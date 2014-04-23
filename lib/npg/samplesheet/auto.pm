@@ -3,14 +3,18 @@
 # Created:       2011-11-29
 #
 
-#package npg::samplesheet::auto; use Moose; use Try::Tiny; with q(MooseX::Log::Log4perl); use npg::samplesheet; use npg_tracking::Schema; has npg_tracking_schema => (isa => q(npg_tracking::Schema), is => q(ro), lazy_build => 1); has sleep_interval => ( q(is) => q(ro), q(isa) => q(Int), default => 90); sub _build_npg_tracking_schema {return npg_tracking::Schema->connect();}  has _miseq => ( q(is) => q(ro), lazy_build => 1 );  sub _build__miseq { my $self=shift; $self->npg_tracking_schema->resultset(q(InstrumentFormat))->find({model=>q(MiSeq)});}  has _pending => ( q(is) => q(ro), lazy_build => 1 );  sub _build__pending { my $self=shift; $self->npg_tracking_schema->resultset(q(RunStatusDict))->find({description=>q(run pending)});}  sub loop {my $self = shift; while(1){ $self->main; sleep $self->sleep_interval} }; sub main { my $self = shift; my $rs = $self->_pending->run_statuses->search({iscurrent=>1})->related_resultset(q(run))->search({q(run.id_instrument_format)=>$self->_miseq->id_instrument_format}); $self->log->debug( $rs->count." ".($self->_miseq->model)." runs marked as ".($self->_pending->description)); while(my$r=$rs->next){$self->log->debug( join",",$r->id_run,$r->instrument->name); my$ss=npg::samplesheet->new(npg_tracking_schema=>$self->npg_tracking_schema, run=>$r, id_run=>$r->id_run); my$o=$ss->output; if(-e $o){ $self->log->debug(qq($o already exists))}else{ try { $ss->process; $self->log->info(qq($o created for run ).($r->id_run)); } catch {  $self->log->error(qq(Trying to create $o for run ).($r->id_run).qq( experienced error: $_)); } } }  } no Moose; 1; use Log::Log4perl qw(:easy); BEGIN{ Log::Log4perl->easy_init({level=>$INFO,}); }
-
 package npg::samplesheet::auto;
+
 use Moose;
 use Try::Tiny;
+use File::Basename;
+use Readonly;
+use File::Copy;
+use File::Spec::Functions;
+
 use npg::samplesheet;
 use npg_tracking::Schema;
-use Readonly;
+use st::api::lims::samplesheet;
 
 our $VERSION = '0';
 
@@ -38,7 +42,6 @@ Class for creating  MiSeq samplesheets automatically for runs which are pending.
 =head1 SUBROUTINES/METHODS
 
 =cut
-
 
 has 'npg_tracking_schema' => (
   'isa' => 'npg_tracking::Schema',
@@ -79,10 +82,24 @@ sub process {
   my $rs = $rt->search({q(run.id_instrument_format)=>$self->_miseq->id_instrument_format});
   $self->log->debug( $rs->count. q[ ] .($self->_miseq->model). q[ runs marked as ] .($self->_pending->description));
   while(my$r=$rs->next){
-    $self->log->debug( join q[,],$r->id_run,$r->instrument->name);
+    my $id_run = $r->id_run;
+    $self->log->debug( join q[,],$id_run,$r->instrument->name);
     my$ss=npg::samplesheet->new(run=>$r);
     my$o=$ss->output;
-    if(-e $o){ $self->log->debug(qq($o already exists))}else{
+    my $generate_new = 1;
+
+    if(-e $o) {
+      my $other_id_run = _id_run_from_samplesheet($o);
+      if ($other_id_run && $other_id_run >= $id_run) {
+        $self->log->info(qq($o already exists for $id_run or belongs to a later run));
+        $generate_new = 0;
+      } else {
+        $self->log->info(qq(Will move existing $o));
+        _move_samplesheet($o);
+      }
+    }
+
+    if ($generate_new) {
       try {
         $ss->process;
         $self->log->info(qq($o created for run ).($r->id_run));
@@ -94,6 +111,35 @@ sub process {
   return;
 }
 
+sub _id_run_from_samplesheet {
+  my $file_path = shift;
+  my $id_run;
+  try {
+    my $sh = st::api::lims::samplesheet->new(path => $file_path);
+    $sh->data; # force to parse the file
+    if ($sh->id_run) {
+      $id_run = int $sh->id_run;
+    }
+  };
+  return $id_run;
+}
+
+sub _move_samplesheet {
+  my $file_path = shift;
+
+  my($filename, $dirname) = fileparse($file_path);
+  $dirname =~ s/\/$//smx; #drop last forward slash if any
+  my $dirname_dest = $dirname . '_old';
+  my $filename_dest = $filename . '_invalid';
+  my $moved;
+  if (-d $dirname_dest) {
+    $moved = move($file_path, catdir($dirname_dest, $filename_dest));
+  }
+  if (!$moved) {
+    move($file_path, catdir($dirname, $filename_dest));
+  }
+  return;
+}
 
 no Moose;
 1;
@@ -107,9 +153,9 @@ __END__
 
 =over
 
-=item strict
+=item File::Basename
 
-=item warnings
+=item File::Copy
 
 =item Moose
 
@@ -117,13 +163,15 @@ __END__
 
 =item Readonly
 
-=item Carp
+=item File::Spec::Functions
 
 =item Try::Tiny
 
 =item npg_tracking::Schema
 
 =item npg::samplesheet
+
+=item st::api::lims::samplesheet
 
 =back
 
