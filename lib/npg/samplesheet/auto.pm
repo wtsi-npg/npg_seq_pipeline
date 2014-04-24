@@ -90,8 +90,8 @@ sub process {
 
     if(-e $o) {
       my $other_id_run = _id_run_from_samplesheet($o);
-      if ($other_id_run && $other_id_run >= $id_run) {
-        $self->log->info(qq($o already exists for $id_run or belongs to a later run));
+      if ($other_id_run && $other_id_run == $id_run) {
+        $self->log->info(qq($o already exists for $id_run));
         $generate_new = 0;
       } else {
         $self->log->info(qq(Will move existing $o));
