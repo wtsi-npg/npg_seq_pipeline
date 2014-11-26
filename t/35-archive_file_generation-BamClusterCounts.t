@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use English qw{-no_match_vars};
 use Test::More tests => 23;
-use Test::Exception::LessClever;
+use Test::Exception;
 use t::util;
 
 BEGIN {
@@ -12,7 +12,8 @@ BEGIN {
 my $util = t::util->new({});
 my $conf_path = $util->conf_path();
 
-$ENV{TEST_DIR} = $util->temp_directory();
+my $dir = $util->temp_directory();
+$ENV{TEST_DIR} = $dir;
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 
@@ -26,16 +27,15 @@ my $archive_path = $recalibrated_path . q{/archive};
 {
   my $object;
   lives_ok {
-    $object = npg_pipeline::archive::file::BamClusterCounts->new({
+    $object = npg_pipeline::archive::file::BamClusterCounts->new(
       run_folder => q{123456_IL2_1234},
       runfolder_path => $analysis_runfolder_path,
       bam_basecall_path => $bam_basecall_path,
       id_run => 1234,
       timestamp => q{20100907-142417},
       conf_path => $conf_path,
-      domain => q{test},
       no_bsub => 1,
-    });
+    );
   } q{obtain object ok};
 
   isa_ok( $object, q{npg_pipeline::archive::file::BamClusterCounts}, q{$object} );
@@ -45,7 +45,7 @@ my $archive_path = $recalibrated_path . q{/archive};
     array_string => q{[1-8]},
   };
 
-  my $bsub_command = $util->drop_temp_part_from_paths( qq{bsub -q test -w'done(123) && done(321)' -J 'npg_pipeline_check_bam_file_cluster_count_1234_20100907-142417[1-8]' -o $archive_path/log/npg_pipeline_check_bam_file_cluster_count_1234_20100907-142417.} . q{%I.%J.out 'npg_pipeline_check_bam_file_cluster_count --id_run=1234 --position=`echo $LSB_JOBINDEX` --qc_path=} . qq{$archive_path/qc --bam_basecall_path=$bam_basecall_path'} );
+  my $bsub_command = $util->drop_temp_part_from_paths( qq{bsub -q srpipeline -w'done(123) && done(321)' -J 'npg_pipeline_check_bam_file_cluster_count_1234_20100907-142417[1-8]' -o $archive_path/log/npg_pipeline_check_bam_file_cluster_count_1234_20100907-142417.} . q{%I.%J.out 'npg_pipeline_check_bam_file_cluster_count --id_run=1234 --position=`echo $LSB_JOBINDEX` --qc_path=} . qq{$archive_path/qc --bam_basecall_path=$bam_basecall_path'} );
   is( $util->drop_temp_part_from_paths( $object->_generate_bsub_command( $arg_refs ) ), $bsub_command, q{generated bsub command is correct} );
 
   my @jids = $object->launch( $arg_refs );
@@ -59,15 +59,14 @@ my $archive_path = $recalibrated_path . q{/archive};
 
   my $object;
   lives_ok{
-    $object = npg_pipeline::archive::file::BamClusterCounts->new({
+    $object = npg_pipeline::archive::file::BamClusterCounts->new(
       id_run => 8747,
       position => 1,
       runfolder_path => $analysis_runfolder_path,
       bam_basecall_path => $bam_basecall_path,
       archive_path => $archive_path,
       conf_path => $conf_path,
-      domain => q{test},
-    });
+    );
   } q{obtain object ok};
 
   is( $object->_bustard_pf_cluster_count(),  150694669, q{correct pf_cluster_count obtained from TileMetricsOut.bin}  );
@@ -82,15 +81,14 @@ my $archive_path = $recalibrated_path . q{/archive};
 {
   my $object;
   lives_ok{
-    $object = npg_pipeline::archive::file::BamClusterCounts->new({
+    $object = npg_pipeline::archive::file::BamClusterCounts->new(
       id_run => 1234,
       runfolder_path => $analysis_runfolder_path,
       position => 3,
       bam_basecall_path => $bam_basecall_path,
       archive_path => $archive_path,
       conf_path => $conf_path,
-      domain => q{test},
-    });
+    );
   } q{obtain object ok};
   
   ok( !$object->_bam_cluster_count_total({}), 'no bam cluster count total returned');
@@ -119,15 +117,14 @@ my $archive_path = $recalibrated_path . q{/archive};
 
   my $object;
   lives_ok{
-    $object = npg_pipeline::archive::file::BamClusterCounts->new({
+    $object = npg_pipeline::archive::file::BamClusterCounts->new(
       id_run => 8747,
       position => 1,
       runfolder_path => $analysis_runfolder_path,
       bam_basecall_path => $bam_basecall_path,
       archive_path => $archive_path,
       conf_path => $conf_path,
-      domain => q{test},
-    });
+    );
   } q{obtain object ok};
 
   is( $object->_bam_cluster_count_total({plex=>1}), 301389338, 'correct bam cluster count total');
@@ -142,7 +139,8 @@ my $archive_path = $recalibrated_path . q{/archive};
   my $analysis_runfolder_path = 't/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX';
   my $bam_basecall_path = "$analysis_runfolder_path/Data/Intensities/BAM_basecalls_20130122-085552";
   my $qc_path = "$bam_basecall_path/PB_cal_bam/archive/qc";
-  my $common_command = "$EXECUTABLE_NAME bin/npg_pipeline_check_bam_file_cluster_count --conf_path $conf_path --domain live --id_run 8747 --bam_basecall_path $bam_basecall_path --qc_path $qc_path --position ";
+
+  my $common_command = "$EXECUTABLE_NAME bin/npg_pipeline_check_bam_file_cluster_count --conf_path $conf_path --id_run 8747 --bam_basecall_path $bam_basecall_path --qc_path $qc_path --position ";
   lives_ok { system "$common_command 1" } qq{script runs ok when no spatial filter json};
   ok( ! $CHILD_ERROR, q{script completed ok - no croak} );
   lives_ok { system "$common_command 4" } qq{script runs ok when spatial filter has failed reads};
