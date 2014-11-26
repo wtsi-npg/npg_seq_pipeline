@@ -1,0 +1,655 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<batch>
+  <id>18932</id>
+  <status>released</status>
+  <lanes>
+    <lane position="1" id="6076070" priority="0">
+      <pool id="5816363" name="2326_090812" request_id="4650380" qc_state="pass">
+        <sample sample_id="1464377" library_id="5721189" library_name="B16_F0_A_RNA 5721189" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1353">
+            <index>2</index>
+            <expected_sequence>CGATGT</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464378" library_id="5721190" library_name="B16_F0_B_RNA 5721190" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1356">
+            <index>4</index>
+            <expected_sequence>TGACCA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464379" library_id="5721191" library_name="B16_F0_C_RNA 5721191" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1358">
+            <index>5</index>
+            <expected_sequence>ACAGTG</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464380" library_id="5721192" library_name="B16_F0_D_RNA 5721192" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1360">
+            <index>6</index>
+            <expected_sequence>GCCAAT</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464381" library_id="5721193" library_name="B16_F0_E_RNA 5721193" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1361">
+            <index>7</index>
+            <expected_sequence>CAGATC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464382" library_id="5721194" library_name="B16_F10_1_RNA 5721194" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1357">
+            <index>12</index>
+            <expected_sequence>CTTGTA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464383" library_id="5721195" library_name="B16_F10_2_RNA 5721195" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1359">
+            <index>13</index>
+            <expected_sequence>AGTCAA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464384" library_id="5721196" library_name="B16_F10_3_RNA 5721196" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1362">
+            <index>14</index>
+            <expected_sequence>AGTTCC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464385" library_id="5721197" library_name="B16_F10_4_RNA 5721197" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1364">
+            <index>15</index>
+            <expected_sequence>ATGTCA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464386" library_id="5721198" library_name="B16_F10_5_RNA 5721198" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1341">
+            <index>16</index>
+            <expected_sequence>CCGTCC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="5806853">
+        <sample sample_id="1255141" library_id="4405872" library_name="PhiX (10Jan12)" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="264">
+            <index>168</index>
+            <expected_sequence>ACAACGCAAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="2" id="6076071" priority="0">
+      <pool id="5816363" name="2326_090812" request_id="4650381" qc_state="pass">
+        <sample sample_id="1464377" library_id="5721189" library_name="B16_F0_A_RNA 5721189" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1353">
+            <index>2</index>
+            <expected_sequence>CGATGT</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464378" library_id="5721190" library_name="B16_F0_B_RNA 5721190" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1356">
+            <index>4</index>
+            <expected_sequence>TGACCA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464379" library_id="5721191" library_name="B16_F0_C_RNA 5721191" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1358">
+            <index>5</index>
+            <expected_sequence>ACAGTG</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464380" library_id="5721192" library_name="B16_F0_D_RNA 5721192" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1360">
+            <index>6</index>
+            <expected_sequence>GCCAAT</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464381" library_id="5721193" library_name="B16_F0_E_RNA 5721193" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1361">
+            <index>7</index>
+            <expected_sequence>CAGATC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464382" library_id="5721194" library_name="B16_F10_1_RNA 5721194" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1357">
+            <index>12</index>
+            <expected_sequence>CTTGTA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464383" library_id="5721195" library_name="B16_F10_2_RNA 5721195" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1359">
+            <index>13</index>
+            <expected_sequence>AGTCAA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464384" library_id="5721196" library_name="B16_F10_3_RNA 5721196" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1362">
+            <index>14</index>
+            <expected_sequence>AGTTCC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464385" library_id="5721197" library_name="B16_F10_4_RNA 5721197" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1364">
+            <index>15</index>
+            <expected_sequence>ATGTCA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464386" library_id="5721198" library_name="B16_F10_5_RNA 5721198" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1341">
+            <index>16</index>
+            <expected_sequence>CCGTCC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="5806853">
+        <sample sample_id="1255141" library_id="4405872" library_name="PhiX (10Jan12)" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="264">
+            <index>168</index>
+            <expected_sequence>ACAACGCAAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="3" id="6076072" priority="0">
+      <pool id="5816363" name="2326_090812" request_id="4650382" qc_state="pass">
+        <sample sample_id="1464377" library_id="5721189" library_name="B16_F0_A_RNA 5721189" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1353">
+            <index>2</index>
+            <expected_sequence>CGATGT</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464378" library_id="5721190" library_name="B16_F0_B_RNA 5721190" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1356">
+            <index>4</index>
+            <expected_sequence>TGACCA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464379" library_id="5721191" library_name="B16_F0_C_RNA 5721191" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1358">
+            <index>5</index>
+            <expected_sequence>ACAGTG</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464380" library_id="5721192" library_name="B16_F0_D_RNA 5721192" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1360">
+            <index>6</index>
+            <expected_sequence>GCCAAT</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464381" library_id="5721193" library_name="B16_F0_E_RNA 5721193" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1361">
+            <index>7</index>
+            <expected_sequence>CAGATC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464382" library_id="5721194" library_name="B16_F10_1_RNA 5721194" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1357">
+            <index>12</index>
+            <expected_sequence>CTTGTA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464383" library_id="5721195" library_name="B16_F10_2_RNA 5721195" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1359">
+            <index>13</index>
+            <expected_sequence>AGTCAA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464384" library_id="5721196" library_name="B16_F10_3_RNA 5721196" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1362">
+            <index>14</index>
+            <expected_sequence>AGTTCC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464385" library_id="5721197" library_name="B16_F10_4_RNA 5721197" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1364">
+            <index>15</index>
+            <expected_sequence>ATGTCA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464386" library_id="5721198" library_name="B16_F10_5_RNA 5721198" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1341">
+            <index>16</index>
+            <expected_sequence>CCGTCC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="5806853">
+        <sample sample_id="1255141" library_id="4405872" library_name="PhiX (10Jan12)" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="264">
+            <index>168</index>
+            <expected_sequence>ACAACGCAAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="4" id="6076073" priority="0">
+      <pool id="5816363" name="2326_090812" request_id="4650383" qc_state="pass">
+        <sample sample_id="1464377" library_id="5721189" library_name="B16_F0_A_RNA 5721189" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1353">
+            <index>2</index>
+            <expected_sequence>CGATGT</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464378" library_id="5721190" library_name="B16_F0_B_RNA 5721190" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1356">
+            <index>4</index>
+            <expected_sequence>TGACCA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464379" library_id="5721191" library_name="B16_F0_C_RNA 5721191" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1358">
+            <index>5</index>
+            <expected_sequence>ACAGTG</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464380" library_id="5721192" library_name="B16_F0_D_RNA 5721192" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1360">
+            <index>6</index>
+            <expected_sequence>GCCAAT</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464381" library_id="5721193" library_name="B16_F0_E_RNA 5721193" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1361">
+            <index>7</index>
+            <expected_sequence>CAGATC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464382" library_id="5721194" library_name="B16_F10_1_RNA 5721194" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1357">
+            <index>12</index>
+            <expected_sequence>CTTGTA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464383" library_id="5721195" library_name="B16_F10_2_RNA 5721195" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1359">
+            <index>13</index>
+            <expected_sequence>AGTCAA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464384" library_id="5721196" library_name="B16_F10_3_RNA 5721196" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1362">
+            <index>14</index>
+            <expected_sequence>AGTTCC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464385" library_id="5721197" library_name="B16_F10_4_RNA 5721197" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1364">
+            <index>15</index>
+            <expected_sequence>ATGTCA</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+        <sample sample_id="1464386" library_id="5721198" library_name="B16_F10_5_RNA 5721198" library_type="Illumina cDNA protocol" study_id="2326" project_id="1147" consent_withdrawn="false">
+          <tag tag_id="1341">
+            <index>16</index>
+            <expected_sequence>CCGTCC</expected_sequence>
+            <tag_group_id>27</tag_group_id>
+          </tag>
+          <insert_size from="200" to="300"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="5806853">
+        <sample sample_id="1255141" library_id="4405872" library_name="PhiX (10Jan12)" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="264">
+            <index>168</index>
+            <expected_sequence>ACAACGCAAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="5" id="6076066" priority="1">
+      <pool id="6033729" name="2370_240912" request_id="4602513" qc_state="pass">
+        <sample sample_id="1484239" library_id="6004424" library_name="FoxoCHIP_V1 6004424" library_type="ChiP-seq" study_id="2370" project_id="1181" consent_withdrawn="false">
+          <tag tag_id="265">
+            <index>1</index>
+            <expected_sequence>ATCACGTTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="250" to="500"/>
+        </sample>
+        <sample sample_id="1484240" library_id="6004425" library_name="FoxoCHIP_V2 6004425" library_type="ChiP-seq" study_id="2370" project_id="1181" consent_withdrawn="false">
+          <tag tag_id="266">
+            <index>2</index>
+            <expected_sequence>CGATGTTTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="250" to="500"/>
+        </sample>
+        <sample sample_id="1484241" library_id="6004426" library_name="FoxoCHIP_M1 6004426" library_type="ChiP-seq" study_id="2370" project_id="1181" consent_withdrawn="false">
+          <tag tag_id="267">
+            <index>3</index>
+            <expected_sequence>TTAGGCATAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="250" to="500"/>
+        </sample>
+        <sample sample_id="1484242" library_id="6004427" library_name="FoxoCHIP_M2 6004427" library_type="ChiP-seq" study_id="2370" project_id="1181" consent_withdrawn="false">
+          <tag tag_id="268">
+            <index>4</index>
+            <expected_sequence>TGACCACTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="250" to="500"/>
+        </sample>
+        <sample sample_id="1484243" library_id="6004428" library_name="IgGCHIP_NC1 6004428" library_type="ChiP-seq" study_id="2370" project_id="1181" consent_withdrawn="false">
+          <tag tag_id="269">
+            <index>5</index>
+            <expected_sequence>ACAGTGGTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="250" to="500"/>
+        </sample>
+        <sample sample_id="1484244" library_id="6004429" library_name="IgGCHIP_NC2 6004429" library_type="ChiP-seq" study_id="2370" project_id="1181" consent_withdrawn="false">
+          <tag tag_id="270">
+            <index>6</index>
+            <expected_sequence>GCCAATGTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="250" to="500"/>
+        </sample>
+        <sample sample_id="1484245" library_id="6004430" library_name="Input_DNA1 6004430" library_type="ChiP-seq" study_id="2370" project_id="1181" consent_withdrawn="false">
+          <tag tag_id="271">
+            <index>7</index>
+            <expected_sequence>CAGATCTGAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="250" to="500"/>
+        </sample>
+        <sample sample_id="1484246" library_id="6004431" library_name="Input_DNA2 6004431" library_type="ChiP-seq" study_id="2370" project_id="1181" consent_withdrawn="false">
+          <tag tag_id="272">
+            <index>8</index>
+            <expected_sequence>ACTTGATGAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="250" to="500"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="5806853">
+        <sample sample_id="1255141" library_id="4405872" library_name="PhiX (10Jan12)" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="264">
+            <index>168</index>
+            <expected_sequence>ACAACGCAAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="6" id="6076067" priority="0">
+      <pool id="6045267" name="2311_111012" request_id="4638258" qc_state="pass">
+        <sample sample_id="1497928" library_id="6034047" library_name="zmp_ph4_1m 6034047" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="144">
+            <index>1</index>
+            <expected_sequence>ATCACGTT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497929" library_id="6034048" library_name="zmp_ph4_1s 6034048" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="149">
+            <index>2</index>
+            <expected_sequence>CGATGTTT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497930" library_id="6034049" library_name="zmp_ph4_2m 6034049" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="153">
+            <index>3</index>
+            <expected_sequence>TTAGGCAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497931" library_id="6034050" library_name="zmp_ph4_2s 6034050" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="158">
+            <index>4</index>
+            <expected_sequence>TGACCACT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497932" library_id="6034051" library_name="zmp_ph4_3m 6034051" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="162">
+            <index>5</index>
+            <expected_sequence>ACAGTGGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497933" library_id="6034052" library_name="zmp_ph4_3s 6034052" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="167">
+            <index>6</index>
+            <expected_sequence>GCCAATGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497934" library_id="6034053" library_name="zmp_ph4_4m 6034053" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="173">
+            <index>7</index>
+            <expected_sequence>CAGATCTG</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497935" library_id="6034054" library_name="zmp_ph4_4s 6034054" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="179">
+            <index>8</index>
+            <expected_sequence>ACTTGATG</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="5806853">
+        <sample sample_id="1255141" library_id="4405872" library_name="PhiX (10Jan12)" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="264">
+            <index>168</index>
+            <expected_sequence>ACAACGCAAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="7" id="6076068" priority="0">
+      <pool id="6045366" name="2311_111012_2" request_id="4638265" qc_state="pass">
+        <sample sample_id="1497936" library_id="6034063" library_name="zmp_ph5_1m 6034063" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="144">
+            <index>1</index>
+            <expected_sequence>ATCACGTT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497937" library_id="6034064" library_name="zmp_ph5_1s 6034064" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="149">
+            <index>2</index>
+            <expected_sequence>CGATGTTT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497938" library_id="6034065" library_name="zmp_ph5_2m 6034065" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="153">
+            <index>3</index>
+            <expected_sequence>TTAGGCAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497939" library_id="6034066" library_name="zmp_ph5_2s 6034066" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="158">
+            <index>4</index>
+            <expected_sequence>TGACCACT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497940" library_id="6034067" library_name="zmp_ph5_3m 6034067" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="162">
+            <index>5</index>
+            <expected_sequence>ACAGTGGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497941" library_id="6034068" library_name="zmp_ph5_3s 6034068" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="167">
+            <index>6</index>
+            <expected_sequence>GCCAATGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="5806853">
+        <sample sample_id="1255141" library_id="4405872" library_name="PhiX (10Jan12)" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="264">
+            <index>168</index>
+            <expected_sequence>ACAACGCAAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="8" id="6076069" priority="0">
+      <pool id="6045465" name="2331_111012_3" request_id="4638272" qc_state="pass">
+        <sample sample_id="1497942" library_id="6034069" library_name="zmp_ph6_1m 6034069" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="144">
+            <index>1</index>
+            <expected_sequence>ATCACGTT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497943" library_id="6034070" library_name="zmp_ph6_1s 6034070" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="149">
+            <index>2</index>
+            <expected_sequence>CGATGTTT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497944" library_id="6034071" library_name="zmp_ph6_2m 6034071" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="153">
+            <index>3</index>
+            <expected_sequence>TTAGGCAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497945" library_id="6034072" library_name="zmp_ph6_2s 6034072" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="158">
+            <index>4</index>
+            <expected_sequence>TGACCACT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497946" library_id="6034073" library_name="zmp_ph6_3m 6034073" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="162">
+            <index>5</index>
+            <expected_sequence>ACAGTGGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+        <sample sample_id="1497947" library_id="6034074" library_name="zmp_ph6_3s 6034074" library_type="qPCR only" study_id="2311" project_id="82" consent_withdrawn="false">
+          <tag tag_id="167">
+            <index>6</index>
+            <expected_sequence>GCCAATGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="70" to="270"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="5806853">
+        <sample sample_id="1255141" library_id="4405872" library_name="PhiX (10Jan12)" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="264">
+            <index>168</index>
+            <expected_sequence>ACAACGCAAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+  </lanes>
+</batch>

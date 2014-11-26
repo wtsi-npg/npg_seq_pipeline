@@ -1,0 +1,57 @@
+---
+- id_event: 23
+  id_event_type: 1
+  date: 2010-09-01 17:21:23
+  description: Some text about a run status change
+  entity_id: 4
+  id_user: 7
+  notification_sent: 0000-00-00 00:00:00
+- id_event: 24
+  id_event_type: 1
+  date: 2010-09-02 17:12:20
+  description: Some more text about a run status change
+  entity_id: 5
+  id_user: 7
+  notification_sent: 0000-00-00 00:00:00
+- id_event: 25
+  id_event_type: 7
+  date: 2010-09-05 11:21:54
+  description: This is an instrument status change - not a run status change
+  entity_id: 50
+  id_user: 7
+  notification_sent: 2010-09-06 11:21:54
+- id_event: 26
+  id_event_type: 1
+  date: 2010-09-07 16:46:13
+  description: Run status change for a batch with no lanes
+  entity_id: 8
+  id_user: 7
+  notification_sent: 2010-09-06 11:21:54
+- id_event: 27
+  id_event_type: 7
+  date: 2010-09-05 11:21:54
+  description: This is an instrument status change - not a run status change
+  entity_id: 50
+  id_user: 7
+  notification_sent: 0000-00-00 00:00:00
+- id_event: 28
+  id_event_type: 8
+  date: 2010-09-05 11:21:54
+  description: pipeline annotated instrument HS8 - Monitor lane 8 in subsequent runs for right edge of tiles 51-100 out of focus.
+  entity_id: 1
+  id_user: 7
+  notification_sent: 0000-00-00 00:00:00
+- id_event: 29
+  id_event_type: 2
+  date: 2010-09-05 11:21:54
+  description: This is a run annotation.
+  entity_id: 1
+  id_user: 7
+  notification_sent: 0000-00-00 00:00:00
+- id_event: 30
+  id_event_type: 9
+  date: 2010-09-05 11:21:54
+  description: This is a run lane annotation.
+  entity_id: 1
+  id_user: 7
+  notification_sent: 0000-00-00 00:00:00

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<batch>
+  <id>23830</id>
+  <status>released</status>
+  <lanes>
+    <lane position="1" id="8401131" priority="0">
+      <pool id="8111702" name="Pbtransgenesis300813mxStm27DA" request_id="5732428" qc_state="">
+        <sample sample_id="1686785" library_id="8110638" library_name="arg404 8110638" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3506">
+            <index>1</index>
+            <expected_sequence>AGTGATTAGCA</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686786" library_id="8110639" library_name="arg405 8110639" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3507">
+            <index>2</index>
+            <expected_sequence>GAATCCCCCTA</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686787" library_id="8110640" library_name="arg406 8110640" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3508">
+            <index>3</index>
+            <expected_sequence>CCTGGGAAACT</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686788" library_id="8110641" library_name="arg407 8110641" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3509">
+            <index>4</index>
+            <expected_sequence>TACCTCCCAGG</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686789" library_id="8110642" library_name="arg408 8110642" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3510">
+            <index>5</index>
+            <expected_sequence>ATTTGTGGTAT</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686790" library_id="8110643" library_name="arg409 8110643" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3511">
+            <index>6</index>
+            <expected_sequence>CCCGAGAGATC</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686791" library_id="8110644" library_name="arg410 8110644" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3512">
+            <index>7</index>
+            <expected_sequence>GAGTATAGGGT</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686792" library_id="8110645" library_name="arg411 8110645" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3513">
+            <index>8</index>
+            <expected_sequence>TCTTAATTGAG</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686793" library_id="8110646" library_name="arg412 8110646" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3514">
+            <index>9</index>
+            <expected_sequence>ACGTTCTGTCG</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686794" library_id="8110647" library_name="arg413 8110647" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3515">
+            <index>10</index>
+            <expected_sequence>CATAATGGCGA</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686795" library_id="8110648" library_name="arg414 8110648" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3516">
+            <index>11</index>
+            <expected_sequence>GGCCGGAACAT</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686796" library_id="8110649" library_name="arg415 8110649" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3517">
+            <index>12</index>
+            <expected_sequence>TCACTTCAAGA</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686797" library_id="8110650" library_name="arg416 8110650" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3518">
+            <index>13</index>
+            <expected_sequence>AGCTGGCCTTC</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686798" library_id="8110651" library_name="arg417 8110651" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3519">
+            <index>14</index>
+            <expected_sequence>CTGCACATTGG</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686799" library_id="8110652" library_name="arg418 8110652" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3520">
+            <index>15</index>
+            <expected_sequence>GGTCCTTCGAT</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686800" library_id="8110653" library_name="arg419 8110653" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3521">
+            <index>16</index>
+            <expected_sequence>TTCGCACCCGA</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686801" library_id="8110654" library_name="arg420 8110654" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3522">
+            <index>17</index>
+            <expected_sequence>CCGTAAATTAC</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686802" library_id="8110655" library_name="arg421 8110655" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3523">
+            <index>18</index>
+            <expected_sequence>GTAGTCGATAT</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686803" library_id="8110656" library_name="arg422 8110656" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3524">
+            <index>19</index>
+            <expected_sequence>TGTAAGAATCA</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686804" library_id="8110657" library_name="arg423 8110657" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3525">
+            <index>20</index>
+            <expected_sequence>AGGCCCGCCGT</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686805" library_id="8110658" library_name="arg424 8110658" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3526">
+            <index>21</index>
+            <expected_sequence>CTCCACGCAAG</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+        <sample sample_id="1686806" library_id="8110659" library_name="arg425 8110659" library_type="qPCR only" study_id="2086" project_id="1182" consent_withdrawn="false">
+          <tag tag_id="3527">
+            <index>22</index>
+            <expected_sequence>GTCTTTGATTA</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+          <insert_size from="75" to="125"/>
+        </sample>
+      </pool>
+    </lane>
+  </lanes>
+</batch>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="12376" batch_id="26195" id_instrument="103" expected_cycle_count="74" actual_cycle_count="74" priority="1" id_run_pair="0" is_paired="0" team="RAD" id_instrument_format="11" flowcell_id="MS2012507-050V2" folder_name="140311_MS5_12376_A_MS2012507-050V2" folder_path_glob="/{export,nfs}/sf49/ILorHSorMS_sf49/*/" name="MS5_12376" loader="nh4" loading_date="2014-03-11" run_folder="140311_MS5_12376_A_MS2012507-050V2">
+ <instrument id_instrument="103" name="MS5" id_instrument_format="11" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="84741" id_run="12376" tile_count="12" tracks="1" position="1" />
+</run_lanes>
+ <current_run_status id_run_status="164267" id_run="12376" date="2014-03-12 09:13:40" id_run_status_dict="20" id_user="76" username="nh4" iscurrent="1" description="qc complete" />
+ <run_statuses>
+ <run_status id_run_status="164267" id_run="12376" date="2014-03-12 09:13:40" id_run_status_dict="20" id_user="76" username="nh4" iscurrent="1" description="qc complete" />
+ <run_status id_run_status="164246" id_run="12376" date="2014-03-11 23:16:16" id_run_status_dict="19" id_user="7" username="nh4" iscurrent="0" description="qc review pending" />
+ <run_status id_run_status="164245" id_run="12376" date="2014-03-11 23:16:14" id_run_status_dict="9" id_user="7" username="nh4" iscurrent="0" description="analysis complete" />
+ <run_status id_run_status="164243" id_run="12376" date="2014-03-11 21:24:23" id_run_status_dict="24" id_user="7" username="nh4" iscurrent="0" description="secondary analysis in progress" />
+ <run_status id_run_status="164242" id_run="12376" date="2014-03-11 21:19:09" id_run_status_dict="7" id_user="7" username="nh4" iscurrent="0" description="analysis in progress" />
+ <run_status id_run_status="164240" id_run="12376" date="2014-03-11 21:06:19" id_run_status_dict="11" id_user="7" username="nh4" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="164241" id_run="12376" date="2014-03-11 21:06:19" id_run_status_dict="6" id_user="7" username="nh4" iscurrent="0" description="analysis pending" />
+ <run_status id_run_status="164239" id_run="12376" date="2014-03-11 20:40:30" id_run_status_dict="4" id_user="7" username="nh4" iscurrent="0" description="run complete" />
+ <run_status id_run_status="164236" id_run="12376" date="2014-03-11 16:07:07" id_run_status_dict="2" id_user="7" username="nh4" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="164226" id_run="12376" date="2014-03-11 12:43:32" id_run_status_dict="1" id_user="76" username="nh4" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ </annotations>
+ <tags>
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>
+

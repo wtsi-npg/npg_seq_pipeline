@@ -1,0 +1,591 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<batch>
+  <id>6854</id>
+  <status>released</status>
+  <lanes>
+    <lane position="1">
+      <pool name="M.Neisseria 24847" project_id="287" request_id="550228" id="127651" study_id="287" qc_state="">
+        <sample library_id="127639" tag="1" sample_id="9903">
+          <tag tag_id="5">
+            <index>1</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127640" tag="2" sample_id="9904">
+          <tag tag_id="7">
+            <index>2</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127641" tag="3" sample_id="9905">
+          <tag tag_id="9">
+            <index>3</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127642" tag="4" sample_id="9906">
+          <tag tag_id="11">
+            <index>4</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127643" tag="5" sample_id="9907">
+          <tag tag_id="1">
+            <index>5</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127644" tag="6" sample_id="9908">
+          <tag tag_id="3">
+            <index>6</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127645" tag="7" sample_id="9909">
+          <tag tag_id="6">
+            <index>7</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127646" tag="8" sample_id="9910">
+          <tag tag_id="8">
+            <index>8</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127647" tag="9" sample_id="9911">
+          <tag tag_id="10">
+            <index>9</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127648" tag="10" sample_id="9912">
+          <tag tag_id="12">
+            <index>10</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127649" tag="11" sample_id="9913">
+          <tag tag_id="2">
+            <index>11</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127650" tag="12" sample_id="9914">
+          <tag tag_id="4">
+            <index>12</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+      </pool>
+    </lane>
+    <lane position="2">
+      <pool name="SamaraTB B2 P3" project_id="229" request_id="550229" id="127664" study_id="229" qc_state="">
+        <sample library_id="127652" tag="1" sample_id="7043">
+          <tag tag_id="5">
+            <index>1</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127653" tag="2" sample_id="7053">
+          <tag tag_id="7">
+            <index>2</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127654" tag="3" sample_id="7052">
+          <tag tag_id="9">
+            <index>3</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127655" tag="4" sample_id="7051">
+          <tag tag_id="11">
+            <index>4</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127656" tag="5" sample_id="7050">
+          <tag tag_id="1">
+            <index>5</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127657" tag="6" sample_id="7049">
+          <tag tag_id="3">
+            <index>6</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127658" tag="7" sample_id="7048">
+          <tag tag_id="6">
+            <index>7</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127659" tag="8" sample_id="7047">
+          <tag tag_id="8">
+            <index>8</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127660" tag="9" sample_id="7046">
+          <tag tag_id="10">
+            <index>9</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127661" tag="10" sample_id="7045">
+          <tag tag_id="12">
+            <index>10</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127662" tag="11" sample_id="7044">
+          <tag tag_id="2">
+            <index>11</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127663" tag="12" sample_id="7054">
+          <tag tag_id="4">
+            <index>12</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+      </pool>
+    </lane>
+    <lane position="3">
+      <pool name="SamaraTB B2 P4" project_id="229" request_id="550230" id="127677" study_id="229" qc_state="">
+        <sample library_id="127665" tag="1" sample_id="7055">
+          <tag tag_id="5">
+            <index>1</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127666" tag="2" sample_id="7065">
+          <tag tag_id="7">
+            <index>2</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127667" tag="3" sample_id="7064">
+          <tag tag_id="9">
+            <index>3</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127668" tag="4" sample_id="7063">
+          <tag tag_id="11">
+            <index>4</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127669" tag="5" sample_id="7062">
+          <tag tag_id="1">
+            <index>5</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127670" tag="11" sample_id="7061">
+          <tag tag_id="2">
+            <index>11</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127671" tag="12" sample_id="7060">
+          <tag tag_id="4">
+            <index>12</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127672" tag="6" sample_id="7059">
+          <tag tag_id="3">
+            <index>6</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127673" tag="7" sample_id="7058">
+          <tag tag_id="6">
+            <index>7</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127674" tag="8" sample_id="7057">
+          <tag tag_id="8">
+            <index>8</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127675" tag="9" sample_id="7056">
+          <tag tag_id="10">
+            <index>9</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127676" tag="10" sample_id="7066">
+          <tag tag_id="12">
+            <index>10</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+      </pool>
+    </lane>
+    <lane position="4">
+      <control name="Multiplex-phix" request_id="553094" id="79578"/>
+    </lane>
+    <lane position="5">
+      <pool name="SamaraTB B3 P6" project_id="229" request_id="550231" id="127690" study_id="229" qc_state="">
+        <sample library_id="127678" tag="1" sample_id="7900">
+          <tag tag_id="5">
+            <index>1</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127679" tag="11" sample_id="7910">
+          <tag tag_id="2">
+            <index>11</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127680" tag="2" sample_id="7909">
+          <tag tag_id="7">
+            <index>2</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127681" tag="3" sample_id="7908">
+          <tag tag_id="9">
+            <index>3</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127682" tag="4" sample_id="7907">
+          <tag tag_id="11">
+            <index>4</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127683" tag="12" sample_id="7906">
+          <tag tag_id="4">
+            <index>12</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127684" tag="5" sample_id="7905">
+          <tag tag_id="1">
+            <index>5</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127685" tag="6" sample_id="7904">
+          <tag tag_id="3">
+            <index>6</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127686" tag="7" sample_id="7903">
+          <tag tag_id="6">
+            <index>7</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127687" tag="8" sample_id="7902">
+          <tag tag_id="8">
+            <index>8</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127688" tag="9" sample_id="7901">
+          <tag tag_id="10">
+            <index>9</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127689" tag="10" sample_id="7911">
+          <tag tag_id="12">
+            <index>10</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+      </pool>
+    </lane>
+    <lane position="6">
+      <pool name="Globalparatyphi" project_id="225" request_id="550232" id="127725" study_id="225" qc_state="">
+        <sample library_id="127713" tag="1" sample_id="7071">
+          <tag tag_id="5">
+            <index>1</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127714" tag="2" sample_id="7081">
+          <tag tag_id="7">
+            <index>2</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127715" tag="3" sample_id="7080">
+          <tag tag_id="9">
+            <index>3</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127716" tag="4" sample_id="7079">
+          <tag tag_id="11">
+            <index>4</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127717" tag="5" sample_id="7078">
+          <tag tag_id="1">
+            <index>5</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127718" tag="6" sample_id="7077">
+          <tag tag_id="3">
+            <index>6</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127719" tag="7" sample_id="7076">
+          <tag tag_id="6">
+            <index>7</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127720" tag="8" sample_id="7075">
+          <tag tag_id="8">
+            <index>8</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127721" tag="9" sample_id="7074">
+          <tag tag_id="10">
+            <index>9</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127722" tag="10" sample_id="7073">
+          <tag tag_id="12">
+            <index>10</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127723" tag="11" sample_id="7072">
+          <tag tag_id="2">
+            <index>11</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127724" tag="12" sample_id="7082">
+          <tag tag_id="4">
+            <index>12</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+      </pool>
+    </lane>
+    <lane position="7">
+      <pool name="Bordetella pool 34" project_id="299" request_id="550226" id="127738" study_id="299" qc_state="">
+        <sample library_id="127726" tag="1" sample_id="9067">
+          <tag tag_id="5">
+            <index>1</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127727" tag="2" sample_id="9077">
+          <tag tag_id="7">
+            <index>2</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127728" tag="3" sample_id="9076">
+          <tag tag_id="9">
+            <index>3</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127729" tag="4" sample_id="9075">
+          <tag tag_id="11">
+            <index>4</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127730" tag="5" sample_id="9074">
+          <tag tag_id="1">
+            <index>5</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127731" tag="6" sample_id="9073">
+          <tag tag_id="3">
+            <index>6</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127732" tag="7" sample_id="9072">
+          <tag tag_id="6">
+            <index>7</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127733" tag="8" sample_id="9071">
+          <tag tag_id="8">
+            <index>8</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127734" tag="9" sample_id="9070">
+          <tag tag_id="10">
+            <index>9</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127735" tag="10" sample_id="9069">
+          <tag tag_id="12">
+            <index>10</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127736" tag="11" sample_id="9068">
+          <tag tag_id="2">
+            <index>11</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127737" tag="12" sample_id="9078">
+          <tag tag_id="4">
+            <index>12</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+      </pool>
+    </lane>
+    <lane position="8">
+      <pool name="Bordetella pool 35" project_id="299" request_id="550227" id="127746" study_id="299" qc_state="">
+        <sample library_id="127739" tag="1" sample_id="9079">
+          <tag tag_id="5">
+            <index>1</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127740" tag="2" sample_id="9080">
+          <tag tag_id="7">
+            <index>2</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127741" tag="3" sample_id="9081">
+          <tag tag_id="9">
+            <index>3</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127742" tag="4" sample_id="9082">
+          <tag tag_id="11">
+            <index>4</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127743" tag="5" sample_id="9083">
+          <tag tag_id="1">
+            <index>5</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127744" tag="6" sample_id="9084">
+          <tag tag_id="3">
+            <index>6</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+        <sample library_id="127745" tag="7" sample_id="9085">
+          <tag tag_id="6">
+            <index>7</index>
+            <expected_sequence></expected_sequence>
+            <tag_group_id>1</tag_group_id>
+          </tag>
+        </sample>
+      </pool>
+    </lane>
+  </lanes>
+</batch>

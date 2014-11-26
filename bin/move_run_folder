@@ -1,0 +1,100 @@
+#!/usr/bin/env perl
+
+# $Id: move_run_folder 16979 2013-04-08 10:03:18Z mg8 $
+# Created By: ajb
+# Last Maintained By: $Author: mg8 $
+# Created On: 2009-07-13
+# Last Changed On: $Date: 2013-04-08 11:03:18 +0100 (Mon, 08 Apr 2013) $
+# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/bin/move_run_folder $
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use npg_pipeline::run::folder::move;
+
+our $VERSION = do { my ($r) = q$LastChangedRevision: 16979 $ =~ /(\d+)/mxs; $r; };
+
+npg_pipeline::run::folder::move->new_with_options()->move_runfolder();
+
+0;
+
+
+__END__
+=head1 NAME
+
+move_run_folder
+
+=head1 VERSION
+
+$LastChangedRevision: 16979 $
+
+=head1 SYNOPSIS
+
+move_run_folder -run_folder=<run_folder> -folder=<analysis/outgoing>
+
+=head1 USAGE
+
+move_run_folder -run_folder=<run_folder> -folder=<analysis/outgoing>
+
+=head1 REQUIRED ARGUMENTS
+
+ run_folder is required
+ folder is required
+
+=head1 OPTIONS
+
+=head1 EXIT STATUS
+
+0
+
+=head1 CONFIGURATION
+
+=head1 DESCRIPTION
+
+=head1 SUBROUTINES/METHODS
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item FindBin
+
+=item lib
+
+=item npg_pipeline::run::folder::move
+
+=back
+
+=head1 INCOMPATIBILITIES
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 AUTHOR
+
+$Author: mg8 $
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.

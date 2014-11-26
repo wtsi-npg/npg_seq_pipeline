@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="8747" batch_id="19051" id_instrument="99" expected_cycle_count="158" actual_cycle_count="158" priority="1" id_run_pair="0" is_paired="0" team="C" id_instrument_format="10" flowcell_id="C1BV5ACXX" folder_name="121103_HS29_08747_B_C1BV5ACXX" folder_path_glob="/{export,nfs}/sf25/ILorHSany_sf25/*/" name="HS29_08747" loader="ajw" loading_date="2012-11-03" run_folder="121103_HS29_08747_B_C1BV5ACXX">
+ <instrument id_instrument="99" name="HS29" id_instrument_format="10" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="67416" id_run="8747" tile_count="48" tracks="6" position="1" />
+<run_lane id_run_lane="67417" id_run="8747" tile_count="48" tracks="6" position="2" />
+<run_lane id_run_lane="67418" id_run="8747" tile_count="48" tracks="6" position="3" />
+<run_lane id_run_lane="67419" id_run="8747" tile_count="48" tracks="6" position="4" />
+<run_lane id_run_lane="67420" id_run="8747" tile_count="48" tracks="6" position="5" />
+<run_lane id_run_lane="67421" id_run="8747" tile_count="48" tracks="6" position="6" />
+<run_lane id_run_lane="67422" id_run="8747" tile_count="48" tracks="6" position="7" />
+<run_lane id_run_lane="67423" id_run="8747" tile_count="48" tracks="6" position="8" />
+</run_lanes>
+ <current_run_status id_run_status="116824" id_run="8747" date="2012-11-23 11:42:15" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_statuses>
+ <run_status id_run_status="116824" id_run="8747" date="2012-11-23 11:42:15" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_status id_run_status="116823" id_run="8747" date="2012-11-23 11:42:05" id_run_status_dict="12" id_user="7" username="pipeline" iscurrent="0" description="run archived" />
+ <run_status id_run_status="116819" id_run="8747" date="2012-11-23 11:36:22" id_run_status_dict="18" id_user="7" username="pipeline" iscurrent="0" description="archival in progress" />
+ <run_status id_run_status="116816" id_run="8747" date="2012-11-23 11:26:25" id_run_status_dict="17" id_user="83" username="pipeline" iscurrent="0" description="archival pending" />
+ <run_status id_run_status="116704" id_run="8747" date="2012-11-22 11:09:18" id_run_status_dict="26" id_user="83" username="pipeline" iscurrent="0" description="qc in progress" />
+ <run_status id_run_status="116682" id_run="8747" date="2012-11-21 22:25:58" id_run_status_dict="19" id_user="7" username="pipeline" iscurrent="0" description="qc review pending" />
+ <run_status id_run_status="116681" id_run="8747" date="2012-11-21 22:25:54" id_run_status_dict="9" id_user="7" username="pipeline" iscurrent="0" description="analysis complete" />
+ <run_status id_run_status="116039" id_run="8747" date="2012-11-15 00:04:11" id_run_status_dict="24" id_user="7" username="pipeline" iscurrent="0" description="secondary analysis in progress" />
+ <run_status id_run_status="115902" id_run="8747" date="2012-11-13 18:52:57" id_run_status_dict="7" id_user="7" username="pipeline" iscurrent="0" description="analysis in progress" />
+ <run_status id_run_status="115900" id_run="8747" date="2012-11-13 18:38:18" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="115901" id_run="8747" date="2012-11-13 18:38:18" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="0" description="analysis pending" />
+ <run_status id_run_status="115899" id_run="8747" date="2012-11-13 18:10:26" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete" />
+ <run_status id_run_status="115171" id_run="8747" date="2012-11-03 13:45:11" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="115166" id_run="8747" date="2012-11-03 11:35:47" id_run_status_dict="1" id_user="33" username="pipeline" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ <annotation id_run_annotation="37087" id_run="8747" id_annotation="32621" date="2012-11-03 11:52:35" id_user="33" username="ajw" comment="Priority flowcell" attachment_name="" run_current_ok="" current_cycle="" />
+ <annotation id_run_annotation="37125" id_run="8747" id_annotation="32631" date="2012-11-04 13:51:37" id_user="33" username="ajw" comment="Lanes 4,5 &#x26; 6 have high phasing 0.398, 0.820 &#x26; 1.035 all are the same project" attachment_name="" run_current_ok="1" current_cycle="13" />
+ <annotation id_run_annotation="37127" id_run="8747" id_annotation="32633" date="2012-11-04 14:40:58" id_user="33" username="ajw" comment="Run paused to investigate high Phasing" attachment_name="" run_current_ok="" current_cycle="13" />
+ <annotation id_run_annotation="37158" id_run="8747" id_annotation="32645" date="2012-11-05 09:41:48" id_user="33" username="ajw" comment="Run resumed high phasing on lanes 4,5 &#x26; 6 is probably library related." attachment_name="" run_current_ok="" current_cycle="14" />
+ <annotation id_run_annotation="37196" id_run="8747" id_annotation="32679" date="2012-11-05 14:51:57" id_user="33" username="ajw" comment="" attachment_name="" run_current_ok="1" current_cycle="18" />
+ <annotation id_run_annotation="37281" id_run="8747" id_annotation="32729" date="2012-11-06 15:30:34" id_user="33" username="ajw" comment="" attachment_name="" run_current_ok="1" current_cycle="38" />
+ <annotation id_run_annotation="37331" id_run="8747" id_annotation="32788" date="2012-11-07 17:23:18" id_user="11" username="tkb" comment="" attachment_name="" run_current_ok="1" current_cycle="58" />
+ <annotation id_run_annotation="37396" id_run="8747" id_annotation="32847" date="2012-11-09 07:09:49" id_user="11" username="tkb" comment="" attachment_name="" run_current_ok="1" current_cycle="83" />
+ <annotation id_run_annotation="37452" id_run="8747" id_annotation="32911" date="2012-11-10 12:44:28" id_user="11" username="tkb" comment="" attachment_name="" run_current_ok="1" current_cycle="100" />
+ <annotation id_run_annotation="37511" id_run="8747" id_annotation="32950" date="2012-11-10 16:57:22" id_user="9" username="ah1" comment="" attachment_name="" run_current_ok="1" current_cycle="103" />
+ <annotation id_run_annotation="37609" id_run="8747" id_annotation="33020" date="2012-11-12 15:11:33" id_user="56" username="sh2" comment="" attachment_name="" run_current_ok="1" current_cycle="139" />
+ <annotation id_run_annotation="37646" id_run="8747" id_annotation="33040" date="2012-11-13 14:31:06" id_user="56" username="sh2" comment="" attachment_name="" run_current_ok="1" current_cycle="157" />
+ <annotation id_run_annotation="38210" id_run="8747" id_annotation="33536" date="2012-11-23 11:27:37" id_user="83" username="rb11" comment="QC complete" attachment_name="" run_current_ok="" current_cycle="" />
+ <annotation id_run_annotation="38848" id_run="8747" id_annotation="34064" date="2012-12-05 10:32:23" id_user="71" username="srl" comment="Moved back to analysis folder to allow re-processing of ZMP lanes" attachment_name="" run_current_ok="" current_cycle="" />
+ </annotations>
+ <tags>
+   <tag id_tag="23" description="fc_slotB" />
+   <tag id_tag="43" description="loaded_r2" />
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="19" description="staging" />
+   <tag id_tag="41" description="verified_fc" />
+   <tag id_tag="42" description="verified_r1" />
+ </tags>
+</run>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<study api_version="0.6">
+  <id>185</id>
+  <name>1000Genomes-A1-YRI</name>
+  <active>false</active>
+  <user_id>8</user_id>
+  <followers>
+    <follower>
+
+      <login>tk2</login>
+      <email>thomas.keane@sanger.ac.uk</email>
+      <name>Thomas Keane</name>
+      <id>43</id>
+    </follower>
+    <follower>
+      <login>jws</login>
+
+      <email>jws@sanger.ac.uk</email>
+      <name>James Stalker</name>
+      <id>82</id>
+    </follower>
+  </followers>
+  <managers>
+    <manager>
+
+      <login>jws</login>
+      <email>jws@sanger.ac.uk</email>
+      <name>James Stalker</name>
+      <id>82</id>
+    </manager>
+  </managers>
+  <owners>
+
+    <owner>
+      <login>rd</login>
+      <email>rd@sanger.ac.uk</email>
+      <name>Richard Durbin</name>
+      <id>8</id>
+    </owner>
+  </owners>
+
+  <!-- Family has been deprecated -->
+  <family_id></family_id>
+  <created_at>2008-10-20 14:40:56 +0100</created_at>
+  <updated_at>2010-06-01 14:54:11 +0100</updated_at>
+  <descriptors>
+    <descriptor>
+      <name>Study description</name>
+
+      <value>1000Genomes Project Pilot 1</value>
+    </descriptor>
+    <descriptor>
+      <name>Funding source</name>
+      <value>Internal</value>
+    </descriptor>
+    <descriptor>
+
+      <name>Priority</name>
+      <value>Low</value>
+    </descriptor>
+    <descriptor>
+      <name>Status</name>
+      <value>Active</value>
+    </descriptor>
+
+    <descriptor>
+      <name>SAC sponsor</name>
+      <value>Richard Durbin</value>
+    </descriptor>
+    <descriptor>
+      <name>Funding approved</name>
+      <value>Yes</value>
+
+    </descriptor>
+    <descriptor>
+      <name>Platform</name>
+      <value>Illumina</value>
+    </descriptor>
+    <descriptor>
+      <name>Sequencing platform</name>
+
+      <value>Illumina</value>
+    </descriptor>
+    <descriptor>
+      <name>Does this study contain samples that are contaminated with human DNA which must be removed prior to analysis?</name>
+      <value>yes</value>
+    </descriptor>
+    <descriptor>
+
+      <name>SRA Study ID</name>
+      <value>28911</value>
+    </descriptor>
+    <descriptor>
+      <name>Abstract</name>
+      <value>2X whole genome sequence coverage of 180 individuals from four major population groups.</value>
+    </descriptor>
+
+    <descriptor>
+      <name>Title</name>
+      <value>1000Genomes Project Pilot 1</value>
+    </descriptor>
+    <descriptor>
+      <name>Study Type</name>
+      <value>whole genome sequencing</value>
+
+    </descriptor>
+    <descriptor>
+      <name>SRA Study Accesion Number</name>
+      <value>SRP000031</value>
+    </descriptor>
+    <descriptor>
+      <name>Study Visibility</name>
+
+      <value>public</value>
+    </descriptor>
+    <descriptor>
+      <name>Do any of the samples in this study contain human DNA?</name>
+      <value>no</value>
+    </descriptor>
+    <descriptor>
+
+      <name>What sort of study is this?</name>
+      <value>genomic sequencing</value>
+    </descriptor>
+    <descriptor>
+      <name>What is the data release strategy for this study?</name>
+      <value>open</value>
+    </descriptor>
+
+    <descriptor>
+      <name>How is the data release to be timed?</name>
+      <value>never</value>
+    </descriptor>
+    <descriptor>
+      <name>Study name abbreviation</name>
+      <value></value>
+
+    </descriptor>
+  </descriptors>
+</study>

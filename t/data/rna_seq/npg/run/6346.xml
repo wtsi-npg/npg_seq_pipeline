@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="6346" batch_id="11265" id_instrument="38" expected_cycle_count="160" actual_cycle_count="160" priority="1" id_run_pair="0" is_paired="0" team="joint" id_instrument_format="4" flowcell_id="" name="IL33_06346" loader="ips" loading_date="2011-06-02" run_folder="110602_IL33_06346">
+ <instrument id_instrument="38" name="IL33" id_instrument_format="4" external_name="" serial="" iscurrent="0" />
+ <run_lanes><run_lane id_run_lane="50402" id_run="6346" tile_count="120" tracks="2" position="1" />
+<run_lane id_run_lane="50403" id_run="6346" tile_count="120" tracks="2" position="2" />
+<run_lane id_run_lane="50404" id_run="6346" tile_count="120" tracks="2" position="3" />
+<run_lane id_run_lane="50405" id_run="6346" tile_count="120" tracks="2" position="4" />
+<run_lane id_run_lane="50406" id_run="6346" tile_count="120" tracks="2" position="5" />
+<run_lane id_run_lane="50407" id_run="6346" tile_count="120" tracks="2" position="6" />
+<run_lane id_run_lane="50408" id_run="6346" tile_count="120" tracks="2" position="7" />
+<run_lane id_run_lane="50409" id_run="6346" tile_count="120" tracks="2" position="8" />
+</run_lanes>
+ <current_run_status id_run_status="83266" id_run="6346" date="2011-06-15 12:57:52" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_statuses>
+ <run_status id_run_status="83266" id_run="6346" date="2011-06-15 12:57:52" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_status id_run_status="83265" id_run="6346" date="2011-06-15 12:57:42" id_run_status_dict="12" id_user="7" username="pipeline" iscurrent="0" description="run archived" />
+ <run_status id_run_status="83260" id_run="6346" date="2011-06-15 11:34:45" id_run_status_dict="18" id_user="7" username="pipeline" iscurrent="0" description="archival in progress" />
+ <run_status id_run_status="83259" id_run="6346" date="2011-06-15 11:23:53" id_run_status_dict="17" id_user="73" username="pipeline" iscurrent="0" description="archival pending" />
+ <run_status id_run_status="83176" id_run="6346" date="2011-06-13 22:44:37" id_run_status_dict="19" id_user="7" username="pipeline" iscurrent="0" description="qc review pending" />
+ <run_status id_run_status="83175" id_run="6346" date="2011-06-13 22:44:30" id_run_status_dict="9" id_user="7" username="pipeline" iscurrent="0" description="analysis complete" />
+ <run_status id_run_status="83021" id_run="6346" date="2011-06-11 19:14:22" id_run_status_dict="24" id_user="7" username="pipeline" iscurrent="0" description="secondary analysis in progress" />
+ <run_status id_run_status="82978" id_run="6346" date="2011-06-11 02:06:34" id_run_status_dict="7" id_user="7" username="pipeline" iscurrent="0" description="analysis in progress" />
+ <run_status id_run_status="82976" id_run="6346" date="2011-06-11 00:48:17" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="82977" id_run="6346" date="2011-06-11 00:48:17" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="0" description="analysis pending" />
+ <run_status id_run_status="82973" id_run="6346" date="2011-06-10 23:05:17" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete" />
+ <run_status id_run_status="82464" id_run="6346" date="2011-06-02 12:35:11" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="82451" id_run="6346" date="2011-06-02 10:39:14" id_run_status_dict="1" id_user="51" username="pipeline" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ <annotation id_run_annotation="14309" id_run="6346" id_annotation="14929" date="2011-06-08 11:04:04" id_user="52" username="jb2" comment="all ok except lane 8 ) poor from start)
+
+ Have emailed  MQ1, to see if this is worth redoing" attachment_name="" run_current_ok="1" current_cycle="103" />
+ <annotation id_run_annotation="14632" id_run="6346" id_annotation="15313" date="2011-06-15 11:23:34" id_user="73" username="nf2" comment="76 cycle part-multiplexed PE GA run: part-PASSED
+34.4 Gbase yield.  Control in Lane 4.
+NB slightly high phasing/prephasing in reverse read.
+NB Lane 2 Insert size not correctly calculated for long insert library
+FAIL Lane 6 low cluster density - insufficient YIELD
+FAIL Lane 8 very low cluster density - insufficient YIELD - already noted" attachment_name="" run_current_ok="" current_cycle="" />
+ </annotations>
+ <tags>
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<batch>
+  <id>23644</id>
+  <status>released</status>
+  <lanes>
+    <lane position="1" id="8330691" priority="0">
+      <pool id="8314075" name="Ppf010813_a" request_id="5690094" qc_state="pass">
+        <sample sample_id="1673810" library_id="8307456" library_name="AnPv 8307456" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="149">
+            <index>2</index>
+            <expected_sequence>CGATGTTT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+        <sample sample_id="1673823" library_id="8307457" library_name="PgCerADN1 8307457" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="153">
+            <index>3</index>
+            <expected_sequence>TTAGGCAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+        <sample sample_id="1673825" library_id="8307458" library_name="PgChaADN3 8307458" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="162">
+            <index>5</index>
+            <expected_sequence>ACAGTGGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+        <sample sample_id="1673826" library_id="8307459" library_name="PgLolADN1 8307459" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="167">
+            <index>6</index>
+            <expected_sequence>GCCAATGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+        <sample sample_id="1673829" library_id="8307460" library_name="PrTarADN1 8307460" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="188">
+            <index>9</index>
+            <expected_sequence>GATCAGCG</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+        <sample sample_id="1673830" library_id="8307461" library_name="PgTouADN2 8307461" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="193">
+            <index>10</index>
+            <expected_sequence>TAGCTTGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="8330696">
+        <sample sample_id="1255141" library_id="6759268" library_name="PhiX520_20130220" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="264">
+            <index>168</index>
+            <expected_sequence>ACAACGCAAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="2" id="8330692" priority="0">
+      <pool id="8314075" name="Ppf010813_a" request_id="5690095" qc_state="pass">
+        <sample sample_id="1673810" library_id="8307456" library_name="AnPv 8307456" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="149">
+            <index>2</index>
+            <expected_sequence>CGATGTTT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+        <sample sample_id="1673823" library_id="8307457" library_name="PgCerADN1 8307457" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="153">
+            <index>3</index>
+            <expected_sequence>TTAGGCAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+        <sample sample_id="1673825" library_id="8307458" library_name="PgChaADN3 8307458" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="162">
+            <index>5</index>
+            <expected_sequence>ACAGTGGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+        <sample sample_id="1673826" library_id="8307459" library_name="PgLolADN1 8307459" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="167">
+            <index>6</index>
+            <expected_sequence>GCCAATGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+        <sample sample_id="1673829" library_id="8307460" library_name="PrTarADN1 8307460" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="188">
+            <index>9</index>
+            <expected_sequence>GATCAGCG</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+        <sample sample_id="1673830" library_id="8307461" library_name="PgTouADN2 8307461" library_type="Pre-quality controlled" study_id="1864" project_id="848" consent_withdrawn="false">
+          <tag tag_id="193">
+            <index>10</index>
+            <expected_sequence>TAGCTTGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="400" to="600"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="8330696">
+        <sample sample_id="1255141" library_id="6759268" library_name="PhiX520_20130220" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="264">
+            <index>168</index>
+            <expected_sequence>ACAACGCAAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+  </lanes>
+</batch>

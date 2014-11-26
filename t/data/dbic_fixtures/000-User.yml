@@ -1,0 +1,33 @@
+---
+ - id_user: 1
+   username: joe_admin
+   rfid: a07c54b988516a16f305aa7d483bb2cf5a496f167ea13548cf2222c5125499e6
+ - id_user: 2
+   username: public
+ - id_user: 3
+   username: joe_loader
+   rfid: 10242ce5373daebeef13af6a9ff5fa72659cde8ed4fd233095deff18e5b7c7a4
+ - id_user: 4
+   username: joe_engineer
+   rfid: cd70152be79ce9e344f36b97efcadd091b9ca1f9a9a665754692e0f9af1f31b6
+ - id_user: 5
+   username: joe_annotator
+   rfid: a49330a9ae20e2ce71dc8a5b65a27b7fb8d38928e2b6dd16a3e13c13a7336df5
+ - id_user: 6
+   username: joe_results
+   rfid: 934f487b0fc126c665d74c5ca2852fc1f8945c8876dda7be6efeafc4cbb79860
+ - id_user: 7
+   username: pipeline
+ - id_user: 8
+   username: joe_events
+   rfid: f128edc1507bf3e20fe1ff14c5019c52a068128ec78aa384e362e9fb3071765c
+ - id_user: 9
+   username: joe_approver
+   rfid: 42f3bceec961f80b8334246d7514fac01168f100b090b9927a3a3a853dae7cbc
+ - id_user: 10
+   username: joe_r_n_d
+   rfid: d67ee62209ee5e0d5d421e0cf5bd479c83329c4fae89f9a51fc3ca6ee9e61174
+ - id_user: 11
+   username: rt_error
+ - id_user: 12
+   username: full@address.already

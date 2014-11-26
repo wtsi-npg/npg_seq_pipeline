@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrument id_instrument="26" name="IL23" id_instrument_format="4" model="HK" external_name="" serial="" iscurrent="1">
+<current_runs>
+<current_run id_run="5271" id_instrument="26" priority="1" actual_cycle_count="74" expected_cycle_count="108" is_paired="0" id_run_pair="" name="IL23_05271" id_run_status="70200" date="2010-09-12 11:51:35" id_run_status_dict="2" id_user="7" username="pipeline" description="run in progress"  /></current_runs>
+<runs></runs>
+
+<current_instrument_status id_instrument_status="7229" id_instrument="26" date="2010-09-12 11:57:54" id_instrument_status_dict="3" id_user="7" username="pipeline" iscurrent="1" description="wash required" comment="automatic status update" />
+<instrument_statuses>
+ <instrument_status id_instrument_status="7229" id_instrument="26" date="2010-09-12 11:57:54" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="1" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="7222" id_instrument="26" date="2010-09-11 17:46:38" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="7221" id_instrument="26" date="2010-09-11 17:46:38" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="NaOH wash 11/09/2010" />
+ <instrument_status id_instrument_status="6952" id_instrument="26" date="2010-08-28 13:53:16" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="6950" id_instrument="26" date="2010-08-28 10:37:14" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="6949" id_instrument="26" date="2010-08-28 10:37:14" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="NaOH Wash gkh 28/8/10" />
+ <instrument_status id_instrument_status="6737" id_instrument="26" date="2010-08-17 13:18:42" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="6736" id_instrument="26" date="2010-08-17 12:37:31" id_instrument_status_dict="1" id_user="50" user="melanie" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="6735" id_instrument="26" date="2010-08-17 12:37:31" id_instrument_status_dict="4" id_user="50" user="melanie" iscurrent="0" description="wash performed" comment="NaOH wash perfomed." />
+ <instrument_status id_instrument_status="6585" id_instrument="26" date="2010-08-09 12:43:02" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="6565" id_instrument="26" date="2010-08-09 09:08:39" id_instrument_status_dict="1" id_user="15" user="js2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="6564" id_instrument="26" date="2010-08-09 09:08:39" id_instrument_status_dict="4" id_user="15" user="js2" iscurrent="0" description="wash performed" comment="NaOH wash performed 09/08/2010" />
+ <instrument_status id_instrument_status="6376" id_instrument="26" date="2010-08-01 13:17:51" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="6374" id_instrument="26" date="2010-08-01 10:40:03" id_instrument_status_dict="1" id_user="10" user="sl1" iscurrent="0" description="up" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="6373" id_instrument="26" date="2010-08-01 10:40:03" id_instrument_status_dict="4" id_user="10" user="sl1" iscurrent="0" description="wash performed" comment="prime volumes ok" />
+ <instrument_status id_instrument_status="6225" id_instrument="26" date="2010-07-24 12:33:53" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="6217" id_instrument="26" date="2010-07-24 09:32:59" id_instrument_status_dict="1" id_user="9" user="ah1" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="6216" id_instrument="26" date="2010-07-24 09:32:59" id_instrument_status_dict="4" id_user="9" user="ah1" iscurrent="0" description="wash performed" comment="Volumes correct" />
+ <instrument_status id_instrument_status="6078" id_instrument="26" date="2010-07-18 14:57:36" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="6072" id_instrument="26" date="2010-07-18 11:19:09" id_instrument_status_dict="1" id_user="14" user="pnc" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="6071" id_instrument="26" date="2010-07-18 11:19:09" id_instrument_status_dict="4" id_user="14" user="pnc" iscurrent="0" description="wash performed" comment="NaOH wash, all volumes okay." />
+ <instrument_status id_instrument_status="5905" id_instrument="26" date="2010-07-11 02:15:04" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="5904" id_instrument="26" date="2010-07-10 17:41:11" id_instrument_status_dict="1" id_user="14" user="pnc" iscurrent="0" description="up" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="5903" id_instrument="26" date="2010-07-10 17:41:11" id_instrument_status_dict="4" id_user="14" user="pnc" iscurrent="0" description="wash performed" comment="NaOH wash. All volumes okay." />
+ <instrument_status id_instrument_status="5658" id_instrument="26" date="2010-06-30 12:39:53" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="5635" id_instrument="26" date="2010-06-29 15:57:05" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="5634" id_instrument="26" date="2010-06-29 15:57:05" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="NaOH washed" />
+ <instrument_status id_instrument_status="5627" id_instrument="26" date="2010-06-29 14:32:22" id_instrument_status_dict="3" id_user="11" user="tkb" iscurrent="0" description="wash required" comment="" />
+ <instrument_status id_instrument_status="5624" id_instrument="26" date="2010-06-29 13:19:26" id_instrument_status_dict="1" id_user="10" user="sl1" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="5619" id_instrument="26" date="2010-06-29 12:59:44" id_instrument_status_dict="5" id_user="38" user="twost@illumina.com" iscurrent="0" description="request approval" comment="Checked chiller unit-all ok.
+Fluid level low so topped up.
+" />
+ <instrument_status id_instrument_status="5614" id_instrument="26" date="2010-06-29 11:11:19" id_instrument_status_dict="2" id_user="7" user="pipeline" iscurrent="0" description="down" comment="automatic status update" />
+ <instrument_status id_instrument_status="5494" id_instrument="26" date="2010-06-22 07:32:11" id_instrument_status_dict="6" id_user="9" user="ah1" iscurrent="0" description="planned maintenance" comment="Please could you check instrument as chiller timed out error given. Now on C88/224" />
+
+ <instrument_status id_instrument_status="5333" id_instrument="26" date="2010-06-11 11:40:24" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="5320" id_instrument="26" date="2010-06-11 09:26:05" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="5319" id_instrument="26" date="2010-06-11 09:26:05" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="NaOH Washed" />
+ <instrument_status id_instrument_status="5101" id_instrument="26" date="2010-05-30 15:32:10" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="5099" id_instrument="26" date="2010-05-30 11:43:54" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="5098" id_instrument="26" date="2010-05-30 11:43:54" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="NaOH wash 30/05/2010" />
+ <instrument_status id_instrument_status="5042" id_instrument="26" date="2010-05-25 13:56:25" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="5029" id_instrument="26" date="2010-05-25 10:35:48" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="5028" id_instrument="26" date="2010-05-25 10:35:48" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="NaOH Wash Prime OK gkh 25/510" />
+
+ <instrument_status id_instrument_status="4831" id_instrument="26" date="2010-05-13 11:06:08" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="4821" id_instrument="26" date="2010-05-12 16:55:52" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="4820" id_instrument="26" date="2010-05-12 16:55:52" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="NaOH Washed" />
+ <instrument_status id_instrument_status="4817" id_instrument="26" date="2010-05-12 12:43:44" id_instrument_status_dict="3" id_user="8" user="jb1" iscurrent="0" description="wash required" comment="" />
+ <instrument_status id_instrument_status="4816" id_instrument="26" date="2010-05-12 12:43:35" id_instrument_status_dict="1" id_user="8" user="jb1" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="4815" id_instrument="26" date="2010-05-12 12:04:32" id_instrument_status_dict="5" id_user="48" user="jweeden@illumina.com" iscurrent="0" description="request approval" comment="leaking front manifold, replaced. Priming correct volumes now." />
+ <instrument_status id_instrument_status="4774" id_instrument="26" date="2010-05-09 11:49:38" id_instrument_status_dict="2" id_user="14" user="pnc" iscurrent="0" description="down" comment="Not priming correct volume" />
+ <instrument_status id_instrument_status="4726" id_instrument="26" date="2010-05-05 12:32:39" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="4721" id_instrument="26" date="2010-05-05 10:52:38" id_instrument_status_dict="5" id_user="39" user="jsmith@illumina.com" iscurrent="0" description="request approval" comment="Temperature calibrated, chiller now functioning normally." />
+
+ <instrument_status id_instrument_status="4715" id_instrument="26" date="2010-05-05 08:53:52" id_instrument_status_dict="2" id_user="52" user="jb2" iscurrent="0" description="down" comment="see comment from 29/4/10" />
+ <instrument_status id_instrument_status="4713" id_instrument="26" date="2010-05-04 17:50:07" id_instrument_status_dict="5" id_user="39" user="jsmith@illumina.com" iscurrent="0" description="request approval" comment="C: HDD Was replaced a few runs back, instrument is currently running RTA. I don&#39;t think this should be down?" />
+ <instrument_status id_instrument_status="4709" id_instrument="26" date="2010-05-04 14:38:51" id_instrument_status_dict="2" id_user="7" user="pipeline" iscurrent="0" description="down" comment="automatic status update" />
+ <instrument_status id_instrument_status="4608" id_instrument="26" date="2010-04-29 11:04:08" id_instrument_status_dict="6" id_user="14" user="pnc" iscurrent="0" description="planned maintenance" comment="GA reagent chiller has ice forming inside behind IMX reagent." />
+ <instrument_status id_instrument_status="4536" id_instrument="26" date="2010-04-23 11:09:36" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="4535" id_instrument="26" date="2010-04-23 08:58:35" id_instrument_status_dict="1" id_user="56" user="sh2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="4534" id_instrument="26" date="2010-04-23 08:58:35" id_instrument_status_dict="4" id_user="56" user="sh2" iscurrent="0" description="wash performed" comment="NaOH wash performed." />
+ <instrument_status id_instrument_status="4405" id_instrument="26" date="2010-04-17 07:11:38" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="4377" id_instrument="26" date="2010-04-14 14:22:02" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="4376" id_instrument="26" date="2010-04-14 14:22:02" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="NaOH wash performed, primed OK 14/04/10" />
+ <instrument_status id_instrument_status="4331" id_instrument="26" date="2010-04-11 02:15:04" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="4305" id_instrument="26" date="2010-04-09 11:48:16" id_instrument_status_dict="1" id_user="54" user="svvd" iscurrent="0" description="up" comment="revert from spurious status change" />
+ <instrument_status id_instrument_status="4265" id_instrument="26" date="2010-04-07 16:35:25" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="4077" id_instrument="26" date="2010-03-13 09:05:30" id_instrument_status_dict="1" id_user="14" user="pnc" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="4076" id_instrument="26" date="2010-03-13 09:05:30" id_instrument_status_dict="4" id_user="14" user="pnc" iscurrent="0" description="wash performed" comment="NaOH wash" />
+ <instrument_status id_instrument_status="4068" id_instrument="26" date="2010-03-12 15:36:16" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="4067" id_instrument="26" date="2010-03-12 15:36:15" id_instrument_status_dict="1" id_user="8" user="jb1" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="4066" id_instrument="26" date="2010-03-12 15:25:50" id_instrument_status_dict="5" id_user="38" user="twost@illumina.com" iscurrent="0" description="request approval" comment="JSmith@illumina.com replaced C:
+
+Long delay waiting for Landesk image to be visible over n/w. Once confirgured, C: reimaged and setup. Ready to go." />
+
+ <instrument_status id_instrument_status="3950" id_instrument="26" date="2010-02-21 13:15:24" id_instrument_status_dict="2" id_user="9" user="ah1" iscurrent="0" description="down" comment="PC issue. Unable to restart Windows. Crashed in a run(Cycle 2) Production FC on board under peltier." />
+ <instrument_status id_instrument_status="3756" id_instrument="26" date="2010-01-27 09:36:06" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="3755" id_instrument="26" date="2010-01-27 09:36:06" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="NaOH Washed" />
+ <instrument_status id_instrument_status="3751" id_instrument="26" date="2010-01-26 16:55:34" id_instrument_status_dict="3" id_user="8" user="jb1" iscurrent="0" description="wash required" comment="" />
+ <instrument_status id_instrument_status="3750" id_instrument="26" date="2010-01-26 16:55:26" id_instrument_status_dict="1" id_user="8" user="jb1" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="3749" id_instrument="26" date="2010-01-26 16:40:15" id_instrument_status_dict="5" id_user="39" user="jsmith@illumina.com" iscurrent="0" description="request approval" comment="Front manifold lane 8 blockage, replaced with new and tested fluidics all ok." />
+ <instrument_status id_instrument_status="3745" id_instrument="26" date="2010-01-24 16:15:12" id_instrument_status_dict="2" id_user="33" user="ajw" iscurrent="0" description="down" comment="Not priming correct volume 5.5ml instead of 6.4mls air in some of syringes" />
+ <instrument_status id_instrument_status="3719" id_instrument="26" date="2010-01-14 11:10:24" id_instrument_status_dict="1" id_user="14" user="pnc" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="3717" id_instrument="26" date="2010-01-13 20:54:05" id_instrument_status_dict="5" id_user="39" user="jsmith@illumina.com" iscurrent="0" description="request approval" comment="Camera replaced with new, tile tilt and flatness adjusted. Autofocus adjusted. " />
+
+ <instrument_status id_instrument_status="3703" id_instrument="26" date="2010-01-12 13:14:32" id_instrument_status_dict="2" id_user="11" user="tkb" iscurrent="0" description="down" comment="Ice/Dirt on Camera" />
+ <instrument_status id_instrument_status="3659" id_instrument="26" date="2010-01-07 10:58:21" id_instrument_status_dict="1" id_user="56" user="sh2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="3658" id_instrument="26" date="2010-01-07 10:58:21" id_instrument_status_dict="4" id_user="56" user="sh2" iscurrent="0" description="wash performed" comment="NaOH wash performed sh2" />
+ <instrument_status id_instrument_status="3527" id_instrument="26" date="2009-12-24 02:15:03" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="3335" id_instrument="26" date="2009-11-25 12:21:38" id_instrument_status_dict="1" id_user="15" user="js2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="3334" id_instrument="26" date="2009-11-25 12:21:38" id_instrument_status_dict="4" id_user="15" user="js2" iscurrent="0" description="wash performed" comment="NaOH wash performed 25/11/2009" />
+ <instrument_status id_instrument_status="3264" id_instrument="26" date="2009-11-15 02:15:02" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="3094" id_instrument="26" date="2009-10-17 08:41:14" id_instrument_status_dict="1" id_user="10" user="sl1" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="3093" id_instrument="26" date="2009-10-17 08:41:14" id_instrument_status_dict="4" id_user="10" user="sl1" iscurrent="0" description="wash performed" comment="NaOH wash completed" />
+
+ <instrument_status id_instrument_status="3090" id_instrument="26" date="2009-10-16 17:49:23" id_instrument_status_dict="3" id_user="10" user="sl1" iscurrent="0" description="wash required" comment="...after actual PM" />
+ <instrument_status id_instrument_status="3089" id_instrument="26" date="2009-10-16 17:03:56" id_instrument_status_dict="1" id_user="36" user="hps" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="3088" id_instrument="26" date="2009-10-16 16:59:30" id_instrument_status_dict="5" id_user="10" user="sl1" iscurrent="0" description="request approval" comment="PM complete" />
+ <instrument_status id_instrument_status="3067" id_instrument="26" date="2009-10-13 06:32:23" id_instrument_status_dict="2" id_user="7" user="pipeline" iscurrent="0" description="down" comment="automatic status update" />
+ <instrument_status id_instrument_status="3064" id_instrument="26" date="2009-10-12 18:02:17" id_instrument_status_dict="6" id_user="14" user="pnc" iscurrent="0" description="planned maintenance" comment="PM to be done after run finished." />
+ <instrument_status id_instrument_status="3053" id_instrument="26" date="2009-10-07 09:58:20" id_instrument_status_dict="1" id_user="10" user="sl1" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="3052" id_instrument="26" date="2009-10-07 09:58:19" id_instrument_status_dict="4" id_user="10" user="sl1" iscurrent="0" description="wash performed" comment="NaOH wash completed" />
+ <instrument_status id_instrument_status="3051" id_instrument="26" date="2009-10-07 09:57:47" id_instrument_status_dict="3" id_user="10" user="sl1" iscurrent="0" description="wash required" comment="after PM" />
+ <instrument_status id_instrument_status="3050" id_instrument="26" date="2009-10-07 09:16:52" id_instrument_status_dict="1" id_user="5" user="djt" iscurrent="0" description="up" comment="" />
+
+ <instrument_status id_instrument_status="3047" id_instrument="26" date="2009-10-06 12:28:52" id_instrument_status_dict="5" id_user="39" user="jsmith@illumina.com" iscurrent="0" description="request approval" comment="PM Complete." />
+ <instrument_status id_instrument_status="3039" id_instrument="26" date="2009-10-04 15:00:47" id_instrument_status_dict="2" id_user="14" user="pnc" iscurrent="0" description="down" comment="automatic status update" />
+ <instrument_status id_instrument_status="3038" id_instrument="26" date="2009-10-04 15:00:47" id_instrument_status_dict="6" id_user="14" user="pnc" iscurrent="0" description="planned maintenance" comment="" />
+ <instrument_status id_instrument_status="3037" id_instrument="26" date="2009-10-04 15:00:35" id_instrument_status_dict="5" id_user="14" user="pnc" iscurrent="0" description="request approval" comment="" />
+ <instrument_status id_instrument_status="3034" id_instrument="26" date="2009-10-04 07:23:23" id_instrument_status_dict="2" id_user="14" user="pnc" iscurrent="0" description="down" comment="P.M. for Monday 5/10/09" />
+ <instrument_status id_instrument_status="2930" id_instrument="26" date="2009-09-16 17:55:50" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="2929" id_instrument="26" date="2009-09-16 17:55:50" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="NaOH wash performed" />
+ <instrument_status id_instrument_status="2928" id_instrument="26" date="2009-09-16 17:55:04" id_instrument_status_dict="3" id_user="33" user="ajw" iscurrent="0" description="wash required" comment="SBS 2.5 upgrade" />
+ <instrument_status id_instrument_status="2857" id_instrument="26" date="2009-09-02 10:27:03" id_instrument_status_dict="1" id_user="50" user="melanie" iscurrent="0" description="up" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="2856" id_instrument="26" date="2009-09-02 10:27:03" id_instrument_status_dict="4" id_user="50" user="melanie" iscurrent="0" description="wash performed" comment="NaOH was performed." />
+ <instrument_status id_instrument_status="2843" id_instrument="26" date="2009-08-30 14:48:00" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="2737" id_instrument="26" date="2009-08-11 11:38:44" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="2736" id_instrument="26" date="2009-08-11 11:38:44" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="NaOH washed" />
+ <instrument_status id_instrument_status="2715" id_instrument="26" date="2009-08-07 02:15:03" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="2577" id_instrument="26" date="2009-07-09 10:57:11" id_instrument_status_dict="1" id_user="50" user="melanie" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="2576" id_instrument="26" date="2009-07-09 10:57:11" id_instrument_status_dict="4" id_user="50" user="melanie" iscurrent="0" description="wash performed" comment="NaOH wash performed" />
+ <instrument_status id_instrument_status="2574" id_instrument="26" date="2009-07-09 02:15:02" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="2328" id_instrument="26" date="2009-06-10 07:43:45" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="2327" id_instrument="26" date="2009-06-10 07:43:45" id_instrument_status_dict="4" id_user="52" user="jb2" iscurrent="0" description="wash performed" comment="naoh wash done bill" />
+ <instrument_status id_instrument_status="2314" id_instrument="26" date="2009-06-09 14:43:41" id_instrument_status_dict="3" id_user="8" user="jb1" iscurrent="0" description="wash required" comment="" />
+ <instrument_status id_instrument_status="2313" id_instrument="26" date="2009-06-09 14:43:31" id_instrument_status_dict="1" id_user="8" user="jb1" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="2310" id_instrument="26" date="2009-06-09 14:41:30" id_instrument_status_dict="5" id_user="38" user="twost@illumina.com" iscurrent="0" description="request approval" comment="GA2x upgrade complete. NaOH wash required prior to loading next run." />
+ <instrument_status id_instrument_status="2244" id_instrument="26" date="2009-06-02 09:50:30" id_instrument_status_dict="2" id_user="38" user="twost@illumina.com" iscurrent="0" description="down" comment="GA2x upgrade" />
+ <instrument_status id_instrument_status="2229" id_instrument="26" date="2009-05-30 12:29:12" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="2228" id_instrument="26" date="2009-05-30 12:29:12" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="NaOH wash gkh 30/05/09" />
+ <instrument_status id_instrument_status="2218" id_instrument="26" date="2009-05-29 02:15:03" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="2079" id_instrument="26" date="2009-04-30 09:29:07" id_instrument_status_dict="1" id_user="9" user="ah1" iscurrent="0" description="up" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="2078" id_instrument="26" date="2009-04-30 09:29:07" id_instrument_status_dict="4" id_user="9" user="ah1" iscurrent="0" description="wash performed" comment="NaOH wash done" />
+ <instrument_status id_instrument_status="2052" id_instrument="26" date="2009-04-24 02:15:04" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="1926" id_instrument="26" date="2009-03-26 10:06:44" id_instrument_status_dict="1" id_user="56" user="sh2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="1925" id_instrument="26" date="2009-03-26 10:06:44" id_instrument_status_dict="4" id_user="56" user="sh2" iscurrent="0" description="wash performed" comment="NaOH wash performed sh2" />
+ <instrument_status id_instrument_status="1913" id_instrument="26" date="2009-03-22 12:59:06" id_instrument_status_dict="3" id_user="10" user="sl1" iscurrent="0" description="wash required" comment="after use of new v.long run enzyme(RDP)" />
+ <instrument_status id_instrument_status="1857" id_instrument="26" date="2009-03-12 15:34:08" id_instrument_status_dict="1" id_user="9" user="ah1" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="1856" id_instrument="26" date="2009-03-12 15:34:08" id_instrument_status_dict="4" id_user="9" user="ah1" iscurrent="0" description="wash performed" comment="NaOH wash done" />
+ <instrument_status id_instrument_status="1855" id_instrument="26" date="2009-03-12 15:33:34" id_instrument_status_dict="3" id_user="9" user="ah1" iscurrent="0" description="wash required" comment="Due to chiller upgrade" />
+ <instrument_status id_instrument_status="1816" id_instrument="26" date="2009-03-06 12:37:06" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="1815" id_instrument="26" date="2009-03-06 12:37:06" id_instrument_status_dict="4" id_user="52" user="jb2" iscurrent="0" description="wash performed" comment="noah done" />
+ <instrument_status id_instrument_status="1810" id_instrument="26" date="2009-03-06 00:15:02" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="1636" id_instrument="26" date="2009-02-05 17:59:47" id_instrument_status_dict="1" id_user="14" user="pnc" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="1635" id_instrument="26" date="2009-02-05 17:59:47" id_instrument_status_dict="4" id_user="14" user="pnc" iscurrent="0" description="wash performed" comment="NaOH Wash 05/02/09 pnc" />
+ <instrument_status id_instrument_status="1573" id_instrument="26" date="2009-02-02 04:37:42" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="1505" id_instrument="26" date="2009-01-14 13:56:46" id_instrument_status_dict="1" id_user="8" user="jb1" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="1496" id_instrument="26" date="2009-01-13 10:49:44" id_instrument_status_dict="5" id_user="39" user="jsmith@illumina.com" iscurrent="0" description="request approval" comment="Instrument checked, no problem found." />
+ <instrument_status id_instrument_status="1493" id_instrument="26" date="2009-01-13 07:27:35" id_instrument_status_dict="2" id_user="14" user="pnc" iscurrent="0" description="down" comment="J Smith to look at this instrument 12/01/09" />
+ <instrument_status id_instrument_status="1412" id_instrument="26" date="2009-01-04 13:46:43" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="1411" id_instrument="26" date="2009-01-04 13:46:43" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="NaOH WASH 04/01/09" />
+ <instrument_status id_instrument_status="1390" id_instrument="26" date="2009-01-04 10:41:30" id_instrument_status_dict="3" id_user="14" user="pnc" iscurrent="0" description="wash required" comment="" />
+ <instrument_status id_instrument_status="1308" id_instrument="26" date="2008-12-16 11:08:01" id_instrument_status_dict="1" id_user="9" user="ah1" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="1307" id_instrument="26" date="2008-12-16 11:08:01" id_instrument_status_dict="4" id_user="9" user="ah1" iscurrent="0" description="wash performed" comment="NaOH wash done" />
+ <instrument_status id_instrument_status="1296" id_instrument="26" date="2008-12-14 07:24:33" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="1255" id_instrument="26" date="2008-12-08 22:05:39" id_instrument_status_dict="1" id_user="36" user="hps" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="1248" id_instrument="26" date="2008-12-08 16:53:52" id_instrument_status_dict="5" id_user="38" user="twost@illumina.com" iscurrent="0" description="request approval" comment="Sorry, run at C1.1! Changed to IL16 for chiller upgrade." />
+ <instrument_status id_instrument_status="1245" id_instrument="26" date="2008-12-08 15:30:51" id_instrument_status_dict="2" id_user="38" user="twost@illumina.com" iscurrent="0" description="down" comment="DOWN for chiller upgrade." />
+ <instrument_status id_instrument_status="1142" id_instrument="26" date="2008-11-15 15:05:05" id_instrument_status_dict="1" id_user="9" user="ah1" iscurrent="0" description="up" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="1141" id_instrument="26" date="2008-11-15 15:05:05" id_instrument_status_dict="4" id_user="9" user="ah1" iscurrent="0" description="wash performed" comment="NaOH done" />
+ <instrument_status id_instrument_status="1111" id_instrument="26" date="2008-11-10 07:13:00" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="1075" id_instrument="26" date="2008-11-04 16:05:02" id_instrument_status_dict="1" id_user="36" user="hps" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="1073" id_instrument="26" date="2008-11-03 17:33:02" id_instrument_status_dict="5" id_user="39" user="jsmith@illumina.com" iscurrent="0" description="request approval" comment="Instrument flushed through with water, tested ok." />
+ <instrument_status id_instrument_status="1072" id_instrument="26" date="2008-11-03 16:21:37" id_instrument_status_dict="2" id_user="14" user="pnc" iscurrent="0" description="down" comment="Veturi valve? is letting air in, and passing through the flowcell." />
+ <instrument_status id_instrument_status="1036" id_instrument="26" date="2008-10-12 12:38:03" id_instrument_status_dict="1" id_user="10" user="sl1" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="1035" id_instrument="26" date="2008-10-12 12:38:03" id_instrument_status_dict="4" id_user="10" user="sl1" iscurrent="0" description="wash performed" comment="NaOH wash complete" />
+ <instrument_status id_instrument_status="1025" id_instrument="26" date="2008-10-09 09:03:26" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="861" id_instrument="26" date="2008-09-10 10:34:22" id_instrument_status_dict="1" id_user="9" user="ah1" iscurrent="0" description="up" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="860" id_instrument="26" date="2008-09-10 10:34:22" id_instrument_status_dict="4" id_user="9" user="ah1" iscurrent="0" description="wash performed" comment="NaOH wash done" />
+ <instrument_status id_instrument_status="852" id_instrument="26" date="2008-09-06 07:03:02" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="764" id_instrument="26" date="2008-08-08 09:40:40" id_instrument_status_dict="1" id_user="36" user="hps" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="763" id_instrument="26" date="2008-08-08 09:40:40" id_instrument_status_dict="4" id_user="36" user="hps" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="762" id_instrument="26" date="2008-08-08 01:16:13" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="757" id_instrument="26" date="2008-08-07 16:46:00" id_instrument_status_dict="1" id_user="36" user="hps" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="754" id_instrument="26" date="2008-08-07 16:43:40" id_instrument_status_dict="5" id_user="36" user="hps" iscurrent="0" description="request approval" comment="" />
+ <instrument_status id_instrument_status="751" id_instrument="26" date="2008-08-07 15:58:50" id_instrument_status_dict="2" id_user="51" user="ips" iscurrent="0" description="down" comment="NaOH wash carried out 7/8/08" />
+ <instrument_status id_instrument_status="747" id_instrument="26" date="2008-08-06 15:47:04" id_instrument_status_dict="1" id_user="36" user="hps" iscurrent="0" description="up" comment="Validation Run Passed " />
+
+ <instrument_status id_instrument_status="738" id_instrument="26" date="2008-08-04 08:53:14" id_instrument_status_dict="5" id_user="38" user="twost@illumina.com" iscurrent="0" description="request approval" comment="Validation run complete. Awaiting acceptance signoff." />
+ <instrument_status id_instrument_status="705" id_instrument="26" date="2008-07-21 09:41:04" id_instrument_status_dict="2" id_user="14" user="pnc" iscurrent="0" description="down" comment="Upgrade to GAII
+" />
+ <instrument_status id_instrument_status="673" id_instrument="26" date="2008-07-10 16:33:53" id_instrument_status_dict="1" id_user="9" user="ah1" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="672" id_instrument="26" date="2008-07-10 16:33:53" id_instrument_status_dict="4" id_user="9" user="ah1" iscurrent="0" description="wash performed" comment="NaOH wash done" />
+ <instrument_status id_instrument_status="671" id_instrument="26" date="2008-07-09 12:38:32" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="670" id_instrument="26" date="2008-07-09 12:38:30" id_instrument_status_dict="1" id_user="36" user="hps" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="669" id_instrument="26" date="2008-07-09 11:52:04" id_instrument_status_dict="5" id_user="39" user="jsmith@illumina.com" iscurrent="0" description="request approval" comment="PEM fluidics checked. Volumes and prime ok. No fault found." />
+ <instrument_status id_instrument_status="667" id_instrument="26" date="2008-07-09 08:01:23" id_instrument_status_dict="2" id_user="9" user="ah1" iscurrent="0" description="down" comment="Please check PE Module to ensure it&#39;s working correctly" />
+ <instrument_status id_instrument_status="647" id_instrument="26" date="2008-07-04 01:03:23" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+
+ <instrument_status id_instrument_status="549" id_instrument="26" date="2008-06-05 11:58:20" id_instrument_status_dict="1" id_user="9" user="ah1" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="548" id_instrument="26" date="2008-06-05 11:58:20" id_instrument_status_dict="4" id_user="9" user="ah1" iscurrent="0" description="wash performed" comment="NaOH wash done" />
+ <instrument_status id_instrument_status="536" id_instrument="26" date="2008-05-31 06:58:09" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="457" id_instrument="26" date="2008-05-02 14:41:35" id_instrument_status_dict="1" id_user="14" user="pnc" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="456" id_instrument="26" date="2008-05-02 14:41:35" id_instrument_status_dict="4" id_user="14" user="pnc" iscurrent="0" description="wash performed" comment="NaOH Wash 02/05/08" />
+ <instrument_status id_instrument_status="448" id_instrument="26" date="2008-05-01 07:40:00" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="344" id_instrument="26" date="2008-04-02 14:52:05" id_instrument_status_dict="1" id_user="10" user="sl1" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="343" id_instrument="26" date="2008-04-02 14:52:05" id_instrument_status_dict="4" id_user="10" user="sl1" iscurrent="0" description="wash performed" comment="NaOH wash complete" />
+ <instrument_status id_instrument_status="340" id_instrument="26" date="2008-04-02 10:22:59" id_instrument_status_dict="3" id_user="14" user="pnc" iscurrent="0" description="wash required" comment="NaOH" />
+
+ <instrument_status id_instrument_status="334" id_instrument="26" date="2008-04-02 09:19:33" id_instrument_status_dict="1" id_user="38" user="twost@illumina.com" iscurrent="0" description="up" comment="SCS1.02 updated
+PEM installed and validated
+NaOH wash required before use" />
+ <instrument_status id_instrument_status="327" id_instrument="26" date="2008-03-31 17:42:02" id_instrument_status_dict="2" id_user="38" user="twost@illumina.com" iscurrent="0" description="down" comment="PEM to be fitted 01.04.08." />
+ <instrument_status id_instrument_status="277" id_instrument="26" date="2008-03-18 15:57:19" id_instrument_status_dict="1" id_user="14" user="pnc" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="276" id_instrument="26" date="2008-03-18 15:57:19" id_instrument_status_dict="4" id_user="14" user="pnc" iscurrent="0" description="wash performed" comment="NaOH Wash 18/03/08" />
+ <instrument_status id_instrument_status="219" id_instrument="26" date="2008-02-20 00:00:00" id_instrument_status_dict="4" id_user="1" user="rmp" iscurrent="0" description="wash performed" comment="manual entry of last wash data from pnc 2008-02-28" />
+ <instrument_status id_instrument_status="35" id_instrument="26" date="2007-11-29 09:57:50" id_instrument_status_dict="1" id_user="1" user="rmp" iscurrent="0" description="up" comment="installed &amp; networked" />
+</instrument_statuses>
+<instrument_mods>
+ <instrument_mod id_instrument_mod="23" id_instrument="26" type="Prism" revision="67deg" date_added="2008-04-08 16:25:32" date_removed="2009-06-10 15:31:37" operator="pipeline" iscurrent="0" />
+ <instrument_mod id_instrument_mod="51" id_instrument="26" type="Objective" revision="Custom" date_added="2008-04-08 16:25:32" date_removed="" operator="pipeline" iscurrent="1" />
+
+ <instrument_mod id_instrument_mod="79" id_instrument="26" type="Mode Scrambler" revision="MKIV" date_added="2008-04-08 16:25:32" date_removed="" operator="pipeline" iscurrent="1" />
+ <instrument_mod id_instrument_mod="107" id_instrument="26" type="Tubing" revision="0.5mm" date_added="2008-04-08 16:25:32" date_removed="" operator="pipeline" iscurrent="1" />
+ <instrument_mod id_instrument_mod="135" id_instrument="26" type="Recipes" revision="AF4" date_added="2008-04-08 16:25:32" date_removed="2008-08-11 17:04:34" operator="pipeline" iscurrent="0" />
+ <instrument_mod id_instrument_mod="162" id_instrument="26" type="PE module" revision="A" date_added="2008-03-30 00:00:00" date_removed="2008-03-31 00:00:00" operator="pipeline" iscurrent="0" />
+ <instrument_mod id_instrument_mod="189" id_instrument="26" type="SCS" revision="SCS1.01(all cycle flush) Version 4" date_added="2008-03-30 00:00:00" date_removed="2008-03-31 00:00:00" operator="pipeline" iscurrent="0" />
+ <instrument_mod id_instrument_mod="221" id_instrument="26" type="PE module" revision="F" date_added="2008-03-31 00:00:00" date_removed="" operator="pipeline" iscurrent="1" />
+ <instrument_mod id_instrument_mod="222" id_instrument="26" type="SCS" revision="SCS1.02(all cycle flush) Version 4" date_added="2008-03-31 00:00:00" date_removed="2008-08-06 17:28:28" operator="pipeline" iscurrent="0" />
+ <instrument_mod id_instrument_mod="231" id_instrument="26" type="SCS" revision="2.01" date_added="2008-08-11 17:04:44" date_removed="2009-03-03 16:15:38" operator="twost@illumina.com" iscurrent="0" />
+ <instrument_mod id_instrument_mod="232" id_instrument="26" type="Recipes" revision="GA2 recipes" date_added="2008-08-11 17:04:58" date_removed="2009-06-10 15:29:38" operator="twost@illumina.com" iscurrent="0" />
+
+ <instrument_mod id_instrument_mod="291" id_instrument="26" type="Instrument Upgrade" revision="GA2" date_added="2008-10-08 09:56:28" date_removed="2009-03-03 16:15:07" operator="twost@illumina.com" iscurrent="0" />
+ <instrument_mod id_instrument_mod="325" id_instrument="26" type="Chiller Unit" revision="Standard" date_added="2009-01-29 00:00:00" date_removed="2009-03-03 16:15:45" operator="pipeline" iscurrent="0" />
+ <instrument_mod id_instrument_mod="357" id_instrument="26" type="Instrument Upgrade" revision="GA2" date_added="2009-03-03 16:15:28" date_removed="2009-06-10 15:28:30" operator="twost@illumina.com" iscurrent="0" />
+ <instrument_mod id_instrument_mod="358" id_instrument="26" type="SCS" revision="2.3" date_added="2009-03-03 16:16:04" date_removed="2009-12-04 11:10:10" operator="twost@illumina.com" iscurrent="0" />
+ <instrument_mod id_instrument_mod="359" id_instrument="26" type="Chiller Unit" revision="GA2x" date_added="2009-03-03 16:16:11" date_removed="" operator="twost@illumina.com" iscurrent="1" />
+ <instrument_mod id_instrument_mod="380" id_instrument="26" type="Instrument Upgrade" revision="GA2x" date_added="2009-06-10 15:28:30" date_removed="" operator="twost@illumina.com" iscurrent="1" />
+ <instrument_mod id_instrument_mod="407" id_instrument="26" type="Recipes" revision="RDP recipes (SCS2.3, v6.1)" date_added="2009-06-10 15:29:38" date_removed="" operator="twost@illumina.com" iscurrent="1" />
+ <instrument_mod id_instrument_mod="433" id_instrument="26" type="Prism" revision="GA2x 67deg" date_added="2009-06-10 15:31:37" date_removed="" operator="twost@illumina.com" iscurrent="1" />
+ <instrument_mod id_instrument_mod="454" id_instrument="26" type="SCS" revision="2.6" date_added="2009-12-04 11:10:10" date_removed="" operator="ajb" iscurrent="1" />
+
+ <instrument_mod id_instrument_mod="473" id_instrument="26" type="RTA" revision="1.6" date_added="2009-12-04 11:11:06" date_removed="" operator="ajb" iscurrent="1" />
+ <instrument_mod id_instrument_mod="557" id_instrument="26" type="SCS" revision="2.5" date_added="2009-09-16 00:00:00" date_removed="" operator="svvd" iscurrent="1" />
+ <instrument_mod id_instrument_mod="558" id_instrument="26" type="RTA" revision="1.5" date_added="2009-09-16 00:00:00" date_removed="" operator="svvd" iscurrent="1" />
+ <instrument_mod id_instrument_mod="605" id_instrument="26" type="RTA" revision="1.8.67" date_added="2010-06-17 14:58:13" date_removed="" operator="jb2" iscurrent="1" />
+ <instrument_mod id_instrument_mod="606" id_instrument="26" type="SCS" revision="2.8.96" date_added="2010-06-17 14:59:02" date_removed="" operator="jb2" iscurrent="1" />
+ <instrument_mod id_instrument_mod="698" id_instrument="26" type="RTA" revision="1.8.70" date_added="2010-08-27 17:46:24" date_removed="" operator="mgibbs@illumina.com" iscurrent="1" />
+ <instrument_mod id_instrument_mod="699" id_instrument="26" type="SCS" revision="2.8.97" date_added="2010-08-27 17:46:41" date_removed="" operator="mgibbs@illumina.com" iscurrent="1" />
+</instrument_mods>
+<designations>
+ <designation id_designation="4" description="Accepted" />
+
+</designations>
+</instrument>

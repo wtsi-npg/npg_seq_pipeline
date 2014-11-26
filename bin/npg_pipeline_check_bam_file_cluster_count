@@ -1,0 +1,101 @@
+#!/usr/bin/env perl
+
+# $Id: npg_pipeline_check_bam_file_cluster_count 16979 2013-04-08 10:03:18Z mg8 $
+# Created By: gq1
+# Last Maintained By: $Author: mg8 $
+# Created On: 2011-11-25
+# Last Changed On: $Date: 2013-04-08 11:03:18 +0100 (Mon, 08 Apr 2013) $
+# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/bin/npg_pipeline_check_bam_file_cluster_count $
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use npg_pipeline::archive::file::BamClusterCounts;
+
+our $VERSION = do { my ($r) = q$LastChangedRevision: 16979 $ =~ /(\d+)/mxs; $r; };
+
+npg_pipeline::archive::file::BamClusterCounts->new_with_options()->run_cluster_count_check();
+
+0;
+
+__END__
+
+=head1 NAME
+
+npg_pipeline_check_file_cluster_count
+
+=head1 VERSION
+
+$LastChangedRevision: 16979 $
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+This script goes and checks pf cluster counts in BustardSummary.xml match the read counts in the bam files
+
+=head1 USAGE
+
+  npg_pipeline_check_bam_file_cluster_count --id_run 1234 --position 4 --bam_basecall_path /path/to/bam_basecall --archive_path /path/to/archive/directory
+
+=head1 REQUIRED ARGUMENTS
+
+  id_run
+  position
+  bam_basecall_path
+
+=head1 OPTIONS
+
+pathways which will eventually allow determination of bam_basecall and archive level directories
+
+=head1 EXIT STATUS
+
+0
+
+=head1 SUBROUTINES/METHODS
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item FindBin
+
+=item lib
+
+=item npg_pipeline::archive::file::BamClusterCounts
+
+=back
+
+=head1 INCOMPATIBILITIES
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 AUTHOR
+
+$Author: mg8 $
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2011 GRL, by Guoying Qi (gq1@sanger.ac.uk)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="2341" batch_id="4451" id_instrument="16" expected_cycle_count="76" actual_cycle_count="76" priority="1" id_run_pair="3412" is_paired="1" is_dev="0" id_instrument_format="4" name="IL2_2341" loader="" loading_date="">
+ <instrument id_instrument="16" name="IL2" id_instrument_format="4" external_name="EAS116" serial="" iscurrent="1" />
+ <run_lanes>
+<run_lane id_run_lane="28712" id_run="2341" tile_count="100" tracks="2" id_project="1" projectname="FUSE" repository="/fuse/mpsafs/runs/3645" auto_analyse="1" position="1" auto_qc="" manual_qc="fail" stlibrary_id="4771" stlibrary_name="Pcynomolgi_NoPCR 1" stproject_id="317" stproject_name="BPRC Plasmodium Sequencing" sac_sponsor="Matthew Berriman"/>
+
+<run_lane id_run_lane="28713" id_run="2341" tile_count="100" tracks="2" id_project="1" projectname="FUSE" repository="/fuse/mpsafs/runs/3645" auto_analyse="1" position="2" auto_qc="" manual_qc="fail" stlibrary_id="4771" stlibrary_name="Pcynomolgi_NoPCR 1" stproject_id="317" stproject_name="BPRC Plasmodium Sequencing" sac_sponsor="Matthew Berriman"/>
+
+<run_lane id_run_lane="28714" id_run="2341" tile_count="100" tracks="2" id_project="1" projectname="FUSE" repository="/fuse/mpsafs/runs/3645" auto_analyse="1" position="3" auto_qc="" manual_qc="fail" stlibrary_id="4801" stlibrary_name="300_BbiS3P_NoPCR 1" stproject_id="318" stproject_name="Babesia bigemina BbiS3P" sac_sponsor="Matthew Berriman"/>
+
+<run_lane id_run_lane="28715" id_run="2341" tile_count="100" tracks="2" id_project="1" projectname="FUSE" repository="/fuse/mpsafs/runs/3645" auto_analyse="1" position="4" auto_qc="" manual_qc="-" stcontrol_id="1792" stcontrol_name="Illumina phiX" />
+
+<run_lane id_run_lane="28716" id_run="2341" tile_count="100" tracks="2" id_project="1" projectname="FUSE" repository="/fuse/mpsafs/runs/3645" auto_analyse="1" position="5" auto_qc="" manual_qc="fail" stlibrary_id="5048" stlibrary_name="DHTu2v2 1" stproject_id="182" stproject_name="AB Strain ZFish" sac_sponsor="Derek Stemple"/>
+
+<run_lane id_run_lane="28717" id_run="2341" tile_count="100" tracks="2" id_project="1" projectname="FUSE" repository="/fuse/mpsafs/runs/3645" auto_analyse="1" position="6" auto_qc="" manual_qc="fail" stlibrary_id="5048" stlibrary_name="DHTu2v2 1" stproject_id="182" stproject_name="AB Strain ZFish" sac_sponsor="Derek Stemple"/>
+
+<run_lane id_run_lane="28718" id_run="2341" tile_count="100" tracks="2" id_project="1" projectname="FUSE" repository="/fuse/mpsafs/runs/3645" auto_analyse="1" position="7" auto_qc="" manual_qc="fail" stlibrary_id="5303" stlibrary_name="pftwist 1" stproject_id="271" stproject_name="Enzyme tests" sac_sponsor="Julian Parkhill"/>
+
+<run_lane id_run_lane="28719" id_run="2341" tile_count="100" tracks="2" id_project="1" projectname="FUSE" repository="/fuse/mpsafs/runs/3645" auto_analyse="1" position="8" auto_qc="" manual_qc="fail" stlibrary_id="6018" stlibrary_name="nippo_dscDNA 1" stproject_id="355" stproject_name="Nippostrongylus brasiliensis transcriptome project" sac_sponsor="Matt Berriman"/>
+</run_lanes>
+ <current_run_status id_run_status="51973" id_run="2341" date="2009-09-14 03:02:35" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_statuses>
+ <run_status id_run_status="51973" id_run="2341" date="2009-09-14 03:02:35" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_status id_run_status="51971" id_run="2341" date="2009-09-14 03:02:20" id_run_status_dict="12" id_user="7" username="pipeline" iscurrent="0" description="run archived" />
+ <run_status id_run_status="51950" id_run="2341" date="2009-09-13 16:12:50" id_run_status_dict="18" id_user="7" username="pipeline" iscurrent="0" description="archival in progress" />
+ <run_status id_run_status="51839" id_run="2341" date="2009-09-12 09:28:40" id_run_status_dict="19" id_user="7" username="pipeline" iscurrent="0" description="qc review pending" />
+
+ <run_status id_run_status="51816" id_run="2341" date="2009-09-11 21:30:54" id_run_status_dict="9" id_user="7" username="pipeline" iscurrent="0" description="analysis complete" />
+ <run_status id_run_status="51814" id_run="2341" date="2009-09-11 21:30:31" id_run_status_dict="9" id_user="7" username="pipeline" iscurrent="0" description="analysis complete" />
+ <run_status id_run_status="51430" id_run="2341" date="2009-09-08 06:34:14" id_run_status_dict="7" id_user="7" username="pipeline" iscurrent="0" description="analysis in progress" />
+ <run_status id_run_status="51139" id_run="2341" date="2009-09-05 09:50:59" id_run_status_dict="15" id_user="7" username="pipeline" iscurrent="0" description="analysis prelim complete" />
+ <run_status id_run_status="51041" id_run="2341" date="2009-09-04 04:25:50" id_run_status_dict="14" id_user="7" username="pipeline" iscurrent="0" description="analysis prelim" />
+ <run_status id_run_status="51040" id_run="2341" date="2009-09-04 04:18:01" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="0" description="analysis pending" />
+ <run_status id_run_status="51039" id_run="2341" date="2009-09-04 04:17:59" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="51038" id_run="2341" date="2009-09-04 03:53:58" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete" />
+ <run_status id_run_status="50666" id_run="2341" date="2009-08-31 12:18:59" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress" />
+
+ <run_status id_run_status="50664" id_run="2341" date="2009-08-31 11:58:09" id_run_status_dict="1" id_user="14" username="pipeline" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ </annotations>
+ <tags>
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>

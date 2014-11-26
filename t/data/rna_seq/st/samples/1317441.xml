@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sample api_version="0.6">
+  <id>1317441</id>
+  <name>C_4D5_A1_RNA</name>
+  <study_id>1708</study_id>
+  <consent_withdrawn>false</consent_withdrawn>
+  <properties>
+    <property>
+      <name>Organism</name>
+      <value>mouse</value>
+    </property>
+    <property>
+      <name>Cohort</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Country of origin</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Geographical region</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Ethnicity</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Volume (&#181;l)</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Plate</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Mother</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Father</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Replicate</name>
+      <value></value>
+    </property>
+    <property>
+      <name>GC content</name>
+      <value>Neutral</value>
+    </property>
+    <property>
+      <name>Gender</name>
+      <value>Male</value>
+    </property>
+    <property>
+      <name>DNA source</name>
+      <value>Genomic</value>
+    </property>
+    <property>
+      <name>Public Name</name>
+      <value>C_4D5_A1_RNA</value>
+    </property>
+    <property>
+      <name>Common Name</name>
+      <value>mus musculus</value>
+    </property>
+    <property>
+      <name>Strain</name>
+      <value>C57Bl/6N</value>
+    </property>
+    <property>
+      <name>TAXON ID</name>
+      <value>10090</value>
+    </property>
+    <property>
+      <name>ENA Sample Accession Number</name>
+      <value>ERS208950</value>
+    </property>
+    <property>
+      <name>Sample Description</name>
+      <value>Micro RNA</value>
+    </property>
+    <property>
+      <name>Sample Visibility</name>
+      <value>Hold</value>
+    </property>
+    <property>
+      <name>Sibling</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Is re-submitted?</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Date of sample collection</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Date of sample extraction</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Sample extraction method</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Sample purified</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Purification method</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Concentration</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Concentration determind by</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Sample type</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Sample storage conditions</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Genotype</name>
+      <value>Hemizygous</value>
+    </property>
+    <property>
+      <name>Phenotype</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Age</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Developmental Stage</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Cell Type</name>
+      <value>ES cell</value>
+    </property>
+    <property>
+      <name>Disease State</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Compound</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Dose</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Immunoprecipitate</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Growth Condition</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>RNAi</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Organism Part</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Time Point</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Treatment</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Subject</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Disease</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Reference Genome</name>
+      <value>Homo_sapiens (1000Genomes_hs37d5)</value>
+    </property>
+  </properties>
+  <assets>
+    <asset id="4069505" href="/assets/4069505"/>
+    <asset id="4106321" href="/assets/4106321"/>
+    <asset id="4106331" href="/assets/4106331"/>
+    <asset id="4221840" href="/assets/4221840"/>
+    <asset id="4643899" href="/assets/4643899"/>
+    <asset id="5145308" href="/assets/5145308"/>
+  </assets>
+  <study_id>1708</study_id>
+</sample>

@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<study api_version="0.6">
+  <id>2086</id>
+  <name>Multiplex Plasmodium transgenesis sequencing</name>
+  <active>true</active>
+  <user_id>29</user_id>
+  <followers>
+    <follower>
+      <login>arg</login>
+      <email>arg@sanger.ac.uk</email>
+      <name>Ana Rita Batista Gomes</name>
+      <id>678</id>
+    </follower>
+    <follower>
+      <login>ncb</login>
+      <email>ncb@sanger.ac.uk</email>
+      <name>Nathalie C Smerdon</name>
+      <id>191</id>
+    </follower>
+    <follower>
+      <login>km8</login>
+      <email>km8@sanger.ac.uk</email>
+      <name>Katarzyna Modrzynska</name>
+      <id>684</id>
+    </follower>
+  </followers>
+  <managers>
+    <manager>
+      <login>mjs</login>
+      <email>mjs@sanger.ac.uk</email>
+      <name>Mandy Sanders</name>
+      <id>29</id>
+    </manager>
+    <manager>
+      <login>ncb</login>
+      <email>ncb@sanger.ac.uk</email>
+      <name>Nathalie C Smerdon</name>
+      <id>191</id>
+    </manager>
+    <manager>
+      <login>sarah</login>
+      <email>sarah</email>
+      <name>Sarah Sims</name>
+      <id>137</id>
+    </manager>
+    <manager>
+      <login>neh</login>
+      <email>neh@sanger.ac.uk</email>
+      <name>Nancy Holroyd</name>
+      <id>143</id>
+    </manager>
+  </managers>
+  <owners>
+    <owner>
+      <login>eb5</login>
+      <email>eb5@sanger.ac.uk</email>
+      <name>Ellen Bushell</name>
+      <id>675</id>
+    </owner>
+  </owners>
+  <!-- Family has been deprecated -->
+  <family_id/>
+  <created_at>2012-01-18 12:03:35 +0000</created_at>
+  <updated_at>2012-11-26 14:20:22 +0000</updated_at>
+  <descriptors>
+    <descriptor>
+      <name>Study description</name>
+      <value>Data obtained from the sequencing of pools of barcoded P. berghei transgenics is predicted to allow for qualitative and quantitative measurements of individual mutant progeny generated during multiplex transfections. This type of analysis is expected to take P. berghei reverse genetics beyond that of the single-gene level. It aims to explore genetic interactions by measuring the effect on growth rates caused by simultaneous disruption of different genes in diverse genetic backgrounds, as well as potentially becoming a tool to identify essential genes to be prioritised as e.g. potential drug targets, or conversely to be excluded from future gene disruption studies. This data is part of a pre-publication release. For information on the proper use of pre-publication data shared by the Wellcome Trust Sanger Institute (including details of any publication moratoria), please see http://www.sanger.ac.uk/datasharing/</value>
+    </descriptor>
+    <descriptor>
+      <name>Does this study contain samples that are contaminated with human DNA which must be removed prior to analysis?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>Does this study require the removal of X chromosome and autosome sequence?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>Does this study require y chromosome data to be separated from x and autosomal data before archival?</name>
+      <value>false</value>
+    </descriptor>
+    <descriptor>
+      <name>ENA Project ID</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>Abstract</name>
+      <value>This project comprises the sequencing (Illumina MiSeq) of 100 bp PCR products amplified from pools of  P. berghei transfectants, derived from multiplex transfections performed with gene targeting vectors carrying unique, gene-specific 11 bp molecular barcodes.</value>
+    </descriptor>
+    <descriptor>
+      <name>Title</name>
+      <value>Multiplex Plasmodium transgenesis: Sequence-based, quantitative detection of pooled P. berghei transfectants</value>
+    </descriptor>
+    <descriptor>
+      <name>ENA Study Accession Number</name>
+      <value>ERP001151</value>
+    </descriptor>
+    <descriptor>
+      <name>Study Visibility</name>
+      <value>Hold</value>
+    </descriptor>
+    <descriptor>
+      <name>Do any of the samples in this study contain human DNA?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>Are all the samples to be used in this study commercially available, unlinked anonymised cell-lines?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>Study name abbreviation</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>What is the data release strategy for this study?</name>
+      <value>open</value>
+    </descriptor>
+    <descriptor>
+      <name>Will you be using WTSI's standard access agreement?</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>How is the data release to be timed?</name>
+      <value>delayed</value>
+    </descriptor>
+    <descriptor>
+      <name>Reason for delaying release</name>
+      <value>phd study</value>
+    </descriptor>
+    <descriptor>
+      <name>Delay for</name>
+      <value>12 months</value>
+    </descriptor>
+    <descriptor>
+      <name>Alignments in BAM</name>
+      <value>true</value>
+    </descriptor>
+    <descriptor>
+      <name>Please explain the reason for delaying release</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>Comment regarding data release timing and approval</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>Policy Url</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>Policy title</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>EGA DAC Accession Number</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>EGA Policy Accession Number</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>ArrayExpress Accession Number</name>
+      <value>E-ERAD-47</value>
+    </descriptor>
+    <descriptor>
+      <name>Has the delay period been approved by the data sharing committee for this project?</name>
+      <value>Yes</value>
+    </descriptor>
+    <descriptor>
+      <name>What is the reason for preventing data release?</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>Has this been approved?</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>Comment regarding prevention of data release and approval</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>SNP study ID</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>SNP parent study ID</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>Number of gigabases per sample (minimum 0.15)</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>HMDMC approval number</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>Study Type</name>
+      <value>Synthetic Genomics</value>
+    </descriptor>
+    <descriptor>
+      <name>What sort of study is this?</name>
+      <value>other sequencing-based assay</value>
+    </descriptor>
+    <descriptor>
+      <name>Reference Genome</name>
+      <value/>
+    </descriptor>
+    <descriptor>
+      <name>Faculty Sponsor</name>
+      <value>Oliver Billker</value>
+    </descriptor>
+  </descriptors>
+</study>

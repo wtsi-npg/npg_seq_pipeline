@@ -1,0 +1,107 @@
+#!/usr/bin/env perl
+
+# $Id: npg_pipeline_preexec_references 16979 2013-04-08 10:03:18Z mg8 $
+# Created By: ajb
+# Last Maintained By: $Author: mg8 $
+# Created On: 2010-08-26
+# Last Changed On: $Date: 2013-04-08 11:03:18 +0100 (Mon, 08 Apr 2013) $
+# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/bin/npg_pipeline_preexec_references $
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 16979 $ =~ /(\d+)/mxs; $r; };
+use Moose;
+use Moose::Meta::Class;
+use Getopt::Long;
+
+my $opts = {};
+GetOptions($opts, qw{repository=s});
+
+Moose::Meta::Class->create_anon_class(
+  roles => [qw/npg_tracking::data::reference::list/])->new_object($opts);
+
+exit 0;
+
+
+__END__
+
+=head1 NAME
+
+npg_pipeline_preexec_references
+
+=head1 VERSION
+
+$LastChangedRevision: 16979 $
+
+=head1 SYNOPSIS
+
+  npg_pipeline_preexec_references
+
+=head1 DESCRIPTION
+
+This script looks for the existence of teh reference repository
+
+=head1 USAGE
+
+  npg_pipeline_preexec_references
+
+=head1 REQUIRED ARGUMENTS
+
+none
+
+=head1 OPTIONS
+
+none
+
+=head1 EXIT STATUS
+
+0
+
+=head1 SUBROUTINES/METHODS
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item Getopt::Long
+
+=item Moose
+
+=item Moose::Meta::Class
+
+=back
+
+=head1 INCOMPATIBILITIES
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 AUTHOR
+
+$Author: mg8 $
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.

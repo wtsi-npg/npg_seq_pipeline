@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<run id_run="10808" batch_id="23209" id_instrument="110" expected_cycle_count="305" actual_cycle_count="305" priority="1" id_run_pair="0" is_paired="0" team="C" id_instrument_format="11" flowcell_id="MS2030455-300V2" folder_name="130917_MS6_10808_A_MS2030455-300V2" folder_path_glob="/{export,nfs}/sf49/ILorHSorMS_sf49/*/" name="MS6_10808" loader="tkb" loading_date="2013-09-17" run_folder="130917_MS6_10808_A_MS2030455-300V2">
+ <instrument id_instrument="110" name="MS6" id_instrument_format="11" external_name="" serial="" iscurrent="1"/>
+ <run_lanes><run_lane id_run_lane="78791" id_run="10808" tile_count="12" tracks="1" position="1"/>
+</run_lanes>
+ <current_run_status id_run_status="142776" id_run="10808" date="2013-09-20 09:24:09" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete"/>
+ <run_statuses>
+ <run_status id_run_status="142776" id_run="10808" date="2013-09-20 09:24:09" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete"/>
+ <run_status id_run_status="142775" id_run="10808" date="2013-09-20 09:22:10" id_run_status_dict="12" id_user="7" username="pipeline" iscurrent="0" description="run archived"/>
+ <run_status id_run_status="142766" id_run="10808" date="2013-09-20 09:13:43" id_run_status_dict="18" id_user="7" username="pipeline" iscurrent="0" description="archival in progress"/>
+ <run_status id_run_status="142652" id_run="10808" date="2013-09-18 16:28:48" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="0" description="qc complete"/>
+ <run_status id_run_status="142651" id_run="10808" date="2013-09-18 16:28:23" id_run_status_dict="12" id_user="7" username="pipeline" iscurrent="0" description="run archived"/>
+ <run_status id_run_status="142649" id_run="10808" date="2013-09-18 16:16:03" id_run_status_dict="18" id_user="7" username="pipeline" iscurrent="0" description="archival in progress"/>
+ <run_status id_run_status="142648" id_run="10808" date="2013-09-18 16:08:06" id_run_status_dict="17" id_user="80" username="pipeline" iscurrent="0" description="archival pending"/>
+ <run_status id_run_status="142646" id_run="10808" date="2013-09-18 16:05:10" id_run_status_dict="26" id_user="80" username="pipeline" iscurrent="0" description="qc in progress"/>
+ <run_status id_run_status="142644" id_run="10808" date="2013-09-18 16:03:16" id_run_status_dict="19" id_user="7" username="pipeline" iscurrent="0" description="qc review pending"/>
+ <run_status id_run_status="142640" id_run="10808" date="2013-09-18 14:47:33" id_run_status_dict="9" id_user="7" username="pipeline" iscurrent="0" description="analysis complete"/>
+ <run_status id_run_status="142603" id_run="10808" date="2013-09-18 11:58:15" id_run_status_dict="24" id_user="7" username="pipeline" iscurrent="0" description="secondary analysis in progress"/>
+ <run_status id_run_status="142600" id_run="10808" date="2013-09-18 11:30:16" id_run_status_dict="7" id_user="7" username="pipeline" iscurrent="0" description="analysis in progress"/>
+ <run_status id_run_status="142595" id_run="10808" date="2013-09-18 11:23:19" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored"/>
+ <run_status id_run_status="142596" id_run="10808" date="2013-09-18 11:23:19" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="0" description="analysis pending"/>
+ <run_status id_run_status="142564" id_run="10808" date="2013-09-18 10:38:30" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete"/>
+ <run_status id_run_status="142469" id_run="10808" date="2013-09-17 12:24:30" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress"/>
+ <run_status id_run_status="142454" id_run="10808" date="2013-09-17 10:49:13" id_run_status_dict="1" id_user="11" username="pipeline" iscurrent="0" description="run pending"/>
+ </run_statuses>
+ <annotations>
+ <annotation id_run_annotation="52458" id_run="10808" id_annotation="46658" date="2013-09-18 16:08:16" id_user="80" username="dw1" comment="QC complete" attachment_name="" run_current_ok="" current_cycle=""/>
+ <annotation id_run_annotation="52507" id_run="10808" id_annotation="46710" date="2013-09-20 09:20:43" id_user="71" username="srl" comment="Initial analysis failed as the current transcript counting pipeline expects the poly T to start at base 11 rather than base 18. Re-analysed with a modified version of the pipeline. Tag decode rate now 97.65%" attachment_name="" run_current_ok="" current_cycle=""/>
+ </annotations>
+ <tags>
+   <tag id_tag="20" description="multiplex"/>
+   <tag id_tag="17" description="paired_read"/>
+   <tag id_tag="16" description="rta"/>
+   <tag id_tag="19" description="staging"/>
+ </tags>
+</run>

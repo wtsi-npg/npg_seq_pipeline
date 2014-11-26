@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<batch>
+  <id>11265</id>
+  <status>released</status>
+  <lanes>
+    <lane position="1" id="2678120" priority="1">
+      <pool id="2526947" name="RK_CHIP" request_id="3220222" qc_state="pass">
+        <sample sample_id="1127758" library_id="2526935" library_name="HilAinput1 2526935" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="265">
+            <index>1</index>
+            <expected_sequence>ATCACGTTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+        <sample sample_id="1127759" library_id="2526936" library_name="HilAinput2 2526936" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="266">
+            <index>2</index>
+            <expected_sequence>CGATGTTTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+        <sample sample_id="1127760" library_id="2526937" library_name="HilAinput3 2526937" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="267">
+            <index>3</index>
+            <expected_sequence>TTAGGCATAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+        <sample sample_id="1127761" library_id="2526938" library_name="HilAinput4 2526938" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="268">
+            <index>4</index>
+            <expected_sequence>TGACCACTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+        <sample sample_id="1127762" library_id="2526939" library_name="HilAtest1 2526939" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="269">
+            <index>5</index>
+            <expected_sequence>ACAGTGGTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+        <sample sample_id="1127763" library_id="2526940" library_name="HilAtest2 2526940" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="270">
+            <index>6</index>
+            <expected_sequence>GCCAATGTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+        <sample sample_id="1127764" library_id="2526941" library_name="HilAtest3 2526941" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="271">
+            <index>7</index>
+            <expected_sequence>CAGATCTGAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+        <sample sample_id="1127765" library_id="2526942" library_name="HilAtest4 2526942" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="272">
+            <index>8</index>
+            <expected_sequence>ACTTGATGAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+        <sample sample_id="1127766" library_id="2526943" library_name="FliAinput1 2526943" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="273">
+            <index>9</index>
+            <expected_sequence>GATCAGCGAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+        <sample sample_id="1127767" library_id="2526944" library_name="FliAinput2 2526944" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="274">
+            <index>10</index>
+            <expected_sequence>TAGCTTGTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+        <sample sample_id="1127768" library_id="2526945" library_name="FliAtest1 2526945" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="275">
+            <index>11</index>
+            <expected_sequence>GGCTACAGAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+        <sample sample_id="1127769" library_id="2526946" library_name="FliAtest2 2526946" library_type="ChiP-seq" study_id="1814" project_id="678" consent_withdrawn="false">
+          <tag tag_id="276">
+            <index>12</index>
+            <expected_sequence>CTTGTACTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="200" to="700"/>
+        </sample>
+      </pool>
+    </lane>
+    <lane position="2" id="2678121" priority="1">
+      <library id="2545746" name="coli3kb 2545746" request_id="3220223" qc_state="pass">
+        <sample sample_id="1128389" library_id="2545746" library_name="coli3kb 2545746" library_type="Long range" study_id="710" project_id="678" consent_withdrawn="false">
+          <insert_size from="2000" to="4000"/>
+        </sample>
+      </library>
+    </lane>
+    <lane position="3" id="2678117" priority="1">
+      <pool id="2586355" name="Final-Enzy-sel-3d7" request_id="3220219" qc_state="pass">
+        <sample sample_id="1136720" library_id="2586351" library_name="Phus_3d7 2586351" library_type="Custom" study_id="1935" project_id="721" consent_withdrawn="false">
+          <tag tag_id="265">
+            <index>1</index>
+            <expected_sequence>ATCACGTTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="100" to="500"/>
+        </sample>
+        <sample sample_id="1136721" library_id="2586352" library_name="Accu_3d7 2586352" library_type="Custom" study_id="1935" project_id="721" consent_withdrawn="false">
+          <tag tag_id="266">
+            <index>2</index>
+            <expected_sequence>CGATGTTTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="100" to="500"/>
+        </sample>
+        <sample sample_id="1136722" library_id="2586353" library_name="KapR_3d7 2586353" library_type="Custom" study_id="1935" project_id="721" consent_withdrawn="false">
+          <tag tag_id="267">
+            <index>3</index>
+            <expected_sequence>TTAGGCATAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="100" to="500"/>
+        </sample>
+        <sample sample_id="1136723" library_id="2586354" library_name="KapHifi_3d7 2586354" library_type="Custom" study_id="1935" project_id="721" consent_withdrawn="false">
+          <tag tag_id="268">
+            <index>4</index>
+            <expected_sequence>TGACCACTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="100" to="500"/>
+        </sample>
+      </pool>
+    </lane>
+    <lane position="4" id="" priority="0">
+      <control id="79577" name="phiX CT1462-2 1" request_id="3220225">
+        <sample sample_id="9836" library_id="79577" library_name="phiX CT1462-2 1" library_type="" study_id="" project_id="" consent_withdrawn="false">
+        </sample>
+      </control>
+    </lane>
+    <lane position="5" id="2678122" priority="1">
+      <pool id="2586368" name="Final-Enzy-sel-PK76" request_id="3220224" qc_state="pass">
+        <sample sample_id="1136724" library_id="2586364" library_name="Phus_PK76 2586364" library_type="Custom" study_id="1935" project_id="721" consent_withdrawn="false">
+          <tag tag_id="265">
+            <index>1</index>
+            <expected_sequence>ATCACGTTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="100" to="500"/>
+        </sample>
+        <sample sample_id="1136725" library_id="2586365" library_name="Accu_PK76 2586365" library_type="Custom" study_id="1935" project_id="721" consent_withdrawn="false">
+          <tag tag_id="266">
+            <index>2</index>
+            <expected_sequence>CGATGTTTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="100" to="500"/>
+        </sample>
+        <sample sample_id="1136726" library_id="2586366" library_name="KapR_PK76 2586366" library_type="Custom" study_id="1935" project_id="721" consent_withdrawn="false">
+          <tag tag_id="267">
+            <index>3</index>
+            <expected_sequence>TTAGGCATAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="100" to="500"/>
+        </sample>
+        <sample sample_id="1136727" library_id="2586367" library_name="KapHifi_PK76 2586367" library_type="Custom" study_id="1935" project_id="721" consent_withdrawn="false">
+          <tag tag_id="268">
+            <index>4</index>
+            <expected_sequence>TGACCACTAT</expected_sequence>
+            <tag_group_id>7</tag_group_id>
+          </tag>
+          <insert_size from="100" to="500"/>
+        </sample>
+      </pool>
+    </lane>
+    <lane position="6" id="2678116" priority="1">
+      <pool id="2669208" name="intx_bioo" request_id="3220218" qc_state="fail">
+        <sample sample_id="1154120" library_id="2669200" library_name="intxFl_NP1 2669200" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="602">
+            <index>1</index>
+            <expected_sequence>CGATGT</expected_sequence>
+            <tag_group_id>18</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154122" library_id="2669202" library_name="intxFl_NP3 2669202" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="608">
+            <index>3</index>
+            <expected_sequence>ACAGTG</expected_sequence>
+            <tag_group_id>18</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154123" library_id="2669203" library_name="intxFl_NP4 2669203" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="611">
+            <index>4</index>
+            <expected_sequence>GCCAAT</expected_sequence>
+            <tag_group_id>18</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154124" library_id="2669204" library_name="intxFl_P1 2669204" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="614">
+            <index>5</index>
+            <expected_sequence>CAGATC</expected_sequence>
+            <tag_group_id>18</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154125" library_id="2669205" library_name="intxFl_P2 2669205" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="617">
+            <index>6</index>
+            <expected_sequence>CTTGTA</expected_sequence>
+            <tag_group_id>18</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154126" library_id="2669206" library_name="intxFl_P3 2669206" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="618">
+            <index>7</index>
+            <expected_sequence>ATCACG</expected_sequence>
+            <tag_group_id>18</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154127" library_id="2669207" library_name="intxFl_P4 2669207" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="621">
+            <index>8</index>
+            <expected_sequence>TTAGGC</expected_sequence>
+            <tag_group_id>18</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154121" library_id="2669201" library_name="intxFl-NP2 2669201" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="610">
+            <index>11</index>
+            <expected_sequence>TAGCTT</expected_sequence>
+            <tag_group_id>18</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+      </pool>
+    </lane>
+    <lane position="7" id="2678118" priority="1">
+      <pool id="2669230" name="intx_sanger" request_id="3220220" qc_state="pass">
+        <sample sample_id="1154128" library_id="2669218" library_name="intxNP1 2669218" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="144">
+            <index>1</index>
+            <expected_sequence>ATCACGTT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154129" library_id="2669219" library_name="intxNP2 2669219" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="149">
+            <index>2</index>
+            <expected_sequence>CGATGTTT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154130" library_id="2669220" library_name="intxNP3 2669220" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="153">
+            <index>3</index>
+            <expected_sequence>TTAGGCAT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154131" library_id="2669221" library_name="intxNP4 2669221" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="158">
+            <index>4</index>
+            <expected_sequence>TGACCACT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154132" library_id="2669222" library_name="intxP1 2669222" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="162">
+            <index>5</index>
+            <expected_sequence>ACAGTGGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154133" library_id="2669223" library_name="intxP2 2669223" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="167">
+            <index>6</index>
+            <expected_sequence>GCCAATGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154134" library_id="2669224" library_name="intxP3 2669224" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="173">
+            <index>7</index>
+            <expected_sequence>CAGATCTG</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154135" library_id="2669225" library_name="intxP4 2669225" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="179">
+            <index>8</index>
+            <expected_sequence>ACTTGATG</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154136" library_id="2669226" library_name="intx30ng 2669226" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="188">
+            <index>9</index>
+            <expected_sequence>GATCAGCG</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154137" library_id="2669227" library_name="intx10ng 2669227" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="193">
+            <index>10</index>
+            <expected_sequence>TAGCTTGT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154138" library_id="2669228" library_name="intx2ng 2669228" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="175">
+            <index>11</index>
+            <expected_sequence>GGCTACAG</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+        <sample sample_id="1154139" library_id="2669229" library_name="intx0pt5ng 2669229" library_type="Standard" study_id="700" project_id="678" consent_withdrawn="false">
+          <tag tag_id="184">
+            <index>12</index>
+            <expected_sequence>CTTGTACT</expected_sequence>
+            <tag_group_id>6</tag_group_id>
+          </tag>
+          <insert_size from="100" to="400"/>
+        </sample>
+      </pool>
+    </lane>
+    <lane position="8" id="2678119" priority="1">
+      <library id="2671074" name="270511_agilentprobe 2671074" request_id="3220221" qc_state="fail">
+        <sample sample_id="1154724" library_id="2671074" library_name="270511_agilentprobe 2671074" library_type="Small RNA" study_id="311" project_id="311" consent_withdrawn="false">
+          <insert_size from="150" to="252"/>
+        </sample>
+      </library>
+    </lane>
+  </lanes>
+</batch>

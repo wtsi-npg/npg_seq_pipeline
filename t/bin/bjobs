@@ -1,0 +1,83 @@
+#!/usr/bin/env perl
+
+# $Id: bjobs 17667 2013-10-28 11:22:35Z kt6 $
+# Created By: ajb
+# Last Maintained By: $Author: kt6 $
+# Created On: 2009-08-11
+# Last Changed On: $Date: 2013-10-28 11:22:35 +0000 (Mon, 28 Oct 2013) $
+# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/t/bin/bjobs $
+
+use strict;
+use warnings;
+use Carp;
+use English qw{-no_match_vars};
+use File::Basename;
+use Perl6::Slurp;
+
+my $jid = $ARGV[0];
+
+my %responses = (
+9966041 => q{PEND},
+964093 => q{PEND},
+957666 => q{PEND},
+91 => q{PEND},
+9 => q{PEND},
+8164 => q{PEND},
+740026 => q{PEND},
+724 => q{PEND},
+72 => q{PEND},
+68 => q{PEND},
+66472 => q{PEND},
+66 => q{PEND},
+6436 => q{RUN},
+61794 => q{RUN},
+5928 => q{RUN},
+563 => q{RUN},
+5 => q{RUN},
+43 => q{RUN},
+4108 => q{RUN},
+4 => q{RUN},
+384 => q{RUN},
+3 => q{DONE},
+288 => q{DONE},
+271 => q{EXIT},
+24612 => q{EXIT},
+2426 => q{Job <2426> is not found},
+20046363 => q{Job <20046363> is not found},
+q{0} => q{DONE},
+q{01222} => q{DONE},
+1 => q{DONE},
+112 => q{DONE},
+16 => q{DONE},
+);
+
+if ($responses{$jid}) {
+  print $responses{$jid};
+}elsif($jid eq q(-m)){
+  print slurp(dirname(__FILE__).q(/../data/lsf/bjobs_on_a_node))
+} else {
+  carp $jid;
+}
+__END__
+
+
+=head1 AUTHOR
+
+$Author: kt6 $
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2009 Andy Brown (ajb@sanger.ac.uk)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.

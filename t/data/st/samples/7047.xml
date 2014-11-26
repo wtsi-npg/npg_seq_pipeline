@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sample api_version="0.6">
+  <id>7047</id>
+  <name>08_14357</name>
+  <study_id>229</study_id>
+  <ended></ended>
+  <properties>
+    <property>
+      <name>Organism</name>
+      <value>M. tuberculosis</value>
+    </property>
+    <property>
+      <name>GC content</name>
+      <value>High GC</value>
+    </property>
+    <property>
+      <name>TAXON ID</name>
+      <value>1773</value>
+    </property>
+    <property>
+      <name>Sample Visibility</name>
+      <value>hold</value>
+    </property>
+    <property>
+      <name>Common Name</name>
+      <value>Mycobacterium tuberculosis</value>
+    </property>
+    <property>
+      <name>Public Name</name>
+      <value>M08/14357</value>
+    </property>
+    <property>
+      <name>Strain</name>
+      <value>M08/14357</value>
+    </property>
+    <property>
+      <name>Sample Description</name>
+      <value></value>
+    </property>
+    <property>
+      <name>SRA Sample Accession Number</name>
+      <value>ERS009108</value>
+    </property>
+  </properties>
+  <assets>
+    <asset href="/assets/63331" id="63331"/>
+    <asset href="/assets/127659" id="127659"/>
+  </assets>
+  <study_id>229</study_id>
+</sample>

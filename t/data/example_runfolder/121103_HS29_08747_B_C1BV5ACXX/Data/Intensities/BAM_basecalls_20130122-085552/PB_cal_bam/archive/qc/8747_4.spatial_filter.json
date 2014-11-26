@@ -1,0 +1,1 @@
+{"__CLASS__":"npg_qc::autoqc::results::spatial_filter-16199","info":{"Check":"npg_qc::autoqc::checks::spatial_filter","Check_version":"16458"},"num_total_reads":432554392,"position":"4","path":"/dev/stdin","num_spatial_filter_fail_reads":218838,"id_run":"8747"}

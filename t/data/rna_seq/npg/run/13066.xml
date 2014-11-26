@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="13066" batch_id="27322" id_instrument="80" expected_cycle_count="150" actual_cycle_count="150" priority="1" id_run_pair="0" is_paired="0" team="C" id_instrument_format="10" flowcell_id="C3C3KACXX" folder_name="140529_HS18_13066_A_C3C3KACXX" folder_path_glob="/{export,nfs}/sf39/ILorHSany_sf39/*/" name="HS18_13066" loader="tkb" loading_date="2014-05-29" run_folder="140529_HS18_13066_A_C3C3KACXX">
+ <instrument id_instrument="80" name="HS18" id_instrument_format="10" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="86915" id_run="13066" tile_count="48" tracks="6" position="1" />
+<run_lane id_run_lane="86916" id_run="13066" tile_count="48" tracks="6" position="2" />
+<run_lane id_run_lane="86917" id_run="13066" tile_count="48" tracks="6" position="3" />
+<run_lane id_run_lane="86918" id_run="13066" tile_count="48" tracks="6" position="4" />
+<run_lane id_run_lane="86919" id_run="13066" tile_count="48" tracks="6" position="5" />
+<run_lane id_run_lane="86920" id_run="13066" tile_count="48" tracks="6" position="6" />
+<run_lane id_run_lane="86921" id_run="13066" tile_count="48" tracks="6" position="7" />
+<run_lane id_run_lane="86922" id_run="13066" tile_count="48" tracks="6" position="8" />
+</run_lanes>
+ <current_run_status id_run_status="175380" id_run="13066" date="2014-06-05 19:08:22" id_run_status_dict="19" id_user="7" username="pipeline" iscurrent="1" description="qc review pending" />
+ <run_statuses>
+ <run_status id_run_status="175380" id_run="13066" date="2014-06-05 19:08:22" id_run_status_dict="19" id_user="7" username="pipeline" iscurrent="1" description="qc review pending" />
+ <run_status id_run_status="175379" id_run="13066" date="2014-06-05 19:08:20" id_run_status_dict="9" id_user="7" username="pipeline" iscurrent="0" description="analysis complete" />
+ <run_status id_run_status="175059" id_run="13066" date="2014-06-04 18:38:11" id_run_status_dict="24" id_user="7" username="pipeline" iscurrent="0" description="secondary analysis in progress" />
+ <run_status id_run_status="174970" id_run="13066" date="2014-06-04 11:54:02" id_run_status_dict="7" id_user="7" username="pipeline" iscurrent="0" description="analysis in progress" />
+ <run_status id_run_status="174963" id_run="13066" date="2014-06-04 11:47:38" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="174964" id_run="13066" date="2014-06-04 11:47:38" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="0" description="analysis pending" />
+ <run_status id_run_status="174948" id_run="13066" date="2014-06-04 11:06:35" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete" />
+ <run_status id_run_status="174028" id_run="13066" date="2014-05-29 12:22:03" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="174009" id_run="13066" date="2014-05-29 11:23:09" id_run_status_dict="1" id_user="11" username="pipeline" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ <annotation id_run_annotation="60529" id_run="13066" id_annotation="55827" date="2014-05-31 17:28:10" id_user="11" username="tkb" comment="" attachment_name="" run_current_ok="1" current_cycle="58" />
+ <annotation id_run_annotation="60539" id_run="13066" id_annotation="55838" date="2014-06-01 09:56:12" id_user="11" username="tkb" comment="" attachment_name="" run_current_ok="1" current_cycle="75" />
+ <annotation id_run_annotation="60560" id_run="13066" id_annotation="55860" date="2014-06-02 14:35:27" id_user="56" username="sh2" comment="" attachment_name="" run_current_ok="1" current_cycle="100" />
+ <annotation id_run_annotation="60588" id_run="13066" id_annotation="55890" date="2014-06-03 17:06:57" id_user="33" username="ajw" comment="" attachment_name="" run_current_ok="1" current_cycle="129" />
+ <annotation id_run_annotation="60679" id_run="13066" id_annotation="56020" date="2014-06-06 13:19:51" id_user="71" username="srl" comment="re-analysing with correct study https://rt.sanger.ac.uk/Ticket/Display.html?id=403131" attachment_name="" run_current_ok="" current_cycle="" />
+ </annotations>
+ <tags>
+   <tag id_tag="22" description="fc_slotA" />
+   <tag id_tag="43" description="loaded_r2" />
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>

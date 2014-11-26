@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sample api_version="0.6">
+  <id>1886357</id>
+  <name>S_Phase_mES_cells</name>
+  <study_id>2893</study_id>
+  <consent_withdrawn>false</consent_withdrawn>
+  <properties>
+    <property>
+      <name>Organism</name>
+      <value>Mouse</value>
+    </property>
+    <property>
+      <name>Cohort</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Country of origin</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Geographical region</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Ethnicity</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Volume (&#181;l)</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Plate</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Mother</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Father</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Replicate</name>
+      <value>1</value>
+    </property>
+    <property>
+      <name>GC content</name>
+      <value>Neutral</value>
+    </property>
+    <property>
+      <name>Gender</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Donor Id</name>
+      <value></value>
+    </property>
+    <property>
+      <name>DNA source</name>
+      <value>Cell Line</value>
+    </property>
+    <property>
+      <name>Public Name</name>
+      <value>mES_2iLIF_S_9Feb13</value>
+    </property>
+    <property>
+      <name>Common Name</name>
+      <value>Mus musculus</value>
+    </property>
+    <property>
+      <name>Strain</name>
+      <value>AB2.2. Rex1-GFP</value>
+    </property>
+    <property>
+      <name>TAXON ID</name>
+      <value>10090</value>
+    </property>
+    <property>
+      <name>ENA Sample Accession Number</name>
+      <value>ERS424645</value>
+    </property>
+    <property>
+      <name>Sample Description</name>
+      <value>"AB2.2 Rex1-GFP cells. Cells sorted using 5uM Hoechst staining for S phase and sN/Ap frozen on 9/2/2014. RN/A extraction done by Sequencing facility"</value>
+    </property>
+    <property>
+      <name>Sample Visibility</name>
+      <value>Hold</value>
+    </property>
+    <property>
+      <name>Sibling</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Is re-submitted?</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Date of sample collection</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Date of sample extraction</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Sample extraction method</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Sample purified</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Purification method</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Concentration</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Concentration determind by</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Sample type</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Sample storage conditions</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Genotype</name>
+      <value>AB2.2. Rex1-GFP</value>
+    </property>
+    <property>
+      <name>Phenotype</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Age</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Developmental Stage</name>
+      <value>embryonic stem cell line</value>
+    </property>
+    <property>
+      <name>Cell Type</name>
+      <value>ESC</value>
+    </property>
+    <property>
+      <name>Disease State</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Compound</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Dose</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Immunoprecipitate</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Growth Condition</name>
+      <value>2i/LIF</value>
+    </property>
+    <property>
+      <name>RNAi</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Organism Part</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Time Point</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Treatment</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Subject</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Disease</name>
+      <value>N/A</value>
+    </property>
+    <property>
+      <name>Reference Genome</name>
+      <value>Mus_musculus (NCBIm37 + ensembl_67_transcriptome)</value>
+    </property>
+  </properties>
+  <assets>
+    <asset id="9702412" href="/assets/9702412"/>
+    <asset id="9741865" href="/assets/9741865"/>
+    <asset id="9745716" href="/assets/9745716"/>
+    <asset id="9769590" href="/assets/9769590"/>
+    <asset id="9837999" href="/assets/9837999"/>
+  </assets>
+  <study_id>2893</study_id>
+</sample>
