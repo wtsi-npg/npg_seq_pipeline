@@ -1,4 +1,3 @@
-# $Id: 10-base.t 15116 2012-02-06 09:20:07Z mg8 $
 use strict;
 use warnings;
 use Test::More;

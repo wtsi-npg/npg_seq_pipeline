@@ -1,4 +1,3 @@
-# $Id: 40-dispatch_tree.t 16979 2013-04-08 10:03:18Z mg8 $
 use strict;
 use warnings;
 use Test::More tests => 7;

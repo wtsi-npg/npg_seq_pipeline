@@ -1,4 +1,3 @@
-# $Id: 50-archival_runner.t 17862 2013-12-04 10:26:28Z mg8 $
 use strict;
 use warnings;
 use Test::More tests => 17;

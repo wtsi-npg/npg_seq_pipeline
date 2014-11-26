@@ -57,6 +57,7 @@ t/00-critic.t
 t/00-distribution.t
 t/00-pod.t
 t/00-podcoverage.t
+t/00-scripts-compile.t
 t/10-base.t
 t/10-cache.t
 t/10-lsf_job.t
@@ -64,7 +65,6 @@ t/10-pluggable.t
 t/10-pluggable_harold.t
 t/10-pluggable_harold_pb_cal_bam.t
 t/10-pluggable_harold_post_qc_review.t
-t/10-scripts-compile.t
 t/15-pipeline_launcher_scripts.t
 t/20-archive-fastqcheck.t
 t/20-archive_auto_qc_to_db.t
@@ -90,8 +90,6 @@ t/50-archival_runner.t
 t/50-harold_analysis_runner.t
 t/60-npg_tracking-daemon-analysis.t
 t/60-npg_tracking-daemon-archival.t
-t/bin/bhist
-t/bin/bjobs
 t/bin/bkill
 t/bin/bresume
 t/bin/bsub

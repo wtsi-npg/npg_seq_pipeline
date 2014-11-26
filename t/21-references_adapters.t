@@ -1,4 +1,3 @@
-# $Id: 21-references_adapters.t 16979 2013-04-08 10:03:18Z mg8 $
 use strict;
 use warnings;
 use English qw{-no_match_vars};

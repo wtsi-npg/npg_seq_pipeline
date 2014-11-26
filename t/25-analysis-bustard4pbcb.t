@@ -1,4 +1,3 @@
-# $Id: 25-analysis-bustard4pbcb.t 18160 2014-03-11 08:22:45Z mg8 $
 use strict;
 use warnings;
 use Test::More tests => 18;

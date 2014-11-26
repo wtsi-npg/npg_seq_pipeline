@@ -1,66 +1,9 @@
 #!/usr/bin/env perl
 
-# $Id: bsub 17667 2013-10-28 11:22:35Z kt6 $
-# Created By: ajb
-# Last Maintained By: $Author: kt6 $
-# Created On: 2009-06-16
-# Last Changed On: $Date: 2013-10-28 11:22:35 +0000 (Mon, 28 Oct 2013) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/t/bin/bsub $
-
 use strict;
 use warnings;
 
-my @arguments = @ARGV;
-my $max_index = scalar@arguments - 1;
+print 'Job <50> is submitted to queue <small>.';
 
-my $dependencies;
-my $script_to_call;
-foreach my $i (0..$max_index) {
-  if ($arguments[$i] eq q{-w}) {
-    $dependencies = $arguments[$i+1];
-  }
-  if($arguments[$i] eq q{-o} || $arguments[$i] eq q{-e}) {
-    `touch $arguments[$i+1]`;
-  }
-  if ($i == $max_index) {
-    $script_to_call = $arguments[$i];
-  }
-}
-my @temp = split /[ ]/xms, $script_to_call;
-if (
-    $script_to_call =~ /qseq2fastq.pl/xms
-    ||
-    $script_to_call =~ /fastqcheck/xms
-   ) {
-  `touch $temp[-1]`;
-}
-if ($script_to_call =~ /fastq_srf_split/xms) {
-  `touch $temp[-1]/test_split_file`;
-}
+1;
 
-print 'Job <50> is submitted to queue <small>.'
-
-
-__END__
-
-
-=head1 AUTHOR
-
-$Author: kt6 $
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright (C) 2009 Andy Brown (ajb@sanger.ac.uk)
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.

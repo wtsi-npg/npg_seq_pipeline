@@ -1,4 +1,3 @@
-# $Id: 30-run_folder-move.t 18289 2014-04-01 10:23:22Z mg8 $
 use strict;
 use warnings;
 use English qw{-no_match_vars};

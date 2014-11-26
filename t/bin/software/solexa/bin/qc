@@ -1,12 +1,1 @@
-#!/software/bin/perl -wT
 
-# $Id: qc 11073 2010-09-28 11:25:46Z ajb $
-
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 11073 $ =~ /(\d+)/mxs; $r; };
-
-print q{
-/software/solexa/bin/qc version 10804
-(Getopt::Long::GetOptions version 2.37; Perl version 5.8.8)
-};
-
-__END__

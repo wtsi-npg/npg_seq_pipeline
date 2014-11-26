@@ -1,12 +1,3 @@
-#########
-# Author:        mg8
-# Maintainer:    $Author: mg8 $
-# Created:       18 December 2009
-# Last Modified: $Date: 2014-11-26 14:28:42 +0000 (Wed, 26 Nov 2014) $
-# Id:            $Id: 60-npg_tracking-daemon-analysis.t 18739 2014-11-26 14:28:42Z mg8 $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/t/60-npg_tracking-daemon-analysis.t $
-#
-
 use strict;
 use warnings;
 use Test::More tests => 8;
@@ -35,3 +26,5 @@ use_ok('npg_tracking::daemon::analysis');
     is($r->ping, q[daemon --running -n npg_pipeline_harold_analysis_runner && ((if [ -w /tmp/npg_pipeline_harold_analysis_runner.pid ]; then touch -mc /tmp/npg_pipeline_harold_analysis_runner.pid; fi) && echo -n 'ok') || echo -n 'not ok'], 'ping command');
     is($r->stop, q[daemon --stop -n npg_pipeline_harold_analysis_runner], 'stop command');
 }
+
+1;

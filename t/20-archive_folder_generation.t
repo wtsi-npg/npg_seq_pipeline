@@ -1,4 +1,3 @@
-# $Id: 20-archive_folder_generation.t 18404 2014-05-12 08:28:31Z mg8 $
 use strict;
 use warnings;
 use Test::More tests => 4;

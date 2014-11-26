@@ -1,4 +1,3 @@
-# $Id: 25-harold_calibration_bam.t 18563 2014-08-11 10:02:56Z js10 $
 use strict;
 use warnings;
 use Test::More tests => 34;

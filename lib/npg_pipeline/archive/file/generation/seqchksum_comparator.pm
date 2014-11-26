@@ -13,17 +13,13 @@ use File::Spec;
 use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision$ =~ /(\d+)/mxs; $r; };
 use npg_pipeline::lsf_job;
 
-extends qw{npg_pipeline::archive::file::generation};
+extends qw{npg_pipeline::base};
 
 Readonly::Scalar our $SEQCHKSUM_SCRIPT => q{npg_pipeline_seqchksum_comparator};
 
 =head1 NAME
 
 npg_pipeline::archive::file::generation::seqchksum_comparator
-
-=head1 VERSION
-  
-$LastChangedRevision$
   
 =head1 SYNOPSIS
 
@@ -41,25 +37,14 @@ Generates and submits the LSF job array to run the seqchksum comparator
 
 sub launch {
   my ($self, $arg_refs) = @_;
-
-  my @job_ids;
-
-  my @positions = $self->positions( $arg_refs);
-
-  if ( ! scalar @positions) {
-    croak( 'No positions found, so not submitting any jobs');
-  }
-
-  $arg_refs->{array_string} = npg_pipeline::lsf_job->create_array_string( @positions );
-
-  push @job_ids, $self->submit_bsub_command( $self->_generate_bsub_command ( $arg_refs) );
-  return @job_ids;
+  my $job_id = $self->submit_bsub_command( $self->_generate_bsub_command ( $arg_refs) );
+  return ($job_id);
 }
 
 sub _generate_bsub_command {
   my ($self, $arg_refs) = @_;
 
-  my $array_string = $arg_refs->{array_string};
+  my $array_string = npg_pipeline::lsf_job->create_array_string($self->positions());
   my $required_job_completion = $arg_refs->{required_job_completion} || q{};
   my $timestamp = $self->timestamp();
   my $id_run = $self->id_run();
