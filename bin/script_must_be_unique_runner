@@ -1,21 +1,13 @@
 #!/usr/bin/env perl
 
-# $Id: script_must_be_unique_runner 17413 2013-08-22 15:33:32Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-09-24
-# Last Changed On: $Date: 2013-08-22 16:33:32 +0100 (Thu, 22 Aug 2013) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/bin/script_must_be_unique_runner $
-
 use strict;
 use warnings;
 use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Carp;
-use Readonly;
 use Getopt::Long;
 
-Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 17413 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 my $opts = {};
 GetOptions($opts, qw{job_name=s own_job_name=s});
@@ -43,10 +35,6 @@ __END__
 =head1 NAME
 
 script_must_be_unique_runner
-
-=head1 VERSION
-
-$LastChangedRevision: 17413 $
 
 =head1 SYNOPSIS
 
@@ -100,10 +88,6 @@ This satisfies the way that LSF determines if it is OK to proceed with the job i
 
 =item Carp
 
-=item English -no_match_vars
-
-=item Readonly
-
 =item Getopt::Long
 
 =item lib
@@ -118,11 +102,11 @@ This satisfies the way that LSF determines if it is OK to proceed with the job i
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -1,19 +1,12 @@
 #!/usr/bin/env perl
 
-# $Id: npg_pipeline_check_bam_file_cluster_count 16979 2013-04-08 10:03:18Z mg8 $
-# Created By: gq1
-# Last Maintained By: $Author: mg8 $
-# Created On: 2011-11-25
-# Last Changed On: $Date: 2013-04-08 11:03:18 +0100 (Mon, 08 Apr 2013) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/bin/npg_pipeline_check_bam_file_cluster_count $
-
 use strict;
 use warnings;
 use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use npg_pipeline::archive::file::BamClusterCounts;
 
-our $VERSION = do { my ($r) = q$LastChangedRevision: 16979 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 npg_pipeline::archive::file::BamClusterCounts->new_with_options()->run_cluster_count_check();
 
@@ -24,10 +17,6 @@ __END__
 =head1 NAME
 
 npg_pipeline_check_file_cluster_count
-
-=head1 VERSION
-
-$LastChangedRevision: 16979 $
 
 =head1 SYNOPSIS
 
@@ -81,11 +70,11 @@ pathways which will eventually allow determination of bam_basecall and archive l
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2011 GRL, by Guoying Qi (gq1@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
