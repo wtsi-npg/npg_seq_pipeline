@@ -1,11 +1,3 @@
-#############
-# $Id: harold_analysis_runner.pm 18289 2014-04-01 10:23:22Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-09-14
-# Last Changed On: $Date: 2014-04-01 11:23:22 +0100 (Tue, 01 Apr 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/daemons/harold_analysis_runner.pm $
-
 package npg_pipeline::daemons::harold_analysis_runner;
 
 use Moose;
@@ -13,9 +5,11 @@ use MooseX::ClassAttribute;
 use Carp;
 use English qw{-no_match_vars};
 use List::MoreUtils  qw/none/;
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18289 $ =~ /(\d+)/mxs; $r; };
+use Readonly;
 
 extends qw{npg_pipeline::base};
+
+our $VERSION = '0';
 
 Readonly::Scalar our $PB_CAL_SCRIPT     => q{npg_pipeline_PB_cal_bam};
 
@@ -160,10 +154,6 @@ __END__
 
 npg_pipeline::daemons::harold_analysis_runner
 
-=head1 VERSION
-
-$LastChangedRevision: 18289 $
-
 =head1 SYNOPSIS
 
   my $runner = npg_pipeline::daemons::harold_analysis_runner->new();
@@ -175,7 +165,7 @@ This module interrogates the npg database for runs with a status of analysis pen
 
 =head1 SUBROUTINES/METHODS
 
-=head2 run - the only method and the only one you need. It does everything.
+=head2 run - runner method for the daemon
 
 =head2 run_command
 
@@ -213,11 +203,12 @@ This module interrogates the npg database for runs with a status of analysis pen
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

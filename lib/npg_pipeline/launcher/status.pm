@@ -1,8 +1,3 @@
-#############
-# $Id: status_update.pm -1   $
-# Last Changed On: $Date: $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/branches/prerelease-46.0/lib/npg_pipeline/function/status_update.pm $
-
 package npg_pipeline::launcher::status;
 
 use Moose;
@@ -11,7 +6,7 @@ use Readonly;
 
 extends q{npg_pipeline::base};
 
-our $VERSION = do { my ($r) = q$LastChangedRevision: -1 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 Readonly::Scalar our $STATUS_SCRIPT  => q{npg_status2file};
 
@@ -97,10 +92,6 @@ __END__
 
 npg_pipeline::launcher::status
 
-=head1 VERSION
-
-$LastChangedRevision: -1 $
-
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
@@ -147,7 +138,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 GRL, by Marina Gourtovaia
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

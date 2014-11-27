@@ -1,18 +1,13 @@
-#############
-# $Id: move.pm 16979 2013-04-08 10:03:18Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-07-08
-# Last Changed On: $Date: 2013-04-08 11:03:18 +0100 (Mon, 08 Apr 2013) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/run/folder/move.pm $
-
 package npg_pipeline::run::folder::move;
+
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 16979 $ =~ /(\d+)/mxs; $r; };
+use Readonly;
 
 extends q{npg_pipeline::run::folder};
+
+our $VERSION = '0';
 
 Readonly::Scalar our $MOVE_FOLDER_SCRIPT  => q{move_run_folder};
 
@@ -101,10 +96,6 @@ __END__
 
 npg_pipeline::run::folder::move
 
-=head1 VERSION
-
-$LastChangedRevision: 16979 $
-
 =head1 SYNOPSIS
 
   my $rfm = npg_pipeline::run::folder::move->new({
@@ -150,11 +141,11 @@ or submit a job to LSF so that it can be done at an appropriate time.
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

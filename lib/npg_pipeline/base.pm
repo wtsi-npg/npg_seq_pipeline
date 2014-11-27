@@ -1,11 +1,3 @@
-#############
-# $Id: base.pm 18687 2014-10-20 13:47:30Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-09-25
-# Last Changed On: $Date: 2014-10-20 14:47:30 +0100 (Mon, 20 Oct 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/base.pm $
-
 package npg_pipeline::base;
 
 use Moose;
@@ -18,7 +10,9 @@ use Sys::Filesystem::MountPoint qw(path_to_mount_point);
 use File::Spec::Functions qw(splitdir);
 use File::Slurp;
 use FindBin qw($Bin);
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18687 $ =~ /(\d+)/mxs; $r; };
+use Readonly;
+
+our $VERSION = '0';
 
 with qw{MooseX::Getopt
         MooseX::AttributeCloner
@@ -38,10 +32,6 @@ $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
 =head1 NAME
 
 npg_pipeline::base
-
-=head1 VERSION
-
-$LastChangedRevision: 18687 $
 
 =head1 SYNOPSIS
 
@@ -672,11 +662,12 @@ __END__
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

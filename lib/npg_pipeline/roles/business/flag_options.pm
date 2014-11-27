@@ -1,23 +1,12 @@
-#############
-# $Id: flag_options.pm 18643 2014-10-01 13:44:22Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-11-30
-# Last Changed On: $Date: 2014-10-01 14:44:22 +0100 (Wed, 01 Oct 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/roles/business/flag_options.pm $
-
 package npg_pipeline::roles::business::flag_options;
+
 use Moose::Role;
 
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18643 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 =head1 NAME
 
 npg_pipeline::roles::business::flag_options
-
-=head1 VERSION
-
-$LastChangedRevision: 18643 $
 
 =head1 SYNOPSIS
 
@@ -271,12 +260,6 @@ __END__
 
 =item Moose::Role
 
-=item Carp
-
-=item English -no_match_vars
-
-=item Readonly
-
 =back
 
 =head1 INCOMPATIBILITIES
@@ -285,11 +268,11 @@ __END__
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

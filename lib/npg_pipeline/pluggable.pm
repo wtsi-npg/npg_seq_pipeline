@@ -1,22 +1,16 @@
-#############
-# $Id: pluggable.pm 18289 2014-04-01 10:23:22Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-06-11
-# Last Changed On: $Date: 2014-04-01 11:23:22 +0100 (Tue, 01 Apr 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/pluggable.pm $
-
 package npg_pipeline::pluggable;
 
 use Moose;
 use Carp;
 use Try::Tiny;
+use Readonly;
+
 use npg_pipeline::dispatch_tree;
 use npg_pipeline::cache;
 
 extends q{npg_pipeline::base};
 
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18289 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 Readonly::Scalar our $SUSPENDED_START_FUNCTION => q[lsf_start];
 Readonly::Scalar our $END_FUNCTION             => q[lsf_end];
@@ -24,10 +18,6 @@ Readonly::Scalar our $END_FUNCTION             => q[lsf_end];
 =head1 NAME
 
 npg_pipeline::pluggable
-
-=head1 VERSION
-
- $LastChangedRevision: 18289 $
 
 =head1 SYNOPSIS
 
@@ -44,7 +34,6 @@ has q{dispatch_tree} => (isa => q{npg_pipeline::dispatch_tree},
                          init_arg => undef,
                          metaclass => q{NoGetopt},);
 sub _build_dispatch_tree {
-  my $self = shift;
   return npg_pipeline::dispatch_tree->new();
 }
 
@@ -433,11 +422,12 @@ array order, but that those functions can (in theory) be placed in whichever ord
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

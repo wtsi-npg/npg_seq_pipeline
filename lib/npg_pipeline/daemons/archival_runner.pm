@@ -1,18 +1,13 @@
-#############
-# $Id: archival_runner.pm 17862 2013-12-04 10:26:28Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-09-14
-# Last Changed On: $Date: 2013-12-04 10:26:28 +0000 (Wed, 04 Dec 2013) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/daemons/archival_runner.pm $
-
 package npg_pipeline::daemons::archival_runner;
+
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 17862 $ =~ /(\d+)/mxs; $r; };
+use Readonly;
 
 extends qw{npg_pipeline::daemons::harold_analysis_runner};
+
+our $VERSION = '0';
 
 Readonly::Scalar our $POST_QC_REVIEW_SCRIPT       => q{npg_pipeline_post_qc_review};
 Readonly::Scalar our $ARCHIVAL_PENDING            => q{archival pending};
@@ -62,10 +57,6 @@ __END__
 
 npg_pipeline::daemons::archival_runner
 
-=head1 VERSION
-
-$LastChangedRevision: 17862 $
-
 =head1 SYNOPSIS
 
   my $runner = npg_pipeline::archival_runner->new();
@@ -103,11 +94,12 @@ This module interrogates the npg database for runs with a status of archival pen
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

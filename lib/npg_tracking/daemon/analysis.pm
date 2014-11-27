@@ -1,21 +1,11 @@
-#########
-# Author:        Marina Gourtovaia
-# Maintainer:    $Author: mg8 $
-# Created:       18 December 2009
-# Last Modified: $Date: 2014-11-26 14:28:42 +0000 (Wed, 26 Nov 2014) $
-# Id:            $Id: analysis.pm 18739 2014-11-26 14:28:42Z mg8 $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_tracking/daemon/analysis.pm $
-#
-
 package npg_tracking::daemon::analysis;
 
 use Moose;
-use English qw{-no_match_vars};
 use Readonly;
 
 extends 'npg_tracking::daemon';
 
-Readonly::Scalar our $VERSION => do { my ($r) = q$Revision: 18739 $ =~ /(\d+)/smx; $r; };
+our $VERSION = '0';
 
 Readonly::Scalar our $SCRIPT_NAME => q[npg_pipeline_harold_analysis_runner];
 
@@ -31,10 +21,6 @@ __END__
 =head1 NAME
 
 npg_tracking::daemon::analysis
-
-=head1 VERSION
-
-$LastChangedRevision: 18739 $
 
 =head1 SYNOPSIS
 
@@ -56,8 +42,6 @@ Daemon definition for the analysis pipeline.
 
 =item Readonly
 
-=item English
-
 =item npg_tracking::daemon
 
 =back
@@ -68,13 +52,13 @@ Daemon definition for the analysis pipeline.
 
 =head1 AUTHOR
 
-Author: Marina Gourtovaia E<lt>mg8@sanger.ac.ukE<gt>
+Marina Gourtovaia E<lt>mg8@sanger.ac.ukE<gt>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2009 GRL, by Marina Gourtovaia
+Copyright (C) 2014 Genome Research Ltd
 
-This file is part of NPG.
+This file is part of NPG software.
 
 NPG is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

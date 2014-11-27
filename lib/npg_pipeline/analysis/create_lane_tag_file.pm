@@ -1,31 +1,20 @@
-#############
-# $Id: create_lane_tag_file.pm 18722 2014-11-17 15:52:45Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2010-01-27
-# Last Changed On: $Date: 2014-11-17 15:52:45 +0000 (Mon, 17 Nov 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/analysis/create_lane_tag_file.pm $
-
 package npg_pipeline::analysis::create_lane_tag_file;
 
 use Moose;
 use Carp;
 use File::Spec::Functions;
 use List::Util qw(max min);
+use Readonly;
 
 use npg_pipeline::roles::business::base;
 
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18722 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 Readonly::Scalar our $TAG_LIST_FILE_HEADER  => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
 
 =head1 NAME
 
 npg_pipeline::analysis::create_lane_tag_file
-
-=head1 VERSION
-
-$LastChangedRevision: 18722 $
 
 =head1 SYNOPSIS
 

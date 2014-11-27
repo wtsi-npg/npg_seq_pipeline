@@ -1,15 +1,7 @@
-#############
-# $Id: folder.pm 14773 2011-12-12 10:52:07Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2008-07-08
-# Last Changed On: $Date: 2011-12-12 10:52:07 +0000 (Mon, 12 Dec 2011) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/run/folder.pm $
-
 package npg_pipeline::run::folder;
 
 use Moose;
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 14773 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 extends q{npg_pipeline::base};
 
@@ -33,10 +25,6 @@ __END__
 =head1 NAME
 
 npg_pipeline::run::folder
-
-=head1 VERSION
-
-$LastChangedRevision: 14773 $
 
 =head1 SYNOPSIS
 
@@ -76,11 +64,11 @@ Base class for run_folder based modules
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

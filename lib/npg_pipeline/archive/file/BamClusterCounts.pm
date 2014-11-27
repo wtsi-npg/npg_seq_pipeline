@@ -1,24 +1,18 @@
-#############
-# $Id: BamClusterCounts.pm 18687 2014-10-20 13:47:30Z mg8 $
-# Created By: gq1
-# Last Maintained By: $Author: mg8 $
-# Created On: 2011-11-25
-# Last Changed On: $Date: 2014-10-20 14:47:30 +0100 (Mon, 20 Oct 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/archive/file/BamClusterCounts.pm $
-
 package npg_pipeline::archive::file::BamClusterCounts;
 
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
 use File::Spec;
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18687 $ =~ /(\d+)/mxs; $r; };
+use Readonly;
 use XML::LibXML;
 use List::MoreUtils qw(uniq);
 
 use npg_qc::autoqc::qc_store;
 use npg_pipeline::lsf_job;
 extends qw{npg_pipeline::base};
+
+our $VERSION = '0';
 
 Readonly::Scalar our $CLUSTER_COUNTS_SCRIPT => q{npg_pipeline_check_bam_file_cluster_count};
 
@@ -32,21 +26,17 @@ Readonly::Scalar our $TILE_METRICS_INTEROP_CODES => {'cluster density'    => 100
 
 npg_pipeline::archive::file::BamClusterCounts
 
-=head1 VERSION
-
-$LastChangedRevision: 18687 $
-
 =head1 SYNOPSIS
 
 
   my @job_ids;
   eval {
-    my $oClusterCounts = npg_pipeline::archive::file::BamClusterCounts->new({
+    my $oClusterCounts = npg_pipeline::archive::file::BamClusterCounts->new(
       run_folder          => $run_folder,
       timestamp           => q{20090709-123456},
       id_run              => 1234,
       verbose              => 1, # use if you want logging of the commands sent to LSF
-    });
+    );
 
     my $arg_refs = {
       required_job_completion  => q{-w'done(123) && done(321)'},
@@ -57,10 +47,10 @@ $LastChangedRevision: 18687 $
     # your error handling here
   };
 
-  my $oClusterCounts = npg_pipeline::archive::file::ClusterCounts->new({
+  my $oClusterCounts = npg_pipeline::archive::file::ClusterCounts->new(
     run_folder => $run_folder,
     verbose    => 1, # use if you want logging of the commands sent to LSF
-  });
+  );
   $oClusterCounts->run_cluster_count_check();
 
 =head1 DESCRIPTION
@@ -459,11 +449,11 @@ __END__
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2011 GRL, by Guoying Qi (gq1@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

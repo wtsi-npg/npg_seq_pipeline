@@ -1,24 +1,18 @@
-#############
-# $Id: harold_calibration_bam.pm 18687 2014-10-20 13:47:30Z mg8 $
-# Created By: gq1
-# Last Maintained By: $Author: mg8 $
-# Created On: 2011-07-27
-# Last Changed On: $Date: 2014-10-20 14:47:30 +0100 (Mon, 20 Oct 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/analysis/harold_calibration_bam.pm $
-
 package npg_pipeline::analysis::harold_calibration_bam;
 
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
 use Cwd;
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18687 $ =~ /(\d+)/mxs; $r; };
+use Readonly;
 use List::MoreUtils qw{any};
 use File::Spec;
 use File::Basename;
 
 use npg_tracking::util::types;
 use npg_pipeline::lsf_job;
+
+our $VERSION = '0';
 
 Readonly::Scalar our $PB_ALIGN_BAM_PREFIX => q{pb_align_};
 Readonly::Scalar our $MAKE_STATS_J => 4;
@@ -34,10 +28,6 @@ with qw{
 =head1 NAME
 
 npg_pipeline::analysis::harold_calibration_bam
-
-=head1 VERSION
-
-$LastChangedRevision: 18687 $
 
 =head1 SYNOPSIS
 
@@ -699,11 +689,11 @@ __END__
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2011 GRL, by Guoying Qi (gq1@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

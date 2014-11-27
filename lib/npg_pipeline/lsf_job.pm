@@ -1,49 +1,27 @@
-#############
-# $Id: $
-# Created By: kt6
-# Last Maintained By: $Author: kt6 $
-# Created On: 2013-10-07
-# Last Changed On: $Date: $
-# $HeadURL: $
-
 package npg_pipeline::lsf_job;
 
-use POSIX;
+use Moose;
 use List::MoreUtils qw/any/;
 use Sys::Hostname;
-use Moose;
-use Moose::Util::TypeConstraints;
 use Carp;
-use English qw{-no_match_vars};
+use POSIX;
 use Readonly;
-use npg_tracking::util::types;
 
+use npg_tracking::util::types;
 with qw{npg_common::roles::software_location};
 
-Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 17323 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 Readonly::Scalar my $THOUSANDTH => 0.001;
-Readonly::Scalar my $THOUSAND => 1000;
-Readonly::Scalar my $LOW_MEM => 1;
-Readonly::Scalar my $HI_MEM => 96_000;
+Readonly::Scalar my $THOUSAND   => 1000;
+Readonly::Scalar my $LOW_MEM    => 1;
+Readonly::Scalar my $HI_MEM     => 96_000;
 
 =head1 NAME
 
 npg_pipeline::lsf_job
 
-=head1 VERSION
-
-$LastChangedRevision: 17323 $
-
 =head1 SYNOPSIS
-
-Any explicit occurrences of:
-
-  -R 'select[mem>8000] rusage[mem=8000]  span [hosts=1]' -n 4 -M8000000
-
-should be transformed to use lsf_job->new(memory=>8000)->memory_spec
-
-  my $memory_spec = join q[  ], npg_pipeline::lsf_job->new(memory => 8000)->memory_spec,  "-R 'select[span [hosts=1]'",  "-n 4";
 
 =head1 SUBROUTINES/METHODS
 
@@ -51,10 +29,9 @@ should be transformed to use lsf_job->new(memory=>8000)->memory_spec
 
 =cut
 
-has q{memory}       => (isa => q{NpgTrackingPositiveInt},
-                        is => q{ro},
-                        lazy_build => 0,
-                        );
+has q{memory}       => (isa        => q{NpgTrackingPositiveInt},
+                        is         => q{ro},
+                       );
 
 =head2 memory_units - one of KB, MB, GB; defaults to MB. 
 
@@ -62,8 +39,8 @@ has q{memory}       => (isa => q{NpgTrackingPositiveInt},
 
 has q{memory_units} => (isa => q{Str},
                         is => q{ro},
-                        lazy_build => 0,
-                        default => 'MB',);
+                        default => 'MB',
+                       );
 
 =head2 memory_units - one of KB, MB, GB; defaults to MB. 
 
@@ -71,7 +48,8 @@ has q{memory_units} => (isa => q{Str},
 
 has q{memory_in_mb} => (isa => q{NpgTrackingPositiveInt},
                         is => q{ro},
-                        lazy_build => 1,);
+                        lazy_build => 1,
+                       );
 
 sub _build_memory_in_mb {
   my $self = shift;
@@ -94,10 +72,10 @@ sub _build_memory_in_mb {
 =cut
 
 has 'lsadmin_cmd'   => ( is      => 'ro',
-                          isa     => 'NpgCommonResolvedPathExecutable',
-                          coerce  => 1,
-                          default => 'lsadmin',
-                        );
+                         isa     => 'NpgCommonResolvedPathExecutable',
+                         coerce  => 1,
+                         default => 'lsadmin',
+                      );
 
 
 =head2 memory_spec - returns an appropriate bsub component 
@@ -115,8 +93,6 @@ sub memory_spec {
   my $memory_spec = "-R 'select[mem>$resource_memory] rusage[mem=$resource_memory]' -M$memory_limit";
   return $memory_spec;
 }
-
-### private methods
 
 =head2 _is_valid_memory
 
@@ -203,7 +179,6 @@ sub _scale_mem_limit {
 
 sub _find_memory_factor {
   my ($self, $unit) = @_;
-
   my $ret = (($unit eq 'KB') ? $THOUSANDTH : (($unit eq 'MB') ? 1 : (($unit eq 'GB') ? $THOUSAND : 1)));
   return $ret;
 }
@@ -213,9 +188,10 @@ sub _find_memory_factor {
  Takes an array of integers, and then converts them to an LSF job array string
  for appending to a job_name
 
-  my $sArrayString = $oClass->create_array_string( 1,4,5,6,7,10... );
+ my $sArrayString = $oClass->create_array_string( 1,4,5,6,7,10... );
 
 =cut
+
 sub create_array_string {
   my ( $self, @lsf_indices ) = @_;
 
@@ -257,9 +233,7 @@ __END__
 
 =head1 DESCRIPTION
 
-Used to make -R memory strings suitable for precise and lenny and to ensure that the mem and -M match.
-
-On lenny, the resource memory is specified in MB and the memory limit is specified in KB.  On precise, both are specified in MB.  
+A collection of LSF-specific helper methods.
 
 =head1 DIAGNOSTICS
 
@@ -269,13 +243,21 @@ On lenny, the resource memory is specified in MB and the memory limit is specifi
 
 =over
 
+=item List::MoreUtils
+
+=item Sys::Hostname
+
 =item Moose
 
 =item Carp
 
-=item English -no_match_vars
+=item Readonly
 
-=item Cwd
+=item POSIX
+
+=item npg_tracking::util::types
+
+=item npg_common::roles::software_location
 
 =back
 
@@ -285,11 +267,12 @@ On lenny, the resource memory is specified in MB and the memory limit is specifi
 
 =head1 AUTHOR
 
-$Author: kt6 $
+Kate Taylor
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2013 GRL, by Kate Taylor(kt6@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

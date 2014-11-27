@@ -1,28 +1,18 @@
-#############
-# $Id: post_qc_review.pm 18296 2014-04-03 11:26:45Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-11-05
-# Last Changed On: $Date: 2014-04-03 12:26:45 +0100 (Thu, 03 Apr 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/pluggable/harold/post_qc_review.pm $
-
 package npg_pipeline::pluggable::harold::post_qc_review;
+
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
 use File::Spec;
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18296 $ =~ /(\d+)/mxs; $r; };
 
 use npg_pipeline::cache;
 extends qw{npg_pipeline::pluggable::harold};
 
+our $VERSION = '0';
+
 =head1 NAME
 
 npg_pipeline::pluggable::harold::post_qc_review
-
-=head1 VERSION
-
-$LastChangedRevision: 18296 $
 
 =head1 SYNOPSIS
 
@@ -182,7 +172,7 @@ __END__
 
 =item English -no_match_vars
 
-=item Readonly
+=item File::Spec
 
 =back
 
@@ -192,11 +182,11 @@ __END__
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

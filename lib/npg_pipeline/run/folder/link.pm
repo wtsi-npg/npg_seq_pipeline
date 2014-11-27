@@ -1,19 +1,14 @@
-#############
-# $Id: link.pm 18649 2014-10-06 12:23:28Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-07-08
-# Last Changed On: $Date: 2014-10-06 13:23:28 +0100 (Mon, 06 Oct 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/run/folder/link.pm $
-
 package npg_pipeline::run::folder::link;
+
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18649 $ =~ /(\d+)/mxs; $r; };
+use Readonly;
 use File::Spec::Functions qw(abs2rel);
 
 extends q{npg_pipeline::run::folder};
+
+our $VERSION = '0';
 
 Readonly::Scalar our $MAKE_LINK_SCRIPT  => q{create_summary_link};
 Readonly::Scalar our $SUMMARY_LINK      => q{Latest_Summary};
@@ -101,10 +96,6 @@ __END__
 
 npg_pipeline::run::folder::link
 
-=head1 VERSION
-
-$LastChangedRevision: 18649 $
-
 =head1 SYNOPSIS
 
   my $rfl = npg_pipeline::run::folder::link->new({
@@ -168,7 +159,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -1,11 +1,3 @@
-#############
-# $Id: illumina2bam.pm 18739 2014-11-26 14:28:42Z mg8 $
-# Created By: gq1
-# Last Maintained By: $Author: mg8 $
-# Created On: 2011-05-16
-# Last Changed On: $Date: 2014-11-26 14:28:42 +0000 (Wed, 26 Nov 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/archive/file/generation/illumina2bam.pm $
-
 package npg_pipeline::archive::file::generation::illumina2bam;
 
 use Moose;
@@ -22,7 +14,7 @@ use npg_pipeline::analysis::create_lane_tag_file;
 extends q{npg_pipeline::base};
 with q{npg_tracking::illumina::run::long_info};
 
-Readonly::Scalar our $VERSION  => do { my ($r) = q$LastChangedRevision: 18739 $ =~ /(\d+)/mxs; $r; };
+our $VERSION  = '0';
 
 Readonly::Scalar our $DEFAULT_RESOURCES => npg_pipeline::lsf_job->new(memory => 2500)->memory_spec();
 Readonly::Scalar our $JAVA_CMD          => q{java};
@@ -309,15 +301,11 @@ __END__
 
 npg_pipeline::archive::file::generation::illumina2bam
 
-=head1 VERSION
-
-$LastChangedRevision: 18739 $
-
 =head1 SYNOPSIS
 
-  my $oAfgfq = npg_pipeline::archive::file::generation::illumina2bam->new({
+  my $oAfgfq = npg_pipeline::archive::file::generation::illumina2bam->new(
     run_folder => $sRunFolder,
-  });
+  );
 
 =head1 DESCRIPTION
 
@@ -329,8 +317,6 @@ Object module which knows how to construct and submits the command line to LSF f
 
   my @job_ids = $oAfgfq->generate({
     required_job_completion} => q{-w (123 && 321)};
-    timestamp                => q{20090709-123456};
-    id_run                   => 1234;
   });
 
 =head1 DIAGNOSTICS

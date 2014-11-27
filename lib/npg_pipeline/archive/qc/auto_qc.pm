@@ -1,19 +1,12 @@
-#############
-# $Id: auto_qc.pm 18687 2014-10-20 13:47:30Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-09-01
-# Last Changed On: $Date: 2014-10-20 14:47:30 +0100 (Mon, 20 Oct 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/archive/qc/auto_qc.pm $
-
 package npg_pipeline::archive::qc::auto_qc;
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18687 $ =~ /(\d+)/mxs; $r; };
 use File::Spec;
 
 extends qw{npg_pipeline::base};
+
+our $VERSION = '0';
 
 sub submit_to_lsf {
   my ($self, $arg_refs) = @_;
@@ -75,10 +68,6 @@ __END__
 
 npg_pipeline::archive::qc::auto_qc
 
-=head1 VERSION
-
-$LastChangedRevision: 18687 $
-
 =head1 SYNOPSIS
 
   my $aaq = npg_pipeline::archive::qc::auto_qc->new({
@@ -110,8 +99,6 @@ $LastChangedRevision: 18687 $
 
 =item English -no_match_vars
 
-=item Readonly
-
 =back
 
 =head1 INCOMPATIBILITIES
@@ -120,11 +107,11 @@ $LastChangedRevision: 18687 $
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

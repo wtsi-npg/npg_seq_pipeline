@@ -1,11 +1,3 @@
-#############
-# $Id: base.pm 18722 2014-11-17 15:52:45Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-11-03
-# Last Changed On: $Date: 2014-11-17 15:52:45 +0000 (Mon, 17 Nov 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/roles/business/base.pm $
-
 package npg_pipeline::roles::business::base;
 
 use Moose::Role;
@@ -19,15 +11,11 @@ use st::api::lims;
 use npg_tracking::data::reference::find;
 use npg_pipeline::cache;
 
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18722 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 =head1 NAME
 
 npg_pipeline::roles::business::base
-
-=head1 VERSION
-
-$LastChangedRevision: 18722 $
 
 =head1 SYNOPSIS
 
@@ -361,8 +349,6 @@ __END__
 =item Moose::Role
 
 =item Carp
-
-=item Readonly
 
 =item List::MoreUtils
 

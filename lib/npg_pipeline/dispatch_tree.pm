@@ -1,16 +1,9 @@
-#############
-# $Id: dispatch_tree.pm 14773 2011-12-12 10:52:07Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-08-07
-# Last Changed On: $Date: 2011-12-12 10:52:07 +0000 (Mon, 12 Dec 2011) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/dispatch_tree.pm $
-
 package npg_pipeline::dispatch_tree;
 
 use Moose;
 use JSON;
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 14773 $ =~ /(\d+)/mxs; $r; };
+
+our $VERSION = '0';
 
 has q{json_structure} => (isa => q{Str},
                           is  => 'ro',
@@ -95,10 +88,6 @@ __END__
 
 npg_pipeline::dispatch_tree
 
-=head1 VERSION
-
-$LastChangedRevision: 14773 $
-
 =head1 SYNOPSIS
 
   my $oTree = npg_pipeline::dispatch_tree->new();
@@ -150,8 +139,6 @@ Writes a json string of all processes in the pipeline to the log file (via finis
 
 =item JSON
 
-=item Readonly
-
 =back
 
 =head1 INCOMPATIBILITIES
@@ -160,11 +147,11 @@ Writes a json string of all processes in the pipeline to the log file (via finis
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

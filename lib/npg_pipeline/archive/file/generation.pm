@@ -1,18 +1,9 @@
-#############
-# $Id: generation.pm 18687 2014-10-20 13:47:30Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-07-07
-# Last Changed On: $Date: 2014-10-20 14:47:30 +0100 (Mon, 20 Oct 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/archive/file/generation.pm $
-
 package npg_pipeline::archive::file::generation;
 
 use Moose;
 use Moose::Meta::Class;
 use Carp;
 use English qw{-no_match_vars};
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18687 $ =~ /(\d+)/mxs; $r; };
 use File::Spec;
 
 use npg_common::roles::run::lane::file_names;
@@ -22,13 +13,11 @@ use npg_tracking::glossary::run;
 
 extends q{npg_pipeline::base};
 
+our $VERSION = '0';
+
 =head1 NAME
 
 npg_pipeline::archive::file::generation
-
-=head1 VERSION
-
-$LastChangedRevision: 18687 $
 
 =head1 SYNOPSIS
 
@@ -102,8 +91,6 @@ __END__
 
 =item English -no_match_vars
 
-=item Readonly
-
 =item Moose
 
 =item Moose::Meta::Class
@@ -126,11 +113,11 @@ __END__
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

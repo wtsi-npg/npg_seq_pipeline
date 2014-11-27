@@ -1,30 +1,20 @@
-#############
-# $Id: harold.pm 18687 2014-10-20 13:47:30Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-06-11
-# Last Changed On: $Date: 2014-10-20 14:47:30 +0100 (Mon, 20 Oct 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/pluggable/harold.pm $
-
 package npg_pipeline::pluggable::harold;
 
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
 use Try::Tiny;
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18687 $ =~ /(\d+)/mxs; $r; };
+use Readonly;
 
 use npg_pipeline::cache;
 extends q{npg_pipeline::pluggable};
 with qw{npg_tracking::illumina::run::long_info};
 
+our $VERSION = '0';
+
 =head1 NAME
 
 npg_pipeline::pluggable::harold
-
-=head1 VERSION
-
-$LastChangedRevision: 18687 $
 
 =head1 SYNOPSIS
 
@@ -370,10 +360,11 @@ __END__
 =head1 AUTHOR
 
 Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Researcg Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

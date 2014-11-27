@@ -1,12 +1,5 @@
-#############
-# $Id: seq_alignment.pm 17667 2013-10-28 11:22:35Z kt6 $
-# Created By: David K. Jackson
-# Last Maintained By: $Author: kt6 $
-# Created On: 2013, March
-# Last Changed On: $Date: 2013-10-28 11:22:35 +0000 (Mon, 28 Oct 2013) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/branches/prerelease-45.0/lib/npg_pipeline/archive/file/generation/rna_seq_alignment.pm $
-
 package npg_pipeline::archive::file::generation::seq_alignment;
+
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
@@ -23,7 +16,7 @@ use npg_common::roles::software_location;
 use st::api::lims;
 extends q{npg_pipeline::base};
 
-Readonly::Scalar our $VERSION  => do { my ($r) = q$LastChangedRevision: 17667 $ =~ /(\d+)/mxs; $r; };
+our $VERSION  = '0';
 
 Readonly::Scalar our $DNA_ALIGNMENT_SCRIPT  => q{bam_alignment.pl};
 Readonly::Scalar our $NUM_THREADS  => q(12,16);
@@ -392,15 +385,11 @@ __END__
 
 npg_pipeline::archive::file::generation::seq_alignment
 
-=head1 VERSION
-
-$LastChangedRevision: 17667 $
-
 =head1 SYNOPSIS
 
-  my $oAfgfq = npg_pipeline::archive::file::generation::seq_alignment->new({
+  my $oAfgfq = npg_pipeline::archive::file::generation::seq_alignment->new(
     run_folder => $sRunFolder,
-  });
+  );
 
 =head1 DESCRIPTION
 
@@ -442,11 +431,11 @@ LSF job creation for seq alignment
 
 =head1 AUTHOR
 
-$Author: kt6 $
+David K. Jackson (david.jackson@sanger.ac.uk)
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 GRL, by David K. Jackson (david.jackson@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

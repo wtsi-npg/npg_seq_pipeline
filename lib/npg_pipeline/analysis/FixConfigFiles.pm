@@ -1,16 +1,8 @@
-#############
-# $Id: FixConfigFiles.pm 16574 2013-01-28 13:11:36Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2010-12-01
-# Last Changed On: $Date: 2013-01-28 13:11:36 +0000 (Mon, 28 Jan 2013) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/analysis/FixConfigFiles.pm $
-
 package npg_pipeline::analysis::FixConfigFiles;
+
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 16574 $ =~ /(\d+)/mxs; $r; };
 use File::Slurp;
 use XML::LibXML;
 
@@ -18,13 +10,11 @@ extends qw{npg_pipeline::base
            npg_tracking::illumina::run::folder::validation};
 with qw{npg_tracking::illumina::run::long_info};
 
+our $VERSION = '0';
+
 =head1 NAME
 
 npg_pipeline::analysis::FixConfigFiles
-
-=head1 VERSION
-
-$LastChangedRevision: 16574 $
 
 =head1 SYNOPSIS
 
@@ -282,8 +272,6 @@ __END__
 
 =item English -no_match_vars
 
-=item Readonly
-
 =back
 
 =head1 INCOMPATIBILITIES
@@ -292,11 +280,11 @@ __END__
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

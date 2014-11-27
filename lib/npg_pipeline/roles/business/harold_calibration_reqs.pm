@@ -1,19 +1,13 @@
-#############
-# $Id: harold_calibration_reqs.pm 18649 2014-10-06 12:23:28Z mg8 $
-# Created By: 
-# Last Maintained By: $Author: mg8 $
-# Created On: 
-# Last Changed On: $Date: 2014-10-06 13:23:28 +0100 (Mon, 06 Oct 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/roles/business/harold_calibration_reqs.pm $
-
 package npg_pipeline::roles::business::harold_calibration_reqs;
 
 use Moose::Role;
 use English qw{-no_match_vars};
 use Carp;
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18649 $ =~ /(\d+)/mxs; $r; };
+use Readonly;
 
 requires qw{directory_exists log};
+
+our $VERSION = '0';
 
 # hard-coded default parameters for running harold_calibration steps, can be overriden on the command line
 # whilst these can be overridden, they are requested to be how the pipeline operates, so we don't
@@ -26,10 +20,6 @@ Readonly::Scalar our $PB_DIRECTORY              => q{PB_cal};
 =head1 NAME
 
 npg_pipeline::roles::business::harold_calibration_reqs
-
-=head1 VERSION
-
-$LastChangedRevision: 18649 $
 
 =head1 SYNOPSIS
 
@@ -217,11 +207,11 @@ __END__
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

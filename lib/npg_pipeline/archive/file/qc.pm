@@ -1,17 +1,9 @@
-#############
-# $Id: qc.pm 18722 2014-11-17 15:52:45Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-07-30
-# Last Changed On: $Date: 2014-11-17 15:52:45 +0000 (Mon, 17 Nov 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/archive/file/qc.pm $
-
 package npg_pipeline::archive::file::qc;
 
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18722 $ =~ /(\d+)/mxs; $r; };
+use Readonly;
 use File::Spec;
 use List::MoreUtils qw{none};
 
@@ -19,6 +11,8 @@ use npg_qc::autoqc::autoqc;
 use npg_pipeline::lsf_job;
 
 extends q{npg_pipeline::base};
+
+our $VERSION = '0';
 
 Readonly::Scalar my $LSF_MEMORY_REQ          => 6000;
 Readonly::Scalar my $LSF_MEMORY_REQ_ADAPTER  => 1500;
@@ -240,19 +234,14 @@ __END__
 
 npg_pipeline::archive::file::qc
 
-=head1 VERSION
-
-$LastChangedRevision: 18722 $
-
 =head1 SYNOPSIS
 
   my @job_ids;
   eval {
-    $aqc = npg_pipeline::archive::file::qc->new({
+    $aqc = npg_pipeline::archive::file::qc->new(
       run_folder => $run_folder,
       qc_to_run => q{test},
-#      verbose => 1, # use if you want logging of the commands sent to LSF
-    });
+    );
     my $arg_refs = {
       required_job_completion  => q{-w'done(123) && done(321)'},
       timestamp                => q{20090709-123456},
@@ -306,7 +295,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 by Genome Research Limited
+Copyright (C) 2014 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

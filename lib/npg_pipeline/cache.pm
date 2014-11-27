@@ -1,8 +1,3 @@
-#############
-# Created By: Marina Gourtovaia
-# Created On: 12 March 2014
-#
-
 package npg_pipeline::cache;
 
 use Moose;
@@ -24,7 +19,7 @@ use npg::samplesheet;
 
 with 'npg_tracking::glossary::run';
 
-our $VERSION = do { my ($r) = q$LastChangedRevision: 15116 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 my $new_cache_dir;
 
@@ -33,10 +28,6 @@ my $new_cache_dir;
 =head1 NAME
 
 npg_pipeline::cache
-
-=head1 VERSION
-
- $LastChangedRevision: 15116 $
 
 =head1 SYNOPSIS
 
@@ -416,11 +407,11 @@ Creates or finds existing cache of lims and other metadata needed to run the pip
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 GRL, by Marina Gourtovaia (mg8@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

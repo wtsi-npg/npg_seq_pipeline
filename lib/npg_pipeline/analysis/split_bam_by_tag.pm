@@ -1,12 +1,5 @@
-#############
-# $Id: split_bam_by_tag.pm 18722 2014-11-17 15:52:45Z mg8 $
-# Created By: gq1
-# Last Maintained By: $Author: mg8 $
-# Created On: 2011-08-19
-# Last Changed On: $Date: 2014-11-17 15:52:45 +0000 (Mon, 17 Nov 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/analysis/split_bam_by_tag.pm $
-
 package npg_pipeline::analysis::split_bam_by_tag;
+
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
@@ -18,7 +11,8 @@ use npg_pipeline::lsf_job;
 
 extends q{npg_pipeline::base};
 
-Readonly::Scalar our $VERSION  => do { my ($r) = q$LastChangedRevision: 18722 $ =~ /(\d+)/mxs; $r; };
+our $VERSION  = '0';
+
 Readonly::Scalar our $DEFAULT_RESOURCES => 4;
 Readonly::Scalar our $JAVA_CMD          =>q{java};
 
@@ -133,15 +127,9 @@ __END__
 
 npg_pipeline::analysis::split_bam_by_tag
 
-=head1 VERSION
-
-$LastChangedRevision: 18722 $
-
 =head1 SYNOPSIS
 
-  my $oAfgfq = npg_pipeline::archive::file::generation::fastq_by_tag->new({
-    run_folder => $sRunFolder,
-  });
+  my $oAfgfq = npg_pipeline::archive::file::generation::fastq_by_tag->new(run_folder => $sRunFolder);
 
 =head1 DESCRIPTION
 
@@ -151,12 +139,7 @@ Object module which knows how to construct and submits the command line to LSF f
 
 =head2 generate - generates the bsub jobs and submits them for spliting the bam files by tag, returning an array of job_ids.
 
-  my @job_ids = $oAfgfq->generate({
-    required_job_completion} => q{-w (123 && 321)};
-    timestamp                => q{20090709-123456};
-    id_run                   => 1234;
- });
-
+  my @job_ids = $oAfgfq->generate({required_job_completion} => q{-w (123 && 321)}});
 
 =head1 DIAGNOSTICS
 
@@ -186,11 +169,11 @@ Object module which knows how to construct and submits the command line to LSF f
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2011 GRL, by Guoying Qi (gq1@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

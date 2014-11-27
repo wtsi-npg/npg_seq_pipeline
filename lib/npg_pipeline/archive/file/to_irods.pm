@@ -1,18 +1,12 @@
-#############
-# $Id: to_irods.pm 18739 2014-11-26 14:28:42Z mg8 $
-# Created By: gq1
-# Last Maintained By: $Author: mg8 $
-# Created On: 2010-09-23
-# Last Changed On: $Date: 2014-11-26 14:28:42 +0000 (Wed, 26 Nov 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/archive/file/to_irods.pm $
-
 package npg_pipeline::archive::file::to_irods;
+
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18739 $ =~ /(\d+)/mxs; $r; };
 
 extends qw{npg_pipeline::base};
+
+our $VERSION = '0';
 
 sub submit_to_lsf {
   my ($self, $arg_refs) = @_;
@@ -74,16 +68,12 @@ __END__
 
 npg_pipeline::archive::file::to_irods
 
-=head1 VERSION
-
-$LastChangedRevision: 18739 $
-
 =head1 SYNOPSIS
 
-  my $fsa = npg_pipeline::archive::file::to_irods->new({
-    run_folder => <run_folder>,
+  my $fsa = npg_pipeline::archive::file::to_irods->new(
+    run_folder => 'run_folder',
     timestamp => $sTimeStamp,
-  });
+  );
 
 =head1 DESCRIPTION
 
@@ -95,7 +85,7 @@ handler for submitting to LSF the archival bam files to irods
 returns an array of lsf job ids
 
   my @job_ids = $fsa->submit_to_lsf({
-    required_job_completion => <string of lsf job dependencies>,
+    required_job_completion => q[string of lsf job dependencies],
   });
 
 =head1 DIAGNOSTICS
@@ -112,8 +102,6 @@ returns an array of lsf job ids
 
 =item English -no_match_vars
 
-=item Readonly
-
 =back
 
 =head1 INCOMPATIBILITIES
@@ -122,11 +110,11 @@ returns an array of lsf job ids
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Guoying Qi (gq1@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -1,19 +1,15 @@
-###################
-# $Id$
-# Created By: Kate Taylor
-# Created On: 6th August 2014
-#
-
 package npg_pipeline::archive::file::generation::seqchksum_comparator;
 
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
 use File::Spec;
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision$ =~ /(\d+)/mxs; $r; };
-use npg_pipeline::lsf_job;
+use Readonly;
 
+use npg_pipeline::lsf_job;
 extends qw{npg_pipeline::base};
+
+our $VERSION = '0';
 
 Readonly::Scalar our $SEQCHKSUM_SCRIPT => q{npg_pipeline_seqchksum_comparator};
 
@@ -186,11 +182,11 @@ __END__
 
 =head1 AUTHOR
 
-$Author: kt6 $
+Kate Taylor
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 GRL, by Kate Taylor (kt6@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

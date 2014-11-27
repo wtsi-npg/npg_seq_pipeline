@@ -1,17 +1,10 @@
-#############
-# $Id: generation.pm 18687 2014-10-20 13:47:30Z mg8 $
-# Created By: ajb
-# Last Maintained By: $Author: mg8 $
-# Created On: 2009-07-09
-# Last Changed On: $Date: 2014-10-20 14:47:30 +0100 (Mon, 20 Oct 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/archive/folder/generation.pm $
-
 package npg_pipeline::archive::folder::generation;
+
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
 
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18687 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';;
 
 extends q{npg_pipeline::base};
 
@@ -174,15 +167,11 @@ __END__
 
 npg_pipeline::archive::folder::generation
 
-=head1 VERSION
-
-$LastChangedRevision: 18687 $
-
 =head1 SYNOPSIS
 
-  my $afg = npg_pipeline::archive::folder::generation->new({
+  my $afg = npg_pipeline::archive::folder::generation->new(
     run_folder => $sRunFolder,
-  });
+  );
 
 =head1 DESCRIPTION
 
@@ -212,8 +201,6 @@ Object module which knows how to construct the path and creates the archival dir
 
 =item English -no_match_vars
 
-=item Readonly
-
 =back
 
 =head1 INCOMPATIBILITIES
@@ -222,11 +209,11 @@ Object module which knows how to construct the path and creates the archival dir
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2010 GRL, by Andy Brown (ajb@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

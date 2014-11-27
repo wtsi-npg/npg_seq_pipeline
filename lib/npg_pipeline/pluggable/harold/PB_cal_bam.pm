@@ -1,29 +1,19 @@
-#############
-# $Id: PB_cal_bam.pm 18722 2014-11-17 15:52:45Z mg8 $
-# Created By: gq1
-# Last Maintained By: $Author: mg8 $
-# Created On: 2010-08-01
-# Last Changed On: $Date: 2014-11-17 15:52:45 +0000 (Mon, 17 Nov 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/pluggable/harold/PB_cal_bam.pm $
-
 package npg_pipeline::pluggable::harold::PB_cal_bam;
 
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18722 $ =~ /(\d+)/mxs; $r; };
+use Readonly;
 use File::Spec;
 
 use npg_pipeline::lsf_job;
 extends qw{npg_pipeline::pluggable::harold::post_qc_review};
 
+our $VERSION = '0';
+
 =head1 NAME
 
 npg_pipeline::pluggable::harold::PB_cal_bam
-
-=head1 VERSION
-
-$LastChangedRevision: 18722 $
 
 =head1 SYNOPSIS
 
@@ -375,7 +365,7 @@ sub _bam2fastqcheck_and_cached_fastq_command {
 
 =head2 seqchksum_comparator
 
-For each lane, job submitted which checks that the .seqchksum created in the illumin2bam step matches one created from all the plex/split product bam in archive directories
+Checks that the .seqchksum created in the illumin2bam step matches one created from all the plex/split product bam in archive directories
 
 =cut
 

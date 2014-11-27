@@ -1,11 +1,3 @@
-#############
-# $Id: bustard4pbcb.pm 18687 2014-10-20 13:47:30Z mg8 $
-# Created By: mg8
-# Last Maintained By: $Author: mg8 $
-# Created On: 30 January 2012
-# Last Changed On: $Date: 2014-10-20 14:47:30 +0100 (Mon, 20 Oct 2014) $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/lib/npg_pipeline/analysis/bustard4pbcb.pm $
-
 package npg_pipeline::analysis::bustard4pbcb;
 
 use Moose;
@@ -15,19 +7,16 @@ use Cwd;
 use File::Spec::Functions;
 use File::Slurp;
 use Try::Tiny;
+use Readonly;
 
-use Readonly; Readonly::Scalar our $VERSION => do { my ($r) = q$LastChangedRevision: 18687 $ =~ /(\d+)/mxs; $r; };
 use npg_pipeline::lsf_job;
-
 extends q{npg_pipeline::base};
+
+our $VERSION = '0';
 
 =head1 NAME
 
 npg_pipeline::analysis::bustard4pbcb
-
-=head1 VERSION
-
-$LastChangedRevision: 18687 $
 
 =head1 SYNOPSIS
 
@@ -196,7 +185,7 @@ sub _make_command {
 sub make {
   my ($self, $step_name, $required_job_completion) = @_;
   if (!$self->pipeline) {
-    croak 'To submit a job, pipelien accessor should be set';
+    croak 'To submit a job, pipeline accessor should be set';
   }
   my $working = getcwd();
   chdir $self->bustard_dir;
@@ -250,11 +239,12 @@ __END__
 
 =head1 AUTHOR
 
-$Author: mg8 $
+Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2012 GRL, by Marina Gourtovaia (mg8@sanger.ac.uk)
+Copyright (C) 2014 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
