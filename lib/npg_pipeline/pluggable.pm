@@ -379,8 +379,8 @@ sub main {
   };
   $self->_clear_env_vars();
   if ($error) {
-    ## no critic
-    print STDOUT $error;
+    ##no critic (InputOutput::RequireCheckedSyscalls)
+    print {*STDOUT} $error;
     croak $error;
   }
   return;
