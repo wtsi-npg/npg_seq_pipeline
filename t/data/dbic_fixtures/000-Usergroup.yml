@@ -1,0 +1,41 @@
+---
+- groupname: admin
+  id_usergroup: 1
+  is_public: 0
+  description: System Administrators
+- groupname: pipeline
+  id_usergroup: 2
+  is_public: 0
+  description: Pipeline Automation
+- groupname: results
+  id_usergroup: 3
+  is_public: 1
+  description: Analysis Notifications
+- groupname: events
+  id_usergroup: 4
+  is_public: 1
+  description: Run Notifications
+- groupname: loaders
+  id_usergroup: 5
+  is_public: 0
+  description: Machine Loaders
+- groupname: engineers
+  id_usergroup: 6
+  is_public: 0
+  description: Illumina Engineers
+- groupname: annotators
+  id_usergroup: 7
+  is_public: 0
+  description: Annotators
+- groupname: approvers
+  id_usergroup: 8
+  is_public: 0
+  description: Instrument Approvals
+- groupname: r+d
+  id_usergroup: 9
+  is_public: 0
+  description: Research & Development
+- groupname: errors
+  id_usergroup: 10
+  is_public: 0
+  description: mail on errors

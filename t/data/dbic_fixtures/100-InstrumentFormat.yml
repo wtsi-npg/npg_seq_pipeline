@@ -1,0 +1,24 @@
+---
+- id_instrument_format: 4
+  id_manufacturer: 10
+  model: HK
+  iscurrent: 1
+  default_tiles: 120
+  default_columns: 2
+  days_between_washes: 28
+  runs_between_washes: 1
+- id_instrument_format: 7
+  id_manufacturer: 10
+  model: cBot
+  iscurrent: 1
+  default_tiles: 0
+  default_columns: 0
+  days_between_washes: 30
+- id_instrument_format: 10
+  id_manufacturer: 10
+  model: HiSeq
+  iscurrent: 1
+  default_tiles: 32
+  default_columns: 4
+  days_between_washes: 28
+  runs_between_washes: 1

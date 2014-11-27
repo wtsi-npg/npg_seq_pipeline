@@ -1,0 +1,13 @@
+---
+- id_user_usergroup: 5
+  id_user: 4
+  id_usergroup: 4
+- id_user_usergroup: 23
+  id_user: 6
+  id_usergroup: 4
+- id_user_usergroup: 24
+  id_user: 12
+  id_usergroup: 4
+- id_user_usergroup: 25
+  id_user: 4
+  id_usergroup: 6

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sample api_version="0.6">
+  <id>42</id>
+  <name>TB 5492_04</name>
+  <study_id>206</study_id>
+  <ended></ended>
+  <properties>
+    <property>
+
+      <name>TAXON ID</name>
+      <value>1773</value>
+    </property>
+    <property>
+      <name>Sample Visibility</name>
+      <value>hold</value>
+    </property>
+
+    <property>
+      <name>Common Name</name>
+      <value>Mycobacterium tuberculosis</value>
+    </property>
+    <property>
+      <name>Public Name</name>
+      <value></value>
+
+    </property>
+    <property>
+      <name>Strain</name>
+      <value>TB 5492_04</value>
+    </property>
+    <property>
+      <name>Sample Description</name>
+
+      <value></value>
+    </property>
+    <property>
+      <name>SRA Sample Accession Number</name>
+      <value>ERS003719</value>
+    </property>
+    <property>
+      <name>Organism</name>
+
+      <value>Mycobacterium tuberculosis</value>
+    </property>
+    <property>
+      <name>GC content</name>
+      <value>neutral</value>
+    </property>
+  </properties>
+
+  <assets>
+    <asset href="/assets/59667" id="59667"/>
+    <asset href="/assets/59668" id="59668"/>
+  </assets>
+  <study_id>206</study_id>
+</sample>

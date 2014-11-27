@@ -1,0 +1,303 @@
+use strict;
+use warnings;
+use Test::More tests => 39;
+use Test::Exception;
+use Test::Differences;
+use File::Path qw/make_path/;
+use Cwd;
+use t::util;
+
+local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
+
+use_ok('npg_pipeline::archive::file::qc');
+
+my $util = t::util->new();
+my $conf_path = $util->conf_path();
+
+my $tmp = $util->temp_directory();
+$ENV{TEST_DIR} = $tmp;
+$ENV{TEST_FS_RESOURCE} = q{nfs_12};
+local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
+
+my $run_folder = $util->default_runfolder();
+my $pbcal = q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal};
+my $recalibrated = $util->analysis_runfolder_path() . q{/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal};
+
+my $arg_refs = {};
+my $job_dep = q{-w'done(123) && done(321)'};
+$arg_refs->{'required_job_completion'}  = $job_dep;;
+
+{
+   throws_ok {
+    npg_pipeline::archive::file::qc->new(
+      run_folder => $run_folder,
+      runfolder_path => $util->analysis_runfolder_path(),
+      recalibrated_path => $recalibrated,
+    )
+  } qr/Attribute[ ][(]qc_to_run[)][ ]is[ ]required/, q{croak on new as no qc_to_run provided};
+}
+
+{
+  my $aqc;
+  lives_ok {
+    $aqc = npg_pipeline::archive::file::qc->new(
+      run_folder => $run_folder,
+      runfolder_path => $util->analysis_runfolder_path(),
+      recalibrated_path => $recalibrated,
+      qc_to_run => q{adapter},
+      timestamp => q{20090709-123456},
+      conf_path => $conf_path,
+      is_indexed => 0,
+    );
+  } q{no croak on new, as required params provided};
+
+  $util->create_analysis({qc_dir => 1});
+
+  my @jids;
+  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  is(scalar@jids, 1, q{1 job id returned});
+
+  my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command($job_dep) );
+  my $expected_command = q{bsub -q srpipeline -R 'select[mem>1500] rusage[mem=1500,nfs_12=1]' -M1500 -R 'span[hosts=1]'  -n2 -w'done(123) && done(321)' -J 'qc_adapter_1234_20090709-123456[1-8]%64' -o } . $pbcal . q{/archive/qc/log/qc_adapter_1234_20090709-123456.%I.%J.out -E 'npg_pipeline_preexec_references' 'qc --check=adapter --id_run=1234 --file_type=bam --position=`echo $LSB_JOBINDEX` } . qq{--qc_in=$pbcal --qc_out=$pbcal/archive/qc'};
+
+  is( $bsub_command, $expected_command, q{generated bsub command is correct});
+}
+
+{
+  my $aqc;
+  lives_ok {
+    $aqc = npg_pipeline::archive::file::qc->new(
+      run_folder => $run_folder,
+      runfolder_path => $util->analysis_runfolder_path(),
+      recalibrated_path => $recalibrated,
+      qc_to_run => q{qX_yield},
+      timestamp => q{20090709-123456},
+      conf_path => $conf_path,
+      is_indexed => 0,
+    );
+  } q{no croak on new, as required params provided};
+
+  $util->create_analysis({qc_dir => 1});
+
+  my @jids;
+  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  is(scalar@jids, 1, q{1 job id returned});
+
+  my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command() );
+  my $expected_command = q{bsub -q srpipeline -R 'rusage[nfs_12=1]'  -J 'qc_qX_yield_1234_20090709-123456[1-8]%64' -o } . $pbcal . q{/archive/qc/log/qc_qX_yield_1234_20090709-123456.%I.%J.out 'qc --check=qX_yield --id_run=1234 --position=`echo $LSB_JOBINDEX` } . qq{--qc_in=$pbcal/archive --qc_out=$pbcal/archive/qc'};
+  is( $bsub_command, $expected_command, q{generated bsub command is correct});
+}
+
+{
+  my $aqc = npg_pipeline::archive::file::qc->new(
+      run_folder => $run_folder,
+      runfolder_path => $util->analysis_runfolder_path(),
+      recalibrated_path => $recalibrated,
+      qc_to_run => q{qX_yield},
+      lanes  => [4],
+      timestamp => q{20090709-123456},
+      conf_path => $conf_path,
+      is_indexed => 0,
+  );
+
+  $util->create_analysis({qc_dir => 1});
+
+  my @jids;
+  lives_ok { @jids = $aqc->run_qc($arg_refs) } q{no croak $aqc->run_qc()};
+  is(scalar @jids, 1, q{1 job id returned});
+
+  my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command($job_dep) );
+  my $expected_command = q{bsub -q srpipeline -R 'rusage[nfs_12=1]' -w'done(123) && done(321)' -J 'qc_qX_yield_1234_20090709-123456[4]%64' -o } . $pbcal . q{/archive/qc/log/qc_qX_yield_1234_20090709-123456.%I.%J.out 'qc --check=qX_yield --id_run=1234 --position=`echo $LSB_JOBINDEX` } . qq{--qc_in=$pbcal/archive --qc_out=$pbcal/archive/qc'};
+  is( $bsub_command, $expected_command, q{generated bsub command is correct});
+}
+
+{
+  my $args = {};
+  $args->{qc_dir} = [7,8];
+  $util->create_multiplex_analysis($args);
+  my $runfolder_path = $util->analysis_runfolder_path();
+
+  my $aqc = npg_pipeline::archive::file::qc->new(
+      run_folder => $run_folder,
+      runfolder_path => $runfolder_path,
+      recalibrated_path => $recalibrated,
+      lanes     => [7],
+      qc_to_run => q{qX_yield},
+      timestamp => q{20090709-123456},
+      conf_path => $conf_path,
+  );
+  is ($aqc->is_indexed, 1, 'run is indexed');
+  my @jids;
+  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  is(scalar@jids, 1, q{1 job id returned}); # but the lane is not a pool
+
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/1234_samplesheet_amended.csv';
+  $aqc = npg_pipeline::archive::file::qc->new(
+      run_folder => $run_folder,
+      runfolder_path => $runfolder_path,
+      recalibrated_path => $recalibrated,
+      lanes     => [8],
+      qc_to_run => q{qX_yield},
+      timestamp => q{20090709-123456},
+      conf_path => $conf_path,
+  );
+
+  @jids = ();
+  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  is(scalar@jids, 2, q{2 job ids returned}); # the lane is a pool
+
+  $aqc = npg_pipeline::archive::file::qc->new(
+      run_folder => $run_folder,
+      runfolder_path => $runfolder_path,
+      recalibrated_path => $recalibrated,
+      lanes     => [8],
+      qc_to_run => q{ref_match},
+      timestamp => q{20090709-123456},
+      conf_path => $conf_path,
+  );
+  my $indexed = 1;
+  my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command($job_dep, $indexed) );
+  my $expected_command = q{bsub -q srpipeline -R 'select[mem>6000] rusage[mem=6000,nfs_12=1]' -M6000 -w'done(123) && done(321)' -J 'qc_ref_match_1234_20090709-123456[8000,8154]%8' -o } . $pbcal . q{/archive/qc/log/qc_ref_match_1234_20090709-123456.%I.%J.out -E 'npg_pipeline_preexec_references' 'qc --check=ref_match --id_run=1234 --position=`echo $LSB_JOBINDEX/1000 | bc` --tag_index=`echo $LSB_JOBINDEX%1000 | bc` --qc_in=} . $pbcal . q{/archive/lane`echo $LSB_JOBINDEX/1000 | bc` --qc_out=} . $pbcal . q{/archive/lane`echo $LSB_JOBINDEX/1000 | bc`/qc'};
+  is( $bsub_command, $expected_command, q{generated bsub command is correct});
+
+  $util->remove_staging;
+}
+
+{
+  $util->create_multiplex_analysis({qc_dir => [7],});
+  my $runfolder_path = $util->analysis_runfolder_path();
+
+  my $aqc = npg_pipeline::archive::file::qc->new(
+      run_folder => $run_folder,
+      runfolder_path => $runfolder_path,
+      recalibrated_path => $recalibrated,
+      lanes     => [7],
+      qc_to_run => q{insert_size},
+      timestamp => q{20090709-123456},
+      conf_path => $conf_path,
+      repository => 't/data/sequence',
+  );
+  is ($aqc->is_indexed, 1, 'run is indexed');
+  my @jids;
+  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  is(scalar @jids, 1, q{1 job ids returned}); # but the lane is not a pool
+
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14353.csv';
+
+  $aqc = npg_pipeline::archive::file::qc->new(
+      id_run => 14353,
+      run_folder => $run_folder,
+      runfolder_path => $util->analysis_runfolder_path(),
+      recalibrated_path => $recalibrated,
+      lanes     => [1],
+      qc_to_run => q{sequence_error},
+      timestamp => q{20090709-123456},
+      conf_path => $conf_path,
+      is_indexed => 0,
+  );
+
+  @jids = undef;
+  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  is(scalar @jids, 1, q{1 job id returned});
+  
+  $util->remove_staging;
+}
+
+{
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14353.csv';
+  my $id_run = 14353;
+
+  my $qc = npg_pipeline::archive::file::qc->new(
+      id_run => $id_run,
+      qc_to_run => 'some_check',
+      is_indexed => 1
+  );
+  throws_ok {$qc->_can_run(1)} qr/some_check check does not exist/,
+    'error trying to check ability to run for non-existing check';
+
+  $qc = npg_pipeline::archive::file::qc->new(
+      id_run => $id_run,
+      qc_to_run => 'tag_metrics',
+      is_indexed => 1
+  );
+  ok( $qc->_can_run(1),    q{lane is indexed - run tag metrics on a lane} );
+  ok( !$qc->_can_run(1,1), q{lane is indexed - do not run tag metrics on a plex} );
+
+  $qc = npg_pipeline::archive::file::qc->new(
+      id_run => $id_run,
+      qc_to_run => 'tag_metrics',
+      is_indexed => 0
+  );
+  ok( !$qc->_can_run(1),   q{run is not indexed - do not run tag metrics on a lane} );
+  ok( !$qc->_can_run(1,1), q{run is not indexed - do not run tag metrics on a plex} );
+
+  mkdir join q[/], $tmp, 'lane1';
+  mkdir join q[/], $tmp, 'lane1', 'qc';
+  mkdir join q[/], $tmp, 'qc';
+
+  $qc = npg_pipeline::archive::file::qc->new(
+      id_run       => $id_run,
+      qc_to_run    => 'gc_bias',
+      repository   => 't',
+      is_indexed   => 1,
+      archive_path => $tmp,
+  );
+  ok( !$qc->_can_run(1),  q{lane is indexed - do not run gcbias on a lane} );
+  ok( $qc->_can_run(1,1), q{lane is indexed - run gcbias on a plex} );
+
+  $qc = npg_pipeline::archive::file::qc->new(
+      id_run => $id_run,
+      qc_to_run => 'gc_bias',
+      repository => 't',
+      is_indexed => 0,
+      archive_path => $tmp,
+  );
+  ok( $qc->_can_run(1),   q{run is not indexed - run gcbiason a lane} );
+  ok( !$qc->_can_run(1,1),q{run is not indexed - do not run gcbias on a plex} );
+}
+
+{
+  my $rf_name = '140915_HS34_14043_A_C3R77ACXX';
+  my $rf_path = join q[/], $tmp, $rf_name;
+  mkdir $rf_path;
+  my $analysis_dir = join q[/], $rf_path, 'Data', 'Intencities', 'BAM_basecalls_20141013-161026';
+  my $archive_dir = join q[/], $analysis_dir, 'no_cal', 'archive';
+  my $qc_dir = join q[/], $archive_dir, 'qc';
+  my $lane6_dir = join q[/], $archive_dir, 'lane6';
+  my $lane6_qc_dir = join q[/], $lane6_dir, 'qc';
+  
+  make_path($qc_dir);
+  make_path($lane6_qc_dir);
+
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14043.csv';
+
+  my $init = {
+      id_run => 14043,
+      run_folder => $rf_name,
+      runfolder_path => $rf_path,
+      bam_basecall_path => $analysis_dir,
+      archive_path => $archive_dir,
+      qc_to_run => q{sequence_error},
+      conf_path => $conf_path,
+      is_indexed => 1,
+      repository => q[t],
+      qc_to_run => q[genotype],
+  };
+
+  my $qc = npg_pipeline::archive::file::qc->new($init);
+  ok ($qc->_can_run(1), 'ref repository not available - genotype check _can_run defaults to true');
+  $init->{'repository'} = getcwd() . '/t/data/qc';
+  $qc = npg_pipeline::archive::file::qc->new($init);
+  ok ($qc->_can_run(1), 'genotype check can run for a non-indexed lane');
+  ok (!$qc->_can_run(6), 'genotype check cannot run for an indexed lane');
+  ok ($qc->_can_run(6, 0), 'genotype check can run for tag 0 (the only plex is a human sample)');
+  ok ($qc->_can_run(6, 1), 'genotype check can run for tag 1 (human sample)');
+  ok (!$qc->_can_run(6, 168), 'genotype check cannot run for a spiked phix tag');
+}
+
+1;

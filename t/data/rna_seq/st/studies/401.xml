@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<study api_version="0.6">
+  <id>401</id>
+  <name>Acute Lymphoblastic Leukemia</name>
+  <active>true</active>
+  <user_id>145</user_id>
+  <followers>
+    <follower>
+      <login>las</login>
+      <email>las@sanger.ac.uk</email>
+      <name>Lucy Stebbings</name>
+      <id>21</id>
+    </follower>
+    <follower>
+      <login>ep7</login>
+      <email>ep7@sanger.ac.uk</email>
+      <name>Elli Papaemmanuil</name>
+      <id>416</id>
+    </follower>
+  </followers>
+  <managers>
+    <manager>
+      <login>sm2</login>
+      <email>sm2@sanger.ac.uk</email>
+      <name>Stuart McLaren</name>
+      <id>145</id>
+    </manager>
+  </managers>
+  <owners>
+    <owner>
+      <login>sm2</login>
+      <email>sm2@sanger.ac.uk</email>
+      <name>Stuart McLaren</name>
+      <id>145</id>
+    </owner>
+  </owners>
+  <!-- Family has been deprecated -->
+  <family_id></family_id>
+  <created_at>2009-11-20 17:10:46 +0000</created_at>
+  <updated_at>2012-11-26 14:15:19 +0000</updated_at>
+  <descriptors>
+    <descriptor>
+      <name>Study description</name>
+      <value>Agilent whole exome hybridisation capture will be performed on genomic DNA derived from Acute Lymphoblastic Leukemia samples and matched normal DNA from the same patients. Three lanes of Illumina GA sequencing will be performed on the resulting exome libraries and mapped build 37 of the human reference genome to facilitate the identification of novel cancer genes. In addition, 500bp, NO_PCR total genomic libraries will be prepared from the same samples and five lanes of Illumina GA sequencing will be analysed to characterise genome wide, somatically acquired structural variation.
+</value>
+    </descriptor>
+    <descriptor>
+      <name>Does this study contain samples that are contaminated with human DNA which must be removed prior to analysis?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>Does this study require the removal of X chromosome and autosome sequence?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>ENA Project ID</name>
+      <value>PRJEB9</value>
+    </descriptor>
+    <descriptor>
+      <name>Abstract</name>
+      <value>Cancer is driven by mutation. Illumina GA massively parallel sequencing technology will be applied to Agilent exome hybridisation capture libraries and total genomic paired-end libraries from matched human Acute Lymphoblastic Leukemia samples. Bespoke algorithms are being developed to identify the somatically acquired structural variants, point mutations, insertions and deletions in these samples. This project will give unprecedented insights into mutational processes, cellular repair pathways and gene networks associated with Acute Lymphoblastic Leukemia development.
+</value>
+    </descriptor>
+    <descriptor>
+      <name>Title</name>
+      <value>Acute Lymphoblastic Leukemia Sequencing</value>
+    </descriptor>
+    <descriptor>
+      <name>ENA Study Accession Number</name>
+      <value>EGAS00001000058</value>
+    </descriptor>
+    <descriptor>
+      <name>Study Visibility</name>
+      <value>Hold</value>
+    </descriptor>
+    <descriptor>
+      <name>Do any of the samples in this study contain human DNA?</name>
+      <value>Yes</value>
+    </descriptor>
+    <descriptor>
+      <name>Are all the samples to be used in this study commercially available, unlinked anonymised cell-lines?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>Study name abbreviation</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>What is the data release strategy for this study?</name>
+      <value>managed</value>
+    </descriptor>
+    <descriptor>
+      <name>Will you be using WTSI's standard access agreement?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>How is the data release to be timed?</name>
+      <value>standard</value>
+    </descriptor>
+    <descriptor>
+      <name>Reason for delaying release</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Delay for</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Alignments in BAM</name>
+      <value>true</value>
+    </descriptor>
+    <descriptor>
+      <name>Please explain the reason for delaying release (e.g., pre-existing collaborative agreement)</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Comment regarding data release timing and approval</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Policy</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Policy title</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>EGA DAC Accession Number</name>
+      <value>EGAC00001000012</value>
+    </descriptor>
+    <descriptor>
+      <name>EGA Policy Accession Number</name>
+      <value>EGAP00001000001</value>
+    </descriptor>
+    <descriptor>
+      <name>ArrayExpress Accession Number</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Has the delay period been approved by the data sharing committee for this project?</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>What is the reason for preventing data release?</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Has this been approved?</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Comment regarding prevention of data release and approval</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>SNP study ID</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>SNP parent study ID</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Number of gigabases per sample (minimum 0.15)</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>HMDMC approval number</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Study Type</name>
+      <value>Cancer Genomics</value>
+    </descriptor>
+    <descriptor>
+      <name>What sort of study is this?</name>
+      <value>genomic sequencing</value>
+    </descriptor>
+    <descriptor>
+      <name>Reference Genome</name>
+      <value>Homo_sapiens (1000Genomes_hs37d5)</value>
+    </descriptor>
+    <descriptor>
+      <name>Faculty Sponsor</name>
+      <value>Peter Campbell</value>
+    </descriptor>
+  </descriptors>
+</study>

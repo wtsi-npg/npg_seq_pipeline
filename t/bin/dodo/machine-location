@@ -1,0 +1,3 @@
+#!/bin/bash
+echo 'default_gateway=172.17.126.1'
+echo 'site_iface=site'

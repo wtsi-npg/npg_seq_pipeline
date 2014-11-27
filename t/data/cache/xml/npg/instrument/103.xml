@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrument id_instrument="103" name="MS5" id_instrument_format="11" model="MiSeq" external_name="" serial="" iscurrent="1">
+
+<runs>
+<run id_run="12376" batch_id="26195" id_instrument="103" priority="1" actual_cycle_count="74" expected_cycle_count="74" is_paired="0" id_run_pair="" team="RAD" name="MS5_12376" id_run_status="164267" date="2014-03-12 09:13:40" id_run_status_dict="20" id_user="76" username="nh4" description="qc complete" loader="nh4" loading_date="2014-03-11"/>
+
+
+<run id_run="12368" batch_id="26166" id_instrument="103" priority="1" actual_cycle_count="164" expected_cycle_count="164" is_paired="0" id_run_pair="" team="RAD" name="MS5_12368" id_run_status="164299" date="2014-03-12 14:05:25" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="la8" loading_date="2014-03-10"/>
+
+
+<run id_run="12340" batch_id="26119" id_instrument="103" priority="1" actual_cycle_count="62" expected_cycle_count="62" is_paired="0" id_run_pair="" team="RAD" name="MS5_12340" id_run_status="164155" date="2014-03-10 14:58:25" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-03-06"/>
+
+
+<run id_run="12328" batch_id="26104" id_instrument="103" priority="1" actual_cycle_count="62" expected_cycle_count="62" is_paired="0" id_run_pair="" team="RAD" name="MS5_12328" id_run_status="163652" date="2014-03-05 22:40:30" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-03-05"/>
+
+
+<run id_run="12322" batch_id="26076" id_instrument="103" priority="1" actual_cycle_count="66" expected_cycle_count="66" is_paired="0" id_run_pair="" team="RAD" name="MS5_12322" id_run_status="163529" date="2014-03-04 22:08:02" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-03-04"/>
+
+
+<run id_run="12266" batch_id="25983" id_instrument="103" priority="1" actual_cycle_count="310" expected_cycle_count="310" is_paired="0" id_run_pair="" team="RAD" name="MS5_12266" id_run_status="163616" date="2014-03-05 16:44:51" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="lm4" loading_date="2014-02-25"/>
+
+
+<run id_run="12245" batch_id="25949" id_instrument="103" priority="1" actual_cycle_count="211" expected_cycle_count="215" is_paired="0" id_run_pair="" team="RAD" name="MS5_12245" id_run_status="162745" date="2014-02-26 17:16:41" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="tp1" loading_date="2014-02-24"/>
+
+
+<run id_run="12228" batch_id="25921" id_instrument="103" priority="1" actual_cycle_count="482" expected_cycle_count="482" is_paired="0" id_run_pair="" team="RAD" name="MS5_12228" id_run_status="162279" date="2014-02-23 08:42:58" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-02-21"/>
+
+
+<run id_run="12213" batch_id="25879" id_instrument="103" priority="1" actual_cycle_count="64" expected_cycle_count="64" is_paired="0" id_run_pair="" team="RAD" name="MS5_12213" id_run_status="162019" date="2014-02-21 00:53:17" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-02-20"/>
+
+
+<run id_run="12196" batch_id="25830" id_instrument="103" priority="1" actual_cycle_count="308" expected_cycle_count="308" is_paired="0" id_run_pair="" team="RAD" name="MS5_12196" id_run_status="161872" date="2014-02-19 15:17:39" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-02-17"/>
+
+
+<run id_run="12188" batch_id="25817" id_instrument="103" priority="1" actual_cycle_count="30" expected_cycle_count="30" is_paired="0" id_run_pair="" team="RAD" name="MS5_12188" id_run_status="161650" date="2014-02-17 15:43:16" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="mb12" loading_date="2014-02-17"/>
+
+
+<run id_run="12173" batch_id="25790" id_instrument="103" priority="1" actual_cycle_count="306" expected_cycle_count="306" is_paired="0" id_run_pair="" team="RAD" name="MS5_12173" id_run_status="161447" date="2014-02-15 19:07:19" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ems" loading_date="2014-02-14"/>
+
+
+<run id_run="12160" batch_id="25753" id_instrument="103" priority="1" actual_cycle_count="246" expected_cycle_count="246" is_paired="0" id_run_pair="" team="RAD" name="MS5_12160" id_run_status="161308" date="2014-02-14 15:44:10" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ems" loading_date="2014-02-13"/>
+
+
+<run id_run="12151" batch_id="25732" id_instrument="103" priority="1" actual_cycle_count="306" expected_cycle_count="306" is_paired="0" id_run_pair="" team="RAD" name="MS5_12151" id_run_status="161156" date="2014-02-13 18:40:44" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ems" loading_date="2014-02-12"/>
+
+
+<run id_run="12121" batch_id="25664" id_instrument="103" priority="1" actual_cycle_count="72" expected_cycle_count="72" is_paired="0" id_run_pair="" team="RAD" name="MS5_12121" id_run_status="163197" date="2014-03-03 09:31:46" id_run_status_dict="20" id_user="76" username="nh4" description="qc complete" loader="nh4" loading_date="2014-02-07"/>
+
+
+<run id_run="12116" batch_id="25660" id_instrument="103" priority="4" actual_cycle_count="60" expected_cycle_count="60" is_paired="0" id_run_pair="" team="C" name="MS5_12116" id_run_status="160612" date="2014-02-07 10:02:20" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mm7" loading_date="2014-02-06"/>
+
+
+<run id_run="12106" batch_id="25616" id_instrument="103" priority="4" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_12106" id_run_status="160564" date="2014-02-06 16:00:21" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="tp1" loading_date="2014-02-06"/>
+
+
+<run id_run="12101" batch_id="25588" id_instrument="103" priority="1" actual_cycle_count="60" expected_cycle_count="60" is_paired="0" id_run_pair="" team="RAD" name="MS5_12101" id_run_status="160512" date="2014-02-05 17:06:57" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="tp1" loading_date="2014-02-05"/>
+
+
+<run id_run="12096" batch_id="25575" id_instrument="103" priority="1" actual_cycle_count="60" expected_cycle_count="60" is_paired="0" id_run_pair="" team="RAD" name="MS5_12096" id_run_status="160430" date="2014-02-04 20:26:18" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="tp1" loading_date="2014-02-04"/>
+
+
+<run id_run="12084" batch_id="25559" id_instrument="103" priority="1" actual_cycle_count="60" expected_cycle_count="60" is_paired="0" id_run_pair="" team="RAD" name="MS5_12084" id_run_status="160358" date="2014-02-03 16:44:11" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="tp1" loading_date="2014-02-03"/>
+
+
+<run id_run="12058" batch_id="25521" id_instrument="103" priority="4" actual_cycle_count="60" expected_cycle_count="60" is_paired="0" id_run_pair="" team="RAD" name="MS5_12058" id_run_status="160063" date="2014-01-30 19:42:28" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="tp1" loading_date="2014-01-30"/>
+
+
+<run id_run="12024" batch_id="25424" id_instrument="103" priority="1" actual_cycle_count="514" expected_cycle_count="514" is_paired="0" id_run_pair="" team="RAD" name="MS5_12024" id_run_status="159602" date="2014-01-26 13:39:31" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-01-24"/>
+
+
+<run id_run="12016" batch_id="25413" id_instrument="103" priority="1" actual_cycle_count="68" expected_cycle_count="68" is_paired="0" id_run_pair="" team="RAD" name="MS5_12016" id_run_status="159433" date="2014-01-23 22:06:01" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-01-23"/>
+
+
+<run id_run="12012" batch_id="25402" id_instrument="103" priority="1" actual_cycle_count="68" expected_cycle_count="68" is_paired="0" id_run_pair="" team="RAD" name="MS5_12012" id_run_status="159310" date="2014-01-23 00:57:29" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-01-22"/>
+
+
+<run id_run="11996" batch_id="25375" id_instrument="103" priority="4" actual_cycle_count="271" expected_cycle_count="271" is_paired="0" id_run_pair="" team="RAD" name="MS5_11996" id_run_status="159402" date="2014-01-23 14:20:15" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="mq1" loading_date="2014-01-21"/>
+
+
+<run id_run="11992" batch_id="25356" id_instrument="103" priority="4" actual_cycle_count="270" expected_cycle_count="270" is_paired="0" id_run_pair="" team="RAD" name="MS5_11992" id_run_status="159094" date="2014-01-21 11:32:50" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="tp1" loading_date="2014-01-20"/>
+
+
+<run id_run="11985" batch_id="25321" id_instrument="103" priority="1" actual_cycle_count="514" expected_cycle_count="514" is_paired="0" id_run_pair="" team="RAD" name="MS5_11985" id_run_status="158937" date="2014-01-19 12:37:05" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-01-17"/>
+
+
+<run id_run="11975" batch_id="25303" id_instrument="103" priority="1" actual_cycle_count="316" expected_cycle_count="316" is_paired="0" id_run_pair="" team="RAD" name="MS5_11975" id_run_status="159129" date="2014-01-21 15:40:51" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="nh4" loading_date="2014-01-16"/>
+
+
+<run id_run="11974" batch_id="25302" id_instrument="103" priority="1" actual_cycle_count="0" expected_cycle_count="317" is_paired="0" id_run_pair="" team="RAD" name="MS5_11974" id_run_status="158715" date="2014-01-16 11:00:09" id_run_status_dict="5" id_user="76" username="nh4" description="run cancelled" loader="nh4" loading_date="2014-01-16"/>
+
+
+<run id_run="11968" batch_id="25279" id_instrument="103" priority="1" actual_cycle_count="70" expected_cycle_count="70" is_paired="0" id_run_pair="" team="RAD" name="MS5_11968" id_run_status="158597" date="2014-01-14 21:27:00" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-01-14"/>
+
+
+<run id_run="11965" batch_id="25276" id_instrument="103" priority="1" actual_cycle_count="80" expected_cycle_count="80" is_paired="0" id_run_pair="" team="RAD" name="MS5_11965" id_run_status="158523" date="2014-01-14 04:06:53" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-01-13"/>
+
+
+<run id_run="11961" batch_id="25259" id_instrument="103" priority="1" actual_cycle_count="30" expected_cycle_count="30" is_paired="0" id_run_pair="" team="RAD" name="MS5_11961" id_run_status="158491" date="2014-01-13 15:17:55" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="mb12" loading_date="2014-01-13"/>
+
+
+<run id_run="11948" batch_id="25251" id_instrument="103" priority="1" actual_cycle_count="514" expected_cycle_count="514" is_paired="0" id_run_pair="" team="RAD" name="MS5_11948" id_run_status="158353" date="2014-01-12 09:01:06" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-01-10"/>
+
+
+<run id_run="11927" batch_id="25197" id_instrument="103" priority="1" actual_cycle_count="0" expected_cycle_count="159" is_paired="0" id_run_pair="" team="RAD" name="MS5_11927" id_run_status="157957" date="2014-01-07 17:04:42" id_run_status_dict="5" id_user="87" username="ib3" description="run cancelled" loader="ib3" loading_date="2014-01-07"/>
+
+
+<run id_run="11926" batch_id="25197" id_instrument="103" priority="1" actual_cycle_count="0" expected_cycle_count="159" is_paired="0" id_run_pair="" team="RAD" name="MS5_11926" id_run_status="157903" date="2014-01-07 13:24:12" id_run_status_dict="5" id_user="87" username="ib3" description="run cancelled" loader="ib3" loading_date="2014-01-07"/>
+
+
+<run id_run="11920" batch_id="25176" id_instrument="103" priority="4" actual_cycle_count="170" expected_cycle_count="170" is_paired="0" id_run_pair="" team="RAD" name="MS5_11920" id_run_status="157820" date="2014-01-07 08:30:00" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2014-01-06"/>
+
+
+<run id_run="11890" batch_id="25148" id_instrument="103" priority="1" actual_cycle_count="328" expected_cycle_count="328" is_paired="0" id_run_pair="" team="RAD" name="MS5_11890" id_run_status="158189" date="2014-01-09 16:23:41" id_run_status_dict="20" id_user="76" username="nh4" description="qc complete" loader="nh4" loading_date="2014-01-02"/>
+
+
+<run id_run="11849" batch_id="25117" id_instrument="103" priority="1" actual_cycle_count="514" expected_cycle_count="514" is_paired="0" id_run_pair="" team="RAD" name="MS5_11849" id_run_status="156878" date="2013-12-22 08:26:40" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="ib3" loading_date="2013-12-20"/>
+
+
+<run id_run="11819" batch_id="25049" id_instrument="103" priority="1" actual_cycle_count="32" expected_cycle_count="32" is_paired="0" id_run_pair="" team="RAD" name="MS5_11819" id_run_status="156368" date="2013-12-17 18:41:34" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="mb12" loading_date="2013-12-17"/>
+
+
+<run id_run="11804" batch_id="25001" id_instrument="103" priority="1" actual_cycle_count="32" expected_cycle_count="32" is_paired="0" id_run_pair="" team="RAD" name="MS5_11804" id_run_status="156210" date="2013-12-16 20:07:49" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="mb12" loading_date="2013-12-16"/>
+
+</runs>
+
+<current_instrument_status id_instrument_status="23346" id_instrument="103" date="2013-08-30 08:02:34" id_instrument_status_dict="11" id_user="56" username="sh2" iscurrent="1" description="wash in progress" comment="" />
+<instrument_statuses>
+ <instrument_status id_instrument_status="23346" id_instrument="103" date="2013-08-30 08:02:34" id_instrument_status_dict="11" id_user="56" user="sh2" iscurrent="1" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="21179" id_instrument="103" date="2013-05-21 01:42:56" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="21173" id_instrument="103" date="2013-05-20 16:02:12" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="21172" id_instrument="103" date="2013-05-20 16:02:12" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="14917" id_instrument="103" date="2012-04-23 15:38:15" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+</instrument_statuses>
+<instrument_mods>
+ <instrument_mod id_instrument_mod="1096" id_instrument="103" type="MCS" revision="v2.1" date_added="2013-02-26 14:39:50" date_removed="" operator="mg19" iscurrent="1" />
+ <instrument_mod id_instrument_mod="1097" id_instrument="103" type="RTA" revision="1.17.25 low diversity" date_added="2013-02-26 14:42:30" date_removed="" operator="mg19" iscurrent="1" />
+ <instrument_mod id_instrument_mod="1101" id_instrument="103" type="RTA" revision="1.17.28 low diversity" date_added="2013-03-15 17:18:40" date_removed="" operator="mg19" iscurrent="1" />
+ <instrument_mod id_instrument_mod="1149" id_instrument="103" type="MCS" revision="2.3" date_added="2013-09-24 14:47:14" date_removed="" operator="mg19" iscurrent="1" />
+</instrument_mods>
+<designations>
+ <designation id_designation="2" description="R&amp;D" />
+ <designation id_designation="4" description="Accepted" />
+</designations>
+</instrument>
+

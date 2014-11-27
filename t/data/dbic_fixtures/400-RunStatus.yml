@@ -1,0 +1,115 @@
+---
+- date: 2007-06-05 10:04:23
+  id_run: 1
+  id_run_status: 1
+  id_run_status_dict: 1
+  id_user: 1
+  iscurrent: 0
+- date: 2007-06-05 10:07:42
+  id_run: 1
+  id_run_status: 2
+  id_run_status_dict: 2
+  id_user: 1
+  iscurrent: 0
+- date: 2007-06-05 10:16:55
+  id_run: 1
+  id_run_status: 3
+  id_run_status_dict: 4
+  id_user: 1
+  iscurrent: 1
+- date: 2010-06-21 14:32:12
+  id_run: 2
+  id_run_status: 4
+  id_run_status_dict: 2
+  id_user: 1
+  iscurrent: 1
+- date: 2010-05-12 12:21:11
+  id_run: 1204
+  id_run_status: 5
+  id_run_status_dict: 1
+  id_user: 1
+  iscurrent: 0
+- date: 2010-05-14 03:32:01
+  id_run: 1204
+  id_run_status: 6
+  id_run_status_dict: 2
+  id_user: 1
+  iscurrent: 0
+- date: 2010-06-01 18:00:00
+  id_run: 1204
+  id_run_status: 7
+  id_run_status_dict: 5
+  id_user: 1
+  iscurrent: 1
+- date: 2010-06-01 18:00:00
+  id_run: 4901
+  id_run_status: 8
+  id_run_status_dict: 2
+  id_user: 1
+  iscurrent: 0
+- date: 2010-07-21 14:42:12
+  id_run: 3
+  id_run_status: 9
+  id_run_status_dict: 2
+  id_user: 1
+  iscurrent: 1
+- id_run_status: 19
+  id_run: 5329
+  date: 2010-09-25 08:29:13
+  id_run_status_dict: 1
+  id_user: 10
+  iscurrent: 0
+- id_run_status: 30
+  id_run: 5329
+  date: 2010-09-25 18:29:45
+  id_run_status_dict: 2
+  id_user: 7
+  iscurrent: 1
+- id_run_status: 20
+  id_run: 5330
+  date: 2010-09-25 08:33:19
+  id_run_status_dict: 1
+  id_user: 10
+  iscurrent: 0
+- id_run_status: 29
+  id_run: 5330
+  date: 2010-09-25 14:49:37
+  id_run_status_dict: 2
+  id_user: 7
+  iscurrent: 1
+- id_run_status: 31
+  id_run: 4329
+  date: 2010-09-25 08:33:19
+  id_run_status_dict: 3
+  id_user: 10
+  iscurrent: 1
+- id_run_status: 32
+  id_run: 4330
+  date: 2010-09-25 14:49:37
+  id_run_status_dict: 6
+  id_user: 7
+  iscurrent: 1
+- id_run_status: 33
+  id_run: 95
+  date: 2010-08-25 12:49:37
+  id_run_status_dict: 1
+  id_user: 7
+  iscurrent: 1
+- id_run_status: 34
+  id_run: 5222
+  date: 2010-11-23 02:14:17
+  id_run_status_dict: 6
+  id_user: 7
+  iscurrent: 1
+- id_run_status: 35
+  id_run: 4999
+  date: 2010-11-23 02:14:17
+  id_run_status_dict: 6
+  id_user: 7
+  iscurrent: 1
+- id_run_status: 36
+  id_run: 3289
+  date: 2010-11-23 02:14:17
+  id_run_status_dict: 4
+  id_user: 7
+  iscurrent: 1

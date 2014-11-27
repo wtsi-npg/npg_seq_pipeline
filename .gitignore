@@ -1,0 +1,7 @@
+Build*
+!Build.PL
+MYMETA*
+_build/
+blib/
+*~
+

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="7928" batch_id="16915" id_instrument="86" expected_cycle_count="108" actual_cycle_count="108" priority="1" id_run_pair="0" is_paired="0" team="joint" id_instrument_format="10" flowcell_id="D0BMKACXX" folder_name="120504_HS22_07928_A_D0BMKACXX" folder_path_glob="/{export,nfs}/sf22/ILorHSany_sf22/*/" name="HS22_07928" loader="gkh" loading_date="2012-05-04" run_folder="120504_HS22_07928_A_D0BMKACXX">
+ <instrument id_instrument="86" name="HS22" id_instrument_format="10" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="62243" id_run="7928" tile_count="48" tracks="6" position="1" />
+<run_lane id_run_lane="62244" id_run="7928" tile_count="48" tracks="6" position="2" />
+<run_lane id_run_lane="62245" id_run="7928" tile_count="48" tracks="6" position="3" />
+<run_lane id_run_lane="62246" id_run="7928" tile_count="48" tracks="6" position="4" />
+<run_lane id_run_lane="62247" id_run="7928" tile_count="48" tracks="6" position="5" />
+<run_lane id_run_lane="62248" id_run="7928" tile_count="48" tracks="6" position="6" />
+<run_lane id_run_lane="62249" id_run="7928" tile_count="48" tracks="6" position="7" />
+<run_lane id_run_lane="62250" id_run="7928" tile_count="48" tracks="6" position="8" />
+</run_lanes>
+ <current_run_status id_run_status="105413" id_run="7928" date="2012-05-14 16:57:51" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_statuses>
+ <run_status id_run_status="105413" id_run="7928" date="2012-05-14 16:57:51" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_status id_run_status="105412" id_run="7928" date="2012-05-14 16:57:41" id_run_status_dict="12" id_user="7" username="pipeline" iscurrent="0" description="run archived" />
+ <run_status id_run_status="105411" id_run="7928" date="2012-05-14 16:54:11" id_run_status_dict="18" id_user="7" username="pipeline" iscurrent="0" description="archival in progress" />
+ <run_status id_run_status="105410" id_run="7928" date="2012-05-14 16:43:52" id_run_status_dict="17" id_user="81" username="pipeline" iscurrent="0" description="archival pending" />
+ <run_status id_run_status="105393" id_run="7928" date="2012-05-14 10:18:04" id_run_status_dict="26" id_user="81" username="pipeline" iscurrent="0" description="qc in progress" />
+ <run_status id_run_status="105305" id_run="7928" date="2012-05-11 05:05:21" id_run_status_dict="19" id_user="7" username="pipeline" iscurrent="0" description="qc review pending" />
+ <run_status id_run_status="105304" id_run="7928" date="2012-05-11 05:05:18" id_run_status_dict="9" id_user="7" username="pipeline" iscurrent="0" description="analysis complete" />
+ <run_status id_run_status="105272" id_run="7928" date="2012-05-09 23:54:32" id_run_status_dict="24" id_user="7" username="pipeline" iscurrent="0" description="secondary analysis in progress" />
+ <run_status id_run_status="105253" id_run="7928" date="2012-05-09 12:37:14" id_run_status_dict="7" id_user="7" username="pipeline" iscurrent="0" description="analysis in progress" />
+ <run_status id_run_status="105251" id_run="7928" date="2012-05-09 12:23:29" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="105252" id_run="7928" date="2012-05-09 12:23:29" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="0" description="analysis pending" />
+ <run_status id_run_status="105248" id_run="7928" date="2012-05-09 12:06:56" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete" />
+ <run_status id_run_status="105108" id_run="7928" date="2012-05-04 12:52:03" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="105106" id_run="7928" date="2012-05-04 11:49:37" id_run_status_dict="1" id_user="46" username="pipeline" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ <annotation id_run_annotation="29084" id_run="7928" id_annotation="26990" date="2012-05-04 16:28:58" id_user="57" username="lc2" comment="" attachment_name="" run_current_ok="1" current_cycle="4" />
+ <annotation id_run_annotation="29107" id_run="7928" id_annotation="26991" date="2012-05-05 16:17:11" id_user="57" username="lc2" comment="" attachment_name="" run_current_ok="1" current_cycle="27" />
+ <annotation id_run_annotation="29144" id_run="7928" id_annotation="27001" date="2012-05-06 16:51:12" id_user="57" username="lc2" comment="" attachment_name="" run_current_ok="1" current_cycle="53" />
+ <annotation id_run_annotation="29191" id_run="7928" id_annotation="27028" date="2012-05-07 17:47:04" id_user="11" username="tkb" comment="" attachment_name="" run_current_ok="1" current_cycle="61" />
+ <annotation id_run_annotation="29215" id_run="7928" id_annotation="27039" date="2012-05-08 10:44:32" id_user="9" username="ah1" comment="Just to note lanes 6 and 7 has poorer A intensities for C1 and C2 and poorer T intensities for C1. Both lanes have higher error rates for C2. " attachment_name="" run_current_ok="1" current_cycle="80" />
+ <annotation id_run_annotation="29219" id_run="7928" id_annotation="27043" date="2012-05-08 12:45:38" id_user="52" username="jb2" comment="CHW PUMP in west p failed (5.5.12 (10.15pm)). Room may have warmed up. Runs checked, and all look ok." attachment_name="" run_current_ok="" current_cycle="83" />
+ <annotation id_run_annotation="29249" id_run="7928" id_annotation="27052" date="2012-05-08 14:33:48" id_user="51" username="ips" comment="" attachment_name="" run_current_ok="1" current_cycle="85" />
+ <annotation id_run_annotation="29472" id_run="7928" id_annotation="27199" date="2012-05-14 16:43:41" id_user="81" username="jillian" comment="QC complete" attachment_name="" run_current_ok="" current_cycle="" />
+ </annotations>
+ <tags>
+   <tag id_tag="22" description="fc_slotA" />
+   <tag id_tag="43" description="loaded_r2" />
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="41" description="verified_fc" />
+   <tag id_tag="42" description="verified_r1" />
+   <tag id_tag="46" description="verified_r2" />
+ </tags>
+</run>

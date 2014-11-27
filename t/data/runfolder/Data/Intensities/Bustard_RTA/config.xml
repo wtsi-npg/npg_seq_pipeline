@@ -1,0 +1,208 @@
+<?xml version="1.0"?>
+<BaseCallAnalysis>
+  <Run Name="Bustard1.8.1a2_22-09-2010_RTA">
+    <BaseCallParameters>
+      <ChastityThreshold>0.600000</ChastityThreshold>
+      <Matrix Path="">
+        <AutoFlag>1</AutoFlag>
+        <AutoLane>4</AutoLane>
+
+        <Cycle>2</Cycle>
+        <CycleOffset>1</CycleOffset>
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>76</LastCycle>
+        <Read>1</Read>
+      </Matrix>
+
+      <Matrix Path="">
+        <AutoFlag>1</AutoFlag>
+        <AutoLane>4</AutoLane>
+        <Cycle>78</Cycle>
+        <CycleOffset>1</CycleOffset>
+        <FirstCycle>77</FirstCycle>
+
+        <LastCycle>84</LastCycle>
+        <Read>2</Read>
+      </Matrix>
+      <Matrix Path="">
+        <AutoFlag>1</AutoFlag>
+        <AutoLane>4</AutoLane>
+        <Cycle>86</Cycle>
+
+        <CycleOffset>1</CycleOffset>
+        <FirstCycle>85</FirstCycle>
+        <LastCycle>160</LastCycle>
+        <Read>3</Read>
+      </Matrix>
+      <MatrixElements />
+      <Phasing Path="">
+
+        <AutoFlag>1</AutoFlag>
+        <AutoLane>4</AutoLane>
+        <Cycle>1</Cycle>
+        <CycleOffset>0</CycleOffset>
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>76</LastCycle>
+
+        <Read>1</Read>
+      </Phasing>
+      <Phasing Path="">
+        <AutoFlag>1</AutoFlag>
+        <AutoLane>4</AutoLane>
+        <Cycle>77</Cycle>
+        <CycleOffset>0</CycleOffset>
+
+        <FirstCycle>77</FirstCycle>
+        <LastCycle>84</LastCycle>
+        <Read>2</Read>
+      </Phasing>
+      <Phasing Path="">
+        <AutoFlag>1</AutoFlag>
+        <AutoLane>4</AutoLane>
+
+        <Cycle>85</Cycle>
+        <CycleOffset>0</CycleOffset>
+        <FirstCycle>85</FirstCycle>
+        <LastCycle>160</LastCycle>
+        <Read>3</Read>
+      </Phasing>
+
+      <PhasingRestarts />
+      <PureBases>25</PureBases>
+      <QhgCompression>none</QhgCompression>
+      <SeqCompression>none</SeqCompression>
+      <Sig2Compression>gzip</Sig2Compression>
+      <SmtFilter>failed-chastity</SmtFilter>
+
+      <SmtRelation>le</SmtRelation>
+      <SmtThreshold>1.000000</SmtThreshold>
+    </BaseCallParameters>
+    <Cycles First="1" Last="160" Number="160" />
+    <Input Path="Intensities" />
+    <RunParameters>
+      <AutoCycleFlag>0</AutoCycleFlag>
+
+      <Barcode>
+        <Cycle>77</Cycle>
+        <Cycle>78</Cycle>
+        <Cycle>79</Cycle>
+        <Cycle>80</Cycle>
+        <Cycle>81</Cycle>
+
+        <Cycle>82</Cycle>
+        <Cycle>83</Cycle>
+        <Cycle>84</Cycle>
+      </Barcode>
+      <BasecallFlag>1</BasecallFlag>
+      <Compression>none</Compression>
+
+      <CompressionSuffix></CompressionSuffix>
+      <Deblocked>0</Deblocked>
+      <DebugFlag>0</DebugFlag>
+      <DirectionSuffix></DirectionSuffix>
+      <FirstRunOnlyFlag>0</FirstRunOnlyFlag>
+      <ImagingReads Index="1">
+        <FirstCycle>1</FirstCycle>
+
+        <LastCycle>76</LastCycle>
+        <RunFolder>100913_IL3_05275</RunFolder>
+      </ImagingReads>
+      <ImagingReads Index="2">
+        <FirstCycle>77</FirstCycle>
+        <LastCycle>84</LastCycle>
+        <RunFolder>100913_IL3_05275</RunFolder>
+
+      </ImagingReads>
+      <ImagingReads Index="3">
+        <FirstCycle>85</FirstCycle>
+        <LastCycle>160</LastCycle>
+        <RunFolder>100913_IL3_05275</RunFolder>
+      </ImagingReads>
+      <Instrument>IL3</Instrument>
+
+      <IparFlag>0</IparFlag>
+      <IterativeMatrixFlag>0</IterativeMatrixFlag>
+      <MakeFlag>1</MakeFlag>
+      <MaxCycle>160</MaxCycle>
+      <MinCycle>0</MinCycle>
+      <QTableVersion>PL14</QTableVersion>
+
+      <Reads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>76</LastCycle>
+        <RunFolder>100913_IL3_05275</RunFolder>
+      </Reads>
+      <Reads Index="2">
+        <FirstCycle>77</FirstCycle>
+
+        <LastCycle>84</LastCycle>
+        <RunFolder>100913_IL3_05275</RunFolder>
+      </Reads>
+      <Reads Index="3">
+        <FirstCycle>85</FirstCycle>
+        <LastCycle>160</LastCycle>
+        <RunFolder>100913_IL3_05275</RunFolder>
+
+      </Reads>
+      <RunFolder>100913_IL3_05275</RunFolder>
+      <RunFolderDate>100913</RunFolderDate>
+      <RunFolderId>5275</RunFolderId>
+      <SelectedFolders />
+      <SelectedTiles />
+      <Sig2></Sig2>
+
+      <Software Name="RTA" Version="1.8.70.0">
+        <Major>1</Major>
+        <Minor>8</Minor>
+        <Patch>70</Patch>
+        <Variant>.0</Variant>
+      </Software>
+      <Tiles />
+
+    </RunParameters>
+    <Software Name="Bustard" Version="1.8.1a2" />
+    <TileSelection>
+      <Lane Index="1">
+        <Sample>s</Sample>
+        <TileRange Max="120" Min="1" />
+      </Lane>
+      <Lane Index="2">
+
+        <Sample>s</Sample>
+        <TileRange Max="120" Min="1" />
+      </Lane>
+      <Lane Index="3">
+        <Sample>s</Sample>
+        <TileRange Max="120" Min="1" />
+      </Lane>
+      <Lane Index="4">
+
+        <Sample>s</Sample>
+        <TileRange Max="120" Min="1" />
+      </Lane>
+      <Lane Index="5">
+        <Sample>s</Sample>
+        <TileRange Max="120" Min="1" />
+      </Lane>
+      <Lane Index="6">
+
+        <Sample>s</Sample>
+        <TileRange Max="120" Min="1" />
+      </Lane>
+      <Lane Index="7">
+        <Sample>s</Sample>
+        <TileRange Max="120" Min="1" />
+      </Lane>
+      <Lane Index="8">
+
+        <Sample>s</Sample>
+        <TileRange Max="120" Min="1" />
+      </Lane>
+    </TileSelection>
+    <Time>
+      <Start>22-09-10 09:42:09 BST</Start>
+    </Time>
+    <User Name="RTA" />
+
+  </Run>
+</BaseCallAnalysis>
