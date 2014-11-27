@@ -3,8 +3,6 @@ use warnings;
 use Test::More;
 use English qw(-no_match_vars);
 
-local $ENV{PATH} = join q[:], q[t/bin], $ENV{PATH};
-
 eval {
   require Test::Distribution;
 };
@@ -12,7 +10,8 @@ eval {
 if($EVAL_ERROR) {
   plan skip_all => 'Test::Distribution not installed';
 } else {
-  Test::Distribution->import('not' => 'prereq'); # Having issues with Test::Dist seeing my PREREQ_PM :(
+  my @nots = qw(prereq pod);
+  Test::Distribution->import(only => [qw/versions description/], distversion => 1);
 }
 
 1;

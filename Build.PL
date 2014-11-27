@@ -1,34 +1,25 @@
-################
-# Created by: ajb
-# Maintainer: $Author: mg8 $ 
-# Created on: 2009-04-08
-# Last Changed: $Date: 2014-11-17 15:52:45 +0000 (Mon, 17 Nov 2014) $
-# Id: $Id: Build.PL 18722 2014-11-17 15:52:45Z mg8 $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/npg-pipeline/trunk/Build.PL $
-
 use strict;
 use warnings;
-use Module::Build;
+use npg_tracking::util::build;
 
-our $VERSION = do { my @r = (q$Revision: 18722 $ =~ /\d+/mxgs); sprintf '%d.'.'%03d' x $#r, @r };
-
-my $class = Module::Build->subclass(code => <<'EOF');
+my $class = npg_tracking::util::build->subclass(code => <<'EOF');
 
   sub process_data_files {
     my $self = shift;
-    `find data/config_files -type f | grep -v .svn | cpio -pdv --quiet blib`;
+    `find data/config_files -type f | cpio -pdv --quiet blib`;
     return;
   }
 EOF
 
 my $builder = $class->new(
-         module_name         => 'npg_pipeline',
-         dist_author         => q(NPG team <npg@sanger.ac.uk>),
-         dist_version        => $VERSION,
-         dist_abstract       => q[WTSI pluggable pipeline for Illumina sequencing post processing and QC],
-         license             => 'gpl',
+         'module_name'         => 'npg_seq_pipeline',
+         'dist_author'         => 'npg <npg@sanger.ac.uk>',
+         'dist_version'        => npg_tracking::util::build->git_tag(),
+         'dist_abstract'       => 'WTSI pluggable pipeline for Illumina sequencing post processing and QC',
+         'license'             => 'gpl',
+         'dist'                => { COMPRESS => 'gzip', SUFFIX => 'gz', },
 
-         requires            => {
+         'requires'            => {
           'autodie'               => 0,
           'Carp'                  => 1.04,
           'Cwd'                   => 0,
@@ -87,7 +78,7 @@ my $builder = $class->new(
           'npg::samplesheet'                                => 0,
          },
 
-         build_requires      => {
+         'build_requires'      => {
           'Digest::MD5'                 => 0,
           'File::Temp'                  => 0,
           'Sys::Hostname'               => 0,
@@ -98,12 +89,9 @@ my $builder = $class->new(
           'Test::More'                  => '0.8',
           'Test::Perl::Critic'          => 0,
           'YAML'                        => 0,
-          'npg_testing::db'             => 0,
-         },
 
-         configure_requires => {
-          'Readonly'                    => 0,
-          'Readonly::XS'                => 0,
+          'npg_testing::db'             => 0,
+          'npg_tracking::util::build'   => 0,
          },
 );
 
@@ -114,3 +102,5 @@ if ($builder->install_base()) {
   warn "WARNING: '--install_base' option is not given, 'data' element will not be installed\n\n";
 }
 $builder->create_build_script();
+
+1;
