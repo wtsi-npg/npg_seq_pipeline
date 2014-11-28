@@ -1,0 +1,93 @@
+---
+- external_name: cBot2
+  id_instrument: 49
+  id_instrument_format: 7
+  serial: ''
+  name: cBot2
+  iscurrent: 1
+  ipaddr:
+  instrument_comp:
+  mirroring_host:
+  staging_dir:
+  latest_contact: '2010-07-21 11:34:04'
+  percent_complete: 95
+- external_name: cBot1
+  id_instrument: 48
+  id_instrument_format: 7
+  serial: ''
+  name: cBot1
+  iscurrent: 1
+  ipaddr:
+  instrument_comp:
+  mirroring_host:
+  staging_dir:
+  latest_contact: '2010-05-11 13:34:04'
+  percent_complete: 40
+- external_name: eas15
+  id_instrument: 3
+  id_instrument_format: 4
+  ipaddr: 192.168.255.3
+  iscurrent: 0
+  name: IL1
+  serial: ''
+  instrument_comp: IL1win
+  mirroring_host:
+  staging_dir: t/data/gaii/staging/IL1/incoming
+  latest_contact:
+- external_name: EAS113
+  id_instrument: 8
+  id_instrument_format: 4
+  ipaddr: 192.168.255.10
+  iscurrent: 1
+  name: IL5
+  serial: ''
+  mirroring_host: sf-1-1-02
+  staging_dir: t/data/gaii/staging/IL5/incoming
+  latest_contact:
+- external_name: eas92
+  id_instrument: 6
+  id_instrument_format: 4
+  ipaddr: 192.168.255.6
+  iscurrent: 1
+  name: IL3
+  serial: ''
+  mirroring_host: sf-1-1-01
+  staging_dir: t/data/gaii/staging/IL3/incoming
+  latest_contact:
+- external_name: EAS126
+  id_instrument: 15
+  id_instrument_format: 4
+  ipaddr: 192.168.255.17
+  iscurrent: 1
+  name: IL12
+  serial: ''
+  instrument_comp: il12win
+  mirroring_host: sf-1-1-03
+  staging_dir: /staging/IL12/incoming
+  latest_contact: 2010-07-21 17:25:56
+  percent_complete:
+- external_name: eas37
+  id_instrument: 4
+  id_instrument_format: 4
+  ipaddr: 192.168.255.4
+  iscurrent: 1
+  name: IL2
+  serial: ''
+  latest_contact:
+- id_instrument: 67
+  name: HS8
+  id_instrument_format: 10
+  external_name: ''
+  serial: ''
+  iscurrent: 1
+  ipaddr: 
+  instrument_comp: HS8
+- id_instrument: 68
+  name: HS1
+  id_instrument_format: 10
+  external_name: ''
+  serial: ''
+  iscurrent: 1
+  ipaddr: 
+  instrument_comp: HS1
+

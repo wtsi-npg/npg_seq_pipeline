@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<run id_run="8033" batch_id="17216" id_instrument="99" expected_cycle_count="70" actual_cycle_count="70" priority="1" id_run_pair="0" is_paired="0" team="C" id_instrument_format="10" flowcell_id="D0W73ACXX" folder_name="120611_HS29_08033_A_D0W73ACXX" folder_path_glob="/{export,nfs}/sf39/ILorHSany_sf39/*/" name="HS29_08033" loader="sh2" loading_date="2012-06-11" run_folder="120611_HS29_08033_A_D0W73ACXX">
+ <instrument id_instrument="99" name="HS29" id_instrument_format="10" external_name="" serial="" iscurrent="1"/>
+ <run_lanes><run_lane id_run_lane="62901" id_run="8033" tile_count="48" tracks="6" position="1"/>
+<run_lane id_run_lane="62902" id_run="8033" tile_count="48" tracks="6" position="2"/>
+<run_lane id_run_lane="62903" id_run="8033" tile_count="48" tracks="6" position="3"/>
+<run_lane id_run_lane="62904" id_run="8033" tile_count="48" tracks="6" position="4"/>
+<run_lane id_run_lane="62905" id_run="8033" tile_count="48" tracks="6" position="5"/>
+<run_lane id_run_lane="62906" id_run="8033" tile_count="48" tracks="6" position="6"/>
+<run_lane id_run_lane="62907" id_run="8033" tile_count="48" tracks="6" position="7"/>
+<run_lane id_run_lane="62908" id_run="8033" tile_count="48" tracks="6" position="8"/>
+</run_lanes>
+ <current_run_status id_run_status="106967" id_run="8033" date="2012-06-28 12:42:22" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete"/>
+ <run_statuses>
+ <run_status id_run_status="106967" id_run="8033" date="2012-06-28 12:42:22" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete"/>
+ <run_status id_run_status="106966" id_run="8033" date="2012-06-28 12:42:12" id_run_status_dict="12" id_user="7" username="pipeline" iscurrent="0" description="run archived"/>
+ <run_status id_run_status="106964" id_run="8033" date="2012-06-28 12:12:25" id_run_status_dict="18" id_user="7" username="pipeline" iscurrent="0" description="archival in progress"/>
+ <run_status id_run_status="106960" id_run="8033" date="2012-06-28 11:58:08" id_run_status_dict="17" id_user="83" username="pipeline" iscurrent="0" description="archival pending"/>
+ <run_status id_run_status="106789" id_run="8033" date="2012-06-20 17:35:39" id_run_status_dict="26" id_user="83" username="pipeline" iscurrent="0" description="qc in progress"/>
+ <run_status id_run_status="106766" id_run="8033" date="2012-06-20 09:44:55" id_run_status_dict="19" id_user="62" username="pipeline" iscurrent="0" description="qc review pending"/>
+ <run_status id_run_status="106735" id_run="8033" date="2012-06-18 16:35:08" id_run_status_dict="8" id_user="62" username="pipeline" iscurrent="0" description="analysis on hold"/>
+ <run_status id_run_status="106694" id_run="8033" date="2012-06-15 20:28:56" id_run_status_dict="24" id_user="7" username="pipeline" iscurrent="0" description="secondary analysis in progress"/>
+ <run_status id_run_status="106686" id_run="8033" date="2012-06-15 16:21:52" id_run_status_dict="7" id_user="7" username="pipeline" iscurrent="0" description="analysis in progress"/>
+ <run_status id_run_status="106667" id_run="8033" date="2012-06-14 18:42:01" id_run_status_dict="24" id_user="7" username="pipeline" iscurrent="0" description="secondary analysis in progress"/>
+ <run_status id_run_status="106662" id_run="8033" date="2012-06-14 17:37:22" id_run_status_dict="7" id_user="7" username="pipeline" iscurrent="0" description="analysis in progress"/>
+ <run_status id_run_status="106660" id_run="8033" date="2012-06-14 17:21:41" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored"/>
+ <run_status id_run_status="106661" id_run="8033" date="2012-06-14 17:21:41" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="0" description="analysis pending"/>
+ <run_status id_run_status="106659" id_run="8033" date="2012-06-14 16:53:14" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete"/>
+ <run_status id_run_status="106563" id_run="8033" date="2012-06-11 18:58:04" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress"/>
+ <run_status id_run_status="106531" id_run="8033" date="2012-06-11 13:49:49" id_run_status_dict="1" id_user="56" username="pipeline" iscurrent="0" description="run pending"/>
+ </run_statuses>
+ <annotations>
+ <annotation id_run_annotation="30156" id_run="8033" id_annotation="27732" date="2012-06-12 14:38:43" id_user="33" username="ajw" comment="" attachment_name="" run_current_ok="1" current_cycle="18"/>
+ <annotation id_run_annotation="30175" id_run="8033" id_annotation="27743" date="2012-06-13 15:25:51" id_user="33" username="ajw" comment="" attachment_name="" run_current_ok="1" current_cycle="45"/>
+ <annotation id_run_annotation="30189" id_run="8033" id_annotation="27751" date="2012-06-14 15:51:21" id_user="33" username="ajw" comment="" attachment_name="" run_current_ok="1" current_cycle="69"/>
+ <annotation id_run_annotation="30207" id_run="8033" id_annotation="27757" date="2012-06-15 16:24:09" id_user="62" username="dj3" comment="MiSeq like TraDIS recipe: read 1 follows dark cycles and so should be normal complexity genomic sequence, read 2 strips back and then sequences transposon sequence, read 3 is the index read.  Read 2 seems to have been treated like a normal reverse read and so matrix was calculated for it and sued - this caused problems for lanes 2,3,5,6,7 most noticeably in the index read 3 where we thing the read 2 matrix would have also been used.  Kicking off analysis afresh with OLB option - should notice the control lane and so use matrices from that...." attachment_name="" run_current_ok="" current_cycle=""/>
+ <annotation id_run_annotation="30242" id_run="8033" id_annotation="27789" date="2012-06-18 12:25:13" id_user="62" username="dj3" comment="Did not use control lane but OLB analysis improved result anyway - deplexing approaching 80% on all lanes." attachment_name="" run_current_ok="" current_cycle=""/>
+ <annotation id_run_annotation="30252" id_run="8033" id_annotation="27795" date="2012-06-18 16:38:55" id_user="62" username="dj3" comment="Altered {runParameters,RunInfo,Data/Intensities/config}.xml files so that read 2 is marked as an index read rather than the reverse read. Kick off analysis with &quot;npg_pipeline_PB_cal_bam --verbose --olb --no_summary_link --no_status_updates --no_irods_archival --job_priority 90 --interactive --not_strip_bam_tag --id_run 8033&quot; and then alter illumina2bam jobs to add &quot; SEC_BC_SEQ=BC SEC_BC_QUAL=QT BC_SEQ=tr BC_QUAL=tq&quot; options before resuming it." attachment_name="" run_current_ok="" current_cycle=""/>
+ <annotation id_run_annotation="30260" id_run="8033" id_annotation="27802" date="2012-06-20 09:46:46" id_user="62" username="dj3" comment="Above OLB analysis (no control lane, treat reads 2 and 3 as index so that matrix from read 1 is used) seems to have worked well - deplexing near 99%." attachment_name="" run_current_ok="" current_cycle=""/>
+ <annotation id_run_annotation="30394" id_run="8033" id_annotation="27937" date="2012-06-28 11:12:34" id_user="83" username="rb11" comment="QC Finished" attachment_name="" run_current_ok="" current_cycle=""/>
+ </annotations>
+ <tags>
+   <tag id_tag="22" description="fc_slotA"/>
+   <tag id_tag="20" description="multiplex"/>
+   <tag id_tag="17" description="paired_read"/>
+   <tag id_tag="16" description="rta"/>
+   <tag id_tag="19" description="staging"/>
+   <tag id_tag="41" description="verified_fc"/>
+   <tag id_tag="42" description="verified_r1"/>
+ </tags>
+</run>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<batch>
+  <id>4361</id>
+  <status>released</status>
+  <lanes>
+    <lane position="1">
+      <hyb_buffer id="12345678987654321">
+        <control name="Super new phiX" id="98765432123456789">
+          <tag>
+            <index>168</index>
+            <expected_sequence>ACAACGCAAT</expected_sequence>
+          </tag>
+        </control>
+      </hyb_buffer>
+      <pool name="JB group 18" project_id="287" request_id="553302" id="236671" study_id="287" qc_state="">
+        <sample tag="1" library_id="236659" sample_id="9915">
+          <tag tag_id="42">
+
+            <index>1</index>
+            <expected_sequence>ATCACGTTAT</expected_sequence>
+            <tag_group_id>4</tag_group_id>
+          </tag>
+        </sample>
+        <sample tag="2" library_id="236660" sample_id="9916">
+          <tag tag_id="43">
+
+            <index>2</index>
+            <expected_sequence>CGATGTTTAT</expected_sequence>
+            <tag_group_id>4</tag_group_id>
+          </tag>
+        </sample>
+      </pool>
+    </lane>
+
+  </lanes>
+</batch>

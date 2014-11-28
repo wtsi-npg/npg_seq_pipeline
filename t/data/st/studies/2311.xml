@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<study api_version="0.6">
+  <id>2311</id>
+  <name>ZMP molecular phenotype</name>
+  <active>true</active>
+  <user_id>427</user_id>
+  <followers>
+    <follower>
+      <login>is1</login>
+      <email>is1@sanger.ac.uk</email>
+      <name>Ian Sealy</name>
+      <id>426</id>
+    </follower>
+  </followers>
+  <managers>
+    <manager>
+      <login>sm11</login>
+      <email>sm11@sanger.ac.uk</email>
+      <name>Sophie Messager</name>
+      <id>427</id>
+    </manager>
+  </managers>
+  <owners>
+    <owner>
+      <login>jec</login>
+      <email>jec@sanger.ac.uk</email>
+      <name>John Collins</name>
+      <id>68</id>
+    </owner>
+  </owners>
+  <!-- Family has been deprecated -->
+  <family_id></family_id>
+  <created_at>2012-08-01 09:25:10 +0100</created_at>
+  <updated_at>2012-08-01 09:43:23 +0100</updated_at>
+  <descriptors>
+    <descriptor>
+      <name>What is the data release strategy for this study?</name>
+      <value>open</value>
+    </descriptor>
+    <descriptor>
+      <name>Comment regarding data release timing and approval</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Are all the samples to be used in this study commercially available, unlinked anonymised cell-lines?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>Does this study contain samples that are contaminated with human DNA which must be removed prior to analysis?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>ArrayExpress Accession Number</name>
+      <value>E-ERAD-91</value>
+    </descriptor>
+    <descriptor>
+      <name>Please explain the reason for delaying release (e.g., pre-existing collaborative agreement)</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Delay for</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>ENA Study Accession Number</name>
+      <value>ERP001656</value>
+    </descriptor>
+    <descriptor>
+      <name>Policy</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Alignments in BAM</name>
+      <value>true</value>
+    </descriptor>
+    <descriptor>
+      <name>Number of gigabases per sample (minimum 0.15)</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>SNP study ID</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>How is the data release to be timed?</name>
+      <value>standard</value>
+    </descriptor>
+    <descriptor>
+      <name>Has the delay period been approved by the data sharing committee for this project?</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Reason for delaying release</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Comment regarding prevention of data release and approval</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Has this been approved?</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Study Visibility</name>
+      <value>Hold</value>
+    </descriptor>
+    <descriptor>
+      <name>Title</name>
+      <value>Transcriptome profiling of mutants from the zebrafish genome project</value>
+    </descriptor>
+    <descriptor>
+      <name>ENA Project ID</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Study description</name>
+      <value>Total RNA was extracted from morpholically abnormal and sibling wild type embryos identified by the Zebrafish Mutation Project (http://www.sanger.ac.uk/Projects/D_rerio/zmp/). The 3prime end of fragmented RNA was pulled down using polyToligos attached to magnetic beads, reverse transcribed, made into Illumina libraries and sequenced using IlluminaHiSeq paired-end sequencing. Protocol: Total RNA was extracted from mouse embryos using Trizol and DNase treated. Chemically fragmented RNA was enriched for the 3prime ends by pulled down using an anchored polyToligo attached to magnetic beads. An RNA oligo comprising part of the Illumina adapter 2 was ligated to the 5prime end of the captured RNA and the RNA was eluted from the beads. Reverse transcription was primed with an anchored polyToligo with part of Illumina adapter 1 at the 5prime end followed by 4 random bases, then an A, C or G base, then one of twelve5 base indexing tags and 14 T bases. An Illumina library with full adapter sequence was produced by 15 cycles of PCR. 
+
+This data is part of a pre-publication release. For information on the proper use of pre-publication data shared by the Wellcome Trust Sanger Institute (including details of any publication moratoria), please see http://www.sanger.ac.uk/datasharing/
+</value>
+    </descriptor>
+    <descriptor>
+      <name>EGA Policy Accession Number</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>HMDMC approval number</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>What is the reason for preventing data release?</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Do any of the samples in this study contain human DNA?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>Abstract</name>
+      <value>Paired-end sequence data from the IlluminaHiSeq was prepared from mutant and wild type zebrafish embryos from the Zebrafish Mutation Project for transcriptome profiling</value>
+    </descriptor>
+    <descriptor>
+      <name>Does this study require the removal of X chromosome and autosome sequence?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>SNP parent study ID</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>EGA DAC Accession Number</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Will you be using WTSI's standard access agreement?</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Study name abbreviation</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>What sort of study is this?</name>
+      <value>transcriptomics</value>
+    </descriptor>
+    <descriptor>
+      <name>Study Type</name>
+      <value>Transcriptome Analysis</value>
+    </descriptor>
+    <descriptor>
+      <name>Reference Genome</name>
+      <value>Danio_rerio (zv9)</value>
+    </descriptor>
+    <descriptor>
+      <name>Faculty Sponsor</name>
+      <value>Derek Stemple</value>
+    </descriptor>
+  </descriptors>
+</study>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<study api_version="0.6">
+  <id>404</id>
+  <name>Rapid high-resolution QTL mapping in yeast</name>
+  <active>true</active>
+  <user_id>111</user_id>
+  <managers>
+    <manager>
+
+      <login>jws</login>
+      <email>jws@sanger.ac.uk</email>
+      <name>James Stalker</name>
+      <id>82</id>
+    </manager>
+  </managers>
+  <owners>
+
+    <owner>
+      <login>lp2</login>
+      <email>lp2@sanger.ac.uk</email>
+      <name>Leopold Parts</name>
+      <id>111</id>
+    </owner>
+  </owners>
+
+  <!-- Family has been deprecated -->
+  <family_id></family_id>
+  <created_at>2009-12-01 14:55:03 +0000</created_at>
+  <updated_at>2009-12-01 16:30:00 +0000</updated_at>
+  <descriptors>
+    <descriptor>
+      <name>SAC sponsor</name>
+
+      <value>Richard Durbin</value>
+    </descriptor>
+    <descriptor>
+      <name>Study description</name>
+      <value>Sequencing DNA from an entire pool of segregants before and after a selection step to map alleles responsible for increased growth in a restrictive condition.</value>
+    </descriptor>
+    <descriptor>
+
+      <name>Does this study contain samples that are contaminated with human DNA which must be removed prior to analysis?</name>
+      <value>no</value>
+    </descriptor>
+    <descriptor>
+      <name>SRA Study ID</name>
+      <value>0</value>
+    </descriptor>
+
+    <descriptor>
+      <name>Abstract</name>
+      <value>Crosses between strains with different properties provide a powerful model for understanding the natural genetic variation underlying the complex architecture of quantitative traits. However, there are two major limitations to the classical linkage analysis: long linkage intervals, and large labour requirements for genotyping and phenotyping. Here, we propose to develop a novel approach to map QTLs rapidly and in narrow intervals using massively parallel sequencing. We plan to do this by crossing two wild isolates of baker&#8217;s yeast Saccharomyces cerevisiae, generating a random population of segregants by mass sporulation, and observing the change of allele frequency in this  population when selection is applied. We previously sequenced 72 strains under the Saccharomyces Genome Resequencing Project, and are performing additional sequencing for high-quality assembled genomes, providing us with full genetic background for the two wild isolates. Our collaborators at University of Nottingham (Dr. Gianni Liti and Prof. Ed Louis) have performed the crossing experiment, as well as additional intercrosses for 10 generations, resulting in pools of 10 &#8211; 100 million segregants with over 500 crossovers per segregant. Four different stress conditions will be applied to the intercross pool to enrich for individuals with alleles that confer a positive fitness effect. Sequencing DNA from the pool before and after selection will allow us to find those alleles responsible for the increased fitness by assessing the change in their frequency. Previous studies on the same cross have found classical quantitative trait loci by genotyping a small number (~100) of individuals. We can dramatically improve on existing results by enriching for alleles that have modest fitness effects, and pinpointing the causative locus down to a few hundred bases due to the power of the selection experiment and the increased number of recombination events. Since variants between the strains also occur every few hundred bases, we should in many cases be able to localise to a single causative variant, or at least a single gene.</value>
+    </descriptor>
+    <descriptor>
+      <name>Title</name>
+
+      <value>Rapid high-resolution QTL mapping in yeast</value>
+    </descriptor>
+    <descriptor>
+      <name>Study Type</name>
+      <value>population genomics</value>
+    </descriptor>
+    <descriptor>
+
+      <name>Study Visibility</name>
+      <value>hold</value>
+    </descriptor>
+    <descriptor>
+      <name>SRA Study Accession Number</name>
+      <value></value>
+    </descriptor>
+
+    <descriptor>
+      <name>Do any of the samples in this study contain human DNA?</name>
+      <value>no</value>
+    </descriptor>
+    <descriptor>
+      <name>What sort of study is this?</name>
+      <value>genomic sequencing</value>
+
+    </descriptor>
+    <descriptor>
+      <name>What is the data release strategy for this study?</name>
+      <value>managed</value>
+    </descriptor>
+    <descriptor>
+      <name>How is the data release to be timed?</name>
+
+      <value>standard</value>
+    </descriptor>
+  </descriptors>
+</study>

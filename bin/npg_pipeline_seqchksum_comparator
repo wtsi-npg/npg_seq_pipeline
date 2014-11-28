@@ -1,0 +1,100 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+
+our $VERSION = '0';
+
+use npg_pipeline::archive::file::generation::seqchksum_comparator;
+
+npg_pipeline::archive::file::generation::seqchksum_comparator->new_with_options()->do_comparison();
+
+0;
+__END__
+
+=head1 NAME
+
+npg_pipeline_seqchsksum_comparator
+
+=head1 USAGE
+
+npg_pipeline_seqchksum_comparator --id_run=1234 --position=`echo $LSB_JOBINDEX` \
+  --archive_path=/tmp/ET_oOGYecL/nfs/sf45/IL2/analysis/123456_IL2_1234Data/Intensities/BAM_basecalls_20100907-142417/no_cal/archive \
+  --bam_basecall_path=/tmp/ET_oOGYecL/nfs/sf45/IL2/analysis/123456_IL2_1234Data/Intensities/BAM_basecalls_20100907-142417/' 
+
+=head1 REQUIRED ARGUMENTS
+
+=over
+
+id_run
+
+position
+
+archive_path
+
+bam_basecall_path 
+
+=back 
+
+=head1 OPTIONS
+
+=head1 EXIT STATUS
+
+0
+
+=head1 CONFIGURATION
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+Bamcat any plex/split bamfiles back together, perform a bamseqchksum and compare it with the one produced by the illumina2bam step, or croak if that has not been done.
+
+=head1 SUBROUTINES/METHODS
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item lib
+
+=item FindBin
+
+=item npg_pipeline::archive::file::seqchsksum_comparator
+
+=back
+
+=head1 INCOMPATIBILITIES
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 AUTHOR
+
+Kate Taylor
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2014 Genome Research Limited
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.

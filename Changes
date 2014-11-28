@@ -1,0 +1,1072 @@
+LIST OF CHANGES
+---------------
+
+release 47.0
+ - code moved to git repository
+
+release 46.3
+ - test fix
+
+release 46.2
+ - use samtools1.1 in seq_alignment P4 based analyses
+ - externally specified webcache and samplesheet are copied to the default location
+     inside the analysis folder
+ - seqchksum primary data comparison between final product and post illumina2bam
+ - run seqchksum and cluster count check at same time as post bam qc
+ - tag list files creation:
+     remove dedicated function
+     call the code from illumina2bam function
+     refactor into a stand-alone per-lane module
+     create these files in the metadata cache directory
+ - allow ref_match qc jobs to run 8 at a time (patched Bowtie ameliorates Lustre problem)
+ - use subtemplate/library base templates rather than monolith ones for seq_alignment P4
+ - do not run lane level pulldown_metrics job for a pool
+ - extra seq_alignment check that run is compatible with available P4 pipelines
+ - limit bam split by tag to lanes requested (fix)
+
+release 46.1
+ - for V4 HiSeq runs without a reference use bam_alignment.pl
+
+release 46.0
+ - remove redundant npg_pipeline::archive and npg_pipeline::roles::business::file_constructs modules
+ - remove dependency on tag files npg_common::roles::run::lane::tag_info role
+ - remove a callback for a phix flavour of the sequence error check (function is not in use)
+ - move options for the adapter detection job to where the job is generated
+ - error is thrown for non-existing qc check
+ - remove generation of tag files (tag list files remain)
+ - always create new tag list files
+ - remove unused configuration options
+ - remove --lane pipeline option (was used only in tests)
+ - move generation of the bam2fastqcheck_and_cached_fastq job out of a module for
+     job generation for autoqc functions
+ - remove unused scripts
+
+release 45.6
+ - remove mostly redundant npg_pipeline::roles::business::internal_info, move
+     tradis flag to the module creating illumina2bam job
+ - remove redundant npg_pipeline::roles::business::bustard_lsf_reqs
+
+release 45.5
+ - remove unused callbacks for old-style run and lane status updates
+ - remove a callback for lane completion files
+ - remove --no_status_updates pipeline option
+ - remove a prereq. script for checking for existence of files
+
+release 45.4
+ - omit PhiX sample name and study from strings generated for illumina2bam
+   BAM RG record generation (lane/pool level)
+ - ensure ref_match qc jobs run serially (to try to alleviate Lustre slow io 
+   on simultaneous file read bug)
+
+release 45.3
+ - write log files for status change to qc complete to outgoing
+
+release 45.2
+ - remove the following functions from function order:
+     status updates that do not create status files
+     redundant touch_completed_lane
+
+release 45.1
+ - bug fixes and code improvements in a callback for file-based statuses
+ - file-base status updates added to function order
+ - ensure P4 pipelines in seq_alignment are aborted if required analysis is 
+   not yet supported
+ - remove bam_alignment and rna_seq_alignment steps (having been replaced
+   by seq_alignment)
+ - run bwa mem P4 alignment pipeline for V4 HiSeq runs as well as HiSeqX runs
+
+release 45.0
+ - Use P4 based BWA Mem analysis in seq_alignment if HiSeqX run
+ - Use variable number of CPU slots for seq_alignment jobs (12 to 16)
+
+release 44.15
+ - Use soft filtering instead of hard filtering for spatial_filter
+ - generate bam_alignment autoqc json for RNAseq analyses
+ - don't try per plex "seq_alignment" analysis  or upstream tag qc 
+   if no indexing read
+ - callbacks for functions saving run and lane statuses to file
+
+release 44.14
+ - switched cluster count check to InterOp files
+ - reinstated bam_cluster_counter_check for HiSeqX
+
+release 44.13
+ - seq_alignment refinements:
+  + to RNAseq p4 script pass:
+   - library_type, fr-unstranded or fr-firststrand if library is dUTP
+   - AlignentFilter.jar location
+   - real PhiX fasta location
+  + add autoqc bam_flagstat json generation
+
+release 44.12
+ - increase nfs resources for seq_alignment to 4
+ - drop localscratch requirement for seq_alignment
+ - amended generation of rna_seq alignment commands to use new parameters, and amended corresponding tests
+
+release 44.11
+ - set PU option when calling Illumina2bam
+ - HiSeqX run: skip bam_cluster_counter_check
+
+release 44.10
+ - update p4 vtfp template location in seq_alignment
+ - do not run illumina_basecall_stats step for HiSeqX data
+
+release 44.9
+ - parallelise seq_alignment function
+
+release 44.8
+ - use seq_alignment module to replace bam_alignment to produce
+   production output files and get rna analysis into production
+
+release 44.7
+ - use analysis_path as a location for the cached data directory
+ - allow for flattened runfolder directory structure, ie do not
+   insist on Illumina RTA directory structure
+
+release 44.6
+ - remove unused test data
+ - use more up-to-date runfolder directory structure in tests
+ - remove unused methods from test utility module
+ - do not use analysis_path either in tests or in the code - this option is not
+   being used
+ - remove unused analysis_type option to the latest summary link creation job
+
+release 44.5
+ - Add qc_verify_bam_id to list of qc functions
+
+release 44.4
+ - pool-level asset ids are not loaded from a samplesheet, creating problems in SeqQC;
+   warehouse loader not to take lims data from a cached samplesheet 
+
+release 44.3
+ - pipeline's unused no_spider flag removed
+ - 'spider' function re-implemented to create a cache suitable for
+   samplesheet-based lims objects
+ - cache directory moved down to the bam basecall directory
+ - 'create_webcache_softlink' function removed since the location
+   of the cache is now inambiguous
+ - stand-alone module npg_pipeline::cache for generating a cache
+ - unused functions for handling emails in tests removed
+ - 'no_recalibration' flag replaced by 'recalibration' flag that
+   defaults to false
+ - analysis pipeline is started without explicitly using setting
+   'recalibration' flag
+ - use Biobambam based adapter detection instead of illumina2bam's
+
+release 44.2
+ - autoqc data retriever has changed, update the constructor's attributes
+
+release 44.1
+ - added Illumina2bam.jar options for runs with an inline index to put the
+   tags on the read with the inline index and modified tests accordingly
+
+release 44.0
+ - location of the log for the archival warehouse loader job changed
+   from the analysis directory to outgoing
+ - reduce dependency on npg_common:
+     parse configuration files directly;
+     move functionality of the npg_common::roles::run::fs_resource
+     role into the base class;
+ - remove run_conf and add_to_run_conf attr/method from the base class
+
+release 43.4
+ - extended inline index to read 2
+ - create tileviz directory when archive and qc directories are created
+
+release 43.3
+ - remove tileviz function from the pipeline
+ - test update following changes to ping procedure for npg daemons
+
+release 43.2
+ - added --tileviz option to spatial filter parameters in pb_cal_align command
+ - changed default region size to 200 and dropped region_min_count
+ - added a check for pools with only one non-phix tag and extended tests
+ 
+release 43.1
+ - remove unused cram file generation function
+ - remove provisions for running daemons on the old lenny farm
+ - daemon to start analysis and archival for run folders that are co-located with
+   daemon's host
+ - update hosts in daemon utility that runs the pipeline daemons
+ - upgrade bam alignment job memory requirement to 16GB
+ - drop appending boost library path to LD_LIBRARY_PATH - not needed
+   on Ubuntu precise
+ - rely on path to find tophat2 executable
+
+release 43.0
+ - remove analysis and archival daemons dependency on npg::api, replace by
+     direct calls to tracking database
+ - remove analysis adaemon dependency on staging area globbing
+ - increase job priority of HiSeq2500 runs
+ - fix a bug in calculating jobs priority - priority should be set regardless
+     of whether a priority value is set in teh tracking database
+ - if the run does not have RTA tag, daemon will try again later
+ - analysis daemon to call analysis on a whole run rather than listing
+     lanes explicitly
+ - remove analysis daemon dependency on LIMs data
+ - remove definition of lsf_resource_select from the config file;
+     both daemons to supply this option as "lenny" if running on the old farm
+
+release 42.7
+ - analysis daemon to submit runs form a subset of staging areas depending
+     on the cluster name it is running on
+ - redundant tests and test code removed
+
+release 42.6
+ - turn off default PhiX based Qval calibration
+ - hard code the memory rather than look in config file
+ - remove mocked objects for qc tests and add explicit test for qc_adapter
+ - separate test executables for lsadmin 
+
+release 42.5
+ - improvements to lsf_job module and its tests
+ - to be able to submit tileviz job accross farms,
+     drop request for particular nodes from the tileviz lsf job spec
+
+release 42.4
+ - new module lsf_job to generate LSF7/9 memory limit strings
+ - remove /software/bin/perl in local LSF commands
+
+release 42.1
+ - add upstream_tags qc check
+
+release 42.0
+ - to ensure host-specific path to script is used, use bare script name in daemon definitions
+
+release 41.10
+ - job that updates run status to 'run archived' should write log to analysis not outgoing
+ - production environment is now set in login shell - no need to set npg
+   and npg cpan lib location through PERL5LIB;
+
+release 41.9
+ - patch for adaptor autoqc jobs memory requirements; mismatch in
+   requested and allowed causes an error in job submission on farm2
+
+release 41.8
+ - patch to script_must_be_unique_runner - it's job id we need
+
+release 41.7
+ - patch to script_must_be_unique_runner - having a pipe expands the value
+   of $LSB_JOB_INDEX prematurely
+
+release 41.6
+ - archival to irods jobs for the same run are prevented from running concurrently
+ - qc_adapter uses explicit span hsots in bsub command
+
+release 41.5
+ - pg_pipeline/analysis::harold_calibration_bam, alignment_script invocation: removed
+    deprecated --intensity_dir flag; added --bam_join_jar flag which uses CLASSPATH
+    to locate its argument
+ - use one nfs slot for rna alignment since all compute is done locally on a node
+ - finding mountpoint for directories in /tmp does not go well under erl 5.16.3
+   on farm-precise-dev64; explicitly set TEST_FS_RESOURCE in the tests for
+   rna alignment farm job creation
+
+release 41.4
+ - OLB can use more CPUs - from 8 to 16 (changed from fixed 8)
+ - --no_recalibration option no longer stops PhiX alignments
+ - amended npg_pipeline/archive/folder/WebCache.pm and lib/npg_pipeline/pluggable/harold.pm
+      to use script_name attribute instead of $PROGRAM_NAME
+
+release 41.3
+ - ensure irods archival does not block setting qc review pending status -
+   bug fix in the parallelisation configuration
+
+release 41.2
+ - changes to tophat alignment script to cope with single reads
+ - qc_adapter uses 2 cpu 1500M, illumina2bam uses 2 cpu 4000M
+ - move to qc review pending state does not depend on the outcome
+   of archival to irods to allow for manual qc to proceed reagrdless
+   of the state of the IRODs repository; failed archival to
+   irods jobs will still show in stuck jobs list
+ - fixed a test that accessed xml feeds from live url
+
+release 41.1
+ - rna-seq alignment added
+
+release 41.0
+ - pipeline daemons settings to work under perl 5.14
+   this set up requires that '/etc/bashrc' is sources in the user's
+   .bashrc 
+ - perlcritic policy name printed when perlcritic errors are displayed
+
+release 40.6
+ - return archival of bam files to irods to the analysis pipeline
+
+release 40.5
+ - local analysis and archival deamons defenitions (moved from instrument handling)
+ - take inline index end from st::api::lims module
+
+release 40.4
+ - exclude archival of bam files to irods from the analysis pipeline -
+   temporary measure to tier over a whole day of irods maintenance 
+
+release 40.3
+ - following controlcentre-less deployment of daemons, irods path is lost
+   in deamons; replace sourcing lsf configuration with sourcing /etc/bashrc
+   which sould take care of lsf configuration and add whatever is defined
+   in .softwarerc (eg irods)
+
+release 40.2
+ - limit max threading for phiX bwa sampe (so we don't break memory limit)
+
+release 40.1
+ - bugfix - fixed cycle_start1 in pb_calibration jobs for '3 prime poly-A pulldown' lanes
+
+release 40.0
+ - dependency on /software removed, filesystem_locations.ini configuration file removed
+ - production pipeline daemons to use standard error for logging, which will go to a file
+   designated when setting the daemon
+ - no fall back onto stored tag files, LIMS should provide information about tags
+ - pb calibration tools are located dynamically
+ - a full path to OLB in the configuration file
+ - unused npg_pipeline_preexec_lsf_resource_max script removed
+ - allow alignment jobs to use 6 to 12 processor slots
+ - removed type==X86_64 lsf select option that was used for some autoqc lsf jobs
+   since it does not combine well with select[lenny] or similar
+ - added lsf_resource_select pipeline option that is set by default to lenny in the config file;
+   if set, this option is added as -R select[xxx] to all lsf job submissions;
+   if set for pipeline daemons, gets appended to pipeline script options
+ - installing data/config_files added to the build's install target
+ - lsf configuration file path is stored in the pipeline configuration files
+ - threading in sam{se,pe} and bump bam_alignment memory up to 13200MB
+
+release 39.7
+ - removed hardcoding illumina2bam location from the pipeline
+ - job creation fails if necessary jar files not found
+ - outdated special test for bam alignment tradis removed
+ - change pb calibration version to 10.6
+ - removed hardcoding a full path to the bam alignment script
+
+release 39.6
+ - spatial filter - default to removing failed reads and use V10.5
+
+release 39.5
+ - bump BAM creation memory from 8G to 10G
+
+release 39.4
+ - fix running of pb_align for single read data
+ - loosen REs looking for cycles to use fo rindex in 3' pulldown sample descriptions
+
+release 39.3
+ - fix misleading cluster counter check fail message
+ - disable cram creation until tools supporting 1.1 are released
+
+release 39.2
+ - only apply spatial_filter if a spatial_filter filter file exists
+ - use lower case for homebrew BAM tags used for random bases in 3' pulldown library illumina2bam usage
+ - extend 3' pulldown "jecfoo" to cope with index starting at different cycles and different read lengths
+ - use spatial filter numbers when checking cluster counts add up
+ - remove unnecessary export of npg_comon modules
+ - reflect the move of some npg_common modules to the npg_tracking namespace
+
+release 39.1
+ - bugfix - use bash for PB_score bsub command (as it uses a bash'ism)
+
+release 39.0
+ - hardcoded list of special-index library types should be compatible with tracking
+ - modified illumina2bam to handle the "jecfoo" special read 1 index
+ - reflect the fact the run, lane and tag roles moved from npg_common to npg_tracking namespace
+
+release 38.3
+ - avoid pointless compression in data pipe out of spatial_filter in PB score jobs
+
+release 38.2
+ - switched to v10.1 of pb_calibration
+
+release 38.1
+ - bugfix spatial filter takes raw intensity path, not dif file location
+ - bump filesystem resources used at calibration table generation step
+
+release 38.0
+ - daemons updated, outdated code removed
+ - spatial filter added
+ - calibration code changed to V9 - one table calibration (incudes both reads)
+
+release 37.2
+ - analysis daemon patch to exlude deleted earlier option
+
+release 37.1
+ - redundant modules removed
+ - default for the local flag reflects the value of no_bsub flag
+ - spatial_filter flag added and propagated to illumina2bam job
+ - bump OLB to 1.9.4
+ - setting nonconsented human and spiked phix flags for a lane - dependency on npg tracking database removed
+
+release 37.0
+ - don't stop spiked phiX "harold" alignment if no_recalibration is set - we still need to filter any PhiX out.
+ - Add adapter detection code after Ilumina2bam for paired read data (data in "a3" and "ah" tags)
+ - TraDIS tags tr and tq no longer stripped by BamTagStripper wrapper so turn back on strip BAM tags by default for TraDIS
+
+release 36.13
+ - tileviz job creation improvements in order to address lsf job failures due to problems with the nfs file system:
+     preexec to check for the existence of the qc directory,
+     pipeline script to create the tileviz directory if it does not exist
+
+release 36.12
+ - bug fix; stopped using roles that were removed in the previous point release
+
+release 36.11
+ - change function_order for tileviz and log name
+ - corrected syntax error in construction of job command in cram.pm
+ - added tests for cram.pm
+
+release 36.10
+ - bug fix for tileviz and calibration_table jobs
+
+release 36.9
+ - npg_pipeline::analysis::harold_calibration module depricated, its test removed
+ - attributes/methods for retrieving control species reference simplified
+ - removed npg_pipeline::pre_exec::references_adapters and refactored bin/npg_pipeline_preexec_references to use reference finder roles directly
+ - removed npg_pipeline::roles::business::pre_exec_strings, its code integrated into npg_pipeline::roles::business::base
+ - fixed files_present_pre_exec_string function; preexec script should ensure that all lanes (not only the ones currently processed) are ready for the state change
+ - removed npg_pipeline::pre_exec::FilesPresent; replaced its code with simple code snippet in npg_pipeline_files_present
+ - added tileviz function
+
+release 36.8
+ - amended cram.pm to supply archive_path to the cram_generation module to avoid lookup at cram creation time; reenabled cpu_limit addition to job name; removed unused code
+
+release 36.7
+ - added cram.pm module to create lsf submissions for bam to cram conversion; added cram_generation method to PB_cal_bam.pm
+
+release 36.6
+ - pass is_paired_read flag to bam_alignment scripts
+ - bam pipeline diagram
+
+release 36.5
+ - convert illumina2bam path to absolute path and pass the result to bam_alignment script as well
+
+release 36.4
+ - add pulldown metrics autoqc check
+ - change illumina2bam jar file name to Illumina2bam.jar
+
+release 36.3
+ - ensure crashing analysis launch for one run does not affect others launching
+ 
+release 36.2
+ - use index_length method inherited from long_info role in create_lane_tag_file to avoid to rebuild
+
+release 36.1
+ - remove archive lane directory and bustard directory for auto qc results loading
+
+release 36.0
+ - Added copy_interop_to_irods
+
+release 35.3
+ - npg tracking db fixtures fixed to reflect db schema changes in pending npg-tracking release 68.2
+
+release 35.2
+ - ensure use_bases is passed in bsub of old deplex jobs
+
+release 35.1
+ - touch complete lane job output name fixed; its command line generated listing only the necessary options
+
+release 35.0
+ - roll back NoGetopt metaclass in lsf queues attrs
+
+release 34.3
+ - bin/npg_pipeline_check_lsf_jobs now contains David's script copied from ~dj3/team117/npgsj
+ - npg_pipeline::ConfigReader removed since this was just on object wrapper around a role
+ - instrument_type and instrument_model pipelien options removed, not needed as options
+ - old pipeline option to switch OLB preprocessing, defaults to false
+ - npg_pipeline::analysis::bustard4pbcb - new module for preprocessing with OLB
+ - npg_pipeline::pluggable::harold::PB_cal_bam_qc (with tests and a script) removed, its functionality moved to npg_pipeline::pluggable::harold::PB_cal_bam
+ - execution of spidering moved to npg_pipeline::roles::business::base, special module for it removed
+ - unused no_cached_webservice_data and webservice_cache_dir options removed
+ - sourcing lsf and oracle conf files removed from the daemons, role and config file for this removed
+ - archive_to_irods step called at the end of analysis, no_irods_archival option to toggle this
+ - references config file removed
+ - phix snip file location in config file changes from the master ref repository to lustre mirror
+ - some unused attr of the base object and roles removed
+ - some options and attributes marked as not available for setting from the command line
+ - add a not_strip_bam_tag flag to pass to bam_alignment script to keep tags like OQ, ci etc. in final bam file
+ - leave bam_alignment.pl script to figure out number of threads to use itself (from LSB_MCPU_HOSTS environment variable)
+ - set bwa aln threads using LSB_MCPU_HOSTS environment variable in PB align commands
+ - no_sf_resource flag added to allow for running on an LSF cluster where sf and irods resource is not defined
+ - npg_pipeline::roles::business::databaseConnection role removed; the code switched to using npg_tracking schema attribute that is inherited from npg_common::...path modules
+ - npg_pipeline::pre_exec::connectDBIxTracking module removed; bin/npg_pipeline_prexec_connect_dbix_tracking uses teh npg_tracking_schema attribute of npg_pipeline::base directly
+
+release 34.2
+ - unused npg_pipeline::reorder_fastq and npg_pipeline::Checker removed
+
+release 34.0
+ - spidering simplified and speeded up
+ - tests that request NPG and Sequencescape XML feeds use webcache and nothing else
+ - tests that post to NPG XML removed
+ - tests that request connection to external live databases removed
+ - propagation of the ref repository location to the can_run part of npg_pipeline::archive::file::qc
+ - tests that access reference repository use test repository
+ - unused test data (xml files) removed
+
+release 33.7
+ - Add option to BamIndexDecoder to convert low quality bases in barcode read to Ns and increase MAX_NO_CALLs from 4 to 6 for single plex lane
+
+release 33.6
+ - use lsf irods resource for bam loading job
+
+release 33.5
+ - a script to compute pipeline performance
+
+release 33.4
+ - bug fix: naming of empty placeholder fastq files for a single run RT#245665
+ - unused scripts deleted from external_script_names.ini
+
+release 33.3
+ - set recalibrated path for create summary link lsf job
+
+release 33.2
+ - code from module npg_pipeline::pluggable::harold::qc moved to npg_pipeline::pluggable::harold
+ - modules that inherited from npg_pipeline::pluggable::harold::qc noe inherit directly from npg_pipeline::pluggable::harold
+ - module npg_pipeline::pluggable::harold::qc and its tests removed
+ - script npg_pipeline_qc removed
+ - a new update_warehouse function created
+ - create_webcache_softlink function added to the pb_cal_bam_qc function order
+
+release 33.1
+ - module npg_pipeline::run removed, its children inherit directly from npg_pipeline::base
+ - npg_pipeline::run::folder::move refactored to cope with moving folders whose names do not conform to standard RT#244644
+ - npg_pipeline::run::folder::link refactored to pass options to a script explicitly
+ - lsf job for creating the summary link moved to the small queue
+ - nfs resourses string removed from creating the summary link and moving runfolder lsf jobs
+ - removed unused test data directory t/fuse
+ - all job scheduling code moved to npg_pipeline::pluggable
+ - a list of submitted job ids returned unsorted to maintain the actual order the jobs were submitted in
+ - for bsub command, npg_pipeline::base->submit_bsub_command returns job number as integer
+ - standard bsub return value (job number as a phrase) for the test bsub script
+ - function create_webcache_softlink moved up to npg_pipeline::pluggable::harold to make it available for the bam pipeline
+
+release-33.0
+ - either launch all jobs or none, ie if cannot launch all jobs, kill the once that has been launched; RT#243670
+ - token lsf job at the end to make last job failure trackable RT#244290
+ - methods and accessors moved between base, pluggable and harold to achieve a more logical split between these three mosules
+ - functions and accessors for inferring function order simplified
+ - use of 'NoGetopt' metaclass for attributes that do not have to be script options
+ - Keep calibrated qualities score when merging with original phix alignment
+ - No longer vary filesystem resources used for BAM and fastq split by tag depending on number of plex (Sanger ISG have upgraded NFS server kernel to avoid XFS/NFS fragmentation bug)
+
+release-32.2
+ - fix missing phasing numbers in BustardSummary.xml - illumina_basecall_stats
+
+release-32.1
+ - move forward qc_tag_metrics just after illumina2bam
+ - parallelise illumina_basecall_stats with illumina2bam
+ - croak when no expected tag sequence or index given in sequencescape and don't create one based on the stardard illumina or sanger tag list
+ - make sure harold_recalibration job submitted to creat bam file soft link when no_recalibration flag given
+ - explicit arguments are given to the illumina analysis archival scripts to prevent future failures when rearrangements are made in the parents, see RT#243937
+ 
+release-32.0
+ - change to new BAM based pipeline for default analysis
+ - suspended start of the pipeline
+ - config path is built relative to the bin directory; if running from the local directory, local configuration is going to be used
+ - spidering methods list reduced
+ - increase max_no_calls for decoding if only one plex for a lane
+
+release-31.1
+ - special case of bam input for the adapter check
+ - unused scripts scripts/functional_script.pl scripts/spider_batch removed
+ - extra function in the function order for pb_cal_bam, bam_cluster_counter_check
+
+release-31.0
+ - don't try to return control recalibration table if no position given
+ - skip non spiked-phix lane for recalibration in PB_cal_bam
+ - create lane and lane qc directory in create_archive_directory function order
+ - add create_archive_directory in PB_cal_bam
+ - add bam_alignment function_order in PB_cal_bam, for bam alignment, filtering, sorting and markduplicates
+ - increase bwa aln threads from 4 to 6 in PB_cal_bam, and get their value from config file
+ - separate module for autoqc functions npg_pipeline::pluggable::harold::qc
+ - pb_cal_bam_qc combined module integrates pb_cal_bam with qc and post_qc_review
+ - hardcoded description of a study for control entity
+ - npg_pipeline::roles::business::base clean-up - redundant test-related code deleted
+ - npg_pipeline::daemons::harold_analysis_runner - calles to batch->lanes replaced with
+   calls to the new st::api::lims module
+ - npg_pipeline::pluggable::harold::post_qc_review - migration pipeline related functions deleted
+ - npg_pipeline::archive::mpsa_to_irods_migration_helper and its tests removed - not needed
+ - function for creating empty fastq files and cached short fastq files from a bam file
+ - function to run tag_metrics autoqc check
+ - qc script to take --qc_in and --qc_out arguments instead of --archive_path to allow for
+   being flexible about qc input directories
+ - parallelesation of  archive_to_irods and archive_to_sra removed since archive_to_sra is not used any more
+ - npg_pipeline::roles::business::base->batch method removed
+ - some changes to the npg::api::lane object usage to stop using depricated methods, especially getting hardcoded references
+
+ - introduction of webcache in tests to cope with npg::api::lane methods using st::api::lims object and the latest batch xml
+ - explicit spidering of st modules from npg::api modules discontinued; getting references and insert sizes explicitly in spidering discontinued since this should be covered by spidering the lims objects
+
+ - redundant code removed:
+     npg_pipeline::pluggable->alert accessor
+     npg_pipeline::dispatch_tree::evaluator module removed
+
+release-30.4
+ - schema info picks up from a local directory before the users directory. Move
+   run_lane_status changes to be run from the runfolder, and this should avoid this
+   problem
+ - don't try to run any recalibration on a lane marked control through PB_cal
+
+release-30.3
+ - only run PB_cal recalibration on a lane which is either phix or a control
+
+release-30.2
+ - enable genotype qc check
+
+release-30.1
+ - ensure that the tag files can be created if the tag on a spike is longer than the tags on the plexes
+
+release-30.0
+ - pb_cal_bam: turn off compression for pb_predictor bam output and merge phix alignment into this output
+ - split_bam_by_tag function order added for pb_cal_bam
+ - increase illumina2bam fs resources from 1 to default 4
+ - increase the number of log files for check_lsf_jobs to look through
+ - finish added to function order by default
+ - update run_lane status, which will handle updating runs to analysis complete/qc review pending
+
+release-29.3
+ - make sure the same study not stored more than once for a multiplexed lane
+
+release-29.2
+ - phasing for lane changed to lane from auto
+ - remove code and files that existed from initial ideas about the pipeline setup
+
+release-29.1
+ - bug fix about file name for lane tag
+
+release-29.0
+ - pipeline to use single access point lims module
+ - pipeline to take actual positions from batch xml in prererence to the run-lane information from the tracking database
+ - tag lists generated only for the lanes the pipeline has to deal with
+ - vary filesystem resources used for fastq split by tag depending on number of plex
+
+release-28.10
+ - bump up filesystem resources used for BAM mark duplicates
+
+release-28.9
+ - decrease cpu requirement for non-consented and spiked phix fastq splitting from 12 to 8
+
+release-28.8
+ - switched to branch 7.0 of PB_cal (detect bad tile/cyles + new caltable format)
+ - bump up filesystem resources used for creating fastq files
+
+release-28.7
+ - bug fix to catch the command line for recalibration_alignment for schema information
+
+release-28.6
+ - bam & markduplicate files need creating for removed phix, even if the lane is multiplexed
+
+release-28.5
+ - daemon only submits for lanes present in batch xml
+ - spidering only spiders lanes which are declared from the positions method
+
+release-28.4
+ - get study from lane entity directly instead of from sample
+
+release-28.3
+ - use study publishable name for bam header, and add study description as well
+
+release-28.2
+ - increase cpu requirement for non-consented and spiked phix fastq splitting from 4 to 12
+
+release-28.1
+ - OLB version upped to 1.9.3
+ - bugfix - BamIndexDecoder not merge by subversion for release-28.0 - corrected
+ - bugfix - Jobs which are launched by a job which is part of an array, take the array index as part of the job requirement
+
+release-28.0
+ - lane based post_qseq launched
+ - analysis complete and qc review pending moved to primary analysis pipeline
+ - analysis complete dependency on post qseq, plus pre-exec test for existence of
+   files in archive directory which will be written at end of each lanes secondary
+   analysis
+ - create a lane taglist file with tag sequence, name and library, sample and study name
+ - pipe illumina2bam output to BamIndexDecoder if multiplexed run
+
+release-27.3
+ - patch to fix only getting stats for lane demultiplex if the lane is multiplexed
+ - bustard and gerald lane based option
+ - pass through bustard.py parameters with override_all_bustard_options
+ - bugfix - ensure that spidering gets assets for plexes
+
+release-27.2
+ - increase memory requirement for illumina2bam job to make sure JVM can start
+
+release-27.1
+ - new function_order illumina2bam to convert bcl files to bam
+ - reduced spidering to only do functions we know are called
+ - dependency on current running job added to any jobs with no dependency
+   if the job launching is a job itself
+ - remove dependency on MooseX::InsideOut (which is broken in Moose2.0)
+
+release-27.0
+ - increase number of job io slots for pb_cal jobs to 4
+ - increase number of processors to 4 for score and alignment
+ - push number of processors through to bwa with aln_parms
+ - stop bam production for full lanes which are multiplexed
+ - stop the subsequent mark duplicate jobs for those lanes
+ - stop the subsequent gc_bias qc check for those lanes
+ - in scripts a helper script for checking spidering. This is always subject to change!
+
+release-26.4
+ - increase memory for bam_markduplicates to cope with higer density coverage
+
+release-26.3
+ - spidering imporovements to capture more data to ensure we get full requests to get the correct study for the sequencing request
+ - all runs without a control lane will run with the PB_cal no recalibration option
+
+release-26.2
+ - job_priority option, to enable a user to determine the job priority to be used for all jobs, regardless of the queue to which the job would be submitted
+ - remove bam_index function order
+ - fix launching the post_qc_review in pipeline migration helper to include user defined requirements
+ - spider calls studies on lane to ensure that we get the studies
+ - move run folder drops the log file into a log directory within the folder moved to, rather than just the folder,
+   so that any wildcard matching won't find that by accident
+
+release-26.1
+ - spidering improved to pick up more relating to samples on multiplex lanes, but not to go down the children, as this might end up pulling the entirety of Sequencescape
+ - munge summary files removed from function_orders.yml as no longer necessary to run
+ - bugfix: correct cal table name should be generated for all functions/scripts which need access to it
+ - references_adapters directory check: must only replace the word references with adapters, not if is is part of a larger word or construct
+
+release-26.0
+ - removal of the munge filenames/readnames that were needed for old version of GERALD recalibration
+ - add in job_name_prefix (both in general_values.ini and as command option) to add a prefix to all job names, for ease of seeing them in lsf
+ - no_secondcall flag to ensure switch off generating second basecalls and storing them in the bam files
+ - update live versions of OLB (for bcl2qseq) and CASAVA
+
+release-25.1
+ - addition of code to check the lsf queues for stuck runs and let you know which jobs failed
+
+release-25-0
+ - complete removal of srf generation and code for gcfreq creation
+ - removal of illumina_pipeline_bin and it's conf key/valeu pairs as legacy which is not needed
+ - switched order that fastq2bam jobs are launched, so that full lanes bams are generated in preference
+   to plex ones. This may give a slight time improvement due to more efficient resource allocation
+ - move as much qc to run in parallel with fastq2bam as possible, to endeavour to reduce the time these
+   extend the pipeline by
+
+release-24.4
+ - daemon for launching analysis to check if the run has spiked lanes, and then launch PB_cal for spiked, with a
+   no_cal/bustard&gerald to run alongside
+
+release-24.3
+ - add bam cluster count checking based on bam flag stats
+
+release-24.2
+ - pre-exec references job added to fastq2bam jobs as these need to query the references repository during running
+ - pre-exec references job added to alignment and calibration jobs in PB_cal
+ - spiked calibration tables need to know the snp files for phix
+ - phix snp file added to pb_cal_pipeline.ini, so as to be retrieved for calibration job
+
+release-24.1
+ - turn off running full PB_cal pipeline as standard
+ - lsf_queue and small_lsf_queue to be used to determine queues, so now functional command line options
+
+release-24.0
+ - a function to perform the ref_match autoqc check
+ - no_srf_generation stops trying to split and index srf files
+ - bugfix - is_spiked_phix is boolean
+ - a function to split nonconsented if not done yet
+ - if the run is performed on a HiSeq, then do not create srf files
+ - a function to perfor a sequence error check for spiked phix part
+ - an ability to pass extra options from functions to an autoqc script
+
+release-23.0
+ - bug fix to make sure correct basecalling software returned from bustard config xml file
+ - bugfix - drop tag from readname in srfs for lanes on multiplexed runs which are not multiplexed
+ - deal with spiked in phix for pb_cal calibration
+ - patch - give Instrument generated BaseCalls directory to setupBcl2Qseq.py
+ - tests: now use domain test in the conf files, so that consistency can be kept in tests, whilst live info may change
+
+release-22.0
+ - spiked phix splitting will generate fastqcheck and md5 for the newly generated fastq files
+ - remove the file renaming part from spiked phix splitting command for schema information
+ - consider spiked phix part for cluster count checking
+ - strip out all dependencies on srpipe::util
+ - strip out dependencies on srpipe::config::constants and srpipe::config::instruments
+ - spidering now calls the required_fragment_size on an asset to ensure that any further xml is loaded
+
+release-21.1
+ - fastq generation only adds the --index flag on lanes which are multiplexed, not all lanes on a run
+   which have the indexing cycles performed
+
+release-21.0
+ - the pipeline to spider over requested lanes only
+ - moved lane_tile_clustercount to npg_common::roles::run::long_info
+ - demultiplexing only tiles which it can find in the Data/Intensities/config.xml file (since HiSeqs do not have consecutively numbered tiles)
+ - phasing and matrix options moved to conf file, and phasing, prephasing and matrix now options to be passed on analyse_RTA's command line
+ - using reference finder for human reference location for creating nonconsented human part bam file
+ - bjobs for spliting spiked phix out, renaming srf and fastq files, and generating bam file
+ - npg_pipeline::analysis::FixConfigFiles - go through the config.xml files in Data/Intensities and Data/Intensities/BaseCalls, and check that
+  1) Last Cycle numbers and number of reads in each are the same (croak if not)
+  2) the runfolder (on fs) has the same name as in NPG tracking (croak if not)
+  3) Assuming 1 + 2 OK, then ensure that both config files have the correct Instrument name, runfolder name and id_run (fixing if needed)
+ - add nonconsented splitting command line and spiked phix spliting program to schema information
+
+release-20.1
+ - MPSA archived HiSeq runs no longer visible by default
+
+release-20.0
+ - bcl2seq can have separate path from OLB
+
+release-19.0
+ - a post_qseq function to generate a stand-alone archive directory for old-runs2irods pipeline
+ - a post_qseq function to call the post qc review script
+ - SecondBaseCall - pb_cal needs to start producing second base calls
+ - check recalibrated qseq files are original. If not, pass the original qseq files to bam generation
+
+release-18.4
+ - moving a run folder no longer requires using srpipe::util, so should be adaptable for anything, although, it no longer
+   copes with a paired run
+ - SchemaInformation now has improved data set, for preparation to go into the Bam headers
+
+release-18.3
+ - qc_cache_reads - additional step which will cache reads for qc's to use, saving processor time
+ - archive_to_irods now in parallel with archive_to_sra
+ - id_run now to be passed to the qc tests in the command line
+ - srfs - index has increased memory for HiSeq benefits. srf_creation has increased memory so that not too many get launched
+   on the same node
+
+release-18.2
+ - patch - webcache now checks the program name as a pattern match rather than an equality, in case the program name contains a path
+ - move runfolder bug - remove the name check against the runfolder as name will not have any padding 0's
+ - md5's - don't record the md5's of full fastq/srfs where the lane shou;d have split non-consented data
+ - improvements to schema_information to make DS a more accurate description, and bugfix where we weren't getting the correct PB_cal information
+
+release-18.1
+ - Patch to SchemaInformation to cope with some changes to the way npg_common operates
+ - parallelise hash now in a config file
+ - removed some now unnecessary hashes/arrays of function orders and parallelise
+ - test for qseq2fastq.pl will check to see if there is an md5sum and fastqcheck which can run on your system
+   and modify/skip tests that rely on checking this functionality. Note: If this is the case, then you will
+   need to modify the production code accordingly
+
+release-18.0
+ - Dependency on srpipe::config::instruments reduced - should use runfolder_path first, and fall back to this
+   expect full removal within a few releases
+ - fastq generation - md5 and fastqcheck creation options turned on
+ - fastq generation - unique option turned on so that testing for uniqueness of readnames out of qseq files is done
+ - md5 creation - script runs so that in process decisions can be made about the existence of files, and if md5s hav
+   already been created
+ - schema_information now created before bam's are created
+ - schema_information always gets the RTA value and sticks at the top
+ - DS tag in schema_information for those which are probably appropriate to go into a Bam Header
+
+release-17.1
+ - pass archive_path to irods_bam_loader instead of id_run
+ - bugfixes
+ - srf and qc_contamination parallelised with bam_generation in order to pull together rate determining steps
+ - cluster counts do not check in the fastq files, the value is allegedly guaranteed in the fastqcheck file
+ - analysis runner daemon now looks at the instrument type and determines which analysis to launch
+ - PB_cal no recalibrated for HiSeq as production
+ - PB_cal analysis now generates their own folder structures within the flag-waver (may need to be moved)
+ - analyse_RTA no longer launches PB_cal
+ - PB_cal - no_recalibration works how it should, so small_pb_cal now removed
+
+release-17.0
+ - schema information files generated which should report on how the run progressed, and various program versions used
+ - patch to cluster counts to be happy if there are no srf's found for the lane
+ - bam indexing done
+ - softlink webcache used for the analysis into the archive directory for that analysis, and the post_qc_review can use that
+
+release-16.5
+ - pb_cal needs new directory paths so that multiple ones can be run
+ - small_pb_cal for running a concurrent job which does no recalibration steps (HS benefit at current time)
+ - pass archive path to bam generation, so that this is less dependent on working out paths itself
+
+release-16.4
+ - check for cif/dif/stats files and flag option to recreate 'dummy' cif/dif files
+ - use a log folder to catch lsf log/out files in the various directories, instead of dumping directly into it
+ - archival to irods
+
+release-16.3
+ - instrument name now taken either from short_info, or if must be calculated itself, then using prefixes
+   from general_values.ini
+
+release-16.2
+ - PB_cal has moved to v6.0, with extra step and using bam files
+ - run_conf file generated in runfolder directory. Current for bustard and gerald directory propagation throughout
+   bustard/gerald primary pipeline
+ - no_bsub flag, so instead of submitting a job to LSF, just logs the command. returns 50 as a potential job id when used
+ - HiSeq archival to sra - no SRF files, and fastq's are either group unconsented (if unconsented), or hiseq (to be hidden
+   but archived, as users should be utilising bam files from iRods)
+ - no-eamss flag turned on for bcl2qseq in PB_cal pipeline
+ - change production version of OLB to OLB-1.8.1a2
+
+release-16.1
+ - cluster count checking - fastq, fastqcheck and srfs get checked to see if they contain the same number of pf reads
+   as the pf cluster count from BustardSummary.xml
+ - moved most values, external script names and pathways to config files
+
+release-16
+ - PB_cal score has additional options to take a control calibration table, and use this if it can't legitimately use
+   a lanes own cal table (see srl as to why)
+ - touch all mp fastq files at start of post_qseq to ensure that they are found for all jobs, even if there are no PF reads
+ - point fastq2bam to latest (v37) human reference
+
+release-15.3
+ - pre-exec script testing that the references and adapter directories can be found, before a job actually starts
+   on the farm, so that there is less chance it will croak out if some repositories go away
+
+release-15.2
+ - all possible arrayed submissions have been done
+ - PB_cal control lane now uses mode 2
+
+release-15.1
+ - bugfix multiplex fastqcheck generation
+ - patch to psuedo down qseq files from BaseCalls for PB_cal pipeline
+
+release 15.0
+ - All post_qseq dispatches are submitted as job arrays, chaining if needed via -w'done(1234[*])' -J job_name[1-8]
+ - PB_cal runs setupBcl2Qseq and amkes the qseq files in the basecalls directory, and then runs off these
+
+release 14.2
+ - load fastqcheck files into qc database added to post_qc_review
+
+release 14.1
+ - pass index tag fastq file to bam generation to add them in bam file
+
+release 14.0
+ - require 4 processors for human splitting bjobs
+ - dependency on multiplex qc jobs added
+ - turn off EAMSS (Killer B's)
+ - mpsa upload now loads missing files for a lane, rather than assumes that because it has 1, it will have all
+   - downside, you must ensure that this is not running for a run, if you want to manually do it
+ - no archival of srf or fastq files for phix control lanes to fuse
+
+release 13.0
+ - PB_cal separated into independent pipeline launched at the end of the illumina analysis pipeline
+ - PB_cal pipeline kicks off a post_qseq pipeline on it by default (but with no Latest_Summary,run_status updates or munge Summary xml)
+ - sf_resource now put into rusage requirement, to try to limit the amount of IO on the nfs staging partitions
+
+release 12.1
+ - bug fix bam submissions
+   - typo which stopped non split full lanes getting submitted
+   - flagstats json file to go to qc directory
+   - fastq files needed full path
+   - strange typo of ; switched for . meant incorrect name and path generation
+
+release 12.0
+ - move bam_flagstats json file for each plex into lane qc directory
+ - turn off creation of sig2 files
+ - "analysis complete" moved after all qc and alignments to before "qc review pending", "secondary analysis in progress" now where "analysis complete" was (after Illumina pipeline is done).
+
+release 11.0
+ - job array for qc on plexed samples
+ - require 4 cpus for bam creation because bwa alignments using threading now
+ - pass human_split type and tag_index for bam generation if available
+ - patch for ensuring a few axtra cached webpages are there
+
+release 10.4
+ - swapped the order of set_run_status_run_archived and move_to_outgoing
+ - for post qc review script, unset an env variable that gives the cache location
+
+release 10.2
+ - bump default OLB to OLB-1.8.1a1
+
+release 10.1
+ - no_munge_summary flag added so that post_qseq can run on PB_cal directory
+ - new postqseq function and module bam_markduplicate
+ - add archive lane path into autoqc data loading list to pick up bam flagstats json file
+
+release 10.0
+ - gc-bias check is done
+ - create lane tag file using expected tag sequence from sequencescape if available
+ - caching of webservice responses in order to enable
+   - less dependencies outside of the filesystem once jobs have been submitted
+   - reduce load on webservers from multiple parallel jobs (in particular when we have a multiplex run)
+   - find out up front if webservices are unavailable, and don't do anything
+
+release 9.0
+ - bam generation with second base call
+ - launch harold recalibration
+ - generate md5 for correct files after human splitting
+ - patch to ensure that manually created lane tag files are not overwritten
+ - update copyright
+ - bam generation even if no reference
+ - split multiplex fastq by tag
+ - bam generation for multiplex split fastq
+ - fastqcheck for multiplex split fastq
+ - moved qseq2fastq.pl from the sanger-pipeline project to this project for better maintenance and deployment
+ - only decode lanes which are multiplexed on the flowcell
+ - generate tag decoding stats as json file for each lane
+
+release 8.0
+ - drop gcfreq creation
+ - bam file generation
+ - multiplex lane specific tag file support
+ - qc_gc_fraction test
+ - munge Summary.xml/htm in GERALD after a multiplex run has gone through GERALD processing
+ - processor_fork_number moved from bustard_lsf_reqs to business/base, so it can be passed to post_qseq
+ - summary data loading removed, as done within illumina summary loading
+ - softlinked qseq_custom files will now use relative path instead of absolute path
+ - Drop dependencies to use SangerPaths
+ - $VERSION now on the same line as use Readonly; so that new Build.PL won't carp.
+ - Build.PL, dependencies updated, but dependencies on other internal packages commented out until their $VERSION lines can be corrected like those in this package
+ - md5s checked of the files once uploaded to mpsa, and compared to that in the md5 file
+
+release 7.0
+ - more launches optimised with MooseX::AttributerCloner generating command line options
+ - srpipe::analysisrunfolder removed with the consumption of npg_common::roles::run::long_info
+ - move to coping with the new way that GERALD deals with needing file structure for multiplexed samples
+ - split srfs will now have srf_index_hash run on them once created
+ - split_nonconsented memory allocation upped to 8G
+
+release 6.1
+ - moving to usage of MooseX::AttributerCloner to generate command line options
+ - Bustard defaults now able to be overridden on the command line, so if the number of processors, etc need changing, then this can be done here without code changes
+ - Bustard and GERALD steps now separated for easier launching of different analysis versions via the command line
+ - 1.6 pipeline set to default
+ - flag_options role, so that we can universally disable functions or pass info (such as no_control_lane) via a flag on the command line
+ - change to use the new illumina_analysis_loader, which should accept particular paths from a command line, and so launch it with paths populated as the launcher object has
+ - change to Bustard to do it's best to accept and force a control_lane determined by the user, but still relies on some info from Sequencescape to be present and correct
+ - tag_file for indexed runs can be manually set rather than relying on choosing a tag_file from the defaults
+
+release 6.0
+ - major refactor of code to allow command line variables to be propagated through to objects using MooseX::Getopt and MooseX::AttributeCloner
+ - separation of pipelines into separate npg_pipeline::pluggable::harold::<type> in order to make code management easier
+ - due to MooseX::AttributeCloner, less code in npg_pipeline::pluggable::harold::<type> methods
+ - increased test and POD coverage
+ - create_pseudo_qseq_custom.pm - if there has been no recalibration, softlink in GERALD the qseq files in Bustard with qseq_custom names
+ - fix_qseqs.pm - ensure that the id_run is correct in the qseq_custom files
+
+release 5.0
+ - npg_pipeline::base class with common methods used by many of the npg_pipeline modules
+ - try to submit a job to lsf upto 5 times, croaking if unsuccessful after that
+ - daemon runner and pipeline for RTA analysis
+
+release 4.7
+ - preexecute script to ensure that only 1 of a type of job could run at a time, and applied to npg_qc_api.pl (illumina analysis) loader
+ - option to include tag files to split non_consented
+ - default queue in archival runner - srpipeline
+ - script to resort fastq files if they get created in the wrong order
+
+release 4.6
+ - archival runner
+ - code for fixing broken fastqs
+ - correct order of qseq_custom files to be alphanumerical when submitted for jobs
+
+release 4.5
+ - patch release
+
+release 4.0
+ - option/support to only run on a single lane
+ - post_qc_review pipeline
+ - refactor of code from srpipe::archive.pm to npg_pipeline::archive::file::to_sra so that this can be done from post_qc_review pipeline
+ - post_qc_review can submit to lsf jobs to upload illumina_analysis, illumina_summary and auto_qc
+
+release 3.0
+ - bug fix - id_run not passed through to qc checks
+ - adapt to use new qseq2fastq with changes for multiplex runs
+ - croak out of post_qseq if it is not a full analysis
+
+release 2.0
+ - add qc_insert_size
+ - srf_creation also does indexing script
+ - log files are created
+ - in log file, json string of dispatch tree
+ - parse of the json string, which interrogates LSF for info
+ - Latest Summary link now relative path
+ - illumina2srf always runs out of 1.4 pipeline
+ - archive dir is now set to be archive dir, not archive_test
+
+release 1.0
+ - set up
+ - create npg_pipeline namespace
+ - generate replacement to cleanup_run

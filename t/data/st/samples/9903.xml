@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sample api_version="0.6">
+  <id>9903</id>
+  <name>24847</name>
+  <study_id>287</study_id>
+  <ended></ended>
+  <properties>
+    <property>
+      <name>Organism</name>
+      <value>Neisseria sicca</value>
+    </property>
+    <property>
+      <name>GC content</name>
+      <value>high at</value>
+    </property>
+    <property>
+      <name>TAXON ID</name>
+      <value>490</value>
+    </property>
+    <property>
+      <name>Sample Visibility</name>
+      <value>hold</value>
+    </property>
+    <property>
+      <name>Common Name</name>
+      <value>Neisseria sicca</value>
+    </property>
+    <property>
+      <name>Public Name</name>
+      <value></value>
+    </property>
+    <property>
+      <name>Strain</name>
+      <value>CCUG 24847</value>
+    </property>
+    <property>
+      <name>Sample Description</name>
+      <value></value>
+    </property>
+    <property>
+      <name>SRA Sample Accession Number</name>
+      <value>ERS007023</value>
+    </property>
+  </properties>
+  <assets>
+    <asset href="/assets/84991" id="84991"/>
+    <asset href="/assets/127639" id="127639"/>
+  </assets>
+  <study_id>287</study_id>
+</sample>
