@@ -21,8 +21,6 @@ with 'npg_tracking::glossary::run';
 
 our $VERSION = '0';
 
-my $new_cache_dir;
-
 ##no citic (RequireLocalizedPunctuationVars)
 
 =head1 NAME
@@ -311,33 +309,30 @@ sub _copy_cache {
 
   $var_name = npg::api::request->cache_dir_var_name();
   my $cache_dir = $ENV{$var_name};
+  $cache_dir =~ s{/\Z}{}smx;
   if ($cache_dir) {
     if (!-e $cache_dir) {
       croak qq[Cache directory $cache_dir does not exist];
     }
-    $new_cache_dir = $self->cache_dir_path;
-    find({'wanted'   => \&_copy_file,
+    my $new_cache_dir = $self->cache_dir_path;
+    my $copy_file_sub = sub {
+      my $file = $File::Find::name;
+      if ( -f $file && $file =~ /[.]xml\Z/xms ) {
+        my ($volume,$directories,$file_name) = File::Spec->splitpath($file);
+        $directories=~s/\Q$cache_dir\E//smx;
+        my $subdir = $new_cache_dir . $directories;
+        make_path $subdir;
+        copy $file, $subdir;
+      }
+      return;
+    };
+    find({'wanted'   => $copy_file_sub,
           'follow'   => 0,
           'no_chdir' => 1}, ($cache_dir));
     $self->_add_message("$cache_dir copied to $destination, $var_name unset");
     $ENV{$var_name} = q[]; ## no critic (Variables::RequireLocalizedPunctuationVars)
   }
 
-  return;
-}
-
-sub _copy_file {
-  my $file = $File::Find::name;
-  ## no critic (ProhibitEscapedMetacharacters)
-  if ( -f $file && $file =~ /\.xml\Z/xms ) {
-    my ($volume,$directories,$file_name) = File::Spec->splitpath($file);
-    ($directories) = $directories =~ /(\/npg\/.*)/smx;
-    if ($directories) {
-      my $subdir = $new_cache_dir . $directories;
-      make_path $subdir;
-      copy $file, $subdir;
-    }
-  }
   return;
 }
 
