@@ -220,6 +220,8 @@ sub create {
       $self->_xml_feeds();
     }
     $self->_copy_cache();
+    local $ENV{ $cache_dir_var_name } = $self->cache_dir_path;
+    $self->_samplesheet();
   } else {
     local $ENV{ $cache_dir_var_name } = $self->cache_dir_path;
     $self->_xml_feeds('with_lims');
@@ -250,9 +252,11 @@ sub env_vars {
 
 sub _samplesheet {
   my ($self) = @_;
-  npg::samplesheet->new(id_run => $self->id_run,
+  if(not -e $self->samplesheet_file_path){
+    npg::samplesheet->new(id_run => $self->id_run,
                         extend => 1,
                         output => $self->samplesheet_file_path)->process();
+  }
   return;
 }
 
