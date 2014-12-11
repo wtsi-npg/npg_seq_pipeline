@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 56;
+use Test::More tests => 65;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 
@@ -84,7 +84,7 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   is ($cache->reuse_cache, 1, 'reuse_cache true by default');
   lives_ok {$cache->setup} 'no error reusing existing cache';
   my @messages = @{$cache->messages};
-  is (scalar @messages, 2, 'two messages saved');
+  is (scalar @messages, 2, 'two messages saved') or diag explain $cache->messages;
   is (shift @messages, qq[Found existing cache directory $cache_dir],
     'message to confirm existing cache is found');
   is (shift @messages, q[Will use existing cache directory],
@@ -103,7 +103,7 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   is (scalar @found, 1, 'two entries in cache location'); 
 
   @messages = @{$cache->messages};
-  is (scalar @messages, 3, 'four messages saved');
+  is (scalar @messages, 4, 'four messages saved') or diag explain $cache->messages;
   is (shift @messages, qq[Found existing cache directory $cache_dir],
     'message to confirm existing cache is found');
   like (shift @messages, qr/Renamed\ existing\ cache\ directory/,
@@ -124,7 +124,7 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   lives_ok {$cache->setup}
     'no error creating a new cache and setting env vars';
   @messages = @{$cache->messages};
-  is (scalar @messages, 4, 'four messages saved');
+  is (scalar @messages, 4, 'four messages saved') or diag explain $cache->messages;
 
   my $ss = join q[/], $cache_dir, 'samplesheet_12376.csv';
   is ($ENV{NPG_CACHED_SAMPLESHEET_FILE}, $ss,
@@ -145,7 +145,7 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
                                       cache_location => $tempdir);
   $cache->setup();
   @messages = @{$cache->messages};
-  is (scalar @messages, 4, 'four messages saved');
+  is (scalar @messages, 4, 'four messages saved') or diag explain $cache->messages;
 
   ok (!$ENV{NPG_CACHED_SAMPLESHEET_FILE},
     'NPG_CACHED_SAMPLESHEET_FILE is unset');
@@ -174,6 +174,29 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   ok (-e join(q[/], $cache_dir, 'npg/run_status_dict.xml'), 'run status xml copied');
   ok (!-e join(q[/], $cache_dir, 'st/batches/26195.xml'), 'batch xml is not copied');
   is (scalar @{$cache->messages}, 5, 'five messages saved');
+  is ($ENV{NPG_WEBSERVICE_CACHE_DIR}, $cache_dir,
+    'NPG_WEBSERVICE_CACHE_DIR is set correctly');
+  is ($ENV{NPG_CACHED_SAMPLESHEET_FILE}, $sh,
+    'NPG_CACHED_SAMPLESHEET_FILE is set');
+}
+
+{
+  my $tempdir = tempdir( CLEANUP => 1);
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/cache/xml';
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
+  my $cache = npg_pipeline::cache->new(id_run => 12376,
+                                    reuse_cache    => 0,
+                                    set_env_vars   => 1,
+                                    cache_location => $tempdir);
+  lives_ok {$cache->setup();} 'no error when NPG_WEBSERVICE_CACHE_DIR is set, but no NPG_CACHED_SAMPLESHEET_FILE is set';
+  my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
+  my $sh = join(q[/], $cache_dir, 'samplesheet_12376.csv');
+  ok (-e $sh, 'samplesheet created');
+  ok (-e join(q[/], $cache_dir, 'npg/instrument/103.xml'), 'instrument xml copied');
+  ok (-e join(q[/], $cache_dir, 'npg/run/12376.xml'), 'run xml copied');
+  ok (-e join(q[/], $cache_dir, 'npg/run_status_dict.xml'), 'run status xml copied');
+  ok (!-e join(q[/], $cache_dir, 'st/batches/26195.xml'), 'batch xml is copied');
+  is (scalar @{$cache->messages}, 5, 'five messages saved') or diag explain $cache->messages;
   is ($ENV{NPG_WEBSERVICE_CACHE_DIR}, $cache_dir,
     'NPG_WEBSERVICE_CACHE_DIR is set correctly');
   is ($ENV{NPG_CACHED_SAMPLESHEET_FILE}, $sh,
