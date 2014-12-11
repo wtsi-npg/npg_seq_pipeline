@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - when using and copying an existing cache directory copy everything (instead of
+   restricting to npg directory)
+ - try to create samplesheet if it does not exist, even if copying cache
+
 release 47.0
  - code moved to git repository
 
