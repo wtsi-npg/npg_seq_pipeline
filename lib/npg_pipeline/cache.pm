@@ -256,6 +256,7 @@ sub _samplesheet {
     npg::samplesheet->new(id_run => $self->id_run,
                         extend => 1,
                         output => $self->samplesheet_file_path)->process();
+    $self->_add_message(q(Samplesheet created at ).$self->samplesheet_file_path);
   }
   return;
 }
