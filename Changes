@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 47.1
  - when using and copying an existing cache directory copy everything (instead of
    restricting to npg directory)
  - try to create samplesheet if it does not exist, even if copying cache
