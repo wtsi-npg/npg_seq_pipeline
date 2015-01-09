@@ -165,7 +165,7 @@ sub _lsf_alignment_command {
     croak qq{only paired reads supported ($name_root)} if not $self->is_paired_read;
     croak qq{nonconsented human split not yet supported ($name_root)} if $l->contains_nonconsented_human;
     croak qq{nonconsented X and autosome human split not yet supported ($name_root)} if $l->contains_nonconsented_xahuman;
-    croak qq{Y human split not yet supported ($name_root)} if $l->separate_y_chromosome_data;
+#    croak qq{Y human split not yet supported ($name_root)} if $l->separate_y_chromosome_data;
     croak qq{No alignments in bam not yet supported ($name_root)} if not $l->alignments_in_bam;
     croak qq{Reference required ($name_root)} if not $self->_ref($l,q(fasta));
     return join q( ),    q(bash -c '),
@@ -193,6 +193,7 @@ sub _lsf_alignment_command {
                                   q(-keys bwa_executable -vals bwa0_6),
                                   q(-keys alignment_method -vals bwa_mem),
                              ) ),
+                             ($l->separate_y_chromosome_data ? q(-keys final_output_prep_target_name -vals yhuman_split) : q()),
                              q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json},
                              qq(> run_$name_root.json),
                            q{&&},
