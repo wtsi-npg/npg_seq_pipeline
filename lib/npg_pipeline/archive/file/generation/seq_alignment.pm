@@ -193,7 +193,7 @@ sub _lsf_alignment_command {
                                   q(-keys bwa_executable -vals bwa0_6),
                                   q(-keys alignment_method -vals bwa_mem),
                              ) ),
-                             ($l->separate_y_chromosome_data ? q(-keys final_output_prep_target_name -vals yhuman_split) : q()),
+                             ($l->separate_y_chromosome_data ? q(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true -keys split_indicator -vals _yhuman) : q()),
                              q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json},
                              qq(> run_$name_root.json),
                            q{&&},
@@ -215,7 +215,17 @@ sub _lsf_alignment_command {
                              $position,
                              ($is_plex ? ($tag_index) : ()),
                              $qcpath,
+                           $l->separate_y_chromosome_data ? (
                            q{&&},
+                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(yhuman), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
+                             (join q{/}, $archive_path, $name_root.q(_phix.markdups_metrics.txt)),
+                             (join q{/}, $archive_path, $name_root.q(_phix.flagstat)),
+                             $self->id_run,
+                             $position,
+                             ($is_plex ? ($tag_index) : ()),
+                             $qcpath,
+                           q{&&}) 
+                              :(),
                            q{qc --check alignment_filter_metrics --qc_in $}.q{PWD --id_run}, $self->id_run, qq{--position $position --qc_out $qcpath}, ($is_plex ? (qq{--tag_index $tag_index}) : ()),
                          q(');
   }else{
