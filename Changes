@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 47.2
+ - don't process phix using the p4 pipeline
+
 release 47.1
  - when using and copying an existing cache directory copy everything (instead of
    restricting to npg directory)
