@@ -144,11 +144,13 @@ sub _lsf_alignment_command {
   my $position = $l->position;
   my $name_root = $id_run . q{_} . $position;
   my $tag_index;
+  my $spike_tag;
   my $input_path= $self->input_path;
   my $archive_path= $self->archive_path;
   my $qcpath= $self->qc_path;
   if($is_plex) {
     $tag_index = $l->tag_index;
+    $spike_tag = (defined $l->spiked_phix_tag_index and $l->spiked_phix_tag_index == $tag_index);
     $name_root .= q{#} . $tag_index;
     my $lane_dir = qq{lane$position};
     $input_path .= q{/} . $lane_dir;
@@ -157,9 +159,10 @@ sub _lsf_alignment_command {
   }
   my $do_rna = $self->_do_rna_analysis($l);
   if(
-    $do_rna or
+    ($do_rna or
     $self->is_hiseqx_run or
-    ($self->_is_v4_run && $self->_ref($l,q(fasta))) #allow old school if no reference
+    ($self->_is_v4_run && $self->_ref($l,q(fasta)))) #allow old school if no reference or if this is the phix spike
+    and !$spike_tag
   ){
     #TODO: support these various options in P4 analyses
     croak qq{only paired reads supported ($name_root)} if not $self->is_paired_read;
