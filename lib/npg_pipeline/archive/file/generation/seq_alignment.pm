@@ -161,8 +161,8 @@ sub _lsf_alignment_command {
   if(
     ($do_rna or
     $self->is_hiseqx_run or
-    ($self->_is_v4_run && $self->_ref($l,q(fasta)))) #allow old school if no reference or if this is the phix spike
-    and !$spike_tag
+    ($self->_is_v4_run and $self->_ref($l,q(fasta)))) #allow old school if no reference or if this is the phix spike
+    and not $spike_tag
   ){
     #TODO: support these various options in P4 analyses
     croak qq{only paired reads supported ($name_root)} if not $self->is_paired_read;
