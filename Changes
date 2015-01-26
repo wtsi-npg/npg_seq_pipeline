@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - P4 can process nonconsented X and autosome human split, and separate Y chromosome data
+
 release 47.2
  - don't process phix using the p4 pipeline
 
