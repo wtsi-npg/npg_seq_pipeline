@@ -168,7 +168,6 @@ sub _lsf_alignment_command {
     croak qq{only paired reads supported ($name_root)} if not $self->is_paired_read;
     croak qq{nonconsented human split not yet supported ($name_root)} if $l->contains_nonconsented_human;
     croak qq{nonconsented X and autosome human split not yet supported ($name_root)} if $l->contains_nonconsented_xahuman;
-#    croak qq{Y human split not yet supported ($name_root)} if $l->separate_y_chromosome_data;
     croak qq{No alignments in bam not yet supported ($name_root)} if not $l->alignments_in_bam;
     croak qq{Reference required ($name_root)} if not $self->_ref($l,q(fasta));
     return join q( ),    q(bash -c '),
@@ -218,11 +217,11 @@ sub _lsf_alignment_command {
                              $position,
                              ($is_plex ? ($tag_index) : ()),
                              $qcpath,
-                           $l->separate_y_chromosome_data ? (
                            q{&&},
+                           $l->separate_y_chromosome_data ? (
                            q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(yhuman), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
-                             (join q{/}, $archive_path, $name_root.q(_phix.markdups_metrics.txt)),
-                             (join q{/}, $archive_path, $name_root.q(_phix.flagstat)),
+                             (join q{/}, $archive_path, $name_root.q(_yhuman.markdups_metrics.txt)),
+                             (join q{/}, $archive_path, $name_root.q(_yhuman.flagstat)),
                              $self->id_run,
                              $position,
                              ($is_plex ? ($tag_index) : ()),
