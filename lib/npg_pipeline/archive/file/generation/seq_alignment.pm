@@ -160,7 +160,7 @@ sub _lsf_alignment_command {
   }
   my $do_rna = $self->_do_rna_analysis($l);
   if(
-    ($do_rna or
+    ($self->force_p4 or $do_rna or
     $self->is_hiseqx_run or
     ($self->_is_v4_run and $self->_ref($l,q(fasta)))) #allow old school if no reference or if this is the phix spike
     and not $spike_tag
