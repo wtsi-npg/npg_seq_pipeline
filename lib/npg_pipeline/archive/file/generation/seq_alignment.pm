@@ -174,7 +174,7 @@ sub _lsf_alignment_command {
                       $l->separate_y_chromosome_data    ? q(yhuman) :
                       q();
     croak qq{Reference required ($name_root)} if not $self->_ref($l,q(fasta));
-    return join q( ), grep {length} q(bash -c '),
+    return join q( ), q(bash -c '),
                            q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
                            q(cd), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{&&},
                            q(vtfp.pl -s),
@@ -199,8 +199,8 @@ sub _lsf_alignment_command {
                                   q(-keys bwa_executable -vals bwa0_6),
                                   q(-keys alignment_method -vals bwa_mem),
                              ) ),
-                             ($human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : q()),
-                             ($l->separate_y_chromosome_data ? q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true) : q()),
+                             $human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : (),
+                             $l->separate_y_chromosome_data ? q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true) : (),
                              q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json},
                              qq(> run_$name_root.json),
                            q{&&},
