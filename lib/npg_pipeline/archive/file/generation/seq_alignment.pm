@@ -139,7 +139,7 @@ sub _save_arguments {
   return $file_name;
 }
 
-sub _lsf_alignment_command {
+sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my ( $self, $l, $is_plex ) = @_;
   my $id_run = $self->id_run;
   my $position = $l->position;
@@ -159,12 +159,12 @@ sub _lsf_alignment_command {
     $qcpath =~s{([^/]+/?)\z}{$lane_dir/$1}smx; #per plex directory split assumed to be one level up from qc directory
   }
   my $do_rna = $self->_do_rna_analysis($l);
-  if(
-    ($self->force_p4 or $do_rna or
-    $self->is_hiseqx_run or
-    ($self->_is_v4_run and $self->_ref($l,q(fasta)))) #allow old school if no reference or if this is the phix spike
-    and not $spike_tag
-  ){
+  if( $self->force_p4 or (
+      ($do_rna or $self->is_hiseqx_run or $self->_is_v4_run) and
+      #allow old school if no reference or if this is the phix spike
+      $self->_ref($l,q(fasta)) and
+      not $spike_tag
+    )){
     #TODO: support these various options in P4 analyses
     croak qq{only paired reads supported ($name_root)} if not $self->is_paired_read;
     croak qq{nonconsented human split not yet supported ($name_root)} if $l->contains_nonconsented_human;
