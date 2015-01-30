@@ -1,7 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 47.3
  - P4 can process nonconsented X and autosome human split, and separate Y chromosome data
+ - tidy of conditions for selection of p4 processing, and new force_p4 flag to override them
 
 release 47.2
  - don't process phix using the p4 pipeline
