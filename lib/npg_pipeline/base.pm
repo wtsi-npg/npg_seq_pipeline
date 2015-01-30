@@ -199,6 +199,14 @@ sub _build_small_lsf_queue {
   return $self->general_values_conf()->{small_lsf_queue};
 }
 
+=head2 force_p4
+
+Boolean decision to force on P4 pipeline usage
+
+=cut
+
+has q{force_p4}        => (isa => q{Bool},  is => q{ro}, documentation => q{Boolean decision to force on P4 pipeline usage});
+
 =head2 verbose
 
 boolean to switch on verbose mode
