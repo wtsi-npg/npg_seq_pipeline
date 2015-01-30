@@ -122,12 +122,12 @@ cmp_deeply(\@lines, [$json ], 'correct json file content (for dUTP library)');
 
 #####  non-RNASeq libraries (i.e. not Illumina cDNA protocol (unstranded) and RNA-seq dUTP (stranded))  pattern match looks for /(?:cD|R)NA/sxm
 
-  $args->{'8007'} = qq{bam_alignment.pl --id_run 12597 --position 8 --tag_index 7 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane8/12597_8#7.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane8/12597_8#7 --do_markduplicates  --is_paired_read};
+  $args->{'5040'} = qq{bam_alignment.pl --id_run 12597 --position 5 --tag_index 40 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane5/12597_5#40.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane5/12597_5#40 --do_markduplicates  --is_paired_read};
  
- lives_ok {$rna_gen->_generate_command_arguments([8])}
+ lives_ok {$rna_gen->_generate_command_arguments([5])}
      'no error generating command arguments for non-RNASeq lane';
 
- is ($rna_gen->_job_args->{'8007'},$args->{'8007'},'correct non-RNASeq lane args generated');
+ is ($rna_gen->_job_args->{'5040'},$args->{'5040'},'correct non-RNASeq lane args generated');
 
 #### monoplex (non-RNA Seq)
 
