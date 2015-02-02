@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - multiple TraDIS library types now in use, all assumed to start with TraDIS
+
 release 47.3
  - P4 can process nonconsented X and autosome human split, and separate Y chromosome data
  - tidy of conditions for selection of p4 processing, and new force_p4 flag to override them
