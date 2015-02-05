@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - turn off BAM archival to iRODS
  - multiple TraDIS library types now in use, all assumed to start with TraDIS
 
 release 47.3
