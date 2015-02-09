@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - reenable archival of index files for CRAM/BAM files to iRODS
+
 release 47.5
  - turn off BAM archival to iRODS
 
