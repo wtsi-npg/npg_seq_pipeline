@@ -1,0 +1,29 @@
+---
+- bait_name: ~
+  cost_code: S0706
+  entity_id_lims: 20651
+  entity_type: library
+  external_release: 1
+  flowcell_barcode: 6175LAAXX
+  forward_read_length: 108
+  id_flowcell_lims: 5992
+  id_iseq_flowcell_tmp: 20301
+  id_lims: SQSCP
+  id_pool_lims: 57206
+  id_sample_tmp: 6195
+  id_study_tmp: 196
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2013-05-08 14:26:33
+  manual_qc: 0
+  pipeline_id_lims: Standard
+  position: 1
+  priority: 0
+  recorded_at: 2014-11-19 17:22:34
+  requested_insert_size_from: 400
+  requested_insert_size_to: 400
+  reverse_read_length: 108
+  tag_index: ~
+  tag_sequence: ~
+  tag_set_id_lims: ~
+  tag_set_name: ~

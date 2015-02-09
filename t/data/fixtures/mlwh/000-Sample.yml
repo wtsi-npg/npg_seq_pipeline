@@ -1,0 +1,37 @@
+---
+- accession_number: ERS013342
+  consent_withdrawn: 0
+  control: ~
+  created: 2010-07-26 14:56:52
+  deleted_at: ~
+  description: ''
+  id_lims: SQSCP
+  id_sample_lims: 254193
+  id_sample_tmp: 6195
+  last_updated: 2012-08-03 10:07:02
+  organism: Burkholderia pseudomallei
+  recorded_at: 2014-11-18 13:06:19
+  reference_genome: ' '
+  replicate: ~
+  sample_visibility: Hold
+  strain: ATCC15682
+  taxon_id: 28450
+  uuid_sample_lims: 1788c8d0-6a6c-11e4-8e19-68b59977951c
+- accession_number: ERS013343
+  consent_withdrawn: 0
+  control: ~
+  created: 2010-07-26 14:56:52
+  deleted_at: ~
+  description: ''
+  id_lims: SQSCP
+  id_sample_lims: 254194
+  id_sample_tmp: 252330
+  last_updated: 2012-08-03 10:07:02
+  organism: Burkholderia pseudomallei
+  recorded_at: 2014-11-18 13:06:19
+  reference_genome: ' '
+  replicate: ~
+  sample_visibility: Hold
+  strain: P6
+  taxon_id: 28450
+  uuid_sample_lims: 178df8f0-6a6c-11e4-8e19-68b59977951c

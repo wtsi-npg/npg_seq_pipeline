@@ -1,6 +1,15 @@
 LIST OF CHANGES
 ---------------
 
+ - GCLP compliance-related daemon changes:
+     runs will not be progressed to analisys/archival unless the
+     flowcell barcode is set is known in the npg_trackign database;
+     runs are not going to be progressed is it's impossible to fetch LIMs data for a flowcell;
+     both analysis and archival daemon to pass runfolder path to the
+     pipeline script;
+     if it is impossible to fetch LIMs data using the flowcell barcode,
+     batch id will be passed to the pipeline script    
+
 release 47.3
  - P4 can process nonconsented X and autosome human split, and separate Y chromosome data
  - tidy of conditions for selection of p4 processing, and new force_p4 flag to override them

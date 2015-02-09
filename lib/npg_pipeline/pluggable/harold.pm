@@ -69,10 +69,6 @@ Called on new construction to ensure that certain parameters are filled/set up
 sub BUILD {
   my ($self) = @_;
 
-  if ( !$self->has_id_run() && !$self->has_run_folder() ) {
-    croak q{Error: No run_folder or id_run provided};
-  }
-
   if (!$self->has_log_file_path()) {
     $self->set_log_file_path( $self->runfolder_path() );
   }

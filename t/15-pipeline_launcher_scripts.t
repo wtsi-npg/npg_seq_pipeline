@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use English qw{-no_match_vars};
-use Test::More tests => 7;
+use Test::More tests => 5;
 use Test::Exception;
 use t::util;
 use Cwd;
@@ -21,11 +21,6 @@ my $analysis_runfolder_path = $util->analysis_runfolder_path();
 $util->set_rta_staging_analysis_area();
 
 # Script failures
-{
-  lives_ok { qx{perl $bin/npg_pipeline_post_qc_review --domain test --conf_path $conf_path }; } q{ran bin/npg_pipeline_post_qc_review with no id_run};
-  ok($CHILD_ERROR, qq{Return code of $CHILD_ERROR as no id_run or runfolder provided});
-}
-
 {
   my $out = `perl $bin/npg_pipeline_PB_cal_bam --domain test --no_bsub  --run_folder 123456_IL2_1234 --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234 --function_order dodo`;
   like($out, qr/Error submitting jobs: Can't locate object method "dodo" via package "npg_pipeline::pluggable::harold::PB_cal_bam"/, 'error when function does not exist');

@@ -28,16 +28,27 @@ my $test_run = $schema->resultset(q[Run])->find(1234);
 $test_run->update_run_status('archival pending', 'pipeline',);
 is($test_run->current_run_status_description, 'archival pending', 'test run is archival pending');
 
+########test class definition start########
+
+package test_archival_runner;
+use Moose;
+extends 'npg_pipeline::daemons::archival_runner';
+sub _runfolder_path { return '/some/path' };
+
+########test class definition end########
+
+package main;
+
 {
   my $runner;
-  lives_ok { $runner = npg_pipeline::daemons::archival_runner->new(
-    log_file_path => $temp_directory,
-    log_file_name => q{npg_pipeline_archival_daemon.log},
+  lives_ok { $runner = test_archival_runner->new(
+    log_file_path       => $temp_directory,
+    log_file_name       => q{archival_daemon.log},
     npg_tracking_schema => $schema, 
   ); } q{object creation ok};
-  isa_ok($runner, q{npg_pipeline::daemons::archival_runner}, q{$runner});
+  isa_ok($runner, q{test_archival_runner});
   lives_ok { $runner->run(); } q{no croak on $runner->run()};
-  like($runner->_generate_command(1234), qr/npg_pipeline_post_qc_review --verbose --id_run=1234/,
+  like($runner->_generate_command(1234), qr/npg_pipeline_post_qc_review --verbose --runfolder_path \/some\/path/,
     q{generated command is correct});
   ok(!$runner->green_host, 'host is not in green datacentre');
 
@@ -56,11 +67,13 @@ is($test_run->current_run_status_description, 'archival pending', 'test run is a
   is($schema->resultset(q[Run])->find(2)->folder_path_glob(), 'sf26', 'run 2 updated to be in red room');
   is($schema->resultset(q[Run])->find(3)->folder_path_glob(), undef,
     'run 3 folder path glob undefined, will never match any host');
-  my $runner = npg_pipeline::daemons::archival_runner->new(
-    log_file_path => $temp_directory,
-    log_file_name => q{npg_pipeline_archival_daemon.log},
-    npg_tracking_schema => $schema,
+  my $runner = test_archival_runner->new(
+    pipeline_script_name => '/bin/true',
+    log_file_path        => $temp_directory,
+    log_file_name        => q{archival_daemon.log},
+    npg_tracking_schema  => $schema,
   );
+
   lives_ok {
     $runner->run();
     sleep 1;

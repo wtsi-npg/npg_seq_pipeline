@@ -1,0 +1,35 @@
+---
+- abbreviation: 619STDY
+  abstract: For further information on this study please see
+  accession_number: ERP000251
+  aligned: 1
+  array_express_accession_number: ~
+  contains_human_dna: No
+  contaminated_human_dna: No
+  created: 2010-06-25 11:19:52
+  data_access_group: ~
+  data_release_delay_period: ~
+  data_release_delay_reason: ~
+  data_release_sort_of_study: genomic sequencing
+  data_release_strategy: open
+  data_release_timing: standard
+  deleted_at: ~
+  description: 'For further information on this study please'
+  ega_dac_accession_number: ~
+  ega_policy_accession_number: ~
+  ena_project_id: 0
+  ethically_approved: ~
+  id_lims: SQSCP
+  id_study_lims: 619
+  id_study_tmp: 196
+  last_updated: 2012-11-26 14:15:32
+  name: Burkholderia pseudomallei diversity
+  recorded_at: 2014-11-19 14:48:06
+  reference_genome: ' '
+  remove_x_and_autosomes: 0
+  separate_y_chromosome_data: 0
+  state: active
+  study_title: Burkholderia pseudomallei diversity
+  study_type: Whole Genome Sequencing
+  study_visibility: Hold
+  uuid_study_lims: 1231de50-6ffb-11e4-b9db-68b59977951c

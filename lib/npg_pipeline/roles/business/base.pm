@@ -31,6 +31,14 @@ and likely to be applied over the whole of the pipeline.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 id_flowcell_lims
+
+Optional LIMs identifier for flowcell
+
+=cut
+
+has q{id_flowcell_lims} => (isa => q{Maybe[Int]},  is => q{ro}, required => 0,);
+
 =head2 run
 
 Run npg::api::run object, an id_run method is required for this.
