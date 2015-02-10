@@ -8,7 +8,6 @@ use English qw{-no_match_vars};
 use List::MoreUtils  qw/none/;
 use Readonly;
 
-use WTSI::DNAP::Warehouse::Schema;
 use npg_tracking::illumina::run::folder::location;
 use npg_tracking::illumina::run::short_info;
 extends qw{npg_pipeline::base};
@@ -31,6 +30,18 @@ class_has 'pipeline_script_name' => (
                        is         => q{ro},
                        lazy_build => 1,
                                     );
+
+has q{_iseq_flowcell} => (
+                isa        => q{DBIx::Class::ResultSet},
+                is         => q{ro},
+                required   => 0,
+                lazy_build => 1,
+                         );
+sub _build__iseq_flowcell {
+  my $self = shift;
+  return $self->mlwh_schema->resultset('IseqFlowcell');
+}
+
 sub _build_pipeline_script_name {
   return $PB_CAL_SCRIPT;
 }
@@ -47,16 +58,6 @@ sub _build_green_host {
     $self->log(q{Do not know what datacentre I am running in});
   }
   return ($datacentre && $datacentre =~ /$GREEN_DATACENTRE/xms);
-}
-
-has q{_iseq_flowcell} => (
-                isa        => q{DBIx::Class::ResultSet},
-                is         => q{ro},
-                required   => 0,
-                lazy_build => 1,
-                         );
-sub _build__iseq_flowcell {
-  return WTSI::DNAP::Warehouse::Schema->connect()->resultset('IseqFlowcell');
 }
 
 sub run {
@@ -265,8 +266,6 @@ starts the pipeline for each of them.
 =item npg_tracking::illumina::run::folder::location
 
 =item npg_tracking::illumina::run::short_info
-
-=item WTSI::DNAP::Warehouse::Schema
 
 =back
 

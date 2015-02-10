@@ -6,6 +6,7 @@ use List::MoreUtils qw{any};
 use File::Basename;
 use Cwd qw{abs_path};
 
+use WTSI::DNAP::Warehouse::Schema;
 use npg::api::run;
 use st::api::lims;
 use npg_tracking::data::reference::find;
@@ -38,6 +39,23 @@ Optional LIMs identifier for flowcell
 =cut
 
 has q{id_flowcell_lims} => (isa => q{Maybe[Int]},  is => q{ro}, required => 0,);
+
+=head2 mlwh_schema
+
+DBIx schema object for ml_warehouse.
+
+=cut
+
+has q{mlwh_schema} => (
+                isa        => q{DBIx::Class::Schema},
+                is         => q{ro},
+                required   => 0,
+                metaclass => 'NoGetopt',
+                lazy_build => 1,
+                         );
+sub _build_iseq_flowcell {
+  return WTSI::DNAP::Warehouse::Schema->connect();
+}
 
 =head2 run
 
@@ -364,6 +382,8 @@ __END__
 
 =item Cwd
 
+=item WTSI::DNAP::Warehouse::Schema
+
 =item st::api::lims
 
 =item npg::api::run
@@ -382,7 +402,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Limited
+Copyright (C) 2015 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

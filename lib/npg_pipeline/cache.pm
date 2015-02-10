@@ -30,18 +30,27 @@ npg_pipeline::cache
 =head1 SYNOPSIS
 
   npg_pipeline::cache->new(id_run         => 78,
+                           lims           => [$run_lims->children],
                            resuse_cache   => 1,
                            set_env_vars   => 1,
                            cache_location => 'my_dir',
                           )->setup;
-
-  npg_pipeline::cache->new(id_run => 78,)->create;
   
 =head1 SUBROUTINES/METHODS
 
 =head2 id_run
  
 Integer run id, required.
+
+=head2 lims
+ 
+A reference to an array of child lims objects.
+
+=cut
+
+has 'lims'       => ('isa'      => 'ArrayRef[st::api::lims]',
+                     'is'       => 'ro',
+                     'required' => 1,);
 
 =head2 reuse_cache
 
@@ -80,8 +89,8 @@ has 'cache_location' => (isa     => 'NpgTrackingDirectory',
 Name of the cache directory, defaults to 'metadata_cache'.
 
 =cut
-has 'cache_dir_name' => (isa     => 'Str',
-                         is      => 'ro',
+has 'cache_dir_name' => (isa        => 'Str',
+                         is         => 'ro',
                          lazy_build => 1,);
 sub _build_cache_dir_name {
   my $self = shift;
@@ -93,8 +102,8 @@ sub _build_cache_dir_name {
 A path to the cache directory.
 
 =cut
-has 'cache_dir_path' => (isa     => 'Str',
-                         is      => 'ro',
+has 'cache_dir_path' => (isa        => 'Str',
+                         is         => 'ro',
                          lazy_build => 1,);
 sub _build_cache_dir_path {
   my $self = shift;
@@ -224,18 +233,8 @@ sub create {
     $self->_samplesheet();
   } else {
     local $ENV{ $cache_dir_var_name } = $self->cache_dir_path;
-    $self->_xml_feeds('with_lims');
+    $self->_xml_feeds();
     $self->_samplesheet();
-  }
-
-  my $st = File::Spec->catdir ($self->cache_dir_path, 'st');
-  if (-d $st) {
-    my $new_st = File::Spec->catdir ($self->cache_dir_path, 'st_original');
-    my $moved = move $st, $new_st;
-    if (!$moved) {
-      croak sprintf 'Failed to move out of the way st directory (%s to %s), error number %s',
-                   $st, $new_st, $ERRNO;
-    }
   }
 
   return;
@@ -253,7 +252,9 @@ sub env_vars {
 sub _samplesheet {
   my ($self) = @_;
   if(not -e $self->samplesheet_file_path){
-    npg::samplesheet->new(id_run => $self->id_run,
+    npg::samplesheet->new(
+                        id_run => $self->id_run,
+                        lims   => $self->lims,
                         extend => 1,
                         output => $self->samplesheet_file_path)->process();
     $self->_add_message(q(Samplesheet created at ).$self->samplesheet_file_path);
@@ -277,7 +278,8 @@ sub _deprecate {
 }
 
 sub _xml_feeds {
-  my ($self, $with_lims) = @_;
+  my $self = shift;
+
   local $ENV{npg::api::request->save2cache_dir_var_name()} = 1;
   my $run = npg::api::run->new({id_run => $self->id_run});
   $run->is_paired_run();
@@ -285,15 +287,6 @@ sub _xml_feeds {
   $run->instrument()->model();
   npg::api::run_status_dict->new()->run_status_dicts();
 
-  if ($with_lims) {
-    my $lims = st::api::lims->new(id_run => $self->id_run, driver_type => 'xml');
-    my @methods = $lims->method_list();
-    foreach my $l ( $lims->associated_lims() ) {
-      foreach my $method ( @methods ) {
-        $l->$method;
-      }
-    }
-  }
   return;
 }
 

@@ -1,0 +1,86 @@
+---
+- email: one@sanger.ac.uk
+  id_study_tmp: 1954
+  id_study_users_tmp: 5925
+  last_updated: 2012-11-26 14:20:11
+  login: one
+  name: One One
+  role: manager
+- email: two@sanger.ac.uk
+  id_study_tmp: 1954
+  id_study_users_tmp: 5926
+  last_updated: 2012-11-26 14:20:11
+  login: two
+  name: Two One
+  role: manager
+- email: three@sanger.ac.uk
+  id_study_tmp: 1954
+  id_study_users_tmp: 5927
+  last_updated: 2012-11-26 14:20:11
+  login: three
+  name: Three One
+  role: owner
+- email: one@sanger.ac.uk
+  id_study_tmp: 1954
+  id_study_users_tmp: 5928
+  last_updated: 2012-11-26 14:20:11
+  login: one
+  name: One One
+  role: follower
+- email: four@sanger.ac.uk
+  id_study_tmp: 2934
+  id_study_users_tmp: 9947
+  last_updated: 2014-07-14 09:25:27
+  login: four
+  name: Four One
+  role: manager
+- email: five@sanger.ac.uk
+  id_study_tmp: 2934
+  id_study_users_tmp: 9948
+  last_updated: 2014-07-14 09:25:27
+  login: five
+  name: Five Four Three
+  role: owner
+- email: two@sanger.ac.uk
+  id_study_tmp: 2934
+  id_study_users_tmp: 9949
+  last_updated: 2014-07-14 09:25:27
+  login: two
+  name: Two Two
+  role: follower
+- email: six@sanger.ac.uk
+  id_study_tmp: 2934
+  id_study_users_tmp: 9950
+  last_updated: 2014-07-14 09:25:27
+  login: six
+  name: Six One
+  role: follower
+- email: seven@sanger.ac.uk
+  id_study_tmp: 2934
+  id_study_users_tmp: 9951
+  last_updated: 2014-07-14 09:25:27
+  login: seven
+  name: Seven One
+  role: follower
+- email: mer-seq@hgi-mer.sanger.ac.uk
+  id_study_tmp: 2934
+  id_study_users_tmp: 9952
+  last_updated: 2014-07-14 09:25:27
+  login: mercury
+  name: Mercury Human Genetics Informatics Pipelines
+  role: follower
+- email: eight@sanger.ac.uk
+  id_study_tmp: 2934
+  id_study_users_tmp: 9953
+  last_updated: 2014-07-14 09:25:27
+  login: eight
+  name: Eight One
+  role: follower
+- email: nine@sanger.ac.uk
+  id_study_tmp: 2934
+  id_study_users_tmp: 9954
+  last_updated: 2014-07-14 09:25:27
+  login: nine
+  name: Nine Seven Two
+  role: follower
+

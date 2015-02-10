@@ -194,7 +194,20 @@ See npg_pipeline::cache for details.
 
 sub spider {
   my ( $self ) = @_;
+
+  my $lims_driver = st::api::lims::ml_warehouse->new(
+                     mlwh_schema      => $self->mlwh_schema,
+                     id_flowcell_lims => $self->id_flowcell_lims,
+                     flowcell_barcode => $self->flowcell_id
+                                                    );
+  my $lims = st::api::lims->new(
+                     id_flowcell_lims => $self->id_flowcell_lims,
+                     flowcell_barcode => $self->flowcell_id,
+                     driver           => $lims_driver,
+                               );
+
   my $cache = npg_pipeline::cache->new( id_run         => $self->id_run,
+                                        lims           => [$lims->children],
                                         resuse_cache   => 1,
                                         set_env_vars   => 1,
                                         cache_location => $self->analysis_path,

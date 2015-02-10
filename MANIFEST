@@ -562,9 +562,10 @@ t/data/summary_files/after_v7_mp_hack_Summary.htm
 t/data/summary_files/after_v7_mp_hack_Summary.xml
 t/data/summary_files/BustardSummary_mp.xml
 t/data/summary_files/Summary.xsl
-t/data/fixtures/mlwh/100-IseqFlowcell.yml
 t/data/fixtures/mlwh/000-Sample.yml
 t/data/fixtures/mlwh/000-Study.yml
+t/data/fixtures/mlwh/100-IseqFlowcell.yml
+t/data/fixtures/mlwh/100-StudyUser.yml
 t/dbic_util.pm
 t/perlcriticrc
 t/util.pm
