@@ -109,11 +109,6 @@ sub _process_one_run {
     return;
   }
 
-  if (!$run->is_tag_set(q[rta])) {
-    $self->log(qq{$id_run is not an RTA run, not processing, will revisit later});
-    return;
-  }
-
   my $message;
   my $id = $self->_check_lims_link($run, \$message);
   if ($id == $NO_LIMS_LINK) {
@@ -225,8 +220,8 @@ npg_pipeline::daemons::harold_analysis_runner
 
 =head1 DESCRIPTION
 
-This module interrogates the npg database for runs with a status of analysis pending,
-and are rta runs, and then, if a link to LIMs data can be established,
+This module interrogates the npg database for runs with a status of analysis pending
+and then, if a link to LIMs data can be established,
 starts the pipeline for each of them.
 
 =head1 SUBROUTINES/METHODS

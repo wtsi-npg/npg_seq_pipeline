@@ -72,10 +72,12 @@ my $builder = $class->new(
           'npg_tracking::illumina::run::short_info'         => 0,
           'npg_tracking::util::types'                       => 0,
           'st::api::lims'                                   => 0,
+          'st::api::lims::warehouse'                        => 0,
           'npg::api::request'                               => 0,
           'npg::api::run'                                   => 0,
           'npg::api::run_status_dict'                       => 0,
           'npg::samplesheet'                                => 0,
+          'WTSI::DNAP::Warehouse::Schema'                   => 0,
          },
 
          'build_requires'      => {

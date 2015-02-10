@@ -3,13 +3,13 @@ LIST OF CHANGES
 
  - GCLP compliance-related daemon changes:
      runs will not be progressed to analisys/archival unless the
-     flowcell barcode is set is known in the npg_trackign database;
-     runs are not going to be progressed is it's impossible to fetch LIMs data for a flowcell;
+     flowcell barcode is set in the npg_tracking database;
+     runs are not going to be progressed if it's impossible to fetch LIMs data for a flowcell;
      both analysis and archival daemon to pass runfolder path to the
      pipeline script;
      if it is impossible to fetch LIMs data using the flowcell barcode,
      batch id will be passed to the pipeline script    
- - use ml_warehouse driver in samplesheet generation
+ - use ml_warehouse driver in the samplesheet generation
  - pipeline-level flag to indicate whether NPG xml feeds shoudl be cached,
      defaults to true
  - GCLP compliance-related pipeline changes:
@@ -17,6 +17,7 @@ LIST OF CHANGES
      accessing LIMs information from runfolder path/content;
      use batch id if provided by the caller;
      derive the run id from runfolder path/content
+ - check for RTA run tag is dropped in the analysis daemon - all current runs are RTA
 
 release 47.3
  - P4 can process nonconsented X and autosome human split, and separate Y chromosome data

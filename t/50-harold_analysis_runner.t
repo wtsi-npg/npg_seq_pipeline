@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 47;
+use Test::More tests => 46;
 use Test::Exception;
 use Cwd;
 use List::MoreUtils qw{any};
@@ -26,8 +26,6 @@ my $schema = $dbic_util->test_schema();
 my $test_run = $schema->resultset(q[Run])->find(1234);
 $test_run->update_run_status('analysis pending', 'pipeline',);
 is($test_run->current_run_status_description, 'analysis pending', 'test run is analysis pending');
-$test_run->set_tag('pipeline', 'rta');
-ok($test_run->is_tag_set('rta'), 'RTA tag set for the test run');
 
 my $folder_path_glob = $test_run->folder_path_glob();
 like($folder_path_glob, qr/\/sf33\//, 'folder path glob correct for a test run');
