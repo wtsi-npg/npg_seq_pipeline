@@ -52,8 +52,8 @@ has q{mlwh_schema} => (
                 required   => 0,
                 metaclass => 'NoGetopt',
                 lazy_build => 1,
-                         );
-sub _build_iseq_flowcell {
+                       );
+sub _build_mlwh_schema {
   return WTSI::DNAP::Warehouse::Schema->connect();
 }
 

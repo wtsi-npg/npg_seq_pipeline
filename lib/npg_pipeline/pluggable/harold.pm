@@ -6,6 +6,8 @@ use English qw{-no_match_vars};
 use Try::Tiny;
 use Readonly;
 
+use st::api::lims;
+use st::api::lims::ml_warehouse;
 use npg_pipeline::cache;
 extends q{npg_pipeline::pluggable};
 with qw{npg_tracking::illumina::run::long_info};
@@ -210,6 +212,7 @@ sub spider {
                                         lims           => [$lims->children],
                                         resuse_cache   => 1,
                                         set_env_vars   => 1,
+                                        cache_xml      => $self->cache_xml,
                                         cache_location => $self->analysis_path,
                                       );
   my $error;
@@ -220,7 +223,7 @@ sub spider {
   };
   $self->log(join qq[\n], @{$cache->messages});
   if ($error) {
-    croak qq[Error while spidering:\n$error];
+    croak qq[Error while spidering:$error];
   }
   return ();
 }
@@ -360,6 +363,10 @@ __END__
 
 =item npg_common::roles::run::status
 
+=item st::api::lims
+
+=item st::api::lims::ml_warehouse
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -373,7 +380,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Researcg Ltd
+Copyright (C) 2015 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -9,6 +9,14 @@ LIST OF CHANGES
      pipeline script;
      if it is impossible to fetch LIMs data using the flowcell barcode,
      batch id will be passed to the pipeline script    
+ - use ml_warehouse driver in samplesheet generation
+ - pipeline-level flag to indicate whether NPG xml feeds shoudl be cached,
+     defaults to true
+ - GCLP compliance-related pipeline changes:
+     get the flowcell barcode needed for
+     accessing LIMs information from runfolder path/content;
+     use batch id if provided by the caller;
+     derive the run id from runfolder path/content
 
 release 47.3
  - P4 can process nonconsented X and autosome human split, and separate Y chromosome data

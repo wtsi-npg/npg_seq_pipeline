@@ -1,10 +1,10 @@
 use strict;
 use warnings;
-use Test::More tests => 20;
+use Test::More tests => 21;
 use Test::Deep;
 use Test::Exception;
 use t::util;
-use npg::api::request;
+use t::dbic_util;
 
 my $util = t::util->new();
 my $conf_path = $util->conf_path();
@@ -103,23 +103,30 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
 }
 
 {
-  my $p = npg_pipeline::pluggable::harold::post_qc_review->new(
-      id_run => 1234,
-      runfolder_path => $runfolder_path,
-      run_folder => q{123456_IL2_1234},
-      local => 1,
-      bam_basecall_path => $runfolder_path,
-  );
-  my $cache = $runfolder_path . q{/metadata_cache_1234};
-  qx{mkdir -p $cache};
-  lives_ok {$p->spider();} q{spider runs ok};
-  is( $ENV{ npg::api::request->cache_dir_var_name() }, $cache, q{environment variable set to cache} );
+  my $wh_schema = t::dbic_util->new()->test_schema_mlwh('t/data/fixtures/mlwh');
 
-  local $ENV{ npg::api::request->cache_dir_var_name() } = q{t/data};
+  my $name = '150204_HS24_15440_B_HBF2DADXX';
+  my $runfolder_path = join q[/], $temp, $name;
+  mkdir $runfolder_path; 
+
+  my $p = npg_pipeline::pluggable::harold::post_qc_review->new(
+      id_run            => 15440,
+      runfolder_path    => $runfolder_path,
+      bam_basecall_path => $runfolder_path,
+      mlwh_schema       => $wh_schema,
+      cache_xml         => 0,
+  );
+
+  my $cache       = join q[/], $runfolder_path , q{metadata_cache_15440};
+  my $samplesheet = join q[/], $cache, 'samplesheet_15440.csv';
+
   lives_ok {$p->spider();} q{spider runs ok};
-  is( $ENV{ npg::api::request->cache_dir_var_name() },qq{$runfolder_path/metadata_cache_1234},
-    q{environment variable is set to local cache} );
-  ok(-d qq{$runfolder_path/metadata_cache_1234}, 'local cache directory exists');
+  is( $ENV{'NPG_WEBSERVICE_CACHE_DIR'}, $cache, q{cache dir. env. var. is set} );
+  is( $ENV{'NPG_CACHED_SAMPLESHEET_FILE'}, $samplesheet,
+    q{cached samplesheet env. var. is set} );
+  ok(-d $cache, 'cache directory created');
+  ok(!-d "$cache/npg", 'directory for cached npg xml feeds is not created');
+  ok(-f $samplesheet, 'samplesheet created');
 }
 
 1;

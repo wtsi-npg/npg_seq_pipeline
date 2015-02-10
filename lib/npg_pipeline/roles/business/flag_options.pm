@@ -247,6 +247,19 @@ has q{spatial_filter} => (
   default =>1,
 );
 
+=head2 cache_xml
+
+Cache npg xml feeds? Boolean flag, true by default.
+
+=cut
+
+has q{cache_xml} => (
+  isa => q{Bool},
+  is => q{ro},
+  documentation => q{cache npg xml feeds, true by default},
+  default =>1,
+);
+
 1;
 __END__
 

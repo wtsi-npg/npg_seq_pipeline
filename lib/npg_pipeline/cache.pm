@@ -42,15 +42,25 @@ npg_pipeline::cache
  
 Integer run id, required.
 
+=head2 cache_xml
+
+Cache npg xml feeds? Boolean flag, true by default.
+
+=cut
+
+has 'cache_xml'  => (isa     => 'Bool',
+                     is      => 'ro',
+                     default =>1,);
+
 =head2 lims
  
 A reference to an array of child lims objects.
 
 =cut
 
-has 'lims'       => ('isa'      => 'ArrayRef[st::api::lims]',
-                     'is'       => 'ro',
-                     'required' => 1,);
+has 'lims'       => (isa      => 'ArrayRef[st::api::lims]',
+                     is       => 'ro',
+                     required => 1,);
 
 =head2 reuse_cache
 
@@ -280,6 +290,10 @@ sub _deprecate {
 sub _xml_feeds {
   my $self = shift;
 
+  if (!$self->cache_xml) {
+    return;
+  }
+
   local $ENV{npg::api::request->save2cache_dir_var_name()} = 1;
   my $run = npg::api::run->new({id_run => $self->id_run});
   $run->is_paired_run();
@@ -404,7 +418,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2015 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
