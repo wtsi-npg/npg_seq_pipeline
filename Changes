@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - switch seqchksum_comparator to cram, add new test data and updated tests
+   convert all cram files to bam as current version of bamcat will not read cram
+   dropped one test as converting an empty bam file to cram produces a valid cram file 
+
 release 47.6
  - reenable archival of index files for CRAM/BAM files to iRODS
 
