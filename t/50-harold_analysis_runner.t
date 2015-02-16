@@ -183,7 +183,7 @@ package main;
 
   $fc_row->update({'flowcell_barcode' => $fc});
 
-  is ($runner->_check_lims_link($test_run, \$message), 0, 'batch id not returned');
+  is ($runner->_check_lims_link($test_run, \$message), 55, 'batch id is returned');
   is ($message, 'initial', 'no message');
 
   $test_run->update({batch_id => undef,});

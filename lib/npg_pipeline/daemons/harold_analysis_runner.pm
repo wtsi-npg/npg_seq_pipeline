@@ -153,11 +153,9 @@ sub _check_lims_link {
     return $NO_LIMS_LINK;
   }
 
-  if (!$row_count) {
-    return $batch_id;
-  }
+  $batch_id ||= 0;
 
-  return 0;
+  return $batch_id;
 }
 
 sub _runfolder_path {
