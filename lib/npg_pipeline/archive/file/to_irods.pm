@@ -44,7 +44,7 @@ sub _generate_bsub_command {
 
   $bsub_command .=  qq{-E 'script_must_be_unique_runner -job_name="$job_name_prefix"' };
   $bsub_command .=  q{-o } . $location_of_logs . qq{/$job_name.out };
-  $bsub_command .=  q{'} . $archive_script . q{ --archive_path } . $self->archive_path() . q{ --runfolder_path } . $self->runfolder_path() . q{ --id_run } . $self->id_run();
+  $bsub_command .=  q{'} . $archive_script . q{ --samtools_cmd samtools1_1 --exclude_bam --archive_path } . $self->archive_path() . q{ --runfolder_path } . $self->runfolder_path() . q{ --id_run } . $self->id_run();
 
   if($position_list){
      $bsub_command .=  $position_list

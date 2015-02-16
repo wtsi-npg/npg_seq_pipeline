@@ -68,7 +68,7 @@ sub create_analysis {
 
   my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
 
-  my $expected_command = q{bsub -q test -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irods_bam_loader.pl --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234'};
+  my $expected_command = q{bsub -q test -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irods_bam_loader.pl --samtools_cmd samtools1_1 --exclude_bam --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234'};
 
   is( $bsub_command, $expected_command, q{generated bsub command is correct});
 }
@@ -99,7 +99,7 @@ sub create_analysis {
   is(scalar@jids, 1, q{only one job submitted});
 
   my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-  my $expected_command = q{bsub -q test -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irods_bam_loader.pl --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234 --positions 8'};
+  my $expected_command = q{bsub -q test -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irods_bam_loader.pl --samtools_cmd samtools1_1 --exclude_bam --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234 --positions 8'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 

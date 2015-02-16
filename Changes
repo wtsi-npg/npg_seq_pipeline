@@ -16,6 +16,15 @@ LIST OF CHANGES
      derive the run id from runfolder path/content
  - check for RTA run tag is dropped in the analysis daemon - all current runs are RTA
 
+release 47.6
+ - reenable archival of index files for CRAM/BAM files to iRODS
+
+release 47.5
+ - turn off BAM archival to iRODS
+
+release 47.4
+ - multiple TraDIS library types now in use, all assumed to start with TraDIS
+
 release 47.3
  - P4 can process nonconsented X and autosome human split, and separate Y chromosome data
  - tidy of conditions for selection of p4 processing, and new force_p4 flag to override them
