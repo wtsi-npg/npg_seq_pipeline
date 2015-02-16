@@ -1,6 +1,7 @@
 package npg_pipeline::cache;
 
 use Moose;
+use MooseX::StrictConstructor;
 use Carp;
 use English qw{-no_match_vars};
 use POSIX qw(strftime);
@@ -42,15 +43,15 @@ npg_pipeline::cache
  
 Integer run id, required.
 
-=head2 cache_xml
+=head2 cache_npg_xml
 
 Cache npg xml feeds? Boolean flag, true by default.
 
 =cut
 
-has 'cache_xml'  => (isa     => 'Bool',
-                     is      => 'ro',
-                     default =>1,);
+has 'cache_npg_xml'  => (isa     => 'Bool',
+                         is      => 'ro',
+                         default => 1,);
 
 =head2 lims
  
@@ -58,9 +59,10 @@ A reference to an array of child lims objects.
 
 =cut
 
-has 'lims'       => (isa      => 'ArrayRef[st::api::lims]',
-                     is       => 'ro',
-                     required => 1,);
+has 'lims'       => (isa       => 'ArrayRef[st::api::lims]',
+                     is        => 'ro',
+                     required  => 0,
+                     predicate => '_has_lims');
 
 =head2 reuse_cache
 
@@ -243,8 +245,19 @@ sub create {
     $self->_samplesheet();
   } else {
     local $ENV{ $cache_dir_var_name } = $self->cache_dir_path;
-    $self->_xml_feeds();
+    my $with_lims = $self->_has_lims ? 0 : 1;
+    $self->_xml_feeds($with_lims);
     $self->_samplesheet();
+  }
+
+  my $st = File::Spec->catdir ($self->cache_dir_path, 'st');
+  if (-d $st) {
+    my $new_st = File::Spec->catdir ($self->cache_dir_path, 'st_original');
+    my $moved = move $st, $new_st;
+    if (!$moved) {
+      croak sprintf 'Failed to move out of the way st directory (%s to %s), error number %s',
+      $st, $new_st, $ERRNO;
+    }
   }
 
   return;
@@ -262,11 +275,16 @@ sub env_vars {
 sub _samplesheet {
   my ($self) = @_;
   if(not -e $self->samplesheet_file_path){
-    npg::samplesheet->new(
-                        id_run => $self->id_run,
-                        lims   => $self->lims,
-                        extend => 1,
-                        output => $self->samplesheet_file_path)->process();
+
+    my $ref = { id_run => $self->id_run,
+                extend => 1,
+		output => $self->samplesheet_file_path,
+              };
+    if ($self->_has_lims) {
+      $ref->{'lims'} = $self->lims;
+    }
+
+    npg::samplesheet->new($ref)->process();
     $self->_add_message(q(Samplesheet created at ).$self->samplesheet_file_path);
   }
   return;
@@ -288,18 +306,27 @@ sub _deprecate {
 }
 
 sub _xml_feeds {
-  my $self = shift;
-
-  if (!$self->cache_xml) {
-    return;
-  }
+  my ($self, $with_lims) = @_;
 
   local $ENV{npg::api::request->save2cache_dir_var_name()} = 1;
-  my $run = npg::api::run->new({id_run => $self->id_run});
-  $run->is_paired_run();
-  $run->current_run_status();
-  $run->instrument()->model();
-  npg::api::run_status_dict->new()->run_status_dicts();
+  
+  if ($self->cache_npg_xml) {
+    my $run = npg::api::run->new({id_run => $self->id_run});
+    $run->is_paired_run();
+    $run->current_run_status();
+    $run->instrument()->model();
+    npg::api::run_status_dict->new()->run_status_dicts();
+  }
+
+  if ($with_lims) {
+    my $lims = st::api::lims->new(id_run => $self->id_run, driver_type => 'xml');
+    my @methods = $lims->method_list();
+    foreach my $l ( $lims->associated_lims() ) {
+      foreach my $method ( @methods ) {
+        $l->$method;
+      }
+    }
+  }
 
   return;
 }
@@ -377,6 +404,8 @@ Creates or finds existing cache of lims and other metadata needed to run the pip
 =item Carp
 
 =item Moose
+
+=item MooseX::StrictConstructor
 
 =item Cwd
 
