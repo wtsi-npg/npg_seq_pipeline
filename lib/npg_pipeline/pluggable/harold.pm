@@ -202,6 +202,7 @@ sub spider {
              };
 
   my $lims = $self->source_lims;
+
   if ($lims) {
     $args->{'lims'} = [$lims->children];
   }

@@ -40,7 +40,7 @@ Optional LIMs identifier for flowcell
 
 =cut
 
-has q{id_flowcell_lims} => (isa => q{Maybe[Int]},  is => q{ro}, required => 0,);
+has q{id_flowcell_lims} => (isa => q{Int},  is => q{ro}, required => 0,);
 
 =head2 mlwh_schema
 
@@ -98,7 +98,6 @@ sub source_lims {
   my $lims_id = $self->id_flowcell_lims;
 
   if (!$lims_id) {
-
     my $driver = st::api::lims::ml_warehouse->new(
          mlwh_schema      => $self->mlwh_schema,
          id_flowcell_lims => $lims_id,
