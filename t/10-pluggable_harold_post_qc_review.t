@@ -3,6 +3,7 @@ use warnings;
 use Test::More tests => 21;
 use Test::Deep;
 use Test::Exception;
+use Cwd;
 use t::util;
 use t::dbic_util;
 
@@ -114,18 +115,19 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
       runfolder_path    => $runfolder_path,
       bam_basecall_path => $runfolder_path,
       mlwh_schema       => $wh_schema,
-      cache_xml         => 0,
   );
 
   my $cache       = join q[/], $runfolder_path , q{metadata_cache_15440};
   my $samplesheet = join q[/], $cache, 'samplesheet_15440.csv';
+
+  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = join q[/], getcwd(), 't/data/run_15440';
 
   lives_ok {$p->spider();} q{spider runs ok};
   is( $ENV{'NPG_WEBSERVICE_CACHE_DIR'}, $cache, q{cache dir. env. var. is set} );
   is( $ENV{'NPG_CACHED_SAMPLESHEET_FILE'}, $samplesheet,
     q{cached samplesheet env. var. is set} );
   ok(-d $cache, 'cache directory created');
-  ok(!-d "$cache/npg", 'directory for cached npg xml feeds is not created');
+  ok(-d "$cache/npg", 'directory for cached npg xml feeds is created');
   ok(-f $samplesheet, 'samplesheet created');
 }
 

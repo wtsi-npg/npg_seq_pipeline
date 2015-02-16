@@ -7,11 +7,8 @@ LIST OF CHANGES
      runs are not going to be progressed if it's impossible to fetch LIMs data for a flowcell;
      both analysis and archival daemon to pass runfolder path to the
      pipeline script;
-     if it is impossible to fetch LIMs data using the flowcell barcode,
-     batch id will be passed to the pipeline script    
- - use ml_warehouse driver in the samplesheet generation
- - pipeline-level flag to indicate whether NPG xml feeds shoudl be cached,
-     defaults to true
+     if batch_id is available, pass it to teh analysis pipeline script    
+ - use appropriate driver for samplesheet generation (xml, warehouse, ml_warehouse)
  - GCLP compliance-related pipeline changes:
      get the flowcell barcode needed for
      accessing LIMs information from runfolder path/content;

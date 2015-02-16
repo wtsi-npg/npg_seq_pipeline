@@ -6,8 +6,6 @@ use English qw{-no_match_vars};
 use Try::Tiny;
 use Readonly;
 
-use st::api::lims;
-use st::api::lims::ml_warehouse;
 use npg_pipeline::cache;
 extends q{npg_pipeline::pluggable};
 with qw{npg_tracking::illumina::run::long_info};
@@ -197,24 +195,18 @@ See npg_pipeline::cache for details.
 sub spider {
   my ( $self ) = @_;
 
-  my $lims_driver = st::api::lims::ml_warehouse->new(
-                     mlwh_schema      => $self->mlwh_schema,
-                     id_flowcell_lims => $self->id_flowcell_lims,
-                     flowcell_barcode => $self->flowcell_id
-                                                    );
-  my $lims = st::api::lims->new(
-                     id_flowcell_lims => $self->id_flowcell_lims,
-                     flowcell_barcode => $self->flowcell_id,
-                     driver           => $lims_driver,
-                               );
+  my $args = {
+    id_run         => $self->id_run,
+    set_env_vars   => 1,
+    cache_location => $self->analysis_path,
+             };
 
-  my $cache = npg_pipeline::cache->new( id_run         => $self->id_run,
-                                        lims           => [$lims->children],
-                                        resuse_cache   => 1,
-                                        set_env_vars   => 1,
-                                        cache_xml      => $self->cache_xml,
-                                        cache_location => $self->analysis_path,
-                                      );
+  my $lims = $self->source_lims;
+  if ($lims) {
+    $args->{'lims'} = [$lims->children];
+  }
+  my $cache = npg_pipeline::cache->new($args);
+
   my $error;
   try {
     $cache->setup();
@@ -362,10 +354,6 @@ __END__
 =item npg_tracking::illumina::run::long_info
 
 =item npg_common::roles::run::status
-
-=item st::api::lims
-
-=item st::api::lims::ml_warehouse
 
 =back
 

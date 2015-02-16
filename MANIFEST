@@ -244,6 +244,9 @@ t/data/rna_seq/st/studies/2775.xml
 t/data/rna_seq/st/studies/2893.xml
 t/data/rna_seq/st/studies/311.xml
 t/data/rna_seq/st/studies/401.xml
+t/data/run_15440/npg/instrument/92.xml
+t/data/run_15440/npg/run/15440.xml
+t/data/run_15440/npg/run_status_dict.xml
 t/data/runfolder/archive/1234_2.bam
 t/data/runfolder/archive/1234_2_human.bam
 t/data/runfolder/archive/1234_3.bam

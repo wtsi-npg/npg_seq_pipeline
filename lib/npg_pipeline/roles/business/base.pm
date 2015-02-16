@@ -9,6 +9,8 @@ use Cwd qw{abs_path};
 use WTSI::DNAP::Warehouse::Schema;
 use npg::api::run;
 use st::api::lims;
+use st::api::lims::warehouse;
+use st::api::lims::ml_warehouse;
 use npg_tracking::data::reference::find;
 use npg_pipeline::cache;
 
@@ -79,6 +81,49 @@ has q{lims} => (isa => q{st::api::lims},  is => q{ro}, metaclass => 'NoGetopt', 
 sub _build_lims {
   my ($self) = @_;
   return st::api::lims->new(id_run => $self->id_run);
+}
+
+=head2 source_lims
+
+ Sometimes alternative sources of LIMs data have to be used.
+ In these cases, return the relevant lims object, otherwise
+ return undefined.
+
+=cut
+
+sub source_lims {
+  my $self = shift;
+
+  my $lims;
+  my $lims_id = $self->id_flowcell_lims;
+
+  if (!$lims_id) {
+
+    my $driver = st::api::lims::ml_warehouse->new(
+         mlwh_schema      => $self->mlwh_schema,
+         id_flowcell_lims => $lims_id,
+         flowcell_barcode => $self->flowcell_id );
+
+    $lims = st::api::lims->new(
+        id_flowcell_lims => $lims_id,
+        flowcell_barcode => $self->flowcell_id,
+        driver           => $driver,
+        driver_type      => 'ml_warehouse' );
+
+  } elsif ($lims_id=~/\A\d{13}\z/smx) { # it's a tube barcode
+
+    my $position = 1;
+    my $driver =  st::api::lims::warehouse->new(
+        position           => $position,
+        tube_ean13_barcode => $lims_id );
+
+    $lims = st::api::lims->new(
+        position    => $position,
+        driver      => $driver,
+        driver_type => 'warehouse' );
+  }
+
+  return $lims;
 }
 
 =head2 multiplexed_lanes
@@ -385,6 +430,10 @@ __END__
 =item WTSI::DNAP::Warehouse::Schema
 
 =item st::api::lims
+
+=item st::api::lims::warehouse
+
+=item st::api::lims::ml_warehouse
 
 =item npg::api::run
 

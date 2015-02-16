@@ -32,11 +32,19 @@ npg_pipeline::cache
 
   npg_pipeline::cache->new(id_run         => 78,
                            lims           => [$run_lims->children],
-                           resuse_cache   => 1,
                            set_env_vars   => 1,
+                           reuse_cache    => 1,
                            cache_location => 'my_dir',
                           )->setup;
-  
+
+  or, to generate the samplesheet from xml feeds,
+
+  npg_pipeline::cache->new(id_run         => 78,
+                           set_env_vars   => 1,
+                           reuse_cache    => 1,
+                           cache_location => 'my_dir',
+                          )->setup;
+
 =head1 SUBROUTINES/METHODS
 
 =head2 id_run
@@ -62,7 +70,7 @@ A reference to an array of child lims objects.
 has 'lims'       => (isa       => 'ArrayRef[st::api::lims]',
                      is        => 'ro',
                      required  => 0,
-                     predicate => '_has_lims');
+                     predicate => '_has_lims',);
 
 =head2 reuse_cache
 
@@ -309,7 +317,7 @@ sub _xml_feeds {
   my ($self, $with_lims) = @_;
 
   local $ENV{npg::api::request->save2cache_dir_var_name()} = 1;
-  
+
   if ($self->cache_npg_xml) {
     my $run = npg::api::run->new({id_run => $self->id_run});
     $run->is_paired_run();
