@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - switch seqchksum_comparator to cram, add new test data and updated tests
+   convert all cram files to bam as current version of bamcat will not read cram
+   dropped one test as converting an empty bam file to cram produces a valid cram file 
  - More sanity checks: use of y split and nonconsented X and autosome split only with Homo
    sapiens reference, use of nonconsented human split only with non Homo sapiens reference.
  - always apply sanity checks (even when not running P4 based pipelines).
