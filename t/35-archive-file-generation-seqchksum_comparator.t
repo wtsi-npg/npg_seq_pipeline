@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 13;
+use Test::More tests => 14;
 use Test::Exception;
 use t::util;
 
@@ -80,8 +80,9 @@ END1
   print $seqchksum_fh1 $seqchksum_contents1 or die $!;
   close $seqchksum_fh1 or die $!;
 
-  # to do, scramble doesn't through an exception when converting an empty bam file to cram it just writes a cram files with a @PG ID:scramble .. line
-  #throws_ok{$object->do_comparison()} qr/Failed to run command bamcat /, q{Doing a comparison with empty bam files throws an exception}; 
+  TODO: { local $TODO= q(scramble doesn't through an exception when converting an empty bam file to cram it just writes a cram files with a @PG ID:scramble .. line);
+    throws_ok{$object->do_comparison()} qr/Failed to run command bamcat /, q{Doing a comparison with empty bam files throws an exception}; 
+  }
 
   #diag "Add bam files before re-doing the comparison";
 
