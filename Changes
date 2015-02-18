@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 47.7
  - switch seqchksum_comparator to cram, add new test data and updated tests
    convert all cram files to bam as current version of bamcat will not read cram
    dropped one test as converting an empty bam file to cram produces a valid cram file 
