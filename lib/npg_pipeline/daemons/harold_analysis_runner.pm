@@ -2,11 +2,14 @@ package npg_pipeline::daemons::harold_analysis_runner;
 
 use Moose;
 use MooseX::ClassAttribute;
+use Moose::Meta::Class;
 use Carp;
 use English qw{-no_match_vars};
 use List::MoreUtils  qw/none/;
 use Readonly;
 
+use npg_tracking::illumina::run::folder::location;
+use npg_tracking::illumina::run::short_info;
 extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
@@ -20,18 +23,32 @@ Readonly::Scalar our $GREEN_DATACENTRE  => q[green];
 Readonly::Array  our @GREEN_STAGING     =>
    qw(sf18 sf19 sf20 sf21 sf22 sf23 sf24 sf25 sf26 sf27 sf28 sf29 sf30 sf31 sf46 sf47 sf48 sf49 sf50 sf51);
 
+Readonly::Scalar my $NO_LIMS_LINK => -1;
+
 class_has 'pipeline_script_name' => (
                        isa        => q{Str},
                        is         => q{ro},
                        lazy_build => 1,
                                     );
+
+has q{_iseq_flowcell} => (
+                isa        => q{DBIx::Class::ResultSet},
+                is         => q{ro},
+                required   => 0,
+                lazy_build => 1,
+                         );
+sub _build__iseq_flowcell {
+  my $self = shift;
+  return $self->mlwh_schema->resultset('IseqFlowcell');
+}
+
 sub _build_pipeline_script_name {
   return $PB_CAL_SCRIPT;
 }
 
-has q{seen}      => (isa => q{HashRef}, is => q{rw}, default => sub { return {}; });
+has q{seen}          => (isa => q{HashRef}, is => q{rw}, default => sub { return {}; });
 
-has q{green_host} => (isa => q{Bool}, is => q{ro}, lazy_build => 1,);
+has q{green_host}    => (isa => q{Bool}, is => q{ro}, lazy_build => 1,);
 sub _build_green_host {
   my $self = shift;
   my $datacentre = `machine-location|grep datacentre`;
@@ -47,16 +64,16 @@ sub run {
   my ($self) = @_;
   $self->log(q{Analysis daemon running...});
   foreach my $run ($self->runs_with_status($ANALYSIS_PENDING)) {
-     eval{
-        if ( $self->staging_host_match($run->folder_path_glob)) {
-           $self->_process_one_run($run);
-        }
-        1;
-     } or do {
-        $self->log('Problems to process one run ' . $run->id_run() );
-        $self->log($EVAL_ERROR);
-        next;
-     };
+    eval{
+      if ( $self->staging_host_match($run->folder_path_glob)) {
+        $self->_process_one_run($run);
+      }
+      1;
+    } or do {
+      $self->log('Problems to process one run ' . $run->id_run() );
+      $self->log($EVAL_ERROR);
+      next;
+    };
   }
   return 1;
 }
@@ -92,41 +109,81 @@ sub _process_one_run {
     return;
   }
 
-  my $batch_id = $run->batch_id();
-  if(!$batch_id) {
-    $self->log(qq{NO BATCH ID for run $id_run, will revisit later});
+  my $message;
+  my $id = $self->_check_lims_link($run, \$message);
+  if ($id == $NO_LIMS_LINK) {
+    my $m = $message || q[];
+    $self->log(qq{$m for run $id_run, will revisit later});
     return;
   }
 
-  if (!$run->is_tag_set(q[rta])) {
-    $self->log(qq{$id_run is not an RTA run, not processing, will revisit later});
-    return;
+  my $arg_refs = { 'script'  => $self->pipeline_script_name, };
+  if ($id) {
+    $arg_refs->{'batch_id'} = $id;
   }
 
-  my $arg_refs = {
-        id_run  => $id_run,
-        script  => $self->pipeline_script_name,
-  };
-  $arg_refs->{job_priority} = $run->run_lanes->count <= 2 ? $RAPID_RUN_JOB_PRIORITY : $DEFAULT_JOB_PRIORITY;
+  $arg_refs->{'job_priority'} = $run->run_lanes->count <= 2 ?
+    $RAPID_RUN_JOB_PRIORITY : $DEFAULT_JOB_PRIORITY;
   my $inherited_priority = $run->priority;
   if ($inherited_priority > 0) { #not sure we curate what we get from LIMs
-    $arg_refs->{job_priority} += $inherited_priority;
+    $arg_refs->{'job_priority'} += $inherited_priority;
   }
+
+  $arg_refs->{'rf_path'} = $self->_runfolder_path($id_run);
 
   $self->run_command( $id_run, $self->_generate_command( $arg_refs ) );
 
   return;
 }
 
+sub _check_lims_link {
+  my ($self, $run, $message) = @_;
+
+  my $fc_barcode = $run->flowcell_id;
+  if(!$fc_barcode) {
+    ${$message} = q{No flowcell barcode};
+    return $NO_LIMS_LINK;
+  }
+
+  my $batch_id = $run->batch_id();
+  my $row_count = $self->_iseq_flowcell->search({'flowcell_barcode' => $fc_barcode})->count;
+  if ( !($batch_id || $row_count) ) {
+    ${$message} =
+      q{Neither batch id nor matching flowcell barcode is found};
+    return $NO_LIMS_LINK;
+  }
+
+  $batch_id ||= 0;
+
+  return $batch_id;
+}
+
+sub _runfolder_path {
+  my ($self, $id_run) = @_;
+
+  return Moose::Meta::Class->create_anon_class(
+    roles => [ qw/npg_tracking::illumina::run::folder::location
+                  npg_tracking::illumina::run::short_info/ ]
+  )->new_object(
+    npg_tracking_schema => $self->npg_tracking_schema,
+    id_run              => $id_run,
+  )->runfolder_path;
+}
+
 sub _generate_command {
   my ( $self, $arg_refs ) = @_;
 
-  my $id_run  = $arg_refs->{id_run};
-  my $script  = $arg_refs->{script};
-  my $job_priority = $arg_refs->{job_priority};
+  my $rf_path      = $arg_refs->{'rf_path'};
+  my $script       = $arg_refs->{'script'};
+  my $job_priority = $arg_refs->{'job_priority'};
+  my $batch_id     = $arg_refs->{'batch_id'};
 
   my $cmd = $script . qq{ --job_priority $job_priority} .
-                      qq{ --verbose --id_run $id_run};
+                      qq{ --verbose --runfolder_path $rf_path};
+  if ($batch_id) {
+    $cmd .= " --id_flowcell_lims $batch_id";
+  }
+
   my $path = join q[:], $self->local_path(), $ENV{PATH};
   $cmd = qq{export PATH=$path;} . $cmd;
   return $cmd;
@@ -161,7 +218,9 @@ npg_pipeline::daemons::harold_analysis_runner
 
 =head1 DESCRIPTION
 
-This module interrogates the npg database for runs with a status of analysis pending, and that are rta runs, and then runs the npg_pipeline_analyse_RTA script on each of them
+This module interrogates the npg database for runs with a status of analysis pending
+and then, if a link to LIMs data can be established,
+starts the pipeline for each of them.
 
 =head1 SUBROUTINES/METHODS
 
@@ -195,6 +254,12 @@ This module interrogates the npg database for runs with a status of analysis pen
 
 =item Readonly
 
+=item Moose::Meta::Class
+
+=item npg_tracking::illumina::run::folder::location
+
+=item npg_tracking::illumina::run::short_info
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -208,7 +273,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd.
+Copyright (C) 2015 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

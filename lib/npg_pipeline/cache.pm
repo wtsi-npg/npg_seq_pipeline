@@ -1,6 +1,7 @@
 package npg_pipeline::cache;
 
 use Moose;
+use MooseX::StrictConstructor;
 use Carp;
 use English qw{-no_match_vars};
 use POSIX qw(strftime);
@@ -30,18 +31,46 @@ npg_pipeline::cache
 =head1 SYNOPSIS
 
   npg_pipeline::cache->new(id_run         => 78,
-                           resuse_cache   => 1,
+                           lims           => [$run_lims->children],
                            set_env_vars   => 1,
+                           reuse_cache    => 1,
                            cache_location => 'my_dir',
                           )->setup;
 
-  npg_pipeline::cache->new(id_run => 78,)->create;
-  
+  or, to generate the samplesheet from xml feeds,
+
+  npg_pipeline::cache->new(id_run         => 78,
+                           set_env_vars   => 1,
+                           reuse_cache    => 1,
+                           cache_location => 'my_dir',
+                          )->setup;
+
 =head1 SUBROUTINES/METHODS
 
 =head2 id_run
  
 Integer run id, required.
+
+=head2 cache_npg_xml
+
+Cache npg xml feeds? Boolean flag, true by default.
+
+=cut
+
+has 'cache_npg_xml'  => (isa     => 'Bool',
+                         is      => 'ro',
+                         default => 1,);
+
+=head2 lims
+ 
+A reference to an array of child lims objects.
+
+=cut
+
+has 'lims'       => (isa       => 'ArrayRef[st::api::lims]',
+                     is        => 'ro',
+                     required  => 0,
+                     predicate => '_has_lims',);
 
 =head2 reuse_cache
 
@@ -80,8 +109,8 @@ has 'cache_location' => (isa     => 'NpgTrackingDirectory',
 Name of the cache directory, defaults to 'metadata_cache'.
 
 =cut
-has 'cache_dir_name' => (isa     => 'Str',
-                         is      => 'ro',
+has 'cache_dir_name' => (isa        => 'Str',
+                         is         => 'ro',
                          lazy_build => 1,);
 sub _build_cache_dir_name {
   my $self = shift;
@@ -93,8 +122,8 @@ sub _build_cache_dir_name {
 A path to the cache directory.
 
 =cut
-has 'cache_dir_path' => (isa     => 'Str',
-                         is      => 'ro',
+has 'cache_dir_path' => (isa        => 'Str',
+                         is         => 'ro',
                          lazy_build => 1,);
 sub _build_cache_dir_path {
   my $self = shift;
@@ -224,7 +253,8 @@ sub create {
     $self->_samplesheet();
   } else {
     local $ENV{ $cache_dir_var_name } = $self->cache_dir_path;
-    $self->_xml_feeds('with_lims');
+    my $with_lims = $self->_has_lims ? 0 : 1;
+    $self->_xml_feeds($with_lims);
     $self->_samplesheet();
   }
 
@@ -234,7 +264,7 @@ sub create {
     my $moved = move $st, $new_st;
     if (!$moved) {
       croak sprintf 'Failed to move out of the way st directory (%s to %s), error number %s',
-                   $st, $new_st, $ERRNO;
+      $st, $new_st, $ERRNO;
     }
   }
 
@@ -253,9 +283,16 @@ sub env_vars {
 sub _samplesheet {
   my ($self) = @_;
   if(not -e $self->samplesheet_file_path){
-    npg::samplesheet->new(id_run => $self->id_run,
-                        extend => 1,
-                        output => $self->samplesheet_file_path)->process();
+
+    my $ref = { id_run => $self->id_run,
+                extend => 1,
+		output => $self->samplesheet_file_path,
+              };
+    if ($self->_has_lims) {
+      $ref->{'lims'} = $self->lims;
+    }
+
+    npg::samplesheet->new($ref)->process();
     $self->_add_message(q(Samplesheet created at ).$self->samplesheet_file_path);
   }
   return;
@@ -278,12 +315,16 @@ sub _deprecate {
 
 sub _xml_feeds {
   my ($self, $with_lims) = @_;
+
   local $ENV{npg::api::request->save2cache_dir_var_name()} = 1;
-  my $run = npg::api::run->new({id_run => $self->id_run});
-  $run->is_paired_run();
-  $run->current_run_status();
-  $run->instrument()->model();
-  npg::api::run_status_dict->new()->run_status_dicts();
+
+  if ($self->cache_npg_xml) {
+    my $run = npg::api::run->new({id_run => $self->id_run});
+    $run->is_paired_run();
+    $run->current_run_status();
+    $run->instrument()->model();
+    npg::api::run_status_dict->new()->run_status_dicts();
+  }
 
   if ($with_lims) {
     my $lims = st::api::lims->new(id_run => $self->id_run, driver_type => 'xml');
@@ -294,6 +335,7 @@ sub _xml_feeds {
       }
     }
   }
+
   return;
 }
 
@@ -371,6 +413,8 @@ Creates or finds existing cache of lims and other metadata needed to run the pip
 
 =item Moose
 
+=item MooseX::StrictConstructor
+
 =item Cwd
 
 =item File::Spec
@@ -411,7 +455,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2015 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -54,6 +54,8 @@ A base class to provide the following methods to any derived objects within npg_
 
 has [qw/ +npg_tracking_schema +slot +flowcell_id +instrument_string +reports_path +subpath +name +tracking_run /] => (metaclass => 'NoGetopt',);
 
+has q{+id_run}         => (required => 0,);
+
 =head2 submit_bsub_command - deals with submitting a command to LSF, retrying upto 5 times if the return code is not 0. It will then croak if it still can't submit
 
   my $LSF_output = $oDerived->submit_bsub_command($cmd);

@@ -1,41 +1,45 @@
 use strict;
 use warnings;
-use Test::More tests => 65;
+use Test::More tests => 90;
 use Test::Exception;
 use File::Temp qw/tempdir/;
+use t::dbic_util;
+
+use st::api::lims::ml_warehouse;
+use st::api::lims;
 
 use_ok('npg_pipeline::cache');
-isa_ok(npg_pipeline::cache->new(id_run => 222), 'npg_pipeline::cache');
+
 is(join(q[ ], npg_pipeline::cache->env_vars()),
   'NPG_WEBSERVICE_CACHE_DIR NPG_CACHED_SAMPLESHEET_FILE',
   'names of env. variables that can be set by the module');
 
-package npg_test_no_xml_cache;
-  use Moose;
-  extends q{npg_pipeline::cache};
-  sub _xml {
-    my $self = shift;
-    mkdir join(q[/], $self->cache_dir_path, 'st');
-    mkdir join(q[/], $self->cache_dir_path, 'npg');
-    return;
-  }
-  override '_samplesheet' => sub {
-    my $self = shift;
-    local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/cache/xml';
-    super();
-    return;
-  };
-  1;
+my $wh_schema = t::dbic_util->new()->test_schema_mlwh('t/data/fixtures/mlwh');
 
-package main;
+my $lims_driver = st::api::lims::ml_warehouse->new(
+                     mlwh_schema      => $wh_schema,
+                     id_flowcell_lims => undef,
+                     flowcell_barcode => 'HBF2DADXX'
+                                                   );
+ my @lchildren = st::api::lims->new(
+                     id_flowcell_lims => undef,
+                     flowcell_barcode => 'HBF2DADXX',
+                     driver           => $lims_driver,
+                     driver_type      => 'ml_warehouse'
+                                   )->children;
 
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 'wibble';
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
 {
   my $tempdir = tempdir( CLEANUP => 1);
   my $ss_path = join q[/],$tempdir,'ss.csv';
-  my $cache = npg_pipeline::cache->new(id_run => 12376,
-                                       samplesheet_file_path => $ss_path);
+  my $cache = npg_pipeline::cache->new(
+      id_run => 12376,
+      lims => \@lchildren,
+      samplesheet_file_path => $ss_path);
+
+  isa_ok($cache, 'npg_pipeline::cache');
+
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/cache/xml';
   lives_ok { $cache->_samplesheet() } 'samplesheet generated';
   ok(-e $ss_path, 'samplesheet file exists');
@@ -45,6 +49,7 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   my $tempdir = tempdir( CLEANUP => 1);
   my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
   my $cache = npg_pipeline::cache->new(id_run => 12376,
+                                       lims   => \@lchildren,
                                        cache_location => $tempdir);
   is ($cache->cache_dir_path, $cache_dir, 'cache directory path is correct');
   is ($cache->samplesheet_file_path, join(q[/],$cache_dir,'samplesheet_12376.csv'),
@@ -69,18 +74,19 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
 {
   my $tempdir = tempdir( CLEANUP => 1);
   my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
-  my $cache = npg_test_no_xml_cache->new(id_run => 12376,
-                                         cache_location => $tempdir);
-  isa_ok ($cache, 'npg_test_no_xml_cache');
+  my $cache = npg_pipeline::cache->new(id_run => 12376,
+                                       lims   => \@lchildren,
+                                       cache_location => $tempdir);
+  isa_ok ($cache, 'npg_pipeline::cache');
   lives_ok {$cache->create} 'no error creating the cache';
   ok (-d $cache_dir, 'cache directory created');
   ok (-d $cache_dir.'/npg', 'npg cache directory is present');
-  ok (-d $cache_dir.'/st_original', 'renamed st cache directory is present');
   ok (-e $cache_dir.'/samplesheet_12376.csv', 'samplesheet is present');
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = '';
-  $cache = npg_test_no_xml_cache->new(id_run => 12376,
-                                      cache_location => $tempdir);
+  $cache = npg_pipeline::cache->new(id_run => 12376,
+                                    lims   => \@lchildren,
+                                    cache_location => $tempdir);
   is ($cache->reuse_cache, 1, 'reuse_cache true by default');
   lives_ok {$cache->setup} 'no error reusing existing cache';
   my @messages = @{$cache->messages};
@@ -92,9 +98,10 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   my @found = glob($tempdir);
   is (scalar @found, 1, 'one entry in cache location');
 
-  $cache = npg_test_no_xml_cache->new(id_run => 12376,
-                                      reuse_cache    => 0,
-                                      cache_location => $tempdir);
+  $cache = npg_pipeline::cache->new(id_run => 12376,
+                                    lims   => \@lchildren,
+                                    reuse_cache    => 0,
+                                    cache_location => $tempdir);
   is ($cache->reuse_cache, 0, 'reuse_cache set to false');
   is ($cache->set_env_vars, 0, 'set_env_vars is false by default');
   lives_ok {$cache->setup}
@@ -116,10 +123,11 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   ok( !$ENV{NPG_CACHED_SAMPLESHEET_FILE},
     'value of NPG_CACHED_SAMPLESHEET_FILE env var is not set');
 
-  $cache = npg_test_no_xml_cache->new(id_run => 12376,
-                                      reuse_cache    => 1,
-                                      set_env_vars    => 1,
-                                      cache_location => $tempdir);
+  $cache = npg_pipeline::cache->new(id_run => 12376,
+                                    lims   => \@lchildren,
+                                    reuse_cache    => 1,
+                                    set_env_vars    => 1,
+                                    cache_location => $tempdir);
   is ($cache->set_env_vars, 1, 'set_env_vars is set to true');
   lives_ok {$cache->setup}
     'no error creating a new cache and setting env vars';
@@ -139,10 +147,11 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   unlink $ss;
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = '';
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
-  $cache = npg_test_no_xml_cache->new(id_run => 12376,
-                                      reuse_cache    => 1,
-                                      set_env_vars   => 1,
-                                      cache_location => $tempdir);
+  $cache = npg_pipeline::cache->new(id_run => 12376,
+                                    lims   => \@lchildren,
+                                    reuse_cache    => 1,
+                                    set_env_vars   => 1,
+                                    cache_location => $tempdir);
   $cache->setup();
   @messages = @{$cache->messages};
   is (scalar @messages, 4, 'four messages saved') or diag explain $cache->messages;
@@ -157,14 +166,115 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
     'message about setting NPG_WEBSERVICE_CACHE_DIR is saved'); 
 }
 
+$lims_driver = st::api::lims::ml_warehouse->new(
+                     mlwh_schema      => $wh_schema,
+                     id_flowcell_lims => 35053,
+                     flowcell_barcode => 'undef'
+                                               );
+@lchildren = st::api::lims->new(
+                     id_flowcell_lims => 35053,
+                     flowcell_barcode => undef,
+                     driver           => $lims_driver,
+                     driver_type      => 'ml_warehouse'
+                               )->children;
+
 {
   my $tempdir = tempdir( CLEANUP => 1);
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/cache/xml';
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/cache/my_samplesheet_12376.csv';
   my $cache = npg_pipeline::cache->new(id_run => 12376,
-                                    reuse_cache    => 1,
-                                    set_env_vars   => 1,
-                                    cache_location => $tempdir);
+                                       lims   => \@lchildren,
+                                       reuse_cache    => 1,
+                                       set_env_vars   => 1,
+                                       cache_location => $tempdir);
+  lives_ok {$cache->setup();} 'no error when NPG_WEBSERVICE_CACHE_DIR is set';
+  my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
+  my $sh = join(q[/], $cache_dir, 'samplesheet_12376.csv');
+  ok (-e $sh, 'renamed samplesheet copied');
+  ok (-e join(q[/], $cache_dir, 'npg/instrument/103.xml'), 'instrument xml copied');
+  ok (-e join(q[/], $cache_dir, 'npg/run/12376.xml'), 'run xml copied');
+  ok (-e join(q[/], $cache_dir, 'npg/run_status_dict.xml'), 'run status xml copied');
+  is (scalar @{$cache->messages}, 5, 'five messages saved');
+  is ($ENV{NPG_WEBSERVICE_CACHE_DIR}, $cache_dir,
+    'NPG_WEBSERVICE_CACHE_DIR is set correctly');
+  is ($ENV{NPG_CACHED_SAMPLESHEET_FILE}, $sh,
+    'NPG_CACHED_SAMPLESHEET_FILE is set');
+}
+
+{
+  my $tempdir = tempdir( CLEANUP => 1);
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/cache/xml';
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/cache/my_samplesheet_12376.csv';
+  my $cache = npg_pipeline::cache->new(id_run => 12376,
+                                       lims   => \@lchildren,
+                                       reuse_cache    => 1,
+                                       set_env_vars   => 1,
+                                       cache_npg_xml  => 0,
+                                       cache_location => $tempdir);
+  lives_ok {$cache->setup();} 'no error when NPG_WEBSERVICE_CACHE_DIR is set but xml caching disabled';
+  my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
+  my $sh = join(q[/], $cache_dir, 'samplesheet_12376.csv');
+  ok (-e $sh, 'renamed samplesheet copied');
+  ok (-e join(q[/], $cache_dir, 'npg'), 'no npg directory insede the cache');
+  is ($ENV{NPG_WEBSERVICE_CACHE_DIR}, $cache_dir,
+    'NPG_WEBSERVICE_CACHE_DIR is set correctly');
+  is ($ENV{NPG_CACHED_SAMPLESHEET_FILE}, $sh,
+    'NPG_CACHED_SAMPLESHEET_FILE is set');
+}
+
+{
+  my $tempdir = tempdir( CLEANUP => 1);
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/cache/xml';
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
+  my $cache = npg_pipeline::cache->new(id_run => 12376,
+                                       lims   => \@lchildren,
+                                       reuse_cache    => 0,
+                                       set_env_vars   => 1,
+                                       cache_location => $tempdir);
+  lives_ok {$cache->setup();} 'no error when NPG_WEBSERVICE_CACHE_DIR is set, but no NPG_CACHED_SAMPLESHEET_FILE is set';
+  my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
+  my $sh = join(q[/], $cache_dir, 'samplesheet_12376.csv');
+  ok (-e $sh, 'samplesheet created');
+  ok (-e join(q[/], $cache_dir, 'npg/instrument/103.xml'), 'instrument xml copied');
+  ok (-e join(q[/], $cache_dir, 'npg/run/12376.xml'), 'run xml copied');
+  ok (-e join(q[/], $cache_dir, 'npg/run_status_dict.xml'), 'run status xml copied');
+  is (scalar @{$cache->messages}, 5, 'five messages saved') or diag explain $cache->messages;
+  is ($ENV{NPG_WEBSERVICE_CACHE_DIR}, $cache_dir,
+    'NPG_WEBSERVICE_CACHE_DIR is set correctly');
+  is ($ENV{NPG_CACHED_SAMPLESHEET_FILE}, $sh,
+    'NPG_CACHED_SAMPLESHEET_FILE is set');
+}
+
+{
+  my $tempdir = tempdir( CLEANUP => 1);
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = '';
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
+  my $cache = npg_pipeline::cache->new(id_run => 12376,
+                                       lims   => \@lchildren,
+                                       reuse_cache    => 0,
+                                       set_env_vars   => 1,
+                                       cache_location => $tempdir,
+                                       cache_npg_xml  => 0);
+  lives_ok {$cache->setup();} 'no error when caching xml is switched off';
+  my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
+  my $sh = join(q[/], $cache_dir, 'samplesheet_12376.csv');
+
+  ok (-e $sh, 'samplesheet created');
+  ok (!-e join(q[/], $cache_dir, 'npg'), 'npg directory is not created inside the cache');
+  is ($ENV{NPG_WEBSERVICE_CACHE_DIR}, $cache_dir,
+    'NPG_WEBSERVICE_CACHE_DIR is set correctly');
+  is ($ENV{NPG_CACHED_SAMPLESHEET_FILE}, $sh,
+    'NPG_CACHED_SAMPLESHEET_FILE is set');
+}
+
+{
+  my $tempdir = tempdir( CLEANUP => 1);
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/cache/xml';
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/cache/my_samplesheet_12376.csv';
+  my $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                       reuse_cache    => 1,
+                                       set_env_vars   => 1,
+                                       cache_location => $tempdir);
   lives_ok {$cache->setup();} 'no error when NPG_WEBSERVICE_CACHE_DIR is set';
   my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
   my $sh = join(q[/], $cache_dir, 'samplesheet_12376.csv');
@@ -184,10 +294,10 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   my $tempdir = tempdir( CLEANUP => 1);
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/cache/xml';
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
-  my $cache = npg_pipeline::cache->new(id_run => 12376,
-                                    reuse_cache    => 0,
-                                    set_env_vars   => 1,
-                                    cache_location => $tempdir);
+  my $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                       reuse_cache    => 0,
+                                       set_env_vars   => 1,
+                                       cache_location => $tempdir);
   lives_ok {$cache->setup();} 'no error when NPG_WEBSERVICE_CACHE_DIR is set, but no NPG_CACHED_SAMPLESHEET_FILE is set';
   my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
   my $sh = join(q[/], $cache_dir, 'samplesheet_12376.csv');

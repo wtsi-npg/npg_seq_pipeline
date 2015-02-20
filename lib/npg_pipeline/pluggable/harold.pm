@@ -69,10 +69,6 @@ Called on new construction to ensure that certain parameters are filled/set up
 sub BUILD {
   my ($self) = @_;
 
-  if ( !$self->has_id_run() && !$self->has_run_folder() ) {
-    croak q{Error: No run_folder or id_run provided};
-  }
-
   if (!$self->has_log_file_path()) {
     $self->set_log_file_path( $self->runfolder_path() );
   }
@@ -188,6 +184,7 @@ Generates cached metadata that are needed by the pipeline.
 If either an existing directory with cached data found or
 the NPG_WEBSERVICE_CACHE_DIR env. variable is set, a new
 cache will not be generated.
+
 Will set the relevant env. variables in the global scope.
 
 The new cache is created in the analysis_path directory.
@@ -198,11 +195,20 @@ See npg_pipeline::cache for details.
 
 sub spider {
   my ( $self ) = @_;
-  my $cache = npg_pipeline::cache->new( id_run         => $self->id_run,
-                                        resuse_cache   => 1,
-                                        set_env_vars   => 1,
-                                        cache_location => $self->analysis_path,
-                                      );
+
+  my $args = {
+    id_run         => $self->id_run,
+    set_env_vars   => 1,
+    cache_location => $self->analysis_path,
+             };
+
+  my $clims = $self->samplesheet_source_lims;
+  if ($clims) {
+    $args->{'lims'} = $clims;
+  }
+
+  my $cache = npg_pipeline::cache->new($args);
+
   my $error;
   try {
     $cache->setup();
@@ -211,7 +217,7 @@ sub spider {
   };
   $self->log(join qq[\n], @{$cache->messages});
   if ($error) {
-    croak qq[Error while spidering:\n$error];
+    croak qq[Error while spidering:$error];
   }
   return ();
 }
@@ -364,7 +370,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Researcg Ltd
+Copyright (C) 2015 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -1,0 +1,461 @@
+---
+- accession_number: ERS013342
+  consent_withdrawn: 0
+  control: ~
+  created: 2010-07-26 14:56:52
+  deleted_at: ~
+  description: ''
+  id_lims: SQSCP
+  id_sample_lims: 254193
+  id_sample_tmp: 6195
+  last_updated: 2012-08-03 10:07:02
+  organism: Burkholderia pseudomallei
+  recorded_at: 2014-11-18 13:06:19
+  reference_genome: ' '
+  replicate: ~
+  sample_visibility: Hold
+  strain: ATCC15682
+  taxon_id: 28450
+  uuid_sample_lims: 1788c8d0-6a6c-11e4-8e19-68b59977951c
+- accession_number: ERS013343
+  consent_withdrawn: 0
+  control: ~
+  created: 2010-07-26 14:56:52
+  deleted_at: ~
+  description: ''
+  id_lims: SQSCP
+  id_sample_lims: 254194
+  id_sample_tmp: 252330
+  last_updated: 2012-08-03 10:07:02
+  organism: Burkholderia pseudomallei
+  recorded_at: 2014-11-18 13:06:19
+  reference_genome: ' '
+  replicate: ~
+  sample_visibility: Hold
+  strain: P6
+  taxon_id: 28450
+  uuid_sample_lims: 178df8f0-6a6c-11e4-8e19-68b59977951c
+- accession_number: ~
+  cohort: ~
+  common_name: ~
+  consent_withdrawn: 0
+  control: ~
+  country_of_origin: ~
+  created: 2011-08-06 14:24:41
+  deleted_at: ~
+  description: ~
+  donor_id: ~
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 1255141
+  id_sample_tmp: 1237247
+  last_updated: 2015-02-06 14:44:14
+  mother: ~
+  name: phiX_for_spiked_buffers
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-02-06 14:44:15
+  reference_genome: ' '
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: ~
+  strain: ~
+  supplier_name: ~
+  taxon_id: 10847
+  uuid_sample_lims: d3a59c4c-c037-11e0-834c-00144f01a414
+- accession_number: ERS429032
+  cohort: ~
+  common_name: Homo Sapien
+  consent_withdrawn: 0
+  control: 0
+  created: 2014-03-06 11:24:06
+  deleted_at: ~
+  description: ~
+  father: ~
+  id_lims: SQSCP
+  id_sample_lims: 1877285
+  id_sample_tmp: 1854903
+  last_updated: 2014-04-01 13:31:37
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-01-21 04:44:43
+  reference_genome: Homo_sapiens (1000Genomes_hs37d5)
+  replicate: ~
+  sample_visibility: ~
+  strain: ~
+  taxon_id: 9606
+  uuid_sample_lims: d41d4a40-a521-11e3-8055-3c4a9275d6c6
+- accession_number: ERS429034
+  cohort: ~
+  common_name: Homo Sapien
+  consent_withdrawn: 0
+  control: 0
+  created: 2014-03-06 11:24:07
+  deleted_at: ~
+  description: ~
+  father: ~
+  id_lims: SQSCP
+  id_sample_lims: 1877289
+  id_sample_tmp: 1854907
+  last_updated: 2014-04-01 13:31:41
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-01-21 04:44:43
+  reference_genome: Homo_sapiens (1000Genomes_hs37d5)
+  replicate: ~
+  sample_visibility: ~
+  strain: ~
+  taxon_id: 9606
+  uuid_sample_lims: d492a150-a521-11e3-8055-3c4a9275d6c6
+- accession_number: ERS429036
+  cohort: ~
+  common_name: Homo Sapien
+  consent_withdrawn: 0
+  control: 0
+  created: 2014-03-06 11:24:07
+  deleted_at: ~
+  description: ~
+  father: ~
+  id_lims: SQSCP
+  id_sample_lims: 1877292
+  id_sample_tmp: 1854910
+  last_updated: 2014-04-01 13:31:45
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-01-21 04:44:43
+  reference_genome: Homo_sapiens (1000Genomes_hs37d5)
+  replicate: ~
+  sample_visibility: ~
+  strain: ~
+  taxon_id: 9606
+  uuid_sample_lims: d4ee2ed0-a521-11e3-8055-3c4a9275d6c6
+- accession_number: ERS429041
+  cohort: ~
+  common_name: Homo Sapien
+  consent_withdrawn: 0
+  control: 0
+  created: 2014-03-06 11:24:09
+  deleted_at: ~
+  description: ~
+  father: ~
+  id_lims: SQSCP
+  id_sample_lims: 1877306
+  id_sample_tmp: 1854924
+  last_updated: 2014-04-01 13:31:55
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-01-21 04:44:43
+  reference_genome: Homo_sapiens (1000Genomes_hs37d5)
+  replicate: ~
+  sample_visibility: ~
+  strain: ~
+  taxon_id: 9606
+  uuid_sample_lims: d62d8ca0-a521-11e3-8055-3c4a9275d6c6
+- accession_number: ~
+  cohort: ~
+  common_name: ~
+  consent_withdrawn: 0
+  control: ~
+  country_of_origin: ~
+  created: 2015-02-05 12:13:19
+  deleted_at: ~
+  description: ~
+  donor_id: ~
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2227349
+  id_sample_tmp: 2197676
+  last_updated: 2015-02-05 12:13:19
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-02-05 12:13:22
+  reference_genome: Homo_sapiens (GRCh37_53)
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: ~
+  strain: ~
+  supplier_name: ~
+  taxon_id: ~
+  uuid_sample_lims: 5f21bec0-ad30-11e4-82e0-68b59976a382
+- accession_number: ~
+  cohort: ~
+  common_name: ~
+  consent_withdrawn: 0
+  control: ~
+  country_of_origin: ~
+  created: 2015-02-05 12:13:19
+  deleted_at: ~
+  description: ~
+  donor_id: ~
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2227350
+  id_sample_tmp: 2197677
+  last_updated: 2015-02-05 12:13:20
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-02-05 12:13:22
+  reference_genome: Homo_sapiens (GRCh37_53)
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: ~
+  strain: ~
+  supplier_name: ~
+  taxon_id: ~
+  uuid_sample_lims: 5f87faa0-ad30-11e4-82e0-68b59976a382
+- accession_number: ~
+  cohort: ~
+  common_name: ~
+  consent_withdrawn: 0
+  control: ~
+  country_of_origin: ~
+  created: 2015-02-05 12:13:20
+  deleted_at: ~
+  description: ~
+  donor_id: ~
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2227351
+  id_sample_tmp: 2197678
+  last_updated: 2015-02-05 12:13:20
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-02-05 12:13:22
+  reference_genome: Homo_sapiens (GRCh37_53)
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: ~
+  strain: ~
+  supplier_name: ~
+  taxon_id: ~
+  uuid_sample_lims: 5fa71b60-ad30-11e4-82e0-68b59976a382
+- accession_number: ~
+  cohort: ~
+  common_name: ~
+  consent_withdrawn: 0
+  control: ~
+  country_of_origin: ~
+  created: 2015-02-05 12:13:20
+  deleted_at: ~
+  description: ~
+  donor_id: ~
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2227352
+  id_sample_tmp: 2197679
+  last_updated: 2015-02-05 12:13:20
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-02-05 12:13:23
+  reference_genome: Homo_sapiens (GRCh37_53)
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: ~
+  strain: ~
+  supplier_name: ~
+  taxon_id: ~
+  uuid_sample_lims: 5fc5c6f0-ad30-11e4-82e0-68b59976a382
+- accession_number: ~
+  cohort: ~
+  common_name: ~
+  consent_withdrawn: 0
+  control: ~
+  country_of_origin: ~
+  created: 2015-02-05 12:13:20
+  deleted_at: ~
+  description: ~
+  donor_id: ~
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2227353
+  id_sample_tmp: 2197680
+  last_updated: 2015-02-05 12:13:20
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-02-05 12:13:23
+  reference_genome: Homo_sapiens (GRCh37_53)
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: ~
+  strain: ~
+  supplier_name: ~
+  taxon_id: ~
+  uuid_sample_lims: 5fe49990-ad30-11e4-82e0-68b59976a382
+- accession_number: ~
+  cohort: ~
+  common_name: ~
+  consent_withdrawn: 0
+  control: ~
+  country_of_origin: ~
+  created: 2015-02-05 12:13:20
+  deleted_at: ~
+  description: ~
+  donor_id: ~
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2227354
+  id_sample_tmp: 2197681
+  last_updated: 2015-02-05 12:13:20
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-02-05 12:13:23
+  reference_genome: Homo_sapiens (GRCh37_53)
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: ~
+  strain: ~
+  supplier_name: ~
+  taxon_id: ~
+  uuid_sample_lims: 6009fbe0-ad30-11e4-82e0-68b59976a382
+- accession_number: ~
+  cohort: ~
+  common_name: ~
+  consent_withdrawn: 0
+  control: ~
+  country_of_origin: ~
+  created: 2015-02-05 12:13:21
+  deleted_at: ~
+  description: ~
+  donor_id: ~
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2227355
+  id_sample_tmp: 2197682
+  last_updated: 2015-02-05 12:13:21
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-02-05 12:13:23
+  reference_genome: Homo_sapiens (GRCh37_53)
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: ~
+  strain: ~
+  supplier_name: ~
+  taxon_id: ~
+  uuid_sample_lims: 60909100-ad30-11e4-82e0-68b59976a382
+- accession_number: ~
+  cohort: ~
+  common_name: ~
+  consent_withdrawn: 0
+  control: ~
+  country_of_origin: ~
+  created: 2015-02-05 12:13:22
+  deleted_at: ~
+  description: ~
+  donor_id: ~
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2227356
+  id_sample_tmp: 2197683
+  last_updated: 2015-02-05 12:13:22
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-02-05 12:13:23
+  reference_genome: Homo_sapiens (GRCh37_53)
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: ~
+  strain: ~
+  supplier_name: ~
+  taxon_id: ~
+  uuid_sample_lims: 60bcf830-ad30-11e4-82e0-68b59976a382
+- accession_number: ~
+  cohort: ~
+  common_name: ~
+  consent_withdrawn: 0
+  control: ~
+  country_of_origin: ~
+  created: 2015-02-05 12:13:22
+  deleted_at: ~
+  description: ~
+  donor_id: ~
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2227357
+  id_sample_tmp: 2197684
+  last_updated: 2015-02-05 12:13:22
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-02-05 12:13:23
+  reference_genome: Homo_sapiens (GRCh37_53)
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: ~
+  strain: ~
+  supplier_name: ~
+  taxon_id: ~
+  uuid_sample_lims: 60e3e120-ad30-11e4-82e0-68b59976a382
+- accession_number: ~
+  cohort: ~
+  common_name: ~
+  consent_withdrawn: 0
+  control: ~
+  country_of_origin: ~
+  created: 2015-02-05 12:13:22
+  deleted_at: ~
+  description: ~
+  donor_id: ~
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2227358
+  id_sample_tmp: 2197685
+  last_updated: 2015-02-05 12:13:22
+  mother: ~
+  organism: ~
+  public_name: ~
+  recorded_at: 2015-02-05 12:13:23
+  reference_genome: Homo_sapiens (GRCh37_53)
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: ~
+  strain: ~
+  supplier_name: ~
+  taxon_id: ~
+  uuid_sample_lims: 6102dad0-ad30-11e4-82e0-68b59976a382
+
