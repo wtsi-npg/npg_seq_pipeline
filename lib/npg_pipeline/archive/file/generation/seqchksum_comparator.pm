@@ -120,20 +120,20 @@ sub _compare_lane {
 
   my $cmd = q{};
 
-  my $bam_file_name_glob = File::Spec->catfile ( $product_seqchksum_dir, qq({lane$position/,}). $self->id_run . '_' . $position . q{*.bam});
-  my @bams = glob $bam_file_name_glob or croak "Cannot find any bam files using $bam_file_name_glob";
-  $self->log("Building .all.seqchksum for lane $position from bam in $bam_file_name_glob ...");
+  my $cram_file_name_glob = File::Spec->catfile ( $product_seqchksum_dir, qq({lane$position/,}). $self->id_run . '_' . $position . q{*.cram});
+  my @crams = glob $cram_file_name_glob or croak "Cannot find any cram files using $cram_file_name_glob";
+  $self->log("Building .all.seqchksum for lane $position from cram in $cram_file_name_glob ...");
 
   $compare_lane_seqchksum_file_name = File::Spec->catfile($product_seqchksum_dir, $lane_seqchksum_file_name);
 
-  my $bam_count = scalar @bams;
-  my $bam_plex_str = join q{ I=}, @bams;
-  $cmd = 'bamcat level=0 I=' . $bam_plex_str . ' streaming=1 ';
+  my $cram_count = scalar @crams;
+  my $cram_plex_str = join q{ I=}, map { qq{<(scramble -u -I cram -O bam $_)} } @crams;
+  $cmd = 'bamcat level=0 I=' . $cram_plex_str . ' streaming=1 ';
   $cmd .= '| bamseqchksum > ' . $compare_lane_seqchksum_file_name;
 
   if ($cmd ne q{}) {
     $self->log("Running $cmd to generate $compare_lane_seqchksum_file_name");
-    my $ret = system $cmd;
+    my $ret = system qq[/bin/bash -c "set -o pipefail && $cmd"];
     if ( $ret  > 0 ) {
       croak "Failed to run command $cmd: $ret";
     }
