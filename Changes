@@ -15,6 +15,7 @@ LIST OF CHANGES
      use batch id if provided by the caller;
      derive the run id from runfolder path/content
  - check for RTA run tag is dropped in the analysis daemon - all current runs are RTA
+ - use alt_process flag when archiving qc runs
 
 release 47.6
  - reenable archival of index files for CRAM/BAM files to iRODS
