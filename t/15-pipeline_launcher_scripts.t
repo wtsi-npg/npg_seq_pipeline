@@ -21,8 +21,8 @@ $util->set_rta_staging_analysis_area();
 
 # Script failures
 {
-  my $out = `perl $bin/npg_pipeline_PB_cal_bam --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo`;
-  like($out, qr/Error submitting jobs: Can't locate object method "dodo" via package "npg_pipeline::pluggable::harold::PB_cal_bam"/,
+  my $out = `perl $bin/npg_pipeline_central --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo`;
+  like($out, qr/Can't locate object method "dodo" via package "npg_pipeline::pluggable::harold::central"/,
   'error when function does not exist');
 }
 

@@ -1,6 +1,6 @@
 ---
 live:
-  pb_cal_bam:
+  central:
     - spider
     - create_archive_directory
     - create_empty_fastq
@@ -53,7 +53,7 @@ live:
     - run_qc_complete
     - update_warehouse
 test:
-  pb_cal_bam:
+  central:
     - spider
     - create_archive_directory
     - create_empty_fastq

@@ -23,15 +23,16 @@ foreach my $tool (($sp, $java)) {
 }
 local $ENV{PATH} = join q[:], $tdir, qq[$cwd/t/bin], $ENV{PATH};
 
-use_ok(q{npg_pipeline::pluggable::harold::PB_cal_bam});
+my $central = q{npg_pipeline::pluggable::harold::central};
+use_ok($central);
 
 my $runfolder_path = $util->analysis_runfolder_path();
 
 {
   $util->set_staging_analysis_area();
-  my $pb_cal_pipeline;
+  my $pipeline;
   lives_ok {
-    $pb_cal_pipeline = npg_pipeline::pluggable::harold::PB_cal_bam->new({
+    $pipeline = $central->new({
       script_name => q{test},
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
@@ -40,7 +41,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
       domain => q{test},
     });
   } q{no croak creating new object};
-  isa_ok($pb_cal_pipeline, q{npg_pipeline::pluggable::harold::PB_cal_bam}, q{$pb_cal_pipeline});
+  isa_ok($pipeline, $central);
 
   my $expected_function_order = [ qw{
           lsf_start
@@ -78,14 +79,14 @@ my $runfolder_path = $util->analysis_runfolder_path();
           qc_upstream_tags
           lsf_end     
   }];
-  is_deeply( $pb_cal_pipeline->function_order() , $expected_function_order, q{Function order correct} );
+  is_deeply( $pipeline->function_order() , $expected_function_order, q{Function order correct} );
 }
 
 {
   local $ENV{CLASSPATH} = q{t/bin/software/solexa/bin/aligners/illumina2bam/current};
-  my $pb_cal_pipeline;
+  my $pipeline;
   lives_ok {
-    $pb_cal_pipeline = npg_pipeline::pluggable::harold::PB_cal_bam->new({
+    $pipeline = $central->new({
       script_name => q{test},
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
@@ -97,15 +98,15 @@ my $runfolder_path = $util->analysis_runfolder_path();
     });
   } q{no croak creating new object};
 
-  ok( !scalar $pb_cal_pipeline->harold_calibration_tables(),  q{no calibration tables launched} );
+  ok( !scalar $pipeline->harold_calibration_tables(),  q{no calibration tables launched} );
  
-  lives_ok { $pb_cal_pipeline->prepare() } 'prepare lives';
-  ok( $pb_cal_pipeline->illumina_basecall_stats(),  q{olb false - illumina_basecall_stats job launched} );
-  ok( !$pb_cal_pipeline->bustard_matrix_lanes(),  q{olb false - bustard_matrix_lanes job is not launhed} );
+  lives_ok { $pipeline->prepare() } 'prepare lives';
+  ok( $pipeline->illumina_basecall_stats(),  q{olb false - illumina_basecall_stats job launched} );
+  ok( !$pipeline->bustard_matrix_lanes(),  q{olb false - bustard_matrix_lanes job is not launhed} );
 }
 
 {
-  my $pb_cal_pipeline = npg_pipeline::pluggable::harold::PB_cal_bam->new(
+  my $pipeline = $central->new(
       script_name => q{test},
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
@@ -115,13 +116,13 @@ my $runfolder_path = $util->analysis_runfolder_path();
       no_bsub => 1,
       olb => 1
   );
-  ok( !$pb_cal_pipeline->illumina_basecall_stats(),  q{olb true - illumina_basecall_stats job is not launched} );
+  ok( !$pipeline->illumina_basecall_stats(),  q{olb true - illumina_basecall_stats job is not launched} );
 }
 
 {
   my $pb;
   lives_ok {
-    $pb = npg_pipeline::pluggable::harold::PB_cal_bam->new({
+    $pb = $central->new({
       id_run => 1234,
       function_order => [qw(qc_qX_yield illumina2bam qc_insert_size)],
       run_folder => q{123456_IL2_1234},
@@ -153,7 +154,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
       repository => 't/data/sequence',
   };
  
-  lives_ok { $pb = npg_pipeline::pluggable::harold::PB_cal_bam->new($init); } q{no croak on new creation};
+  lives_ok { $pb = $central->new($init); } q{no croak on new creation};
   mkdir $pb->archive_path;
   mkdir $pb->qc_path;
   
@@ -175,7 +176,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
   my $timestamp = $pb->timestamp;
   my $recalibrated_path = $pb->recalibrated_path();
   my $log_dir = $pb->make_log_dir( $recalibrated_path );
-  my $expected_command =  qq[bsub -q test  -J whupdate_1234_pb_cal_bam -o $log_dir/whupdate_1234_pb_cal_bam_] . $timestamp .
+  my $expected_command =  qq[bsub -q test  -J whupdate_1234_central -o $log_dir/whupdate_1234_central_] . $timestamp .
   q[.out 'unset NPG_WEBSERVICE_CACHE_DIR; unset NPG_CACHED_SAMPLESHEET_FILE; warehouse_loader --id_run 1234'];
   is($pb->_update_warehouse_command, $expected_command, 'update warehouse command');
 }
@@ -191,7 +192,7 @@ mkdir $rf;
       timestamp => '22-May',
   };
   my $pb;
-  lives_ok { $pb = npg_pipeline::pluggable::harold::PB_cal_bam->new($init); }
+  lives_ok { $pb = $central->new($init); }
     q{no croak on creation of a flattened runfolder};
   is ($pb->intensity_path, $rf, 'intensities path is set to runfolder');
   is ($pb->basecall_path, $rf, 'basecall path is set to runfolder');
@@ -213,7 +214,7 @@ mkdir $rf;
 {
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data/hiseqx];
   my $pb;
-  lives_ok { $pb = npg_pipeline::pluggable::harold::PB_cal_bam->new(
+  lives_ok { $pb = $central->new(
                      id_run => 13219,
                      no_bsub => 1,
                      run_folder => 'myfolder',

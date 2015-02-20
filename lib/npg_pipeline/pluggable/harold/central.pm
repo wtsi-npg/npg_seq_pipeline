@@ -1,4 +1,4 @@
-package npg_pipeline::pluggable::harold::PB_cal_bam;
+package npg_pipeline::pluggable::harold::central;
 
 use Moose;
 use Carp;
@@ -13,15 +13,15 @@ our $VERSION = '0';
 
 =head1 NAME
 
-npg_pipeline::pluggable::harold::PB_cal_bam
+npg_pipeline::pluggable::harold::central
 
 =head1 SYNOPSIS
 
-  npg_pipeline::pluggable::harold::PB_cal_bam->new(id_run => 333)->main();
+  npg_pipeline::pluggable::harold::central->new(id_run => 333)->main();
 
 =head1 DESCRIPTION
 
-Pluggable module runner for the PB_cal_bam pipeline
+Pluggable module runner for the main pipeline
 
 =cut
 

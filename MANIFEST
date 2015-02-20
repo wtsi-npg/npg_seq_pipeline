@@ -3,7 +3,7 @@ bin/move_run_folder
 bin/npg_pipeline_archival_runner
 bin/npg_pipeline_check_bam_file_cluster_count
 bin/npg_pipeline_harold_analysis_runner
-bin/npg_pipeline_PB_cal_bam
+bin/npg_pipeline_central
 bin/npg_pipeline_post_qc_review
 bin/npg_pipeline_preexec_references
 bin/npg_pipeline_seqchksum_comparator
@@ -41,7 +41,7 @@ lib/npg_pipeline/launcher/status.pm
 lib/npg_pipeline/lsf_job.pm
 lib/npg_pipeline/pluggable.pm
 lib/npg_pipeline/pluggable/harold.pm
-lib/npg_pipeline/pluggable/harold/PB_cal_bam.pm
+lib/npg_pipeline/pluggable/harold/central.pm
 lib/npg_pipeline/pluggable/harold/post_qc_review.pm
 lib/npg_pipeline/roles/business/base.pm
 lib/npg_pipeline/roles/business/flag_options.pm
@@ -63,7 +63,7 @@ t/10-cache.t
 t/10-lsf_job.t
 t/10-pluggable.t
 t/10-pluggable_harold.t
-t/10-pluggable_harold_pb_cal_bam.t
+t/10-pluggable_harold_central.t
 t/10-pluggable_harold_post_qc_review.t
 t/15-pipeline_launcher_scripts.t
 t/20-archive-fastqcheck.t

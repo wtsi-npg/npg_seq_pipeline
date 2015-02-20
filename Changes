@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - 'PB_cal_bam' analysis pipeline renamed to 'central'
  - GCLP compliance-related daemon changes:
      runs will not be progressed to analisys/archival unless the
      flowcell barcode is set in the npg_tracking database;
