@@ -114,7 +114,7 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
       id_run            => 15440,
       runfolder_path    => $runfolder_path,
       bam_basecall_path => $runfolder_path,
-      mlwh_schema       => $wh_schema,
+      _mlwh_schema       => $wh_schema,
   );
 
   my $cache       = join q[/], $runfolder_path , q{metadata_cache_15440};

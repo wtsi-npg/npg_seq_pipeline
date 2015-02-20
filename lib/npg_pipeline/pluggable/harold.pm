@@ -184,6 +184,7 @@ Generates cached metadata that are needed by the pipeline.
 If either an existing directory with cached data found or
 the NPG_WEBSERVICE_CACHE_DIR env. variable is set, a new
 cache will not be generated.
+
 Will set the relevant env. variables in the global scope.
 
 The new cache is created in the analysis_path directory.
@@ -201,11 +202,11 @@ sub spider {
     cache_location => $self->analysis_path,
              };
 
-  my $lims = $self->source_lims;
-
-  if ($lims) {
-    $args->{'lims'} = [$lims->children];
+  my $clims = $self->samplesheet_source_lims;
+  if ($clims) {
+    $args->{'lims'} = $clims;
   }
+
   my $cache = npg_pipeline::cache->new($args);
 
   my $error;

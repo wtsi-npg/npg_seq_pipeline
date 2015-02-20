@@ -79,6 +79,7 @@ my $builder = $class->new(
           'npg::api::run'                                   => 0,
           'npg::api::run_status_dict'                       => 0,
           'npg::samplesheet'                                => 0,
+          'npg_warehouse::Schema'                           => 0,
           'WTSI::DNAP::Warehouse::Schema'                   => 0,
          },
 

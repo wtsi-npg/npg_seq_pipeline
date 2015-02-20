@@ -569,6 +569,9 @@ t/data/fixtures/mlwh/000-Sample.yml
 t/data/fixtures/mlwh/000-Study.yml
 t/data/fixtures/mlwh/100-IseqFlowcell.yml
 t/data/fixtures/mlwh/100-StudyUser.yml
+t/data/fixtures/wh/CurrentAliquot.yml
+t/data/fixtures/wh/CurrentLibraryTube.yml
+t/data/fixtures/wh/CurrentSampleTube.yml
 t/dbic_util.pm
 t/perlcriticrc
 t/util.pm

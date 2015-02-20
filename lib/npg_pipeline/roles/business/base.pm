@@ -6,12 +6,13 @@ use List::MoreUtils qw{any};
 use File::Basename;
 use Cwd qw{abs_path};
 
-use WTSI::DNAP::Warehouse::Schema;
 use npg::api::run;
 use st::api::lims;
 use st::api::lims::warehouse;
 use st::api::lims::ml_warehouse;
 use npg_tracking::data::reference::find;
+use npg_warehouse::Schema;
+use WTSI::DNAP::Warehouse::Schema;
 use npg_pipeline::cache;
 
 our $VERSION = '0';
@@ -40,24 +41,9 @@ Optional LIMs identifier for flowcell
 
 =cut
 
-has q{id_flowcell_lims} => (isa => q{Int},  is => q{ro}, required => 0,);
-
-=head2 mlwh_schema
-
-DBIx schema object for ml_warehouse.
-
-=cut
-
-has q{mlwh_schema} => (
-                isa        => q{DBIx::Class::Schema},
-                is         => q{ro},
-                required   => 0,
-                metaclass => 'NoGetopt',
-                lazy_build => 1,
-                       );
-sub _build_mlwh_schema {
-  return WTSI::DNAP::Warehouse::Schema->connect();
-}
+has q{id_flowcell_lims} => ( isa      => q{Int},
+                             is       => q{ro},
+                             required => 0,);
 
 =head2 run
 
@@ -65,7 +51,10 @@ Run npg::api::run object, an id_run method is required for this.
 
 =cut
 
-has q{run} => (isa => q{npg::api::run},  is => q{ro}, metaclass => 'NoGetopt', lazy_build => 1);
+has q{run} => (isa        => q{npg::api::run},
+               is         => q{ro},
+               metaclass  => q{NoGetopt},
+               lazy_build => 1,);
 sub _build_run {
   my ($self) = @_;
   return npg::api::run->new({id_run => $self->id_run(),});
@@ -77,52 +66,93 @@ st::api::lims run-level object
 
 =cut
 
-has q{lims} => (isa => q{st::api::lims},  is => q{ro}, metaclass => 'NoGetopt', lazy_build => 1);
+has q{lims} => (isa        => q{st::api::lims},
+                is         => q{ro},
+                metaclass  => q{NoGetopt},
+                lazy_build => 1,);
 sub _build_lims {
   my ($self) = @_;
   return st::api::lims->new(id_run => $self->id_run);
 }
 
-=head2 source_lims
+=head2 qc_run
+
+Boolean flag indicating whether thi srun is a qc run.
+
+=cut
+
+has q{qc_run} => (isa        => q{Bool},
+                  is         => q{ro},
+                  lazy_build => 1,);
+sub _build_qc_run {
+  my $self = shift;
+  my $lims_id = $self->id_flowcell_lims;
+  return $lims_id && $lims_id =~ /\A\d{13}\z/smx; # it's a tube barcode
+}
+
+has q{_mlwh_schema} => (
+                isa        => q{WTSI::DNAP::Warehouse::Schema},
+                is         => q{ro},
+                required   => 0,
+                lazy_build => 1,);
+sub _build__mlwh_schema {
+  return WTSI::DNAP::Warehouse::Schema->connect();
+}
+
+has q{_wh_schema} => (
+                isa        => q{npg_warehouse::Schema},
+                is         => q{ro},
+                required   => 0,
+                lazy_build => 1,);
+sub _build__wh_schema {
+  return npg_warehouse::Schema->connect();
+}
+
+
+=head2 samplesheet_source_lims
 
  Sometimes alternative sources of LIMs data have to be used.
- In these cases, return the relevant lims object, otherwise
+ In these cases, return children of the relevant lims object, otherwise
  return undefined.
 
 =cut
 
-sub source_lims {
+sub samplesheet_source_lims {
   my $self = shift;
 
-  my $lims;
+  my $clims;
   my $lims_id = $self->id_flowcell_lims;
 
   if (!$lims_id) {
+
     my $driver = st::api::lims::ml_warehouse->new(
-         mlwh_schema      => $self->mlwh_schema,
+         mlwh_schema      => $self->_mlwh_schema,
          id_flowcell_lims => $lims_id,
          flowcell_barcode => $self->flowcell_id );
 
-    $lims = st::api::lims->new(
+    my $lims = st::api::lims->new(
         id_flowcell_lims => $lims_id,
         flowcell_barcode => $self->flowcell_id,
         driver           => $driver,
         driver_type      => 'ml_warehouse' );
+    $clims = [$lims->children];
 
-  } elsif ($lims_id=~/\A\d{13}\z/smx) { # it's a tube barcode
+  } elsif ($self->qc_run) {
 
-    my $position = 1;
+    my $position = 1; # MiSeq runs only
     my $driver =  st::api::lims::warehouse->new(
-        position           => $position,
-        tube_ean13_barcode => $lims_id );
+        npg_warehouse_schema => $self->_wh_schema,
+        position             => $position,
+        tube_ean13_barcode   => $lims_id );
 
-    $lims = st::api::lims->new(
+    my $lims = st::api::lims->new(
         position    => $position,
         driver      => $driver,
         driver_type => 'warehouse' );
+    $clims = [$lims];
   }
 
-  return $lims;
+  return $clims;
 }
 
 =head2 multiplexed_lanes
@@ -132,7 +162,10 @@ Empty array for a not indexed run.
 
 =cut
 
-has q{multiplexed_lanes} => (isa => q{ArrayRef},  is => q{ro}, metaclass => 'NoGetopt', lazy_build => 1);
+has q{multiplexed_lanes} => (isa        => q{ArrayRef},
+                             is         => q{ro},
+                             metaclass  => q{NoGetopt},
+                             lazy_build => 1,);
 sub _build_multiplexed_lanes {
   my ($self) = @_;
   if (!$self->is_indexed) {
@@ -183,7 +216,10 @@ A boolean flag
 
 =cut
 
-has q{is_hiseqx_run} => (isa => q{Bool},  is => q{ro}, metaclass => 'NoGetopt', lazy_build => 1);
+has q{is_hiseqx_run} => (isa        => q{Bool},
+                         is         => q{ro},
+                         metaclass  => q{NoGetopt},
+                         lazy_build => 1,);
 sub _build_is_hiseqx_run {
   my ($self) = @_;
   return $self->run->instrument->name =~ /\AHX/xms;
@@ -220,8 +256,10 @@ A string of wildcards for tiles for OLB, defaults to an empty string
 
 =cut
 
-has q{tile_list} => (isa => q{Str}, is => q{ro}, default => q[],
-                      documentation => q{string of wildcards for tiles for OLB, defaults to an empty string},);
+has q{tile_list} => (isa => q{Str},
+                     is => q{ro},
+                     default => q{},
+                     documentation => q{string of wildcards for tiles for OLB, defaults to an empty string},);
 
 =head2 override_all_bustard_options
 
@@ -246,12 +284,10 @@ A custom reference repository root directory.
 
 =cut
 
-has q{repository} => (
-  isa       => q{Str},
-  is        => q{ro},
-  required  => 0,
-  predicate => q{has_repository},
-);
+has q{repository} => ( isa       => q{Str},
+                       is        => q{ro},
+                       required  => 0,
+                       predicate => q{has_repository},);
 
 =head2 control_ref
 
@@ -259,7 +295,9 @@ has q{repository} => (
 
 =cut
 
-has q{control_ref} => (isa => q{Str}, is => q{ro}, lazy_build => 1,
+has q{control_ref} => (isa           => q{Str},
+                       is            => q{ro},
+                       lazy_build    => 1,
                        documentation => q{path to a default control reference for a default aligner},);
 
 sub _build_control_ref {
