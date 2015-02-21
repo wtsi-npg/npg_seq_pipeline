@@ -8,8 +8,6 @@ use t::util;
 use t::dbic_util;
 
 my $util = t::util->new();
-my $conf_path = $util->conf_path();
-
 my $runfolder_path = $util->analysis_runfolder_path();
 local $ENV{PATH} = join q[:], q[t/bin], $ENV{PATH};
 
@@ -43,9 +41,6 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
       runfolder_path => $runfolder_path,
       run_folder => q{123456_IL2_1234},
       verbose => 1,
-      conf_path => $conf_path,
-      domain => q{test},
-      script_name => q{npg_pipeline_post_qc_review},
     );
   } q{no croak on creation};
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
@@ -58,12 +53,12 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
   my $recalibrated_path = $post_qc_review->recalibrated_path();
   my $log_dir = $post_qc_review->make_log_dir( $recalibrated_path );
   $log_dir =~ s/\/analysis\//\/outgoing\//smx;
-  my $expected =  qq[bsub -q test  -J whupdate_1234_post_qc_review -o $log_dir/whupdate_1234_post_qc_review_] . $timestamp . 
+  my $expected =  qq[bsub -q srpipeline  -J whupdate_1234_post_qc_review -o $log_dir/whupdate_1234_post_qc_review_] . $timestamp . 
      q[.out 'unset NPG_WEBSERVICE_CACHE_DIR; unset NPG_CACHED_SAMPLESHEET_FILE; warehouse_loader --id_run 1234'];
   is($post_qc_review->_update_warehouse_command, $expected, 'update warehouse command');
 
   $log_dir = $post_qc_review->make_log_dir( $runfolder_path );
-  is($post_qc_review->_interop_command, qq[bsub -q test  -J interop_1234_post_qc_review -R 'rusage[nfs_12=1,seq_irods=15]' -o $log_dir/interop_1234_post_qc_review_] . $timestamp . qq[.out 'irods_interop_loader.pl --id_run 1234 --runfolder_path $runfolder_path'], 'irods_interop_loader.pl command');
+  is($post_qc_review->_interop_command, qq[bsub -q srpipeline  -J interop_1234_post_qc_review -R 'rusage[nfs_12=1,seq_irods=15]' -o $log_dir/interop_1234_post_qc_review_] . $timestamp . qq[.out 'irods_interop_loader.pl --id_run 1234 --runfolder_path $runfolder_path'], 'irods_interop_loader.pl command');
 }
 
 {

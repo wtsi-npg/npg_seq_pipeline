@@ -29,12 +29,10 @@ my $schema = t::dbic_util->new->test_schema();
     );
   lives_ok {
     $harold = npg_pipeline::pluggable::harold->new({
-      script_name => q{test},
       id_run => 1234,
       function_order => \@functions_in_order,
       run_folder => q{123456_IL2_1234},
       runfolder_path => $analysis_runfolder_path,
-      conf_path => q{data/config_files},
     });
   } q{no croak on creation};
   isa_ok($harold, q{npg_pipeline::pluggable::harold}, q{$harold});
@@ -58,7 +56,6 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
   my $harold = npg_pipeline::pluggable::harold->new(
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
-      domain => q{test},
       function_order => [],
       runfolder_path => $analysis_runfolder_path,
     );
@@ -72,8 +69,6 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
   $harold = npg_pipeline::pluggable::harold->new(
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
-      domain => q{test},
-      conf_path => q{data/config_files},
       runfolder_path => $analysis_runfolder_path,
       interactive => 1,
     );
@@ -88,7 +83,6 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
   $harold = npg_pipeline::pluggable::harold->new(
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
-      domain => q{test},
       function_order => [$function],
       runfolder_path => $analysis_runfolder_path,
       lanes => [1,2],
@@ -108,7 +102,6 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
   $harold = npg_pipeline::pluggable::harold->new(
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
-      domain => q{test},
       function_order => [$function, 'dodo'],
       runfolder_path => $analysis_runfolder_path,
       resume_start_job => 0,
@@ -129,8 +122,6 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
       runfolder_path => $analysis_runfolder_path,
       npg_tracking_schema => $schema,
       no_bsub => 1,
-      conf_path => $util->conf_path(),
-      domain => q{test},
     });
   } q{no croak on creation};
 
@@ -152,7 +143,6 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
       function_order => [qw(qc_qX_yield qc_insert_size)],
       run_folder => q{123456_IL2_1234},
       runfolder_path => $analysis_runfolder_path,
-      domain => q{test},
     });
   } q{no croak on creation};
   $util->set_staging_analysis_area({with_latest_summary => 1});
@@ -166,13 +156,11 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
   $util->set_staging_analysis_area();
   lives_ok {
     $qc = npg_pipeline::pluggable::harold->new({
-      script_name => q{test},
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
       function_order => [qw{qc_qX_yield qc_adapter qc_insert_size}],
       lanes => [4],
       runfolder_path => $analysis_runfolder_path,
-      domain => q{test},
       no_bsub => 1,
       repository => q{t/data/sequence},
     });

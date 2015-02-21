@@ -14,7 +14,6 @@ $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 
-my $conf_path = $util->conf_path();
 my $mem_units = 'MB';
 
 BEGIN {

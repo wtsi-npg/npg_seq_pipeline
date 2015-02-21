@@ -48,10 +48,7 @@ use_ok(q{npg_pipeline::base});
 {
   my $base;
   lives_ok {
-    $base = npg_pipeline::base->new({
-      conf_path => q{data/config_files},
-      domain => q{test},
-    });
+    $base = npg_pipeline::base->new();
   } q{base ok};
 
   foreach my $config_group ( qw{
@@ -68,12 +65,8 @@ use_ok(q{npg_pipeline::base});
 {
   my $base;
   lives_ok {
-    $base = npg_pipeline::base->new({
-      conf_path => q{does/not/exist},
-      domain => q{test},
-    });
+    $base = npg_pipeline::base->new(conf_path => q{does/not/exist});
   } q{base ok};
-
   throws_ok{ $base->general_values_conf()} qr{cannot find },
     'Croaks for non-esistent config file as expected';;
 }
@@ -99,7 +92,7 @@ use_ok(q{npg_pipeline::base});
   local $ENV{TEST_FS_RESOURCE} = q{nfs_12};
   my $expected_fs_resource =  q{nfs_12};
   my $path = t::util->new()->temp_directory;
-  my $base = npg_pipeline::base->new( id_run => 7440, runfolder_path => $path);
+  my $base = npg_pipeline::base->new(id_run => 7440, runfolder_path => $path);
   my $arg = q{-R 'select[mem>2500] rusage[mem=2500]' -M2500000};
   is ($base->fs_resource_string({resource_string => $arg,}),
     qq[-R 'select[mem>2500] rusage[mem=2500,$expected_fs_resource=8]' -M2500000],
