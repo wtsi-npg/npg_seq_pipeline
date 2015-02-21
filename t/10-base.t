@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 64;
+use Test::More tests => 63;
 use Test::Exception;
 use t::util;
 use File::Temp qw(tempdir tempfile);
@@ -52,7 +52,6 @@ use_ok(q{npg_pipeline::base});
   } q{base ok};
 
   foreach my $config_group ( qw{
-    external_script_names_conf
     function_order_conf
     general_values_conf
     illumina_pipeline_conf

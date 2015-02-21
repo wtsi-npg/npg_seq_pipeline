@@ -341,7 +341,6 @@ sub fs_resource_string {
 ###############
 # config files
 
-=head2 external_script_names_conf
 =head2 function_orders_conf
 =head2 general_values_conf
 =head2 illumina_pipeline_conf
@@ -354,7 +353,6 @@ from the relevant configuration file
 =cut
 
 has [ qw{
-    external_script_names_conf
     function_order_conf
     general_values_conf
     illumina_pipeline_conf
@@ -368,10 +366,6 @@ has [ qw{
   init_arg => undef,
 );
 
-sub _build_external_script_names_conf {
-  my ( $self ) = @_;
-  return $self->_get_config_reader( q{external_script_names.ini} );
-}
 sub _build_function_order_conf {
   my ( $self ) = @_;
   return $self->_get_config_reader( q{function_orders.yml} );

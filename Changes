@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
 
  - removed test and live section in configuration files
+ - removed configuration for external script names
 
  - 'PB_cal_bam' analysis pipeline renamed to 'central'
  - GCLP compliance-related daemon changes:
