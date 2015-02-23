@@ -8,11 +8,7 @@ use Cwd qw{abs_path};
 
 use npg::api::run;
 use st::api::lims;
-use st::api::lims::warehouse;
-use st::api::lims::ml_warehouse;
 use npg_tracking::data::reference::find;
-use npg_warehouse::Schema;
-use WTSI::DNAP::Warehouse::Schema;
 use npg_pipeline::cache;
 
 our $VERSION = '0';
@@ -88,71 +84,6 @@ sub _build_qc_run {
   my $self = shift;
   my $lims_id = $self->id_flowcell_lims;
   return $lims_id && $lims_id =~ /\A\d{13}\z/smx; # it's a tube barcode
-}
-
-has q{_mlwh_schema} => (
-                isa        => q{WTSI::DNAP::Warehouse::Schema},
-                is         => q{ro},
-                required   => 0,
-                lazy_build => 1,);
-sub _build__mlwh_schema {
-  return WTSI::DNAP::Warehouse::Schema->connect();
-}
-
-has q{_wh_schema} => (
-                isa        => q{npg_warehouse::Schema},
-                is         => q{ro},
-                required   => 0,
-                lazy_build => 1,);
-sub _build__wh_schema {
-  return npg_warehouse::Schema->connect();
-}
-
-
-=head2 samplesheet_source_lims
-
- Sometimes alternative sources of LIMs data have to be used.
- In these cases, return children of the relevant lims object, otherwise
- return undefined.
-
-=cut
-
-sub samplesheet_source_lims {
-  my $self = shift;
-
-  my $clims;
-  my $lims_id = $self->id_flowcell_lims;
-
-  if (!$lims_id) {
-
-    my $driver = st::api::lims::ml_warehouse->new(
-         mlwh_schema      => $self->_mlwh_schema,
-         id_flowcell_lims => $lims_id,
-         flowcell_barcode => $self->flowcell_id );
-
-    my $lims = st::api::lims->new(
-        id_flowcell_lims => $lims_id,
-        flowcell_barcode => $self->flowcell_id,
-        driver           => $driver,
-        driver_type      => 'ml_warehouse' );
-    $clims = [$lims->children];
-
-  } elsif ($self->qc_run) {
-
-    my $position = 1; # MiSeq runs only
-    my $driver =  st::api::lims::warehouse->new(
-        npg_warehouse_schema => $self->_wh_schema,
-        position             => $position,
-        tube_ean13_barcode   => $lims_id );
-
-    my $lims = st::api::lims->new(
-        position    => $position,
-        driver      => $driver,
-        driver_type => 'warehouse' );
-    $clims = [$lims];
-  }
-
-  return $clims;
 }
 
 =head2 multiplexed_lanes
@@ -464,15 +395,7 @@ __END__
 
 =item Cwd
 
-=item npg_warehouse::Schema
-
-=item WTSI::DNAP::Warehouse::Schema
-
 =item st::api::lims
-
-=item st::api::lims::warehouse
-
-=item st::api::lims::ml_warehouse
 
 =item npg::api::run
 
