@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 107;
+use Test::More tests => 110;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 use t::dbic_util;
@@ -30,6 +30,14 @@ my $lims_driver = st::api::lims::ml_warehouse->new(
 
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 'wibble';
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
+
+
+for my $type (qw/xml warehouse mlwarehouse/) {
+  my $method = $type . '_driver_name';
+  my $expected = $type eq 'mlwarehouse' ? 'ml_warehouse' : $type;
+  is(npg_pipeline::cache->$method, $expected, "driver name for $type");
+}
+
 
 {
   my $tempdir = tempdir( CLEANUP => 1);

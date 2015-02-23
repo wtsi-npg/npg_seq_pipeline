@@ -136,7 +136,7 @@ sub _build_lims {
     croak "lims_id accessor should be defined for $driver_type driver";
   }
 
-  if ($driver_type eq st::api::lims->mlwarehouse_driver_name) {
+  if ($driver_type eq $self->mlwarehouse_driver_name) {
 
     my $driver = st::api::lims::ml_warehouse->new(
          mlwh_schema      => $self->mlwh_schema,
@@ -150,7 +150,7 @@ sub _build_lims {
         driver_type      => $driver_type );
     $clims = [$lims->children];
 
-  } elsif ($driver_type eq st::api::lims->warehouse_driver_name) {
+  } elsif ($driver_type eq $self->warehouse_driver_name) {
 
     my $position = 1; # MiSeq runs only
     my $driver =  st::api::lims::warehouse->new(
@@ -263,6 +263,24 @@ An array of non-error messages, empty by default.
 has 'messages'  => (isa        => 'ArrayRef[Str]',
                     is         => 'ro',
                     default    => sub { [] },);
+
+=head2 xml_driver_name
+
+=head2 warehouse_driver_name
+
+=head2 mlwarehouse_driver_name
+
+=cut
+
+sub xml_driver_name {
+  return 'xml';
+}
+sub warehouse_driver_name {
+  return 'warehouse';
+}
+sub mlwarehouse_driver_name {
+  return 'ml_warehouse';
+}
 
 =head2 setup
 
@@ -382,7 +400,7 @@ sub _lims_xml_options {
   my $self = shift;
 
   my $driver_type = $self->lims_driver_type;
-  my $expected_driver_type =  st::api::lims->xml_driver_name;
+  my $expected_driver_type =  $self->xml_driver_name;
   if ($driver_type ne $expected_driver_type) {
     croak "lims driver type conflict - got '$driver_type', expected '$expected_driver_type'";
   }
@@ -436,7 +454,7 @@ sub _xml_feeds {
   $run->instrument()->model();
   npg::api::run_status_dict->new()->run_status_dicts();
 
-  if ($self->lims_driver_type eq st::api::lims->xml_driver_name) {
+  if ($self->lims_driver_type eq $self->xml_driver_name) {
     my $lims = st::api::lims->new($self->_lims_xml_options);
     my @methods = $lims->method_list();
     foreach my $l ( $lims->associated_lims() ) {

@@ -7,7 +7,6 @@ use Try::Tiny;
 use Readonly;
 
 use npg_pipeline::cache;
-use st::api::lims;
 
 extends q{npg_pipeline::pluggable};
 with qw{npg_tracking::illumina::run::long_info};
@@ -207,13 +206,13 @@ sub spider {
   my $lims_id = $self->id_flowcell_lims;
 
   if (!$lims_id) {
-    $ref->{'lims_driver_type'} = st::api::lims->mlwarehouse_driver_name;
+    $ref->{'lims_driver_type'} = npg_pipeline::cache->mlwarehouse_driver_name;
     $ref->{'lims_id'}          = $self->flowcell_id;
   } elsif ($self->qc_run) {
-    $ref->{'lims_driver_type'} = st::api::lims->warehouse_driver_name;
+    $ref->{'lims_driver_type'} = npg_pipeline::cache->warehouse_driver_name;
     $ref->{'lims_id'}          = $lims_id;
   } else {
-    $ref->{'lims_driver_type'} = st::api::lims->xml_driver_name;
+    $ref->{'lims_driver_type'} = npg_pipeline::cache->xml_driver_name;
     $ref->{'lims_id'}          = $lims_id;
   }
 
@@ -366,8 +365,6 @@ __END__
 =item Try::Tiny
 
 =item npg_tracking::illumina::run::long_info
-
-=item st::api::lims
 
 =back
 
