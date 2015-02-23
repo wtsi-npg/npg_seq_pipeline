@@ -464,6 +464,8 @@ __END__
 
 =item Cwd
 
+=item npg_warehouse::Schema
+
 =item WTSI::DNAP::Warehouse::Schema
 
 =item st::api::lims
