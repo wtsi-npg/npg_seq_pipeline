@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 64;
+use Test::More tests => 52;
 use Test::Exception;
 use t::util;
 use File::Temp qw(tempdir tempfile);
@@ -167,51 +167,14 @@ use_ok(q{npg_pipeline::base});
 }
 
 {
-  my $clims;
-
-  my $wh_schema = t::dbic_util->new()->test_schema_mlwh('t/data/fixtures/mlwh');
-  my $base = npg_pipeline::base->new(
-               flowcell_id  => 'HBF2DADXX',
-               _mlwh_schema =>  $wh_schema);
+  my $base = npg_pipeline::base->new(flowcell_id  => 'HBF2DADXX');
   ok( !$base->qc_run, 'not qc run');
-  lives_ok {$clims = $base->samplesheet_source_lims() }
-    'can retrieve lims objects';
-  ok( $clims, 'lims objects returned');
-  is( scalar @{$clims}, 2, 'two lims objects returned');
-  is( $clims->[0]->driver_type, 'ml_warehouse', 'correct driver type');
-
-  $base = npg_pipeline::base->new(
-               flowcell_id  => 'XXXXXXXXX',
-               _mlwh_schema =>  $wh_schema);
-  throws_ok {$clims = $base->samplesheet_source_lims() }
-    qr/No record retrieved for st::api::lims::ml_warehouse flowcell_barcode XXXXXXXXX/,
-    'cannot retrieve lims objects';
   
   $base = npg_pipeline::base->new(id_flowcell_lims => 3456);
   ok( !$base->qc_run, 'not qc run');
-  ok( !$base->samplesheet_source_lims(), 'ss_source lims undefined');
-
-  $wh_schema = t::dbic_util->new()->test_schema_wh('t/data/fixtures/wh');
-  $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775',
-                                  _wh_schema       => $wh_schema);
+  
+  $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775');
   ok($base->qc_run, 'qc run');
-  lives_ok { $clims = $base->samplesheet_source_lims() }
-    'can retrieve lims objects';
-  ok( $clims, 'lims objects returned');
-  is( scalar @{$clims}, 1, 'one lims object returned');
-  is( $clims->[0]->driver_type, 'warehouse', 'correct driver type');
-
-  $base = npg_pipeline::base->new(id_flowcell_lims => '9870331130775',
-                                  _wh_schema       => $wh_schema);
-  throws_ok { $clims = $base->samplesheet_source_lims() }
-    qr/EAN13 barcode checksum fail for code 9870331130775/,
-    'cannot retrieve lims objects';
-
-  $base = npg_pipeline::base->new(id_flowcell_lims => '5260271901788',
-                                  _wh_schema       => $wh_schema);
-  throws_ok { $clims = $base->samplesheet_source_lims() }
-    qr/Single tube not found from barcode 271901/,
-    'cannot retrieve lims objects';  
 }
 
 1;
