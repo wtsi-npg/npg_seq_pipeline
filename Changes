@@ -2,12 +2,12 @@ LIST OF CHANGES
 ---------------
 
  - GCLP compliance-related daemon changes:
-     runs will not be progressed to analisys/archival unless the
+     runs will not be progressed to analysis/archival unless the
      flowcell barcode is set in the npg_tracking database;
      runs are not going to be progressed if it's impossible to fetch LIMs data for a flowcell;
      both analysis and archival daemon to pass runfolder path to the
      pipeline script;
-     if batch_id is available, pass it to teh analysis pipeline script    
+     if batch_id is available, pass it to the analysis pipeline script    
  - use appropriate driver for samplesheet generation (xml, warehouse, ml_warehouse)
  - GCLP compliance-related pipeline changes:
      get the flowcell barcode needed for

@@ -73,7 +73,7 @@ sub _build_lims {
 
 =head2 qc_run
 
-Boolean flag indicating whether thi srun is a qc run.
+Boolean flag indicating whether this run is a qc run.
 
 =cut
 
