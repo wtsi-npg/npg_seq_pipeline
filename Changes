@@ -2,6 +2,11 @@ LIST OF CHANGES
 ---------------
 
  - use samtools1 (rather than samtools1_1) for samtools in archival and P4 pipelines
+
+release 47.8.1
+ - workaround bug: daemon missing new warehouse access
+
+release 47.8
  - GCLP compliance-related daemon changes:
      runs will not be progressed to analysis/archival unless the
      flowcell barcode is set in the npg_tracking database;
