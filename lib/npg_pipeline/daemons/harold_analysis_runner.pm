@@ -31,16 +31,6 @@ class_has 'pipeline_script_name' => (
                        lazy_build => 1,
                                     );
 
-has q{_iseq_flowcell} => (
-                isa        => q{DBIx::Class::ResultSet},
-                is         => q{ro},
-                required   => 0,
-                lazy_build => 1,
-                         );
-sub _build__iseq_flowcell {
-  my $self = shift;
-  return $self->mlwh_schema->resultset('IseqFlowcell');
-}
 
 sub _build_pipeline_script_name {
   return $PB_CAL_SCRIPT;
@@ -146,10 +136,9 @@ sub _check_lims_link {
   }
 
   my $batch_id = $run->batch_id();
-  my $row_count = $self->_iseq_flowcell->search({'flowcell_barcode' => $fc_barcode})->count;
-  if ( !($batch_id || $row_count) ) {
+  if ( !($batch_id ) ) {
     ${$message} =
-      q{Neither batch id nor matching flowcell barcode is found};
+      q{No batch id is found};
     return $NO_LIMS_LINK;
   }
 
