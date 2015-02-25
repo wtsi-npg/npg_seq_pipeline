@@ -14,7 +14,6 @@ my $curdir = cwd();
 my $tmp_dir = $util->temp_directory();
 local $ENV{TEST_DIR} = $tmp_dir;
 my $bin = $curdir . q[/bin];
-my $conf_path = $curdir . q{/data/config_files};
 
 my $analysis_runfolder_path = $util->analysis_runfolder_path();
 $util->set_rta_staging_analysis_area();
@@ -31,7 +30,7 @@ $util->set_rta_staging_analysis_area();
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
   my $bustard_path = join q[/], $analysis_runfolder_path, q{Data/Intensities/Bustard1.5.1_09-07-2009_RTA};
   rename $bustard_path, join(q[/], $analysis_runfolder_path, 'moved');
-  lives_ok { diag qx{perl $bin/npg_pipeline_post_qc_review --domain test --conf_path $conf_path --no_folder_moves --runfolder_path $analysis_runfolder_path --bam_basecall_path $analysis_runfolder_path}; } q{ran bin/npg_pipeline_post_qc_review};
+  lives_ok { diag qx{perl $bin/npg_pipeline_post_qc_review --id_flowcell_lims 20150 --no_folder_moves --runfolder_path $analysis_runfolder_path --bam_basecall_path $analysis_runfolder_path}; } q{ran bin/npg_pipeline_post_qc_review};
   ok(!$CHILD_ERROR, qq{Return code of $CHILD_ERROR});
 }
 

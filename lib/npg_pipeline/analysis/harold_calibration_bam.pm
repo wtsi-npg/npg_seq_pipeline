@@ -540,7 +540,7 @@ sub _recalibration_bsub_command {
   if ($self->spatial_filter) {
     $check_cmd .= qq{ ( if [[ -f ${phix_bam}.filter ]]; then echo applying spatial filter 1>&2; } . $self->pb_calibration_bin() . q{/} .
                   qq{spatial_filter -u -a -f -F ${phix_bam}.filter - } .
-                  q{2> >( tee /dev/stderr | } . $self->external_script_names_conf()->{qc_script}  . qq{ --check spatial_filter --id_run $id_run --position $position --qc_out } . $self->qc_path . q{ );} .
+                  q{2> >( tee /dev/stderr | } . qq{qc --check spatial_filter --id_run $id_run --position $position --qc_out } . $self->qc_path . q{ );} .
                   q{ else echo no spatial filter 1>&2; cat; fi;) | };
   }
   $check_cmd .= qq{$bam_merge_cmd; else echo symlinking as no phix alignment 1>&2; rm -f $output_bam; ln -s $input_bam $output_bam; rm -f $output_bam_md5; ln -s $input_bam_md5 $output_bam_md5; fi};

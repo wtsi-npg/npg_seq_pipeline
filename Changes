@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - removed test and live section in configuration files
+ - removed configuration for external script names
+
  - 'PB_cal_bam' analysis pipeline renamed to 'central'
  - use samtools1 (rather than samtools1_1) for samtools in archival and P4 pipelines
 

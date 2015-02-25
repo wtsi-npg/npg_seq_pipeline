@@ -44,7 +44,7 @@ sub _generate_bsub_command {
   } ) ) . q{ };
   $bsub_command .=  q{-o } . File::Spec->catfile( $location_of_logs, $job_name . q{.out } );
   $bsub_command .=  q{'};
-  $bsub_command .=  $self->external_script_names_conf()->{fastqcheck_loader};
+  $bsub_command .=  q{npg_qc_save_files.pl};
 
   for my $path (@fqcheck_paths) {
     $bsub_command .=  qq{ --path=$path};

@@ -5,13 +5,9 @@ use Test::More tests => 23;
 use Test::Exception;
 use t::util;
 
-BEGIN {
-  use_ok( q{npg_pipeline::archive::file::BamClusterCounts} );
-}
+use_ok( q{npg_pipeline::archive::file::BamClusterCounts} );
 
 my $util = t::util->new({});
-my $conf_path = $util->conf_path();
-
 my $dir = $util->temp_directory();
 $ENV{TEST_DIR} = $dir;
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
@@ -33,7 +29,6 @@ my $archive_path = $recalibrated_path . q{/archive};
       bam_basecall_path => $bam_basecall_path,
       id_run => 1234,
       timestamp => q{20100907-142417},
-      conf_path => $conf_path,
       no_bsub => 1,
     );
   } q{obtain object ok};
@@ -65,7 +60,6 @@ my $archive_path = $recalibrated_path . q{/archive};
       runfolder_path => $analysis_runfolder_path,
       bam_basecall_path => $bam_basecall_path,
       archive_path => $archive_path,
-      conf_path => $conf_path,
     );
   } q{obtain object ok};
 
@@ -87,7 +81,6 @@ my $archive_path = $recalibrated_path . q{/archive};
       position => 3,
       bam_basecall_path => $bam_basecall_path,
       archive_path => $archive_path,
-      conf_path => $conf_path,
     );
   } q{obtain object ok};
   
@@ -123,7 +116,6 @@ my $archive_path = $recalibrated_path . q{/archive};
       runfolder_path => $analysis_runfolder_path,
       bam_basecall_path => $bam_basecall_path,
       archive_path => $archive_path,
-      conf_path => $conf_path,
     );
   } q{obtain object ok};
 
@@ -140,7 +132,7 @@ my $archive_path = $recalibrated_path . q{/archive};
   my $bam_basecall_path = "$analysis_runfolder_path/Data/Intensities/BAM_basecalls_20130122-085552";
   my $qc_path = "$bam_basecall_path/PB_cal_bam/archive/qc";
 
-  my $common_command = "$EXECUTABLE_NAME bin/npg_pipeline_check_bam_file_cluster_count --conf_path $conf_path --id_run 8747 --bam_basecall_path $bam_basecall_path --qc_path $qc_path --position ";
+  my $common_command = "$EXECUTABLE_NAME bin/npg_pipeline_check_bam_file_cluster_count --id_run 8747 --bam_basecall_path $bam_basecall_path --qc_path $qc_path --position ";
   lives_ok { system "$common_command 1" } qq{script runs ok when no spatial filter json};
   ok( ! $CHILD_ERROR, q{script completed ok - no croak} );
   lives_ok { system "$common_command 4" } qq{script runs ok when spatial filter has failed reads};

@@ -46,13 +46,19 @@ Create derived class object
 
 =head1 DESCRIPTION
 
-A base class to provide the following methods to any derived objects within npg_pipeline
+A base class to provide basic functionality to any derived objects within npg_pipeline
 
 =head1 SUBROUTINES/METHODS
 
 =cut
 
-has [qw/ +npg_tracking_schema +slot +flowcell_id +instrument_string +reports_path +subpath +name +tracking_run /] => (metaclass => 'NoGetopt',);
+has [qw/ +npg_tracking_schema
+         +slot
+         +flowcell_id
+         +instrument_string
+         +reports_path
+         +subpath +name
+         +tracking_run /] => (metaclass => 'NoGetopt',);
 
 has q{+id_run}         => (required => 0,);
 
@@ -140,31 +146,18 @@ sub _build_script_name {
   return $PROGRAM_NAME;
 }
 
-=head2 time
-
-returns and store localtime so that this can be used for calculations
-
-  my $iTime = $class->time();
-
 =head2 timestamp
 
-returns and stores a timestring YYYY-MM-DD HH:MM:SS of $self->time()
+returns and stores a timestring YYYY-MM-DD HH:MM:SS
 
   my $sTimeStamp = $class->timestamp();
 
 =cut
 
-has q{time}               => (isa => q{Int}, is => q{ro},metaclass => 'NoGetopt',lazy_build => 1, documentation => q{Advise - Do Not set on construction, it can be built});
-has q{timestamp}          => (isa => q{Str}, is => q{ro},metaclass => 'NoGetopt', lazy_build => 1, documentation => q{Advise - Do Not set on construction, it can be built});
-
-sub _build_time {
-  my ($self) = @_;
-  return time;
-}
-
+has q{timestamp} => (isa => q{Str}, is => q{ro},metaclass => 'NoGetopt', lazy_build => 1);
 sub _build_timestamp {
   my ($self) = @_;
-  my $ts = strftime '%Y%m%d-%H%M%S', localtime $self->time();
+  my $ts = strftime '%Y%m%d-%H%M%S', localtime time;
   return $ts;
 }
 
@@ -175,7 +168,6 @@ can be provided by the user, or will take default from either LSB_DEFAULTQUEUE e
 =cut
 
 has q{lsf_queue}      => (isa => q{Str},  is => q{ro},
-                          #metaclass => 'NoGetopt',
                           lazy_build => 1,
                           documentation => q{the lsf_queue you want to submit ordinary jobs to. defaults to LSB_DEFAULTQUEUE or from config file},);
 
@@ -349,20 +341,18 @@ sub fs_resource_string {
 ###############
 # config files
 
-=head2 external_script_names_conf
 =head2 function_orders_conf
 =head2 general_values_conf
 =head2 illumina_pipeline_conf
 =head2 pb_cal_pipeline_conf
 =head2 parallelisation_conf
 
-All of these are accessors which return a hashref of configuration details for the current or declared domain
+All of these are accessors which return a hashref of configuration details
 from the relevant configuration file
 
 =cut
 
 has [ qw{
-    external_script_names_conf
     function_order_conf
     general_values_conf
     illumina_pipeline_conf
@@ -376,10 +366,6 @@ has [ qw{
   init_arg => undef,
 );
 
-sub _build_external_script_names_conf {
-  my ( $self ) = @_;
-  return $self->_get_config_reader( q{external_script_names.ini} );
-}
 sub _build_function_order_conf {
   my ( $self ) = @_;
   return $self->_get_config_reader( q{function_orders.yml} );
@@ -412,12 +398,6 @@ sub _get_config_reader {
     if ( scalar @{ $config } ) {
          $config = $config->[0]->{ $config_file };
     }
-    my $domain = $self->domain();
-    if (defined $config->{$domain}) {
-       $config = $config->{$domain};
-    } else {
-      croak "cannot find $domain in $config_file";
-    }
   } else {
     croak "cannot find $config_file";
   }
@@ -425,29 +405,11 @@ sub _get_config_reader {
   return $config;
 }
 
-=head2 domain
-
-accessor to obtain the domain which should be looked for in the config files
-
-=cut
-
-has q{domain} => (
-  isa => q{Str},
-  is  => q{ro},
-  lazy_build => 1,
-  documentation => q{domain to utilise for config files. Defaults to $} . q{ENV{TEST} or live},
-);
-
-sub _build_domain {
-  my ( $self ) = @_;
-  return $ENV{TEST} || q{live};
-}
-
 has q{conf_path} => (
   isa => q{Str},
   is  => q{ro},
   lazy_build => 1,
-  documentation => q{full path to directory of config files},
+  documentation => q{full path to directory containing config files},
 );
 sub _build_conf_path {
   my $self = shift;

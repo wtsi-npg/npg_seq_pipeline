@@ -9,10 +9,7 @@ use Cwd qw/getcwd/;
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 
 my $util = t::util->new({});
-my $conf_path = $util->conf_path();
-
 $ENV{TEST_DIR} = $util->temp_directory();
-
 my $tmp_dir = $util->temp_directory();
 
 use_ok('npg_pipeline::run::folder::move');
@@ -25,8 +22,6 @@ use_ok('npg_pipeline::run::folder::move');
   lives_ok {
     $rfm = npg_pipeline::run::folder::move->new( {
       run_folder => $run_folder,
-      conf_path => $conf_path,
-      domain => q{test},
       runfolder_path => $runfolder_path,
       id_run => 1234,
     } );
@@ -70,8 +65,6 @@ use_ok('npg_pipeline::run::folder::move');
       folder     => $folder,
       timestamp  => q{20090709-123456},
       verbose    => 1,
-      conf_path => $conf_path,
-      domain => q{test},
       runfolder_path => $util->analysis_runfolder_path(),
       id_run => 1234,
     });
@@ -105,8 +98,6 @@ use_ok('npg_pipeline::run::folder::move');
   lives_ok {
     $rfm = npg_pipeline::run::folder::move->new({
       run_folder => $run_folder,
-      conf_path => $conf_path,
-      domain => q{test},
       runfolder_path => $rf_path,
     });
   } q{no croak as run folder provided};
@@ -133,8 +124,6 @@ use_ok('npg_pipeline::run::folder::move');
   $rf_path =~ s{analysis/.*}{analysis/$run_folder}xms;
   my $rfm = npg_pipeline::run::folder::move->new({
       run_folder => $run_folder,
-      conf_path => $conf_path,
-      domain => q{test},
       runfolder_path => $rf_path,
     });
 
