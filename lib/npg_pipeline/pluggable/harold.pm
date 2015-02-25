@@ -7,6 +7,7 @@ use Try::Tiny;
 use Readonly;
 
 use npg_pipeline::cache;
+
 extends q{npg_pipeline::pluggable};
 with qw{npg_tracking::illumina::run::long_info};
 
@@ -196,18 +197,26 @@ See npg_pipeline::cache for details.
 sub spider {
   my ( $self ) = @_;
 
-  my $args = {
-    id_run         => $self->id_run,
-    set_env_vars   => 1,
-    cache_location => $self->analysis_path,
-             };
+  my $ref = {
+    'id_run'           => $self->id_run,
+    'set_env_vars'     => 1,
+    'cache_location'   => $self->analysis_path,
+            };
 
-  my $clims = $self->samplesheet_source_lims;
-  if ($clims) {
-    $args->{'lims'} = $clims;
+  my $lims_id = $self->id_flowcell_lims;
+
+  if (!$lims_id) {
+    $ref->{'lims_driver_type'} = npg_pipeline::cache->mlwarehouse_driver_name;
+    $ref->{'lims_id'}          = $self->flowcell_id;
+  } elsif ($self->qc_run) {
+    $ref->{'lims_driver_type'} = npg_pipeline::cache->warehouse_driver_name;
+    $ref->{'lims_id'}          = $lims_id;
+  } else {
+    $ref->{'lims_driver_type'} = npg_pipeline::cache->xml_driver_name;
+    $ref->{'lims_id'}          = $lims_id;
   }
 
-  my $cache = npg_pipeline::cache->new($args);
+  my $cache = npg_pipeline::cache->new($ref);
 
   my $error;
   try {
@@ -215,10 +224,12 @@ sub spider {
   } catch {
     $error = $_ || 'some error';
   };
+
   $self->log(join qq[\n], @{$cache->messages});
   if ($error) {
-    croak qq[Error while spidering:$error];
+    croak qq[Error while spidering: $error];
   }
+
   return ();
 }
 
@@ -354,8 +365,6 @@ __END__
 =item Try::Tiny
 
 =item npg_tracking::illumina::run::long_info
-
-=item npg_common::roles::run::status
 
 =back
 

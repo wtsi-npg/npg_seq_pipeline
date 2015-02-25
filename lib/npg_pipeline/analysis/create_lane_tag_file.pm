@@ -144,9 +144,9 @@ sub _construct_specific_file_expected_sequence_with_library {
     $library_names ||= q{};
     $sample_names ||= q{};
 
-    $study_names =~ s/\t/\ /gmxs;
-    $library_names =~ s/\t/\ /gmxs;
-    $sample_names =~ s/\t/\ /gmxs;
+    $study_names =~ s/[\t\n\r]/\ /gmxs;
+    $library_names =~ s/[\t\n\r]/\ /gmxs;
+    $sample_names =~ s/[\t\n\r]/\ /gmxs;
 
     print {$fh}  qq{\n}.$tag_seq_list->[$array_index]
                 .qq{\t}.$tag_index

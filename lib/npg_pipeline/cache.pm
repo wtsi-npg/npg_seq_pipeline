@@ -2,6 +2,7 @@ package npg_pipeline::cache;
 
 use Moose;
 use MooseX::StrictConstructor;
+use Readonly;
 use Carp;
 use English qw{-no_match_vars};
 use POSIX qw(strftime);
@@ -16,6 +17,10 @@ use npg::api::request;
 use npg::api::run;
 use npg::api::run_status_dict;
 use st::api::lims;
+use st::api::lims::warehouse;
+use st::api::lims::ml_warehouse;
+use npg_warehouse::Schema;
+use WTSI::DNAP::Warehouse::Schema;
 use npg::samplesheet;
 
 with 'npg_tracking::glossary::run';
@@ -51,15 +56,64 @@ npg_pipeline::cache
  
 Integer run id, required.
 
-=head2 cache_npg_xml
+=head2 lims_id
 
-Cache npg xml feeds? Boolean flag, true by default.
+Lims id to be used to build lims accessor.
+Required for warehouse and ml_warehouse lims driver types.
+Semantics by lims driver type:
+
+  ml_warehouse - flowcell barcode,   required
+  warehouse    - tube_ean13_barcode, required
+  xml          - batch id,           optional
 
 =cut
 
-has 'cache_npg_xml'  => (isa     => 'Bool',
-                         is      => 'ro',
-                         default => 1,);
+has 'lims_id'        => (isa      => 'Str',
+                         is       => 'ro',
+                         required => 0,);
+
+=head2 lims_driver_type
+ 
+Driver type to be used to build lims accessor,
+defaults to xml.
+
+=cut
+
+has 'lims_driver_type'  => (isa        => 'Str',
+                            is         => 'ro',
+                            required   => 0,
+                            default    => 'xml',);
+
+=head2 wh_schema
+ 
+DBIx schema class for old warehouse access.
+
+=cut
+
+has 'wh_schema'  => (isa        => 'npg_warehouse::Schema',
+                     is         => 'ro',
+                     required   => 0,
+                     lazy_build => 1,);
+sub _build_wh_schema {
+  my $self = shift;
+  return npg_warehouse::Schema->connect();
+}
+
+=head2 mlwh_schema
+ 
+DBIx schema class for ml_warehouse access.
+
+=cut
+
+has q{mlwh_schema} => (
+                isa        => q{WTSI::DNAP::Warehouse::Schema},
+                is         => q{ro},
+                required   => 0,
+                lazy_build => 1,);
+sub _build_mlwh_schema {
+  return WTSI::DNAP::Warehouse::Schema->connect();
+}
+
 
 =head2 lims
  
@@ -67,10 +121,55 @@ A reference to an array of child lims objects.
 
 =cut
 
-has 'lims'       => (isa       => 'ArrayRef[st::api::lims]',
-                     is        => 'ro',
-                     required  => 0,
-                     predicate => '_has_lims',);
+has 'lims'       => (isa        => 'ArrayRef[st::api::lims]',
+                     is         => 'ro',
+                     required   => 0,
+                     lazy_build => 1,);
+sub _build_lims {
+  my $self = shift;
+
+  my $clims;
+  my $driver_type = $self->lims_driver_type;
+  my $lims_id = $self->lims_id;
+
+  if ($driver_type =~ /warehouse/xms && !$lims_id) {
+    croak "lims_id accessor should be defined for $driver_type driver";
+  }
+
+  if ($driver_type eq $self->mlwarehouse_driver_name) {
+
+    my $driver = st::api::lims::ml_warehouse->new(
+         mlwh_schema      => $self->mlwh_schema,
+         id_flowcell_lims => undef,
+         flowcell_barcode => $self->lims_id );
+
+    my $lims = st::api::lims->new(
+        id_flowcell_lims => undef,
+        flowcell_barcode => $self->lims_id,
+        driver           => $driver,
+        driver_type      => $driver_type );
+    $clims = [$lims->children];
+
+  } elsif ($driver_type eq $self->warehouse_driver_name) {
+
+    my $position = 1; # MiSeq runs only
+    my $driver =  st::api::lims::warehouse->new(
+        npg_warehouse_schema => $self->wh_schema,
+        position             => $position,
+        tube_ean13_barcode   => $lims_id );
+
+    my $lims = st::api::lims->new(
+        position    => $position,
+        driver      => $driver,
+        driver_type => $driver_type );
+    $clims = [$lims];
+
+  } else {
+    $clims = [st::api::lims->new($self->_lims_xml_options)->children];
+  }
+
+  return $clims;
+}
 
 =head2 reuse_cache
 
@@ -165,6 +264,24 @@ has 'messages'  => (isa        => 'ArrayRef[Str]',
                     is         => 'ro',
                     default    => sub { [] },);
 
+=head2 xml_driver_name
+
+=head2 warehouse_driver_name
+
+=head2 mlwarehouse_driver_name
+
+=cut
+
+sub xml_driver_name {
+  return 'xml';
+}
+sub warehouse_driver_name {
+  return 'warehouse';
+}
+sub mlwarehouse_driver_name {
+  return 'ml_warehouse';
+}
+
 =head2 setup
 
 Generates cached data. If an existing directory with cached data found,
@@ -253,8 +370,7 @@ sub create {
     $self->_samplesheet();
   } else {
     local $ENV{ $cache_dir_var_name } = $self->cache_dir_path;
-    my $with_lims = $self->_has_lims ? 0 : 1;
-    $self->_xml_feeds($with_lims);
+    $self->_xml_feeds();
     $self->_samplesheet();
   }
 
@@ -280,26 +396,40 @@ sub env_vars {
   return (npg::api::request->cache_dir_var_name(), st::api::lims->cached_samplesheet_var_name());
 }
 
+sub _lims_xml_options {
+  my $self = shift;
+
+  my $driver_type = $self->lims_driver_type;
+  my $expected_driver_type =  $self->xml_driver_name;
+  if ($driver_type ne $expected_driver_type) {
+    croak "lims driver type conflict - got '$driver_type', expected '$expected_driver_type'";
+  }
+  my $ref = {
+    driver_type => $driver_type,
+    id_run      => $self->id_run,
+  };
+  if ($self->lims_id) {
+    $ref->{'batch_id'} = $self->lims_id;
+  }
+  return $ref;
+}
+
 sub _samplesheet {
   my ($self) = @_;
   if(not -e $self->samplesheet_file_path){
 
-    my $ref = { id_run => $self->id_run,
-                extend => 1,
-		output => $self->samplesheet_file_path,
-              };
-    if ($self->_has_lims) {
-      $ref->{'lims'} = $self->lims;
-    }
-
-    npg::samplesheet->new($ref)->process();
+    npg::samplesheet->new(id_run => $self->id_run,
+                          lims   => $self->lims,
+                          extend => 1,
+		          output => $self->samplesheet_file_path,
+                         )->process();
     $self->_add_message(q(Samplesheet created at ).$self->samplesheet_file_path);
   }
   return;
 }
 
 sub _deprecate {
-  my ($self) = @_;
+  my $self = shift;
   if (!-e $self->cache_dir_path) {
     croak sprintf '%s does not exist, nothing to move', $self->cache_dir_path;
   }
@@ -314,20 +444,18 @@ sub _deprecate {
 }
 
 sub _xml_feeds {
-  my ($self, $with_lims) = @_;
+  my $self = shift;
 
   local $ENV{npg::api::request->save2cache_dir_var_name()} = 1;
 
-  if ($self->cache_npg_xml) {
-    my $run = npg::api::run->new({id_run => $self->id_run});
-    $run->is_paired_run();
-    $run->current_run_status();
-    $run->instrument()->model();
-    npg::api::run_status_dict->new()->run_status_dicts();
-  }
+  my $run = npg::api::run->new({id_run => $self->id_run});
+  $run->is_paired_run();
+  $run->current_run_status();
+  $run->instrument()->model();
+  npg::api::run_status_dict->new()->run_status_dicts();
 
-  if ($with_lims) {
-    my $lims = st::api::lims->new(id_run => $self->id_run, driver_type => 'xml');
+  if ($self->lims_driver_type eq $self->xml_driver_name) {
+    my $lims = st::api::lims->new($self->_lims_xml_options);
     my @methods = $lims->method_list();
     foreach my $l ( $lims->associated_lims() ) {
       foreach my $method ( @methods ) {
@@ -415,6 +543,8 @@ Creates or finds existing cache of lims and other metadata needed to run the pip
 
 =item MooseX::StrictConstructor
 
+=item Readonly
+
 =item Cwd
 
 =item File::Spec
@@ -438,6 +568,14 @@ Creates or finds existing cache of lims and other metadata needed to run the pip
 =item npg::api::run_status_dict
 
 =item st::api::lims
+
+=item st::api::lims::warehouse
+
+=item st::api::lims::ml_warehouse
+
+=item npg_warehouse::Schema
+
+=item WTSI::DNAP::Warehouse::Schema
 
 =item npg_tracking::glossary::run
 

@@ -180,7 +180,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                            q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
                            q(cd), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{&&},
                            q(vtfp.pl -s),
-                             q{-keys samtools_executable -vals samtools1_1},
+                             q{-keys samtools_executable -vals samtools1},
                              q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
                              q(-keys aligner_numthreads -vals), q{`echo $}.q{LSB_MCPU_HOSTS | cut -d " " -f2`},
                              q(-keys indatadir -vals), $input_path,

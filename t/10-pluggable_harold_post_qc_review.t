@@ -1,9 +1,10 @@
 use strict;
 use warnings;
-use Test::More tests => 21;
+use Test::More tests => 15;
 use Test::Deep;
 use Test::Exception;
 use Cwd;
+
 use t::util;
 use t::dbic_util;
 
@@ -101,34 +102,6 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
   ok(!$p->archive_to_irods(), 'archival to irods switched off');
   ok($p->update_warehouse(), 'update to warehouse switched on');
   is($p->no_summary_link,1, 'summary_link switched off');
-}
-
-{
-  my $wh_schema = t::dbic_util->new()->test_schema_mlwh('t/data/fixtures/mlwh');
-
-  my $name = '150204_HS24_15440_B_HBF2DADXX';
-  my $runfolder_path = join q[/], $temp, $name;
-  mkdir $runfolder_path; 
-
-  my $p = npg_pipeline::pluggable::harold::post_qc_review->new(
-      id_run            => 15440,
-      runfolder_path    => $runfolder_path,
-      bam_basecall_path => $runfolder_path,
-      _mlwh_schema       => $wh_schema,
-  );
-
-  my $cache       = join q[/], $runfolder_path , q{metadata_cache_15440};
-  my $samplesheet = join q[/], $cache, 'samplesheet_15440.csv';
-
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = join q[/], getcwd(), 't/data/run_15440';
-
-  lives_ok {$p->spider();} q{spider runs ok};
-  is( $ENV{'NPG_WEBSERVICE_CACHE_DIR'}, $cache, q{cache dir. env. var. is set} );
-  is( $ENV{'NPG_CACHED_SAMPLESHEET_FILE'}, $samplesheet,
-    q{cached samplesheet env. var. is set} );
-  ok(-d $cache, 'cache directory created');
-  ok(-d "$cache/npg", 'directory for cached npg xml feeds is created');
-  ok(-f $samplesheet, 'samplesheet created');
 }
 
 1;
