@@ -150,10 +150,13 @@ sub _check_lims_link {
 sub _runfolder_path {
   my ($self, $id_run) = @_;
 
-  return Moose::Meta::Class->create_anon_class(
+  my $class =  Moose::Meta::Class->create_anon_class(
     roles => [ qw/npg_tracking::illumina::run::folder::location
                   npg_tracking::illumina::run::short_info/ ]
-  )->new_object(
+  );
+  $class->add_attribute(q(npg_tracking_schema),{isa => 'npg_tracking::Schema', is=>q(ro)});
+
+  return $class->new_object(
     npg_tracking_schema => $self->npg_tracking_schema,
     id_run              => $id_run,
   )->runfolder_path;

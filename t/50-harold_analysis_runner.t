@@ -1,8 +1,9 @@
 use strict;
 use warnings;
-use Test::More tests => 46;
+use Test::More tests => 47;
 use Test::Exception;
 use Cwd;
+use File::Path qw/make_path/;
 use List::MoreUtils qw{any};
 use t::util;
 use t::dbic_util;
@@ -207,6 +208,24 @@ package main;
   is ($runner->_check_lims_link($test_run, \$message), -1,
     'correct return value when tracking does not have flowcell barcode');
   is ($message, 'No flowcell barcode', 'correct message');
+}
+
+{
+  my $temp = t::util->new()->temp_directory();
+  my $name = '150227_HS35_1234_A_HBFJ3ADXX';
+  my $rf = join q[/], $temp, 'sf33/ILorHSany_sf33/outgoing', $name;
+  make_path $rf;
+  
+  my $row = $schema->resultset('Run')->find(1234);
+  $row->set_tag('pipeline','staging');
+  $row->update({folder_path_glob => $temp . q[/sf33/ILorHSany_sf33/*/], folder_name => $name});
+
+  my $runner = npg_pipeline::daemons::harold_analysis_runner->new(
+               log_file_path       => $temp_directory,
+               log_file_name       => q{npg_pipeline_daemon.log} ,
+               npg_tracking_schema => $schema,
+             );
+  is( $runner->_runfolder_path(1234), $rf, 'runfolder path is correct');
 }
 
 1;
