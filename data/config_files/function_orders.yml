@@ -1,5 +1,4 @@
 central:
-    - spider
     - create_archive_directory
     - create_empty_fastq
     - create_summary_link_analysis
@@ -39,7 +38,6 @@ central:
     - archive_to_irods
     - run_qc_review_pending
 post_qc_review:
-    - spider
     - run_archival_in_progress
     - copy_interop_files_to_irods
     - archive_to_irods

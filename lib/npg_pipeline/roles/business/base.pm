@@ -79,7 +79,8 @@ Boolean flag indicating whether this run is a qc run.
 
 has q{qc_run} => (isa        => q{Bool},
                   is         => q{ro},
-                  lazy_build => 1,);
+                  lazy_build => 1,
+                  documentation => q{Boolean flag indicating whether the run is QC run, will be built if not supplied},);
 sub _build_qc_run {
   my $self = shift;
   my $lims_id = $self->id_flowcell_lims;

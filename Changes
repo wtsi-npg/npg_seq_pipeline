@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - if LIMS cahed data creation fails, pipeline script fails before submitting jobs:
+     removed spider function from finction order for both analysisi and archival pipelines;
+     introduced spider boolean flag that defaults to true;
+     spider is run within prepare() method before the functions are executed
  - removed test and live section in configuration files
  - removed configuration for external script names
  - 'PB_cal_bam' analysis pipeline renamed to 'central'

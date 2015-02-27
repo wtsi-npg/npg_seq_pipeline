@@ -107,6 +107,32 @@ sub BUILD {
   return 1;
 }
 
+=head2 prepare
+
+ Actions to be performed before the functions can be run. Namely, if running OLB preprocessing,
+ creates bustard directory and dependent directories.
+
+=cut
+
+override 'prepare' => sub {
+  my $self = shift;
+
+  super();
+
+  if ($self->olb) {
+    my $bustard_dir = $self->new_with_cloned_attributes(q{npg_pipeline::analysis::bustard4pbcb},
+                      {bustard_home => $self->intensity_path,})->bustard_dir();
+    $self->set_dif_files_path( $bustard_dir );
+    $self->_set_basecall_path( $bustard_dir );
+    $self->set_bam_basecall_path( $bustard_dir );
+    $self->log("basecall, bam_basecall and dif_files paths set to $bustard_dir");
+    $self->make_log_dir( $bustard_dir  );
+    $self->_set_bam_basecall_dependent_paths();
+  }
+  $self->_inject_bustard_functions();
+  return;
+};
+
 
 =head2 _set_bam_basecall_dependant_paths
 
@@ -183,29 +209,6 @@ sub _inject_bustard_functions {
       *{$fpointer}= sub {  $self->log('OLB preprocessing switched off, not running ' . $function ); return (); }
     }
   }
-  return;
-}
-
-=head2 prepare
-
- Actions to be performed before the functions can be run. Namely, if running OLB preprocessing,
- creates bustard directory and dependent directories.
-
-=cut
-
-sub prepare {
-  my $self = shift;
-  if ($self->olb) {
-    my $bustard_dir = $self->new_with_cloned_attributes(q{npg_pipeline::analysis::bustard4pbcb},
-                      {bustard_home => $self->intensity_path,})->bustard_dir();
-    $self->set_dif_files_path( $bustard_dir );
-    $self->_set_basecall_path( $bustard_dir );
-    $self->set_bam_basecall_path( $bustard_dir );
-    $self->log("basecall, bam_basecall and dif_files paths set to $bustard_dir");
-    $self->make_log_dir( $bustard_dir  );
-    $self->_set_bam_basecall_dependent_paths();
-  }
-  $self->_inject_bustard_functions();
   return;
 }
 

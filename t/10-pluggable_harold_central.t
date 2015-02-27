@@ -31,8 +31,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
   my $pipeline;
   lives_ok {
     $pipeline = $central->new(
-      id_run => 1234,
-      run_folder => q{123456_IL2_1234},
       runfolder_path => $runfolder_path,
     );
   } q{no croak creating new object};
@@ -40,7 +38,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
 
   my $expected_function_order = [ qw{
     lsf_start
-    spider
     create_archive_directory
     create_empty_fastq
     create_summary_link_analysis
@@ -90,10 +87,10 @@ my $runfolder_path = $util->analysis_runfolder_path();
   lives_ok {
     $pipeline = $central->new(
       id_run => 1234,
-      run_folder => q{123456_IL2_1234},
       runfolder_path => $runfolder_path,
       recalibration => 0,
       no_bsub => 1,
+      spider  => 0,
     );
   } q{no croak creating new object};
 
@@ -106,8 +103,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
 
 {
   my $pipeline = $central->new(
-      id_run => 1234,
-      run_folder => q{123456_IL2_1234},
       runfolder_path => $runfolder_path,
       no_bsub => 1,
       olb => 1
@@ -119,9 +114,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
   my $pb;
   lives_ok {
     $pb = $central->new(
-      id_run => 1234,
       function_order => [qw(qc_qX_yield illumina2bam qc_insert_size)],
-      run_folder => q{123456_IL2_1234},
       runfolder_path => $runfolder_path,
     );
   } q{no croak on creation};
@@ -136,13 +129,12 @@ my $runfolder_path = $util->analysis_runfolder_path();
   my $pb;
   $util->set_staging_analysis_area();
   my $init = {
-      id_run => 1234,
-      run_folder => q{123456_IL2_1234},
       function_order => [qw{illumina2bam qc_qX_yield qc_adapter update_warehouse qc_insert_size archive_to_irods}],
       lanes => [4],
       runfolder_path => $runfolder_path,
       no_bsub => 1,
       repository => 't/data/sequence',
+      spider  => 0,
   };
  
   lives_ok { $pb = $central->new($init); } q{no croak on new creation};
@@ -154,15 +146,11 @@ my $runfolder_path = $util->analysis_runfolder_path();
     q{error running qc->main() when CLASSPATH is not set for illumina2bam job};
 
   local $ENV{CLASSPATH} = q[t/bin/software];
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-
   throws_ok { $pb->main() }
     qr/Error submitting jobs: no such file on CLASSPATH: BamAdapterFinder\.jar/, 
     q{error running qc->main() when CLASSPATH is not set correctly for illumina2bam job};
 
   local $ENV{CLASSPATH} = q[t/bin/software/solexa/bin/aligners/illumina2bam/current];
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-
   lives_ok { $pb->main() } q{no croak running qc->main() when CLASSPATH is set correctly for illumina2bam job};
   my $timestamp = $pb->timestamp;
   my $recalibrated_path = $pb->recalibrated_path();

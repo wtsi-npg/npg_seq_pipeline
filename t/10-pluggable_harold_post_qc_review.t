@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 15;
+use Test::More tests => 16;
 use Test::Deep;
 use Test::Exception;
 use Cwd;
@@ -35,19 +35,20 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
   push @original, 'lsf_end';
   $util->set_staging_analysis_area({with_latest_summary => 1});
 
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = cwd() . q[/t/data];
+
   lives_ok {
     $post_qc_review = npg_pipeline::pluggable::harold::post_qc_review->new(
-      id_run => 1234,
-      function_order => \@functions_in_order,
-      runfolder_path => $runfolder_path,
-      run_folder => q{123456_IL2_1234},
-      verbose => 1,
+      function_order   => \@functions_in_order,
+      runfolder_path   => $runfolder_path,
+      spider           => 0,
     );
   } q{no croak on creation};
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-  lives_ok { $post_qc_review->main(); } q{no croak running harold->main()};
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
+
   isa_ok($post_qc_review, q{npg_pipeline::pluggable::harold::post_qc_review}, q{$post_qc_review});
+
+  is($post_qc_review->id_run, 1234, 'run id set correctly');
+  lives_ok { $post_qc_review->main(); } q{no croak running harold->main()};
   is(join(q[ ], @{$post_qc_review->function_order()}), join(q[ ], @original), q{$post_qc_review->function_order() set on creation});
 
   my $timestamp = $post_qc_review->timestamp;
@@ -64,9 +65,7 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
 
 {
   my $p = npg_pipeline::pluggable::harold::post_qc_review->new(
-      id_run => 1234,
       runfolder_path => $runfolder_path,
-      run_folder => q{123456_IL2_1234},
       no_irods_archival => 1,
       no_warehouse_update => 1,
     );
@@ -76,9 +75,7 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
 
 {
   my $p = npg_pipeline::pluggable::harold::post_qc_review->new(
-      id_run => 1234,
       runfolder_path => $runfolder_path,
-      run_folder => q{123456_IL2_1234},
       local => 1,
     );
   ok(!$p->archive_to_irods(), 'archival to irods switched off');
@@ -88,9 +85,7 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
 
 {
   my $p = npg_pipeline::pluggable::harold::post_qc_review->new(
-      id_run => 1234,
       runfolder_path => $runfolder_path,
-      run_folder => q{123456_IL2_1234},
       local => 1,
       no_warehouse_update => 0,
     );
