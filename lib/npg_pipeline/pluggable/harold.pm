@@ -92,6 +92,22 @@ sub BUILD {
   return 1;
 }
 
+=head2 prepare
+
+If spider flag is true, runs spidering (creating/reusing LIMs data cache).
+Called in the pipeline's main method before executing functions.
+
+=cut
+
+override 'prepare' => sub {
+  my $self = shift;
+  super();
+  if ($self->spider) {
+    $self->run_spider();
+  }
+  return;
+};
+
 =head2 run_analysis_complete
 =head2 run_qc_complete
 =head2 run_qc_review_pending
@@ -179,12 +195,10 @@ sub _qc_runner {
   return @job_ids;
 }
 
-=head2 spider
+=head2 run_spider
 
-Generates cached metadata that are needed by the pipeline.
-If either an existing directory with cached data found or
-the NPG_WEBSERVICE_CACHE_DIR env. variable is set, a new
-cache will not be generated.
+Generates cached metadata that are needed by the pipeline
+or reuses the existing cache.
 
 Will set the relevant env. variables in the global scope.
 
@@ -194,7 +208,7 @@ See npg_pipeline::cache for details.
 
 =cut
 
-sub spider {
+sub run_spider {
   my ( $self ) = @_;
 
   my $ref = {
@@ -230,7 +244,7 @@ sub spider {
     croak qq[Error while spidering: $error];
   }
 
-  return ();
+  return;
 }
 
 =head2 fix_config_files

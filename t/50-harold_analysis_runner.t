@@ -10,7 +10,7 @@ use t::dbic_util;
 
 use_ok('npg_pipeline::daemons::harold_analysis_runner');
 
-my $script_name = q[npg_pipeline_PB_cal_bam];
+my $script_name = q[npg_pipeline_central];
 is (npg_pipeline::daemons::harold_analysis_runner->pipeline_script_name(),
             $script_name, 'pipeline script name correct'); 
 

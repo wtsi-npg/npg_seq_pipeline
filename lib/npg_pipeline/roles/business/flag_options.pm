@@ -81,7 +81,7 @@ flag option to request that config files are not checked and fixed
 has q{no_fix_config_files} => (
   isa => q{Bool},
   is => q{ro},
-  documentation => q{request that config files are not checked and fixed (where fixing is appropriate)},
+  documentation => q{Request that config files are not checked and fixed (where fixing is appropriate)},
 );
 
 =head2 no_array_cpu_limit
@@ -189,7 +189,7 @@ not strip any tags in final bam file, like OQ, ci etc.
 has q{not_strip_bam_tag} => (
   isa => q{Bool},
   is => q{ro},
-  documentation => q{not strip any tags in final bam file, like OQ, ci etc.},
+  documentation => q{Do not strip any tags in final bam file, like OQ, ci etc.},
 );
 
 =head2 no_sf_resource
@@ -201,7 +201,7 @@ do not use sf resource tokens; set if working outside the npg sequencing farm
 has q{no_sf_resource} => (
   isa => q{Bool},
   is => q{ro},
-  documentation => q{do not use sf resource tokens; set if working outside the npg sequencing farm},
+  documentation => q{Do not use sf resource tokens; set if working outside the npg sequencing farm},
 );
 
 =head2 no_bsub
@@ -226,7 +226,7 @@ defaults to the value of no_bsub flag
 has q{local} => (
   isa => q{Bool},
   is => q{ro},
-  documentation => q{turn off lots of archiving and updating flags},
+  documentation => q{Turn off lots of archiving and updating flags},
   lazy_build => 1,
 );
 sub _build_local {
@@ -243,8 +243,21 @@ Do we want to use the spatial_filter program?
 has q{spatial_filter} => (
   isa => q{Bool},
   is => q{ro},
-  documentation => q{use the spatial_filter program},
+  documentation => q{Use the spatial_filter program},
   default =>1,
+);
+
+=head2 spider
+
+Toggles spider (creating/reusing cached LIMs data), true by default
+
+=cut
+
+has q{spider} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 1,
+  documentation => q{Toggles spider (creating/reusing cached LIMs data), true by default},
 );
 
 1;
@@ -272,7 +285,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2015 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

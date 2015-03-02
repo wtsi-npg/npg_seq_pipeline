@@ -14,7 +14,7 @@ extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
 
-Readonly::Scalar our $PB_CAL_SCRIPT     => q{npg_pipeline_PB_cal_bam};
+Readonly::Scalar our $PB_CAL_SCRIPT     => q{npg_pipeline_central};
 
 Readonly::Scalar our $DEFAULT_JOB_PRIORITY   => 50;
 Readonly::Scalar our $RAPID_RUN_JOB_PRIORITY => 60;

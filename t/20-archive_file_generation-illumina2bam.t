@@ -9,8 +9,6 @@ use Cwd;
 use t::util;
 
 my $util = t::util->new();
-my $conf_path = $util->conf_path();
-
 my $dir = $util->temp_directory();
 $ENV{TEST_DIR} = $dir;
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
@@ -39,7 +37,6 @@ my $current = getcwd();
     timestamp => q{20090709-123456},
     verbose => 0,
     no_bsub => 1,
-    conf_path => $conf_path,
     id_run => 1234,
     _extra_tradis_transposon_read => 1,
     bam_basecall_path => $util->analysis_runfolder_path() . q{/Data/Intensities/BaseCalls},
@@ -89,7 +86,6 @@ my $current = getcwd();
     runfolder_path => $util->analysis_runfolder_path(),
     timestamp => q{20090709-123456},
     verbose => 0,
-    conf_path => $conf_path,
     id_run => 8033,
     bam_basecall_path => $util->analysis_runfolder_path() . q{/Data/Intensities/BaseCalls},
   ); } q{no croak creating bam_generator object};
@@ -124,7 +120,6 @@ my $current = getcwd();
     runfolder_path => $util->analysis_runfolder_path(), 
     timestamp => q{20121112-123456},
     verbose => 0,
-    conf_path => $conf_path,
     id_run => 8797,
     bam_basecall_path =>  $util->analysis_runfolder_path(). q{/Data/Intensities/BaseCalls},
   ); } q{no croak creating bam_generator object for run 8797};
@@ -161,7 +156,6 @@ my $current = getcwd();
     is_indexed => 0,
     verbose => 0,
     timestamp => q{20131028-155757},
-    conf_path => $conf_path,
     bam_basecall_path => $bc,
   ); } q{no croak creating bam_generator object for run 11018};
 
@@ -196,7 +190,6 @@ my $current = getcwd();
   lives_ok { $bam_generator = npg_pipeline::archive::file::generation::illumina2bam->new(
     runfolder_path => $rf,
     timestamp => q{20121112-123456},
-    conf_path => $conf_path,
     bam_basecall_path => $bc,
     verbose => 0,
   ); } q{no croak creating bam_generator object for run 8747};
@@ -232,7 +225,6 @@ my $current = getcwd();
   lives_ok { $bam_generator = npg_pipeline::archive::file::generation::illumina2bam->new(
     runfolder_path => $rf,
     timestamp => q{20130919-132702},
-    conf_path => $conf_path,
     bam_basecall_path => $bc,
     verbose => 0,
   ); } q{no croak creating bam_generator object for run 10808};
@@ -269,7 +261,6 @@ my $current = getcwd();
     runfolder_path => $rf,
     is_indexed => 0,
     timestamp => q{20131022-114117},
-    conf_path => $conf_path,
     bam_basecall_path => $bc,
     verbose => 0,
   ); } q{no croak creating bam_generator object for run 1123};

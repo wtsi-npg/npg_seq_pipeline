@@ -484,8 +484,8 @@ sub _copy_cache {
 
   $var_name = npg::api::request->cache_dir_var_name();
   my $cache_dir = $ENV{$var_name};
-  $cache_dir =~ s{/\Z}{}smx;
   if ($cache_dir) {
+    $cache_dir =~ s{/\Z}{}smx;
     if (!-e $cache_dir) {
       croak qq[Cache directory $cache_dir does not exist];
     }

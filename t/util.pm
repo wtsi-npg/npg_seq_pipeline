@@ -192,11 +192,6 @@ sub drop_temp_part_from_paths {
   return $path;
 }
 
-sub conf_path {
-  my ( $self ) = @_;
-  return $self->cwd() . q{/data/config_files};
-}
-
 # ensure that the environment variables do not get passed around and that extraneous files do not get left behind
 sub DEMOLISH {
   $ENV{ npg::api::request->cache_dir_var_name() } = q{};
