@@ -7,6 +7,8 @@ use t::util;
 use Cwd;
 
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
+local $ENV{http_proxy} = 'http://wibble';
+local $ENV{no_proxy} = q[];
 
 my $util = t::util->new();
 
@@ -43,6 +45,7 @@ my $bin = $curdir . q[/bin];
 # Script passes
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = q{t}; # no chache here
 
   my $util = t::util->new();
   $util->set_rta_staging_analysis_area();

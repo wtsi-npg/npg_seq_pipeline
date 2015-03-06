@@ -3,12 +3,17 @@ use warnings;
 use Test::More tests => 110;
 use Test::Exception;
 use File::Temp qw/tempdir/;
+use File::Path qw/make_path/;
+use File::Copy qw/cp/;
 use t::dbic_util;
 
 use st::api::lims::ml_warehouse;
 use st::api::lims;
 
 use_ok('npg_pipeline::cache');
+
+local $ENV{http_proxy} = 'http://wibble';
+local $ENV{no_proxy}   = q[];
 
 is(join(q[ ], npg_pipeline::cache->env_vars()),
   'NPG_WEBSERVICE_CACHE_DIR NPG_CACHED_SAMPLESHEET_FILE',
@@ -28,16 +33,21 @@ my $lims_driver = st::api::lims::ml_warehouse->new(
                      driver_type      => 'ml_warehouse'
                                    )->children;
 
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 'wibble';
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
 
+my $ca = tempdir( CLEANUP => 1);
+my $run_path = join q[/], $ca, 'npg', 'run';
+my $in_path = join q[/], $ca, 'npg', 'instrument';
+make_path $run_path;
+make_path $in_path;
+cp 't/data/cache/xml/npg/run/12376.xml', $run_path;
+cp 't/data/cache/xml/npg/instrument/103.xml', $in_path;
 
 for my $type (qw/xml warehouse mlwarehouse/) {
   my $method = $type . '_driver_name';
   my $expected = $type eq 'mlwarehouse' ? 'ml_warehouse' : $type;
   is(npg_pipeline::cache->$method, $expected, "driver name for $type");
 }
-
 
 {
   my $tempdir = tempdir( CLEANUP => 1);
@@ -161,23 +171,24 @@ for my $type (qw/xml warehouse mlwarehouse/) {
 }
 
 {
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $ca; # npg xml feeds only
   my $tempdir = tempdir( CLEANUP => 1);
   my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
-  my $cache = npg_pipeline::cache->new(id_run => 12376,
-                                       lims   => \@lchildren,
+  my $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                       lims           => \@lchildren,
                                        cache_location => $tempdir);
   isa_ok ($cache, 'npg_pipeline::cache');
-  lives_ok {$cache->create} 'no error creating the cache';
+  lives_ok {$cache->setup} 'no error creating the cache';
   ok (-d $cache_dir, 'cache directory created');
   ok (-d $cache_dir.'/npg', 'npg cache directory is present');
   ok (-e $cache_dir.'/samplesheet_12376.csv', 'samplesheet is present');
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = '';
-  $cache = npg_pipeline::cache->new(id_run => 12376,
-                                    mlwh_schema => $wh_schema,
+  $cache = npg_pipeline::cache->new(id_run           => 12376,
+                                    mlwh_schema      => $wh_schema,
                                     lims_driver_type => 'ml_warehouse',
-                                    lims_id => 'HBF2DADXX',
-                                    cache_location => $tempdir);
+                                    lims_id          => 'HBF2DADXX',
+                                    cache_location   => $tempdir);
   is ($cache->reuse_cache, 1, 'reuse_cache true by default');
   lives_ok {$cache->setup} 'no error reusing existing cache';
   my @messages = @{$cache->messages};
@@ -189,8 +200,9 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   my @found = glob($tempdir);
   is (scalar @found, 1, 'one entry in cache location');
 
-  $cache = npg_pipeline::cache->new(id_run => 12376,
-                                    lims   => \@lchildren,
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $ca; # npg xml feeds only
+  $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                    lims           => \@lchildren,
                                     reuse_cache    => 0,
                                     cache_location => $tempdir);
   is ($cache->reuse_cache, 0, 'reuse_cache set to false');
@@ -201,7 +213,7 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   is (scalar @found, 1, 'two entries in cache location'); 
 
   @messages = @{$cache->messages};
-  is (scalar @messages, 4, 'four messages saved') or diag explain $cache->messages;
+  is (scalar @messages, 5, 'five messages saved') or diag explain $cache->messages;
   is (shift @messages, qq[Found existing cache directory $cache_dir],
     'message to confirm existing cache is found');
   like (shift @messages, qr/Renamed\ existing\ cache\ directory/,
@@ -214,16 +226,18 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   ok( !$ENV{NPG_CACHED_SAMPLESHEET_FILE},
     'value of NPG_CACHED_SAMPLESHEET_FILE env var is not set');
 
-  $cache = npg_pipeline::cache->new(id_run => 12376,
-                                    lims   => \@lchildren,
+  sleep(1);
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $ca; # npg xml feeds only
+  $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                    lims           => \@lchildren,
                                     reuse_cache    => 1,
-                                    set_env_vars    => 1,
+                                    set_env_vars   => 1,
                                     cache_location => $tempdir);
   is ($cache->set_env_vars, 1, 'set_env_vars is set to true');
   lives_ok {$cache->setup}
     'no error creating a new cache and setting env vars';
   @messages = @{$cache->messages};
-  is (scalar @messages, 4, 'four messages saved') or diag explain $cache->messages;
+  is (scalar @messages, 7, 'seven messages saved') or diag explain $cache->messages;
 
   my $ss = join q[/], $cache_dir, 'samplesheet_12376.csv';
   is ($ENV{NPG_CACHED_SAMPLESHEET_FILE}, $ss,

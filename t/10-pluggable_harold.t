@@ -7,11 +7,12 @@ use t::util;
 use t::dbic_util;
 
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
+local $ENV{http_proxy} = 'http://wibble';
+local $ENV{no_proxy}   = q[];
 
 my $util = t::util->new();
 
 $ENV{TEST_DIR} = $util->temp_directory();
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 
 use_ok('npg_pipeline::pluggable::harold');
 
@@ -56,6 +57,7 @@ my $schema = t::dbic_util->new->test_schema();
 
 $util->set_staging_analysis_area({with_latest_summary => 1});
 {
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   my $harold = npg_pipeline::pluggable::harold->new(
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
@@ -70,6 +72,7 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
   is($harold->dispatch_tree->functions->[0]->{function}, 'lsf_start', 'first function is start');
   is($harold->dispatch_tree->functions->[1]->{function}, 'lsf_end', 'second function is end');
 
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   $harold = npg_pipeline::pluggable::harold->new(
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
@@ -78,13 +81,12 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
       spider      => 0,
     );
   ok($harold->interactive, 'start job will not be resumed');
+  is (join( q[ ], $harold->positions), '1 2 3 4 5 6 7 8', 'positions array');
+  is (join( q[ ], $harold->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
   lives_ok { $harold->main() } 'main method with no functions defined and no resume runs ok';
   is(scalar @{$harold->dispatch_tree->functions}, 2, 'two functions');
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-  is (join( q[ ], $harold->positions), '1 2 3 4 5 6 7 8', 'positions array');
-  is (join( q[ ], $harold->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
-
   my $function = 'run_analysis_complete';
   $harold = npg_pipeline::pluggable::harold->new(
       id_run => 1234,
@@ -96,6 +98,8 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
       spider  => 0,
     );
   is(scalar @{$harold->dispatch_tree->functions}, 0, 'no functions');
+  is (join( q[ ], $harold->positions), '1 2', 'positions array');
+  is (join( q[ ], $harold->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
   $harold->main;
   is(scalar @{$harold->dispatch_tree->functions}, 3, 'three functions');
   is($harold->dispatch_tree->functions->[0]->{function}, 'lsf_start', 'first function is start');
@@ -103,10 +107,7 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
   is($harold->dispatch_tree->functions->[2]->{function}, 'lsf_end', 'third function is end');
   is($harold->dispatch_tree->functions->[2]->{job_dependencies}, q{-w'done(50)'}, 'end dependencies');
 
-  #local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-  is (join( q[ ], $harold->positions), '1 2', 'positions array');
-  is (join( q[ ], $harold->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
-
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   $harold = npg_pipeline::pluggable::harold->new(
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
@@ -178,9 +179,9 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
   } q{no croak on new creation};
   mkdir $qc->archive_path;
   mkdir $qc->qc_path;
-  lives_ok { $qc->main() } q{no croak running qc->main()};
   is (join( q[ ], $qc->positions), '4', 'positions array');
   is (join( q[ ], $qc->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
+  lives_ok { $qc->main() } q{no croak running qc->main()};
 }
 
 1;

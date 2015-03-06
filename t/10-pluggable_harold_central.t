@@ -6,6 +6,9 @@ use Test::Deep;
 use t::util;
 use Cwd qw/getcwd/;
 
+local $ENV{http_proxy} = 'http://wibble';
+local $ENV{no_proxy} = q[];
+
 my $util = t::util->new();
 my $cwd = getcwd();
 my $tdir = $util->temp_directory();
@@ -146,11 +149,13 @@ my $runfolder_path = $util->analysis_runfolder_path();
     q{error running qc->main() when CLASSPATH is not set for illumina2bam job};
 
   local $ENV{CLASSPATH} = q[t/bin/software];
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   throws_ok { $pb->main() }
     qr/Error submitting jobs: no such file on CLASSPATH: BamAdapterFinder\.jar/, 
     q{error running qc->main() when CLASSPATH is not set correctly for illumina2bam job};
 
   local $ENV{CLASSPATH} = q[t/bin/software/solexa/bin/aligners/illumina2bam/current];
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   lives_ok { $pb->main() } q{no croak running qc->main() when CLASSPATH is set correctly for illumina2bam job};
   my $timestamp = $pb->timestamp;
   my $recalibrated_path = $pb->recalibrated_path();
