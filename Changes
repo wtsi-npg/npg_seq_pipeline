@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - Fixed split sanity checks
+
 release 47.9
  - analysis daemon patch: ensure runfolder glob expressions are used when finding the runfolder path
  - use samtools1 (rather than samtools1_1) for samtools in archival and P4 pipelines
