@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 30;
+use Test::More tests => 31;
 use Test::Exception;
 use Test::Deep;
 use t::util;
@@ -46,12 +46,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
     create_summary_link_analysis
     run_analysis_in_progress
     lane_analysis_in_progress
-    bustard_matrix_lanes
-    bustard_matrix_all
-    bustard_phasing_lanes
-    bustard_phasing_all
-    bustard_basecalls_lanes
-    bustard_basecalls_all
     illumina_basecall_stats
     illumina2bam
     qc_tag_metrics
@@ -98,7 +92,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
   } q{no croak creating new object};
 
   ok( !scalar $pipeline->harold_calibration_tables(),  q{no calibration tables launched} );
- 
+  ok(!$pipeline->olb, 'not olb pipeline');
   lives_ok { $pipeline->prepare() } 'prepare lives';
   ok( $pipeline->illumina_basecall_stats(),  q{olb false - illumina_basecall_stats job launched} );
   ok( !$pipeline->bustard_matrix_lanes(),  q{olb false - bustard_matrix_lanes job is not launhed} );
@@ -106,11 +100,11 @@ my $runfolder_path = $util->analysis_runfolder_path();
 
 {
   my $pipeline = $central->new(
-      runfolder_path => $runfolder_path,
-      no_bsub => 1,
-      olb => 1
+    runfolder_path => $runfolder_path,
+    no_bsub => 1,
+    function_list  => 'olb',
   );
-  ok( !$pipeline->illumina_basecall_stats(),  q{olb true - illumina_basecall_stats job is not launched} );
+  ok($pipeline->olb, 'olb pipeline');
 }
 
 {

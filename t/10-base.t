@@ -1,9 +1,10 @@
 use strict;
 use warnings;
-use Test::More tests => 51;
+use Test::More tests => 63;
 use Test::Exception;
 use t::util;
 use File::Temp qw(tempdir tempfile);
+use File::Copy qw(cp);
 use Cwd;
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
 use Sys::Hostname;
@@ -38,21 +39,10 @@ use_ok(q{npg_pipeline::base});
   is($base->no_bsub, 0, 'no_sub flag is 0 as set');
 }
 
-{
+{ 
   my $base = npg_pipeline::base->new();
-  ok(!$base->olb, 'OLB preprocessing is switched off by default');
-  $base = npg_pipeline::base->new(olb => 1);
-  ok($base->olb, 'OLB preprocessing is switched on as set');
-}
-
-{
-  my $base;
-  lives_ok {
-    $base = npg_pipeline::base->new();
-  } q{base ok};
 
   foreach my $config_group ( qw{
-    function_order_conf
     general_values_conf
     illumina_pipeline_conf
     pb_cal_pipeline_conf
@@ -62,11 +52,75 @@ use_ok(q{npg_pipeline::base});
 }
 
 {
+  my $base = npg_pipeline::base->new();
+
+  my $path = getcwd() . '/data/config_files/function_list_base.yml';
+
+  throws_ok { $base->function_list }
+    qr/File $path does not exist or is not readable/,
+    'error when default function list does not exist';
+
+  $base = npg_pipeline::base->new(function_list => 'base');
+  throws_ok { $base->function_list }
+    qr/File $path does not exist or is not readable/,
+    'error when function list does not exist';
+
+  $path =~ s/function_list_base/function_list_central/;
+  $base = npg_pipeline::base->new(function_list => $path);
+  is( $base->function_list, $path, 'function list path as given');
+  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
+  
+  $base = npg_pipeline::base->new(function_list => 'data/config_files/function_list_central.yml');
+  is( $base->function_list, $path, 'function list absolute path from relative path');
+  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
+
+  $base = npg_pipeline::base->new(function_list => 'central');
+  is( $base->function_list, $path, 'function list absolute path from list name');
+  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
+
+  $path =~ s/function_list_central/function_list_post_qc_review/;
+
+  $base = npg_pipeline::base->new(function_list => 'post_qc_review');
+  is( $base->function_list, $path, 'function list absolute path from list name');
+  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
+
+  my $test_path = '/some/test/path.yml';
+  $base = npg_pipeline::base->new(function_list => $test_path);
+  throws_ok { $base->function_list }
+    qr/Bad function list name: $test_path/,
+    'error when function list does not exist, neither it can be interpreted as a function list name';
+  
+  my $conf_dir = tempdir( CLEANUP => 1 );
+  cp $path, $conf_dir;
+  $path = $conf_dir . '/function_list_post_qc_review.yml';
+
+  $base = npg_pipeline::base->new(function_list => $path);
+  is( $base->function_list, $path, 'function list absolute');
+  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
+
+  $base = npg_pipeline::base->new(
+    conf_path => $conf_dir,
+    function_list => 'post_qc_review');
+  is( $base->function_list, $path, 'function list absolute path from list name');
+
+  $path =~ s/function_list_post_qc_review/function_list_base/;
+  $base = npg_pipeline::base->new(conf_path => $conf_dir);
+  throws_ok { $base->function_list }
+    qr/File $path does not exist or is not readable/,
+    'error when default function list does not exist';
+
+  $base = npg_pipeline::base->new(function_list => 'some+other:');
+  throws_ok { $base->function_list }
+    qr/Bad function list name: some\+other:/,
+    'error when function list name contains illegal characters';
+}
+
+{
   my $base;
   lives_ok {
     $base = npg_pipeline::base->new(conf_path => q{does/not/exist});
   } q{base ok};
-  throws_ok{ $base->general_values_conf()} qr{cannot find },
+  throws_ok{ $base->general_values_conf()} qr{does not exist or is not readable},
     'Croaks for non-esistent config file as expected';;
 }
 
