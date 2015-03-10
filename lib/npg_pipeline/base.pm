@@ -2,7 +2,6 @@ package npg_pipeline::base;
 
 use Moose;
 use Moose::Meta::Class;
-use Moose::Util::TypeConstraints;
 use Carp;
 use Config::Any;
 use English qw{-no_match_vars};
@@ -80,10 +79,6 @@ sub submit_bsub_command {
     my $common_options = q{};
     if ( $self->has_job_priority() ) {
       $common_options = q{-sp } . $self->job_priority();
-    }
-    my $select = $self->lsf_resource_select();
-    if ($select) {
-      $common_options .= qq{ -R 'select[$select]'};
     }
     $cmd =~ s/bsub/bsub $common_options/xms;
 
@@ -228,25 +223,6 @@ has q{verbose} => (
   documentation => q{Boolean decision to switch on verbose mode},
 );
 
-=head2 use_bases
-
-Returns a string suitable for various scripts which shows the number of bases in order of sequencing eg Y54,I6n,y54
-an implementation of _build_use_bases needs to be provided for this to work, no provision of this will cause a run_time error,
-unless the string is provided on construction
-
-  my $sUseBases = $class->use_bases();
-
-=cut
-
-has q{use_bases} => (
-  isa => q{Str},
-  is => q{ro},
-  lazy_build => 1,
-  writer => q{_test_use_bases},
-  documentation =>
-  q{string which determines the bases in each reads (i.e. Y54,I6n,y54)},
-);
-
 =head2 lanes
 
 Option to push through an arrayref of lanes to work with
@@ -270,7 +246,7 @@ has q{lanes} => (
   isa           => q{ArrayRef[Int]},
   is            => q{ro},
   predicate     => q{has_lanes},
-  documentation => q{option to push through selected lanes of a run only},
+  documentation => q{Option to push through selected lanes of a run},
   default       => sub { [] },
   handles       => {
     all_lanes   => q{elements},
@@ -278,24 +254,6 @@ has q{lanes} => (
     count_lanes => q{count},
   },
 );
-
-=head2 lsf_resource_select
-
-This lsf resource will be requested for all lsf jobs by adding, for example, -R 'select[lenny]'
-
-=cut
-
-has q{lsf_resource_select} => (
-  isa     => 'Str',
-  is      => 'ro',
-  lazy    => 1,
-  builder => '_build_lsf_resource_select',
-  documentation => 'this lsf resource will be requested for all lsf jobs, example: lenny',
-);
-sub _build_lsf_resource_select {
-  my $self = shift;
-  return $self->general_values_conf()->{'lsf_resource_select'} || q{};
-}
 
 =head2 directory_exists
 
@@ -307,10 +265,7 @@ Returns a boolean true or false dependent on the existence of directory
 
 sub directory_exists {
   my ($self, $directory_path) = @_;
-  if (-d $directory_path) {
-    return 1;
-  }
-  return 0;
+  return -d $directory_path ? 1 : 0;
 }
 
 =head2 lsb_jobindex
@@ -398,9 +353,6 @@ around 'function_list' => sub {
   return $file;
 };
 
-###############
-# config files
-
 =head2 function_list_conf
 
 =cut
@@ -421,7 +373,7 @@ sub _build_function_list_conf {
 =head2 pb_cal_pipeline_conf
 =head2 parallelisation_conf
 
-Return a hashref of configuration details from the relevant configuration file
+Returns a hashref of configuration details from the relevant configuration file
 
 =cut
 
@@ -592,10 +544,11 @@ Will be used on all jobs, regardless of the queue used (i.e. if you are running 
 =cut
 
 has q{job_priority} => (
-  isa => q{Int},
-  is  => q{ro},
-  predicate => q{has_job_priority},
-  documentation => q{user defined all or nothing priority for lsf. default is to use the queue value},
+  isa           => q{Int},
+  is            => q{ro},
+  predicate     => q{has_job_priority},
+  documentation =>
+  q{User defined all or nothing priority for lsf. default is to use the queue value},
 );
 
 =head2 _fs_resource
