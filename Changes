@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 48.0
  - if LIMS cached data creation fails, pipeline script fails before submitting jobs:
      removed spider function from function order for both analysis and archival pipelines;
      introduced spider boolean flag that defaults to true;
