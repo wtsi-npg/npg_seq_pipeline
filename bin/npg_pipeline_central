@@ -4,11 +4,11 @@ use strict;
 use warnings;
 use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
-use npg_pipeline::pluggable::harold::PB_cal_bam;
+use npg_pipeline::pluggable::harold::central;
 
 our $VERSION = '0';
 
-npg_pipeline::pluggable::harold::PB_cal_bam->new_with_options()->main;
+npg_pipeline::pluggable::harold::central->new_with_options()->main;
 
 0;
 
@@ -16,15 +16,15 @@ __END__
 
 =head1 NAME
 
-npg_pipeline_PB_cal_bam
+npg_pipeline_central
 
 =head1 USAGE
 
-npg_pipeline_PB_cal_bam --run_folder=<run_folder> (--id_run=<id_run> --verbose --lanes=<lane_position>)
+npg_pipeline_central --runfolder_path=<path> (--id_flowcell_lims=<id> --verbose --lanes=<lane_position>)
 
 =head1 REQUIRED ARGUMENTS
 
- run_folder and/or id_run is required
+ any combination of paths to allow for inferring id_run or id_run
 
 =head1 OPTIONS
 
@@ -56,7 +56,7 @@ npg_pipeline_PB_cal_bam --run_folder=<run_folder> (--id_run=<id_run> --verbose -
 
 =item FindBin
 
-=item npg_pipeline::pluggable::harold::PB_cal_bam
+=item npg_pipeline::pluggable::harold::central
 
 =back
 

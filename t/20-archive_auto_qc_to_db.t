@@ -7,7 +7,6 @@ use t::util;
 use_ok('npg_pipeline::archive::qc::auto_qc');
 
 my $util = t::util->new();
-my $conf_path = $util->conf_path();
 
 $ENV{TEST_DIR} = $util->temp_directory();
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
@@ -31,14 +30,12 @@ sub create_analysis {
 {
   my $aaq;
 
-  lives_ok { $aaq = npg_pipeline::archive::qc::auto_qc->new({
+  lives_ok { $aaq = npg_pipeline::archive::qc::auto_qc->new(
     run_folder => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
     timestamp => q{20090709-123456},
     verbose => 0,
-    conf_path => $conf_path,
-    domain => q{test},
-  }); } q{created with run_folder ok};
+  ); } q{created with run_folder ok};
   isa_ok($aaq, q{npg_pipeline::archive::qc::auto_qc}, q{$aaq});
   create_analysis();
 
@@ -52,7 +49,7 @@ sub create_analysis {
   is(scalar@jids, 1, q{only one job submitted});
 
   my $bsub_command = $util->drop_temp_part_from_paths( $aaq->_generate_bsub_command($arg_refs) );
-  my $expected_cmd = qq{bsub -q test -w'done(123) && done(321)' -J autoqc_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -o $nfs_pbcal/log/autoqc_loader_1234_20090709-123456.out 'npg_qc_autoqc_data.pl --id_run=1234 --path=$nfs_pbcal/archive/qc'};
+  my $expected_cmd = qq{bsub -q srpipeline -w'done(123) && done(321)' -J autoqc_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -o $nfs_pbcal/log/autoqc_loader_1234_20090709-123456.out 'npg_qc_autoqc_data.pl --id_run=1234 --path=$nfs_pbcal/archive/qc'};
 
   is( $bsub_command, $expected_cmd, q{generated bsub command is correct} );
 }
@@ -64,14 +61,12 @@ sub create_analysis {
   $util->create_multiplex_analysis($args);
 
   my $aaq;
-  lives_ok { $aaq = npg_pipeline::archive::qc::auto_qc->new({
+  lives_ok { $aaq = npg_pipeline::archive::qc::auto_qc->new(
     run_folder => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
     timestamp => q{20090709-123456},
     verbose   => 0,
-    conf_path => $conf_path,
-    domain => q{test},
-  }); } q{created with run_folder ok};
+  ); } q{created with run_folder ok};
   isa_ok($aaq, q{npg_pipeline::archive::qc::auto_qc}, q{$aaq});
 
   my $arg_refs = {
@@ -84,7 +79,7 @@ sub create_analysis {
   is(scalar@jids, 1, q{only one job submitted});
 
   my $bsub_command = $util->drop_temp_part_from_paths( $aaq->_generate_bsub_command($arg_refs) );
-  my $expected_cmd = qq{bsub -q test -w'done(123) && done(321)' -J autoqc_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -o $nfs_pbcal/log/autoqc_loader_1234_20090709-123456.out 'npg_qc_autoqc_data.pl --id_run=1234 --path=$nfs_pbcal/archive/qc --path=$nfs_pbcal/archive/lane2/qc --path=$nfs_pbcal/archive/lane3/qc --path=$nfs_pbcal/archive/lane5/qc'};
+  my $expected_cmd = qq{bsub -q srpipeline -w'done(123) && done(321)' -J autoqc_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -o $nfs_pbcal/log/autoqc_loader_1234_20090709-123456.out 'npg_qc_autoqc_data.pl --id_run=1234 --path=$nfs_pbcal/archive/qc --path=$nfs_pbcal/archive/lane2/qc --path=$nfs_pbcal/archive/lane3/qc --path=$nfs_pbcal/archive/lane5/qc'};
 
   is( $bsub_command, $expected_cmd, q{generated bsub command is correct} );
 }

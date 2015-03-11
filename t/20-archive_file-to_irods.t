@@ -7,7 +7,6 @@ use t::util;
 use_ok('npg_pipeline::archive::file::to_irods');
 
 my $util = t::util->new();
-my $conf_path = $util->conf_path();
 
 $ENV{TEST_DIR} = $util->temp_directory();
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
@@ -36,8 +35,8 @@ sub create_analysis {
     }
   }
 
-  `touch $archive_root/1234_8_human.bam`;
-  `touch $archive_root/1234_8_nonhuman.bam`;
+  `touch $archive_root/1234_8_human.cram`;
+  `touch $archive_root/1234_8.cram`;
 
   return 1;
 }
@@ -45,15 +44,13 @@ sub create_analysis {
 {
   my $bam_irods;
 
-  lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new({
+  lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new(
     run_folder => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
     timestamp => q{20090709-123456},
     verbose => 0,
     recalibrated_path => $pb_cal_path,
-    conf_path => $conf_path,
-    domain => q{test},
-  }); } q{created with run_folder ok};
+  ); } q{created with run_folder ok};
   isa_ok($bam_irods , q{npg_pipeline::archive::file::to_irods}, q{object test});
   create_analysis();
 
@@ -67,25 +64,21 @@ sub create_analysis {
   is(scalar@jids, 1, q{only one job submitted});
 
   my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-
-  my $expected_command = q{bsub -q test -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irods_bam_loader.pl --samtools_cmd samtools1 --exclude_bam --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234'};
-
+  my $expected_command = q{bsub -q srpipeline -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irods_bam_loader.pl --samtools_cmd samtools1 --exclude_bam --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct});
 }
 
 {
   my $bam_irods;
 
-  lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new({
+  lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new(
     run_folder => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
     recalibrated_path => $pb_cal_path,
     timestamp => q{20090709-123456},
     verbose => 0,
-    conf_path => $conf_path,
-    domain => q{test},
     lanes      => [8],
-  }); } q{created with run_folder ok};
+  ); } q{created with run_folder ok};
   isa_ok($bam_irods , q{npg_pipeline::archive::file::to_irods}, q{object test});
   create_analysis();
 
@@ -99,30 +92,28 @@ sub create_analysis {
   is(scalar@jids, 1, q{only one job submitted});
 
   my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-  my $expected_command = q{bsub -q test -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irods_bam_loader.pl --samtools_cmd samtools1 --exclude_bam --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234 --positions 8'};
+  my $expected_command = q{bsub -q srpipeline -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irods_bam_loader.pl --samtools_cmd samtools1 --exclude_bam --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234 --positions 8'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 
 {
   my $bam_irods;
 
-  lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new({
+  lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new(
     run_folder => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
     id_flowcell_lims => q{1023456789111},
     recalibrated_path => $pb_cal_path,
     timestamp => q{20090709-123456},
     verbose => 0,
-    domain => q{test},
-    conf_path => $conf_path,
-  }); } q{created with run_folder ok};
+  ); } q{created with run_folder ok};
 
   my $arg_refs = {
     required_job_completion => q{-w'done(123) && done(321)'},
   };
 
   my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-  my $expected_command = q{bsub -q test -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irods_bam_loader.pl --samtools_cmd samtools1 --exclude_bam --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234 --alt_process qc_run'};
+  my $expected_command = q{bsub -q srpipeline -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irods_bam_loader.pl --samtools_cmd samtools1 --exclude_bam --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234 --alt_process qc_run'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 

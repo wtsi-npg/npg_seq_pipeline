@@ -1,6 +1,15 @@
 LIST OF CHANGES
 ---------------
 
+release 48.0
+ - if LIMS cached data creation fails, pipeline script fails before submitting jobs:
+     removed spider function from function order for both analysis and archival pipelines;
+     introduced spider boolean flag that defaults to true;
+     spider is run within prepare() method before the functions are executed
+ - removed test and live section in configuration files
+ - removed configuration for external script names
+ - 'PB_cal_bam' analysis pipeline renamed to 'central'
+
 release 47.9.1
  - Fixed split sanity checks
 

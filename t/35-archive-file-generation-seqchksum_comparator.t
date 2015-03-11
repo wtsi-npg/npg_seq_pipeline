@@ -7,8 +7,6 @@ use t::util;
 use_ok( q{npg_pipeline::archive::file::generation::seqchksum_comparator} );
 
 my $util = t::util->new({});
-my $conf_path = $util->conf_path();
-
 my $tmp_dir = $util->temp_directory();
 local $ENV{TEST_DIR} = $tmp_dir;
 
@@ -33,7 +31,6 @@ my $archive_path = $recalibrated_path . q{/archive};
       bam_basecall_path => $bam_basecall_path,
       id_run => 1234,
       timestamp => $timestamp,
-      conf_path => $conf_path,
       no_bsub => 1,
       lanes => [1,2],
     );
@@ -55,8 +52,6 @@ my $archive_path = $recalibrated_path . q{/archive};
 
   is($object->archive_path, $archive_path, "Object has correct archive path");
   is($object->bam_basecall_path, $bam_basecall_path, "Object has correct bam_basecall path");
-
-  #diag "Add .post_i2b.seqchksum file and empty bam files before re-doing the comparison";
 
   my $seqchksum_contents1 = <<'END1';
 ###  set count   b_seq name_b_seq  b_seq_qual  b_seq_tags(BC,FI,QT,RT,TC)
@@ -80,17 +75,17 @@ END1
   print $seqchksum_fh1 $seqchksum_contents1 or die $!;
   close $seqchksum_fh1 or die $!;
 
-  TODO: { local $TODO= q(scramble doesn't through an exception when converting an empty bam file to cram it just writes a cram files with a @PG ID:scramble .. line);
-    throws_ok{$object->do_comparison()} qr/Failed to run command bamcat /, q{Doing a comparison with empty bam files throws an exception}; 
+  SKIP: {
+    skip 'no tools', 2 if ((not $ENV{TOOLS_INSTALLED}) and (system(q(which bamseqchksum)) or system(q(which scramble))));
+    TODO: { local $TODO= q(scramble doesn't through an exception when converting an empty bam file to cram it just writes a cram files with a @PG ID:scramble .. line);
+      throws_ok{$object->do_comparison()} qr/Failed to run command bamcat /, q{Doing a comparison with empty bam files throws an exception}; 
+    }
+
+    system "cp -pv t/data/seqchksum/sorted.cram $archive_path/lane1/1234_1#15.cram";
+    system "cp -pv t/data/seqchksum/sorted.cram $archive_path/lane2/1234_2#15.cram";
+
+    throws_ok{$object->do_comparison()} qr/Found a difference in seqchksum for post_i2b and product /, q{Doing a comparison with different bam files throws an exception}; 
   }
-
-  #diag "Add bam files before re-doing the comparison";
-
-  system "cp -pv t/data/seqchksum/sorted.cram $archive_path/lane1/1234_1#15.cram";
-  system "cp -pv t/data/seqchksum/sorted.cram $archive_path/lane2/1234_2#15.cram";
-
-  throws_ok{$object->do_comparison()} qr/Found a difference in seqchksum for post_i2b and product /, q{Doing a comparison with different bam files throws an exception}; 
-
 }
 
 {
@@ -102,7 +97,6 @@ END1
       bam_basecall_path => $bam_basecall_path,
       archive_path => $archive_path,
       id_run => 1234,
-      conf_path => $conf_path,
       no_bsub => 1,
       lanes => [1],
     );
@@ -122,7 +116,6 @@ END1
       bam_basecall_path => $bam_basecall_path,
       archive_path => $archive_path,
       id_run => 1234,
-      conf_path => $conf_path,
       no_bsub => 1,
     );
   } q{object ok};

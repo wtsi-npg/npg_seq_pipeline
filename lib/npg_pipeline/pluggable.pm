@@ -368,12 +368,14 @@ sub main {
   my $self = shift;
 
   my $error = q{};
+  my $when = q[initializing pipeline];
   try {
     $self->prepare();
+    $when = q[submitting jobs];
     $self->schedule_functions();
     $self->_finish();
   } catch {
-    $error = qq{Error submitting jobs: $_};
+    $error = qq{Error $when: $_};
     $self->log($error);
     $self->_kill_jobs();
   };

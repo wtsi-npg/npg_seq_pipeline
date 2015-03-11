@@ -7,7 +7,6 @@ use t::util;
 use_ok('npg_pipeline::analysis::split_bam_by_tag');
 
 my $util = t::util->new();
-my $conf_path = $util->conf_path();
 my $runfolder_path = $util->analysis_runfolder_path();
 my $recalibrated = "$runfolder_path/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal";
 
@@ -26,7 +25,6 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/1234_samplesheet_amended.cs
     runfolder_path => $runfolder_path,
     recalibrated_path => $recalibrated,
     timestamp => q{20090709-123456},
-    conf_path => $conf_path,
     verbose => 0,
     no_bsub => 1,
   }); } q{no croak creating $fastq_generator object};

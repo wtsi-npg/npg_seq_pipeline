@@ -12,8 +12,6 @@ local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH}
 use_ok('npg_pipeline::archive::file::qc');
 
 my $util = t::util->new();
-my $conf_path = $util->conf_path();
-
 my $tmp = $util->temp_directory();
 $ENV{TEST_DIR} = $tmp;
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
@@ -47,7 +45,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       recalibrated_path => $recalibrated,
       qc_to_run => q{adapter},
       timestamp => q{20090709-123456},
-      conf_path => $conf_path,
       is_indexed => 0,
     );
   } q{no croak on new, as required params provided};
@@ -73,7 +70,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       recalibrated_path => $recalibrated,
       qc_to_run => q{qX_yield},
       timestamp => q{20090709-123456},
-      conf_path => $conf_path,
       is_indexed => 0,
     );
   } q{no croak on new, as required params provided};
@@ -97,7 +93,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       qc_to_run => q{qX_yield},
       lanes  => [4],
       timestamp => q{20090709-123456},
-      conf_path => $conf_path,
       is_indexed => 0,
   );
 
@@ -125,7 +120,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       lanes     => [7],
       qc_to_run => q{qX_yield},
       timestamp => q{20090709-123456},
-      conf_path => $conf_path,
   );
   is ($aqc->is_indexed, 1, 'run is indexed');
   my @jids;
@@ -141,7 +135,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       lanes     => [8],
       qc_to_run => q{qX_yield},
       timestamp => q{20090709-123456},
-      conf_path => $conf_path,
   );
 
   @jids = ();
@@ -155,7 +148,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       lanes     => [8],
       qc_to_run => q{ref_match},
       timestamp => q{20090709-123456},
-      conf_path => $conf_path,
   );
   my $indexed = 1;
   my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command($job_dep, $indexed) );
@@ -176,7 +168,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       lanes     => [7],
       qc_to_run => q{insert_size},
       timestamp => q{20090709-123456},
-      conf_path => $conf_path,
       repository => 't/data/sequence',
   );
   is ($aqc->is_indexed, 1, 'run is indexed');
@@ -195,7 +186,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       lanes     => [1],
       qc_to_run => q{sequence_error},
       timestamp => q{20090709-123456},
-      conf_path => $conf_path,
       is_indexed => 0,
   );
 
@@ -283,7 +273,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       bam_basecall_path => $analysis_dir,
       archive_path => $archive_dir,
       qc_to_run => q{sequence_error},
-      conf_path => $conf_path,
       is_indexed => 1,
       repository => q[t],
       qc_to_run => q[genotype],
