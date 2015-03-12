@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 47;
+use Test::More tests => 49;
 use Test::Exception;
 use Cwd;
 use File::Path qw/make_path/;
@@ -38,7 +38,7 @@ my $rf_path = '/some/path';
 package test_analysis_runner;
 use Moose;
 extends 'npg_pipeline::daemons::harold_analysis_runner';
-sub _check_lims_link{ return 0; }
+sub _check_lims_link{ return {'id' => 0}; }
 sub _runfolder_path { return '/some/path' };
 
 ########test class definition end########
@@ -57,11 +57,27 @@ package main;
   isa_ok($runner, q{test_analysis_runner}, q{$runner});
   
   like($runner->_generate_command( {
-    rf_path => $rf_path,
-    script => q{npg_pipeline_PB_cal},
-    job_priority=> 50,
-  } ), qr/npg_pipeline_PB_cal --job_priority 50 --verbose --runfolder_path $rf_path/,
+    rf_path      => $rf_path,
+    job_priority => 50,
+  } ), qr/npg_pipeline_central --verbose --job_priority 50 --runfolder_path $rf_path/,
     q{generated command is correct});
+
+  like($runner->_generate_command( {
+    rf_path      => $rf_path,
+    job_priority => 50,
+    gclp         => 1,
+  } ), qr/npg_pipeline_central --verbose --job_priority 50 --runfolder_path $rf_path --function_list gclp/,
+    q{generated command is correct});
+
+  like($runner->_generate_command( {
+    rf_path      => $rf_path,
+    job_priority => 50,
+    gclp         => 1,
+    id           => 22,
+  } ), qr/npg_pipeline_central --verbose --job_priority 50 --runfolder_path $rf_path --function_list gclp/,
+    q{generated command is correct});
+
+
   ok($runner->green_host, 'running on a host in a green datacentre');
   ok($runner->staging_host_match($path49), 'staging matches host');
   ok(!$runner->staging_host_match($path32), 'staging does not match host');
@@ -95,11 +111,10 @@ package main;
       npg_tracking_schema => $schema,
   ) } q{object creation ok};
   like($runner->_generate_command( {
-    rf_path => $rf_path,
-    script => q{npg_pipeline_PB_cal},
-    job_priority=> 50,
-    batch_id => 56,
-  } ), qr/npg_pipeline_PB_cal --job_priority 50 --verbose --runfolder_path $rf_path --id_flowcell_lims 56/,
+    rf_path      => $rf_path,
+    job_priority => 50,
+    id           => 56,
+  } ), qr/npg_pipeline_central --verbose --job_priority 50 --runfolder_path $rf_path --id_flowcell_lims 56/,
     q{generated command is correct});
   ok(!$runner->green_host, 'host is not in green datacentre');
   ok(!$runner->staging_host_match($path49), 'staging does not match host');
@@ -139,7 +154,7 @@ package main;
 package test_analysis_anotherrunner;
 use Moose;
 extends 'npg_pipeline::daemons::harold_analysis_runner';
-sub _check_lims_link{ return -1; }
+sub _check_lims_link{ return {'id' => -1}; }
 sub _runfolder_path { return '/some/path' };
 
 ########test class definition end########
@@ -167,7 +182,7 @@ package main;
                log_file_path       => $temp_directory,
                log_file_name       => q{npg_pipeline_daemon.log} ,
                npg_tracking_schema => $schema,
-              _iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
+               iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
              );
   } 'object created';
 
@@ -177,37 +192,36 @@ package main;
   is ($wh_schema->resultset('IseqFlowcell')->search('flowcell_barcode' => $fc )->count,
     0, 'test prereq. - no rows with this barcode in the lims table');
 
-  my $message = 'initial';
-
-  is ($runner->_check_lims_link($test_run, \$message), 55, 'batch id returned');
-  is ($message, 'initial', 'no message');
+  my $lims_data = $runner->_check_lims_link($test_run);
+  is ($lims_data->{'id'}, 55, 'batch id returned');
+  ok (!exists $lims_data->{'message'}, 'no message');
 
   $fc_row->update({'flowcell_barcode' => $fc});
 
-  is ($runner->_check_lims_link($test_run, \$message), 55, 'batch id is returned');
-  is ($message, 'initial', 'no message');
+  $lims_data = $runner->_check_lims_link($test_run);
+  is ($lims_data->{'id'}, 55, 'batch id is returned');
+  ok (!exists $lims_data->{'message'}, 'no message');
 
   $test_run->update({batch_id => undef,});
   ok (!defined $test_run->batch_id, 'test prereq. - tracking batch id undefined');
 
-  TODO: { local $TODO = q(Workaround for 47.8.1 release);
-    is ($runner->_check_lims_link($test_run, \$message), 0, 'no batch id - no problem');
-    is ($message, 'initial', 'no message');
-  }
+  $lims_data = $runner->_check_lims_link($test_run);
+  is ($lims_data->{'id'}, 0, 'no batch id - no problem');
+  ok (!exists $lims_data->{'message'}, 'no message');
 
   $fc_row->update({flowcell_barcode => 'some value'});
 
-  is ($runner->_check_lims_link($test_run, \$message), -1,
+  $lims_data = $runner->_check_lims_link($test_run);
+  is ($lims_data->{'id'}, -1,
     'correct return value when neither batch id nor flowcell barcode can be used');
-  TODO: { local $TODO = q(Workaround for 47.8.1 release);
-    is ($message, 'Neither batch id nor matching flowcell barcode is found', 'correct message');
-  }
+  is ($lims_data->{'message'}, 'No matching flowcell LIMs record is found');
 
   $test_run->update({flowcell_id => undef,});
   ok (!defined $test_run->batch_id, 'test prereq. - tracking flowcell id undefined');
-  is ($runner->_check_lims_link($test_run, \$message), -1,
+  $lims_data = $runner->_check_lims_link($test_run);
+  is ($lims_data->{'id'}, -1,
     'correct return value when tracking does not have flowcell barcode');
-  is ($message, 'No flowcell barcode', 'correct message');
+  is ($lims_data->{'message'}, 'No flowcell barcode', 'correct message');
 }
 
 {

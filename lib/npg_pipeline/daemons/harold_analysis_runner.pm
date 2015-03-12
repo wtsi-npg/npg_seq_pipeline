@@ -10,35 +10,44 @@ use Readonly;
 
 use npg_tracking::illumina::run::folder::location;
 use npg_tracking::illumina::run::short_info;
+use WTSI::DNAP::Warehouse::Schema;
+use WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell;
+
 extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
 
-Readonly::Scalar our $PB_CAL_SCRIPT     => q{npg_pipeline_central};
+Readonly::Scalar my $PIPELINE_SCRIPT        => q{npg_pipeline_central};
 
-Readonly::Scalar our $DEFAULT_JOB_PRIORITY   => 50;
-Readonly::Scalar our $RAPID_RUN_JOB_PRIORITY => 60;
-Readonly::Scalar our $ANALYSIS_PENDING  => q{analysis pending};
-Readonly::Scalar our $GREEN_DATACENTRE  => q[green];
-Readonly::Array  our @GREEN_STAGING     =>
+Readonly::Scalar my $DEFAULT_JOB_PRIORITY   => 50;
+Readonly::Scalar my $RAPID_RUN_JOB_PRIORITY => 60;
+Readonly::Scalar my $ANALYSIS_PENDING  => q{analysis pending};
+Readonly::Scalar my $GREEN_DATACENTRE  => q[green];
+Readonly::Array  my @GREEN_STAGING     =>
    qw(sf18 sf19 sf20 sf21 sf22 sf23 sf24 sf25 sf26 sf27 sf28 sf29 sf30 sf31 sf46 sf47 sf48 sf49 sf50 sf51);
 
 Readonly::Scalar my $NO_LIMS_LINK => -1;
 
 class_has 'pipeline_script_name' => (
-                       isa        => q{Str},
-                       is         => q{ro},
-                       lazy_build => 1,
-                                    );
-
-
+  isa        => q{Str},
+  is         => q{ro},
+  lazy_build => 1,
+);
 sub _build_pipeline_script_name {
-  return $PB_CAL_SCRIPT;
+  return $PIPELINE_SCRIPT;
 }
 
-has q{seen}          => (isa => q{HashRef}, is => q{rw}, default => sub { return {}; });
+has 'seen' => (
+  isa     => q{HashRef},
+  is      => q{rw},
+  default => sub { return {}; }
+);
 
-has q{green_host}    => (isa => q{Bool}, is => q{ro}, lazy_build => 1,);
+has q{green_host} => (
+  isa        => q{Bool},
+  is         => q{ro},
+  lazy_build => 1,
+);
 sub _build_green_host {
   my $self = shift;
   my $datacentre = `machine-location|grep datacentre`;
@@ -49,6 +58,30 @@ sub _build_green_host {
   }
   return ($datacentre && $datacentre =~ /$GREEN_DATACENTRE/xms);
 }
+
+has 'iseq_flowcell' => (
+  isa        => q{DBIx::Class::ResultSet},
+  is         => q{ro},
+  lazy_build => 1,
+);
+sub _build_iseq_flowcell {
+  return WTSI::DNAP::Warehouse::Schema->connect()->resultset('IseqFlowcell');
+}
+
+has 'lims_query_class' => (
+  isa        => q{Moose::Meta::Class},
+  is         => q{ro},
+  default    => sub {
+    my $package_name = 'npg_pipeline::mlwh_query';
+    my $class=Moose::Meta::Class->create($package_name);
+    $class->add_attribute('flowcell_barcode', {isa =>'Str', is=>'ro'});
+    $class->add_attribute('id_flowcell_lims', {isa =>'Str', is=>'ro'});
+    $class->add_attribute('iseq_flowcell',    {isa =>'DBIx::Class::ResultSet', is=>'ro'});
+    return Moose::Meta::Class->create_anon_class(
+      superclasses=> [$package_name],
+      roles       => [qw/WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell/] );
+  },
+);
 
 sub run {
   my ($self) = @_;
@@ -99,18 +132,14 @@ sub _process_one_run {
     return;
   }
 
-  my $message;
-  my $id = $self->_check_lims_link($run, \$message);
-  if ($id == $NO_LIMS_LINK) {
-    my $m = $message || q[];
+  my $arg_refs = $self->_check_lims_link($run);
+  if ($arg_refs->{'id'} == $NO_LIMS_LINK) {
+    my $m = $arg_refs->{'message'};
     $self->log(qq{$m for run $id_run, will revisit later});
     return;
   }
 
-  my $arg_refs = { 'script'  => $self->pipeline_script_name, };
-  if ($id) {
-    $arg_refs->{'batch_id'} = $id;
-  }
+  $arg_refs->{'script'} = $self->pipeline_script_name;
 
   $arg_refs->{'job_priority'} = $run->run_lanes->count <= 2 ?
     $RAPID_RUN_JOB_PRIORITY : $DEFAULT_JOB_PRIORITY;
@@ -127,24 +156,34 @@ sub _process_one_run {
 }
 
 sub _check_lims_link {
-  my ($self, $run, $message) = @_;
+  my ($self, $run) = @_;
+
+  my $lims = {'id' => $NO_LIMS_LINK};
 
   my $fc_barcode = $run->flowcell_id;
   if(!$fc_barcode) {
-    ${$message} = q{No flowcell barcode};
-    return $NO_LIMS_LINK;
+    $lims->{'message'} = q{No flowcell barcode};
+  } else {
+    my $batch_id = $run->batch_id();
+
+    my $ref = { 'iseq_flowcell'  => $self->iseq_flowcell };
+    $ref->{'flowcell_barcode'} = $fc_barcode;
+    if ( $batch_id ) {
+      $ref->{'id_flowcell_lims'} = $batch_id;
+    }
+
+    my $fcell_row = $self->lims_query_class()->new_object($ref)
+      ->query_resultset()->next;
+
+    if ( !($batch_id || $fcell_row)  ) {
+       $lims->{'message'} = q{No matching flowcell LIMs record is found};
+    } else {
+      $lims->{'id'}   = $batch_id || 0;
+      $lims->{'gclp'} = $fcell_row ? $fcell_row->from_gclp : 0;
+    }
   }
 
-  my $batch_id = $run->batch_id();
-  if ( !($batch_id ) ) {
-    ${$message} =
-      q{No batch id is found};
-    return $NO_LIMS_LINK;
-  }
-
-  $batch_id ||= 0;
-
-  return $batch_id;
+  return $lims;
 }
 
 sub _runfolder_path {
@@ -165,15 +204,15 @@ sub _runfolder_path {
 sub _generate_command {
   my ( $self, $arg_refs ) = @_;
 
-  my $rf_path      = $arg_refs->{'rf_path'};
-  my $script       = $arg_refs->{'script'};
-  my $job_priority = $arg_refs->{'job_priority'};
-  my $batch_id     = $arg_refs->{'batch_id'};
+  my $cmd = sprintf '%s --verbose --job_priority %i --runfolder_path %s',
+             $self->pipeline_script_name,
+             $arg_refs->{'job_priority'},
+             $arg_refs->{'rf_path'};
 
-  my $cmd = $script . qq{ --job_priority $job_priority} .
-                      qq{ --verbose --runfolder_path $rf_path};
-  if ($batch_id) {
-    $cmd .= " --id_flowcell_lims $batch_id";
+  if ( $arg_refs->{'gclp'} ) {
+    $cmd .= ' --function_list gclp';
+  } elsif ( $arg_refs->{'id'} ) {
+    $cmd .= ' --id_flowcell_lims ' . $arg_refs->{'id'};
   }
 
   my $path = join q[:], $self->local_path(), $ENV{PATH};
@@ -251,6 +290,10 @@ starts the pipeline for each of them.
 =item npg_tracking::illumina::run::folder::location
 
 =item npg_tracking::illumina::run::short_info
+
+=item WTSI::DNAP::Warehouse::Schema
+
+item WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell
 
 =back
 

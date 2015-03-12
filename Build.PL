@@ -81,6 +81,7 @@ my $builder = $class->new(
           'npg::samplesheet'                                => 0,
           'npg_warehouse::Schema'                           => 0,
           'WTSI::DNAP::Warehouse::Schema'                   => 0,
+          'WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell' => 0,
          },
 
          'build_requires'      => {
