@@ -58,7 +58,7 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
   my $expected =  qq[bsub -q srpipeline  -J warehouse_loader_1234_post_qc_review -o $log_dir/warehouse_loader_1234_post_qc_review_] . $timestamp . 
      q[.out 'unset NPG_WEBSERVICE_CACHE_DIR; unset NPG_CACHED_SAMPLESHEET_FILE; warehouse_loader --id_run 1234'];
   is($post_qc_review->_update_warehouse_command(undef,'warehouse_loader'), $expected, 'update warehouse command');
-  $expected =  qq[bsub -q test  -J ml_warehouse_loader_1234_post_qc_review -o $log_dir/ml_warehouse_loader_1234_post_qc_review_] . $timestamp . 
+  $expected =  qq[bsub -q srpipeline  -J ml_warehouse_loader_1234_post_qc_review -o $log_dir/ml_warehouse_loader_1234_post_qc_review_] . $timestamp . 
      q[.out 'unset NPG_WEBSERVICE_CACHE_DIR; unset NPG_CACHED_SAMPLESHEET_FILE; ml_warehouse_loader --id_run 1234'];
   is($post_qc_review->_update_warehouse_command(undef,'ml_warehouse_loader'), $expected, 'update ml_warehouse command');
 
