@@ -30,7 +30,7 @@ sub _generate_bsub_command {
 
   my $required_job_completion = $arg_refs->{'required_job_completion'};
   my $timestamp = $self->timestamp();
-  my $archive_script = $self->external_script_names_conf()->{'archive_to_irods'};
+  my $archive_script = q{irods_bam_loader.pl};
   my $job_name_prefix = $archive_script . q{_} . $self->id_run();
   my $job_name = $job_name_prefix . q{_} . $timestamp;
 
@@ -44,7 +44,11 @@ sub _generate_bsub_command {
 
   $bsub_command .=  qq{-E 'script_must_be_unique_runner -job_name="$job_name_prefix"' };
   $bsub_command .=  q{-o } . $location_of_logs . qq{/$job_name.out };
-  $bsub_command .=  q{'} . $archive_script . q{ --archive_path } . $self->archive_path() . q{ --runfolder_path } . $self->runfolder_path() . q{ --id_run } . $self->id_run();
+  $bsub_command .=  q{'} . $archive_script . q{ --samtools_cmd samtools1 --exclude_bam --archive_path } . $self->archive_path() . q{ --runfolder_path } . $self->runfolder_path() . q{ --id_run } . $self->id_run();
+
+  if ($self->qc_run) {
+    $bsub_command .= q{ --alt_process qc_run};
+  }
 
   if($position_list){
      $bsub_command .=  $position_list

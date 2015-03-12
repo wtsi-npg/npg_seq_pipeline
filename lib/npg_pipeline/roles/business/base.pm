@@ -31,13 +31,26 @@ and likely to be applied over the whole of the pipeline.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 id_flowcell_lims
+
+Optional LIMs identifier for flowcell
+
+=cut
+
+has q{id_flowcell_lims} => ( isa      => q{Int},
+                             is       => q{ro},
+                             required => 0,);
+
 =head2 run
 
 Run npg::api::run object, an id_run method is required for this.
 
 =cut
 
-has q{run} => (isa => q{npg::api::run},  is => q{ro}, metaclass => 'NoGetopt', lazy_build => 1);
+has q{run} => (isa        => q{npg::api::run},
+               is         => q{ro},
+               metaclass  => q{NoGetopt},
+               lazy_build => 1,);
 sub _build_run {
   my ($self) = @_;
   return npg::api::run->new({id_run => $self->id_run(),});
@@ -49,10 +62,29 @@ st::api::lims run-level object
 
 =cut
 
-has q{lims} => (isa => q{st::api::lims},  is => q{ro}, metaclass => 'NoGetopt', lazy_build => 1);
+has q{lims} => (isa        => q{st::api::lims},
+                is         => q{ro},
+                metaclass  => q{NoGetopt},
+                lazy_build => 1,);
 sub _build_lims {
   my ($self) = @_;
   return st::api::lims->new(id_run => $self->id_run);
+}
+
+=head2 qc_run
+
+Boolean flag indicating whether this run is a qc run.
+
+=cut
+
+has q{qc_run} => (isa        => q{Bool},
+                  is         => q{ro},
+                  lazy_build => 1,
+                  documentation => q{Boolean flag indicating whether the run is QC run, will be built if not supplied},);
+sub _build_qc_run {
+  my $self = shift;
+  my $lims_id = $self->id_flowcell_lims;
+  return $lims_id && $lims_id =~ /\A\d{13}\z/smx; # it's a tube barcode
 }
 
 =head2 multiplexed_lanes
@@ -62,7 +94,10 @@ Empty array for a not indexed run.
 
 =cut
 
-has q{multiplexed_lanes} => (isa => q{ArrayRef},  is => q{ro}, metaclass => 'NoGetopt', lazy_build => 1);
+has q{multiplexed_lanes} => (isa        => q{ArrayRef},
+                             is         => q{ro},
+                             metaclass  => q{NoGetopt},
+                             lazy_build => 1,);
 sub _build_multiplexed_lanes {
   my ($self) = @_;
   if (!$self->is_indexed) {
@@ -113,7 +148,10 @@ A boolean flag
 
 =cut
 
-has q{is_hiseqx_run} => (isa => q{Bool},  is => q{ro}, metaclass => 'NoGetopt', lazy_build => 1);
+has q{is_hiseqx_run} => (isa        => q{Bool},
+                         is         => q{ro},
+                         metaclass  => q{NoGetopt},
+                         lazy_build => 1,);
 sub _build_is_hiseqx_run {
   my ($self) = @_;
   return $self->run->instrument->name =~ /\AHX/xms;
@@ -150,8 +188,10 @@ A string of wildcards for tiles for OLB, defaults to an empty string
 
 =cut
 
-has q{tile_list} => (isa => q{Str}, is => q{ro}, default => q[],
-                      documentation => q{string of wildcards for tiles for OLB, defaults to an empty string},);
+has q{tile_list} => (isa => q{Str},
+                     is => q{ro},
+                     default => q{},
+                     documentation => q{string of wildcards for tiles for OLB, defaults to an empty string},);
 
 =head2 override_all_bustard_options
 
@@ -176,12 +216,10 @@ A custom reference repository root directory.
 
 =cut
 
-has q{repository} => (
-  isa       => q{Str},
-  is        => q{ro},
-  required  => 0,
-  predicate => q{has_repository},
-);
+has q{repository} => ( isa       => q{Str},
+                       is        => q{ro},
+                       required  => 0,
+                       predicate => q{has_repository},);
 
 =head2 control_ref
 
@@ -189,7 +227,9 @@ has q{repository} => (
 
 =cut
 
-has q{control_ref} => (isa => q{Str}, is => q{ro}, lazy_build => 1,
+has q{control_ref} => (isa           => q{Str},
+                       is            => q{ro},
+                       lazy_build    => 1,
                        documentation => q{path to a default control reference for a default aligner},);
 
 sub _build_control_ref {
@@ -374,7 +414,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Limited
+Copyright (C) 2015 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

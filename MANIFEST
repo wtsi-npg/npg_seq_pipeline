@@ -3,14 +3,13 @@ bin/move_run_folder
 bin/npg_pipeline_archival_runner
 bin/npg_pipeline_check_bam_file_cluster_count
 bin/npg_pipeline_harold_analysis_runner
-bin/npg_pipeline_PB_cal_bam
+bin/npg_pipeline_central
 bin/npg_pipeline_post_qc_review
 bin/npg_pipeline_preexec_references
 bin/npg_pipeline_seqchksum_comparator
 bin/script_must_be_unique_runner
 Build.PL
 Changes
-data/config_files/external_script_names.ini
 data/config_files/function_orders.yml
 data/config_files/general_values.ini
 data/config_files/illumina_pipeline.ini
@@ -41,7 +40,7 @@ lib/npg_pipeline/launcher/status.pm
 lib/npg_pipeline/lsf_job.pm
 lib/npg_pipeline/pluggable.pm
 lib/npg_pipeline/pluggable/harold.pm
-lib/npg_pipeline/pluggable/harold/PB_cal_bam.pm
+lib/npg_pipeline/pluggable/harold/central.pm
 lib/npg_pipeline/pluggable/harold/post_qc_review.pm
 lib/npg_pipeline/roles/business/base.pm
 lib/npg_pipeline/roles/business/flag_options.pm
@@ -63,7 +62,7 @@ t/10-cache.t
 t/10-lsf_job.t
 t/10-pluggable.t
 t/10-pluggable_harold.t
-t/10-pluggable_harold_pb_cal_bam.t
+t/10-pluggable_harold_central.t
 t/10-pluggable_harold_post_qc_review.t
 t/15-pipeline_launcher_scripts.t
 t/20-archive-fastqcheck.t
@@ -244,6 +243,9 @@ t/data/rna_seq/st/studies/2775.xml
 t/data/rna_seq/st/studies/2893.xml
 t/data/rna_seq/st/studies/311.xml
 t/data/rna_seq/st/studies/401.xml
+t/data/run_15440/npg/instrument/92.xml
+t/data/run_15440/npg/run/15440.xml
+t/data/run_15440/npg/run_status_dict.xml
 t/data/runfolder/archive/1234_2.bam
 t/data/runfolder/archive/1234_2_human.bam
 t/data/runfolder/archive/1234_3.bam
@@ -562,6 +564,13 @@ t/data/summary_files/after_v7_mp_hack_Summary.htm
 t/data/summary_files/after_v7_mp_hack_Summary.xml
 t/data/summary_files/BustardSummary_mp.xml
 t/data/summary_files/Summary.xsl
+t/data/fixtures/mlwh/000-Sample.yml
+t/data/fixtures/mlwh/000-Study.yml
+t/data/fixtures/mlwh/100-IseqFlowcell.yml
+t/data/fixtures/mlwh/100-StudyUser.yml
+t/data/fixtures/wh/CurrentAliquot.yml
+t/data/fixtures/wh/CurrentLibraryTube.yml
+t/data/fixtures/wh/CurrentSampleTube.yml
 t/dbic_util.pm
 t/perlcriticrc
 t/util.pm

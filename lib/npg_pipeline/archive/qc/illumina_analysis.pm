@@ -31,7 +31,7 @@ sub _generate_bsub_command {
   } ) ) . q{ };
   $bsub_command .=  qq{-E 'script_must_be_unique_runner -job_name="$job_name_prefix" -own_job_name="$job_name"' };
   $bsub_command .=  q{-o } . $location_of_logs . q{/} . $job_name . q{.out };
-  $bsub_command .=  q{'} . $self->external_script_names_conf()->{illumina_analysis_qc_loader};
+  $bsub_command .=  q{'npg_qc_illumina_analysis_loader};
   $bsub_command .= q{  --id_run } . $self->id_run;
   $bsub_command .= q{  --run_folder } . $self->run_folder;
   $bsub_command .= q{  --runfolder_path } . $self->runfolder_path;

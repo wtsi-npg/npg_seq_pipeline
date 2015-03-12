@@ -1,0 +1,630 @@
+---
+- bait_name: ~
+  cost_code: S0706
+  entity_id_lims: 20651
+  entity_type: library
+  external_release: 1
+  flowcell_barcode: 6175LAAXX
+  forward_read_length: 108
+  id_flowcell_lims: 5992
+  id_iseq_flowcell_tmp: 20301
+  id_lims: SQSCP
+  id_pool_lims: 57206
+  id_sample_tmp: 6195
+  id_study_tmp: 196
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2013-05-08 14:26:33
+  manual_qc: 0
+  pipeline_id_lims: Standard
+  position: 1
+  priority: 0
+  recorded_at: 2014-11-19 17:22:34
+  requested_insert_size_from: 400
+  requested_insert_size_to: 400
+  reverse_read_length: 108
+  tag_index: ~
+  tag_sequence: ~
+  tag_set_id_lims: ~
+  tag_set_name: ~
+- bait_name: ~
+  cost_code: ~
+  entity_id_lims: 12459448
+  entity_type: library_indexed_spike
+  external_release: ~
+  flowcell_barcode: HBF2DADXX
+  forward_read_length: 100
+  id_flowcell_lims: 34769
+  id_iseq_flowcell_tmp: 6833
+  id_library_lims: NT318381B
+  id_lims: SQSCP
+  id_pool_lims: NT589960T
+  id_sample_tmp: 1237247
+  id_study_tmp: 196
+  is_r_and_d: 0
+  is_spiked: 1
+  last_updated: 2015-02-04 11:16:10
+  legacy_library_id: 6759268
+  manual_qc: ~
+  pipeline_id_lims: ~
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-04 11:16:10
+  requested_insert_size_from: ~
+  requested_insert_size_to: ~
+  reverse_read_length: 100
+  tag_index: 168
+  tag_sequence: ACAACGCAAT
+  tag_set_id_lims: 6
+  tag_set_name: 'Sanger_168tags - 10 mer tags'
+- bait_name: ~
+  cost_code: S0969
+  entity_id_lims: 13538644
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: HBF2DADXX
+  forward_read_length: 100
+  id_flowcell_lims: 34769
+  id_iseq_flowcell_tmp: 6834
+  id_library_lims: DN384378S:A11
+  id_lims: SQSCP
+  id_pool_lims: NT589960T
+  id_sample_tmp: 1854903
+  id_study_tmp: 2934
+  is_r_and_d: 0
+  is_spiked: 1
+  last_updated: 2015-02-04 11:16:10
+  legacy_library_id: 12789790
+  manual_qc: ~
+  pipeline_id_lims: Standard
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-04 11:16:10
+  requested_insert_size_from: 400
+  requested_insert_size_to: 600
+  reverse_read_length: 100
+  tag_index: 81
+  tag_sequence: GGAATGAT
+  tag_set_id_lims: 6
+  tag_set_name: 'Sanger_168tags - 10 mer tags'
+- bait_name: ~
+  cost_code: S0969
+  entity_id_lims: 13538645
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: HBF2DADXX
+  forward_read_length: 100
+  id_flowcell_lims: 34769
+  id_iseq_flowcell_tmp: 6835
+  id_library_lims: DN384378S:B11
+  id_lims: SQSCP
+  id_pool_lims: NT589960T
+  id_sample_tmp: 1854907
+  id_study_tmp: 2934
+  is_r_and_d: 0
+  is_spiked: 1
+  last_updated: 2015-02-04 11:16:10
+  legacy_library_id: 12789802
+  manual_qc: ~
+  pipeline_id_lims: Standard
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-04 11:16:11
+  requested_insert_size_from: 400
+  requested_insert_size_to: 600
+  reverse_read_length: 100
+  tag_index: 82
+  tag_sequence: GAGCCAAT
+  tag_set_id_lims: 6
+  tag_set_name: 'Sanger_168tags - 10 mer tags'
+- bait_name: ~
+  cost_code: S0969
+  entity_id_lims: 13538646
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: HBF2DADXX
+  forward_read_length: 100
+  id_flowcell_lims: 34769
+  id_iseq_flowcell_tmp: 6836
+  id_library_lims: DN384378S:C11
+  id_lims: SQSCP
+  id_pool_lims: NT589960T
+  id_sample_tmp: 1854910
+  id_study_tmp: 2934
+  is_r_and_d: 0
+  is_spiked: 1
+  last_updated: 2015-02-04 11:16:10
+  legacy_library_id: 12789814
+  manual_qc: ~
+  pipeline_id_lims: Standard
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-04 11:16:11
+  requested_insert_size_from: 400
+  requested_insert_size_to: 600
+  reverse_read_length: 100
+  tag_index: 83
+  tag_sequence: GCTCCTTG
+  tag_set_id_lims: 6
+  tag_set_name: 'Sanger_168tags - 10 mer tags'
+- bait_name: ~
+  cost_code: S0969
+  entity_id_lims: 13538647
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: HBF2DADXX
+  forward_read_length: 100
+  id_flowcell_lims: 34769
+  id_iseq_flowcell_tmp: 6837
+  id_library_lims: DN384378S:D11
+  id_lims: SQSCP
+  id_pool_lims: NT589960T
+  id_sample_tmp: 1854924
+  id_study_tmp: 2934
+  is_r_and_d: 0
+  is_spiked: 1
+  last_updated: 2015-02-04 11:16:10
+  legacy_library_id: 12789826
+  manual_qc: ~
+  pipeline_id_lims: Standard
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-04 11:16:11
+  requested_insert_size_from: 400
+  requested_insert_size_to: 600
+  reverse_read_length: 100
+  tag_index: 84
+  tag_sequence: GTAAGGTG
+  tag_set_id_lims: 6
+  tag_set_name: 'Sanger_168tags - 10 mer tags'
+- bait_name: ~
+  cost_code: ~
+  entity_id_lims: 12459448
+  entity_type: library_indexed_spike
+  external_release: ~
+  flowcell_barcode: HBF2DADXX
+  forward_read_length: 100
+  id_flowcell_lims: 34769
+  id_iseq_flowcell_tmp: 6838
+  id_library_lims: NT318381B
+  id_lims: SQSCP
+  id_pool_lims: NT589960T
+  id_sample_tmp: 1237247
+  id_study_tmp: 196
+  is_r_and_d: 0
+  is_spiked: 1
+  last_updated: 2015-02-04 11:16:10
+  legacy_library_id: 6759268
+  manual_qc: ~
+  pipeline_id_lims: ~
+  position: 2
+  priority: 0
+  recorded_at: 2015-02-04 11:16:11
+  requested_insert_size_from: ~
+  requested_insert_size_to: ~
+  reverse_read_length: 100
+  tag_index: 168
+  tag_sequence: ACAACGCAAT
+  tag_set_id_lims: 6
+  tag_set_name: 'Sanger_168tags - 10 mer tags'
+- bait_name: ~
+  cost_code: S0969
+  entity_id_lims: 13538648
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: HBF2DADXX
+  forward_read_length: 100
+  id_flowcell_lims: 34769
+  id_iseq_flowcell_tmp: 6839
+  id_library_lims: DN384378S:A11
+  id_lims: SQSCP
+  id_pool_lims: NT589960T
+  id_sample_tmp: 1854903
+  id_study_tmp: 2934
+  is_r_and_d: 0
+  is_spiked: 1
+  last_updated: 2015-02-04 11:16:10
+  legacy_library_id: 12789790
+  manual_qc: ~
+  pipeline_id_lims: Standard
+  position: 2
+  priority: 0
+  recorded_at: 2015-02-04 11:16:11
+  requested_insert_size_from: 400
+  requested_insert_size_to: 600
+  reverse_read_length: 100
+  tag_index: 81
+  tag_sequence: GGAATGAT
+  tag_set_id_lims: 6
+  tag_set_name: 'Sanger_168tags - 10 mer tags'
+- bait_name: ~
+  cost_code: S0969
+  entity_id_lims: 13538649
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: HBF2DADXX
+  forward_read_length: 100
+  id_flowcell_lims: 34769
+  id_iseq_flowcell_tmp: 6840
+  id_library_lims: DN384378S:B11
+  id_lims: SQSCP
+  id_pool_lims: NT589960T
+  id_sample_tmp: 1854907
+  id_study_tmp: 2934
+  is_r_and_d: 0
+  is_spiked: 1
+  last_updated: 2015-02-04 11:16:10
+  legacy_library_id: 12789802
+  manual_qc: ~
+  pipeline_id_lims: Standard
+  position: 2
+  priority: 0
+  recorded_at: 2015-02-04 11:16:11
+  requested_insert_size_from: 400
+  requested_insert_size_to: 600
+  reverse_read_length: 100
+  tag_index: 82
+  tag_sequence: GAGCCAAT
+  tag_set_id_lims: 6
+  tag_set_name: 'Sanger_168tags - 10 mer tags'
+- bait_name: ~
+  cost_code: S0969
+  entity_id_lims: 13538650
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: HBF2DADXX
+  forward_read_length: 100
+  id_flowcell_lims: 34769
+  id_iseq_flowcell_tmp: 6841
+  id_library_lims: DN384378S:C11
+  id_lims: SQSCP
+  id_pool_lims: NT589960T
+  id_sample_tmp: 1854910
+  id_study_tmp: 2934
+  is_r_and_d: 0
+  is_spiked: 1
+  last_updated: 2015-02-04 11:16:10
+  legacy_library_id: 12789814
+  manual_qc: ~
+  pipeline_id_lims: Standard
+  position: 2
+  priority: 0
+  recorded_at: 2015-02-04 11:16:11
+  requested_insert_size_from: 400
+  requested_insert_size_to: 600
+  reverse_read_length: 100
+  tag_index: 83
+  tag_sequence: GCTCCTTG
+  tag_set_id_lims: 6
+  tag_set_name: 'Sanger_168tags - 10 mer tags'
+- bait_name: ~
+  cost_code: S0969
+  entity_id_lims: 13538651
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: HBF2DADXX
+  forward_read_length: 100
+  id_flowcell_lims: 34769
+  id_iseq_flowcell_tmp: 6842
+  id_library_lims: DN384378S:D11
+  id_lims: SQSCP
+  id_pool_lims: NT589960T
+  id_sample_tmp: 1854924
+  id_study_tmp: 2934
+  is_r_and_d: 0
+  is_spiked: 1
+  last_updated: 2015-02-04 11:16:10
+  legacy_library_id: 12789826
+  manual_qc: ~
+  pipeline_id_lims: Standard
+  position: 2
+  priority: 0
+  recorded_at: 2015-02-04 11:16:11
+  requested_insert_size_from: 400
+  requested_insert_size_to: 600
+  reverse_read_length: 100
+  tag_index: 84
+  tag_sequence: GTAAGGTG
+  tag_set_id_lims: 6
+  tag_set_name: 'Sanger_168tags - 10 mer tags'
+- bait_name: ~
+  cost_code: S0696
+  entity_id_lims: 12977057
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: ~
+  forward_read_length: 130
+  id_flowcell_lims: 35053
+  id_iseq_flowcell_tmp: 7351
+  id_library_lims: NT597899F
+  id_lims: SQSCP
+  id_pool_lims: NT597909N
+  id_sample_tmp: 2197676
+  id_study_tmp: 1954
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2015-02-05 14:05:40
+  legacy_library_id: 12977046
+  manual_qc: ~
+  pipeline_id_lims: Custom
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-05 14:05:41
+  requested_insert_size_from: 100
+  requested_insert_size_to: 500
+  reverse_read_length: 130
+  tag_index: 26
+  tag_sequence: CGTACTAGTATCCTCT
+  tag_set_id_lims: 78
+  tag_set_name: 'Nextera v3 - 96 tags - 16mer'
+- bait_name: ~
+  cost_code: S0696
+  entity_id_lims: 12977057
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: ~
+  forward_read_length: 130
+  id_flowcell_lims: 35053
+  id_iseq_flowcell_tmp: 7352
+  id_library_lims: NT597900E
+  id_lims: SQSCP
+  id_pool_lims: NT597909N
+  id_sample_tmp: 2197677
+  id_study_tmp: 1954
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2015-02-05 14:05:40
+  legacy_library_id: 12977047
+  manual_qc: ~
+  pipeline_id_lims: Custom
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-05 14:05:41
+  requested_insert_size_from: 100
+  requested_insert_size_to: 500
+  reverse_read_length: 130
+  tag_index: 27
+  tag_sequence: AGGCAGAATATCCTCT
+  tag_set_id_lims: 78
+  tag_set_name: 'Nextera v3 - 96 tags - 16mer'
+- bait_name: ~
+  cost_code: S0696
+  entity_id_lims: 12977057
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: ~
+  forward_read_length: 130
+  id_flowcell_lims: 35053
+  id_iseq_flowcell_tmp: 7353
+  id_library_lims: NT597901F
+  id_lims: SQSCP
+  id_pool_lims: NT597909N
+  id_sample_tmp: 2197678
+  id_study_tmp: 1954
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2015-02-05 14:05:40
+  legacy_library_id: 12977048
+  manual_qc: ~
+  pipeline_id_lims: Custom
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-05 14:05:41
+  requested_insert_size_from: 100
+  requested_insert_size_to: 500
+  reverse_read_length: 130
+  tag_index: 28
+  tag_sequence: TCCTGAGCTATCCTCT
+  tag_set_id_lims: 78
+  tag_set_name: 'Nextera v3 - 96 tags - 16mer'
+- bait_name: ~
+  cost_code: S0696
+  entity_id_lims: 12977057
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: ~
+  forward_read_length: 130
+  id_flowcell_lims: 35053
+  id_iseq_flowcell_tmp: 7354
+  id_library_lims: NT597902G
+  id_lims: SQSCP
+  id_pool_lims: NT597909N
+  id_sample_tmp: 2197679
+  id_study_tmp: 1954
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2015-02-05 14:05:40
+  legacy_library_id: 12977049
+  manual_qc: ~
+  pipeline_id_lims: Custom
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-05 14:05:41
+  requested_insert_size_from: 100
+  requested_insert_size_to: 500
+  reverse_read_length: 130
+  tag_index: 29
+  tag_sequence: GGACTCCTTATCCTCT
+  tag_set_id_lims: 78
+  tag_set_name: 'Nextera v3 - 96 tags - 16mer'
+- bait_name: ~
+  cost_code: S0696
+  entity_id_lims: 12977057
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: ~
+  forward_read_length: 130
+  id_flowcell_lims: 35053
+  id_iseq_flowcell_tmp: 7355
+  id_library_lims: NT597903H
+  id_lims: SQSCP
+  id_pool_lims: NT597909N
+  id_sample_tmp: 2197680
+  id_study_tmp: 1954
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2015-02-05 14:05:40
+  legacy_library_id: 12977050
+  manual_qc: ~
+  pipeline_id_lims: Custom
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-05 14:05:41
+  requested_insert_size_from: 100
+  requested_insert_size_to: 500
+  reverse_read_length: 130
+  tag_index: 30
+  tag_sequence: TAGGCATGTATCCTCT
+  tag_set_id_lims: 78
+  tag_set_name: 'Nextera v3 - 96 tags - 16mer'
+- bait_name: ~
+  cost_code: S0696
+  entity_id_lims: 12977057
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: ~
+  forward_read_length: 130
+  id_flowcell_lims: 35053
+  id_iseq_flowcell_tmp: 7356
+  id_library_lims: NT597904I
+  id_lims: SQSCP
+  id_pool_lims: NT597909N
+  id_sample_tmp: 2197681
+  id_study_tmp: 1954
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2015-02-05 14:05:40
+  legacy_library_id: 12977051
+  manual_qc: ~
+  pipeline_id_lims: Custom
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-05 14:05:41
+  requested_insert_size_from: 100
+  requested_insert_size_to: 500
+  reverse_read_length: 130
+  tag_index: 37
+  tag_sequence: TAAGGCGAAGAGTAGA
+  tag_set_id_lims: 78
+  tag_set_name: 'Nextera v3 - 96 tags - 16mer'
+- bait_name: ~
+  cost_code: S0696
+  entity_id_lims: 12977057
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: ~
+  forward_read_length: 130
+  id_flowcell_lims: 35053
+  id_iseq_flowcell_tmp: 7357
+  id_library_lims: NT597905J
+  id_lims: SQSCP
+  id_pool_lims: NT597909N
+  id_sample_tmp: 2197682
+  id_study_tmp: 1954
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2015-02-05 14:05:40
+  legacy_library_id: 12977052
+  manual_qc: ~
+  pipeline_id_lims: Custom
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-05 14:05:41
+  requested_insert_size_from: 100
+  requested_insert_size_to: 500
+  reverse_read_length: 130
+  tag_index: 38
+  tag_sequence: CGTACTAGAGAGTAGA
+  tag_set_id_lims: 78
+  tag_set_name: 'Nextera v3 - 96 tags - 16mer'
+- bait_name: ~
+  cost_code: S0696
+  entity_id_lims: 12977057
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: ~
+  forward_read_length: 130
+  id_flowcell_lims: 35053
+  id_iseq_flowcell_tmp: 7358
+  id_library_lims: NT597906K
+  id_lims: SQSCP
+  id_pool_lims: NT597909N
+  id_sample_tmp: 2197683
+  id_study_tmp: 1954
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2015-02-05 14:05:40
+  legacy_library_id: 12977053
+  manual_qc: ~
+  pipeline_id_lims: Custom
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-05 14:05:41
+  requested_insert_size_from: 100
+  requested_insert_size_to: 500
+  reverse_read_length: 130
+  tag_index: 39
+  tag_sequence: AGGCAGAAAGAGTAGA
+  tag_set_id_lims: 78
+  tag_set_name: 'Nextera v3 - 96 tags - 16mer'
+- bait_name: ~
+  cost_code: S0696
+  entity_id_lims: 12977057
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: ~
+  forward_read_length: 130
+  id_flowcell_lims: 35053
+  id_iseq_flowcell_tmp: 7359
+  id_library_lims: NT597907L
+  id_lims: SQSCP
+  id_pool_lims: NT597909N
+  id_sample_tmp: 2197684
+  id_study_tmp: 1954
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2015-02-05 14:05:40
+  legacy_library_id: 12977054
+  manual_qc: ~
+  pipeline_id_lims: Custom
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-05 14:05:41
+  requested_insert_size_from: 100
+  requested_insert_size_to: 500
+  reverse_read_length: 130
+  tag_index: 40
+  tag_sequence: TCCTGAGCAGAGTAGA
+  tag_set_id_lims: 78
+  tag_set_name: 'Nextera v3 - 96 tags - 16mer'
+- bait_name: ~
+  cost_code: S0696
+  entity_id_lims: 12977057
+  entity_type: library_indexed
+  external_release: ~
+  flowcell_barcode: ~
+  forward_read_length: 130
+  id_flowcell_lims: 35053
+  id_iseq_flowcell_tmp: 7360
+  id_library_lims: NT597908M
+  id_lims: SQSCP
+  id_pool_lims: NT597909N
+  id_sample_tmp: 2197685
+  id_study_tmp: 1954
+  is_r_and_d: 0
+  is_spiked: 0
+  last_updated: 2015-02-05 14:05:40
+  legacy_library_id: 12977055
+  manual_qc: ~
+  pipeline_id_lims: Custom
+  position: 1
+  priority: 0
+  recorded_at: 2015-02-05 14:05:41
+  requested_insert_size_from: 100
+  requested_insert_size_to: 500
+  reverse_read_length: 130
+  tag_index: 49
+  tag_sequence: TAAGGCGAGTAAGGAG
+  tag_set_id_lims: 78
+  tag_set_name: 'Nextera v3 - 96 tags - 16mer'
+

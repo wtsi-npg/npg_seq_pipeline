@@ -9,8 +9,6 @@ local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH}
 use_ok('npg_pipeline::archive::qc::illumina_analysis');
 
 my $util = t::util->new();
-my $conf_path = $util->conf_path();
-
 $ENV{TEST_DIR} = $util->temp_directory();
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 my $tmp_dir = $util->temp_directory();
@@ -32,15 +30,13 @@ sub create_analysis {
 {
   my $aia;
 
-  lives_ok { $aia = npg_pipeline::archive::qc::illumina_analysis->new({
+  lives_ok { $aia = npg_pipeline::archive::qc::illumina_analysis->new(
     run_folder => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
     recalibrated_path => "$analysis_runfolder_path/$pbcal",
     timestamp => q{20090709-123456},
     verbose => 1,
-    conf_path => $conf_path,
-    domain => q{test},
-  }); } q{created with run_folder ok};
+  ); } q{created with run_folder ok};
   isa_ok($aia, q{npg_pipeline::archive::qc::illumina_analysis}, q{$aia});
   $util->create_analysis();
 
@@ -53,7 +49,7 @@ sub create_analysis {
   is(scalar@jids, 1, q{only one job submitted});
 
   my $bsub_command = $util->drop_temp_part_from_paths( $aia->_generate_bsub_command( $arg_refs ) );
-  my $expected_command = qq{bsub -q test -w'done(123) && done(321)' -J illumina_analysis_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -E 'script_must_be_unique_runner -job_name="illumina_analysis_loader" -own_job_name="illumina_analysis_loader_1234_20090709-123456"' -o $nfs_pbcal/log/illumina_analysis_loader_1234_20090709-123456.out 'npg_qc_illumina_analysis_loader  --id_run 1234  --run_folder 123456_IL2_1234  --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls  --verbose'};
+  my $expected_command = qq{bsub -q srpipeline -w'done(123) && done(321)' -J illumina_analysis_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -E 'script_must_be_unique_runner -job_name="illumina_analysis_loader" -own_job_name="illumina_analysis_loader_1234_20090709-123456"' -o $nfs_pbcal/log/illumina_analysis_loader_1234_20090709-123456.out 'npg_qc_illumina_analysis_loader  --id_run 1234  --run_folder 123456_IL2_1234  --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls  --verbose'};
 
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
@@ -64,9 +60,7 @@ sub create_analysis {
     runfolder_path => $analysis_runfolder_path,
     recalibrated_path => "$analysis_runfolder_path/$pbcal",
     timestamp => q{20090709-123456},
-    conf_path => $conf_path,
     bam_basecall_path => $analysis_runfolder_path,
-    domain => q{test},
   );
   $util->create_analysis();
 
@@ -75,7 +69,7 @@ sub create_analysis {
   };
 
   my $bsub_command = $util->drop_temp_part_from_paths( $aia->_generate_bsub_command( $arg_refs ) );
-  my $expected_command = qq{bsub -q test -w'done(123) && done(321)' -J illumina_analysis_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -E 'script_must_be_unique_runner -job_name="illumina_analysis_loader" -own_job_name="illumina_analysis_loader_1234_20090709-123456"' -o $nfs_pbcal/log/illumina_analysis_loader_1234_20090709-123456.out 'npg_qc_illumina_analysis_loader  --id_run 1234  --run_folder 123456_IL2_1234  --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --bam_basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls'};
+  my $expected_command = qq{bsub -q srpipeline -w'done(123) && done(321)' -J illumina_analysis_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -E 'script_must_be_unique_runner -job_name="illumina_analysis_loader" -own_job_name="illumina_analysis_loader_1234_20090709-123456"' -o $nfs_pbcal/log/illumina_analysis_loader_1234_20090709-123456.out 'npg_qc_illumina_analysis_loader  --id_run 1234  --run_folder 123456_IL2_1234  --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --bam_basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 1;
