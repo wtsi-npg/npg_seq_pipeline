@@ -104,17 +104,34 @@ sub update_warehouse {
     return ();
   }
   my $required_job_completion = shift @args;
-  my $command = $self->_update_warehouse_command($required_job_completion);
+  my $command = $self->_update_warehouse_command($required_job_completion, 'warehouse_loader');
   return $self->submit_bsub_command($command);
 }
 
+=head2 update_ml_warehouse
+
+Updates run data in the npg tables of the ml_warehouse.
+
+=cut
+sub update_ml_warehouse {
+  my ($self, @args) = @_;
+  if ($self->no_warehouse_update) {
+    $self->log(q{Updates to warehouse is switched off.});
+    return ();
+  }
+  my $required_job_completion = shift @args;
+  my $command = $self->_update_warehouse_command($required_job_completion, 'ml_warehouse_loader');
+  return $self->submit_bsub_command($command);
+}
+
+
 sub _update_warehouse_command {
-  my ($self, $required_job_completion) = @_;
+  my ($self, $required_job_completion, $loader_name) = @_;
 
   my $id_run = $self->id_run;
   my $command = join q[ ], map {q[unset ] . $_ . q[;]} npg_pipeline::cache->env_vars;
-  $command .= qq{ warehouse_loader --id_run $id_run};
-  my $job_name = join q{_}, q{whupdate}, $id_run, $self->pipeline_name;
+  $command .= qq{ $loader_name --id_run $id_run};
+  my $job_name = join q{_}, $loader_name, $id_run, $self->pipeline_name;
   my $out = join q{_}, $job_name, $self->timestamp . q{.out};
   $out =  File::Spec->catfile($self->make_log_dir( $self->recalibrated_path()), $out );
   (my $name) = __PACKAGE__ =~ /(\w+)$/smx;
