@@ -40,7 +40,7 @@ sub _build_pipeline_script_name {
 has 'seen' => (
   isa     => q{HashRef},
   is      => q{rw},
-  default => sub { return {}; }
+  default => sub { return {}; },
 );
 
 has q{green_host} => (
@@ -75,7 +75,7 @@ has 'lims_query_class' => (
     my $package_name = 'npg_pipeline::mlwh_query';
     my $class=Moose::Meta::Class->create($package_name);
     $class->add_attribute('flowcell_barcode', {isa =>'Str', is=>'ro'});
-    $class->add_attribute('id_flowcell_lims', {isa =>'Str', is=>'ro'});
+    $class->add_attribute('id_flowcell_lims', {isa =>'Maybe[Str]', is=>'ro'});
     $class->add_attribute('iseq_flowcell',    {isa =>'DBIx::Class::ResultSet', is=>'ro'});
     return Moose::Meta::Class->create_anon_class(
       superclasses=> [$package_name],
@@ -168,12 +168,10 @@ sub _check_lims_link {
 
     my $ref = { 'iseq_flowcell'  => $self->iseq_flowcell };
     $ref->{'flowcell_barcode'} = $fc_barcode;
-    if ( $batch_id ) {
-      $ref->{'id_flowcell_lims'} = $batch_id;
-    }
+    $ref->{'id_flowcell_lims'} = $batch_id;
 
-    my $fcell_row = $self->lims_query_class()->new_object($ref)
-      ->query_resultset()->next;
+    my $obj = $self->lims_query_class()->new_object($ref);
+    my $fcell_row = $obj->query_resultset()->next;
 
     if ( !($batch_id || $fcell_row)  ) {
        $lims->{'message'} = q{No matching flowcell LIMs record is found};

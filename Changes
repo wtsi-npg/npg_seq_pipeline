@@ -4,6 +4,7 @@ LIST OF CHANGES
  - pipeline-specific function lists
  - olb flag removed, use '--function_list olb' option instead
  - unused pipeline flags and options removed
+ - for gclp runs, the analysis daemon to pass gclp function list to analysis pipeline
 
 release 48.0
  - if LIMS cached data creation fails, pipeline script fails before submitting jobs:

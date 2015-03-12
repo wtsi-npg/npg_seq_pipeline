@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 49;
+use Test::More tests => 55;
 use Test::Exception;
 use Cwd;
 use File::Path qw/make_path/;
@@ -175,7 +175,7 @@ package main;
 
 {
   my $wh_schema = $dbic_util->test_schema_mlwh('t/data/fixtures/mlwh');
-  my $fc_row = $wh_schema->resultset('IseqFlowcell')->search->next;
+  my $fc_row = $wh_schema->resultset('IseqFlowcell')->search()->next;
 
   my $runner;
   lives_ok { $runner = npg_pipeline::daemons::harold_analysis_runner->new(
@@ -195,12 +195,19 @@ package main;
   my $lims_data = $runner->_check_lims_link($test_run);
   is ($lims_data->{'id'}, 55, 'batch id returned');
   ok (!exists $lims_data->{'message'}, 'no message');
+  is ($lims_data->{'gclp'}, 0, 'gclp flag is set to false');
 
   $fc_row->update({'flowcell_barcode' => $fc});
 
   $lims_data = $runner->_check_lims_link($test_run);
   is ($lims_data->{'id'}, 55, 'batch id is returned');
   ok (!exists $lims_data->{'message'}, 'no message');
+  is ($lims_data->{'gclp'}, 0, 'gclp flag is set to false');
+
+  $wh_schema->resultset('IseqFlowcell')->search()->update({'id_lims' => 'CLARITY-GCLP'});
+
+  $lims_data = $runner->_check_lims_link($test_run);
+  is ($lims_data->{'gclp'}, 0, 'gclp flag is set to false');
 
   $test_run->update({batch_id => undef,});
   ok (!defined $test_run->batch_id, 'test prereq. - tracking batch id undefined');
@@ -208,6 +215,7 @@ package main;
   $lims_data = $runner->_check_lims_link($test_run);
   is ($lims_data->{'id'}, 0, 'no batch id - no problem');
   ok (!exists $lims_data->{'message'}, 'no message');
+  is ($lims_data->{'gclp'}, 1, 'gclp flag is set to true');
 
   $fc_row->update({flowcell_barcode => 'some value'});
 
@@ -215,6 +223,7 @@ package main;
   is ($lims_data->{'id'}, -1,
     'correct return value when neither batch id nor flowcell barcode can be used');
   is ($lims_data->{'message'}, 'No matching flowcell LIMs record is found');
+  ok (!exists $lims_data->{'gclp'}, 'gclp flag is not set');
 
   $test_run->update({flowcell_id => undef,});
   ok (!defined $test_run->batch_id, 'test prereq. - tracking flowcell id undefined');
@@ -222,6 +231,7 @@ package main;
   is ($lims_data->{'id'}, -1,
     'correct return value when tracking does not have flowcell barcode');
   is ($lims_data->{'message'}, 'No flowcell barcode', 'correct message');
+  ok (!exists $lims_data->{'gclp'}, 'gclp flag is not set');
 }
 
 {
