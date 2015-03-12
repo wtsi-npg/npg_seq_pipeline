@@ -1,17 +1,20 @@
 use strict;
 use warnings;
-use Test::More tests => 42;
+use Test::More tests => 51;
 use Test::Exception;
 use t::util;
 use File::Temp qw(tempdir tempfile);
 use Cwd;
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
 use Sys::Hostname;
+use t::dbic_util;
 
 use_ok(q{npg_pipeline::base});
 
 {
-  throws_ok {npg_pipeline::base->new(no_bsub => 3)} qr/Validation failed for 'Bool' (failed[ ])?with value 3/, 'error trying to set boolean flag to 3';
+  throws_ok {npg_pipeline::base->new(no_bsub => 3)}
+    qr/Validation failed for 'Bool' (failed[ ])?with value 3/,
+    'error trying to set boolean flag to 3';
   my $base = npg_pipeline::base->new();
   isa_ok($base, q{npg_pipeline::base});
   is($base->no_bsub, undef, 'no_bsub flag value is undefined if not set');
@@ -45,14 +48,10 @@ use_ok(q{npg_pipeline::base});
 {
   my $base;
   lives_ok {
-    $base = npg_pipeline::base->new({
-      conf_path => q{data/config_files},
-      domain => q{test},
-    });
+    $base = npg_pipeline::base->new();
   } q{base ok};
 
   foreach my $config_group ( qw{
-    external_script_names_conf
     function_order_conf
     general_values_conf
     illumina_pipeline_conf
@@ -65,28 +64,48 @@ use_ok(q{npg_pipeline::base});
 {
   my $base;
   lives_ok {
-    $base = npg_pipeline::base->new({
-      conf_path => q{does/not/exist},
-      domain => q{test},
-    });
+    $base = npg_pipeline::base->new(conf_path => q{does/not/exist});
   } q{base ok};
+  throws_ok{ $base->general_values_conf()} qr{cannot find },
+    'Croaks for non-esistent config file as expected';;
+}
 
-  throws_ok{ $base->general_values_conf()} qr{cannot find }, 'Croaks for non-esistent config file as expected';;
+{
+  my $bpath = t::util->new()->temp_directory;
+  my $path = join q[/], $bpath, '150206_HS29_15467_A_C5WL2ACXX';
+  my $base;
+  lives_ok { $base = npg_pipeline::base->new(runfolder_path => $path); }
+    'can create object without supplying run id';
+  is ($base->id_run, 15467, 'id run derived correctly from runfolder_path');
+  ok (!defined $base->id_flowcell_lims, 'lims flowcell id undefined');
+  is ($base->flowcell_id, 'C5WL2ACXX', 'flowcell barcode derived from runfolder path');
+  
+  $path = join q[/], $bpath, '150204_MS8_15441_A_MS2806735-300V2';
+  $base = npg_pipeline::base->new(runfolder_path => $path, id_flowcell_lims => 45);
+  is ($base->id_run, 15441, 'id run derived correctly from runfolder_path');
+  is ($base->id_flowcell_lims, 45, 'lims flowcell id returned correctly');
+  is ($base->flowcell_id, 'MS2806735-300V2', 'MiSeq reagent kit id derived from runfolder path');
 }
 
 {
   local $ENV{TEST_FS_RESOURCE} = q{nfs_12};
   my $expected_fs_resource =  q{nfs_12};
   my $path = t::util->new()->temp_directory;
-  my $base = npg_pipeline::base->new( id_run => 7440, runfolder_path => $path);
+  my $base = npg_pipeline::base->new(id_run => 7440, runfolder_path => $path);
   my $arg = q{-R 'select[mem>2500] rusage[mem=2500]' -M2500000};
-  is ($base->fs_resource_string({resource_string => $arg,}), qq[-R 'select[mem>2500] rusage[mem=2500,$expected_fs_resource=8]' -M2500000], 'resource string with sf resource');
-  is ($base->fs_resource_string({resource_string => $arg, seq_irods => 1,}), qq[-R 'select[mem>2500] rusage[mem=2500,$expected_fs_resource=8,seq_irods=1]' -M2500000], 'resource string with sf and irods resource');
+  is ($base->fs_resource_string({resource_string => $arg,}),
+    qq[-R 'select[mem>2500] rusage[mem=2500,$expected_fs_resource=8]' -M2500000],
+   'resource string with sf resource');
+  is ($base->fs_resource_string({resource_string => $arg, seq_irods => 1,}),
+    qq[-R 'select[mem>2500] rusage[mem=2500,$expected_fs_resource=8,seq_irods=1]' -M2500000],
+    'resource string with sf and irods resource');
   $base = npg_pipeline::base->new(id_run => 7440, runfolder_path => $path , no_sf_resource => 1);
-  is ($base->fs_resource_string({resource_string => $arg,}), $arg, 'resource string with no sr resource if no_sf_resource is set');
+  is ($base->fs_resource_string({resource_string => $arg,}), $arg,
+    'resource string with no sr resource if no_sf_resource is set');
 
   $arg = q{-R 'select[mem>13800] rusage[mem=13800] span[hosts=1]'};
-  is ($base->fs_resource_string({resource_string => $arg, counter_slots_per_job => 8,}), $arg, 'resource string with no sr resource if no_sf_resource is set');
+  is ($base->fs_resource_string({resource_string => $arg, counter_slots_per_job => 8,}), $arg,
+    'resource string with no sr resource if no_sf_resource is set');
 }
 
 {
@@ -137,6 +156,17 @@ use_ok(q{npg_pipeline::base});
   throws_ok {npg_pipeline::base->metadata_cache_dir()}
     qr/Cannot infer location of cache directory/,
     'error when no env vars are set';
+}
+
+{
+  my $base = npg_pipeline::base->new(flowcell_id  => 'HBF2DADXX');
+  ok( !$base->qc_run, 'not qc run');
+  
+  $base = npg_pipeline::base->new(id_flowcell_lims => 3456);
+  ok( !$base->qc_run, 'not qc run');
+  
+  $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775');
+  ok($base->qc_run, 'qc run');
 }
 
 1;

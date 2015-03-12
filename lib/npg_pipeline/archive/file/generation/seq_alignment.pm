@@ -14,6 +14,7 @@ use npg_tracking::data::transcriptome;
 use npg_pipeline::lsf_job;
 use npg_common::roles::software_location;
 use st::api::lims;
+use List::Util qw(sum);
 extends q{npg_pipeline::base};
 
 our $VERSION  = '0';
@@ -138,7 +139,7 @@ sub _save_arguments {
   return $file_name;
 }
 
-sub _lsf_alignment_command {
+sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my ( $self, $l, $is_plex ) = @_;
   my $id_run = $self->id_run;
   my $position = $l->position;
@@ -157,25 +158,29 @@ sub _lsf_alignment_command {
     $archive_path .= q{/} . $lane_dir;
     $qcpath =~s{([^/]+/?)\z}{$lane_dir/$1}smx; #per plex directory split assumed to be one level up from qc directory
   }
+  croak qq{Only one of nonconsented X and autosome human split, separate Y chromosome data, and nonconsented human split may be specified ($name_root)} if (1 < sum $l->contains_nonconsented_xahuman, $l->separate_y_chromosome_data, $l->contains_nonconsented_human);
+  croak qq{Nonconsented X and autosome human split, and separate Y chromosome data, must have Homo sapiens reference ($name_root)} if (($l->contains_nonconsented_xahuman or $l->separate_y_chromosome_data) and not $l->reference_genome=~/Homo_sapiens/smx );
+  croak qq{Nonconsented human split must not have Homo sapiens reference ($name_root)} if ($l->contains_nonconsented_human and $l->reference_genome=~/Homo_sapiens/smx );
   my $do_rna = $self->_do_rna_analysis($l);
-  if(
-    ($do_rna or
-    $self->is_hiseqx_run or
-    ($self->_is_v4_run && $self->_ref($l,q(fasta)))) #allow old school if no reference or if this is the phix spike
-    and !$spike_tag
-  ){
+  if( $self->force_p4 or (
+      ($do_rna or $self->is_hiseqx_run or $self->_is_v4_run) and
+      #allow old school if no reference or if this is the phix spike
+      $self->_ref($l,q(fasta)) and
+      not $spike_tag
+    )){
     #TODO: support these various options in P4 analyses
     croak qq{only paired reads supported ($name_root)} if not $self->is_paired_read;
     croak qq{nonconsented human split not yet supported ($name_root)} if $l->contains_nonconsented_human;
-    croak qq{nonconsented X and autosome human split not yet supported ($name_root)} if $l->contains_nonconsented_xahuman;
-    croak qq{Y human split not yet supported ($name_root)} if $l->separate_y_chromosome_data;
     croak qq{No alignments in bam not yet supported ($name_root)} if not $l->alignments_in_bam;
+    my $human_split = $l->contains_nonconsented_xahuman ? q(xahuman) :
+                      $l->separate_y_chromosome_data    ? q(yhuman) :
+                      q();
     croak qq{Reference required ($name_root)} if not $self->_ref($l,q(fasta));
-    return join q( ),    q(bash -c '),
+    return join q( ), q(bash -c '),
                            q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
                            q(cd), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{&&},
                            q(vtfp.pl -s),
-                             q{-keys samtools_executable -vals samtools1_1},
+                             q{-keys samtools_executable -vals samtools1},
                              q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
                              q(-keys aligner_numthreads -vals), q{`echo $}.q{LSB_MCPU_HOSTS | cut -d " " -f2`},
                              q(-keys indatadir -vals), $input_path,
@@ -196,6 +201,8 @@ sub _lsf_alignment_command {
                                   q(-keys bwa_executable -vals bwa0_6),
                                   q(-keys alignment_method -vals bwa_mem),
                              ) ),
+                             $human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : (),
+                             $l->separate_y_chromosome_data ? q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true) : (),
                              q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json},
                              qq(> run_$name_root.json),
                            q{&&},
@@ -218,6 +225,16 @@ sub _lsf_alignment_command {
                              ($is_plex ? ($tag_index) : ()),
                              $qcpath,
                            q{&&},
+                           $human_split ? (
+                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(}.$human_split.q{), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
+                             (join q{/}, $archive_path, $name_root.q(_).$human_split.q(.markdups_metrics.txt)),
+                             (join q{/}, $archive_path, $name_root.q(_).$human_split.q(.flagstat)),
+                             $self->id_run,
+                             $position,
+                             ($is_plex ? ($tag_index) : ()),
+                             $qcpath,
+                           q{&&})
+                              :(),
                            q{qc --check alignment_filter_metrics --qc_in $}.q{PWD --id_run}, $self->id_run, qq{--position $position --qc_out $qcpath}, ($is_plex ? (qq{--tag_index $tag_index}) : ()),
                          q(');
   }else{

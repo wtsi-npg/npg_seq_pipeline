@@ -14,6 +14,7 @@ extends q{npg_pipeline::base};
 
 our $VERSION = '0';
 
+Readonly::Scalar my $QC_SCRIPT_NAME          => 'qc';
 Readonly::Scalar my $LSF_MEMORY_REQ          => 6000;
 Readonly::Scalar my $LSF_MEMORY_REQ_ADAPTER  => 1500;
 Readonly::Scalar my $LSF_INDEX_MULTIPLIER    => 1000;
@@ -73,8 +74,7 @@ sub _generate_bsub_command {
   my $timestamp = $self->timestamp();
   my $id_run = $self->id_run();
 
-  my $job_name = join q{_},
-    $self->external_script_names_conf()->{qc_script},$self->qc_to_run(),$id_run,$timestamp;
+  my $job_name = join q{_},$QC_SCRIPT_NAME,$self->qc_to_run(),$id_run,$timestamp;
 
   $self->make_log_dir( $self->qc_path() );
   my $qc_out = $self->qc_path() . q{/log};
@@ -99,7 +99,7 @@ sub _generate_bsub_command {
   }
   $job_sub .= q{ '};
 
-  $job_sub .= $self->external_script_names_conf()->{qc_script};
+  $job_sub .= $QC_SCRIPT_NAME;
   $job_sub .= q{ --check=} . $self->qc_to_run();
   $job_sub .= q{ --id_run=} . $self->id_run();
 

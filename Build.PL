@@ -46,6 +46,7 @@ my $builder = $class->new(
           'MooseX::AttributeCloner'      => 0.17,
           'MooseX::ClassAttribute'       => 0,
           'MooseX::Getopt'               => 0,
+          'MooseX::StrictConstructor'    => 0,
           'Perl6::Slurp'           => 0,
           'POSIX'                  => 0,
           'Readonly'               => 1.03,
@@ -72,10 +73,14 @@ my $builder = $class->new(
           'npg_tracking::illumina::run::short_info'         => 0,
           'npg_tracking::util::types'                       => 0,
           'st::api::lims'                                   => 0,
+          'st::api::lims::warehouse'                        => 0,
+          'st::api::lims::ml_warehouse'                     => 0,
           'npg::api::request'                               => 0,
           'npg::api::run'                                   => 0,
           'npg::api::run_status_dict'                       => 0,
           'npg::samplesheet'                                => 0,
+          'npg_warehouse::Schema'                           => 0,
+          'WTSI::DNAP::Warehouse::Schema'                   => 0,
          },
 
          'build_requires'      => {

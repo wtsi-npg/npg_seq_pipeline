@@ -7,6 +7,7 @@ use Try::Tiny;
 use Readonly;
 
 use npg_pipeline::cache;
+
 extends q{npg_pipeline::pluggable};
 with qw{npg_tracking::illumina::run::long_info};
 
@@ -69,10 +70,6 @@ Called on new construction to ensure that certain parameters are filled/set up
 sub BUILD {
   my ($self) = @_;
 
-  if ( !$self->has_id_run() && !$self->has_run_folder() ) {
-    croak q{Error: No run_folder or id_run provided};
-  }
-
   if (!$self->has_log_file_path()) {
     $self->set_log_file_path( $self->runfolder_path() );
   }
@@ -94,6 +91,22 @@ sub BUILD {
   $self->_inject_autoqc_functions();
   return 1;
 }
+
+=head2 prepare
+
+If spider flag is true, runs spidering (creating/reusing LIMs data cache).
+Called in the pipeline's main method before executing functions.
+
+=cut
+
+override 'prepare' => sub {
+  my $self = shift;
+  super();
+  if ($self->spider) {
+    $self->run_spider();
+  }
+  return;
+};
 
 =head2 run_analysis_complete
 =head2 run_qc_complete
@@ -182,12 +195,11 @@ sub _qc_runner {
   return @job_ids;
 }
 
-=head2 spider
+=head2 run_spider
 
-Generates cached metadata that are needed by the pipeline.
-If either an existing directory with cached data found or
-the NPG_WEBSERVICE_CACHE_DIR env. variable is set, a new
-cache will not be generated.
+Generates cached metadata that are needed by the pipeline
+or reuses the existing cache.
+
 Will set the relevant env. variables in the global scope.
 
 The new cache is created in the analysis_path directory.
@@ -196,24 +208,43 @@ See npg_pipeline::cache for details.
 
 =cut
 
-sub spider {
+sub run_spider {
   my ( $self ) = @_;
-  my $cache = npg_pipeline::cache->new( id_run         => $self->id_run,
-                                        resuse_cache   => 1,
-                                        set_env_vars   => 1,
-                                        cache_location => $self->analysis_path,
-                                      );
+
+  my $ref = {
+    'id_run'           => $self->id_run,
+    'set_env_vars'     => 1,
+    'cache_location'   => $self->analysis_path,
+            };
+
+  my $lims_id = $self->id_flowcell_lims;
+
+  if (!$lims_id) {
+    $ref->{'lims_driver_type'} = npg_pipeline::cache->mlwarehouse_driver_name;
+    $ref->{'lims_id'}          = $self->flowcell_id;
+  } elsif ($self->qc_run) {
+    $ref->{'lims_driver_type'} = npg_pipeline::cache->warehouse_driver_name;
+    $ref->{'lims_id'}          = $lims_id;
+  } else {
+    $ref->{'lims_driver_type'} = npg_pipeline::cache->xml_driver_name;
+    $ref->{'lims_id'}          = $lims_id;
+  }
+
+  my $cache = npg_pipeline::cache->new($ref);
+
   my $error;
   try {
     $cache->setup();
   } catch {
     $error = $_ || 'some error';
   };
+
   $self->log(join qq[\n], @{$cache->messages});
   if ($error) {
-    croak qq[Error while spidering:\n$error];
+    croak qq[Error while spidering: $error];
   }
-  return ();
+
+  return;
 }
 
 =head2 fix_config_files
@@ -349,8 +380,6 @@ __END__
 
 =item npg_tracking::illumina::run::long_info
 
-=item npg_common::roles::run::status
-
 =back
 
 =head1 INCOMPATIBILITIES
@@ -364,7 +393,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Researcg Ltd
+Copyright (C) 2015 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

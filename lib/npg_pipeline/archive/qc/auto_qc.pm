@@ -43,7 +43,7 @@ sub _generate_bsub_command {
   } ) ) . q{ };
   $bsub_command .=  q{-o } . File::Spec->catfile( $location_of_logs, $job_name . q{.out } );
   $bsub_command .=  q{'};
-  $bsub_command .=  $self->external_script_names_conf()->{auto_qc_loader};
+  $bsub_command .=  q{npg_qc_autoqc_data.pl};
   $bsub_command .=  q{ --id_run=} . $self->id_run();
 
   for my $path (@qc_paths) {

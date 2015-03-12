@@ -272,7 +272,7 @@ sub _build__extra_tradis_transposon_read {
 
   my $is_tradis = 0;
   foreach my $d ($self->lims->descendants()) {
-    if ($d->library_type && $d->library_type eq 'TraDIS') {
+    if ($d->library_type && $d->library_type =~ /^TraDIS/smx) {
       $is_tradis = 1;
       last;
     }

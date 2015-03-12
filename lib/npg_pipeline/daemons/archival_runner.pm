@@ -42,7 +42,7 @@ sub run {
 
 sub _generate_command {
   my ($self, $id_run) = @_;
-  my $cmd = $self->pipeline_script_name() . q{ --verbose --id_run=} . $id_run;
+  my $cmd = $self->pipeline_script_name() . q{ --verbose --runfolder_path } . $self->_runfolder_path($id_run);
   my $path = join q[:], $self->local_path(), $ENV{PATH};
   $cmd = qq{export PATH=$path;} . $cmd;
   return $cmd;
