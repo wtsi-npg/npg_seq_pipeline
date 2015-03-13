@@ -196,6 +196,19 @@ sub _build_local {
   return $self->no_bsub ? 1 : 0;
 }
 
+=head2 olb
+
+Switches on OLB Bustard preprocessing to generate dif and bcl
+files and Bustard XML Summary from cif files; false by default.
+
+=cut
+
+has q{olb} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  documentation => q{Switches on OLB Bustard preprocessing},
+);
+
 =head2 spatial_filter
 
 Do we want to use the spatial_filter program?

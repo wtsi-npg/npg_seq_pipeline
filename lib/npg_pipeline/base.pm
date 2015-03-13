@@ -26,8 +26,9 @@ with qw{
 with qw{npg_tracking::illumina::run::long_info};
 with q{npg_pipeline::roles::business::flag_options};
 
-Readonly::Scalar our $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
-Readonly::Scalar our $CONF_DIR                   => q{data/config_files};
+Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
+Readonly::Scalar my $CONF_DIR                   => q{data/config_files};
+Readonly::Array  my @FLAG2FUNCTOIN_LIST         => qw/ olb qc_run /;
 
 $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
 
@@ -335,6 +336,11 @@ has 'function_list' => (
 );
 sub _build_function_list {
   my $self = shift;
+  foreach my $flag (@FLAG2FUNCTOIN_LIST) {
+    if ($self->can($flag) && $self->$flag) {
+      return $flag;
+    }
+  }
   return $self->pipeline_name;
 }
 around 'function_list' => sub {
@@ -349,6 +355,9 @@ around 'function_list' => sub {
       croak "Bad function list name: $v";
     }
     $file = $self->_conf_file_path( 'function_list_' . $v . '.yml');
+  }
+  if ($self->verbose) {
+    $self->log("Will use function list $file");
   }
   return $file;
 };
@@ -408,7 +417,8 @@ sub _build_parallelisation_conf {
 sub _conf_file_path {
   my ( $self, $conf_name ) = @_;
   my $path = abs_path( catfile($self->conf_path(), $conf_name) );
-  if (!-f $path) {
+  $path ||= q{};
+  if (!$path || !-f $path) {
     croak "File $path does not exist or is not readable";
   }
   return $path;

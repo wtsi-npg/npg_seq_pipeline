@@ -2,7 +2,8 @@ LIST OF CHANGES
 ---------------
 
  - pipeline-specific function lists
- - olb flag removed, use '--function_list olb' option instead
+ - setting olb or qc_run flags to true results in olb or qc_run function lists used
+ - qc_run flag on its own does not cause a change of lims driver
  - unused pipeline flags and options removed
  - for gclp runs, the analysis daemon to pass gclp function list to analysis pipeline
 

@@ -45,23 +45,6 @@ sub _build_pbcal_obj {
   return $self->new_with_cloned_attributes(q{npg_pipeline::analysis::harold_calibration_bam});
 }
 
-=head2 olb
-
-Switches on OLB Bustard preprocessing to generate dif and bcl files and Bustard XML Summary from cif files; false by default.
-
-=cut
-
-has q{olb} => (
-  isa => q{Bool},
-  is => q{ro},
-  lazy_build => 1,
-  metaclass  => q{NoGetopt},
-);
-sub _build_olb {
-  my $self = shift;
-  return any { $_ =~ /bustard/xms } @{$self->function_list_conf};
-}
-
 =head2 BUILD
 
 ensures that the folders are built that everything expects. If they are provided, it will use them, else it will create them

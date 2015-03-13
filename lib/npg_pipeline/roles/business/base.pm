@@ -73,15 +73,29 @@ sub _build_lims {
 
 =head2 qc_run
 
-Boolean flag indicating whether this run is a qc run.
+Boolean flag indicating whether this run is a qc run,
+will be built if not supplied;
 
 =cut
 
 has q{qc_run} => (isa        => q{Bool},
                   is         => q{ro},
                   lazy_build => 1,
-                  documentation => q{Boolean flag indicating whether the run is QC run, will be built if not supplied},);
+                  documentation => q{Boolean flag indicating whether the run is QC run, }.
+                    q{will be built if not supplied},);
 sub _build_qc_run {
+  my $self = shift;
+  return $self->is_qc_run;
+}
+
+=head2 is_qc_run
+
+Examines id_flowcell_lims attribute. If it consists of 13 digits, ie is a tube barcode,
+returns true, otherwise returns false.
+
+=cut
+
+sub is_qc_run {
   my $self = shift;
   my $lims_id = $self->id_flowcell_lims;
   return $lims_id && $lims_id =~ /\A\d{13}\z/smx; # it's a tube barcode

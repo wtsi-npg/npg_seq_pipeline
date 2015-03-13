@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 63;
+use Test::More tests => 69;
 use Test::Exception;
 use t::util;
 use File::Temp qw(tempdir tempfile);
@@ -214,13 +214,22 @@ use_ok(q{npg_pipeline::base});
 
 {
   my $base = npg_pipeline::base->new(flowcell_id  => 'HBF2DADXX');
+  ok( !$base->is_qc_run, 'looking on flowcell lims id: not qc run');
   ok( !$base->qc_run, 'not qc run');
   
   $base = npg_pipeline::base->new(id_flowcell_lims => 3456);
+  ok( !$base->is_qc_run, 'looking on flowcell lims id: not qc run');
   ok( !$base->qc_run, 'not qc run');
+
+  $base = npg_pipeline::base->new(id_flowcell_lims => 3456, qc_run => 1);
+  ok( !$base->is_qc_run, 'looking on flowcell lims id: not qc run');
+  my $fl = getcwd() . '/data/config_files/function_list_qc_run.yml';
+  is( $base->function_list, $fl, 'qc function list');
   
   $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775');
-  ok($base->qc_run, 'qc run');
+  ok( $base->is_qc_run, 'looking on flowcell lims id: qc run');
+  ok( $base->qc_run, 'qc run');
+  is( $base->function_list, $fl, 'qc function list');
 }
 
 1;
