@@ -222,7 +222,7 @@ sub run_spider {
   if (!$lims_id) {
     $ref->{'lims_driver_type'} = npg_pipeline::cache->mlwarehouse_driver_name;
     $ref->{'lims_id'}          = $self->flowcell_id;
-  } elsif ($self->qc_run) {
+  } elsif ($self->is_qc_run) {
     $ref->{'lims_driver_type'} = npg_pipeline::cache->warehouse_driver_name;
     $ref->{'lims_id'}          = $lims_id;
   } else {

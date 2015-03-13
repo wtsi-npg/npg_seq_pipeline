@@ -7,25 +7,28 @@ use Config::Any;
 use English qw{-no_match_vars};
 use POSIX qw(strftime);
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
-use File::Spec::Functions qw(splitdir);
+use File::Spec::Functions qw(splitdir catfile);
+use Cwd qw(abs_path);
 use File::Slurp;
 use FindBin qw($Bin);
 use Readonly;
 
 our $VERSION = '0';
 
-with qw{MooseX::Getopt
+with qw{
+        MooseX::Getopt
         MooseX::AttributeCloner
         npg_common::roles::log
         npg_tracking::illumina::run::short_info
         npg_tracking::illumina::run::folder
         npg_pipeline::roles::business::base
-      };
+       };
 with qw{npg_tracking::illumina::run::long_info};
 with q{npg_pipeline::roles::business::flag_options};
 
-Readonly::Scalar our $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
-Readonly::Scalar our $CONF_DIR                   => q{data/config_files};
+Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
+Readonly::Scalar my $CONF_DIR                   => q{data/config_files};
+Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ olb qc_run /;
 
 $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
 
@@ -52,7 +55,7 @@ A base class to provide basic functionality to any derived objects within npg_pi
 
 =cut
 
-has [qw/ +npg_tracking_schema
+ has [qw/ +npg_tracking_schema
          +slot
          +flowcell_id
          +instrument_string
@@ -77,10 +80,6 @@ sub submit_bsub_command {
     my $common_options = q{};
     if ( $self->has_job_priority() ) {
       $common_options = q{-sp } . $self->job_priority();
-    }
-    my $select = $self->lsf_resource_select();
-    if ($select) {
-      $common_options .= qq{ -R 'select[$select]'};
     }
     $cmd =~ s/bsub/bsub $common_options/xms;
 
@@ -133,18 +132,17 @@ sub submit_bsub_command {
 
 =head2 script_name
 
-returns the current scripts name (same as $PROGRAM_NAME), unless you have a desire to set on construction
-
-  my $sScriptName = $class->script_name();
+Current scripts name (from $PROGRAM_NAME)
 
 =cut
 
-has q{script_name} => (isa => q{Str}, is => q{ro}, metaclass => 'NoGetopt', lazy_build => 1, documentation => q{Advise - Do Not set on construction - unless you need to, it can be built from $PROGRAM_NAME}); ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-
-sub _build_script_name {
-  my ($self) = @_;
-  return $PROGRAM_NAME;
-}
+has q{script_name} => (
+  isa       => q{Str},
+  is        => q{ro},
+  default   => $PROGRAM_NAME,
+  init_arg  => undef,
+  metaclass => 'NoGetopt',
+);
 
 =head2 timestamp
 
@@ -154,22 +152,30 @@ returns and stores a timestring YYYY-MM-DD HH:MM:SS
 
 =cut
 
-has q{timestamp} => (isa => q{Str}, is => q{ro},metaclass => 'NoGetopt', lazy_build => 1);
+has q{timestamp} => (
+  isa        => q{Str},
+  is         => q{ro},
+  lazy_build => 1,
+  metaclass  => 'NoGetopt',
+);
 sub _build_timestamp {
-  my ($self) = @_;
   my $ts = strftime '%Y%m%d-%H%M%S', localtime time;
   return $ts;
 }
 
 =head2 lsf_queue
 
-can be provided by the user, or will take default from either LSB_DEFAULTQUEUE environment variable or value for default_lsf_queue in general_values.ini
+Can be provided by the user, or will take default from either LSB_DEFAULTQUEUE
+environment variable or value for default_lsf_queue in general_values.ini
 
 =cut
 
-has q{lsf_queue}      => (isa => q{Str},  is => q{ro},
-                          lazy_build => 1,
-                          documentation => q{the lsf_queue you want to submit ordinary jobs to. defaults to LSB_DEFAULTQUEUE or from config file},);
+has q{lsf_queue} => (
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation =>
+  q{The lsf_queue you want to submit ordinary jobs to. Defaults to LSB_DEFAULTQUEUE or is read from config file.},);
 
 sub _build_lsf_queue {
   my ($self) = @_;
@@ -179,14 +185,15 @@ sub _build_lsf_queue {
 
 =head2 small_lsf_queue
 
-can be provided by the user, or will take default from either LSB_DEFAULTQUEUE environment variable or value for default_lsf_queue in general_values.ini
+Can be provided by the user, or will take the value for small_lsf_queue in general_values.ini
 
 =cut
 
-has q{small_lsf_queue}  => (isa => q{Str},
-                            is => q{ro},
-                            lazy_build => 1,
-                            documentation => q{the lsf_queue you want to submit small jobs to. defaults to value from config file},
+has q{small_lsf_queue}  => (
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{the lsf_queue you want to submit small jobs to. defaults to value from config file},
 );
 sub _build_small_lsf_queue {
   my ($self) = @_;
@@ -199,45 +206,39 @@ Boolean decision to force on P4 pipeline usage
 
 =cut
 
-has q{force_p4}        => (isa => q{Bool},  is => q{ro}, documentation => q{Boolean decision to force on P4 pipeline usage});
+has q{force_p4}  => (
+  isa           => q{Bool},
+  is            => q{ro},
+  documentation => q{Boolean decision to force on P4 pipeline usage},
+);
 
 =head2 verbose
 
-boolean to switch on verbose mode
+Boolean option to switch on verbose mode
 
 =cut
 
-has q{verbose}        => (isa => q{Bool},  is => q{ro}, documentation => q{Boolean decision to switch on verbose mode});
-
-=head2 use_bases
-
-returns a string suitable for various scripts which shows the number of bases in order of sequencing eg Y54,I6n,y54
-an implementation of _build_use_bases needs to be provided for this to work, no provision of this will cause a run_time error,
-unless the string is provided on construction
-
-  my $sUseBases = $class->use_bases();
-
-=cut
-
-# a writer has been provided for test purposes
-has q{use_bases} => (isa => q{Str}, is => q{ro}, lazy_build => 1,  writer => q{_test_use_bases},
-                     documentation => q{string which determines the bases in each reads (i.e. Y54,I6n,y54)},);
+has q{verbose} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  documentation => q{Boolean decision to switch on verbose mode},
+);
 
 =head2 lanes
 
-option to push through an arrayref of lanes to run on
+Option to push through an arrayref of lanes to work with
 
 =head2 all_lanes
 
-returns an array of the elements in $class->lanes();
+An array of the elements in $class->lanes();
 
 =head2 no_lanes
 
-returns true if no lanes have been specified
+True if no lanes have been specified
 
 =head2 count_lanes
 
-returns the number of lanes in $class->lanes()
+Returns the number of lanes in $class->lanes()
 
 =cut
 
@@ -246,7 +247,7 @@ has q{lanes} => (
   isa           => q{ArrayRef[Int]},
   is            => q{ro},
   predicate     => q{has_lanes},
-  documentation => q{option to push through selected lanes of a run only},
+  documentation => q{Option to push through selected lanes of a run},
   default       => sub { [] },
   handles       => {
     all_lanes   => q{elements},
@@ -255,27 +256,9 @@ has q{lanes} => (
   },
 );
 
-=head2 lsf_resource_select
-
- This lsf resource will be requested for all lsf jobs by adding, for example, -R 'select[lenny]'
-
-=cut
-
-has q{lsf_resource_select} => (
-  isa     => 'Str',
-  is      => 'ro',
-  lazy    => 1,
-  builder => '_build_lsf_resource_select',
-  documentation => 'this lsf resource will be requested for all lsf jobs, example: lenny',
-);
-sub _build_lsf_resource_select {
-  my $self = shift;
-  return $self->general_values_conf()->{'lsf_resource_select'} || q{};
-}
-
 =head2 directory_exists
 
-returns a boolean true or false dependent on the existence of directory
+Returns a boolean true or false dependent on the existence of directory
 
   my $bDirectoryExists = $class->directory_exists($sDirectoryPath);
 
@@ -283,15 +266,12 @@ returns a boolean true or false dependent on the existence of directory
 
 sub directory_exists {
   my ($self, $directory_path) = @_;
-  if (-d $directory_path) {
-    return 1;
-  }
-  return 0;
+  return -d $directory_path ? 1 : 0;
 }
 
 =head2 lsb_jobindex
 
-returns a useable string which can be dropped into the command which will be launched in the bsub job, where you
+Returns a useable string which can be dropped into the command which will be launched in the bsub job, where you
 need $LSB_JOBINDEX, as this doesn't straight convert if it is required as part of a longer string
 
 =cut
@@ -302,7 +282,7 @@ sub lsb_jobindex {
 
 =head2 fs_resource_string
 
-returns a resource string for the bsub command in format
+Returns a resource string for the bsub command in format
 
   -R 'select rusage[nfs_sf=8]'
   -R 'select[nfs_12>=0] rusage[nfs_sf=8]' # we would like to include this, but it doesn't work with lsf6.1
@@ -338,77 +318,132 @@ sub fs_resource_string {
   return $resource_string;
 }
 
-###############
-# config files
+=head2 pipeline_name
 
-=head2 function_orders_conf
+=cut
+sub pipeline_name {
+  my $self = shift;
+  my $name = ref $self;
+  ($name) = $name =~ /(\w+)$/smx;
+  $name = lc $name;
+  return $name;
+}
+
+has 'function_list' => (
+  isa        => q{Str},
+  is         => q{ro},
+  lazy_build => 1,
+);
+sub _build_function_list {
+  my $self = shift;
+  foreach my $flag (@FLAG2FUNCTION_LIST) {
+    if ($self->can($flag) && $self->$flag) {
+      return $flag;
+    }
+  }
+  return $self->pipeline_name;
+}
+around 'function_list' => sub {
+  my $orig = shift;
+  my $self = shift;
+
+  my $v = $self->$orig();
+
+  my $file = abs_path($v);
+  if (!$file || !-f $file) {
+    if ($v !~ /\A\w+\Z/smx) {
+      croak "Bad function list name: $v";
+    }
+    $file = $self->_conf_file_path( 'function_list_' . $v . '.yml');
+  }
+  if ($self->verbose) {
+    $self->log("Will use function list $file");
+  }
+  return $file;
+};
+
+=head2 function_list_conf
+
+=cut
+has 'function_list_conf' => (
+  isa        => q{ArrayRef},
+  is         => q{ro},
+  lazy_build => 1,
+  metaclass  => 'NoGetopt',
+  init_arg   => undef,
+);
+sub _build_function_list_conf {
+  my ( $self ) = @_;
+  return $self->_read_config( $self->function_list );
+}
+
 =head2 general_values_conf
 =head2 illumina_pipeline_conf
 =head2 pb_cal_pipeline_conf
 =head2 parallelisation_conf
 
-All of these are accessors which return a hashref of configuration details
-from the relevant configuration file
+Returns a hashref of configuration details from the relevant configuration file
 
 =cut
 
-has [ qw{
-    function_order_conf
-    general_values_conf
-    illumina_pipeline_conf
-    pb_cal_pipeline_conf
-    parallelisation_conf
-  } ] => (
-  isa => q{HashRef},
-  is  => q{ro},
-  lazy_build => 1,
-  metaclass => 'NoGetopt',
-  init_arg => undef,
-);
+has [ qw{ general_values_conf
+          illumina_pipeline_conf
+          pb_cal_pipeline_conf
+          parallelisation_conf } ] => (
 
-sub _build_function_order_conf {
-  my ( $self ) = @_;
-  return $self->_get_config_reader( q{function_orders.yml} );
-}
+  isa        => q{HashRef},
+  is         => q{ro},
+  lazy_build => 1,
+  metaclass  => 'NoGetopt',
+  init_arg   => undef,
+);
 sub _build_general_values_conf {
   my ( $self ) = @_;
-  return $self->_get_config_reader( q{general_values.ini} );
+  return $self->_read_config( $self->_conf_file_path(q{general_values.ini}) );
 }
 sub _build_illumina_pipeline_conf {
   my ( $self ) = @_;
-  return $self->_get_config_reader( q{illumina_pipeline.ini} );
+  return $self->_read_config( $self->_conf_file_path(q{illumina_pipeline.ini}) );
 }
 sub _build_pb_cal_pipeline_conf {
   my ( $self ) = @_;
-  return $self->_get_config_reader( q{pb_cal_pipeline.ini} );
+  return $self->_read_config( $self->_conf_file_path(q{pb_cal_pipeline.ini}) );
 }
 sub _build_parallelisation_conf {
   my ( $self ) = @_;
-  return $self->_get_config_reader( q{parallelisation.yml} );
+  return $self->_read_config( $self->_conf_file_path(q{parallelisation.yml}) );
 }
 
-sub _get_config_reader {
+sub _conf_file_path {
   my ( $self, $conf_name ) = @_;
+  my $path = abs_path( catfile($self->conf_path(), $conf_name) );
+  $path ||= q{};
+  if (!$path || !-f $path) {
+    croak "File $path does not exist or is not readable";
+  }
+  return $path;
+}
 
-  my $config = {};
+sub _read_config {
+  my ( $self, $path ) = @_;
 
-  my $config_file = join q[/], $self->conf_path(), $conf_name;
-  if ( -e $config_file ) {
-    $config = Config::Any->load_files({files => [$config_file], use_ext => 1, });
-    if ( scalar @{ $config } ) {
-         $config = $config->[0]->{ $config_file };
-    }
-  } else {
-    croak "cannot find $config_file";
+  my $config = Config::Any->load_files({files => [$path], use_ext => 1, });
+  if ( scalar @{ $config } ) {
+    $config = $config->[0]->{ $path };
   }
 
   return $config;
 }
 
+=head2 config_path
+
+Path of the directory with teh config files.
+
+=cut
 has q{conf_path} => (
-  isa => q{Str},
-  is  => q{ro},
-  lazy_build => 1,
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
   documentation => q{full path to directory containing config files},
 );
 sub _build_conf_path {
@@ -423,8 +458,8 @@ Boolean flag to tell the pipeline to fix any missing broken files it can
 =cut
 
 has q{fix_broken_files} => (
-  isa => q{Bool},
-  is  => q{ro},
+  isa           => q{Bool},
+  is            => q{ro},
   documentation => q{boolean flag to fix files that may be missing or broken if it can},
 );
 
@@ -470,12 +505,12 @@ sub make_log_dir {
   my $rc = qx{chgrp $owning_group $log_dir};
   if ( $CHILD_ERROR ) {
     if ( $self->can( q{log} ) ) {
-      $self->log("could not chgrp $log_dir\n\t$rc");                # not fatal
+      $self->log("could not chgrp $log_dir\n\t$rc"); # not fatal
     }
   }
   $rc = qx{chmod u=rwx,g=srxw,o=rx $log_dir};
   if ( $CHILD_ERROR ) {
-    $self->log("could not chmod $log_dir\n\t$rc");                # not fatal
+    $self->log("could not chmod $log_dir\n\t$rc");   # not fatal
   }
 
   return $log_dir;
@@ -483,9 +518,12 @@ sub make_log_dir {
 
 =head2 job_name_prefix
 
-value to be prepended to job_names to signify something about where they have been launched from (i.e. prod for production). No need to use an underscore in the prefix, this will be added automatically
+Value to be prepended to job_names to signify something about
+where they have been launched from (i.e. prod for production).
+Underscore is added automatically after the prefix
 
-This can be set in the general_values.ini config file, but will be overridden if given on the command line.
+This can be set in the general_values.ini config file,
+but will be overridden if given on the command line.
 
 =cut
 
@@ -510,29 +548,30 @@ sub job_name_prefix {
 
 =head2 job_priority
 
-enables you to set on construction a priority value to be used for all jobs to LSF. It is up to the user to ensure that it is suitable for the queue the jobs are to be dispatched to. Not setting this will use the queue default
-
-Note, this is an all or nothing approach, it will be used on all jobs, regardless of the queue used (i.e. if you are running some as small)
+A priority value to be used for all jobs to LSF. Not setting this will use the queue default.
+Will be used on all jobs, regardless of the queue used (i.e. if you are running some as small).
 
 =cut
 
 has q{job_priority} => (
-  isa => q{Int},
-  is  => q{ro},
-  predicate => q{has_job_priority},
-  documentation => q{user defined all or nothing priority for lsf. default is to use the queue value},
+  isa           => q{Int},
+  is            => q{ro},
+  predicate     => q{has_job_priority},
+  documentation =>
+  q{User defined all or nothing priority for lsf. default is to use the queue value},
 );
 
-=head2 _fs_resource - returns the fs_resource for the given runfolder_path
+=head2 _fs_resource
+
+Returns the fs_resource for the given runfolder_path
 
 =cut 
 
 has _fs_resource => (
-  is => 'ro',
-  isa => 'Str',
+  is         => 'ro',
+  isa        => 'Str',
   lazy_build => 1,
 );
-
 sub _build__fs_resource {
   my ($self) = @_;
 
