@@ -28,11 +28,13 @@ npg_pipeline::pluggable
 The npg_pipeline::dispatch_tree object, which internally stores the tree of dispatched jobs.
 
 =cut
-has q{dispatch_tree} => (isa => q{npg_pipeline::dispatch_tree},
-                         is => q{ro},
-                         lazy_build => 1,
-                         init_arg => undef,
-                         metaclass => q{NoGetopt},);
+has q{dispatch_tree} => (
+  isa        => q{npg_pipeline::dispatch_tree},
+  is         => q{ro},
+  lazy_build => 1,
+  init_arg   => undef,
+  metaclass  => q{NoGetopt},
+);
 sub _build_dispatch_tree {
   return npg_pipeline::dispatch_tree->new();
 }
@@ -40,18 +42,24 @@ sub _build_dispatch_tree {
 =head2 interactive
 
 =cut
-has q{interactive}  => (isa => q{Bool},
-                        is => q{ro},
-                        default => 0,
-                        documentation => q{Should be set if the user needs to resume the start LSF job interactively; false by default, resulting in resuming the start job by th epipeline once all jobs have been successfully sub,itted},);
+has q{interactive}  => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 0,
+  documentation =>
+  q{Set to true to resume the start LSF job interactively. By default the start job is resumed once all jobs have been successfully submitted},
+);
 
 =head2 function_order
 
 =cut
-has q{function_order} => (isa => q{ArrayRef},
-                          is => q{ro},
-                          lazy_build => 1,
-                          documentation => q{A reference to an array of function names in the order they should run. Defaults to a list from a configuration file.},);
+has q{function_order} => (
+  isa           => q{ArrayRef},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation =>
+  q{A reference to an array of function names in the order they should run. Defaults to a list from a configuration file.},
+);
 sub _build_function_order {
   my $self = shift;
 
@@ -60,11 +68,22 @@ sub _build_function_order {
 
   my $fo = [];
   if ($module ne $parent && $module =~ /^$parent/mxs) {
-    $fo =  $self->function_order_conf()->{$self->pipeline_name};
-    if (!$fo) { $fo = []; }
+    $fo =  $self->function_list_conf() || [];
   }
   return $fo;
 }
+around 'function_order' => sub {
+  my $orig = shift;
+  my $self = shift;
+  my $fo = $self->$orig();
+  if ( !@{$fo} || $fo->[0] ne $SUSPENDED_START_FUNCTION ) {
+    unshift @{$fo}, $SUSPENDED_START_FUNCTION;
+  }
+  if ( $fo->[-1] ne $END_FUNCTION ) {
+    push @{$fo}, $END_FUNCTION;
+  }
+  return $fo;
+};
 
 =head2 parallelise
 
@@ -80,23 +99,15 @@ This would mean that func_a and func_b would be submitted to LSF with no depende
 and, likewise, func_g, func_h and func_i.
 
 =cut
-has q{parallelise}  => (isa => q{HashRef},
-                        is => q{ro},
-                        lazy_build => 1,
-                        metaclass => q{NoGetopt},);
+has q{parallelise}  => (
+  isa        => q{HashRef},
+  is         => q{ro},
+  lazy_build => 1,
+  metaclass  => q{NoGetopt},
+);
 sub _build_parallelise {
   my $self = shift;
   return $self->parallelisation_conf();
-}
-
-=head2 BUILD - wraps the function order
-
-=cut
-sub BUILD {
-  my $self = shift;
-  unshift @{$self->function_order}, $SUSPENDED_START_FUNCTION;
-  push @{$self->function_order}, $END_FUNCTION;
-  return;
 }
 
 =head2 lsf_job_complete_requirements - takes an array of job ids, and returns a -w'done(X) && done(Y) ....' string for use in lsf job submissions
@@ -211,17 +222,6 @@ sub _token_job {
   my $job_id = $self->submit_bsub_command($cmd);
   ($job_id) = $job_id =~ m/(\d+)/ixms;
   return ($job_id);
-}
-
-=head2 pipeline_name
-
-=cut
-sub pipeline_name {
-  my $self = shift;
-  my $name = ref $self;
-  ($name) = $name =~ /(\w+)$/smx;
-  $name = lc $name;
-  return $name;
 }
 
 =head2 lsf_start

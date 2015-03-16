@@ -77,6 +77,7 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
       id_run => 1234,
       run_folder => q{123456_IL2_1234},
       runfolder_path => $analysis_runfolder_path,
+      function_order => [],
       interactive => 1,
       spider      => 0,
     );
@@ -125,7 +126,6 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
   my $harold;
   lives_ok {
     $harold = npg_pipeline::pluggable::harold->new(
-      script_name => q{test},
       id_run => 6588,
       lanes => [1..8],
       run_folder => q{123456_IL2_1234},

@@ -5,6 +5,7 @@ use Carp;
 use English qw{-no_match_vars};
 use Readonly;
 use File::Spec;
+use List::MoreUtils qw/any/;
 
 use npg_pipeline::lsf_job;
 extends qw{npg_pipeline::pluggable::harold::post_qc_review};
@@ -220,10 +221,6 @@ Use Illumina tools to generate the (per run) BustardSummary and IVC reports (fro
 
 sub illumina_basecall_stats {
   my ($self, @args) = @_;
-  if ($self->olb) {
-    $self->log( q{OLB flag set, illumina_basecall_stats will not be run} );
-    return ();
-  }
 
   if ( $self->is_hiseqx_run ) {
     $self->log( q{HiSeqX sequencing instrument, illumina_basecall_stats will not be run} );
@@ -400,6 +397,8 @@ __END__
 =item Readonly
 
 =item File::Spec
+
+=item List::MoreUtils
 
 =back
 
