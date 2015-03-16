@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 48.1
  - pipeline-specific function lists
  - setting olb or qc_run flags to true results in olb or qc_run function lists used
  - qc_run flag on its own does not cause a change of lims driver
