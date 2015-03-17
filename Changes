@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - removed sf48 from list of staging areas in green room
+
 release 48.1
  - pipeline-specific function lists
  - setting olb or qc_run flags to true results in olb or qc_run function lists used

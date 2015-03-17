@@ -24,7 +24,7 @@ Readonly::Scalar my $RAPID_RUN_JOB_PRIORITY => 60;
 Readonly::Scalar my $ANALYSIS_PENDING  => q{analysis pending};
 Readonly::Scalar my $GREEN_DATACENTRE  => q[green];
 Readonly::Array  my @GREEN_STAGING     =>
-   qw(sf18 sf19 sf20 sf21 sf22 sf23 sf24 sf25 sf26 sf27 sf28 sf29 sf30 sf31 sf46 sf47 sf48 sf49 sf50 sf51);
+   qw(sf18 sf19 sf20 sf21 sf22 sf23 sf24 sf25 sf26 sf27 sf28 sf29 sf30 sf31 sf46 sf47 sf49 sf50 sf51);
 
 Readonly::Scalar my $NO_LIMS_LINK => -1;
 
