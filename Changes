@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - added update_ml_warehouse
  - removed sf48 from list of staging areas in green room
 
 release 48.1

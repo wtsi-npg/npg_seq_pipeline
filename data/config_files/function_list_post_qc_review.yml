@@ -9,3 +9,4 @@
 - move_to_outgoing
 - run_qc_complete
 - update_warehouse
+- update_ml_warehouse
