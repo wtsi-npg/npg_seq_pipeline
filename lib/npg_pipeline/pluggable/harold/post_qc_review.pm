@@ -120,7 +120,7 @@ sub update_ml_warehouse {
     return ();
   }
   my $required_job_completion = shift @args;
-  my $command = $self->_update_warehouse_command($required_job_completion, 'ml_warehouse_loader');
+  my $command = $self->_update_warehouse_command($required_job_completion, 'npg_runs2mlwarehouse');
   return $self->submit_bsub_command($command);
 }
 
