@@ -51,6 +51,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
     illumina2bam
     qc_tag_metrics
     update_warehouse
+    update_ml_warehouse
     harold_alignment_files
     harold_calibration_tables
     harold_recalibration
