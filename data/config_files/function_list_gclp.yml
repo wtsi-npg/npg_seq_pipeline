@@ -7,7 +7,7 @@
 - illumina_basecall_stats
 - illumina2bam
 - qc_tag_metrics
-- update_warehouse
+- update_ml_warehouse
 - harold_alignment_files
 - harold_calibration_tables
 - harold_recalibration
