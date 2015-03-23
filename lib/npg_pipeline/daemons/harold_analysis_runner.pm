@@ -132,7 +132,7 @@ sub _process_one_run {
     return;
   }
 
-  my $arg_refs = $self->_check_lims_link($run);
+  my $arg_refs = $self->check_lims_link($run);
   if ($arg_refs->{'id'} == $NO_LIMS_LINK) {
     my $m = $arg_refs->{'message'};
     $self->log(qq{$m for run $id_run, will revisit later});
@@ -155,7 +155,7 @@ sub _process_one_run {
   return;
 }
 
-sub _check_lims_link {
+sub check_lims_link {
   my ($self, $run) = @_;
 
   my $lims = {'id' => $NO_LIMS_LINK};
@@ -262,6 +262,8 @@ starts the pipeline for each of them.
 =head2 staging_host_match
 
 =head2 green_host
+
+=head2 check_lims_link
 
 =head1 DIAGNOSTICS
 

@@ -28,7 +28,7 @@ sub run {
         next;
       }
       if ( $self->staging_host_match($run->folder_path_glob)) {
-        my $lims = $self->_check_lims_link($run);
+        my $lims = $self->check_lims_link($run);
         $self->run_command($id_run, $self->_generate_command($id_run, $lims->{gclp}));
       }
       1;
