@@ -28,7 +28,8 @@ sub run {
         next;
       }
       if ( $self->staging_host_match($run->folder_path_glob)) {
-        $self->run_command($id_run, $self->_generate_command($id_run));
+        my $lims = $self->check_lims_link($run);
+        $self->run_command($id_run, $self->_generate_command($id_run, $lims->{gclp}));
       }
       1;
     } or do {
@@ -41,8 +42,10 @@ sub run {
 }
 
 sub _generate_command {
-  my ($self, $id_run) = @_;
-  my $cmd = $self->pipeline_script_name() . q{ --verbose --runfolder_path } . $self->_runfolder_path($id_run);
+  my ($self, $id_run, $gclp) = @_;
+  my $cmd = $self->pipeline_script_name();
+  $cmd = $cmd . ($gclp ? q{ --function_list post_qc_review_gclp} : q());
+  $cmd = $cmd . q{ --verbose --runfolder_path } . $self->_runfolder_path($id_run);
   my $path = join q[:], $self->local_path(), $ENV{PATH};
   $cmd = qq{export PATH=$path;} . $cmd;
   return $cmd;

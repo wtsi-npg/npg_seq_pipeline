@@ -38,7 +38,7 @@ my $rf_path = '/some/path';
 package test_analysis_runner;
 use Moose;
 extends 'npg_pipeline::daemons::harold_analysis_runner';
-sub _check_lims_link{ return {'id' => 0}; }
+sub check_lims_link{ return {'id' => 0}; }
 sub _runfolder_path { return '/some/path' };
 
 ########test class definition end########
@@ -154,7 +154,7 @@ package main;
 package test_analysis_anotherrunner;
 use Moose;
 extends 'npg_pipeline::daemons::harold_analysis_runner';
-sub _check_lims_link{ return {'id' => -1}; }
+sub check_lims_link{ return {'id' => -1}; }
 sub _runfolder_path { return '/some/path' };
 
 ########test class definition end########
@@ -192,34 +192,34 @@ package main;
   is ($wh_schema->resultset('IseqFlowcell')->search('flowcell_barcode' => $fc )->count,
     0, 'test prereq. - no rows with this barcode in the lims table');
 
-  my $lims_data = $runner->_check_lims_link($test_run);
+  my $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, 55, 'batch id returned');
   ok (!exists $lims_data->{'message'}, 'no message');
   is ($lims_data->{'gclp'}, 0, 'gclp flag is set to false');
 
   $fc_row->update({'flowcell_barcode' => $fc});
 
-  $lims_data = $runner->_check_lims_link($test_run);
+  $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, 55, 'batch id is returned');
   ok (!exists $lims_data->{'message'}, 'no message');
   is ($lims_data->{'gclp'}, 0, 'gclp flag is set to false');
 
   $wh_schema->resultset('IseqFlowcell')->search()->update({'id_lims' => 'CLARITY-GCLP'});
 
-  $lims_data = $runner->_check_lims_link($test_run);
+  $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'gclp'}, 0, 'gclp flag is set to false');
 
   $test_run->update({batch_id => undef,});
   ok (!defined $test_run->batch_id, 'test prereq. - tracking batch id undefined');
 
-  $lims_data = $runner->_check_lims_link($test_run);
+  $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, 0, 'no batch id - no problem');
   ok (!exists $lims_data->{'message'}, 'no message');
   is ($lims_data->{'gclp'}, 1, 'gclp flag is set to true');
 
   $fc_row->update({flowcell_barcode => 'some value'});
 
-  $lims_data = $runner->_check_lims_link($test_run);
+  $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, -1,
     'correct return value when neither batch id nor flowcell barcode can be used');
   is ($lims_data->{'message'}, 'No matching flowcell LIMs record is found');
@@ -227,7 +227,7 @@ package main;
 
   $test_run->update({flowcell_id => undef,});
   ok (!defined $test_run->batch_id, 'test prereq. - tracking flowcell id undefined');
-  $lims_data = $runner->_check_lims_link($test_run);
+  $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, -1,
     'correct return value when tracking does not have flowcell barcode');
   is ($lims_data->{'message'}, 'No flowcell barcode', 'correct message');

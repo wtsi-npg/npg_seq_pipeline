@@ -1,0 +1,11 @@
+---
+- run_archival_in_progress
+- copy_interop_files_to_irods
+- archive_to_irods
+- upload_fastqcheck_to_qc_database
+- upload_illumina_analysis_to_qc_database
+- upload_auto_qc_to_qc_database
+- run_run_archived
+- move_to_outgoing
+- run_qc_complete
+- update_ml_warehouse
