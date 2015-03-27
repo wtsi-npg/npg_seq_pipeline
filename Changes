@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - enable human split for P4 in seq_alignment
  - gclp-specific function list for archival
 
 release 48.2
