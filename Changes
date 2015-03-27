@@ -1,7 +1,7 @@
 LIST OF CHANGES
 ---------------
 
- - use new ml warehouse only for gclp runs
+ - gclp-specific function list for archival
 
 release 48.2
  - added update_ml_warehouse
