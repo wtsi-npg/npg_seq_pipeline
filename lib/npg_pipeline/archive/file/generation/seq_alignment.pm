@@ -8,13 +8,14 @@ use Moose::Meta::Class;
 use Try::Tiny;
 use File::Slurp;
 use JSON;
+use List::Util qw(sum);
+use List::MoreUtils qw(any);
 
 use npg_tracking::data::reference::find;
 use npg_tracking::data::transcriptome;
 use npg_pipeline::lsf_job;
 use npg_common::roles::software_location;
 use st::api::lims;
-use List::Util qw(sum);
 extends q{npg_pipeline::base};
 
 our $VERSION  = '0';
@@ -22,6 +23,7 @@ our $VERSION  = '0';
 Readonly::Scalar our $DNA_ALIGNMENT_SCRIPT  => q{bam_alignment.pl};
 Readonly::Scalar our $NUM_THREADS  => q(12,16);
 Readonly::Scalar our $MEMORY       => q{32000}; # memory in megabytes
+Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
 
 =head2 phix_reference
 
@@ -163,7 +165,9 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   croak qq{Nonconsented human split must not have Homo sapiens reference ($name_root)} if ($l->contains_nonconsented_human and $l->reference_genome=~/Homo_sapiens/smx );
   my $do_rna = $self->_do_rna_analysis($l);
   if( $self->force_p4 or (
-      ($do_rna or $self->is_hiseqx_run or $self->_is_v4_run) and
+      ($do_rna or $self->is_hiseqx_run or $self->_is_v4_run or
+       any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts
+      ) and
       #allow old school if no reference or if this is the phix spike
       $self->_ref($l,q(fasta)) and
       not $spike_tag

@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - force P4 and so bwa mem for runs with reads > 100bp
  - enable human split for P4 in seq_alignment
  - gclp-specific function list for archival
 
