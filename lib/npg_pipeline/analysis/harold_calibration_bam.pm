@@ -297,7 +297,7 @@ sub _lane_has_spiked_phix {
     return;
   }
 
-  if ( $run_lane->is_spiked_phix() ) {
+  if ( $run_lane->is_spiked_phix() or $self->force_phix_split) {
     return 1;
   }
 

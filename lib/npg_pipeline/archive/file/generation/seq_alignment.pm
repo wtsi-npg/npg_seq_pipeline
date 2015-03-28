@@ -172,6 +172,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       $self->_ref($l,q(fasta)) and
       not $spike_tag
     )){
+    #TODO: allow for an analysis genuinely with out phix and where no phiX split work is wanted - especially the phix plex....
     #TODO: support these various options in P4 analyses
     croak qq{only paired reads supported ($name_root)} if not $self->is_paired_read;
     croak qq{No alignments in bam not yet supported ($name_root)} if not $l->alignments_in_bam;
@@ -263,6 +264,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                          q(');
   }else{
     return join q( ),    $DNA_ALIGNMENT_SCRIPT,
+                         ( ($self->force_phix_split and not $spike_tag) ? ( q(--spiked_phix_split) ) : () ), #might be better to turn off split if ref is phix
                          q(--id_run),        $self->id_run,
                          q(--position),      $position,
                          ($is_plex ? ( q(--tag_index),     $tag_index ) : ()),
