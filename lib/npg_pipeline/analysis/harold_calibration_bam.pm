@@ -342,10 +342,6 @@ sub _generate_calibration_table_per_lane {
 
   my $run_lane = $arg_refs->{run_lane};
 
-  if (! $run_lane->is_spiked_phix() ){
-     return;
-  }
-
   my $position = $run_lane->position();
   my $job_ids  = $arg_refs->{job_ids};
 
@@ -372,9 +368,6 @@ sub _generate_alignment_file_per_lane {
   my ( $self, $arg_refs ) = @_;
 
   my $run_lane = $arg_refs->{run_lane};
-  if (! $run_lane->is_spiked_phix() ) {
-     return;
-  }
 
   my $bsub_command = $self->_alignment_file_bsub_command( {
     position => $run_lane->position(),
@@ -614,7 +607,7 @@ sub _calibration_table_bsub_command {
 
   if ( $arg_refs->{is_spiked_phix} ) {
     if (!$arg_refs->{snp_file}) {
-      croak 'Snip file not available';
+      croak 'SNP file not available';
     }
     push @command, q{--snp } . $arg_refs->{snp_file};
   }

@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 34;
+use Test::More tests => 39;
 use Test::Exception::LessClever;
 use t::util;
 use Cwd;
@@ -82,6 +82,7 @@ sub set_staging_analysis_area {
       spatial_filter => 1,
       no_bsub => 1,
       recalibration => 1,
+      force_phix_split => 0,
     });
   } q{create $harold object ok};
 
@@ -199,6 +200,7 @@ sub set_staging_analysis_area {
       bam_basecall_path => $runfolder_path . q{/Data/Intensities/BaseCalls},
       no_bsub => 1,
       recalibration => 1,
+      force_phix_split => 0,
     });
   } q{create $harold object ok};
 
@@ -212,6 +214,37 @@ sub set_staging_analysis_area {
 
   @job_ids = $harold->generate_recalibrated_bam({});
   is( scalar @job_ids, 8, q{8 job ids for recalibration even if no spiked phix lane} );
+}
+
+{
+  set_staging_analysis_area();
+  my $harold;
+  $id_run = 4846;
+  lives_ok {
+    $harold = npg_pipeline::analysis::harold_calibration_bam->new({
+      id_run => $id_run,
+      run_folder => q{123456_IL2_1234},
+      runfolder_path => $runfolder_path,
+      timestamp => q{20091028-101635},
+      verbose => 0,
+      repository => $repos,
+      bam_basecall_path => $runfolder_path . q{/Data/Intensities/BaseCalls},
+      no_bsub => 1,
+      recalibration => 1,
+      force_phix_split => 1,
+    });
+  } q{create $harold object ok};
+
+  isa_ok($harold, q{npg_pipeline::analysis::harold_calibration_bam}, q{$harold});
+
+  my @job_ids = $harold->generate_alignment_files({});
+  is( scalar @job_ids, 8, q{8 job ids for alignment as no spiked phix lane but force phix split} );
+
+  @job_ids = $harold->generate_calibration_table({});
+  is( scalar @job_ids, 8, q{8 job ids for calibration table as no spiked phix lane but force phix split} );
+
+  @job_ids = $harold->generate_recalibrated_bam({});
+  is( scalar @job_ids, 8, q{8 job ids for recalibration even if no spiked phix lane but force phix split} );
 }
 
 {
@@ -231,6 +264,7 @@ sub set_staging_analysis_area {
       no_bsub => 1,
       spatial_filter => 1,
       recalibration => 1,
+      force_phix_split => 0,
     });
   } q{create $harold object ok};
 
