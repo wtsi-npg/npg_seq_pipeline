@@ -167,13 +167,16 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   if( $self->force_p4 or (
       ($do_rna or $self->is_hiseqx_run or $self->_is_v4_run or
        any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts
+      ) and (
+      #allow old school if no reference or no alignments in bam
+        ($self->_ref($l,q(fasta)) and $l->alignments_in_bam) or
+        $l->contains_nonconsented_human # but not if contains_nonconsented_human
       ) and
-      #allow old school if no reference or if this is the phix spike
-      $self->_ref($l,q(fasta)) and
-      not $spike_tag
+      not $spike_tag #or allow old school if this is the phix spike
     )){
-    #TODO: allow for an analysis genuinely with out phix and where no phiX split work is wanted - especially the phix plex....
-    #TODO: support these various options in P4 analyses
+    #TODO: no alignments or no ref but contains_nonconsented_human and read length >100 
+    #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
+    #TODO: support this, and above "old school", various options in P4 analyses
     croak qq{only paired reads supported ($name_root)} if not $self->is_paired_read;
     croak qq{No alignments in bam not yet supported ($name_root)} if not $l->alignments_in_bam;
     my $human_split = $l->contains_nonconsented_xahuman ? q(xahuman) :
