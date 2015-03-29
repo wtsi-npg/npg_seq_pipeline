@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - get informatrion about a spike directly from lims
  - use old bam_alignment.pl, not P4, if omission of alignments requested
  - option (default on) to force analyses to assume phix spike
  - force P4 and so bwa mem for runs with reads > 100bp

@@ -143,8 +143,7 @@ sub generate_alignment_files {
   my ( $self, $arg_refs ) = @_;
 
   my $job_ids = [];
-  my $job_dependencies = $arg_refs->{required_job_completion};
-  my $run = $self->run();
+  my $job_dependencies = $arg_refs->{'required_job_completion'};
 
   my $cur_dir = getcwd();            # save for later
   my $dir = $self->bam_basecall_path();
@@ -159,18 +158,16 @@ sub generate_alignment_files {
   $self->log( qq{Changing to $pb_cal_dir} );
   chdir $pb_cal_dir or croak "could not cd to $pb_cal_dir"; # change to the calibration directory
 
-  foreach my $run_lane ( @{$run->run_lanes()} ) {
-
-    if ( ! $self->_lane_has_spiked_phix( $run_lane ) ){
-       $self->log('Lane is not spiked with phiX, no PB_cal alignment job needed: ' . $run_lane->position());
+  foreach my $position ( $self->positions ) {
+    if ( ! $self->is_spiked_lane( $position ) ){
+       $self->log("Lane $position is not spiked with phiX, no PB_cal alignment job needed");
        next;
     }
-
-    $self->_generate_alignment_file_per_lane( {
-      run_lane => $run_lane,
-      job_ids => $job_ids,
-      job_dependencies => $job_dependencies,
-    } );
+    $self->_generate_alignment_file_per_lane({
+      position         => $position,
+      job_ids          => $job_ids,
+      job_dependencies => $job_dependencies
+    });
   }
 
   $self->log( qq{Changing back to $cur_dir} );
@@ -198,8 +195,7 @@ sub generate_calibration_table {
   }
 
   my $job_ids = [];
-  my $job_dependencies = $arg_refs->{required_job_completion};
-  my $run     = $self->run();
+  my $job_dependencies = $arg_refs->{'required_job_completion'};
 
   my $cur_dir = getcwd();            # save for later
 
@@ -213,18 +209,16 @@ sub generate_calibration_table {
 
   my $snp_file = $self->control_snp_file();
 
-  foreach my $run_lane ( @{$run->run_lanes()} ) {
-
-    if ( ! $self->_lane_has_spiked_phix( $run_lane ) ){
-       $self->log('Lane is not spiked with phiX, no PB_cal calibration table job needed: ' . $run_lane->position());
+  foreach my $position ( $self->positions ) {
+    if ( ! $self->is_spiked_lane( $position ) ){
+       $self->log("Lane $position is not spiked with phiX, no PB_cal calibration table job needed");
        next;
     }
-
     $self->_generate_calibration_table_per_lane( {
-      run_lane => $run_lane,
-      job_ids => $job_ids,
+      position         => $position,
+      job_ids          => $job_ids,
       job_dependencies => $job_dependencies,
-      snp_file => $snp_file,
+      snp_file         => $snp_file,
     } );
   }
 
@@ -257,23 +251,17 @@ sub generate_recalibrated_bam {
   }
 
   my $job_ids = [];
-  my $run     = $self->run();
-  my $job_dependencies = $arg_refs->{required_job_completion};
+  my $job_dependencies = $arg_refs->{'required_job_completion'};
 
   my $cur_dir = getcwd();            # save for later
 
   $self->log( qq{Changing to $pb_cal_dir} );
   chdir $pb_cal_dir or croak "could not cd to $pb_cal_dir"; # change to the calibration directory
 
-  foreach my $run_lane ( @{$run->run_lanes()} ) {
-    my $position = $run_lane->position();
-    if ( ! ( any { $position == $_ } $self->positions() ) ) {
-       next;
-    }
-
+  foreach my $position ( $self->positions ) {
     my $arg_ref_hash = {
-      job_ids => $job_ids,
-      run_lane => $run_lane,
+      job_ids          => $job_ids,
+      position         => $position,
       job_dependencies => $job_dependencies,
     };
     $self->_generate_recalibrated_bam_per_lane( $arg_ref_hash );
@@ -288,51 +276,29 @@ sub generate_recalibrated_bam {
 ##########
 # private methods
 
-sub _lane_has_spiked_phix {
-  my ( $self, $run_lane ) = @_;
-
-  my $position = $run_lane->position();
-
-  if ( ! ( any { $position == $_ } $self->positions() ) ) {
-    return;
-  }
-
-  if ( $run_lane->is_spiked_phix() or $self->force_phix_split) {
-    return 1;
-  }
-
-  return;
-}
-
-
 sub _generate_recalibrated_bam_per_lane {
   my ( $self, $arg_refs ) = @_;
 
-  my $run_lane = $arg_refs->{run_lane};
-  my $id_run = $self->id_run();
-  my $lane = $run_lane->position();
-  my $job_ids = $arg_refs->{job_ids};
+  my $lane    = $arg_refs->{'position'};
 
   my $cal_table_1_to_use = $self->calibration_table_name( {
-      id_run => $id_run,
-      position => $lane,
-    } );
+    id_run   => $self->id_run(),
+    position => $lane,
+  } );
 
 
   my $args_bam= {
-       position => $lane,
-       job_dependencies => $arg_refs->{job_dependencies},
-       ct => $cal_table_1_to_use,
+    position         => $lane,
+    job_dependencies => $arg_refs->{'job_dependencies'},
+    ct               => $cal_table_1_to_use,
   };
-
-
 
   my $bsub_command = $self->_recalibration_bsub_command( $args_bam );
   if ( $self->verbose() ) {
       $self->log( $bsub_command );
   }
 
-  push @{ $job_ids }, $self->submit_bsub_command( $bsub_command );
+  push @{ $arg_refs->{'job_ids'} }, $self->submit_bsub_command( $bsub_command );
 
   return;
 }
@@ -340,25 +306,20 @@ sub _generate_recalibrated_bam_per_lane {
 sub _generate_calibration_table_per_lane {
   my ( $self, $arg_refs ) = @_;
 
-  my $run_lane = $arg_refs->{run_lane};
-
-  my $position = $run_lane->position();
-  my $job_ids  = $arg_refs->{job_ids};
-
   my $args = {
-            position => $position,
-            job_dependencies => $arg_refs->{job_dependencies},
-            is_spiked_phix => 1,
-            snp_file => $arg_refs->{snp_file},
+    position         => $arg_refs->{'position'},
+    job_dependencies => $arg_refs->{'job_dependencies'},
+    is_spiked_phix   => 1,
+    snp_file         => $arg_refs->{'snp_file'},
   };
 
   my $bsub_command = $self->_calibration_table_bsub_command( $args );
 
   if ( $self->verbose() ) {
-          $self->log( $bsub_command );
+    $self->log( $bsub_command );
   }
 
-  push @{ $job_ids }, $self->submit_bsub_command($bsub_command);
+  push @{ $arg_refs->{'job_ids'} }, $self->submit_bsub_command($bsub_command);
 
   return;
 }
@@ -367,21 +328,19 @@ sub _generate_calibration_table_per_lane {
 sub _generate_alignment_file_per_lane {
   my ( $self, $arg_refs ) = @_;
 
-  my $run_lane = $arg_refs->{run_lane};
-
   my $bsub_command = $self->_alignment_file_bsub_command( {
-    position => $run_lane->position(),
-    job_dependencies => $arg_refs->{job_dependencies},
-    ref_seq => $self->control_ref(),
-    is_paired => $self->is_paired_read(),
-    is_spiked_phix => 1,
+    position         => $arg_refs->{'position'},
+    job_dependencies => $arg_refs->{'job_dependencies'},
+    ref_seq          => $self->control_ref(),
+    is_paired        => $self->is_paired_read(),
+    is_spiked_phix   => 1,
   } );
 
   if ( $self->verbose() ) {
     $self->log( $bsub_command );
   }
 
-  push @{ $arg_refs->{job_ids} }, $self->submit_bsub_command($bsub_command);
+  push @{ $arg_refs->{'job_ids'} }, $self->submit_bsub_command($bsub_command);
 
   return;
 }
@@ -390,11 +349,11 @@ sub _generate_alignment_file_per_lane {
 sub _alignment_file_bsub_command {
   my ( $self, $arg_refs ) = @_;
 
-  my $position          = $arg_refs->{position};
-  my $job_dependencies  = $arg_refs->{job_dependencies};
-  my $ref_seq           = $arg_refs->{ref_seq};
-  my $is_paired         = $arg_refs->{is_paired};
-  my $is_spiked_phix    = $arg_refs->{is_spiked_phix};
+  my $position          = $arg_refs->{'position'};
+  my $job_dependencies  = $arg_refs->{'job_dependencies'};
+  my $ref_seq           = $arg_refs->{'ref_seq'};
+  my $is_paired         = $arg_refs->{'is_paired'};
+  my $is_spiked_phix    = $arg_refs->{'is_spiked_phix'};
 
   my $mem_size    = $self->general_values_conf()->{bam_creation_memory};
   my $timestamp   = $self->timestamp();
@@ -460,8 +419,8 @@ sub _alignment_file_bsub_command {
 # generate bsub command for recalibrating the lane qseq data
 sub _recalibration_bsub_command {
   my ($self, $arg_refs) = @_;
-  my $position = $arg_refs->{position};
-  my $job_dependencies = $arg_refs->{job_dependencies};
+  my $position = $arg_refs->{'position'};
+  my $job_dependencies = $arg_refs->{'job_dependencies'};
   my $id_run = $self->id_run();
 
   my $output_bam = $id_run . q{_} . $position . q{.bam};
@@ -553,10 +512,8 @@ sub _recalibration_bsub_command {
 # generate bsub command for generating the calibration table required
 sub _calibration_table_bsub_command {
   my ($self, $arg_refs) = @_;
-  my $position = $arg_refs->{position};
-  my $job_dependencies = $arg_refs->{job_dependencies};
-
-  my $control = $arg_refs->{control};
+  my $position = $arg_refs->{'position'};
+  my $job_dependencies = $arg_refs->{'job_dependencies'};
 
   my $mem_size = $self->mem_calibration();
   my $timestamp   = $self->timestamp();
@@ -686,7 +643,7 @@ Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2015 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

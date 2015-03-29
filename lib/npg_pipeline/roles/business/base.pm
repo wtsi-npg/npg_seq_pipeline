@@ -135,6 +135,34 @@ sub is_multiplexed_lane {
   return any {$_ == $position} @{$self->multiplexed_lanes};
 }
 
+sub _lims4lane {
+  my ($self, $position) = @_;
+  if (!$position) {
+    croak 'Position not given';
+  }
+  my $lane = $self->lims->children_ia->{$position};
+  if (!$lane) {
+    croak "Failed to get lims data for lane $position";
+  }
+  return $lane;
+}
+
+=head2 is_spiked_lane
+
+Returns true if the lane is spiked or if the force_phix_split
+flag is set ti true.
+
+=cut
+
+sub is_spiked_lane {
+  my ($self, $position) = @_;
+  if ($self->force_phix_split) {
+    return 1;
+  }
+  my $spike_tag_index = $self->_lims4lane($position)->spiked_phix_tag_index;
+  return (defined $spike_tag_index && $spike_tag_index);
+}
+
 =head2 get_tag_index_list
 
 Returns an array of sorted tag indices for a lane, including tag zero.
@@ -146,11 +174,7 @@ sub get_tag_index_list {
   if (!$self->is_multiplexed_lane($position)) {
     return [];
   }
-  my $lane = $self->lims->children_ia->{$position};
-  if (!$lane) {
-    croak "Failed to get lims data for lane $position";
-  }
-  my @tags = sort keys $lane->tags();
+  my @tags = sort keys $self->_lims4lane($position)->tags();
   unshift @tags, 0;
   return \@tags;
 }
