@@ -217,7 +217,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                                   ($nchs? (q(-keys hs_alignment_reference_genome -vals), _default_human_split_ref(q{bwa0_6})): ()),   # always human default
                                   q(-keys bwa_executable -vals bwa0_6),
                                   q(-keys alignment_method -vals bwa_mem),
-                                  ($nchs ? q(-keys alignment_hs_method -vals bwa_mem) : ()),
+                                  ($nchs ? q(-keys alignment_hs_method -vals bwa_aln) : ()),
                              ) ),
                              $human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : (),
                              $l->separate_y_chromosome_data ? q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true) : (),
