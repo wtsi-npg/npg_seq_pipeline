@@ -200,6 +200,19 @@ sub _build_small_lsf_queue {
   return $self->general_values_conf()->{small_lsf_queue};
 }
 
+=head2 force_phix_split
+
+Boolean decision to force on phix split
+
+=cut
+
+has q{force_phix_split}  => (
+  isa           => q{Bool},
+  is            => q{ro},
+  documentation => q{Boolean decision to force on phiX split},
+  default       => 1,
+);
+
 =head2 force_p4
 
 Boolean decision to force on P4 pipeline usage

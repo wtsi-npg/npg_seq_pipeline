@@ -8,13 +8,14 @@ use Moose::Meta::Class;
 use Try::Tiny;
 use File::Slurp;
 use JSON;
+use List::Util qw(sum);
+use List::MoreUtils qw(any);
 
 use npg_tracking::data::reference::find;
 use npg_tracking::data::transcriptome;
 use npg_pipeline::lsf_job;
 use npg_common::roles::software_location;
 use st::api::lims;
-use List::Util qw(sum);
 extends q{npg_pipeline::base};
 
 our $VERSION  = '0';
@@ -22,10 +23,11 @@ our $VERSION  = '0';
 Readonly::Scalar our $DNA_ALIGNMENT_SCRIPT  => q{bam_alignment.pl};
 Readonly::Scalar our $NUM_THREADS  => q(12,16);
 Readonly::Scalar our $MEMORY       => q{32000}; # memory in megabytes
+Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
 
 =head2 phix_reference
 
-A path to human reference for bwa alignment to split non-consented reads
+A path to phix reference for bwa alignment to split phiX spike-in reads
 
 =cut
 has 'phix_reference' => (isa => 'Str',
@@ -163,18 +165,28 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   croak qq{Nonconsented human split must not have Homo sapiens reference ($name_root)} if ($l->contains_nonconsented_human and $l->reference_genome=~/Homo_sapiens/smx );
   my $do_rna = $self->_do_rna_analysis($l);
   if( $self->force_p4 or (
-      ($do_rna or $self->is_hiseqx_run or $self->_is_v4_run) and
-      #allow old school if no reference or if this is the phix spike
-      $self->_ref($l,q(fasta)) and
-      not $spike_tag
+      ($do_rna or $self->is_hiseqx_run or $self->_is_v4_run or
+       any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts
+      ) and (
+      #allow old school if no reference or no alignments in bam
+        ($self->_ref($l,q(fasta)) and $l->alignments_in_bam) or
+        $l->contains_nonconsented_human # but not if contains_nonconsented_human
+      ) and
+      not $spike_tag #or allow old school if this is the phix spike
     )){
-    #TODO: support these various options in P4 analyses
+    #TODO: no alignments or no ref but contains_nonconsented_human and read length >100 
+    #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
+    #TODO: support this, and above "old school", various options in P4 analyses
     croak qq{only paired reads supported ($name_root)} if not $self->is_paired_read;
-    croak qq{nonconsented human split not yet supported ($name_root)} if $l->contains_nonconsented_human;
     croak qq{No alignments in bam not yet supported ($name_root)} if not $l->alignments_in_bam;
     my $human_split = $l->contains_nonconsented_xahuman ? q(xahuman) :
                       $l->separate_y_chromosome_data    ? q(yhuman) :
                       q();
+
+    my $nchs = $l->contains_nonconsented_human;
+    my $nchs_template_label = $nchs? q{humansplit_}: q{};
+    my $nchs_outfile_label = $nchs? q{human}: q{};
+
     croak qq{Reference required ($name_root)} if not $self->_ref($l,q(fasta));
     return join q( ), q(bash -c '),
                            q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
@@ -188,22 +200,28 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                              q(-keys af_metrics -vals), $name_root.q{.bam_alignment_filter_metrics.json},
                              q(-keys rpt -vals), $name_root,
                              q(-keys reference_dict -vals), $self->_ref($l,q(picard)).q(.dict),
+                             ($nchs? (q(-keys reference_dict_hs -vals), _default_human_split_ref(q{picard}),): ()),   # always human default
                              q(-keys reference_genome_fasta -vals), $self->_ref($l,q(fasta)),
+                             ($nchs? (q(-keys hs_reference_genome_fasta -vals), _default_human_split_ref(q{fasta})): ()),   # always human default
                              q(-keys phix_reference_genome_fasta -vals), $self->phix_reference,
                              q(-keys alignment_filter_jar -vals), $self->_AlignmentFilter_jar,
                              ( $do_rna ? (
                                   q(-keys alignment_reference_genome -vals), $self->_ref($l,q(bowtie2)),
+                                  ($nchs? (q(-keys hs_alignment_reference_genome -vals), _default_human_split_ref(q{bowtie2})): ()),   # always human default
                                   q(-keys library_type -vals), ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) ),
                                   q(-keys transcriptome_val -vals), $self->_transcriptome($l)->transcriptome_index_name(),
                                   q(-keys alignment_method -vals tophat2),
+                                  ($nchs ? q(-keys alignment_hs_method -vals tophat2) : ()),
                                ) : (
                                   q(-keys alignment_reference_genome -vals), $self->_ref($l,q(bwa0_6)),
+                                  ($nchs? (q(-keys hs_alignment_reference_genome -vals), _default_human_split_ref(q{bwa0_6})): ()),   # always human default
                                   q(-keys bwa_executable -vals bwa0_6),
                                   q(-keys alignment_method -vals bwa_mem),
+                                  ($nchs ? q(-keys alignment_hs_method -vals bwa_aln) : ()),
                              ) ),
                              $human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : (),
                              $l->separate_y_chromosome_data ? q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true) : (),
-                             q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json},
+                             q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
                              qq(> run_$name_root.json),
                            q{&&},
                            qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
@@ -235,10 +253,21 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                              $qcpath,
                            q{&&})
                               :(),
+                           $nchs ? (
+                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(}.$nchs_outfile_label.q{), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
+                             (join q{/}, $archive_path, $name_root.q(_).$nchs_outfile_label.q(.markdups_metrics.txt)),
+                             (join q{/}, $archive_path, $name_root.q(_).$nchs_outfile_label.q(.flagstat)),
+                             $self->id_run,
+                             $position,
+                             ($is_plex ? ($tag_index) : ()),
+                             $qcpath,
+                           q{&&})
+                              :(),
                            q{qc --check alignment_filter_metrics --qc_in $}.q{PWD --id_run}, $self->id_run, qq{--position $position --qc_out $qcpath}, ($is_plex ? (qq{--tag_index $tag_index}) : ()),
                          q(');
   }else{
     return join q( ),    $DNA_ALIGNMENT_SCRIPT,
+                         ( ($self->force_phix_split and not $spike_tag) ? ( q(--spiked_phix_split) ) : () ), #might be better to turn off split if ref is phix
                          q(--id_run),        $self->id_run,
                          q(--position),      $position,
                          ($is_plex ? ( q(--tag_index),     $tag_index ) : ()),
@@ -394,6 +423,27 @@ sub _default_resources {
   my ( $self ) = @_;
   my $hosts = 1;
   return (join q[ ], npg_pipeline::lsf_job->new(memory => $MEMORY)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$NUM_THREADS");
+}
+
+sub _default_human_split_ref {
+   (my $aligner) = @_;
+
+   my $ruser = Moose::Meta::Class->create_anon_class(
+          roles => [qw/npg_tracking::data::reference::find/])
+          ->new_object({species => q{Homo_sapiens}, aligner => $aligner} );
+
+   my $human_ref;
+   eval {
+      $human_ref = $ruser->refs->[0];
+      if($aligner eq q{picard}) {
+        $human_ref .= q{.dict};
+      }
+      1;
+   } or do{
+      carp $EVAL_ERROR;
+   };
+
+   return $human_ref;
 }
 
 no Moose;

@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 20;
+use Test::More tests => 21;
 use Test::Exception;
 use Test::Deep;
 use File::Temp qw/tempdir/;
@@ -64,6 +64,7 @@ my $rna_gen;
       verbose           => 1,
       repository        => $dir,
       no_bsub           => 1,
+      force_phix_split  => 0,
       ###uncomment to check V4 failure, flowcell_id=>'C333TANXX',
     )
   } 'no error creating an object';
@@ -120,9 +121,24 @@ my $json = qq({"4003":"bash -c ' mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Dat
 
 cmp_deeply(\@lines, [$json ], 'correct json file content (for dUTP library)');
 
+#### force on phix_split
+  lives_ok {
+    $rna_gen = npg_pipeline::archive::file::generation::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2014},
+      verbose           => 1,
+      repository        => $dir,
+      no_bsub           => 1,
+      force_phix_split  => 1,
+      ###uncomment to check V4 failure, flowcell_id=>'C333TANXX',
+    )
+  } 'no error creating an object (forcing on phix split)';
+
 #####  non-RNASeq libraries (i.e. not Illumina cDNA protocol (unstranded) and RNA-seq dUTP (stranded))  pattern match looks for /(?:cD|R)NA/sxm
 
-  $args->{'5040'} = qq{bam_alignment.pl --id_run 12597 --position 5 --tag_index 40 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane5/12597_5#40.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane5/12597_5#40 --do_markduplicates  --is_paired_read};
+  $args->{'5040'} = qq{bam_alignment.pl --spiked_phix_split --id_run 12597 --position 5 --tag_index 40 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane5/12597_5#40.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane5/12597_5#40 --do_markduplicates  --is_paired_read};
  
  lives_ok {$rna_gen->_generate_command_arguments([5])}
      'no error generating command arguments for non-RNASeq lane';
@@ -134,7 +150,7 @@ cmp_deeply(\@lines, [$json ], 'correct json file content (for dUTP library)');
 lives_ok {$rna_gen->_generate_command_arguments([1])}
      'no error generating command arguments for non-multiplex lane';
 
- $args->{'1'} = qq{bam_alignment.pl --id_run 12597 --position 1 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/12597_1.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/12597_1 --do_markduplicates  --is_paired_read};
+ $args->{'1'} = qq{bam_alignment.pl --spiked_phix_split --id_run 12597 --position 1 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/12597_1.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/12597_1 --do_markduplicates  --is_paired_read};
 
  is ($rna_gen->_job_args->{'1'},$args->{'1'},'correct non-multiplex lane args generated');
 
