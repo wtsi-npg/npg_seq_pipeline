@@ -1,11 +1,14 @@
 LIST OF CHANGES
 ---------------
 
+release 48.3
  - get informatrion about a spike directly from lims
  - use old bam_alignment.pl, not P4, if omission of alignments requested
  - option (default on) to force analyses to assume phix spike
  - force P4 and so bwa mem for runs with reads > 100bp
  - enable human split for P4 in seq_alignment (using bwa aln, adapter trimming)
+ - run old warehouse loader live in order to pick up pool-level information
+     that is currently needed in SeqQC
  - gclp-specific function list for archival
 
 release 48.2
