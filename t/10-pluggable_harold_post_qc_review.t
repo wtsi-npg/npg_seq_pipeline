@@ -55,12 +55,18 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
   my $recalibrated_path = $post_qc_review->recalibrated_path();
   my $log_dir = $post_qc_review->make_log_dir( $recalibrated_path );
   $log_dir =~ s/\/analysis\//\/outgoing\//smx;
-  my $expected =  qq[bsub -q srpipeline  -J warehouse_loader_1234_post_qc_review -o $log_dir/warehouse_loader_1234_post_qc_review_] . $timestamp . 
-     q[.out 'warehouse_loader --id_run 1234'];
-  is($post_qc_review->_update_warehouse_command(undef,'warehouse_loader'), $expected, 'update warehouse command');
-  $expected =  qq[bsub -q srpipeline  -J npg_runs2mlwarehouse_1234_post_qc_review -o $log_dir/npg_runs2mlwarehouse_1234_post_qc_review_] . $timestamp . 
-     q[.out 'npg_runs2mlwarehouse --id_run 1234'];
-  is($post_qc_review->_update_warehouse_command(undef,'npg_runs2mlwarehouse'), $expected, 'update ml_warehouse command');
+  my $unset_string = 'unset NPG_WEBSERVICE_CACHE_DIR; unset NPG_CACHED_SAMPLESHEET_FILE;';
+  my $expected = q[bsub -q srpipeline 50 -J warehouse_loader_1234_post_qc_review ] .
+                qq[-o $log_dir/warehouse_loader_1234_post_qc_review_] . $timestamp . 
+                qq[.out '$unset_string warehouse_loader --id_run 1234'];
+  is($post_qc_review->_update_warehouse_command(50,'warehouse_loader', $unset_string),
+    $expected, 'update warehouse command');
+
+  $expected = q[bsub -q srpipeline 50 -J npg_runs2mlwarehouse_1234_post_qc_review ] .
+             qq[-o $log_dir/npg_runs2mlwarehouse_1234_post_qc_review_] . $timestamp . 
+              q[.out 'npg_runs2mlwarehouse --id_run 1234'];
+  is($post_qc_review->_update_warehouse_command(50,'npg_runs2mlwarehouse'),
+    $expected, 'update ml_warehouse command');
 
   $log_dir = $post_qc_review->make_log_dir( $runfolder_path );
   is($post_qc_review->_interop_command, qq[bsub -q srpipeline  -J interop_1234_post_qc_review -R 'rusage[nfs_12=1,seq_irods=15]' -o $log_dir/interop_1234_post_qc_review_] . $timestamp . qq[.out 'irods_interop_loader.pl --id_run 1234 --runfolder_path $runfolder_path'], 'irods_interop_loader.pl command');
