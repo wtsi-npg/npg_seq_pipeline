@@ -5,6 +5,7 @@ use Carp;
 use English qw{-no_match_vars};
 use File::Spec;
 use Readonly;
+use Cwd;
 
 use npg_pipeline::lsf_job;
 extends qw{npg_pipeline::base};
@@ -108,8 +109,6 @@ sub _compare_lane {
 
   my $input_seqchksum_dir = $self->bam_basecall_path();
   #my $product_seqchksum_dir = $self->bam_basecall_path() .q{/no_cal/archive/};
-  my $product_seqchksum_dir = $self->archive_path();
-  my $compare_lane_seqchksum_file_name = q{};
   my $input_seqchksum_file_name = $self->id_run . '_' . $position . '.post_i2b.seqchksum';
   my $lane_seqchksum_file_name = $self->id_run . '_' . $position . '.all.seqchksum';
 
@@ -118,31 +117,33 @@ sub _compare_lane {
     croak "Cannot find $input_lane_seqchksum_file_name to compare: please check illumina2bam pipeline step";
   }
 
-  my $cmd = q{};
+  my$wd = getcwd();
+  $self->log('Changing to archive directory '.$self->archive_path());
+  chdir $self->archive_path() or croak 'Failed to change directory';
 
-  my $cram_file_name_glob = File::Spec->catfile ( $product_seqchksum_dir, qq({lane$position/,}). $self->id_run . '_' . $position . q{*.cram});
+  my $cram_file_name_glob = qq({lane$position/,}). $self->id_run . '_' . $position . q{*.cram};
   my @crams = glob $cram_file_name_glob or croak "Cannot find any cram files using $cram_file_name_glob";
   $self->log("Building .all.seqchksum for lane $position from cram in $cram_file_name_glob ...");
 
-  $compare_lane_seqchksum_file_name = File::Spec->catfile($product_seqchksum_dir, $lane_seqchksum_file_name);
 
   my $cram_count = scalar @crams;
   my $cram_plex_str = join q{ I=}, map { qq{<(scramble -u -I cram -O bam $_)} } @crams;
-  $cmd = 'bamcat level=0 I=' . $cram_plex_str . ' streaming=1 ';
-  $cmd .= '| bamseqchksum > ' . $compare_lane_seqchksum_file_name;
+  my $cmd = 'bamcat level=0 I=' . $cram_plex_str . ' streaming=1 ';
+  $cmd .= '| bamseqchksum > ' . $lane_seqchksum_file_name;
 
   if ($cmd ne q{}) {
-    $self->log("Running $cmd to generate $compare_lane_seqchksum_file_name");
+    $self->log("Running $cmd to generate $lane_seqchksum_file_name");
     my $ret = system qq[/bin/bash -c "set -o pipefail && $cmd"];
     if ( $ret  > 0 ) {
       croak "Failed to run command $cmd: $ret";
     }
   }
 
-  my $compare_cmd = q{diff -u <(grep '.all' } . $input_lane_seqchksum_file_name . q{) <(grep '.all' } . $compare_lane_seqchksum_file_name . q{)};
+  my $compare_cmd = q{diff -u <(grep '.all' } . $input_lane_seqchksum_file_name . q{) <(grep '.all' } . $lane_seqchksum_file_name . q{)};
   $self->log($compare_cmd);
 
   my $compare_ret = system qq[/bin/bash -c "$compare_cmd"];
+  chdir $wd or croak "Failed to change back to $wd";
   if ($compare_ret !=0) {
     croak "Found a difference in seqchksum for post_i2b and product running $compare_cmd: $compare_ret";
   } else {
