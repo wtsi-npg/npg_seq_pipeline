@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - seqchksum_comparator to cope with higher plexing (with a chdir)
+ - force HiSeq rapid run V2 flowcells (BCXX suffix) to use P4
+
 release 48.3
  - get informatrion about a spike directly from lims
  - use old bam_alignment.pl, not P4, if omission of alignments requested

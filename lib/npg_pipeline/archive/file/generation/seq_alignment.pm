@@ -165,7 +165,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   croak qq{Nonconsented human split must not have Homo sapiens reference ($name_root)} if ($l->contains_nonconsented_human and $l->reference_genome=~/Homo_sapiens/smx );
   my $do_rna = $self->_do_rna_analysis($l);
   if( $self->force_p4 or (
-      ($do_rna or $self->is_hiseqx_run or $self->_is_v4_run or
+      ($do_rna or $self->is_hiseqx_run or $self->_has_newer_flowcell or
        any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts
       ) and (
       #allow old school if no reference or no alignments in bam
@@ -322,9 +322,9 @@ sub _generate_command_arguments {
   return;
 }
 
-sub _is_v4_run {
+sub _has_newer_flowcell { # is HiSeq High Throughput >= V4, Rapid Run >= V2
   my ($self) = @_;
-  return $self->flowcell_id() =~ /A[N-Z]XX\z/smx;
+  return $self->flowcell_id() =~ /(?:A[N-Z]|[B-Z][[:upper:]])XX\z/smx;
 }
 
 sub _do_rna_analysis {
