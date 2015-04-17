@@ -1,8 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+release 48.4
  - seqchksum_comparator to cope with higher plexing (with a chdir)
  - force HiSeq rapid run V2 flowcells (BCXX suffix) to use P4
+ - allow old-school (non-p4) alignment for tag#0 when no target alignment is requested
+     but the lane contains non-consented human
 
 release 48.3
  - get informatrion about a spike directly from lims
