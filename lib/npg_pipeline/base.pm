@@ -200,6 +200,23 @@ sub _build_small_lsf_queue {
   return $self->general_values_conf()->{small_lsf_queue};
 }
 
+=head2 lowload_lsf_queue
+
+Can be provided by the user, or will take the value for lowload_lsf_queue in general_values.ini
+
+=cut
+
+has q{lowload_lsf_queue}  => (
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{the lsf_queue to which you want to submit jobs limited by remote interactions. defaults to value from config file},
+);
+sub _build_lowload_lsf_queue {
+  my ($self) = @_;
+  return $self->general_values_conf()->{lowload_lsf_queue};
+}
+
 =head2 force_phix_split
 
 Boolean decision to force on phix split
