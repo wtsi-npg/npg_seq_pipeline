@@ -170,7 +170,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       ) and (
       #allow old school if no reference or no alignments in bam
         ($self->_ref($l,q(fasta)) and $l->alignments_in_bam) or
-        ($l->contains_nonconsented_human and defined $tag_index and $tag_index) # but not if contains_nonconsented_human
+        ($l->contains_nonconsented_human and (not $is_plex or $tag_index)) # but not if contains_nonconsented_human (unless tag 0)
       ) and
       not $spike_tag #or allow old school if this is the phix spike
     )){
