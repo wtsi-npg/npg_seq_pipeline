@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - allow for no reference/no alignment in target output in P4 pipelines
  - seqchksum_comparator to cope with higher plexing (with a chdir)
  - force HiSeq rapid run V2 flowcells (BCXX suffix) to use P4
 
