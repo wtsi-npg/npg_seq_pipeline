@@ -142,7 +142,7 @@ sub _update_warehouse_command {
   if ($self->pipeline_name eq $name) {
     $out =~ s/\/analysis\//\/outgoing\//smx; #the job is run after the runfolder is moved to outgoing
   }
-  return q{bsub -q } . $self->lsf_queue() . qq{ $required_job_completion -J $job_name -o $out '$command'};
+  return q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name -o $out '$command'};
 }
 
 =head2 copy_interop_files_to_irods
@@ -170,7 +170,7 @@ sub _interop_command
                    counter_slots_per_job => 1,
                    seq_irods             => $self->general_values_conf()->{default_lsf_irods_resource},
                                              } );
-  return q{bsub -q } . $self->lsf_queue() . qq{ $required_job_completion -J $job_name $resources -o $out '$command'};
+  return q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name $resources -o $out '$command'};
 }
 
 no Moose;
