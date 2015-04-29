@@ -215,6 +215,7 @@ sub _generate_command {
 
   my $path = join q[:], $self->local_path(), $ENV{PATH};
   $cmd = qq{export PATH=$path;} . $cmd;
+  $cmd = $self->gclp_conf()->{command_prefix} . q{ } . $cmd;
   return $cmd;
 }
 

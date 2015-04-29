@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - add gclp.ini and optionally add command_prefix to commands
+
  - use lowload lsf queue
  - seqchksum_comparator to cope with higher plexing (with a chdir)
  - force HiSeq rapid run V2 flowcells (BCXX suffix) to use P4

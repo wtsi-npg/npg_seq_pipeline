@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 69;
+use Test::More tests => 70;
 use Test::Exception;
 use t::util;
 use File::Temp qw(tempdir tempfile);
@@ -46,6 +46,7 @@ use_ok(q{npg_pipeline::base});
     general_values_conf
     illumina_pipeline_conf
     pb_cal_pipeline_conf
+    gclp_conf
   } ) {
     isa_ok( $base->$config_group(), q{HASH}, q{$} . qq{base->$config_group} );
   }

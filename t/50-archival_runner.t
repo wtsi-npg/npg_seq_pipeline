@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 18;
+use Test::More tests => 19;
 use Test::Exception;
 use Cwd;
 use List::MoreUtils qw{any};
@@ -48,6 +48,9 @@ package main;
   ); } q{object creation ok};
   isa_ok($runner, q{test_archival_runner});
   lives_ok { $runner->run(); } q{no croak on $runner->run()};
+  my $prefix = $runner->gclp_conf()->{command_prefix};
+  like($runner->_generate_command(1234), qr/^$prefix /,
+    q{generated command is correct});
   like($runner->_generate_command(1234), qr/npg_pipeline_post_qc_review --verbose --runfolder_path \/some\/path/,
     q{generated command is correct});
   like($runner->_generate_command(1234,1), qr/npg_pipeline_post_qc_review --function_list post_qc_review_gclp --verbose --runfolder_path \/some\/path/,
