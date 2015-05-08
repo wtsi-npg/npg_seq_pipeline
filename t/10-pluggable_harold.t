@@ -14,7 +14,10 @@ my $util = t::util->new();
 
 $ENV{TEST_DIR} = $util->temp_directory();
 
-use_ok('npg_pipeline::pluggable::harold');
+BEGIN {
+  local $ENV{HOME}   = q[t];
+  use_ok('npg_pipeline::pluggable::harold');
+}
 
 my $analysis_runfolder_path = $util->analysis_runfolder_path();
 my $schema = t::dbic_util->new->test_schema();

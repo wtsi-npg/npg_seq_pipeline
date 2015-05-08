@@ -10,7 +10,10 @@ use t::dbic_util;
 use st::api::lims::ml_warehouse;
 use st::api::lims;
 
-use_ok('npg_pipeline::cache');
+BEGIN {
+  local $ENV{HOME}   = q[t];
+  use_ok('npg_pipeline::cache');
+}
 
 local $ENV{http_proxy} = 'http://wibble';
 local $ENV{no_proxy}   = q[];
