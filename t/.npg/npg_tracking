@@ -1,0 +1,12 @@
+#!/usr/bin/env perl
+my $VAR1 = {
+  'staging_areas' => {
+    'indexes' => [15,17],
+    'prefix' => '/nfs/sf',
+    'samplesheets' => '/some/samplesheets/'
+  },
+  'repository' => {
+    'root' => '/some_root',
+    'instrument_prefix' => 'C:\Illumina\MiSeq Reporter\Genomes\refs'
+  }
+}
