@@ -607,7 +607,10 @@ sub _build__fs_resource {
 
   if ($ENV{TEST_FS_RESOURCE}) { return $ENV{TEST_FS_RESOURCE}; }
 
-  my $r = join '_', grep {$_} splitdir path_to_mount_point($self->runfolder_path());
+  my $p = path_to_mount_point($self->runfolder_path());
+  $p =~ s{\A/export/}{/nfs/}smx;
+  #note above substitution is cope with running on a server but where the network, not native, version of the path should be used
+  my $r = join '_', grep {$_} splitdir $p;
   return join q(),$r=~/\w+/xsmg;
 }
 
