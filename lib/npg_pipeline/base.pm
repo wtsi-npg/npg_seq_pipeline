@@ -12,6 +12,7 @@ use Cwd qw(abs_path);
 use File::Slurp;
 use FindBin qw($Bin);
 use Readonly;
+use npg_tracking::util::abs_path qw(network_abs_path);
 
 our $VERSION = '0';
 
@@ -607,10 +608,7 @@ sub _build__fs_resource {
 
   if ($ENV{TEST_FS_RESOURCE}) { return $ENV{TEST_FS_RESOURCE}; }
 
-  my $p = path_to_mount_point($self->runfolder_path());
-  $p =~ s{\A/export/}{/nfs/}smx;
-  #note above substitution is cope with running on a server but where the network, not native, version of the path should be used
-  my $r = join '_', grep {$_} splitdir $p;
+  my $r = join '_', grep {$_} splitdir network_abs_path path_to_mount_point($self->runfolder_path());
   return join q(),$r=~/\w+/xsmg;
 }
 
