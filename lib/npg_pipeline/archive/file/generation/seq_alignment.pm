@@ -20,9 +20,9 @@ extends q{npg_pipeline::base};
 
 our $VERSION  = '0';
 
-Readonly::Scalar our $DNA_ALIGNMENT_SCRIPT  => q{bam_alignment.pl};
-Readonly::Scalar our $NUM_THREADS  => q(12,16);
-Readonly::Scalar our $MEMORY       => q{32000}; # memory in megabytes
+Readonly::Scalar our $DNA_ALIGNMENT_SCRIPT         => q{bam_alignment.pl};
+Readonly::Scalar our $NUM_SLOTS                    => q(12,16);
+Readonly::Scalar our $MEMORY                       => q{32000}; # memory in megabytes
 Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
 
 =head2 phix_reference
@@ -422,7 +422,8 @@ sub _job_index {
 sub _default_resources {
   my ( $self ) = @_;
   my $hosts = 1;
-  return (join q[ ], npg_pipeline::lsf_job->new(memory => $MEMORY)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$NUM_THREADS");
+  my $num_slots = $self->general_values_conf()->{'seq_alignment_slots'} || $NUM_SLOTS;
+  return (join q[ ], npg_pipeline::lsf_job->new(memory => $MEMORY)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$num_slots");
 }
 
 sub _default_human_split_ref {
