@@ -366,9 +366,9 @@ sub _alignment_file_bsub_command {
 
   my @command;
   push @command, $self->pb_calibration_bin() . q{/} . $self->alignment_script();
-  push @command,  q{--aln_parms "-t "`echo $}.q{LSB_MCPU_HOSTS | cut -d " " -f2` };
   ##no critic (RequireInterpolationOfMetachars)
-  push @command,  q{--sam_parms "-t "`perl -we 'use strict; my$n=(split q( ),$ENV{LSB_MCPU_HOSTS})[-1]; print $n>8?8:$n'` };
+  push @command,  q{--aln_parms "-t "`}. q[perl -e 'print scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'] .q{` };
+  push @command,  q{--sam_parms "-t "`}. q[perl -e 'my$n= scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg); ($n)=$].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm unless $n; print $n>8?8:$n'] .q{` };
   ## use critic
   if ($self->spatial_filter) {
     push @command, q{--spatial_filter};

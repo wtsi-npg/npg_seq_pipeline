@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - use LSB_BIND_CPU_LIST over LSB_MCPU_HOSTS to determine number of threads to use
+   within a job (cope with hyperthreading where LSF gives one slot to what is presented
+   as two cpu - this will try to make use of apparent CPUs)
  - make number of slots used by seq_alignment configurable
  - use npg_tracking::util::abs_path to patch absolute paths (so allow running on file 
    server)

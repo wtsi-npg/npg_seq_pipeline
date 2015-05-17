@@ -194,7 +194,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                            q(vtfp.pl -s),
                              q{-keys samtools_executable -vals samtools1},
                              q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
-                             q(-keys aligner_numthreads -vals), q{`echo $}.q{LSB_MCPU_HOSTS | cut -d " " -f2`},
+                             q(-keys aligner_numthreads -vals), q{`}. q[perl -e '"'"'print scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'"'"'] .q{`},
                              q(-keys indatadir -vals), $input_path,
                              q(-keys outdatadir -vals), $archive_path,
                              q(-keys af_metrics -vals), $name_root.q{.bam_alignment_filter_metrics.json},
