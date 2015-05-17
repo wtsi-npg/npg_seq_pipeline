@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - use npg_tracking::util::abs_path to patch absolute paths (so allow running on file 
+   server)
  - drop not_strip_bam_tag option, explicitly disable bam tag stripping in seq_alignment
  - use lowload lsf queue
  - seqchksum_comparator to cope with higher plexing (with a chdir)
