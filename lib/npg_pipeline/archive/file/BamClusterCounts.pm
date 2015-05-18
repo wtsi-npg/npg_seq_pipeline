@@ -351,6 +351,7 @@ sub _generate_bsub_command {
   $job_sub .= $CLUSTER_COUNTS_SCRIPT;
   $job_sub .= q{ --id_run=} . $id_run;
   $job_sub .= q{ --position=}  . $self->lsb_jobindex();
+  $job_sub .= q{ --runfolder_path=} . $self->runfolder_path();
   $job_sub .= q{ --qc_path=} . $self->qc_path();
   $job_sub .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
 
