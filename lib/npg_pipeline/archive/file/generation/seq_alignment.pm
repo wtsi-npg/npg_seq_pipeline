@@ -174,11 +174,6 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       ) and
       not $spike_tag #or allow old school if this is the phix spike
     )){
-    #TODO: no alignments or no ref but contains_nonconsented_human and read length >100 
-    #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
-    #TODO: support this, and above "old school", various options in P4 analyses
-    croak qq{only paired reads supported ($name_root)} if not $self->is_paired_read;
-    croak qq{No alignments in bam not yet supported ($name_root)} if not $l->alignments_in_bam;
     my $human_split = $l->contains_nonconsented_xahuman ? q(xahuman) :
                       $l->separate_y_chromosome_data    ? q(yhuman) :
                       q();
@@ -186,6 +181,16 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     my $nchs = $l->contains_nonconsented_human;
     my $nchs_template_label = $nchs? q{humansplit_}: q{};
     my $nchs_outfile_label = $nchs? q{human}: q{};
+
+    #TODO: no alignments or no ref but contains_nonconsented_human and read length >100 
+    #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
+    #TODO: support this, and above "old school", various options in P4 analyses
+    croak qq{only paired reads supported for RNA or non-consented human ($name_root)} if (not $self->is_paired_read) and ($do_rna or $nchs);
+    croak qq{No alignments in bam not yet supported ($name_root)} if not $l->alignments_in_bam;
+
+    $self->log(q[Using p4]);
+    if($l->contains_nonconsented_human) { $self->log(q[  nonconsented_humansplit]) }
+    if(not $self->is_paired_read) { $self->log(q[  single-end]) }
 
     croak qq{Reference required ($name_root)} if not $self->_ref($l,q(fasta));
     return join q( ), q(bash -c '),
@@ -219,6 +224,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                                   q(-keys alignment_method -vals bwa_mem),
                                   ($nchs ? q(-keys alignment_hs_method -vals bwa_aln) : ()),
                              ) ),
+                             (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
                              $human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : (),
                              $l->separate_y_chromosome_data ? q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true) : (),
                              q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
