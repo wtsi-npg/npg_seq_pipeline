@@ -21,7 +21,7 @@
       <library name="NA18907-YRI-1" project_id="185" request_id="2411" id="51021" study_id="185" qc_state="pending" sample_id="766"/>
     </lane>
     <lane position="4">
-      <control name="phiX_SI_SPRI" request_id="41944" id="79570"/>
+      <control name="phiX_SI_SPRI" request_id="41944" id="79570" sample_id="766"/>
     </lane>
     <lane position="5">
 

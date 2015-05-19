@@ -6,12 +6,13 @@ use Readonly;
 use Carp;
 use English qw{-no_match_vars};
 use POSIX qw(strftime);
-use Cwd qw/cwd abs_path/;
+use Cwd qw/cwd/;
 use File::Spec;
 use File::Copy;
 use File::Find;
 use File::Path qw/make_path/;
 
+use npg_tracking::util::abs_path qw/abs_path/;
 use npg_tracking::util::types;
 use npg::api::request;
 use npg::api::run;

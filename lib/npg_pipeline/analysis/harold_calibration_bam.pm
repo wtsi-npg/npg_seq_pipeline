@@ -85,7 +85,7 @@ sub _generate_illumina_basecall_stats_command {
   my @command;
   push @command, 'bsub';
   push @command, "-q $bsub_queue";
-  push @command, q{-o log/}. $job_name . q{.%J.out};
+  push @command, qq{-o $dir/log/}. $job_name . q{.%J.out};
   push @command, "-J $job_name";
 
   my $hosts = 1;
@@ -102,6 +102,7 @@ sub _generate_illumina_basecall_stats_command {
   my $bcl2qseq_path = join q[/], $self->illumina_pipeline_conf()->{olb}, $self->illumina_pipeline_conf()->{bcl_to_qseq};
 
   my $cmd = join q[ && ],
+    qq{cd $dir},
     q{if [[ -f Makefile ]]; then echo Makefile already present 1>&2; else echo creating bcl2qseq Makefile 1>&2; }.
       qq{$bcl2qseq_path -b $basecall_dir -o $dir --overwrite; fi},
     qq[make -j $MAKE_STATS_J Matrix Phasing],
@@ -122,10 +123,7 @@ Use Illumina tools to generate the (per run) BustardSummary and IVC reports (fro
 
 sub generate_illumina_basecall_stats{
   my ( $self, $arg_refs ) = @_;
-  my $cur_dir = getcwd();            # save for later
-  chdir $self->bam_basecall_path() or croak 'could not cd to '.$self->bam_basecall_path(); # change to the BAM_basecalls directory
   my @id_runs = $self->submit_bsub_command( $self->_generate_illumina_basecall_stats_command($arg_refs) );
-  chdir $cur_dir or croak "could not cd to $cur_dir";
   return @id_runs;
 }
 
@@ -366,9 +364,9 @@ sub _alignment_file_bsub_command {
 
   my @command;
   push @command, $self->pb_calibration_bin() . q{/} . $self->alignment_script();
-  push @command,  q{--aln_parms "-t "`echo $}.q{LSB_MCPU_HOSTS | cut -d " " -f2` };
   ##no critic (RequireInterpolationOfMetachars)
-  push @command,  q{--sam_parms "-t "`perl -we 'use strict; my$n=(split q( ),$ENV{LSB_MCPU_HOSTS})[-1]; print $n>8?8:$n'` };
+  push @command,  q{--aln_parms "-t "`}. q[perl -e 'print scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'] .q{` };
+  push @command,  q{--sam_parms "-t "`}. q[perl -e 'my$n= scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg); ($n)=$].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm unless $n; print $n>8?8:$n'] .q{` };
   ## use critic
   if ($self->spatial_filter) {
     push @command, q{--spatial_filter};

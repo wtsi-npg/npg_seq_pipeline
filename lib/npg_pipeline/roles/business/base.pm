@@ -4,8 +4,8 @@ use Moose::Role;
 use Carp;
 use List::MoreUtils qw{any};
 use File::Basename;
-use Cwd qw{abs_path};
 
+use npg_tracking::util::abs_path qw{abs_path};
 use npg::api::run;
 use st::api::lims;
 use npg_tracking::data::reference::find;
@@ -432,7 +432,7 @@ __END__
 
 =item File::Basename
 
-=item Cwd
+=item npg_tracking::util::abs_path
 
 =item st::api::lims
 

@@ -178,7 +178,7 @@
   last_updated: 2015-02-05 12:13:19
   mother: ~
   organism: ~
-  public_name: ~
+  public_name: some_sample
   recorded_at: 2015-02-05 12:13:22
   reference_genome: Homo_sapiens (GRCh37_53)
   replicate: ~
@@ -188,7 +188,7 @@
   supplier_name: ~
   taxon_id: ~
   uuid_sample_lims: 5f21bec0-ad30-11e4-82e0-68b59976a382
-- accession_number: ~
+- accession_number: 12345
   cohort: ~
   common_name: ~
   consent_withdrawn: 0
@@ -238,7 +238,7 @@
   last_updated: 2015-02-05 12:13:20
   mother: ~
   organism: ~
-  public_name: ~
+  public_name: some_name
   recorded_at: 2015-02-05 12:13:22
   reference_genome: Homo_sapiens (GRCh37_53)
   replicate: ~
@@ -268,7 +268,7 @@
   last_updated: 2015-02-05 12:13:20
   mother: ~
   organism: ~
-  public_name: ~
+  public_name: some_name
   recorded_at: 2015-02-05 12:13:23
   reference_genome: Homo_sapiens (GRCh37_53)
   replicate: ~
@@ -278,7 +278,7 @@
   supplier_name: ~
   taxon_id: ~
   uuid_sample_lims: 5fc5c6f0-ad30-11e4-82e0-68b59976a382
-- accession_number: ~
+- accession_number: 34567
   cohort: ~
   common_name: ~
   consent_withdrawn: 0
@@ -308,7 +308,7 @@
   supplier_name: ~
   taxon_id: ~
   uuid_sample_lims: 5fe49990-ad30-11e4-82e0-68b59976a382
-- accession_number: ~
+- accession_number: 12345679
   cohort: ~
   common_name: ~
   consent_withdrawn: 0
@@ -338,7 +338,7 @@
   supplier_name: ~
   taxon_id: ~
   uuid_sample_lims: 6009fbe0-ad30-11e4-82e0-68b59976a382
-- accession_number: ~
+- accession_number: 896745
   cohort: ~
   common_name: ~
   consent_withdrawn: 0
@@ -368,7 +368,7 @@
   supplier_name: ~
   taxon_id: ~
   uuid_sample_lims: 60909100-ad30-11e4-82e0-68b59976a382
-- accession_number: ~
+- accession_number: 99887765
   cohort: ~
   common_name: ~
   consent_withdrawn: 0
@@ -398,7 +398,7 @@
   supplier_name: ~
   taxon_id: ~
   uuid_sample_lims: 60bcf830-ad30-11e4-82e0-68b59976a382
-- accession_number: ~
+- accession_number: 456783
   cohort: ~
   common_name: ~
   consent_withdrawn: 0
@@ -428,7 +428,7 @@
   supplier_name: ~
   taxon_id: ~
   uuid_sample_lims: 60e3e120-ad30-11e4-82e0-68b59976a382
-- accession_number: ~
+- accession_number: 56783
   cohort: ~
   common_name: ~
   consent_withdrawn: 0
