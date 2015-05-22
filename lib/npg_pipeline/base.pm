@@ -420,6 +420,7 @@ Returns a hashref of configuration details from the relevant configuration file
 has [ qw{ general_values_conf
           illumina_pipeline_conf
           pb_cal_pipeline_conf
+          gclp_conf
           parallelisation_conf } ] => (
 
   isa        => q{HashRef},
@@ -443,6 +444,17 @@ sub _build_pb_cal_pipeline_conf {
 sub _build_parallelisation_conf {
   my ( $self ) = @_;
   return $self->_read_config( $self->_conf_file_path(q{parallelisation.yml}) );
+}
+
+sub _build_gclp_conf {
+  my ( $self ) = @_;
+  my $path = abs_path( catfile($self->conf_path(), 'gclp.ini') );
+  $path ||= q{};
+  my $config = $self->_read_config( $path );
+  if (ref $config ne 'HASH') {
+    $config = {};
+  }
+  return $config;
 }
 
 sub _conf_file_path {
