@@ -529,17 +529,19 @@ sub make_log_dir {
     croak qq{unable to create $log_dir:$output};
   }
 
-  if ( $self->can( q{log} ) ) {
-    $self->log( qq{chgrp $owning_group $log_dir} );
-  }
-
-  my $rc = qx{chgrp $owning_group $log_dir};
-  if ( $CHILD_ERROR ) {
+  if ($owning_group) {
     if ( $self->can( q{log} ) ) {
-      $self->log("could not chgrp $log_dir\n\t$rc"); # not fatal
+      $self->log( qq{chgrp $owning_group $log_dir} );
+    }
+
+    my $rc = qx{chgrp $owning_group $log_dir};
+    if ( $CHILD_ERROR ) {
+      if ( $self->can( q{log} ) ) {
+        $self->log("could not chgrp $log_dir\n\t$rc"); # not fatal
+      }
     }
   }
-  $rc = qx{chmod u=rwx,g=srxw,o=rx $log_dir};
+  my $rc = qx{chmod u=rwx,g=srxw,o=rx $log_dir};
   if ( $CHILD_ERROR ) {
     $self->log("could not chmod $log_dir\n\t$rc");   # not fatal
   }
