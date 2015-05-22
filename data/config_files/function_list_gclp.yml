@@ -22,7 +22,6 @@
 - seq_alignment
 - bam_cluster_counter_check
 - seqchksum_comparator
-- qc_gc_bias
 - qc_pulldown_metrics
 - qc_genotype
 - qc_verify_bam_id
