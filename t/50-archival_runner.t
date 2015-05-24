@@ -49,13 +49,13 @@ package main;
   ); } q{object creation ok};
   isa_ok($runner, q{test_archival_runner});
   lives_ok { $runner->run(); } q{no croak on $runner->run()};
-  my $prefix = $runner->gclp_conf()->{command_prefix};
-  like($runner->_generate_command(1234), qr/^$prefix /,
+  my $prefix = $runner->daemon_conf()->{command_prefix};
+  like($runner->_generate_command(1234), qr/;\s*\Q$prefix\Enpg_pipeline_/,
     q{generated command is correct});
   like($runner->_generate_command(1234), qr/npg_pipeline_post_qc_review --verbose --runfolder_path \/some\/path/,
     q{generated command is correct});
   like($runner->_generate_command(1234,1), qr/npg_pipeline_post_qc_review --function_list post_qc_review_gclp --verbose --runfolder_path \/some\/path/,
-    q{generated command is correct});
+    q{generated gclp command is correct});
   ok(!$runner->green_host, 'host is not in green datacentre');
 
   $schema->resultset(q[Run])->find(2)->update_run_status('archival pending', 'pipeline');

@@ -10,7 +10,7 @@ LIST OF CHANGES
    + use npg_tracking::util::abs_path to patch absolute paths
    + avoid perl chdir to give job working dir
  - drop not_strip_bam_tag option, explicitly disable bam tag stripping in seq_alignment
- - add gclp.ini and optionally add command_prefix to commands
+ - add daemon.ini and optionally add command_prefix to commands
  - use lowload lsf queue
  - seqchksum_comparator to cope with higher plexing (with a chdir)
  - force HiSeq rapid run V2 flowcells (BCXX suffix) to use P4

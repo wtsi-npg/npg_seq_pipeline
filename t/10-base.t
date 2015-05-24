@@ -46,7 +46,7 @@ use_ok(q{npg_pipeline::base});
     general_values_conf
     illumina_pipeline_conf
     pb_cal_pipeline_conf
-    gclp_conf
+    daemon_conf
   } ) {
     isa_ok( $base->$config_group(), q{HASH}, q{$} . qq{base->$config_group} );
   }
