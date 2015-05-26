@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 48.4
  - Make group to change analysis directories to optional
  - use LSB_BIND_CPU_LIST over LSB_MCPU_HOSTS to determine number of threads to use
    within a job (cope with hyperthreading where LSF gives one slot to what is presented
@@ -13,7 +14,7 @@ LIST OF CHANGES
  - add daemon.ini and optionally add command_prefix to commands
  - use lowload lsf queue
  - seqchksum_comparator to cope with higher plexing (with a chdir)
- - force HiSeq rapid run V2 flowcells (BCXX suffix) to use P4
+ - force HiSeq rapid run V2 flowcells (BCXX suffix) to use p4
  - enable p4 single-end processing (bwa mem only, not RNA or non-consented human split)
 
 release 48.3
