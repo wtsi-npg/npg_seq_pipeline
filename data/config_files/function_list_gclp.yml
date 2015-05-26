@@ -15,7 +15,6 @@
 - split_bam_by_tag
 - bam2fastqcheck_and_cached_fastq
 - qc_qX_yield
-- qc_adapter
 - qc_insert_size
 - qc_sequence_error
 - qc_gc_fraction
@@ -23,11 +22,9 @@
 - seq_alignment
 - bam_cluster_counter_check
 - seqchksum_comparator
-- qc_gc_bias
 - qc_pulldown_metrics
 - qc_genotype
 - qc_verify_bam_id
 - qc_upstream_tags
 - run_analysis_complete
-- archive_to_irods
 - run_qc_review_pending

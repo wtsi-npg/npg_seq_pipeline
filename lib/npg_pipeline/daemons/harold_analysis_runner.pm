@@ -214,7 +214,9 @@ sub _generate_command {
   }
 
   my $path = join q[:], $self->local_path(), $ENV{PATH};
-  $cmd = qq{export PATH=$path;} . $cmd;
+  my $prefix = $self->daemon_conf()->{'command_prefix'};
+  if (not defined $prefix) { $prefix=q(); }
+  $cmd = qq{export PATH=$path; $prefix$cmd};
   return $cmd;
 }
 

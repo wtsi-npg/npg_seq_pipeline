@@ -420,6 +420,7 @@ Returns a hashref of configuration details from the relevant configuration file
 has [ qw{ general_values_conf
           illumina_pipeline_conf
           pb_cal_pipeline_conf
+          daemon_conf
           parallelisation_conf } ] => (
 
   isa        => q{HashRef},
@@ -445,6 +446,17 @@ sub _build_parallelisation_conf {
   return $self->_read_config( $self->_conf_file_path(q{parallelisation.yml}) );
 }
 
+sub _build_daemon_conf { # this file is optional
+  my ( $self ) = @_;
+  my $path = abs_path( catfile($self->conf_path(), 'daemon.ini') );
+  $path ||= q{};
+  my $config = $self->_read_config( $path );
+  if (ref $config ne 'HASH') {
+    $config = {};
+  }
+  return $config;
+}
+
 sub _conf_file_path {
   my ( $self, $conf_name ) = @_;
   my $path = abs_path( catfile($self->conf_path(), $conf_name) );
@@ -468,7 +480,7 @@ sub _read_config {
 
 =head2 config_path
 
-Path of the directory with teh config files.
+Path of the directory with the config files.
 
 =cut
 has q{conf_path} => (
@@ -529,17 +541,19 @@ sub make_log_dir {
     croak qq{unable to create $log_dir:$output};
   }
 
-  if ( $self->can( q{log} ) ) {
-    $self->log( qq{chgrp $owning_group $log_dir} );
-  }
-
-  my $rc = qx{chgrp $owning_group $log_dir};
-  if ( $CHILD_ERROR ) {
+  if ($owning_group) {
     if ( $self->can( q{log} ) ) {
-      $self->log("could not chgrp $log_dir\n\t$rc"); # not fatal
+      $self->log( qq{chgrp $owning_group $log_dir} );
+    }
+
+    my $rc = qx{chgrp $owning_group $log_dir};
+    if ( $CHILD_ERROR ) {
+      if ( $self->can( q{log} ) ) {
+        $self->log("could not chgrp $log_dir\n\t$rc"); # not fatal
+      }
     }
   }
-  $rc = qx{chmod u=rwx,g=srxw,o=rx $log_dir};
+  my $rc = qx{chmod u=rwx,g=srxw,o=rx $log_dir};
   if ( $CHILD_ERROR ) {
     $self->log("could not chmod $log_dir\n\t$rc");   # not fatal
   }

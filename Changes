@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - Make group to change analysis directories to optional
  - use LSB_BIND_CPU_LIST over LSB_MCPU_HOSTS to determine number of threads to use
    within a job (cope with hyperthreading where LSF gives one slot to what is presented
    as two cpu - this will try to make use of apparent CPUs)
@@ -9,6 +10,7 @@ LIST OF CHANGES
    + use npg_tracking::util::abs_path to patch absolute paths
    + avoid perl chdir to give job working dir
  - drop not_strip_bam_tag option, explicitly disable bam tag stripping in seq_alignment
+ - add daemon.ini and optionally add command_prefix to commands
  - use lowload lsf queue
  - seqchksum_comparator to cope with higher plexing (with a chdir)
  - force HiSeq rapid run V2 flowcells (BCXX suffix) to use P4
