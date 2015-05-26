@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - use low_load queue for upstream_tags qc (accesses tracking and qc DBs)
+
 release 48.4
  - Make group to change analysis directories to optional
  - use LSB_BIND_CPU_LIST over LSB_MCPU_HOSTS to determine number of threads to use
