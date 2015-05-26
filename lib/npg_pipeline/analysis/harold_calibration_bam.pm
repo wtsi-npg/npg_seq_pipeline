@@ -85,7 +85,7 @@ sub _generate_illumina_basecall_stats_command {
   my @command;
   push @command, 'bsub';
   push @command, "-q $bsub_queue";
-  push @command, q{-o log/}. $job_name . q{.%J.out};
+  push @command, qq{-o $dir/log/}. $job_name . q{.%J.out};
   push @command, "-J $job_name";
 
   my $hosts = 1;
@@ -102,6 +102,7 @@ sub _generate_illumina_basecall_stats_command {
   my $bcl2qseq_path = join q[/], $self->illumina_pipeline_conf()->{olb}, $self->illumina_pipeline_conf()->{bcl_to_qseq};
 
   my $cmd = join q[ && ],
+    qq{cd $dir},
     q{if [[ -f Makefile ]]; then echo Makefile already present 1>&2; else echo creating bcl2qseq Makefile 1>&2; }.
       qq{$bcl2qseq_path -b $basecall_dir -o $dir --overwrite; fi},
     qq[make -j $MAKE_STATS_J Matrix Phasing],
@@ -122,10 +123,7 @@ Use Illumina tools to generate the (per run) BustardSummary and IVC reports (fro
 
 sub generate_illumina_basecall_stats{
   my ( $self, $arg_refs ) = @_;
-  my $cur_dir = getcwd();            # save for later
-  chdir $self->bam_basecall_path() or croak 'could not cd to '.$self->bam_basecall_path(); # change to the BAM_basecalls directory
   my @id_runs = $self->submit_bsub_command( $self->_generate_illumina_basecall_stats_command($arg_refs) );
-  chdir $cur_dir or croak "could not cd to $cur_dir";
   return @id_runs;
 }
 
@@ -145,18 +143,10 @@ sub generate_alignment_files {
   my $job_ids = [];
   my $job_dependencies = $arg_refs->{'required_job_completion'};
 
-  my $cur_dir = getcwd();            # save for later
-  my $dir = $self->bam_basecall_path();
-
-  $self->make_log_dir( $dir ); # create a log directory within bam_basecalls
-
   # create the calibration directory
   my $pb_cal_dir = $self->create_pb_calibration_directory();
 
   $self->_set_recalibrated_path( $self->pb_cal_path() );
-
-  $self->log( qq{Changing to $pb_cal_dir} );
-  chdir $pb_cal_dir or croak "could not cd to $pb_cal_dir"; # change to the calibration directory
 
   foreach my $position ( $self->positions ) {
     if ( ! $self->is_spiked_lane( $position ) ){
@@ -169,9 +159,6 @@ sub generate_alignment_files {
       job_dependencies => $job_dependencies
     });
   }
-
-  $self->log( qq{Changing back to $cur_dir} );
-  chdir $cur_dir or croak "could not cd back to $cur_dir";  # go back home
 
   return @{ $job_ids };
 }
@@ -197,15 +184,10 @@ sub generate_calibration_table {
   my $job_ids = [];
   my $job_dependencies = $arg_refs->{'required_job_completion'};
 
-  my $cur_dir = getcwd();            # save for later
-
   # create the calibration directory
   my $pb_cal_dir = $self->create_pb_calibration_directory();
 
   $self->_set_recalibrated_path( $self->pb_cal_path() );
-
-  $self->log( qq{Changing to $pb_cal_dir} );
-  chdir $pb_cal_dir or croak "could not cd to $pb_cal_dir"; # change to the calibration directory
 
   my $snp_file = $self->control_snp_file();
 
@@ -221,9 +203,6 @@ sub generate_calibration_table {
       snp_file         => $snp_file,
     } );
   }
-
-  $self->log( qq{Changing back to $cur_dir} );
-  chdir $cur_dir or croak "could not cd back to $cur_dir";  # go back home
 
   return @{ $job_ids };
 }
@@ -253,11 +232,6 @@ sub generate_recalibrated_bam {
   my $job_ids = [];
   my $job_dependencies = $arg_refs->{'required_job_completion'};
 
-  my $cur_dir = getcwd();            # save for later
-
-  $self->log( qq{Changing to $pb_cal_dir} );
-  chdir $pb_cal_dir or croak "could not cd to $pb_cal_dir"; # change to the calibration directory
-
   foreach my $position ( $self->positions ) {
     my $arg_ref_hash = {
       job_ids          => $job_ids,
@@ -266,9 +240,6 @@ sub generate_recalibrated_bam {
     };
     $self->_generate_recalibrated_bam_per_lane( $arg_ref_hash );
   }
-
-  $self->log( qq{Changing back to $cur_dir} );
-  chdir $cur_dir or croak "could not cd back to $cur_dir";  # go back home
 
   return @{ $job_ids };
 }
@@ -365,10 +336,11 @@ sub _alignment_file_bsub_command {
                 ;
 
   my @command;
+  push @command, q{cd}, $self->pb_cal_path(), q{&&};
   push @command, $self->pb_calibration_bin() . q{/} . $self->alignment_script();
-  push @command,  q{--aln_parms "-t "`echo $}.q{LSB_MCPU_HOSTS | cut -d " " -f2` };
   ##no critic (RequireInterpolationOfMetachars)
-  push @command,  q{--sam_parms "-t "`perl -we 'use strict; my$n=(split q( ),$ENV{LSB_MCPU_HOSTS})[-1]; print $n>8?8:$n'` };
+  push @command,  q{--aln_parms "-t "`}. q[perl -e 'print scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'] .q{` };
+  push @command,  q{--sam_parms "-t "`}. q[perl -e 'my$n= scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg); ($n)=$].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm unless $n; print $n>8?8:$n'] .q{` };
   ## use critic
   if ($self->spatial_filter) {
     push @command, q{--spatial_filter};
@@ -398,7 +370,7 @@ sub _alignment_file_bsub_command {
   push @command, 'bsub';
   push @command, "-q $bsub_queue";
   push @command, $self->ref_adapter_pre_exec_string();
-  push @command, q{-o log/}. $job_name . q{.%J.out};
+  push @command, q{-o }.$self->pb_cal_path().q{/log/}. $job_name . q{.%J.out};
   push @command, "-J $job_name";
 
   my $hosts = 1;
@@ -473,7 +445,7 @@ sub _recalibration_bsub_command {
   my @command;
   push @command, 'bsub';
   push @command, "-q $bsub_queue";
-  push @command, q{-o log/}. $job_name . q{.%J.out};
+  push @command, q{-o }.$self->pb_cal_path().q{/log/}. $job_name . q{.%J.out};
   push @command, "-J $job_name";
 
   my $hosts = 1;
@@ -485,6 +457,7 @@ sub _recalibration_bsub_command {
   push @command, $job_dependencies || q[];
 
   push @command, q[']; # ' enclose command in quotes
+  push @command, q{cd}, $self->pb_cal_path(), q{&&};
 
   my $check_cl_table = qq{-f $cl_table1};
 
@@ -526,7 +499,7 @@ sub _calibration_table_bsub_command {
   push @command, 'bsub';
   push @command, "-q $bsub_queue";
   push @command, $self->ref_adapter_pre_exec_string();
-  push @command, q{-o log/}. $job_name . q{.%J.out};
+  push @command, q{-o }.$self->pb_cal_path().q{/log/}. $job_name . q{.%J.out};
   push @command, "-J $job_name";
 
   my $hosts = 1;
@@ -538,6 +511,7 @@ sub _calibration_table_bsub_command {
   push @command, $job_dependencies || q[];
 
   push @command, q["];               # " enclose command in quotes
+  push @command, q{cd}, $self->pb_cal_path(), q{&&};
   push @command, $self->pb_calibration_bin() . q{/} . $self->cal_table_script();
   push @command, q{--intensity_dir }. $self->dif_files_path(); # for dif file location, change to bustard if olb
   push @command, q{--t_filter } . $self->t_filter();

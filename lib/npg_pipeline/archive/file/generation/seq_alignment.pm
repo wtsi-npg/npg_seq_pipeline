@@ -20,9 +20,9 @@ extends q{npg_pipeline::base};
 
 our $VERSION  = '0';
 
-Readonly::Scalar our $DNA_ALIGNMENT_SCRIPT  => q{bam_alignment.pl};
-Readonly::Scalar our $NUM_THREADS  => q(12,16);
-Readonly::Scalar our $MEMORY       => q{32000}; # memory in megabytes
+Readonly::Scalar our $DNA_ALIGNMENT_SCRIPT         => q{bam_alignment.pl};
+Readonly::Scalar our $NUM_SLOTS                    => q(12,16);
+Readonly::Scalar our $MEMORY                       => q{32000}; # memory in megabytes
 Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
 
 =head2 phix_reference
@@ -165,7 +165,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   croak qq{Nonconsented human split must not have Homo sapiens reference ($name_root)} if ($l->contains_nonconsented_human and $l->reference_genome=~/Homo_sapiens/smx );
   my $do_rna = $self->_do_rna_analysis($l);
   if( $self->force_p4 or (
-      ($do_rna or $self->is_hiseqx_run or $self->_is_v4_run or
+      ($do_rna or $self->is_hiseqx_run or $self->_has_newer_flowcell or
        any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts
       ) and (
       #allow old school if no reference or no alignments in bam
@@ -174,11 +174,6 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       ) and
       not $spike_tag #or allow old school if this is the phix spike
     )){
-    #TODO: no alignments or no ref but contains_nonconsented_human and read length >100 
-    #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
-    #TODO: support this, and above "old school", various options in P4 analyses
-    croak qq{only paired reads supported ($name_root)} if not $self->is_paired_read;
-    croak qq{No alignments in bam not yet supported ($name_root)} if not $l->alignments_in_bam;
     my $human_split = $l->contains_nonconsented_xahuman ? q(xahuman) :
                       $l->separate_y_chromosome_data    ? q(yhuman) :
                       q();
@@ -187,6 +182,16 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     my $nchs_template_label = $nchs? q{humansplit_}: q{};
     my $nchs_outfile_label = $nchs? q{human}: q{};
 
+    #TODO: no alignments or no ref but contains_nonconsented_human and read length >100 
+    #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
+    #TODO: support this, and above "old school", various options in P4 analyses
+    croak qq{only paired reads supported for RNA or non-consented human ($name_root)} if (not $self->is_paired_read) and ($do_rna or $nchs);
+    croak qq{No alignments in bam not yet supported ($name_root)} if not $l->alignments_in_bam;
+
+    $self->log(q[Using p4]);
+    if($l->contains_nonconsented_human) { $self->log(q[  nonconsented_humansplit]) }
+    if(not $self->is_paired_read) { $self->log(q[  single-end]) }
+
     croak qq{Reference required ($name_root)} if not $self->_ref($l,q(fasta));
     return join q( ), q(bash -c '),
                            q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
@@ -194,7 +199,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                            q(vtfp.pl -s),
                              q{-keys samtools_executable -vals samtools1},
                              q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
-                             q(-keys aligner_numthreads -vals), q{`echo $}.q{LSB_MCPU_HOSTS | cut -d " " -f2`},
+                             q(-keys aligner_numthreads -vals), q{`}. q[perl -e '"'"'print scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'"'"'] .q{`},
                              q(-keys indatadir -vals), $input_path,
                              q(-keys outdatadir -vals), $archive_path,
                              q(-keys af_metrics -vals), $name_root.q{.bam_alignment_filter_metrics.json},
@@ -219,6 +224,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                                   q(-keys alignment_method -vals bwa_mem),
                                   ($nchs ? q(-keys alignment_hs_method -vals bwa_aln) : ()),
                              ) ),
+                             (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
                              $human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : (),
                              $l->separate_y_chromosome_data ? q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true) : (),
                              q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
@@ -274,7 +280,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                          q(--input),         ( join q{/}, $input_path, $name_root.q{.bam}),
                          q(--output_prefix), ( join q{/}, $archive_path, $name_root),
                          q(--do_markduplicates),
-                         ($self->not_strip_bam_tag ? q(--not_strip_bam_tag) : q() ),
+                         q(--not_strip_bam_tag),
                          ($self->is_paired_read ? q(--is_paired_read) : q(--no-is_paired_read) );
   }
 
@@ -322,9 +328,9 @@ sub _generate_command_arguments {
   return;
 }
 
-sub _is_v4_run {
+sub _has_newer_flowcell { # is HiSeq High Throughput >= V4, Rapid Run >= V2
   my ($self) = @_;
-  return $self->flowcell_id() =~ /A[N-Z]XX\z/smx;
+  return $self->flowcell_id() =~ /(?:A[N-Z]|[B-Z][[:upper:]])XX\z/smx;
 }
 
 sub _do_rna_analysis {
@@ -422,7 +428,8 @@ sub _job_index {
 sub _default_resources {
   my ( $self ) = @_;
   my $hosts = 1;
-  return (join q[ ], npg_pipeline::lsf_job->new(memory => $MEMORY)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$NUM_THREADS");
+  my $num_slots = $self->general_values_conf()->{'seq_alignment_slots'} || $NUM_SLOTS;
+  return (join q[ ], npg_pipeline::lsf_job->new(memory => $MEMORY)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$num_slots");
 }
 
 sub _default_human_split_ref {

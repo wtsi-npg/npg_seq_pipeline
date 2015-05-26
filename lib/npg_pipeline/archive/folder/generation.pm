@@ -85,47 +85,49 @@ sub create_dir {
       }
   }
 
-  ############
-  # ensure that the owning group is what we expect
+  if ($owning_group) {
+    ############
+    # ensure that the owning group is what we expect
 
-  $self->log("chgrp $owning_group $archive_dir");
-  my $rc = `chgrp $owning_group $archive_dir`;
-  if ( $CHILD_ERROR ) {
-    $self->log("could not chgrp $archive_dir\n\t$rc");                # not fatal
-  }
+    $self->log("chgrp $owning_group $archive_dir");
+    my $rc = `chgrp $owning_group $archive_dir`;
+    if ( $CHILD_ERROR ) {
+      $self->log("could not chgrp $archive_dir\n\t$rc");                # not fatal
+    }
 
-  $self->log("chgrp $owning_group $qc_dir");
-  $rc = `chgrp $owning_group $qc_dir`;
-  if ( $CHILD_ERROR ) {
-    $self->log("could not chgrp $qc_dir\n\t$rc");                # not fatal
-  }
+    $self->log("chgrp $owning_group $qc_dir");
+    $rc = `chgrp $owning_group $qc_dir`;
+    if ( $CHILD_ERROR ) {
+      $self->log("could not chgrp $qc_dir\n\t$rc");                # not fatal
+    }
 
-  $self->log("chgrp $owning_group $tileviz_dir");
-  $rc = `chgrp $owning_group $tileviz_dir`;
-  if ( $CHILD_ERROR ) {
-    $self->log("could not chgrp $tileviz_dir\n\t$rc");                # not fatal
-  }
+    $self->log("chgrp $owning_group $tileviz_dir");
+    $rc = `chgrp $owning_group $tileviz_dir`;
+    if ( $CHILD_ERROR ) {
+      $self->log("could not chgrp $tileviz_dir\n\t$rc");                # not fatal
+    }
 
-  ############
-  # ensure that the owning group is what we expect
+    ############
+    # ensure that the owning group is what we expect
 
-  $self->log("chgrp $owning_group $archive_log_dir");
-  $rc = `chgrp $owning_group $archive_log_dir`;
-  if ( $CHILD_ERROR ) {
-    $self->log("could not chgrp $archive_log_dir\n\t$rc");                # not fatal
-  }
+    $self->log("chgrp $owning_group $archive_log_dir");
+    $rc = `chgrp $owning_group $archive_log_dir`;
+    if ( $CHILD_ERROR ) {
+      $self->log("could not chgrp $archive_log_dir\n\t$rc");                # not fatal
+    }
 
-  $self->log("chgrp $owning_group $qc_log_dir");
-  $rc = `chgrp $owning_group $qc_log_dir`;
-  if ( $CHILD_ERROR ) {
-    $self->log("could not chgrp $qc_log_dir\n\t$rc");                # not fatal
+    $self->log("chgrp $owning_group $qc_log_dir");
+    $rc = `chgrp $owning_group $qc_log_dir`;
+    if ( $CHILD_ERROR ) {
+      $self->log("could not chgrp $qc_log_dir\n\t$rc");                # not fatal
+    }
   }
 
   ###########
   # set correct permissions on the archive directory
 
   $self->log("chmod u=rwx,g=srxw,o=rx $archive_dir");
-  $rc = `chmod u=rwx,g=srxw,o=rx $archive_dir`;
+  my $rc = `chmod u=rwx,g=srxw,o=rx $archive_dir`;
   if ( $CHILD_ERROR ) {
     $self->log("could not chmod $archive_dir\n\t$rc");                # not fatal
   }

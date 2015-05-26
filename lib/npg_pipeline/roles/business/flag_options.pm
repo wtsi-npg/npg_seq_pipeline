@@ -140,18 +140,6 @@ has q{no_warehouse_update} => (
   documentation => q{Switches off updating the NPG warehouse.},
 );
 
-=head2 not_strip_bam_tag
-
-not strip any tags in final bam file, like OQ, ci etc.
-
-=cut
-
-has q{not_strip_bam_tag} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{Do not strip any tags in final bam file, like OQ, ci etc.},
-);
-
 =head2 no_sf_resource
 
 do not use sf resource tokens; set if working outside the npg sequencing farm

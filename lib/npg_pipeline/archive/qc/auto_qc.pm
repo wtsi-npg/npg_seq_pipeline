@@ -37,7 +37,7 @@ sub _generate_bsub_command {
     }
   }
 
-  my $bsub_command = q{bsub -q } . $self->lsf_queue() . qq{ $required_job_completion -J $job_name };
+  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name };
   $bsub_command .=  ( $self->fs_resource_string( {
     counter_slots_per_job => 1,
   } ) ) . q{ };

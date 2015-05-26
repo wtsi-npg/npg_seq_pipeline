@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 18;
+use Test::More tests => 19;
 use Test::Exception;
 use Cwd;
 use List::MoreUtils qw{any};
@@ -33,7 +33,8 @@ is($test_run->current_run_status_description, 'archival pending', 'test run is a
 package test_archival_runner;
 use Moose;
 extends 'npg_pipeline::daemons::archival_runner';
-sub _runfolder_path { return '/some/path' };
+sub _runfolder_path { return '/some/path' }
+sub check_lims_link { return {}; } #to prevent access to ml_warehouse
 
 ########test class definition end########
 
@@ -48,10 +49,13 @@ package main;
   ); } q{object creation ok};
   isa_ok($runner, q{test_archival_runner});
   lives_ok { $runner->run(); } q{no croak on $runner->run()};
+  my $prefix = $runner->daemon_conf()->{command_prefix};
+  like($runner->_generate_command(1234), qr/;\s*\Q$prefix\Enpg_pipeline_/,
+    q{generated command is correct});
   like($runner->_generate_command(1234), qr/npg_pipeline_post_qc_review --verbose --runfolder_path \/some\/path/,
     q{generated command is correct});
   like($runner->_generate_command(1234,1), qr/npg_pipeline_post_qc_review --function_list post_qc_review_gclp --verbose --runfolder_path \/some\/path/,
-    q{generated command is correct});
+    q{generated gclp command is correct});
   ok(!$runner->green_host, 'host is not in green datacentre');
 
   $schema->resultset(q[Run])->find(2)->update_run_status('archival pending', 'pipeline');

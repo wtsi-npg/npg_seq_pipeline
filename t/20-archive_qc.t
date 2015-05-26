@@ -274,13 +274,12 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       archive_path => $archive_dir,
       qc_to_run => q{sequence_error},
       is_indexed => 1,
-      repository => q[t],
+      repository => getcwd() . '/t/data/qc',
       qc_to_run => q[genotype],
   };
 
   my $qc = npg_pipeline::archive::file::qc->new($init);
   ok ($qc->_can_run(1), 'ref repository not available - genotype check _can_run defaults to true');
-  $init->{'repository'} = getcwd() . '/t/data/qc';
   $qc = npg_pipeline::archive::file::qc->new($init);
   ok ($qc->_can_run(1), 'genotype check can run for a non-indexed lane');
   ok (!$qc->_can_run(6), 'genotype check cannot run for an indexed lane');
