@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - archive to a "gclp" iRODS if function_list looks like gclp variant
  - use low_load queue for upstream_tags qc (accesses tracking and qc DBs)
 
 release 48.4
