@@ -58,7 +58,7 @@ sub _generate_bsub_command {
   }
 
   if($irodsinstance){
-    $bsub_command .= qq{ --collection /$irodsinstance/illumina/seq/run/} . $self->id_run();
+    $bsub_command .= qq{ --collection /14mg/seq/illumina/run/} . $self->id_run();
   }
 
   if($position_list){
