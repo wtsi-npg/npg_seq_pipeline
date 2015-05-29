@@ -92,7 +92,8 @@ sub _generate_bsub_command {
   }
   $job_name .= q{'};
 
-  my $job_sub = q{bsub -q } . $self->lsf_queue() . q{ } .
+  my $job_sub = q{bsub -q } . ( $self->qc_to_run() eq q[upstream_tags] ? $self->lowload_lsf_queue() : $self->lsf_queue() ) . q{ } .
+    #lowload queue for upstream tags as it has qc and tracking db access
     $self->_lsf_options($self->qc_to_run()) . qq{ $required_job_completion -J $job_name -o $outfile};
   if ( ! $NO_REFERENCE_REPOS_DEPENDENCY->{ $self->qc_to_run() } ) {
     $job_sub .= q{ } . $self->ref_adapter_pre_exec_string();

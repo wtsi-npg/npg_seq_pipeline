@@ -39,6 +39,7 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
 
   lives_ok {
     $post_qc_review = npg_pipeline::pluggable::harold::post_qc_review->new(
+      function_list => q{post_qc_review},
       function_order   => \@functions_in_order,
       runfolder_path   => $runfolder_path,
       spider           => 0,
