@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 48.6
+ - force gclp analysis along the p4 route
+
 release 48.5
  - archive to a "gclp" iRODS if function_list looks like gclp variant
  - use low_load queue for upstream_tags qc (accesses tracking and qc DBs)
