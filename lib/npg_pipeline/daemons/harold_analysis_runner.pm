@@ -208,7 +208,7 @@ sub _generate_command {
              $arg_refs->{'rf_path'};
 
   if ( $arg_refs->{'gclp'} ) {
-    $cmd .= ' --function_list gclp';
+    $cmd .= ' --function_list gclp --force_p4';
   } elsif ( $arg_refs->{'id'} ) {
     $cmd .= ' --id_flowcell_lims ' . $arg_refs->{'id'};
   }
