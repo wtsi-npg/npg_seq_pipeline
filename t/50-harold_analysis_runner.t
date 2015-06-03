@@ -66,7 +66,7 @@ package main;
     rf_path      => $rf_path,
     job_priority => 50,
     gclp         => 1,
-  } ), qr/npg_pipeline_central --verbose --job_priority 50 --runfolder_path $rf_path --function_list gclp/,
+  } ), qr/npg_pipeline_central --verbose --job_priority 50 --runfolder_path $rf_path --function_list gclp --force_p4/,
     q{generated command is correct});
 
   like($runner->_generate_command( {
@@ -74,7 +74,7 @@ package main;
     job_priority => 50,
     gclp         => 1,
     id           => 22,
-  } ), qr/npg_pipeline_central --verbose --job_priority 50 --runfolder_path $rf_path --function_list gclp/,
+  } ), qr/npg_pipeline_central --verbose --job_priority 50 --runfolder_path $rf_path --function_list gclp --force_p4/,
     q{generated command is correct});
 
 
@@ -204,7 +204,7 @@ package main;
   ok (!exists $lims_data->{'message'}, 'no message');
   is ($lims_data->{'gclp'}, 0, 'gclp flag is set to false');
 
-  $wh_schema->resultset('IseqFlowcell')->search()->update({'id_lims' => 'CLARITY-GCLP'});
+  $wh_schema->resultset('IseqFlowcell')->search()->update({'id_lims' => 'C_GCLP'});
 
   $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'gclp'}, 0, 'gclp flag is set to false');

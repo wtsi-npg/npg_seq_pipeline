@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 13;
+use Test::More tests => 15;
 use Test::Exception;
 use t::util;
 
@@ -45,6 +45,7 @@ sub create_analysis {
   my $bam_irods;
 
   lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new(
+    function_list => q{post_qc_review},
     run_folder => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
     timestamp => q{20090709-123456},
@@ -72,6 +73,7 @@ sub create_analysis {
   my $bam_irods;
 
   lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new(
+    function_list => q{post_qc_review},
     run_folder => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
     recalibrated_path => $pb_cal_path,
@@ -100,6 +102,7 @@ sub create_analysis {
   my $bam_irods;
 
   lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new(
+    function_list => q{post_qc_review},
     run_folder => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
     id_flowcell_lims => q{1023456789111},
@@ -114,6 +117,28 @@ sub create_analysis {
 
   my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
   my $expected_command = q{bsub -q lowload -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irods_bam_loader.pl --samtools_cmd samtools1 --exclude_bam --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234 --alt_process qc_run'};
+  is( $bsub_command, $expected_command, q{generated bsub command is correct} );
+}
+
+{
+  my $bam_irods;
+
+  lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new(
+    function_list => q{post_qc_review_gclp},
+    run_folder => q{123456_IL2_1234},
+    runfolder_path => $analysis_runfolder_path,
+    id_flowcell_lims => q{1023456789111},
+    recalibrated_path => $pb_cal_path,
+    timestamp => q{20090709-123456},
+    verbose => 0,
+  ); } q{created with run_folder ok};
+
+  my $arg_refs = {
+    required_job_completion => q{-w'done(123) && done(321)'},
+  };
+
+  my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
+  my $expected_command = q{bsub -q lowload -w'done(123) && done(321)' -J irods_bam_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="irods_bam_loader.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/irods_bam_loader.pl_1234_20090709-123456.out 'irodsEnvFile=$HOME/.irods/.irodsEnv-gclp-iseq irods_bam_loader.pl --samtools_cmd samtools1 --exclude_bam --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --id_run 1234 --alt_process qc_run --collection /14mg/seq/illumina/run/1234'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 

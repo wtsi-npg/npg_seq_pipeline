@@ -18,6 +18,7 @@ sub submit_to_lsf {
 sub _generate_bsub_command {
   my ($self, $arg_refs) = @_;
 
+  my $irodsinstance = $self->function_list() =~ /gclp/ismx ? q(gclp) : q();
   my $id_run = $self->id_run();
   my @positions = $self->positions();
 
@@ -44,10 +45,20 @@ sub _generate_bsub_command {
 
   $bsub_command .=  qq{-E 'script_must_be_unique_runner -job_name="$job_name_prefix"' };
   $bsub_command .=  q{-o } . $location_of_logs . qq{/$job_name.out };
-  $bsub_command .=  q{'} . $archive_script . q{ --samtools_cmd samtools1 --exclude_bam --archive_path } . $self->archive_path() . q{ --runfolder_path } . $self->runfolder_path() . q{ --id_run } . $self->id_run();
+  $bsub_command .=  q{'};
+
+  if($irodsinstance){
+    $bsub_command .= q{irodsEnvFile=$}.q{HOME/.irods/.irodsEnv-} . $irodsinstance . q{-iseq };
+  }
+
+  $bsub_command .=  $archive_script . q{ --samtools_cmd samtools1 --exclude_bam --archive_path } . $self->archive_path() . q{ --runfolder_path } . $self->runfolder_path() . q{ --id_run } . $self->id_run();
 
   if ($self->qc_run) {
     $bsub_command .= q{ --alt_process qc_run};
+  }
+
+  if($irodsinstance){
+    $bsub_command .= q{ --collection /14mg/seq/illumina/run/} . $self->id_run();
   }
 
   if($position_list){

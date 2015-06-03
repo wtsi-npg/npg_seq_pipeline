@@ -40,7 +40,7 @@ my $archive_path = $recalibrated_path . q{/archive};
     array_string => q{[1-8]},
   };
 
-  my $bsub_command = $util->drop_temp_part_from_paths( qq{bsub -q srpipeline -w'done(123) && done(321)' -J 'npg_pipeline_check_bam_file_cluster_count_1234_20100907-142417[1-8]' -o $archive_path/log/npg_pipeline_check_bam_file_cluster_count_1234_20100907-142417.} . q{%I.%J.out 'npg_pipeline_check_bam_file_cluster_count --id_run=1234 --position=`echo $LSB_JOBINDEX` --qc_path=} . qq{$archive_path/qc --bam_basecall_path=$bam_basecall_path'} );
+  my $bsub_command = $util->drop_temp_part_from_paths( qq{bsub -q srpipeline -w'done(123) && done(321)' -J 'npg_pipeline_check_bam_file_cluster_count_1234_20100907-142417[1-8]' -o $archive_path/log/npg_pipeline_check_bam_file_cluster_count_1234_20100907-142417.} . q{%I.%J.out 'npg_pipeline_check_bam_file_cluster_count --id_run=1234 --position=`echo $LSB_JOBINDEX` --runfolder_path=} . qq{$analysis_runfolder_path --qc_path=$archive_path/qc --bam_basecall_path=$bam_basecall_path'} );
   is( $util->drop_temp_part_from_paths( $object->_generate_bsub_command( $arg_refs ) ), $bsub_command, q{generated bsub command is correct} );
 
   my @jids = $object->launch( $arg_refs );

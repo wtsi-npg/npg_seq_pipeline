@@ -208,13 +208,15 @@ sub _generate_command {
              $arg_refs->{'rf_path'};
 
   if ( $arg_refs->{'gclp'} ) {
-    $cmd .= ' --function_list gclp';
+    $cmd .= ' --function_list gclp --force_p4';
   } elsif ( $arg_refs->{'id'} ) {
     $cmd .= ' --id_flowcell_lims ' . $arg_refs->{'id'};
   }
 
   my $path = join q[:], $self->local_path(), $ENV{PATH};
-  $cmd = qq{export PATH=$path;} . $cmd;
+  my $prefix = $self->daemon_conf()->{'command_prefix'};
+  if (not defined $prefix) { $prefix=q(); }
+  $cmd = qq{export PATH=$path; $prefix$cmd};
   return $cmd;
 }
 
