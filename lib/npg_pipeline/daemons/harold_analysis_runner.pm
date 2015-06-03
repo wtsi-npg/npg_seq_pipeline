@@ -208,8 +208,10 @@ sub _generate_command {
              $arg_refs->{'rf_path'};
 
   if ( $arg_refs->{'gclp'} ) {
+    $self->log('GCLP run');
     $cmd .= ' --function_list gclp --force_p4';
   } elsif ( $arg_refs->{'id'} ) {
+    $self->log('Non-GCLP run');
     $cmd .= ' --id_flowcell_lims ' . $arg_refs->{'id'};
   }
 
@@ -223,13 +225,20 @@ sub _generate_command {
 # run the command generated
 sub run_command {
   my ( $self, $id_run, $cmd ) = @_;
+
+  $self->log(qq{COMMAND: $cmd});
   my $output = `$cmd`;
+
   if ( $CHILD_ERROR ) {
-    $self->log( qq{Error $CHILD_ERROR occured. Will try $id_run again on next loop.});
+    $self->log(qq{Error $CHILD_ERROR occured. Will try $id_run again on next loop.});
   }else{
-    $self->log(qq{Output:\n$output});
     $self->seen->{$id_run}++; # you have now seen this
   }
+
+  if ($output) {
+    $self->log(qq{Output:$output});
+  }
+
   return;
 }
 
