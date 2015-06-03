@@ -78,11 +78,11 @@ package main;
     q{generated command is correct});
 
 
-  ok($runner->green_host, 'running on a host in a green datacentre');
+  ok($runner->green_host,'running on a host in a green datacentre');
   ok($runner->staging_host_match($path49), 'staging matches host');
   ok(!$runner->staging_host_match($path32), 'staging does not match host');
   throws_ok {$runner->staging_host_match()}
-    qr/Need folder_path_glob to decide whether the run folder and daemon host are co-located/,
+    qr/Need folder_path_glob to decide whether the run folder and the daemon host are co-located/,
     'error if folder_path_glob is not defined';
   ok(!$runner->staging_host_match($folder_path_glob), 'staging does not match host for a test run');
   

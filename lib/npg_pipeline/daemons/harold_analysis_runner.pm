@@ -53,10 +53,10 @@ sub _build_green_host {
   my $datacentre = `machine-location|grep datacentre`;
   if ($datacentre) {
     $self->log(qq{Running in $datacentre});
-  } else {
-    $self->log(q{Do not know what datacentre I am running in});
+    return ($datacentre && $datacentre =~ /$GREEN_DATACENTRE/xms) ? 1 : 0;
   }
-  return ($datacentre && $datacentre =~ /$GREEN_DATACENTRE/xms);
+  $self->log(q{Do not know what datacentre I am running in});
+  return;
 }
 
 has 'iseq_flowcell' => (
@@ -114,12 +114,17 @@ sub runs_with_status {
 
 sub staging_host_match {
   my ($self, $folder_path_glob) = @_;
-  if ($folder_path_glob) {
-    return $self->green_host ^ none { $folder_path_glob =~ m{/$_/}smx } @GREEN_STAGING;
-  } else {
-    croak q[Need folder_path_glob to decide whether the run folder and daemon host are co-located];
+
+  my $match = 1;
+
+  if (defined $self->green_host) {
+    if (!$folder_path_glob) {
+      croak q[Need folder_path_glob to decide whether the run folder and the daemon host are co-located];
+    }
+    $match =  $self->green_host ^ none { $folder_path_glob =~ m{/$_/}smx } @GREEN_STAGING;
   }
-  return;
+
+  return $match;
 }
 
 sub _process_one_run {

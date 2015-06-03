@@ -43,7 +43,7 @@ sub run {
 
 sub _generate_command {
   my ($self, $id_run, $gclp) = @_;
-  
+
   $self->log($gclp ? 'GCLP run' : 'Non-GCLP run');
 
   my $cmd = $self->pipeline_script_name();
