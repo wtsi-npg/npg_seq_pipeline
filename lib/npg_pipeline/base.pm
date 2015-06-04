@@ -634,17 +634,6 @@ sub _build_run_folder {
   return $run_folder;
 }
 
-=head2 local_path
-
- a list with a path to bin the code is running from and perl executable the code is running under
-
-=cut
-sub local_path {
-  my $perl_path = "$EXECUTABLE_NAME";
-  $perl_path =~ s/\/perl$//xms;
-  return ($Bin, $perl_path);
-}
-
 =head2 status_files_path
 
  a directory to save status files to
