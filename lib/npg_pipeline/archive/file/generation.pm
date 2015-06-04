@@ -69,7 +69,7 @@ sub create_empty_fastq_files {
    foreach my $file (@files) {
      system "touch $file";
      my $fastqcheck = $file . q[check];
-     system "cat $file | fastqcheck > $fastqcheck";
+     system "echo '0 sequences, 0 total length' > $fastqcheck";
    }
    return ();
 }

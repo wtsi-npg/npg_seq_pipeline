@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+release 48.7
+ - generate  fastqcheck files for empty fastq files explicitly without
+   running fastqcheck executable, which is not available on gseq cluster
+ - daemon to process a run if machine location is unknown
+
 release 48.6
  - force gclp analysis along the p4 route
 
