@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 48.8
+ - pipeline daemon - when calling the pipeline, do not use paths that are local to the host
+
 release 48.7
  - generate  fastqcheck files for empty fastq files explicitly without
    running fastqcheck executable, which is not available on gseq cluster

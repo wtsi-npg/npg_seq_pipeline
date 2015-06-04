@@ -4,12 +4,14 @@ use Moose;
 use MooseX::ClassAttribute;
 use Moose::Meta::Class;
 use Carp;
-use English qw{-no_match_vars};
+use English qw/-no_match_vars/;
 use List::MoreUtils  qw/none/;
+use FindBin qw/$Bin/;
 use Readonly;
 
 use npg_tracking::illumina::run::folder::location;
 use npg_tracking::illumina::run::short_info;
+use npg_tracking::util::abs_path qw/abs_path/;
 use WTSI::DNAP::Warehouse::Schema;
 use WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell;
 
@@ -198,10 +200,12 @@ sub _runfolder_path {
   );
   $class->add_attribute(q(npg_tracking_schema),{isa => 'npg_tracking::Schema', is=>q(ro)});
 
-  return $class->new_object(
+  my $path = $class->new_object(
     npg_tracking_schema => $self->npg_tracking_schema,
     id_run              => $id_run,
   )->runfolder_path;
+
+  return abs_path($path);
 }
 
 sub _generate_command {
@@ -220,14 +224,13 @@ sub _generate_command {
     $cmd .= ' --id_flowcell_lims ' . $arg_refs->{'id'};
   }
 
-  my $path = join q[:], $self->local_path(), $ENV{PATH};
+  my $path = join q[:], $self->local_path(), $ENV{'PATH'};
   my $prefix = $self->daemon_conf()->{'command_prefix'};
   if (not defined $prefix) { $prefix=q(); }
   $cmd = qq{export PATH=$path; $prefix$cmd};
   return $cmd;
 }
 
-# run the command generated
 sub run_command {
   my ( $self, $id_run, $cmd ) = @_;
 
@@ -245,6 +248,18 @@ sub run_command {
   }
 
   return;
+}
+
+=head2 local_path
+
+ a list with a path to bin the code is running from and perl executable the code is running under
+
+=cut
+sub local_path {
+  my $perl_path = "$EXECUTABLE_NAME";
+  $perl_path =~ s/\/perl$//xms;
+  my @paths = map { abs_path($_) } ($Bin, $perl_path);
+  return @paths;
 }
 
 no Moose;
@@ -281,6 +296,10 @@ starts the pipeline for each of them.
 
 =head2 check_lims_link
 
+=head2 local_path
+
+ returns list with paths to bin the code is running from and perl executable the code is running under
+
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT
@@ -295,6 +314,8 @@ starts the pipeline for each of them.
 
 =item Carp
 
+=item FindBin
+
 =item English -no_match_vars
 
 =item List::MoreUtils
@@ -307,9 +328,11 @@ starts the pipeline for each of them.
 
 =item npg_tracking::illumina::run::short_info
 
+=item use npg_tracking::util::abs_path
+
 =item WTSI::DNAP::Warehouse::Schema
 
-item WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell
+=item WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell
 
 =back
 
