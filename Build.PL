@@ -72,6 +72,7 @@ my $builder = $class->new(
           'npg_tracking::illumina::run::long_info'          => 0,
           'npg_tracking::illumina::run::short_info'         => 0,
           'npg_tracking::util::types'                       => 0,
+          'npg_tracking::util::abs_path'                    => 0,
           'st::api::lims'                                   => 0,
           'st::api::lims::warehouse'                        => 0,
           'st::api::lims::ml_warehouse'                     => 0,
