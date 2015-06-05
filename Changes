@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 48.9
+ - run illumina analysis loader in a lowload lsf queue
+
 release 48.8
  - pipeline daemon - when calling the pipeline, do not use paths that are local to the host
 

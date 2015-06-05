@@ -25,7 +25,7 @@ sub _generate_bsub_command {
   my $job_name = join q{_}, $job_name_prefix, $self->id_run() , $timestamp;
 
   my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
-  my $bsub_command = q{bsub -q } . $self->lsf_queue() . qq{ $required_job_completion -J $job_name };
+  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue . qq{ $required_job_completion -J $job_name };
   $bsub_command .=  ( $self->fs_resource_string( {
     counter_slots_per_job => 1,
   } ) ) . q{ };
