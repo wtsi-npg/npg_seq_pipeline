@@ -52,8 +52,6 @@ my $required_job_completion = q{-w'done(123) && done(321)'};
   );
   my $ostatus_dir = $status_dir;
   my $olog_dir = $log_dir;
-  $olog_dir =~ s/analysis/outgoing/smx;
-  $ostatus_dir =~ s/analysis/outgoing/smx;
   $bsub_command = $sr->_generate_bsub_command($required_job_completion);
   $expected_cmd =  q{bsub -w'done(123) && done(321)' -J save_run_status_1234_qc_complete_20090709-123456 -q small -o } . $olog_dir . q{/save_run_status_1234_qc_complete_20090709-123456.out 'npg_status2file --id_run 1234 --status "qc complete" --dir_out }. $ostatus_dir . q{'};
   is($bsub_command, $expected_cmd, q{bsub command ok when updating status to "qc complete"});

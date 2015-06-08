@@ -5,6 +5,5 @@
 - upload_illumina_analysis_to_qc_database
 - upload_auto_qc_to_qc_database
 - run_run_archived
-- move_to_outgoing
 - run_qc_complete
 - update_ml_warehouse

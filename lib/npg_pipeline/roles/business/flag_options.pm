@@ -20,23 +20,11 @@ npg_pipeline::roles::business::flag_options
 This role gives some boolean flag options which should be set on construction (or via the command line if using MooseX::Getopt)
 so that you can turn off global features/functions without having to necessarily specify them.
 
-  --no_folder_moves
+  --no_summary_link
 
 These would globally stop anything being done should functions be requested which do these (either directly, or by job submission)
 
 =head1 SUBROUTINES/METHODS
-
-=head2 no_folder_moves
-
-Universally disables anything that would move a folder
-
-=cut
-
-has q{no_folder_moves} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{Turn off moving any folders},
-);
 
 =head2 no_summary_link
 
