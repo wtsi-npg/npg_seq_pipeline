@@ -311,40 +311,6 @@ sub create_summary_link_analysis {
   return ($job_id);
 }
 
-=head2 move_to_outgoing
-
-used in archival step (post qc review) for moving the runfolder to the outgoing directory
-
-=cut
-
-sub move_to_outgoing {
-  my ($self, @args) = @_;
-
-  # check that this hasn't been expressly turned off
-  if ($self->no_folder_moves()) {
-    $self->log(q{Folder moving turned off});
-    return ();
-  }
-
-  my $required_job_completion = shift @args;
-  my $rfm = $self->new_with_cloned_attributes(q{npg_pipeline::run::folder::move},{
-    folder => q{outgoing},
-  });
-
-  my $arg_refs = {
-    required_job_completion => $required_job_completion,
-  };
-
-  if (!$required_job_completion) {
-    $rfm->move_runfolder($arg_refs);
-    return ();
-  }
-
-  my $job_id = $rfm->submit_move_run_folder($arg_refs);
-  return ($job_id);
-
-}
-
 =head2 create_empty_fastq
 
 Creates a full set of empty fastq files

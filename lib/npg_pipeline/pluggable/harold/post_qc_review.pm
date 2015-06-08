@@ -137,11 +137,6 @@ sub _update_warehouse_command {
   my $job_name = join q{_}, $loader_name, $id_run, $self->pipeline_name;
   my $out = join q{_}, $job_name, $self->timestamp . q{.out};
   $out =  File::Spec->catfile($self->make_log_dir( $self->recalibrated_path()), $out );
-  (my $name) = __PACKAGE__ =~ /(\w+)$/smx;
-  $name = lc $name;
-  if ($self->pipeline_name eq $name) {
-    $out =~ s/\/analysis\//\/outgoing\//smx; #the job is run after the runfolder is moved to outgoing
-  }
   return q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name -o $out '$command'};
 }
 

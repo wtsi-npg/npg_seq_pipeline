@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+release 49.0
+ - run the archival pipeline entirely in the directory where it was started, ie
+   do not move the runnfolder to outgoing; this will be done by the staging
+   monitor
+
 release 48.9
  - run illumina analysis loader in a lowload lsf queue
 

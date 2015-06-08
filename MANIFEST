@@ -1,5 +1,4 @@
 bin/create_summary_link
-bin/move_run_folder
 bin/npg_pipeline_archival_runner
 bin/npg_pipeline_check_bam_file_cluster_count
 bin/npg_pipeline_harold_analysis_runner
@@ -50,9 +49,7 @@ lib/npg_pipeline/pluggable/harold/post_qc_review.pm
 lib/npg_pipeline/roles/business/base.pm
 lib/npg_pipeline/roles/business/flag_options.pm
 lib/npg_pipeline/roles/business/harold_calibration_reqs.pm
-lib/npg_pipeline/run/folder.pm
 lib/npg_pipeline/run/folder/link.pm
-lib/npg_pipeline/run/folder/move.pm
 lib/npg_tracking/daemon/analysis.pm
 lib/npg_tracking/daemon/archival.pm
 MANIFEST			This list of files
@@ -86,7 +83,6 @@ t/25-analysis-split_bam_by_tag.t
 t/25-harold_calibration_bam.t
 t/30-launcher-status.t
 t/30-run_folder-link.t
-t/30-run_folder-move.t
 t/35-archive_file_generation-BamClusterCounts.t
 t/35-archive-file-generation-seqchksum_comparator.t
 t/40-dispatch_tree.t

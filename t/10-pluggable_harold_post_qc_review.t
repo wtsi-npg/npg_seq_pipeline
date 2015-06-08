@@ -25,7 +25,6 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
     archive_to_irods
     upload_illumina_analysis_to_qc_database
     upload_auto_qc_to_qc_database
-    move_to_outgoing
     run_run_archived
     run_qc_complete
     update_warehouse
@@ -55,7 +54,6 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
   my $timestamp = $post_qc_review->timestamp;
   my $recalibrated_path = $post_qc_review->recalibrated_path();
   my $log_dir = $post_qc_review->make_log_dir( $recalibrated_path );
-  $log_dir =~ s/\/analysis\//\/outgoing\//smx;
   my $unset_string = 'unset NPG_WEBSERVICE_CACHE_DIR; unset NPG_CACHED_SAMPLESHEET_FILE;';
   my $expected = q[bsub -q lowload 50 -J warehouse_loader_1234_post_qc_review ] .
                 qq[-o $log_dir/warehouse_loader_1234_post_qc_review_] . $timestamp . 
