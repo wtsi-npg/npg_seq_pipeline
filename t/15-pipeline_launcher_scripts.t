@@ -52,7 +52,7 @@ my $bin = $curdir . q[/bin];
   my $tmp_dir = $util->temp_directory();
   local $ENV{TEST_DIR} = $tmp_dir;
  
-  lives_ok { diag qx{perl $bin/npg_pipeline_post_qc_review --no_folder_moves --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234}; } q{ran bin/npg_pipeline_post_qc_review};
+  lives_ok { diag qx{perl $bin/npg_pipeline_post_qc_review --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234}; } q{ran bin/npg_pipeline_post_qc_review};
   ok(!$CHILD_ERROR, qq{Return code of $CHILD_ERROR});
 }
 

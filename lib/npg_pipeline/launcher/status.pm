@@ -21,15 +21,6 @@ has q{lane_status_flag} => (isa      => q{Bool},
                             default  => 0,
 );
 
-override 'status_files_path' => sub {
-  my $self = shift;
-  my $path = super();
-  if ($self->status eq q{qc complete}) {
-    $path =~ s/analysis/outgoing/xms;
-  }
-  return $path;
-};
-
 sub _command {
   my $self = shift;
 
@@ -105,10 +96,6 @@ Launches a job for saving run and lane statuses to a file.
 =head2 lane_status_flag
 
   A boolean flag; if true, a lane status will be set; false by default
-
-=head2 status_files_path
-
-  Overides parent's method to return path in outgoing for 'qc complete'.
 
 =head2 submit - handles generating and submitting an LSF job
 

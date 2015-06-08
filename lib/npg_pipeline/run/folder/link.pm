@@ -6,12 +6,12 @@ use English qw{-no_match_vars};
 use Readonly;
 use File::Spec::Functions qw(abs2rel);
 
-extends q{npg_pipeline::run::folder};
+extends q{npg_pipeline::base};
 
 our $VERSION = '0';
 
-Readonly::Scalar our $MAKE_LINK_SCRIPT  => q{create_summary_link};
-Readonly::Scalar our $SUMMARY_LINK      => q{Latest_Summary};
+Readonly::Scalar my $MAKE_LINK_SCRIPT     => q{create_summary_link};
+Readonly::Scalar my $SUMMARY_LINK         => q{Latest_Summary};
 
 sub make_link {
   my $self = shift;
@@ -56,23 +56,12 @@ sub make_link {
 sub _generate_bsub_command {
   my ($self, $arg_refs) = @_;
 
-  my $required_job_completion = $arg_refs->{required_job_completion};
+  my $required_job_completion = $arg_refs->{'required_job_completion'};
   my $run_folder = $self->run_folder();
-  if ( !$self->folder() ) {
-    $self->_set_folder( q{analysis} );
-  }
-  my $folder = $self->folder();
-  my $inst_dir = $self->get_instrument_dir($self->runfolder_path);
-  $inst_dir =~ s/incoming/$folder/xms;
-
   my $job_name = join q{_}, q{create_latest_summary_link}, $self->id_run, $run_folder;
-
   my $bsub_command = qq{bsub $required_job_completion -J $job_name -q } . $self->small_lsf_queue();
-  $bsub_command .= q{ -o } . $inst_dir . q{/} . $run_folder . q{/} . $job_name . q{_} . $self->timestamp . q{.out};
+  $bsub_command .= q{ -o } . $run_folder . q{/} . $job_name . q{_} . $self->timestamp . q{.out};
   $bsub_command .= q{ '} . $MAKE_LINK_SCRIPT;
-  if ($self->folder) {
-    $bsub_command .=  q{ --folder } . $self->folder;
-  }
   $bsub_command .=  qq{ --run_folder $run_folder --runfolder_path } . $self->runfolder_path;
   $bsub_command .=  q{ --recalibrated_path } . $self->recalibrated_path;
   $bsub_command .=  q{'};
