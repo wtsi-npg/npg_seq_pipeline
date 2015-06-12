@@ -42,6 +42,7 @@
   id_run_pair: 0
   is_paired: 0
   priority: 1
+  folder_name: 123456_IL2_1234_A_80B5TABXX 
   folder_path_glob: /{export,nfs}/sf33/ILorHSany_sf33/*/
   team: '"RAD"'
 - actual_cycle_count: 120
