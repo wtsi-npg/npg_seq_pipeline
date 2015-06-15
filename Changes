@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 49.1
+ - remove 'move_to_outgoing' step from function list for qc runs
+
 release 49.0
  - run the archival pipeline entirely in the directory where it was started, ie
    do not move the runnfolder to outgoing; this will be done by the staging
