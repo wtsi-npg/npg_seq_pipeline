@@ -14,27 +14,21 @@ has 'fixture_path' => (
 sub test_schema {
     my ($self) = @_;
     return $self->create_test_db(
-        'npg_tracking::Schema',
-        $self->fixture_path(),
-        ':memory:'
+        'npg_tracking::Schema', $self->fixture_path()
     );
 }
 
 sub test_schema_mlwh {
     my ($self, $fixture_path) = @_;
     return $self->create_test_db(
-        'WTSI::DNAP::Warehouse::Schema',
-        $fixture_path,
-        ':memory:'
+        'WTSI::DNAP::Warehouse::Schema', $fixture_path
     );
 }
 
 sub test_schema_wh {
     my ($self, $fixture_path) = @_;
     return $self->create_test_db(
-        'npg_warehouse::Schema',
-        $fixture_path,
-        ':memory:'
+        'npg_warehouse::Schema', $fixture_path
     );
 }
 
