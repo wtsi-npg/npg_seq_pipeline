@@ -5,11 +5,10 @@ use Test::Exception;
 use File::Slurp;
 use File::Temp qw{ tempdir };
 
-local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
+use t::dbic_util;
+my $schema = t::dbic_util->new()->test_schema;
 
-BEGIN {
-  use_ok( q{npg_pipeline::analysis::FixConfigFiles} );
-}
+use_ok( q{npg_pipeline::analysis::FixConfigFiles} );
 
 sub _hiseq_runfolder_path {
   my $mismatched_cycles = shift;
@@ -35,11 +34,12 @@ my $intensity_path = $runfolder_path . q{/Data/Intensities};
 {
   my $fix_config_files;
   lives_ok {
-    $fix_config_files = npg_pipeline::analysis::FixConfigFiles->new( {
-      id_run => 1234,
-      runfolder_name_ok => 0,
+    $fix_config_files = npg_pipeline::analysis::FixConfigFiles->new(
+      id_run                => 1234,
+      npg_tracking_schema   => $schema,
+      runfolder_name_ok     => 0,
       last_cycle_numbers_ok => 1,
-    } );
+    );
   } q{new object created ok};
 
   isa_ok( $fix_config_files, q{npg_pipeline::analysis::FixConfigFiles}, q{$fix_config_files} );
@@ -48,30 +48,28 @@ my $intensity_path = $runfolder_path . q{/Data/Intensities};
     $fix_config_files->run();
   } qr{problem[ ]with[ ]runfolder_name[ ]or[ ]last_cycle_numbers}, q{runfolder_name is not ok, throws error};
 
-  $fix_config_files = npg_pipeline::analysis::FixConfigFiles->new( {
-    id_run => 1234,
-    runfolder_name_ok => 1,
+  $fix_config_files = npg_pipeline::analysis::FixConfigFiles->new(
+    id_run                => 1234,
+    npg_tracking_schema   => $schema,
+    runfolder_name_ok     => 1,
     last_cycle_numbers_ok => 0,
-  } );
+  );
   throws_ok {
     $fix_config_files->run();
   } qr{problem[ ]with[ ]runfolder_name[ ]or[ ]last_cycle_numbers}, q{last_cycle_numbers are not ok, throws error};
 
-  $fix_config_files = npg_pipeline::analysis::FixConfigFiles->new( {
-    id_run => 1234,
-    runfolder_path => $runfolder_path,
-    no_npg_check => 1,
+  $fix_config_files = npg_pipeline::analysis::FixConfigFiles->new(
+    id_run                => 1234,
+    npg_tracking_schema   => $schema,
+    runfolder_path        => $runfolder_path,
     last_cycle_numbers_ok => 1,
-    intensity_path => $intensity_path,
-  } );
-
+    intensity_path        => $intensity_path,
+  );
   lives_ok {
     $fix_config_files->basecalls_xml();
   } q{BaseCalls/config.xml read in ok};
 
-  lives_ok {
-    $fix_config_files->run();
-  } q{run ok};
+  lives_ok { $fix_config_files->run(); } q{run ok};
 
   my $changed_intensities_file = read_file ( $intensity_path . q{/config.xml} );
   my $changed_basecalls_file   = read_file ( $intensity_path . q{/BaseCalls/config.xml} );
@@ -84,23 +82,23 @@ my $intensity_path = $runfolder_path . q{/Data/Intensities};
 }
 
 {
-  my $fix_config_files = npg_pipeline::analysis::FixConfigFiles->new( {
-    id_run => 1234,
-    runfolder_path => $runfolder_path,
-    intensity_path => $intensity_path,
-  } );
+  my $fix_config_files = npg_pipeline::analysis::FixConfigFiles->new(
+    id_run                => 1234,
+    npg_tracking_schema   => $schema,
+    runfolder_path        => $runfolder_path,
+    intensity_path        => $intensity_path,
+  );
 
   ok( $fix_config_files->last_cycle_numbers_ok(), q{All last cycle numbers are the same} );
-}
 
-{
   $runfolder_path = _hiseq_runfolder_path(1);
   $intensity_path = $runfolder_path . q{/Data/Intensities};
-  my $fix_config_files = npg_pipeline::analysis::FixConfigFiles->new( {
-    id_run => 1234,
-    runfolder_path => $runfolder_path,
-    intensity_path => $intensity_path,
-  } );
+  $fix_config_files = npg_pipeline::analysis::FixConfigFiles->new(
+    id_run                => 1234,
+    npg_tracking_schema   => $schema,
+    runfolder_path        => $runfolder_path,
+    intensity_path        => $intensity_path,
+  );
 
   ok( ! $fix_config_files->last_cycle_numbers_ok(), q{Not all last cycle numbers are the same} );
 }
