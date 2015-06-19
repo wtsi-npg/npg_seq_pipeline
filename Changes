@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 49.2
+ - test updates only
+
 release 49.1
  - remove 'move_to_outgoing' step from function list for qc runs
 
