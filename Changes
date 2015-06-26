@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ -  allow p4 to be used where no alignment is specified for target but human
+     split (contains_nonconsented_human) is
+
 release 49.2
  - test updates only
 
