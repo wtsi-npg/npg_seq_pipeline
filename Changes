@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 49.2.1
+ - to avaid deprication warnings in Config::Any,
+   ensure XS extensions are available for YAML and JSON
+
 release 49.2
  - test updates only
 
