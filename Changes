@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+ - call warehouse loaders with verbose option
+ - call ml warehouse loader at the end of the analysis pipeline so that the product
+   table is loaded by the time the run goes into QC thus allowing to query this
+   warehouse using run id
+
 release 49.2.1
  - to avaid deprication warnings in Config::Any,
    ensure XS extensions are available for YAML and JSON
