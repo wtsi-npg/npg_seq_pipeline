@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 70;
+use Test::More tests => 77;
 use Test::Exception;
 use t::util;
 use File::Temp qw(tempdir tempfile);
@@ -231,6 +231,17 @@ use_ok(q{npg_pipeline::base});
   ok( $base->is_qc_run, 'looking on flowcell lims id: qc run');
   ok( $base->qc_run, 'qc run');
   is( $base->function_list, $fl, 'qc function list');
+}
+
+{
+  my $base = npg_pipeline::base->new(id_run => 4);
+  is ($base->fq_filename(3, undef), '4_3.fastq');
+  is ($base->fq_filename(3, undef, 1), '4_3_1.fastq');
+  is ($base->fq_filename(3, undef, 2), '4_3_2.fastq');
+  is ($base->fq_filename(3, undef, 't'), '4_3_t.fastq');
+  is ($base->fq_filename(3, 5), '4_3#5.fastq');
+  is ($base->fq_filename(3, 5, 1), '4_3_1#5.fastq');
+  is ($base->fq_filename(3, 5, 2), '4_3_2#5.fastq');
 }
 
 1;

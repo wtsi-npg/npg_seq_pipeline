@@ -5,6 +5,7 @@ LIST OF CHANGES
  - call ml warehouse loader at the end of the analysis pipeline so that the product
    table is loaded by the time the run goes into QC thus allowing to query this
    warehouse using run id
+ - simplified name generation for fastq files
 
 release 49.2.1
  - to avaid deprication warnings in Config::Any,

@@ -377,7 +377,7 @@ sub ref_adapter_pre_exec_string {
 
 =head2 metadata_cache_dir
 
-Returns an absolute path of teh metadata cache directory if in can be
+Returns an absolute path of the metadata cache directory if in can be
 inferred from the environment variables set up during caching.
 
 =cut
@@ -411,6 +411,21 @@ sub metadata_cache_dir {
   }
 
   return $ds[0];
+}
+
+=head2 fq_filename
+
+Generates fastq file names.
+
+=cut
+
+sub fq_filename {
+  my ($self, $position, $tag_index, $end) = @_;
+  return sprintf '%i_%i%s%s.fastq',
+    $self->id_run,
+    $position,
+    $end       ? "_$end"      : q[],
+    $tag_index ? "#$tag_index" : q[];
 }
 
 1;
