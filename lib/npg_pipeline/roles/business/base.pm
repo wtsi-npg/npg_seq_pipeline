@@ -424,8 +424,8 @@ sub fq_filename {
   return sprintf '%i_%i%s%s.fastq',
     $self->id_run,
     $position,
-    $end       ? "_$end"      : q[],
-    $tag_index ? "#$tag_index" : q[];
+    $end               ? "_$end"      : q[],
+    defined $tag_index ? "#$tag_index" : q[];
 }
 
 1;

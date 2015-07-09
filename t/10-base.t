@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 77;
+use Test::More tests => 80;
 use Test::Exception;
 use t::util;
 use File::Temp qw(tempdir tempfile);
@@ -242,6 +242,9 @@ use_ok(q{npg_pipeline::base});
   is ($base->fq_filename(3, 5), '4_3#5.fastq');
   is ($base->fq_filename(3, 5, 1), '4_3_1#5.fastq');
   is ($base->fq_filename(3, 5, 2), '4_3_2#5.fastq');
+  is ($base->fq_filename(3, 0), '4_3#0.fastq');
+  is ($base->fq_filename(3, 0, 1), '4_3_1#0.fastq');
+  is ($base->fq_filename(3, 0, 2), '4_3_2#0.fastq');
 }
 
 1;
