@@ -241,7 +241,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                              ($is_plex ? ($tag_index) : ()),
                              $qcpath,
                            q{&&},
-                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
+                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(subset=>q(phix), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
                              (join q{/}, $archive_path, $name_root.q(_phix.markdups_metrics.txt)),
                              (join q{/}, $archive_path, $name_root.q(_phix.flagstat)),
                              $self->id_run,
@@ -250,7 +250,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                              $qcpath,
                            q{&&},
                            $human_split ? (
-                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(}.$human_split.q{), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
+                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(subset=>q(}.$human_split.q{), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
                              (join q{/}, $archive_path, $name_root.q(_).$human_split.q(.markdups_metrics.txt)),
                              (join q{/}, $archive_path, $name_root.q(_).$human_split.q(.flagstat)),
                              $self->id_run,
@@ -260,7 +260,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                            q{&&})
                               :(),
                            $nchs ? (
-                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(}.$nchs_outfile_label.q{), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
+                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(subset=>q(}.$nchs_outfile_label.q{), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
                              (join q{/}, $archive_path, $name_root.q(_).$nchs_outfile_label.q(.markdups_metrics.txt)),
                              (join q{/}, $archive_path, $name_root.q(_).$nchs_outfile_label.q(.flagstat)),
                              $self->id_run,

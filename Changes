@@ -1,8 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+ - use 'subset' option of the bam_flagstast autoqc result instead
+   of the 'human_split' option
+
 release 49.2.1
- - to avaid deprication warnings in Config::Any,
+ - to avoid deprication warnings in Config::Any,
    ensure XS extensions are available for YAML and JSON
 
 release 49.2
