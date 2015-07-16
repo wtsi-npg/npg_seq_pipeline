@@ -451,7 +451,7 @@ sub _default_human_split_ref {
           roles => [qw/npg_tracking::data::reference::find/])
           ->new_object({
                          species => q{Homo_sapiens},
-                         aligner => $aligner, 
+                         aligner => $aligner,
                         ($repos ? (q(repository)=>$repos) : ())
                        } );
 
