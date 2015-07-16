@@ -3,6 +3,8 @@ LIST OF CHANGES
 
  -  allow p4 to be used where no alignment is specified for target but human
      split (contains_nonconsented_human) is
+ -  new tests for various p4 analysis options in seq_alignment
+     (20-archive_file_generation-seq_alignment.t)
 
 release 49.2
  - test updates only
