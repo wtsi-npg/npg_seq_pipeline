@@ -8,6 +8,10 @@ LIST OF CHANGES
  - simplified name generation for fastq files
  - use 'subset' option of the bam_flagstast autoqc result instead
    of the 'human_split' option
+ - allow p4 to be used where no alignment is specified for target but human
+     split (contains_nonconsented_human) is
+ - new tests for various p4 analysis options in seq_alignment
+     (20-archive_file_generation-seq_alignment.t)
 
 release 49.2.1
  - to avoid deprecation warnings in Config::Any,
