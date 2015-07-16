@@ -1,15 +1,7 @@
 package npg_pipeline::archive::file::generation;
 
 use Moose;
-use Moose::Meta::Class;
-use Carp;
-use English qw{-no_match_vars};
-use File::Spec;
-
-use npg_common::roles::run::lane::file_names;
-use npg_tracking::glossary::tag;
-use npg_tracking::glossary::lane;
-use npg_tracking::glossary::run;
+use File::Spec qw/catfile/;
 
 extends q{npg_pipeline::base};
 
@@ -30,48 +22,36 @@ npg_pipeline::archive::file::generation
 =cut
 
 sub create_empty_fastq_files {
-   my ( $self, $arg_refs ) = @_;
+  my $self = shift;
 
-   my $ext = q[fastq];
-   my $forward_end = ($self->is_paired_read() || $self->is_indexed()) ? 1 : undef;
-    my @files = ();
+  my $forward_end = ($self->is_paired_read() || $self->is_indexed()) ? 1 : undef;
+  my @files = ();
+  my $apath = $self->archive_path;
 
-   my $apath = $self->archive_path;
+  foreach my $position ( $self->positions() ) {
+    push @files, catfile($apath, $self->fq_filename($position, undef, $forward_end));
+    if ( $self->is_paired_read() ) {
+      push @files, catfile($apath, $self->fq_filename($position, undef, 2));
+    }
+    if ( $self->is_indexed() && $self->is_multiplexed_lane($position) ) {
+      push @files, catfile($apath, $self->fq_filename($position, undef, q[t]));
+      my $lpath = $self->lane_archive_path($position);
+      foreach my $tag_index ( @{ $self->get_tag_index_list( $position ) } ) {
+        push @files, catfile($lpath, $self->fq_filename($position, $tag_index, 1));
+        if ( $self->is_paired_read() ) {
+          push @files, catfile($lpath, $self->fq_filename($position, $tag_index, 2));
+        }
+      }
+    }
+  }
 
-   foreach my $position ( $self->positions() ) {
-     my $generator = Moose::Meta::Class->create_anon_class(
-          roles => [qw/npg_common::roles::run::lane::file_names
-                       npg_tracking::glossary::tag
-                       npg_tracking::glossary::lane
-                       npg_tracking::glossary::run/])->new_object(
-          {id_run => $self->id_run, position => $position,});
-     push @files, File::Spec->catfile($apath,$generator->create_filename($ext, $forward_end));
-     if ($self->is_paired_read()) {
-       push @files, File::Spec->catfile($apath,$generator->create_filename($ext, 2));
-     }
-     if ($self->is_indexed() && $self->is_multiplexed_lane($position)) {
-       push @files, File::Spec->catfile($apath,$generator->create_filename($ext, q[t]));
-       my $lpath = $self->lane_archive_path($position);
-       foreach my $tag_index ( @{ $self->get_tag_index_list( $position ) } ) {
-         my $pgenerator = Moose::Meta::Class->create_anon_class(
-            roles => [qw/npg_common::roles::run::lane::file_names
-                         npg_tracking::glossary::tag
-                         npg_tracking::glossary::lane
-                         npg_tracking::glossary::run/])->new_object(
-            {id_run => $self->id_run, position => $position, tag_index => $tag_index,});
-         push @files, File::Spec->catfile($lpath,$pgenerator->create_filename($ext, $forward_end));
-         if ($self->is_paired_read()) {
-           push @files, File::Spec->catfile($lpath,$pgenerator->create_filename($ext, 2));
-	 }
-       }
-     }
-   }
-   foreach my $file (@files) {
-     system "touch $file";
-     my $fastqcheck = $file . q[check];
-     system "echo '0 sequences, 0 total length' > $fastqcheck";
-   }
-   return ();
+  foreach my $file (@files) {
+    system "touch $file";
+    my $fastqcheck = $file . q[check];
+    system "echo '0 sequences, 0 total length' > $fastqcheck";
+  }
+
+  return ();
 }
 
 no Moose;
@@ -87,23 +67,9 @@ __END__
 
 =over
 
-=item Carp
-
-=item English -no_match_vars
-
 =item Moose
 
-=item Moose::Meta::Class
-
 =item File::Spec
-
-=item npg_common::roles::run::lane::file_names
-
-=item npg_tracking::glossary::tag
-
-=item npg_tracking::glossary::lane
-
-=item npg_tracking::glossary::run
 
 =back
 
@@ -117,7 +83,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2015 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

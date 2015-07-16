@@ -313,11 +313,11 @@ sub create_summary_link_analysis {
 
 =head2 create_empty_fastq
 
-Creates a full set of empty fastq files
+Creates a full set of empty fastq and fastqcheck files
 
 =cut
 sub create_empty_fastq {
-  my ( $self, @args ) = @_;
+  my ( $self ) = @_;
   return $self->new_with_cloned_attributes(
       q{npg_pipeline::archive::file::generation})->create_empty_fastq_files();
 }

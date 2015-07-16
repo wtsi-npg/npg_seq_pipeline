@@ -133,7 +133,7 @@ sub _update_warehouse_command {
 
   my $id_run = $self->id_run;
   $command = $command ? "$command " : q[];
-  $command .= qq{$loader_name --id_run $id_run};
+  $command .= qq{$loader_name --verbose --id_run $id_run};
   my $job_name = join q{_}, $loader_name, $id_run, $self->pipeline_name;
   my $out = join q{_}, $job_name, $self->timestamp . q{.out};
   $out =  File::Spec->catfile($self->make_log_dir( $self->recalibrated_path()), $out );
