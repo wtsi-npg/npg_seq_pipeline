@@ -192,7 +192,6 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
 
     my $nchs_outfile_label = $nchs? q{human}: q{};
 
-    #TODO: no alignments or no ref but contains_nonconsented_human and read length >100 
     #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
     #TODO: support this, and above "old school", various options in P4 analyses
     croak qq{only paired reads supported for RNA or non-consented human ($name_root)} if (not $self->is_paired_read) and ($do_rna or $nchs);
