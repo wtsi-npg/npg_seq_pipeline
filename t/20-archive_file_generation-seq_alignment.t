@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 26;
+use Test::More tests => 46;
 use Test::Exception;
 use Test::Deep;
 use File::Temp qw/tempdir/;
@@ -246,6 +246,417 @@ my $rna_gen;
 
   cmp_deeply ($rna_gen->_job_args, $args,
     'correct command arguments for library RNASeq lane (unstranded Illumina cDNA library)');
+}
+
+{  ##HiSeqX, run 16839_7
+
+my $ref_dir = join q[/],$dir,'references','Homo_sapiens','GRCh38_full_analysis_set_plus_decoy_hla','all';
+`mkdir -p $ref_dir/fasta`;
+`mkdir $ref_dir/bwa0_6`;
+`mkdir $ref_dir/picard`;
+
+my $runfolder = q{150709_HX4_16839_A_H7MHWCCXX};
+my $runfolder_path = join q[/], $dir, $runfolder;
+my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/no_cal';
+`mkdir -p $bc_path`;
+my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/metadata_cache_16839';
+`mkdir $cache_dir`;
+
+copy("t/data/hiseqx/16839_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+
+`touch $ref_dir/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa`;
+`touch $ref_dir/picard/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.dict`;
+`touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.alt`;
+`touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.amb`;
+`touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.ann`;
+`touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt`;
+`touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.pac`;
+`touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.sa`;
+
+# system(qq[ls -lR $ref_dir_bwa0_6]);
+
+local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseqx];
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/hiseqx/samplesheet_16839.csv];
+
+my $hsx_gen;
+  lives_ok {
+    $hsx_gen = npg_pipeline::archive::file::generation::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2015},
+      repository        => $dir,
+      no_bsub           => 1,
+    )
+  } 'no error creating an object';
+
+  is ($hsx_gen->id_run, 16839, 'id_run inferred correctly');
+
+  my $args = {};
+
+  $args->{7007} = qq{bash -c ' mkdir -p $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#7 ; cd $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#7 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e '"'"'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;'"'"'` -keys indatadir -vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/lane7 -keys outdatadir -vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7 -keys af_metrics -vals 16839_7#7.bam_alignment_filter_metrics.json -keys rpt -vals 16839_7#7 -keys reference_dict -vals $dir/references/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/picard/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.dict -keys reference_genome_fasta -vals $dir/references/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa -keys phix_reference_genome_fasta -vals $phix_ref -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_7#7.json && viv.pl -s -x -v 3 -o viv_16839_7#7.log run_16839_7#7.json  } .
+    q{&& perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#7.markdups_metrics.txt $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#7.flagstat 16839 7 7 $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#7_phix.markdups_metrics.txt $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#7_phix.flagstat 16839 7 7 $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16839 --position 7 } .
+    qq{--qc_out $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/qc --tag_index 7 }.
+    q{'};
+  $args->{7015} = qq{bash -c ' mkdir -p $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#15 ; cd $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#15 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e '"'"'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;'"'"'` -keys indatadir -vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/lane7 -keys outdatadir -vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7 -keys af_metrics -vals 16839_7#15.bam_alignment_filter_metrics.json -keys rpt -vals 16839_7#15 -keys reference_dict -vals $dir/references/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/picard/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.dict -keys reference_genome_fasta -vals $dir/references/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa -keys phix_reference_genome_fasta -vals $phix_ref -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_7#15.json && viv.pl -s -x -v 3 -o viv_16839_7#15.log run_16839_7#15.json  } .
+    q{&& perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#15.markdups_metrics.txt $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#15.flagstat 16839 7 15 $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#15_phix.markdups_metrics.txt $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#15_phix.flagstat 16839 7 15 $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16839 --position 7 } .
+    qq{--qc_out $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/qc --tag_index 15 }.
+    q{'};
+  $args->{7000} = qq{bash -c ' mkdir -p $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#0 ; cd $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#0 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e '"'"'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;'"'"'` -keys indatadir -vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/lane7 -keys outdatadir -vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7 -keys af_metrics -vals 16839_7#0.bam_alignment_filter_metrics.json -keys rpt -vals 16839_7#0 -keys reference_dict -vals $dir/references/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/picard/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.dict -keys reference_genome_fasta -vals $dir/references/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa -keys phix_reference_genome_fasta -vals $phix_ref -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_7#0.json && viv.pl -s -x -v 3 -o viv_16839_7#0.log run_16839_7#0.json  } .
+    q{&& perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#0.markdups_metrics.txt $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#0.flagstat 16839 7 0 $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#0_phix.markdups_metrics.txt $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/16839_7#0_phix.flagstat 16839 7 0 $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16839 --position 7 } .
+    qq{--qc_out $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/qc --tag_index 0 }.
+    q{'};
+
+  lives_ok {$hsx_gen->_generate_command_arguments([7])}
+     'no error generating hsx command arguments';
+
+  cmp_deeply ($hsx_gen->_job_args, $args,
+    'correct command arguments for HiSeqX lane 16839_7');
+}
+
+{  ##HiSeq, run 16807_6 (newer flowcell)
+
+my $ref_dir = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5','all';
+`mkdir -p $ref_dir/fasta`;
+`mkdir $ref_dir/bwa0_6`;
+`mkdir $ref_dir/picard`;
+
+my $runfolder = q{150707_HS38_16807_A_C7U2YANXX};
+my $runfolder_path = join q[/], $dir, $runfolder;
+my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-232614/no_cal';
+`mkdir -p $bc_path`;
+my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-232614/metadata_cache_16807';
+`mkdir $cache_dir`;
+
+copy("t/data/hiseq/16807_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+
+# dummy reference should already exist
+
+# system(qq[ls -lR $ref_dir]);
+
+local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseq];
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/hiseq/samplesheet_16807.csv];
+
+my $hs_gen;
+  lives_ok {
+    $hs_gen = npg_pipeline::archive::file::generation::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2015},
+      repository        => $dir,
+      no_bsub           => 1,
+    )
+  } 'no error creating an object';
+
+  is ($hs_gen->id_run, 16807, 'id_run inferred correctly');
+
+  my $args = {};
+
+  $args->{6001} = qq{bash -c \' mkdir -p $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#1 ; cd $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#1 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/lane6 -keys outdatadir -vals $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6 -keys af_metrics -vals 16807_6#1.bam_alignment_filter_metrics.json -keys rpt -vals 16807_6#1 -keys reference_dict -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa.dict -keys reference_genome_fasta -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem -nullkeys bwa_mem_p_flag \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16807_6#1.json && viv.pl -s -x -v 3 -o viv_16807_6#1.log run_16807_6#1.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#1.markdups_metrics.txt $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#1.flagstat 16807 6 1 $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#1_phix.markdups_metrics.txt $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#1_phix.flagstat 16807 6 1 $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16807 --position 6 } .
+    qq{--qc_out $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/qc --tag_index 1 }.
+    q{'};
+  $args->{6002} = qq{bash -c \' mkdir -p $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#2 ; cd $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#2 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/lane6 -keys outdatadir -vals $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6 -keys af_metrics -vals 16807_6#2.bam_alignment_filter_metrics.json -keys rpt -vals 16807_6#2 -keys reference_dict -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa.dict -keys reference_genome_fasta -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem -nullkeys bwa_mem_p_flag \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16807_6#2.json && viv.pl -s -x -v 3 -o viv_16807_6#2.log run_16807_6#2.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#2.markdups_metrics.txt $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#2.flagstat 16807 6 2 $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#2_phix.markdups_metrics.txt $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#2_phix.flagstat 16807 6 2 $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16807 --position 6 } .
+    qq{--qc_out $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/qc --tag_index 2 }.
+    q{'};
+  $args->{6000} = qq{bash -c \' mkdir -p $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#0 ; cd $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#0 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/lane6 -keys outdatadir -vals $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6 -keys af_metrics -vals 16807_6#0.bam_alignment_filter_metrics.json -keys rpt -vals 16807_6#0 -keys reference_dict -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa.dict -keys reference_genome_fasta -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem -nullkeys bwa_mem_p_flag \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16807_6#0.json && viv.pl -s -x -v 3 -o viv_16807_6#0.log run_16807_6#0.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#0.markdups_metrics.txt $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#0.flagstat 16807 6 0 $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#0_phix.markdups_metrics.txt $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/16807_6#0_phix.flagstat 16807 6 0 $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16807 --position 6 } .
+    qq{--qc_out $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/lane6/qc --tag_index 0 }.
+    q{'};
+
+  lives_ok {$hs_gen->_generate_command_arguments([6])}
+     'no error generating hs command arguments';
+
+my @a1 = (split / /, $args->{6001});
+my @a2 = (split / /, $hs_gen->_job_args->{6001});
+for my $i (0..$#a1) {
+	if($a1[$i] ne $a2[$i]) {
+		print "DIFF AT ELEM $i:\n$a1[$i]\n$a2[$i]\n";
+	}
+}
+
+  cmp_deeply ($hs_gen->_job_args, $args,
+    'correct command arguments for HiSeq lane 16807_6');
+}
+
+{  ##MiSeq, run 16850_1 (cycle count over threshold (currently >= 101))
+
+my $ref_dir = join q[/],$dir,'references','Plasmodium_falciparum','3D7_Oct11v3','all';
+`mkdir -p $ref_dir/fasta`;
+`mkdir $ref_dir/bwa0_6`;
+`mkdir $ref_dir/picard`;
+
+my $runfolder = q{150710_MS2_16850_A_MS3014507-500V2};
+my $runfolder_path = join q[/], $dir, $runfolder;
+my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-022206/no_cal';
+`mkdir -p $bc_path`;
+my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-022206/metadata_cache_16850';
+`mkdir $cache_dir`;
+
+copy("t/data/miseq/16850_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+
+`touch $ref_dir/fasta/Pf3D7_v3.fasta`;
+`touch $ref_dir/picard/Pf3D7_v3.fasta.dict`;
+`touch $ref_dir/bwa0_6/Pf3D7_v3.fasta.amb`;
+`touch $ref_dir/bwa0_6/Pf3D7_v3.fasta.ann`;
+`touch $ref_dir/bwa0_6/Pf3D7_v3.fasta.bwt`;
+`touch $ref_dir/bwa0_6/Pf3D7_v3.fasta.pac`;
+`touch $ref_dir/bwa0_6/Pf3D7_v3.fasta.sa`;
+
+system(qq[ls -lR $ref_dir]);
+
+local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/miseq];
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_16850.csv];
+
+my $ms_gen;
+  lives_ok {
+    $ms_gen = npg_pipeline::archive::file::generation::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2015},
+      repository        => $dir,
+      no_bsub           => 1,
+    )
+  } 'no error creating an object';
+
+  is ($ms_gen->id_run, 16850, 'id_run inferred correctly');
+
+  my $args = {};
+
+  $args->{1001} = qq{bash -c \' mkdir -p $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/tmp_\$LSB_JOBID/16850_1#1 ; cd $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/tmp_\$LSB_JOBID/16850_1#1 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/lane1 -keys outdatadir -vals $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1 -keys af_metrics -vals 16850_1#1.bam_alignment_filter_metrics.json -keys rpt -vals 16850_1#1 -keys reference_dict -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/picard/Pf3D7_v3.fasta.dict -keys reference_genome_fasta -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/fasta/Pf3D7_v3.fasta -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/bwa0_6/Pf3D7_v3.fasta -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16850_1#1.json && viv.pl -s -x -v 3 -o viv_16850_1#1.log run_16850_1#1.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#1.markdups_metrics.txt $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#1.flagstat 16850 1 1 $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#1_phix.markdups_metrics.txt $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#1_phix.flagstat 16850 1 1 $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16850 --position 1 } .
+    qq{--qc_out $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/qc --tag_index 1 } .
+    q{'};
+
+  $args->{1002} = qq{bash -c \' mkdir -p $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/tmp_\$LSB_JOBID/16850_1#2 ; cd $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/tmp_\$LSB_JOBID/16850_1#2 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/lane1 -keys outdatadir -vals $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1 -keys af_metrics -vals 16850_1#2.bam_alignment_filter_metrics.json -keys rpt -vals 16850_1#2 -keys reference_dict -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/picard/Pf3D7_v3.fasta.dict -keys reference_genome_fasta -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/fasta/Pf3D7_v3.fasta -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/bwa0_6/Pf3D7_v3.fasta -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16850_1#2.json && viv.pl -s -x -v 3 -o viv_16850_1#2.log run_16850_1#2.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#2.markdups_metrics.txt $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#2.flagstat 16850 1 2 $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#2_phix.markdups_metrics.txt $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#2_phix.flagstat 16850 1 2 $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16850 --position 1 } .
+    qq{--qc_out $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/qc --tag_index 2 } .
+    q{'};
+
+  $args->{1000} = qq{bash -c \' mkdir -p $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/tmp_\$LSB_JOBID/16850_1#0 ; cd $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/tmp_\$LSB_JOBID/16850_1#0 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/lane1 -keys outdatadir -vals $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1 -keys af_metrics -vals 16850_1#0.bam_alignment_filter_metrics.json -keys rpt -vals 16850_1#0 -keys reference_dict -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/picard/Pf3D7_v3.fasta.dict -keys reference_genome_fasta -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/fasta/Pf3D7_v3.fasta -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/bwa0_6/Pf3D7_v3.fasta -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16850_1#0.json && viv.pl -s -x -v 3 -o viv_16850_1#0.log run_16850_1#0.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#0.markdups_metrics.txt $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#0.flagstat 16850 1 0 $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#0_phix.markdups_metrics.txt $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/16850_1#0_phix.flagstat 16850 1 0 $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16850 --position 1 } .
+    qq{--qc_out $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/lane1/qc --tag_index 0 } .
+    q{'};
+
+  lives_ok {$ms_gen->_generate_command_arguments([1])}
+     'no error generating ms command arguments';
+
+  cmp_deeply ($ms_gen->_job_args, $args,
+    'correct command arguments for MiSeq lane 16850_1');
+}
+
+{  ##MiSeq, run 16756_1 (nonconsented human split, no target alignment)
+
+my $ref_dir = join q[/],$dir,'references','Plasmodium_falciparum','3D7_Oct11v3','all';
+`mkdir -p $ref_dir/fasta`;
+`mkdir $ref_dir/bwa0_6`;
+`mkdir $ref_dir/picard`;
+
+my $runfolder = q{150701_HS36_16756_B_C711RANXX};
+my $runfolder_path = join q[/], $dir, $runfolder;
+my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-132329/no_cal';
+`mkdir -p $bc_path`;
+my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-132329/metadata_cache_16756';
+`mkdir $cache_dir`;
+
+copy("t/data/hiseq/16756_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+
+# default human reference needed for alignment for unconsented human split
+my $default_source = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5';
+my $default_target = join q[/],$dir,'references','Homo_sapiens','default';
+`ln -s $default_source $default_target`;
+
+local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseq];
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/hiseq/samplesheet_16756.csv];
+
+my $hs_gen;
+  lives_ok {
+    $hs_gen = npg_pipeline::archive::file::generation::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2015},
+      repository        => $dir,
+      no_bsub           => 1,
+    )
+  } 'no error creating an object';
+
+  is ($hs_gen->id_run, 16756, 'id_run inferred correctly');
+
+  my $args = {};
+
+  $args->{1001} = qq{bash -c \' mkdir -p $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#1 ; cd $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#1 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/lane1 -keys outdatadir -vals $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1 -keys af_metrics -vals 16756_1#1.bam_alignment_filter_metrics.json -keys rpt -vals 16756_1#1 -keys reference_dict_hs -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa.dict -keys hs_reference_genome_fasta -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys hs_alignment_reference_genome -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem -keys alignment_hs_method -vals bwa_aln \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_notargetalign_template.json > run_16756_1#1.json && viv.pl -s -x -v 3 -o viv_16756_1#1.log run_16756_1#1.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#1.markdups_metrics.txt $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#1.flagstat 16756 1 1 $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#1_phix.markdups_metrics.txt $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#1_phix.flagstat 16756 1 1 $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(human), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#1_human.markdups_metrics.txt $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#1_human.flagstat 16756 1 1 $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16756 --position 1 } .
+    qq{--qc_out $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc --tag_index 1 } .
+    q{'};
+  $args->{1002} = qq{bash -c \' mkdir -p $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#2 ; cd $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#2 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/lane1 -keys outdatadir -vals $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1 -keys af_metrics -vals 16756_1#2.bam_alignment_filter_metrics.json -keys rpt -vals 16756_1#2 -keys reference_dict_hs -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa.dict -keys hs_reference_genome_fasta -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys hs_alignment_reference_genome -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem -keys alignment_hs_method -vals bwa_aln \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_notargetalign_template.json > run_16756_1#2.json && viv.pl -s -x -v 3 -o viv_16756_1#2.log run_16756_1#2.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#2.markdups_metrics.txt $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#2.flagstat 16756 1 2 $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#2_phix.markdups_metrics.txt $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#2_phix.flagstat 16756 1 2 $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(human), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#2_human.markdups_metrics.txt $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#2_human.flagstat 16756 1 2 $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16756 --position 1 } .
+    qq{--qc_out $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc --tag_index 2 } .
+    q{'};
+  $args->{1000} = qq{bash -c \' mkdir -p $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#0 ; cd $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#0 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/lane1 -keys outdatadir -vals $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1 -keys af_metrics -vals 16756_1#0.bam_alignment_filter_metrics.json -keys rpt -vals 16756_1#0 -keys reference_dict_hs -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa.dict -keys hs_reference_genome_fasta -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys hs_alignment_reference_genome -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem -keys alignment_hs_method -vals bwa_aln \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_notargetalign_template.json > run_16756_1#0.json && viv.pl -s -x -v 3 -o viv_16756_1#0.log run_16756_1#0.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#0.markdups_metrics.txt $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#0.flagstat 16756 1 0 $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#0_phix.markdups_metrics.txt $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#0_phix.flagstat 16756 1 0 $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(human), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#0_human.markdups_metrics.txt $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/16756_1#0_human.flagstat 16756 1 0 $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16756 --position 1 } .
+    qq{--qc_out $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/qc --tag_index 0 } .
+    q{'};
+
+  lives_ok {$hs_gen->_generate_command_arguments([1])}
+     'no error generating hs command arguments';
+
+my @a1 = (split / /, $args->{1002});
+my @a2 = (split / /, $hs_gen->_job_args->{1002});
+for my $i (0..$#a1) {
+	if($a1[$i] ne $a2[$i]) {
+		print "DIFF AT ELEM $i:\n$a1[$i]\n$a2[$i]\n";
+	}
+}
+
+  cmp_deeply ($hs_gen->_job_args, $args,
+    'correct command arguments for HiSeq lane 16756_1');
+}
+
+{  ##MiSeq, run 16866_1 (nonconsented human split, target alignment)
+
+#################
+# already exists?
+#################
+### my $ref_dir = join q[/],$dir,'references','Plasmodium_falciparum','3D7_Oct11v3','all';
+### `mkdir -p $ref_dir/fasta`;
+### `mkdir $ref_dir/bwa0_6`;
+### `mkdir $ref_dir/picard`;
+#################
+# already exists?
+#################
+
+my $runfolder = q{150713_MS8_16866_A_MS3734403-300V2};
+my $runfolder_path = join q[/], $dir, $runfolder;
+my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150714-133929/no_cal';
+`mkdir -p $bc_path`;
+my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150714-133929/metadata_cache_16866';
+`mkdir $cache_dir`;
+
+copy("t/data/miseq/16866_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+
+# default human reference needed for alignment for unconsented human split (should already be done)
+
+local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/miseq];
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_16866.csv];
+
+my $ms_gen;
+  lives_ok {
+    $ms_gen = npg_pipeline::archive::file::generation::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2015},
+      repository        => $dir,
+      no_bsub           => 1,
+    )
+  } 'no error creating an object';
+
+  is ($ms_gen->id_run, 16866, 'id_run inferred correctly');
+
+  my $args = {};
+
+  $args->{1001} = qq{bash -c \' mkdir -p $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#1 ; cd $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#1 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/lane1 -keys outdatadir -vals $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1 -keys af_metrics -vals 16866_1#1.bam_alignment_filter_metrics.json -keys rpt -vals 16866_1#1 -keys reference_dict -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/picard/Pf3D7_v3.fasta.dict -keys reference_dict_hs -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa.dict -keys reference_genome_fasta -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/fasta/Pf3D7_v3.fasta -keys hs_reference_genome_fasta -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/bwa0_6/Pf3D7_v3.fasta -keys hs_alignment_reference_genome -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem -keys alignment_hs_method -vals bwa_aln \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16866_1#1.json && viv.pl -s -x -v 3 -o viv_16866_1#1.log run_16866_1#1.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#1.markdups_metrics.txt $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#1.flagstat 16866 1 1 $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#1_phix.markdups_metrics.txt $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#1_phix.flagstat 16866 1 1 $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(human), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#1_human.markdups_metrics.txt $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#1_human.flagstat 16866 1 1 $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16866 --position 1 } .
+    qq{--qc_out $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc --tag_index 1 } .
+    q{'};
+  $args->{1002} = qq{bash -c \' mkdir -p $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#2 ; cd $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#2 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/lane1 -keys outdatadir -vals $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1 -keys af_metrics -vals 16866_1#2.bam_alignment_filter_metrics.json -keys rpt -vals 16866_1#2 -keys reference_dict -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/picard/Pf3D7_v3.fasta.dict -keys reference_dict_hs -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa.dict -keys reference_genome_fasta -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/fasta/Pf3D7_v3.fasta -keys hs_reference_genome_fasta -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/bwa0_6/Pf3D7_v3.fasta -keys hs_alignment_reference_genome -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem -keys alignment_hs_method -vals bwa_aln \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16866_1#2.json && viv.pl -s -x -v 3 -o viv_16866_1#2.log run_16866_1#2.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#2.markdups_metrics.txt $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#2.flagstat 16866 1 2 $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#2_phix.markdups_metrics.txt $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#2_phix.flagstat 16866 1 2 $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(human), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#2_human.markdups_metrics.txt $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#2_human.flagstat 16866 1 2 $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16866 --position 1 } .
+    qq{--qc_out $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc --tag_index 2 } .
+    q{'};
+  $args->{1000} = qq{bash -c \' mkdir -p $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#0 ; cd $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#0 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e \'"\'"\'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;\'"\'"\'` -keys indatadir -vals $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/lane1 -keys outdatadir -vals $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1 -keys af_metrics -vals 16866_1#0.bam_alignment_filter_metrics.json -keys rpt -vals 16866_1#0 -keys reference_dict -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/picard/Pf3D7_v3.fasta.dict -keys reference_dict_hs -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa.dict -keys reference_genome_fasta -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/fasta/Pf3D7_v3.fasta -keys hs_reference_genome_fasta -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Plasmodium_falciparum/3D7_Oct11v3/all/bwa0_6/Pf3D7_v3.fasta -keys hs_alignment_reference_genome -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_mem -keys alignment_hs_method -vals bwa_aln \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16866_1#0.json && viv.pl -s -x -v 3 -o viv_16866_1#0.log run_16866_1#0.json } .
+    q{ && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#0.markdups_metrics.txt $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#0.flagstat 16866 1 0 $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(phix), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#0_phix.markdups_metrics.txt $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#0_phix.flagstat 16866 1 0 $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(human_split=>q(human), id_run=>$ARGV[2], position=>$ARGV[3], tag_index=>$ARGV[4]); $o->parsing_metrics_file($ARGV[0]); open my$fh,q(<),$ARGV[1]; $o->parsing_flagstats($fh); close$fh; $o->store($ARGV[-1]) '"'"' } .
+    qq{$dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#0_human.markdups_metrics.txt $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/16866_1#0_human.flagstat 16866 1 0 $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc } .
+    q{&& qc --check alignment_filter_metrics --qc_in $PWD --id_run 16866 --position 1 } .
+    qq{--qc_out $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/qc --tag_index 0 } .
+    q{'};
+
+  lives_ok {$ms_gen->_generate_command_arguments([1])}
+     'no error generating ms command arguments';
+
+my @a1 = (split / /, $args->{1002});
+my @a2 = (split / /, $ms_gen->_job_args->{1002});
+for my $i (0..$#a1) {
+	if($a1[$i] ne $a2[$i]) {
+		print "DIFF AT ELEM $i:\n$a1[$i]\n$a2[$i]\n";
+	}
+}
+
+  cmp_deeply ($ms_gen->_job_args, $args,
+    'correct command arguments for HiSeq lane 16866_1');
 }
 
 1;
