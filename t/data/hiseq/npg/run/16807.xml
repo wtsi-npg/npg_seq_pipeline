@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="16807" batch_id="39357" id_instrument="120" expected_cycle_count="27" actual_cycle_count="27" priority="4" id_run_pair="0" is_paired="0" team="C" id_instrument_format="10" flowcell_id="C7U2YANXX" folder_name="150707_HS38_16807_A_C7U2YANXX" folder_path_glob="/{export,nfs}/sf54/ILorHSany_sf54/*/" name="HS38_16807" loader="tkb" loading_date="2015-07-07" run_folder="150707_HS38_16807_A_C7U2YANXX">
+ <instrument id_instrument="120" name="HS38" id_instrument_format="10" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="102825" id_run="16807" tile_count="48" tracks="6" position="1" />
+<run_lane id_run_lane="102826" id_run="16807" tile_count="48" tracks="6" position="2" />
+<run_lane id_run_lane="102827" id_run="16807" tile_count="48" tracks="6" position="3" />
+<run_lane id_run_lane="102828" id_run="16807" tile_count="48" tracks="6" position="4" />
+<run_lane id_run_lane="102829" id_run="16807" tile_count="48" tracks="6" position="5" />
+<run_lane id_run_lane="102830" id_run="16807" tile_count="48" tracks="6" position="6" />
+<run_lane id_run_lane="102831" id_run="16807" tile_count="48" tracks="6" position="7" />
+<run_lane id_run_lane="102832" id_run="16807" tile_count="48" tracks="6" position="8" />
+</run_lanes>
+ <current_run_status id_run_status="224782" id_run="16807" date="2015-07-07 23:21:23" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="1" description="analysis pending" />
+ <run_statuses>
+ <run_status id_run_status="224781" id_run="16807" date="2015-07-07 23:21:23" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="224782" id_run="16807" date="2015-07-07 23:21:23" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="1" description="analysis pending" />
+ <run_status id_run_status="224775" id_run="16807" date="2015-07-07 22:53:08" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete" />
+ <run_status id_run_status="224694" id_run="16807" date="2015-07-07 10:08:25" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="224682" id_run="16807" date="2015-07-07 09:24:12" id_run_status_dict="1" id_user="11" username="pipeline" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ <annotation id_run_annotation="68890" id_run="16807" id_annotation="67363" date="2015-07-07 09:47:50" id_user="11" username="tkb" comment="custom primer, no phix used." attachment_name="" run_current_ok="1" current_cycle="" />
+ </annotations>
+ <tags>
+   <tag id_tag="22" description="fc_slotA" />
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="18" description="single_read" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>
