@@ -1,7 +1,7 @@
 package npg_pipeline::archive::file::generation;
 
 use Moose;
-use File::Spec qw/catfile/;
+use File::Spec::Functions qw/catfile/;
 
 extends q{npg_pipeline::base};
 
