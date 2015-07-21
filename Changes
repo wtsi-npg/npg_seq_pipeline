@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - kill unwanted jobs efficiently (one command for all ids and -b option)
  - call warehouse loaders with verbose option
  - call ml warehouse loader at the end of the analysis pipeline so that the product
    table is loaded by the time the run goes into QC thus allowing to query this
