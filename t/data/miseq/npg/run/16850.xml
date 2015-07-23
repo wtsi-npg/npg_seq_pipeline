@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="16850" batch_id="39445" id_instrument="100" expected_cycle_count="508" actual_cycle_count="508" priority="1" id_run_pair="0" is_paired="0" team="C" id_instrument_format="11" flowcell_id="MS3014507-500V2" folder_name="150710_MS2_16850_A_MS3014507-500V2" folder_path_glob="/{export,nfs}/sf49/ILorHSorMS_sf49/*/" name="MS2_16850" loader="ajw" loading_date="2015-07-10" run_folder="150710_MS2_16850_A_MS3014507-500V2">
+ <instrument id_instrument="100" name="MS2" id_instrument_format="11" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="103047" id_run="16850" tile_count="12" tracks="1" position="1" />
+</run_lanes>
+ <current_run_status id_run_status="225339" id_run="16850" date="2015-07-12 02:07:42" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="1" description="analysis pending" />
+ <run_statuses>
+ <run_status id_run_status="225338" id_run="16850" date="2015-07-12 02:07:42" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="225339" id_run="16850" date="2015-07-12 02:07:42" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="1" description="analysis pending" />
+ <run_status id_run_status="225337" id_run="16850" date="2015-07-12 01:36:53" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete" />
+ <run_status id_run_status="225161" id_run="16850" date="2015-07-10 12:36:24" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="225138" id_run="16850" date="2015-07-10 11:15:40" id_run_status_dict="1" id_user="33" username="pipeline" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ </annotations>
+ <tags>
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>

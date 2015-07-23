@@ -27,4 +27,5 @@
 - qc_verify_bam_id
 - qc_upstream_tags
 - run_analysis_complete
+- update_ml_warehouse
 - run_qc_review_pending
