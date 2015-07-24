@@ -10,7 +10,8 @@ use npg_pipeline::roles::business::base;
 
 our $VERSION = '0';
 
-Readonly::Scalar our $TAG_LIST_FILE_HEADER  => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
+Readonly::Scalar my $TAG_LIST_FILE_HEADER  => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
+Readonly::Scalar my $SPIKED_PHIX_PADDED    => q{ACAACGCATCTTTCCC};
 
 =head1 NAME
 
@@ -214,8 +215,13 @@ sub _check_tag_length {
     if ( scalar @{$tag_length{$temp[1]}} == 1 ) {
       my $tag_index = $tag_length{$temp[1]}->[0];
       if ( $spiked_phix_tag_index && $tag_index == $spiked_phix_tag_index ) {
+        my $max_length = $temp[0];
+        $self->_log( qq{Longest tag length: $max_length} );
+        if ( $max_length > (length $SPIKED_PHIX_PADDED) ) {
+          croak qq{Padded sequence for spiked Phix $SPIKED_PHIX_PADDED is shorter than longest tag length of $max_length};
+	}
         $self->_log( q{Yes - pad shortest tag to length of longest tag} );
-        @indexed_length_tags = map { length($_) < $temp[0] ? substr 'ACAACGCATCTTTCCC', 0, $temp[0] : $_ } @indexed_length_tags;
+        @indexed_length_tags = map { length($_) < $max_length ? substr $SPIKED_PHIX_PADDED, 0, $max_length : $_ } @indexed_length_tags;
         $tags_ok = 1;
       } else {
         $self->_log( q{No} . " tag_index=$tag_index spiked_phix_tag_index=" . ($spiked_phix_tag_index ? $spiked_phix_tag_index : q{}) );
@@ -386,7 +392,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Limited
+Copyright (C) 2015 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

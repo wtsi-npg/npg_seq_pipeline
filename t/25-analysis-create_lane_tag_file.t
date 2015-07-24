@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 49;
+use Test::More tests => 52;
 use Test::Exception;
 use File::Slurp;
 use File::Temp qw(tempdir);
@@ -125,6 +125,43 @@ my $dir = tempdir( CLEANUP => 1 );
   lives_ok {
     $create_lane->generate();
   } q{no croak running generate()};
+}
+
+{
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
+  my $lims = st::api::lims->new(id_run => 1234, batch_id=>6532)->children_ia;
+
+  my $create_lane = npg_pipeline::analysis::create_lane_tag_file->new(
+      lane_lims    => $lims->{1},
+      index_length => 16,
+      location     => $dir,
+  );
+  my $tag_list_lane_init = {1=> 'TAGCTTGTTGA', 2 => 'TGCGATGTTAATTTTT', 3 => 'GGCCAATGGGGAAAAA',};
+  my ($index_list, $tag_seq_list) = $create_lane->_process_tag_list($tag_list_lane_init, 1);
+  is_deeply($create_lane->_check_tag_length($tag_seq_list, $index_list, 3),
+    [qw(ACAACGCATCTTTCCC TGCGATGTTAATTTTT GGCCAATGGGGAAAAA)],
+    'short phix tag is padded');
+
+  $create_lane = npg_pipeline::analysis::create_lane_tag_file->new(
+      lane_lims    => $lims->{1},
+      index_length => 14,
+      location     => $dir,
+  );
+  $tag_list_lane_init = {1=> 'TAGCTTGTTGA', 2 => 'TGCGATGTTAATTT', 3 => 'GGCCAATGGGGAAA',};
+  ($index_list, $tag_seq_list) = $create_lane->_process_tag_list($tag_list_lane_init, 1);
+  is_deeply($create_lane->_check_tag_length($tag_seq_list, $index_list, 3),
+    [qw(ACAACGCATCTTTC TGCGATGTTAATTT GGCCAATGGGGAAA)],
+    'short phix tag is padded'); 
+
+  $create_lane = npg_pipeline::analysis::create_lane_tag_file->new(
+      lane_lims    => $lims->{1},
+      index_length => 18,
+      location     => $dir,
+  );
+  $tag_list_lane_init = {1=> 'TAGCTTGTTGA', 2 => 'TGCGATGTTAATTTTTTT', 3 => 'GGCCAATGGGGAAAAAAA',};
+  throws_ok { $create_lane->_process_tag_list($tag_list_lane_init, 1) }
+    qr/Padded sequence for spiked Phix ACAACGCATCTTTCCC is shorter than longest tag length of 18/,
+    'error when spiked phix padding is not long enough';  
 }
 
 {
