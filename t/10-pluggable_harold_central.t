@@ -73,6 +73,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
     qc_verify_bam_id
     qc_upstream_tags
     run_analysis_complete
+    update_ml_warehouse
     archive_to_irods
     run_qc_review_pending          
     lsf_end     
@@ -161,7 +162,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
   my $unset_string = 'unset NPG_WEBSERVICE_CACHE_DIR; unset NPG_CACHED_SAMPLESHEET_FILE;';
   my $expected_command = q[bsub -q lowload 50 -J warehouse_loader_1234_central ] .
                         qq[-o $log_dir/warehouse_loader_1234_central_] . $timestamp .
-                        qq[.out '$unset_string warehouse_loader --id_run 1234'];
+                        qq[.out '$unset_string warehouse_loader --verbose --id_run 1234'];
   is($pb->_update_warehouse_command(50, 'warehouse_loader', $unset_string),
     $expected_command, 'update warehouse command');
 }

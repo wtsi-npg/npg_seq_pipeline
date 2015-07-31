@@ -229,25 +229,28 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   mkdir join q[/], $tmp, 'lane1', 'qc';
   mkdir join q[/], $tmp, 'qc';
 
-  $qc = npg_pipeline::archive::file::qc->new(
-      id_run       => $id_run,
-      qc_to_run    => 'gc_bias',
-      repository   => 't',
-      is_indexed   => 1,
-      archive_path => $tmp,
-  );
-  ok( !$qc->_can_run(1),  q{lane is indexed - do not run gcbias on a lane} );
-  ok( $qc->_can_run(1,1), q{lane is indexed - run gcbias on a plex} );
+  SKIP: {
+    skip 'no legacy gc_bias window_depth tool available', 4 if not `which window_depth`;
+    $qc = npg_pipeline::archive::file::qc->new(
+        id_run       => $id_run,
+        qc_to_run    => 'gc_bias',
+        repository   => 't',
+        is_indexed   => 1,
+        archive_path => $tmp,
+    );
+    ok( !$qc->_can_run(1),  q{lane is indexed - do not run gcbias on a lane} );
+    ok( $qc->_can_run(1,1), q{lane is indexed - run gcbias on a plex} );
 
-  $qc = npg_pipeline::archive::file::qc->new(
-      id_run => $id_run,
-      qc_to_run => 'gc_bias',
-      repository => 't',
-      is_indexed => 0,
-      archive_path => $tmp,
-  );
-  ok( $qc->_can_run(1),   q{run is not indexed - run gcbiason a lane} );
-  ok( !$qc->_can_run(1,1),q{run is not indexed - do not run gcbias on a plex} );
+    $qc = npg_pipeline::archive::file::qc->new(
+        id_run => $id_run,
+        qc_to_run => 'gc_bias',
+        repository => 't',
+        is_indexed => 0,
+        archive_path => $tmp,
+    );
+    ok( $qc->_can_run(1),   q{run is not indexed - run gcbiason a lane} );
+    ok( !$qc->_can_run(1,1),q{run is not indexed - do not run gcbias on a plex} );
+  }
 }
 
 {

@@ -1,8 +1,23 @@
 LIST OF CHANGES
 ---------------
 
+release 49.3
+ - error if padding for spiked Phix index sequence is not long enough
+ - kill unwanted jobs efficiently (one command for all ids and -b option)
+ - call warehouse loaders with verbose option
+ - call ml warehouse loader at the end of the analysis pipeline so that the product
+   table is loaded by the time the run goes into QC thus allowing to query this
+   warehouse using run id
+ - simplified name generation for fastq files
+ - use 'subset' option of the bam_flagstast autoqc result instead
+   of the 'human_split' option
+ - allow p4 to be used where no alignment is specified for target but human
+     split (contains_nonconsented_human) is
+ - new tests for various p4 analysis options in seq_alignment
+     (20-archive_file_generation-seq_alignment.t)
+
 release 49.2.1
- - to avaid deprication warnings in Config::Any,
+ - to avoid deprecation warnings in Config::Any,
    ensure XS extensions are available for YAML and JSON
 
 release 49.2
@@ -550,7 +565,7 @@ release 36.10
  - bug fix for tileviz and calibration_table jobs
 
 release 36.9
- - npg_pipeline::analysis::harold_calibration module depricated, its test removed
+ - npg_pipeline::analysis::harold_calibration module deprecated, its test removed
  - attributes/methods for retrieving control species reference simplified
  - removed npg_pipeline::pre_exec::references_adapters and refactored bin/npg_pipeline_preexec_references to use reference finder roles directly
  - removed npg_pipeline::roles::business::pre_exec_strings, its code integrated into npg_pipeline::roles::business::base
@@ -722,7 +737,7 @@ release-31.0
    being flexible about qc input directories
  - parallelesation of  archive_to_irods and archive_to_sra removed since archive_to_sra is not used any more
  - npg_pipeline::roles::business::base->batch method removed
- - some changes to the npg::api::lane object usage to stop using depricated methods, especially getting hardcoded references
+ - some changes to the npg::api::lane object usage to stop using deprecated methods, especially getting hardcoded references
 
  - introduction of webcache in tests to cope with npg::api::lane methods using st::api::lims object and the latest batch xml
  - explicit spidering of st modules from npg::api modules discontinued; getting references and insert sizes explicitly in spidering discontinued since this should be covered by spidering the lims objects

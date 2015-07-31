@@ -177,10 +177,9 @@ sub _kill_jobs {
     }
     if (@job_ids) {
       @job_ids = reverse @job_ids;
-      $self->log(q{Will try to kill submitted jobs with following ids: } . join q{ }, @job_ids);
-      foreach my $id (@job_ids) {
-        $self->submit_bsub_command("bkill $id");
-      }
+      my $all_jobs = join q{ }, @job_ids;
+      $self->log(qq{Will try to kill submitted jobs with following ids: $all_jobs});
+      $self->submit_bsub_command("bkill -b $all_jobs");
     }
   }
   return;
