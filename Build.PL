@@ -23,6 +23,7 @@ my $builder = $class->new(
           'autodie'                      => 0,
           'Carp'                         => 1.04,
           'Cwd'                          => 0,
+          'Class::Load'                  => 0,
           'Config::Any'                  => 0,
           'Date::Format'                 => 0,
           'English'                      => 1.02,
@@ -60,8 +61,7 @@ my $builder = $class->new(
           'XML::LibXML'                  => 0,
 
           'npg_common::roles::log'                             => 0,
-          'npg_common::roles::software_location'               => 0,         
-          'npg_qc::autoqc::autoqc'                             => 0,
+          'npg_common::roles::software_location'               => 0,
           'npg_qc::autoqc::qc_store'                           => 0,
           'npg_tracking::data::reference::find'                => 0,
           'npg_tracking::data::reference::list'                => 0,
