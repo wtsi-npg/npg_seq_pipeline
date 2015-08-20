@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 49.4
  - LSF job creation for autoqc checks - use qc check objects directly when
    testing whether to create a job
 
