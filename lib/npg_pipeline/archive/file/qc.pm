@@ -2,12 +2,12 @@ package npg_pipeline::archive::file::qc;
 
 use Moose;
 use Carp;
-use English qw{-no_match_vars};
+use Try::Tiny;
 use Readonly;
 use File::Spec;
 use List::MoreUtils qw{none};
+use Class::Load qw/load_class/;
 
-use npg_qc::autoqc::autoqc;
 use npg_pipeline::lsf_job;
 
 extends q{npg_pipeline::base};
@@ -25,7 +25,7 @@ Readonly::Scalar my $NO_REFERENCE_REPOS_DEPENDENCY => {
   upstream_tags => 1,
 };
 
-has q{qc_to_run}    => (isa => q{Str}, is => q{ro}, required => 1);
+has q{qc_to_run} => (isa => q{Str}, is => q{ro}, required => 1);
 
 sub run_qc {
   my ($self, $arg_refs) = @_;
@@ -65,7 +65,8 @@ sub run_qc {
 sub _generate_bsub_command {
   my ($self, $required_job_completion, $indexed) = @_;
 
-  my $array_string = $self->_lsf_job_array($indexed);
+  my ($command, $qc_in) = $self->_qc_command($indexed);
+  my $array_string = $self->_lsf_job_array($qc_in, $indexed);
   if (!$array_string) {
     return;
   }
@@ -98,14 +99,22 @@ sub _generate_bsub_command {
   if ( ! $NO_REFERENCE_REPOS_DEPENDENCY->{ $self->qc_to_run() } ) {
     $job_sub .= q{ } . $self->ref_adapter_pre_exec_string();
   }
-  $job_sub .= q{ '};
 
-  $job_sub .= $QC_SCRIPT_NAME;
-  $job_sub .= q{ --check=} . $self->qc_to_run();
-  $job_sub .= q{ --id_run=} . $self->id_run();
+  $job_sub .= qq{ '$command'};
+
+  if ($self->verbose()) { $self->log($job_sub); }
+  return $job_sub;
+}
+
+sub _qc_command {
+  my ($self, $indexed) = @_;
+
+  my $c = $QC_SCRIPT_NAME;
+  $c .= q{ --check=} . $self->qc_to_run();
+  $c .= q{ --id_run=} . $self->id_run();
 
   if ( $self->qc_to_run() eq q[adapter] ) {
-    $job_sub .= q{ --file_type=bam};
+    $c .= q{ --file_type=bam};
   }
 
   my $qc_in;
@@ -120,24 +129,22 @@ sub _generate_bsub_command {
     $qc_in = ( $self->qc_to_run() eq q[adapter]) ?
 	  File::Spec->catfile($recalibrated_path, q[lane] . $lanestr) : $lane_archive_path;
     $qc_out_dir =  File::Spec->catfile($lane_archive_path, q[qc]);
-    $job_sub .= q{ --position=}  . $lanestr;
-    $job_sub .= q{ --tag_index=} . $tagstr;
+    $c .= q{ --position=}  . $lanestr;
+    $c .= q{ --tag_index=} . $tagstr;
   } else {
-    $job_sub .= q{ --position=}  . $self->lsb_jobindex();
+    $c .= q{ --position=}  . $self->lsb_jobindex();
     $qc_in  = $self->qc_to_run() eq q{tag_metrics} ? $self->bam_basecall_path :
         (($self->qc_to_run() eq q[adapter]) ? $recalibrated_path : $archive_path);
     $qc_out_dir = $self->qc_path();
   }
 
-  $job_sub .= qq{ --qc_in=$qc_in --qc_out=$qc_out_dir};
-  $job_sub .= q{'};
+  $c .= qq{ --qc_in=$qc_in --qc_out=$qc_out_dir};
 
-  if ($self->verbose()) { $self->log($job_sub); }
-  return $job_sub;
+  return ($c, $qc_in);
 }
 
 sub _can_run {
-  my ($self, $position, $tag_index) = @_;
+  my ($self, $qc_in, $position, $tag_index) = @_;
 
   my $qc = $self->qc_to_run();
 
@@ -154,48 +161,45 @@ sub _can_run {
     }
   }
 
-  if ( none {$_ eq $qc} @{npg_qc::autoqc::autoqc->checks_list()} ) {
-    croak qq{$qc check does not exist};
-  }
+  my $p = q{npg_qc::autoqc::checks::} . $qc;
+  load_class($p);
 
   my $init_hash = {
-      archive_path => $self->archive_path(),
-      position     => $position,
-      check        => $qc,
-      id_run       => $self->id_run(),
+      path      => $qc_in,
+      position  => $position,
+      check     => $qc,
+      id_run    => $self->id_run(),
   };
   if ( defined $tag_index ) {
-      $init_hash->{tag_index} = $tag_index;
+    $init_hash->{'tag_index'} = $tag_index;
   }
   if ($self->has_repository) {
-      $init_hash->{repository} = $self->repository;
+    $init_hash->{'repository'} = $self->repository;
   }
 
   my $return_value = 1;
-  my $object = npg_qc::autoqc::autoqc->new($init_hash);
-  eval {
-    $return_value = $object->can_run();
-    1;
-  } or do {
-    $self->log($EVAL_ERROR);
+  try {
+    $return_value = $p->new($init_hash)->can_run();
+  } catch {
+    $self->log($_);
   };
 
   return $return_value;
 }
 
 sub _lsf_job_array {
-  my ( $self, $indexed ) = @_;
+  my ($self, $qc_in, $indexed) = @_;
 
   my @lsf_indices = ();
   foreach my $lane ($self->positions()) {
     if ($indexed) {
       foreach my $tag (@{$self->get_tag_index_list($lane)}) {
-        if ( $self->_can_run($lane, $tag) ) {
+        if ( $self->_can_run($qc_in, $lane, $tag) ) {
           push @lsf_indices, ( $lane * $LSF_INDEX_MULTIPLIER ) + $tag;
         }
       }
     } else {
-      if ( $self->_can_run($lane) ) {
+      if ( $self->_can_run($qc_in, $lane) ) {
         push @lsf_indices, $lane;
       }
     }
@@ -274,7 +278,7 @@ Object module responsible for launching jobs to LSF for qc'ing fastq/fastqcheck 
 
 =item Carp
 
-=item English -no_match_vars
+=item Try::Tiny
 
 =item Readonly
 
@@ -282,7 +286,7 @@ Object module responsible for launching jobs to LSF for qc'ing fastq/fastqcheck 
 
 =item List::MoreUtils
 
-=item npg_qc::autoqc::autoqc
+=item Class::Load
 
 =back
 
@@ -296,7 +300,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Limited
+Copyright (C) 2015 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

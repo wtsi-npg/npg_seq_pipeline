@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 49.4
+ - LSF job creation for autoqc checks - use qc check objects directly when
+   testing whether to create a job
+
 release 49.3
  - error if padding for spiked Phix index sequence is not long enough
  - kill unwanted jobs efficiently (one command for all ids and -b option)
