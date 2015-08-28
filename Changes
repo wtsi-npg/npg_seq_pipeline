@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - npg_pipeline::cache - reuse_cache_only option added RT#486264
+
 release 49.4
  - LSF job creation for autoqc checks - use qc check objects directly when
    testing whether to create a job
