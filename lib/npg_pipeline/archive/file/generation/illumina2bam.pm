@@ -30,10 +30,11 @@ sub generate {
     my $tag_list_file;
     if ($self->is_multiplexed_lane($p)) {
       $self->log(qq{Lane $p is indexed, generating tag list});
+      my $index_length = $self->_get_index_length( $alims->{$p} );
       $tag_list_file = npg_pipeline::analysis::create_lane_tag_file->new(
         location     => $self->metadata_cache_dir,
         lane_lims    => $alims->{$p},
-        index_length => $self->index_length,
+        index_length => $index_length,
         verbose      => $self->verbose
       )->generate();
     }
@@ -80,6 +81,22 @@ sub _build__bam_index_decode_cmd {
   return $JAVA_CMD . q{ -Xmx1024m}
                    . q{ -jar } . $self->_BamIndexDecoder_jar()
                    . q{ VALIDATION_STRINGENCY=SILENT}
+}
+
+sub _get_index_length {
+  my ( $self, $lane_lims ) = @_;
+
+  my $index_length = $self->index_length;
+
+  if ($lane_lims->inline_index_exists) {
+    my $index_start = $lane_lims->inline_index_start;
+    my $index_end = $lane_lims->inline_index_end;
+    if ($index_start && $index_end) {
+      $index_length = $index_end - $index_start + 1;
+    }
+  }
+
+  return $index_length;
 }
 
 sub _generate_bsub_commands {
