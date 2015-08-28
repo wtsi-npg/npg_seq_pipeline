@@ -184,6 +184,16 @@ has 'reuse_cache' => (isa     => 'Bool',
                       writer  => '_set_reuse_cache',
                       default => 1,);
 
+=head2 reuse_cache_only
+
+A boolean flag indicating whether to only reuse the existing cache without
+ever creating a new one. Defaults to false.
+
+=cut
+has 'reuse_cache_only' => (isa     => 'Bool',
+                           is      => 'ro',
+                           default => 0,);
+
 =head2 set_env_vars
 
 A boolean flag indicating whether to set environment variables in global scope.
@@ -318,8 +328,12 @@ sub setup {
   }
 
   if (!$cache_exists) {
-    $self->_add_message(q[Will create a new cache directory ] . $self->cache_dir_path);
-    $self->create($copy_cache);
+    if ($self->reuse_cache_only) {
+      croak 'Failed to find existing cache directory';
+    } else {
+      $self->_add_message(q[Will create a new cache directory ] . $self->cache_dir_path);
+      $self->create($copy_cache);
+    }
   }
 
   if ($self->set_env_vars) {
@@ -333,8 +347,11 @@ sub setup {
       $ENV{ $samplesheet_file_var_name } = $cache_path;
       $self->_add_message(qq[$samplesheet_file_var_name is set to $cache_path]);
     } else {
-       $self->_add_message(sprintf '%s is not set, samplesheet %s not found]',
-                                   $samplesheet_file_var_name, $self->samplesheet_file_path);
+      if ($self->reuse_cache_only) {
+        croak 'Failed to find existing samplesheet';
+      }
+      $self->_add_message(sprintf '%s is not set, samplesheet %s not found]',
+                                  $samplesheet_file_var_name, $self->samplesheet_file_path);
     }
     ##use critic
   }

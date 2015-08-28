@@ -1,7 +1,8 @@
 LIST OF CHANGES
 ---------------
 
-- check for an inline index when calculating index_length
+ - npg_pipeline::cache - reuse_cache_only option added RT#486264
+ - check for an inline index when calculating index_length
 
 release 49.4
  - LSF job creation for autoqc checks - use qc check objects directly when
