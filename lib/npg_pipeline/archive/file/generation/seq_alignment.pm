@@ -291,6 +291,8 @@ sub _bfs_command {##no critic (Subroutines::ProhibitManyArgs)
   $args4new =~ s/["\{\}]//gxms;
   ##use critic
   ##no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+
+  #TODO: shift this horrendous inlining of perl scripts to a qc check the same as alignment_filer_metrics
   return join q[ ],
     q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(} . $args4new .q{); $o->execute(); $o->store($ARGV[-1]) '"'"'},
     join(q[/], $archive_path,  $name_root . '.cram'),
