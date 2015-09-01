@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - factor out generation of bam_flagstats metics into a method
+ - call new bam_flagstats execute method instead of invoking individual parsers explicitly -
+   forward compatibility
+
 release 49.4
  - LSF job creation for autoqc checks - use qc check objects directly when
    testing whether to create a job
