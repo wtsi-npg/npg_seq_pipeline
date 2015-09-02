@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - drop redundant do_markduplicates and not_strip_bam_tag options from args list
+   of the old-style bam alignment script
  - factor out generation of bam_flagstats metics into a method
  - call new bam_flagstats execute method instead of invoking individual parsers explicitly -
    forward compatibility

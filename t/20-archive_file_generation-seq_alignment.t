@@ -5,7 +5,7 @@ use Test::Exception;
 use Test::Deep;
 use File::Temp qw/tempdir/;
 use Cwd qw/cwd abs_path/;
-use  Perl6::Slurp;
+use Perl6::Slurp;
 use File::Copy;
 
 use_ok('npg_pipeline::archive::file::generation::seq_alignment');
@@ -82,7 +82,7 @@ my $rna_gen;
     qq{--qc_out $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc --tag_index 3 }.
     q{'};
 
-   $args->{'4000'} = qq{bam_alignment.pl --id_run 12597 --position 4 --tag_index 0 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#0.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#0 --do_markduplicates --not_strip_bam_tag --is_paired_read};
+   $args->{'4000'} = qq{bam_alignment.pl --id_run 12597 --position 4 --tag_index 0 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#0.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#0 --is_paired_read};
      
   
  lives_ok {$rna_gen->_generate_command_arguments([4])}
@@ -117,7 +117,7 @@ my $json = qq({"4003":"bash -c ' mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Dat
   qq($dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#3_phix.cram $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc ) .
     q{&&   qc --check alignment_filter_metrics --qc_in $PWD --id_run 12597 --position 4 } .
     qq{--qc_out $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc --tag_index 3 }.
-  qq('","4000":"bam_alignment.pl --id_run 12597 --position 4 --tag_index 0 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#0.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#0 --do_markduplicates --not_strip_bam_tag --is_paired_read"});
+  qq('","4000":"bam_alignment.pl --id_run 12597 --position 4 --tag_index 0 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#0.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#0 --is_paired_read"});
 
 cmp_deeply(\@lines, [$json ], 'correct json file content (for dUTP library)');
 
@@ -137,7 +137,7 @@ cmp_deeply(\@lines, [$json ], 'correct json file content (for dUTP library)');
 
 #####  non-RNASeq libraries (i.e. not Illumina cDNA protocol (unstranded) and RNA-seq dUTP (stranded))  pattern match looks for /(?:cD|R)NA/sxm
 
-  $args->{'5040'} = qq{bam_alignment.pl --spiked_phix_split --id_run 12597 --position 5 --tag_index 40 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane5/12597_5#40.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane5/12597_5#40 --do_markduplicates --not_strip_bam_tag --is_paired_read};
+  $args->{'5040'} = qq{bam_alignment.pl --spiked_phix_split --id_run 12597 --position 5 --tag_index 40 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane5/12597_5#40.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane5/12597_5#40 --is_paired_read};
  
   lives_ok {$rna_gen->_generate_command_arguments([5])}
      'no error generating command arguments for non-RNASeq lane';
@@ -149,7 +149,7 @@ cmp_deeply(\@lines, [$json ], 'correct json file content (for dUTP library)');
   lives_ok {$rna_gen->_generate_command_arguments([1])}
      'no error generating command arguments for non-multiplex lane';
 
-  $args->{'1'} = qq{bam_alignment.pl --spiked_phix_split --id_run 12597 --position 1 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/12597_1.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/12597_1 --do_markduplicates --not_strip_bam_tag --is_paired_read};
+  $args->{'1'} = qq{bam_alignment.pl --spiked_phix_split --id_run 12597 --position 1 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/12597_1.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/12597_1 --is_paired_read};
 
   is ($rna_gen->_job_args->{'1'},$args->{'1'},'correct non-multiplex lane args generated');
 

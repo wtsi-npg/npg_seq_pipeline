@@ -264,8 +264,6 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                          ($is_plex ? ( q(--tag_index),     $tag_index ) : ()),
                          q(--input),         ( join q{/}, $input_path, $name_root.q{.bam}),
                          q(--output_prefix), ( join q{/}, $archive_path, $name_root),
-                         q(--do_markduplicates),
-                         q(--not_strip_bam_tag),
                          ($self->is_paired_read ? q(--is_paired_read) : q(--no-is_paired_read) );
   }
 
