@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - correctly determine path to SplitBamByChromosomes.jar
  - drop redundant do_markduplicates and not_strip_bam_tag options from args list
    of the old-style bam alignment script
  - factor out generation of bam_flagstats metics into a method

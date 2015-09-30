@@ -64,6 +64,13 @@ has q{_AlignmentFilter_jar} => (
                            default    => q{AlignmentFilter.jar},
                                 );
 
+has q{_SplitBamByChromosomes_jar} => (
+                           isa        => q{NpgCommonResolvedPathJarFile},
+                           is         => q{ro},
+                           coerce     => 1,
+                           default    => q{SplitBamByChromosomes.jar},
+                                );
+
 has 'input_path'      => ( isa        => 'Str',
                            is         => 'ro',
                            lazy_build => 1,
@@ -238,7 +245,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                              ) ),
                              (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
                              $human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : (),
-                             $l->separate_y_chromosome_data ? q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true) : (),
+                             $l->separate_y_chromosome_data ? (q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true -keys split_bam_by_chromosomes_jar -vals ), $self->_SplitBamByChromosomes_jar) : (),
                              q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
                              qq(> run_$name_root.json),
                            q{&&},
