@@ -95,15 +95,15 @@ sub BUILD {
       $self->_set_basecall_path( $bpath);
     }
     $self->log('BaseCalls path: ' . $self->basecall_path() );
-
-    if( !  $self->has_bam_basecall_path() ) {
-      my $bam_basecalls_dir = $self->intensity_path() . q{/} .q{BAM_basecalls_} . $self->timestamp();
-      $self->make_log_dir( $bam_basecalls_dir  );
-      $self->set_bam_basecall_path( $bam_basecalls_dir );
-    }
-    $self->log('BAM_basecall path: ' . $self->bam_basecall_path());
-    $self->_set_bam_basecall_dependent_paths();
   }
+
+  if( !  $self->has_bam_basecall_path() ) {
+    my $bam_basecalls_dir = $self->intensity_path() . q{/} .q{BAM_basecalls_} . $self->timestamp();
+    $self->make_log_dir( $bam_basecalls_dir  );
+    $self->set_bam_basecall_path( $bam_basecalls_dir );
+  }
+  $self->log('BAM_basecall path: ' . $self->bam_basecall_path());
+  $self->_set_bam_basecall_dependent_paths();
 
   return 1;
 }
@@ -125,10 +125,8 @@ override 'prepare' => sub {
                       {bustard_home => $self->intensity_path,})->bustard_dir();
     $self->set_dif_files_path( $bustard_dir );
     $self->_set_basecall_path( $bustard_dir );
-    $self->set_bam_basecall_path( $bustard_dir );
-    $self->log("basecall, bam_basecall and dif_files paths set to $bustard_dir");
+    $self->log("basecall and dif_files paths set to $bustard_dir");
     $self->make_log_dir( $bustard_dir  );
-    $self->_set_bam_basecall_dependent_paths();
   }
   $self->_inject_bustard_functions();
   return;
@@ -203,7 +201,7 @@ sub _inject_bustard_functions {
                            return npg_pipeline::analysis::bustard4pbcb->new(
                              pipeline=>$self,
                              bustard_home=>$self->intensity_path,
-                             bustard_dir=>$self->bam_basecall_path,
+                             bustard_dir=>$self->basecall_path,
                              id_run=>$self->id_run,
                              lanes=>$self->lanes)->make($function,$job_dep); };
     } else {
