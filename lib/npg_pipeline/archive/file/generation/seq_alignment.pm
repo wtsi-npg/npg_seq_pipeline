@@ -7,7 +7,7 @@ use Readonly;
 use Moose::Meta::Class;
 use Try::Tiny;
 use File::Slurp;
-use JSON;
+use JSON::XS;
 use List::Util qw(sum);
 use List::MoreUtils qw(any);
 
@@ -62,6 +62,13 @@ has q{_AlignmentFilter_jar} => (
                            is         => q{ro},
                            coerce     => 1,
                            default    => q{AlignmentFilter.jar},
+                                );
+
+has q{_SplitBamByChromosomes_jar} => (
+                           isa        => q{NpgCommonResolvedPathJarFile},
+                           is         => q{ro},
+                           coerce     => 1,
+                           default    => q{SplitBamByChromosomes.jar},
                                 );
 
 has 'input_path'      => ( isa        => 'Str',
@@ -134,7 +141,7 @@ sub _save_arguments {
   my ($self, $job_id) = @_;
   my $file_name = join q[_], $self->job_name_root, $job_id;
   $file_name = join q[/], $self->input_path, $file_name;
-  write_file($file_name, to_json $self->_job_args);
+  write_file($file_name, encode_json $self->_job_args);
   if($self->verbose) {
     $self->log(qq[Arguments written to $file_name]);
   }
@@ -143,6 +150,8 @@ sub _save_arguments {
 
 sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my ( $self, $l, $is_plex ) = @_;
+
+  $is_plex ||= 0;
   my $id_run = $self->id_run;
   my $position = $l->position;
   my $name_root = $id_run . q{_} . $position;
@@ -155,10 +164,9 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $tag_index = $l->tag_index;
     $spike_tag = (defined $l->spiked_phix_tag_index and $l->spiked_phix_tag_index == $tag_index);
     $name_root .= q{#} . $tag_index;
-    my $lane_dir = qq{lane$position};
-    $input_path .= q{/} . $lane_dir;
-    $archive_path .= q{/} . $lane_dir;
-    $qcpath =~s{([^/]+/?)\z}{$lane_dir/$1}smx; #per plex directory split assumed to be one level up from qc directory
+    $input_path  .= qq{/lane$position};
+    $archive_path = $self->lane_archive_path($position);
+    $qcpath       = $self->lane_qc_path($position);
   }
   croak qq{Only one of nonconsented X and autosome human split, separate Y chromosome data, and nonconsented human split may be specified ($name_root)} if (1 < sum $l->contains_nonconsented_xahuman, $l->separate_y_chromosome_data, $l->contains_nonconsented_human);
   croak qq{Nonconsented X and autosome human split, and separate Y chromosome data, must have Homo sapiens reference ($name_root)} if (($l->contains_nonconsented_xahuman or $l->separate_y_chromosome_data) and not $l->reference_genome=~/Homo_sapiens/smx );
@@ -237,52 +245,25 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                              ) ),
                              (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
                              $human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : (),
-                             $l->separate_y_chromosome_data ? q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true) : (),
+                             $l->separate_y_chromosome_data ? (q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true -keys split_bam_by_chromosomes_jar -vals ), $self->_SplitBamByChromosomes_jar) : (),
                              q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
                              qq(> run_$name_root.json),
                            q{&&},
                            qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
-                           #TODO: shift this horrendous inlining of perl scripts to a qc check the same as alignment_filer_metrics below
                            q{&&},
-                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
-                             (join q{/}, $archive_path, $name_root.q(.markdups_metrics.txt)),
-                             (join q{/}, $archive_path, $name_root.q(.flagstat)),
-                             $self->id_run,
-                             $position,
-                             ($is_plex ? ($tag_index) : ()),
-                             $qcpath,
+			   _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex),
                            q{&&},
-                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(subset=>q(phix), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
-                             (join q{/}, $archive_path, $name_root.q(_phix.markdups_metrics.txt)),
-                             (join q{/}, $archive_path, $name_root.q(_phix.flagstat)),
-                             $self->id_run,
-                             $position,
-                             ($is_plex ? ($tag_index) : ()),
-                             $qcpath,
+                           _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex, 'phix'),
                            q{&&},
-                           $human_split ? (
-                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(subset=>q(}.$human_split.q{), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
-                             (join q{/}, $archive_path, $name_root.q(_).$human_split.q(.markdups_metrics.txt)),
-                             (join q{/}, $archive_path, $name_root.q(_).$human_split.q(.flagstat)),
-                             $self->id_run,
-                             $position,
-                             ($is_plex ? ($tag_index) : ()),
-                             $qcpath,
-                           q{&&})
-                              :(),
-                           $nchs ? (
-                           q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$}.q{o=npg_qc::autoqc::results::bam_flagstats->new(subset=>q(}.$nchs_outfile_label.q{), id_run=>$}.q{ARGV[2], position=>$}.q{ARGV[3]}.($is_plex?q{, tag_index=>$}.q{ARGV[4]}:q()).q{); $}.q{o->parsing_metrics_file($}.q{ARGV[0]); open my$}.q{fh,q(<),$}.q{ARGV[1]; $}.q{o->parsing_flagstats($}.q{fh); close$}.q{fh; $}.q{o->store($}.q{ARGV[-1]) '"'"'},
-                             (join q{/}, $archive_path, $name_root.q(_).$nchs_outfile_label.q(.markdups_metrics.txt)),
-                             (join q{/}, $archive_path, $name_root.q(_).$nchs_outfile_label.q(.flagstat)),
-                             $self->id_run,
-                             $position,
-                             ($is_plex ? ($tag_index) : ()),
-                             $qcpath,
-                           q{&&})
-                              :(),
+                           $human_split ? join q( ),
+                           _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex, $human_split),
+                           q{&&} : q(),
+                           $nchs        ? join q( ),
+                           _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex, $nchs_outfile_label),
+                           q{&&} : q(),
                            q{qc --check alignment_filter_metrics --qc_in $}.q{PWD --id_run}, $self->id_run, qq{--position $position --qc_out $qcpath}, ($is_plex ? (qq{--tag_index $tag_index}) : ()),
                          q(');
-  }else{
+  } else {
     return join q( ),    $DNA_ALIGNMENT_SCRIPT,
                          ( ($self->force_phix_split and not $spike_tag) ? ( q(--spiked_phix_split) ) : () ), #might be better to turn off split if ref is phix
                          q(--id_run),        $self->id_run,
@@ -290,11 +271,37 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                          ($is_plex ? ( q(--tag_index),     $tag_index ) : ()),
                          q(--input),         ( join q{/}, $input_path, $name_root.q{.bam}),
                          q(--output_prefix), ( join q{/}, $archive_path, $name_root),
-                         q(--do_markduplicates),
-                         q(--not_strip_bam_tag),
                          ($self->is_paired_read ? q(--is_paired_read) : q(--no-is_paired_read) );
   }
 
+}
+
+sub _bfs_command {##no critic (Subroutines::ProhibitManyArgs)
+  my ($archive_path, $qc_path, $name_root, $l, $is_plex, $subset) = @_;
+
+  if ($subset) {
+    $name_root .= q(_) . $subset;
+  }
+  my $bfs_args = {id_run => $l->id_run, position => $l->position};
+  if ($is_plex && defined $l->tag_index) {
+    $bfs_args->{'tag_index'} = $l->tag_index;
+  }
+  if ($subset) {
+    $bfs_args->{'subset'} = 'q(' . $subset . ')';
+  }
+  $bfs_args->{'sequence_file'} = q[$] . 'ARGV[0]';
+  my $args4new = JSON::XS->new()->canonical(1)->encode($bfs_args);
+  $args4new =~ s/:/=>/gxms;
+  ##no critic (RegularExpressions::ProhibitEscapedMetacharacters)
+  $args4new =~ s/["\{\}]//gxms;
+  ##use critic
+  ##no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+
+  #TODO: shift this horrendous inlining of perl scripts to a qc check the same as alignment_filer_metrics
+  return join q[ ],
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(} . $args4new .q{); $o->execute(); $o->store($ARGV[-1]) '"'"'},
+    join(q[/], $archive_path,  $name_root . '.cram'),
+    $qc_path;
 }
 
 sub _generate_command_arguments {
