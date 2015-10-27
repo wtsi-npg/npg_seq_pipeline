@@ -44,6 +44,26 @@ sub archive_to_irods {
   return @job_ids;
 }
 
+=head2 archive_logs
+
+upload all log files to irods
+
+=cut
+
+sub archive_logs {
+  my ($self, @args) = @_;
+  if ($self->no_irods_archival) {
+    $self->log(q{Archival to iRODS is switched off.});
+    return ();
+  }
+  my $required_job_completion = shift @args;
+  my $ats = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::logs});
+  my @job_ids = $ats->submit_to_lsf({
+    required_job_completion => $required_job_completion,
+  });
+  return @job_ids;
+}
+
 =head2 upload_illumina_analysis_to_qc_database
 
 upload illumina analysis qc data 
