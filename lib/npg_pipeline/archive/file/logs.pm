@@ -39,7 +39,6 @@ sub _generate_bsub_command {
     seq_irods             => $self->general_values_conf()->{default_lsf_irods_resource},
   } ) ) . q{ };
 
-  $bsub_command .=  qq{-E 'script_must_be_unique_runner -job_name="$job_name_prefix"' };
   $bsub_command .=  q{-o } . $location_of_logs . qq{/$job_name.out };
   $bsub_command .=  q{'};
 
