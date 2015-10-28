@@ -27,7 +27,7 @@ sub _generate_bsub_command {
 
   my $required_job_completion = $arg_refs->{'required_job_completion'};
   my $timestamp = $self->timestamp();
-  my $archive_script = q{irods_log_loader.pl};
+  my $archive_script = q{npg_irods_log_loader.pl};
   my $job_name_prefix = $archive_script . q{_} . $self->id_run();
   my $job_name = $job_name_prefix . q{_} . $timestamp;
 
