@@ -1,8 +1,6 @@
 package npg_pipeline::archive::file::logs;
 
 use Moose;
-use Carp;
-use English qw{-no_match_vars};
 
 extends qw{npg_pipeline::base};
 
