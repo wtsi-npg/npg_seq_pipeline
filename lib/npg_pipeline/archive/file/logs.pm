@@ -40,6 +40,10 @@ sub _generate_bsub_command {
   $bsub_command .=  q{-o } . $location_of_logs . qq{/$job_name.out };
   $bsub_command .=  q{'};
 
+  if ($irodsinstance) {
+    $bsub_command .= q{irodsEnvFile=$}.q{HOME/.irods/.irodsEnv-} . $irodsinstance . q{-iseq-logs };
+  }
+
   $bsub_command .=  $archive_script . q{ --runfolder_path } . $self->runfolder_path() . q{ --id_run } . $self->id_run();
 
   if ($self->irods_root()) {
