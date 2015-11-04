@@ -27,6 +27,7 @@
 - qc_genotype
 - qc_verify_bam_id
 - qc_upstream_tags
+- qc_rna_seqc
 - run_analysis_complete
 - run_archival_in_progress
 - copy_interop_files_to_irods

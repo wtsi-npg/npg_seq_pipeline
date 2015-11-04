@@ -55,6 +55,7 @@ Readonly::Array our @AUTOQC_FUNCTIONS => qw/
                                           qc_pulldown_metrics
                                           qc_tag_metrics
                                           qc_upstream_tags
+                                          qc_rna_seqc
                                            /;
 
 Readonly::Scalar my $MIN_ARCHIVE_PATH_DEPTH => 3;
@@ -164,6 +165,7 @@ sub _save_status {
 =head2 qc_gc_fraction 
 =head2 qc_gc_bias
 =head2 qc_tag_metrics
+=head3 qc_rna_seqc
 
 functions to run various autoqc checks.
 

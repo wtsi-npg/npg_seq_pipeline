@@ -121,6 +121,7 @@ sub _qc_command {
   my $qc_out_dir;
   my $archive_path      = $self->archive_path;
   my $recalibrated_path = $self->recalibrated_path;
+  my $rna_seqc_out_dir  = $archive_path . q[/qc/rna_seqc];
 
   if ( defined $indexed ) {
     my $tagstr = $self->_tag_index_decode_string();
@@ -128,12 +129,12 @@ sub _qc_command {
     my $lane_archive_path = File::Spec->catfile($archive_path, q[lane] . $lanestr);
     $qc_in = ( $self->qc_to_run() eq q[adapter]) ?
 	  File::Spec->catfile($recalibrated_path, q[lane] . $lanestr) : $lane_archive_path;
-    $qc_out_dir =  File::Spec->catfile($lane_archive_path, q[qc]);
+    $qc_out_dir = File::Spec->catfile($lane_archive_path, q[qc]);
     $c .= q{ --position=}  . $lanestr;
     $c .= q{ --tag_index=} . $tagstr;
   } else {
     $c .= q{ --position=}  . $self->lsb_jobindex();
-    $qc_in  = $self->qc_to_run() eq q{tag_metrics} ? $self->bam_basecall_path :
+    $qc_in  = $self->qc_to_run() eq q{tag_metrics} ? $self->bam_basecall_path : 
         (($self->qc_to_run() eq q[adapter]) ? $recalibrated_path : $archive_path);
     $qc_out_dir = $self->qc_path();
   }
@@ -148,9 +149,9 @@ sub _can_run {
 
   my $qc = $self->qc_to_run();
 
-  if ($qc =~ /^tag_metrics|upstream_tags|gc_bias|verify_bam_id|genotype|pulldown_metrics$/smx) {
+  if ($qc =~ /^tag_metrics|upstream_tags|gc_bias|verify_bam_id|genotype|pulldown_metrics|rna_seqc$/smx) {
     my $is_multiplexed_lane = $self->is_multiplexed_lane($position);
-    if ($qc =~ /^gc_bias|verify_bam_id|genotype|pulldown_metrics$/smx) {
+    if ($qc =~ /^gc_bias|verify_bam_id|genotype|pulldown_metrics|rna_seqc$/smx) {
       my $can_run = ((!defined $tag_index) && !$is_multiplexed_lane) ||
 	  ((defined $tag_index) && $is_multiplexed_lane);
       if (!$can_run) {
@@ -219,7 +220,7 @@ sub _lsf_options {
   my ($self, $qc_to_run) = @_;
 
   my $resources;
-  if ($qc_to_run =~ /insert_size|sequence_error|ref_match|pulldown_metrics/smx ) {
+  if ($qc_to_run =~ /insert_size|sequence_error|ref_match|pulldown_metrics|rna_seqc/smx ) {
     $resources = npg_pipeline::lsf_job->new(memory => $LSF_MEMORY_REQ)->memory_spec();
   } elsif ($qc_to_run eq q[adapter]) {
     $resources = npg_pipeline::lsf_job->new(memory => $LSF_MEMORY_REQ_ADAPTER)->memory_spec() .
