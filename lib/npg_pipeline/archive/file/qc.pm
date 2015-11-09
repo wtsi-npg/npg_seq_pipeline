@@ -134,7 +134,7 @@ sub _qc_command {
     $c .= q{ --tag_index=} . $tagstr;
   } else {
     $c .= q{ --position=}  . $self->lsb_jobindex();
-    $qc_in  = $self->qc_to_run() eq q{tag_metrics} ? $self->bam_basecall_path : 
+    $qc_in  = $self->qc_to_run() eq q{tag_metrics} ? $self->bam_basecall_path :
         (($self->qc_to_run() eq q[adapter]) ? $recalibrated_path : $archive_path);
     $qc_out_dir = $self->qc_path();
   }
@@ -149,7 +149,8 @@ sub _can_run {
 
   my $qc = $self->qc_to_run();
 
-  if ($qc =~ /^tag_metrics|upstream_tags|gc_bias|verify_bam_id|genotype|pulldown_metrics|rna_seqc$/smx) {
+  if (($qc =~ /^tag_metrics|upstream_tags|gc_bias|verify_bam_id$/smx) ||
+      ($qc =~ /^genotype|pulldown_metrics|rna_seqc$/smx)) {
     my $is_multiplexed_lane = $self->is_multiplexed_lane($position);
     if ($qc =~ /^gc_bias|verify_bam_id|genotype|pulldown_metrics|rna_seqc$/smx) {
       my $can_run = ((!defined $tag_index) && !$is_multiplexed_lane) ||
