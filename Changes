@@ -3,6 +3,7 @@ LIST OF CHANGES
 
  - pass RG paramater to illumina2bam
  - add archive::file::logs
+ - use threading for bam and cram creation in seq_alignment
 
 release 49.5
  - correctly determine path to SplitBamByChromosomes.jar
