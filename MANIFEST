@@ -31,6 +31,7 @@ lib/npg_pipeline/archive/file/generation/seq_alignment.pm
 lib/npg_pipeline/archive/file/qc.pm
 lib/npg_pipeline/archive/file/generation/seqchksum_comparator.pm
 lib/npg_pipeline/archive/file/to_irods.pm
+lib/npg_pipeline/archive/file/logs.pm
 lib/npg_pipeline/archive/folder/generation.pm
 lib/npg_pipeline/archive/qc/auto_qc.pm
 lib/npg_pipeline/archive/qc/fastqcheck_loader.pm
@@ -75,6 +76,7 @@ t/20-archive_file_generation-seq_alignment.t
 t/20-archive_folder_generation.t
 t/20-archive_illumina_analysis.t
 t/20-archive_qc.t
+t/20-archive_logs.t
 t/21-references_adapters.t
 t/25-analysis-bustard4pbcb.t
 t/25-analysis-create_lane_tag_file.t
