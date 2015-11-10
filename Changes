@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
 
  - pass RG paramater to illumina2bam
+ - add archive::file::logs
 
 release 49.5
  - correctly determine path to SplitBamByChromosomes.jar
