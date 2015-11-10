@@ -122,7 +122,8 @@ sub _generate_bsub_commands {
   my $job_command = $self->_illumina2bam_cmd()
                   . q{ I=} . $intensity_path
                   . q{ L=} . $position
-		  . q{ B=} . $self->basecall_path()
+                  . q{ B=} . $self->basecall_path()
+                  . q{ RG=}. $id_run.q{_}.$position
                   . q{ PU=}. join q[_], $self->run_folder, $position;
 
   my $st_names = $self->_get_library_sample_study_names($lane_lims);
