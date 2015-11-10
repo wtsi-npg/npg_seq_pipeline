@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - pass RG paramater to illumina2bam
+
 release 49.5
  - correctly determine path to SplitBamByChromosomes.jar
  - drop redundant do_markduplicates and not_strip_bam_tag options from args list
