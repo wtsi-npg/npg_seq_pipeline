@@ -13,7 +13,7 @@ has 'irods_root' => ( isa => 'Str',
 
 sub _build_irods_root {
   my $self = shift;
-  return $self->function_list() =~ /gclp/ismx ? q(/gclp/) : q(/seq/);
+  return $self->function_list() =~ /gclp/ismx ? q(/gseq/) : q(/seq/);
 }
 
 sub submit_to_lsf {
