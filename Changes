@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - [Hinxton #500033] seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt references
  - pass RG paramater to illumina2bam
  - add archive::file::logs
 

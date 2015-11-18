@@ -174,15 +174,24 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   my $do_rna = $self->_do_rna_analysis($l);
 
   if( $self->force_p4 or (
-      ($do_rna or $self->is_hiseqx_run or $self->_has_newer_flowcell or
-       any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts
-      ) and (
+       (
       #allow old school if no reference or no alignments in bam
         ($self->_ref($l,q(fasta)) and $l->alignments_in_bam) or
         $l->contains_nonconsented_human # but not if contains_nonconsented_human
-      ) and
+      )
+      and
       not $spike_tag #or allow old school if this is the phix spike
     )){
+
+    # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp)
+    my $bwa = ($self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
+              ? 'bwa_mem'
+              : 'bwa_aln';
+
+    # There will be a new exception to the use of "aln": if you specify a reference
+    # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla, then we will use
+    # bwa's "mem"
+    $bwa = $self->_is_alt_reference($l) ? 'bwa_mem' : $bwa;
 
     my $human_split = $l->contains_nonconsented_xahuman ? q(xahuman) :
                       $l->separate_y_chromosome_data    ? q(yhuman) :
@@ -240,7 +249,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                                   ($do_target_alignment? (q(-keys alignment_reference_genome -vals), $self->_ref($l,q(bwa0_6)),): ()),
                                   ($nchs? (q(-keys hs_alignment_reference_genome -vals), _default_human_split_ref(q{bwa0_6}, $self->repository)): ()),   # always human default
                                   q(-keys bwa_executable -vals bwa0_6),
-                                  q(-keys alignment_method -vals bwa_mem),
+                                  q(-keys alignment_method -vals), $bwa,
                                   ($nchs ? q(-keys alignment_hs_method -vals bwa_aln) : ()),
                              ) ),
                              (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
@@ -474,6 +483,12 @@ sub _default_human_split_ref {
 
    return $human_ref;
 }
+
+sub _is_alt_reference {
+    my ($self, $l) = @_;
+    return $self->_ref($l,'bwa0_6') =~ /.alt/smx;
+}
+
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
