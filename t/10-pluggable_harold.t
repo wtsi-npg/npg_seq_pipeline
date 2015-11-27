@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 57;
+use Test::More tests => 58;
 use Test::Deep;
 use Test::Exception;
 use t::util;
