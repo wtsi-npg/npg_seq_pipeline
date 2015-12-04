@@ -503,7 +503,7 @@ sub _read_config {
   if ( scalar @{ $config } ) {
     $config = $config->[0]->{ $path };
   }
- 
+
   return $config;
 }
 
