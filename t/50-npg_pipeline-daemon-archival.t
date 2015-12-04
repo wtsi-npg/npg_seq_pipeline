@@ -4,12 +4,17 @@ use Test::More tests => 19;
 use Test::Exception;
 use Cwd;
 use List::MoreUtils qw{any};
+use Log::Log4perl qw(:easy);
+
 use t::dbic_util;
 use t::util;
 
 BEGIN {
   use_ok('npg_pipeline::daemons::archival_runner');
 }
+
+Log::Log4perl->easy_init($ERROR);
+
 my $script_name = q[npg_pipeline_post_qc_review];
 is (npg_pipeline::daemons::archival_runner->pipeline_script_name(),
             $script_name, 'pipeline script name correct'); 

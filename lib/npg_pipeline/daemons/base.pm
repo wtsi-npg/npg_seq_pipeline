@@ -1,4 +1,4 @@
-package npg_pipeline::daemons::harold_analysis_runner;
+package npg_pipeline::daemons::base;
 
 use Moose;
 use MooseX::ClassAttribute;
@@ -8,6 +8,7 @@ use English qw/-no_match_vars/;
 use List::MoreUtils  qw/none/;
 use FindBin qw/$Bin/;
 use Readonly;
+use Log::Log4perl;
 
 use npg_tracking::illumina::run::folder::location;
 use npg_tracking::illumina::run::short_info;
@@ -19,11 +20,6 @@ extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $PIPELINE_SCRIPT        => q{npg_pipeline_central};
-
-Readonly::Scalar my $DEFAULT_JOB_PRIORITY   => 50;
-Readonly::Scalar my $RAPID_RUN_JOB_PRIORITY => 60;
-Readonly::Scalar my $ANALYSIS_PENDING  => q{analysis pending};
 Readonly::Scalar my $GREEN_DATACENTRE  => q[green];
 Readonly::Array  my @GREEN_STAGING     =>
    qw(sf18 sf19 sf20 sf21 sf22 sf23 sf24 sf25 sf26 sf27 sf28 sf29 sf30 sf31 sf46 sf47 sf49 sf50 sf51);
@@ -35,9 +31,19 @@ class_has 'pipeline_script_name' => (
   is         => q{ro},
   lazy_build => 1,
 );
-sub _build_pipeline_script_name {
-  return $PIPELINE_SCRIPT;
-}
+
+has 'logger' => (
+  isa        => q{Log::Log4perl::Logger},
+  is         => q{ro},
+  default    => sub { Log::Log4perl->get_logger() },
+);
+
+around 'log' => sub {
+   my $orig = shift;
+   my $self = shift;
+   $self->logger->info('"log" method is depricated');
+   return $self->logger->warn(@_);
+};
 
 has 'seen' => (
   isa     => q{HashRef},
@@ -54,10 +60,10 @@ sub _build_green_host {
   my $self = shift;
   my $datacentre = `machine-location|grep datacentre`;
   if ($datacentre) {
-    $self->log(qq{Running in $datacentre});
+    $self->logger->info(qq{Running in $datacentre});
     return ($datacentre && $datacentre =~ /$GREEN_DATACENTRE/xms) ? 1 : 0;
   }
-  $self->log(q{Do not know what datacentre I am running in});
+  $self->logger->warn(q{Do not know what datacentre I am running in});
   return;
 }
 
@@ -85,24 +91,6 @@ has 'lims_query_class' => (
   },
 );
 
-sub run {
-  my ($self) = @_;
-  $self->log(q{Analysis daemon running...});
-  foreach my $run ($self->runs_with_status($ANALYSIS_PENDING)) {
-    eval{
-      if ( $self->staging_host_match($run->folder_path_glob)) {
-        $self->_process_one_run($run);
-      }
-      1;
-    } or do {
-      $self->log('Problems to process one run ' . $run->id_run() );
-      $self->log($EVAL_ERROR);
-      next;
-    };
-  }
-  return 1;
-}
-
 sub runs_with_status {
   my ($self, $status_name) = @_;
   if (!$status_name) {
@@ -121,7 +109,8 @@ sub staging_host_match {
 
   if (defined $self->green_host) {
     if (!$folder_path_glob) {
-      croak q[Need folder_path_glob to decide whether the run folder and the daemon host are co-located];
+      croak q[Need folder_path_glob to decide whether the run folder ] .
+            q[and the daemon host are co-located];
     }
     $match =  $self->green_host ^ none { $folder_path_glob =~ m{/$_/}smx } @GREEN_STAGING;
   }
@@ -129,132 +118,53 @@ sub staging_host_match {
   return $match;
 }
 
-sub _process_one_run {
-  my ($self, $run) = @_;
-
-  my $id_run = $run->id_run();
-  $self->log(qq{Considering run $id_run});
-  if ($self->seen->{$id_run}) {
-    $self->log(qq{Already seen run $id_run, skipping...});
-    return;
-  }
-
-  my $arg_refs = $self->check_lims_link($run);
-  if ($arg_refs->{'id'} == $NO_LIMS_LINK) {
-    my $m = $arg_refs->{'message'};
-    $self->log(qq{$m for run $id_run, will revisit later});
-    return;
-  }
-
-  $arg_refs->{'script'} = $self->pipeline_script_name;
-
-  $arg_refs->{'job_priority'} = $run->run_lanes->count <= 2 ?
-    $RAPID_RUN_JOB_PRIORITY : $DEFAULT_JOB_PRIORITY;
-  my $inherited_priority = $run->priority;
-  if ($inherited_priority > 0) { #not sure we curate what we get from LIMs
-    $arg_refs->{'job_priority'} += $inherited_priority;
-  }
-
-  $arg_refs->{'rf_path'} = $self->_runfolder_path($id_run);
-
-  $self->run_command( $id_run, $self->_generate_command( $arg_refs ) );
-
-  return;
-}
-
 sub check_lims_link {
   my ($self, $run) = @_;
 
-  my $lims = {'id' => $NO_LIMS_LINK};
-
   my $fc_barcode = $run->flowcell_id;
   if(!$fc_barcode) {
-    $lims->{'message'} = q{No flowcell barcode};
-  } else {
-    my $batch_id = $run->batch_id();
-
-    my $ref = { 'iseq_flowcell'  => $self->iseq_flowcell };
-    $ref->{'flowcell_barcode'} = $fc_barcode;
-    $ref->{'id_flowcell_lims'} = $batch_id;
-
-    my $obj = $self->lims_query_class()->new_object($ref);
-    my $fcell_row = $obj->query_resultset()->next;
-
-    if ( !($batch_id || $fcell_row)  ) {
-       $lims->{'message'} = q{No matching flowcell LIMs record is found};
-    } else {
-      $lims->{'id'}   = $batch_id || 0;
-      $lims->{'gclp'} = $fcell_row ? $fcell_row->from_gclp : 0;
-    }
+    croak q{No flowcell barcode};
   }
+
+  my $batch_id = $run->batch_id();
+  my $ref = { 'iseq_flowcell'  => $self->iseq_flowcell };
+  $ref->{'flowcell_barcode'} = $fc_barcode;
+  $ref->{'id_flowcell_lims'} = $batch_id;
+
+  my $obj = $self->lims_query_class()->new_object($ref);
+  my $fcell_row = $obj->query_resultset()->next;
+
+  if ( !($batch_id || $fcell_row)  ) {
+    croak q{No matching flowcell LIMs record is found};
+  }
+
+  my $lims = {};
+  $lims->{'id'}   = $batch_id || 0;
+  $lims->{'gclp'} = $fcell_row ? $fcell_row->from_gclp : 0;
 
   return $lims;
-}
-
-sub _runfolder_path {
-  my ($self, $id_run) = @_;
-
-  my $class =  Moose::Meta::Class->create_anon_class(
-    roles => [ qw/npg_tracking::illumina::run::folder::location
-                  npg_tracking::illumina::run::short_info/ ]
-  );
-  $class->add_attribute(q(npg_tracking_schema),{isa => 'npg_tracking::Schema', is=>q(ro)});
-
-  my $path = $class->new_object(
-    npg_tracking_schema => $self->npg_tracking_schema,
-    id_run              => $id_run,
-  )->runfolder_path;
-
-  return abs_path($path);
-}
-
-sub _generate_command {
-  my ( $self, $arg_refs ) = @_;
-
-  my $cmd = sprintf '%s --verbose --job_priority %i --runfolder_path %s',
-             $self->pipeline_script_name,
-             $arg_refs->{'job_priority'},
-             $arg_refs->{'rf_path'};
-
-  if ( $arg_refs->{'gclp'} ) {
-    $self->log('GCLP run');
-    $cmd .= ' --function_list gclp --force_p4';
-  } elsif ( $arg_refs->{'id'} ) {
-    $self->log('Non-GCLP run');
-    $cmd .= ' --id_flowcell_lims ' . $arg_refs->{'id'};
-  }
-
-  my $path = join q[:], $self->local_path(), $ENV{'PATH'};
-  my $prefix = $self->daemon_conf()->{'command_prefix'};
-  if (not defined $prefix) { $prefix=q(); }
-  $cmd = qq{export PATH=$path; $prefix$cmd};
-  return $cmd;
 }
 
 sub run_command {
   my ( $self, $id_run, $cmd ) = @_;
 
-  $self->log(qq{COMMAND: $cmd});
+  $self->logger->info(qq{COMMAND: $cmd});
   my $output = `$cmd`;
 
   if ( $CHILD_ERROR ) {
-    $self->log(qq{Error $CHILD_ERROR occured. Will try $id_run again on next loop.});
+    $self->logger->warn(
+      qq{Error $CHILD_ERROR occured. Will try $id_run again on next loop.});
   }else{
-    $self->seen->{$id_run}++; # you have now seen this
+    $self->seen->{$id_run}++;
   }
 
   if ($output) {
-    $self->log(qq{Output:$output});
+    $self->logger->info(qq{Output:$output});
   }
 
   return;
 }
 
-=head2 local_path
-
- a list with a path to bin the code is running from and perl executable the code is running under
-
-=cut
 sub local_path {
   my $perl_path = "$EXECUTABLE_NAME";
   $perl_path =~ s/\/perl$//xms;
@@ -265,26 +175,24 @@ sub local_path {
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
+
 __END__
 
 =head1 NAME
 
-npg_pipeline::daemons::harold_analysis_runner
+npg_pipeline::daemons::base
 
 =head1 SYNOPSIS
 
-  my $runner = npg_pipeline::daemons::harold_analysis_runner->new();
-  $runner->run();
+  package npg_pipeline::daemons::my_pipeline;
+  use Moose;
+  extends 'npg_pipeline::daemons::base';
 
 =head1 DESCRIPTION
 
-This module interrogates the npg database for runs with a status of analysis pending
-and then, if a link to LIMs data can be established,
-starts the pipeline for each of them.
+A Moose parent class for npg_pipeline daemons.
 
 =head1 SUBROUTINES/METHODS
-
-=head2 run - runner method for the daemon
 
 =head2 run_command
 
@@ -298,7 +206,8 @@ starts the pipeline for each of them.
 
 =head2 local_path
 
- returns list with paths to bin the code is running from and perl executable the code is running under
+ Returns a list with paths to bin the code is running from
+ and perl executable the code is running under
 
 =head1 DIAGNOSTICS
 
@@ -324,6 +233,8 @@ starts the pipeline for each of them.
 
 =item Moose::Meta::Class
 
+=item Log::Log4perl
+
 =item npg_tracking::illumina::run::folder::location
 
 =item npg_tracking::illumina::run::short_info
@@ -342,7 +253,6 @@ starts the pipeline for each of them.
 
 =head1 AUTHOR
 
-Andy Brown
 Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT

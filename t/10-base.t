@@ -1,13 +1,14 @@
 use strict;
 use warnings;
-use Test::More tests => 80;
+use Test::More tests => 82;
 use Test::Exception;
-use t::util;
 use File::Temp qw(tempdir tempfile);
 use File::Copy qw(cp);
 use Cwd;
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
 use Sys::Hostname;
+
+use t::util;
 use t::dbic_util;
 
 use_ok(q{npg_pipeline::base});
@@ -50,6 +51,13 @@ use_ok(q{npg_pipeline::base});
   } ) {
     isa_ok( $base->$config_group(), q{HASH}, q{$} . qq{base->$config_group} );
   }
+
+  my $tempdir = tempdir( CLEANUP => 1 );
+  $base = npg_pipeline::base->new(conf_path => $tempdir, verbose => 0);
+  is_deeply($base->study_analysis_conf(), [],
+    'no study analysis config file - empty array returned');
+  $base = npg_pipeline::base->new(conf_path => 't/data/study_analysis_conf');
+  isa_ok($base->study_analysis_conf(), 'ARRAY', 'array of study configurations');
 }
 
 {

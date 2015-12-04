@@ -39,7 +39,8 @@ lib/npg_pipeline/archive/qc/illumina_analysis.pm
 lib/npg_pipeline/base.pm
 lib/npg_pipeline/cache.pm
 lib/npg_pipeline/daemons/archival_runner.pm
-lib/npg_pipeline/daemons/harold_analysis_runner.pm
+lib/npg_pipeline/daemons/analysis.pm
+lib/npg_pipeline/daemons/base.pm
 lib/npg_pipeline/dispatch_tree.pm
 lib/npg_pipeline/launcher/status.pm
 lib/npg_pipeline/lsf_job.pm
@@ -88,8 +89,8 @@ t/30-run_folder-link.t
 t/35-archive_file_generation-BamClusterCounts.t
 t/35-archive-file-generation-seqchksum_comparator.t
 t/40-dispatch_tree.t
-t/50-archival_runner.t
-t/50-harold_analysis_runner.t
+t/50-npg_pipeline-daemon-archival.t
+t/50-npg_pipeline-daemon-analysis.t
 t/60-npg_tracking-daemon-analysis.t
 t/60-npg_tracking-daemon-archival.t
 t/bin/bkill
@@ -563,6 +564,7 @@ t/data/st/studies/299.xml
 t/data/st/studies/404.xml
 t/data/st/studies/411.xml
 t/data/st/studies/82.xml
+t/data/study_analysis_conf/study_analysis.yml
 t/data/summary_files/after_v7_mp_hack_Summary.htm
 t/data/summary_files/after_v7_mp_hack_Summary.xml
 t/data/summary_files/BustardSummary_mp.xml

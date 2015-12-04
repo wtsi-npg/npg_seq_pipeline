@@ -1,6 +1,14 @@
 LIST OF CHANGES
 ---------------
 
+ - require minimum version 5.10 for perl
+ - add study analysis configuration accessor
+ - simpler name for the archival daemon module
+ - parent class for pipeline daemons
+ - consistent behaviour of the archival and analysis daemons
+   when LIMs data are not available in the ml warehouse -
+   the run is skipped
+ - Log::Log4perl logger is used in pipeline daemons
  - pass RG paramater to illumina2bam
  - add archive::file::logs
 
