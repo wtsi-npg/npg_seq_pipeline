@@ -94,6 +94,11 @@ has '_job_args'   => ( isa     => 'HashRef',
                        default => sub { return {};},
                      );
 
+has '_using_alt_reference' => ( isa => 'Bool',
+                                is  => 'rw',
+                                default => 0,
+                              );
+
 sub generate {
   my ( $self, $arg_refs ) = @_;
 
@@ -345,6 +350,7 @@ sub _generate_command_arguments {
         }
         my $ji = _job_index($position, $tag_index);
         $self->_job_args->{$ji} = $self->_lsf_alignment_command($l,1);
+        $self->_using_alt_reference($self->_is_alt_reference($l));
       }
     } else { # do lane level analyses
       my $l = $lane_lims;
@@ -486,9 +492,8 @@ sub _default_human_split_ref {
 
 sub _is_alt_reference {
     my ($self, $l) = @_;
-    return $self->_ref($l,'bwa0_6') =~ /.alt/smx;
+    return -e $self->_ref($l,'bwa0_6') . '.alt';
 }
-
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

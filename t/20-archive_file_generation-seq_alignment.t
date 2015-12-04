@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 46;
+use Test::More tests => 48;
 use Test::Exception;
 use Test::Deep;
 use File::Temp qw/tempdir/;
@@ -265,6 +265,8 @@ my $rna_gen;
 
   cmp_deeply ($rna_gen->_job_args, $args,
     'correct command arguments for library RNASeq lane (unstranded Illumina cDNA library)');
+
+  is ($rna_gen->_using_alt_reference, 0, 'Not using alternate reference');
 }
 
 {  ##HiSeqX, run 16839_7
@@ -343,6 +345,8 @@ my $hsx_gen;
 
   cmp_deeply ($hsx_gen->_job_args, $args,
     'correct command arguments for HiSeqX lane 16839_7');
+
+  is ($hsx_gen->_using_alt_reference, 1, 'Using alternate reference');
 }
 
 {  ##HiSeq, run 16807_6 (newer flowcell)
