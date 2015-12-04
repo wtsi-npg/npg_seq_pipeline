@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - add study analysis configuration accessor
  - pass RG paramater to illumina2bam
  - add archive::file::logs
 

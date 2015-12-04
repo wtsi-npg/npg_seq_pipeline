@@ -563,6 +563,7 @@ t/data/st/studies/299.xml
 t/data/st/studies/404.xml
 t/data/st/studies/411.xml
 t/data/st/studies/82.xml
+t/data/study_analysis_conf/study_analysis.yml
 t/data/summary_files/after_v7_mp_hack_Summary.htm
 t/data/summary_files/after_v7_mp_hack_Summary.xml
 t/data/summary_files/BustardSummary_mp.xml
