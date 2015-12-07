@@ -189,7 +189,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     )){
 
     # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp)
-    my $bwa = ($self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
+    my $bwa = ($self->is_hiseqx_run or $self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
               ? 'bwa_mem'
               : 'bwa_aln';
 
