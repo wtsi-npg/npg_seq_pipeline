@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 49.6
  - pass RG paramater to illumina2bam
  - add archive::file::logs
 
