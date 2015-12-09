@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt references
+
 release 49.6
  - pass RG paramater to illumina2bam
  - add archive::file::logs
