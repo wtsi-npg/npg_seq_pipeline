@@ -231,6 +231,23 @@ has q{force_phix_split}  => (
   default       => 1,
 );
 
+=head2 gclp
+
+Boolean describing whether this analysis is GCLP
+
+=cut
+
+has q{gclp}  => (
+  isa           => q{Bool},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{Boolean describing whether this analysis is GCLP with a default based on the function_list if set},
+);
+sub _build_gclp {
+  my ($self) = @_;
+  return $self->has_function_list && $self->function_list =~ /gclp/ismx;
+}
+
 =head2 force_p4
 
 Boolean decision to force on P4 pipeline usage
@@ -240,8 +257,13 @@ Boolean decision to force on P4 pipeline usage
 has q{force_p4}  => (
   isa           => q{Bool},
   is            => q{ro},
-  documentation => q{Boolean decision to force on P4 pipeline usage},
+  lazy_build    => 1,
+  documentation => q{Boolean decision to force on P4 pipeline usage, default true iff GCLP},
 );
+sub _build_force_p4 {
+  my ($self) = @_;
+  return $self->gclp;
+}
 
 =head2 verbose
 
@@ -367,12 +389,13 @@ has 'function_list' => (
 );
 sub _build_function_list {
   my $self = shift;
+  my $suffix = $self->has_gclp && $self->gclp ? q(_gclp) : q();
   foreach my $flag (@FLAG2FUNCTION_LIST) {
     if ($self->can($flag) && $self->$flag) {
-      return $flag;
+      return $flag . $suffix;
     }
   }
-  return $self->pipeline_name;
+  return $self->pipeline_name . $suffix;
 }
 around 'function_list' => sub {
   my $orig = shift;

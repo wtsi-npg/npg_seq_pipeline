@@ -1,7 +1,9 @@
 LIST OF CHANGES
 ---------------
 
- - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt references
+ - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt
+   references
+ - add attribute "gclp" common to analysis and archival scripts
 
 release 49.6
  - pass RG paramater to illumina2bam

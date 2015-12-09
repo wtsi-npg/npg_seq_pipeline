@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 80;
+use Test::More tests => 85;
 use Test::Exception;
 use t::util;
 use File::Temp qw(tempdir tempfile);
@@ -54,6 +54,7 @@ use_ok(q{npg_pipeline::base});
 
 {
   my $base = npg_pipeline::base->new();
+  ok( !$base->gclp, 'function list not set and correctly defaults as not GCLP');
 
   my $path = getcwd() . '/data/config_files/function_list_base.yml';
 
@@ -69,6 +70,14 @@ use_ok(q{npg_pipeline::base});
   $path =~ s/function_list_base/function_list_central/;
   $base = npg_pipeline::base->new(function_list => $path);
   is( $base->function_list, $path, 'function list path as given');
+  ok( !$base->gclp, 'function list set and correctly identified as not GCLP');
+  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
+  
+  my$gpath=$path;
+  $gpath =~ s/function_list_central/function_list_gclp/;
+  $base = npg_pipeline::base->new(function_list => $gpath);
+  is( $base->function_list, $gpath, 'GCLP function list path as given');
+  ok( $base->gclp, 'function list set and correctly identified as GCLP');
   isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
   
   $base = npg_pipeline::base->new(function_list => 'data/config_files/function_list_central.yml');
