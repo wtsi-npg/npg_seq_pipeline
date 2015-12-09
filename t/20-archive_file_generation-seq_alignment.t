@@ -178,7 +178,7 @@ cmp_deeply(\@lines, [$json ], 'correct json file content (for dUTP library)');
     )
   } 'no error creating an object (forcing on phix split)';
 
-#####  non-RNASeq libraries (i.e. not Illumina cDNA protocol (unstranded) and RNA-seq dUTP (stranded))  pattern match looks for /(?:cD|R)NA/sxm
+#####  phiX control libraries
 
   $args->{'5168'} = qq{bam_alignment.pl --id_run 12597 --position 5 --tag_index 168 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane5/12597_5#168.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane5/12597_5#168 --is_paired_read};
  
