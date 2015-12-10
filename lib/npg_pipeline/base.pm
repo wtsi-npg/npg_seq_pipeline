@@ -231,23 +231,6 @@ has q{force_phix_split}  => (
   default       => 1,
 );
 
-=head2 gclp
-
-Boolean describing whether this analysis is GCLP
-
-=cut
-
-has q{gclp}  => (
-  isa           => q{Bool},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{Boolean describing whether this analysis is GCLP with a default based on the function_list if set},
-);
-sub _build_gclp {
-  my ($self) = @_;
-  return $self->has_function_list && $self->function_list =~ /gclp/ismx;
-}
-
 =head2 force_p4
 
 Boolean decision to force on P4 pipeline usage
@@ -415,6 +398,10 @@ around 'function_list' => sub {
   }
   return $file;
 };
+sub _build_gclp {
+  my ($self) = @_;
+  return $self->has_function_list && $self->function_list =~ /gclp/ismx;
+}
 
 =head2 function_list_conf
 
