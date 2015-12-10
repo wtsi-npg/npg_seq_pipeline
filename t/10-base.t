@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 86;
+use Test::More tests => 87;
 use Test::Exception;
 use t::util;
 use File::Temp qw(tempdir tempfile);
@@ -239,6 +239,10 @@ package main;
   ok( !$base->is_qc_run, 'looking on flowcell lims id: not qc run');
   my $fl = getcwd() . '/data/config_files/function_list_central_qc_run.yml';
   is( $base->function_list, $fl, 'qc function list');
+  
+  $base = mytest::central->new(id_flowcell_lims => 3456, gclp => 1);
+  my $gfl = getcwd() . '/data/config_files/function_list_central_gclp.yml';
+  is( $base->function_list, $gfl, 'gclp function list');
   
   $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775');
   my $path = getcwd() . '/data/config_files/function_list_base_qc_run.yml';
