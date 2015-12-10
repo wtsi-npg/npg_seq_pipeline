@@ -9,7 +9,10 @@ LIST OF CHANGES
    when LIMs data are not available in the ml warehouse -
    the run is skipped
  - Log::Log4perl logger is used in pipeline daemons
- - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt references
+ - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt
+   references and GCLP
+ - add attribute "gclp" common to analysis and archival scripts
+ - function list config files always contain pipeline module name e.g. central
 
 release 49.6
  - pass RG paramater to illumina2bam

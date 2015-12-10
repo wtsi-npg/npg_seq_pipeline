@@ -195,6 +195,19 @@ sub _build_is_hiseqx_run {
   return $self->run->instrument->name =~ /\AHX/xms;
 }
 
+=head2 gclp
+
+Boolean describing whether this analysis is GCLP
+
+=cut
+
+has q{gclp}  => (
+  isa           => q{Bool},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{Boolean describing whether this analysis is GCLP with a default based on the function_list if set},
+);
+
 =head2 positions
 
 An array of lane positions for this submission.
