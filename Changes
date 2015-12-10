@@ -9,6 +9,9 @@ LIST OF CHANGES
    when LIMs data are not available in the ml warehouse -
    the run is skipped
  - Log::Log4perl logger is used in pipeline daemons
+ - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt references
+
+release 49.6
  - pass RG paramater to illumina2bam
  - add archive::file::logs
 
