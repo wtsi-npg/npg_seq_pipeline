@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 85;
+use Test::More tests => 86;
 use Test::Exception;
 use t::util;
 use File::Temp qw(tempdir tempfile);
@@ -74,7 +74,7 @@ use_ok(q{npg_pipeline::base});
   isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
   
   my$gpath=$path;
-  $gpath =~ s/function_list_central/function_list_gclp/;
+  $gpath =~ s/function_list_central/function_list_central_gclp/;
   $base = npg_pipeline::base->new(function_list => $gpath);
   is( $base->function_list, $gpath, 'GCLP function list path as given');
   ok( $base->gclp, 'function list set and correctly identified as GCLP');
@@ -222,6 +222,10 @@ use_ok(q{npg_pipeline::base});
     'error when no env vars are set';
 }
 
+package mytest::central;
+use base 'npg_pipeline::base';
+package main;
+
 {
   my $base = npg_pipeline::base->new(flowcell_id  => 'HBF2DADXX');
   ok( !$base->is_qc_run, 'looking on flowcell lims id: not qc run');
@@ -231,12 +235,17 @@ use_ok(q{npg_pipeline::base});
   ok( !$base->is_qc_run, 'looking on flowcell lims id: not qc run');
   ok( !$base->qc_run, 'not qc run');
 
-  $base = npg_pipeline::base->new(id_flowcell_lims => 3456, qc_run => 1);
+  $base = mytest::central->new(id_flowcell_lims => 3456, qc_run => 1);
   ok( !$base->is_qc_run, 'looking on flowcell lims id: not qc run');
-  my $fl = getcwd() . '/data/config_files/function_list_qc_run.yml';
+  my $fl = getcwd() . '/data/config_files/function_list_central_qc_run.yml';
   is( $base->function_list, $fl, 'qc function list');
   
   $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775');
+  my $path = getcwd() . '/data/config_files/function_list_base_qc_run.yml';
+  throws_ok { $base->function_list }
+    qr/File $path does not exist or is not readable/,
+    'error when default function list does not exist';
+  $base = mytest::central->new(id_flowcell_lims => '3980331130775');
   ok( $base->is_qc_run, 'looking on flowcell lims id: qc run');
   ok( $base->qc_run, 'qc run');
   is( $base->function_list, $fl, 'qc function list');

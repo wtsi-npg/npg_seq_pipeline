@@ -29,7 +29,7 @@ with q{npg_pipeline::roles::business::flag_options};
 
 Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
 Readonly::Scalar my $CONF_DIR                   => q{data/config_files};
-Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ olb qc_run /;
+Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ olb qc_run gclp /;
 
 $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
 
@@ -389,10 +389,10 @@ has 'function_list' => (
 );
 sub _build_function_list {
   my $self = shift;
-  my $suffix = $self->has_gclp && $self->gclp ? q(_gclp) : q();
+  my $suffix = q();
   foreach my $flag (@FLAG2FUNCTION_LIST) {
     if ($self->can($flag) && $self->$flag) {
-      return $flag . $suffix;
+      $suffix .= "_$flag";
     }
   }
   return $self->pipeline_name . $suffix;
