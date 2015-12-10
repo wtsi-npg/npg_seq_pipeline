@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 46;
+use Test::More tests => 48;
 use Test::Exception;
 use Test::Deep;
 use File::Temp qw/tempdir/;
@@ -30,13 +30,32 @@ my $phix_ref = "$phix_ref_dir/phix-illumina.fa";
 `touch $phix_ref`;
 
 {
+`mkdir -p $dir/references/PhiX/default/all/bwa0_6`;
+`touch $dir/references/PhiX/default/all/bwa0_6/phix.fa`;
+
+`mkdir -p $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta`;
+`touch $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa`;
+`mkdir -p $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard`;
+`touch $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa`;
+`mkdir -p $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6`;
+`touch $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa`;
+`ln -s 1000Genomes_hs37d5 $dir/references/Homo_sapiens/default`;
+
 my $ref_dir = join q[/],$dir,'references','Mus_musculus','NCBIm37','all';
 `mkdir -p $ref_dir/fasta`;
+`mkdir -p $dir/references/Strongyloides_ratti/20100601/all/fasta`;
+`touch $dir/references/Strongyloides_ratti/20100601/all/fasta/rat.fa`;
+`mkdir -p $dir/references/Strongyloides_ratti/20100601/all/picard`;
+`touch $dir/references/Strongyloides_ratti/20100601/all/picard/rat.fa`;
+`mkdir -p $dir/references/Strongyloides_ratti/20100601/all/bwa0_6`;
+`touch $dir/references/Strongyloides_ratti/20100601/all/bwa0_6/rat.fa`;
 `mkdir $ref_dir/bowtie2`;
 `mkdir $ref_dir/picard`;
+`mkdir $ref_dir/bwa0_6`;
 `touch $ref_dir/fasta/mm_ref_NCBI37_1.fasta`;
 `touch $ref_dir/bowtie2/mm_ref_NCBI37_1.fasta`;
 `touch $ref_dir/picard/mm_ref_NCBI37_1.fasta`;
+`touch $ref_dir/bwa0_6/mm_ref_NCBI37_1.fasta`;
 
 my $ref = qq[$ref_dir/bowtie2/mm_ref_NCBI37_1.fasta] ; 
 my $runfolder = q{140409_HS34_12597_A_C333TACXX};
@@ -82,8 +101,14 @@ my $rna_gen;
     qq{--qc_out $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc --tag_index 3 }.
     q{'};
 
-   $args->{'4000'} = qq{bam_alignment.pl --id_run 12597 --position 4 --tag_index 0 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#0.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#0 --is_paired_read};
-     
+  $args->{'4000'} = qq{bash -c '\ mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#0 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#0 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e '"'"'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;'"'"'` -keys br_numthreads_val -vals `perl -e '"'"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm unless \$n; \$n-=1; \$n=int \$n/2; print \$n>1?\$n:1;'"'"'` -keys b2c_mt_val -vals `perl -e '"'"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm unless \$n; \$n-=2; \$n=int \$n/2; print \$n>1?\$n:1;'"'"'` -keys indatadir -vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4 -keys outdatadir -vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4 -keys af_metrics -vals 12597_4#0.bam_alignment_filter_metrics.json -keys rpt -vals 12597_4#0 -keys reference_dict -vals $dir/references/Mus_musculus/NCBIm37/all/picard/mm_ref_NCBI37_1.fasta.dict -keys reference_genome_fasta -vals $dir/references/Mus_musculus/NCBIm37/all/fasta/mm_ref_NCBI37_1.fasta -keys phix_reference_genome_fasta -vals $phix_ref -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Mus_musculus/NCBIm37/all/bwa0_6/mm_ref_NCBI37_1.fasta -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_aln \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#0.json && viv.pl -s -x -v 3 -o viv_12597_4#0.log run_12597_4#0.json  } .
+  q{&& perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>12597,position=>4,sequence_file=>$ARGV[0],tag_index=>0); $o->execute(); $o->store($ARGV[-1]) '"'"' } .
+  qq{$dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#0.cram $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc && } .
+  q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>12597,position=>4,sequence_file=>$ARGV[0],subset=>q(phix),tag_index=>0); $o->execute(); $o->store($ARGV[-1]) '"'"' } .
+  qq{$dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#0_phix.cram $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc &&   } .
+  q{qc --check alignment_filter_metrics --qc_in $PWD --id_run 12597 --position 4 } .
+  qq{--qc_out $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc --tag_index 0 }.
+    q{'};
   
  lives_ok {$rna_gen->_generate_command_arguments([4])}
      'no error generating command arguments';
@@ -110,14 +135,27 @@ ok (-e $fname, 'file exists');
 
 my @lines = slurp($fname);
 
+my $xjson = qq({"4003":"bash -c ' mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e '\\"'\\"'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\\\d+)\\\\s*\\\\Z/sm;'\\"'\\"'` -keys br_numthreads_val -vals `perl -e '\\"'\\"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\\\d+)\\\\s*\\\\Z/sm unless \$n; \$n-=1; \$n=int \$n/2; print \$n>1?\$n:1;'\\"'\\"'` -keys b2c_mt_val -vals `perl -e '\\"'\\"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\\\d+)\\\\s*\\\\Z/sm unless \$n; \$n-=2; \$n=int \$n/2; print \$n>1?\$n:1;'\\"'\\"'` -keys indatadir -vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4 -keys outdatadir -vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4 -keys af_metrics -vals 12597_4#3.bam_alignment_filter_metrics.json -keys rpt -vals 12597_4#3 -keys reference_dict -vals $dir/references/Mus_musculus/NCBIm37/all/picard/mm_ref_NCBI37_1.fasta.dict -keys reference_genome_fasta -vals $dir/references/Mus_musculus/NCBIm37/all/fasta/mm_ref_NCBI37_1.fasta -keys phix_reference_genome_fasta -vals $phix_ref -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Mus_musculus/NCBIm37/all/bowtie2/mm_ref_NCBI37_1.fasta -keys library_type -vals fr-firststrand -keys transcriptome_val -vals $dir/transcriptomes/Mus_musculus/ensembl_67_transcriptome/NCBIm37/tophat2/NCBIm37.known -keys alignment_method -vals tophat2 \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#3.json && viv.pl -s -x -v 3 -o viv_12597_4#3.log run_12597_4#3.json  ) .
+  q(&& perl -e '\"'\"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>12597,position=>4,sequence_file=>$ARGV[0],tag_index=>3); $o->execute(); $o->store($ARGV[-1]) '\"'\"' ) .
+  qq($dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#3.cram $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc && ) .
+  q(perl -e '\"'\"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>12597,position=>4,sequence_file=>$ARGV[0],subset=>q(phix),tag_index=>3); $o->execute(); $o->store($ARGV[-1]) '\"'\"' ) .
+  qq($dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#3_phix.cram $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc ) .
+  q{&&   qc --check alignment_filter_metrics --qc_in $PWD --id_run 12597 --position 4 } .
+  qq{--qc_out $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc --tag_index 3 }.
+  qq('","4000":"bam_alignment.pl --id_run 12597 --position 4 --tag_index 0 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#0.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#0 --is_paired_read"});
+
 my $json = qq({"4003":"bash -c ' mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e '\\"'\\"'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\\\d+)\\\\s*\\\\Z/sm;'\\"'\\"'` -keys br_numthreads_val -vals `perl -e '\\"'\\"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\\\d+)\\\\s*\\\\Z/sm unless \$n; \$n-=1; \$n=int \$n/2; print \$n>1?\$n:1;'\\"'\\"'` -keys b2c_mt_val -vals `perl -e '\\"'\\"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\\\d+)\\\\s*\\\\Z/sm unless \$n; \$n-=2; \$n=int \$n/2; print \$n>1?\$n:1;'\\"'\\"'` -keys indatadir -vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4 -keys outdatadir -vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4 -keys af_metrics -vals 12597_4#3.bam_alignment_filter_metrics.json -keys rpt -vals 12597_4#3 -keys reference_dict -vals $dir/references/Mus_musculus/NCBIm37/all/picard/mm_ref_NCBI37_1.fasta.dict -keys reference_genome_fasta -vals $dir/references/Mus_musculus/NCBIm37/all/fasta/mm_ref_NCBI37_1.fasta -keys phix_reference_genome_fasta -vals $phix_ref -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Mus_musculus/NCBIm37/all/bowtie2/mm_ref_NCBI37_1.fasta -keys library_type -vals fr-firststrand -keys transcriptome_val -vals $dir/transcriptomes/Mus_musculus/ensembl_67_transcriptome/NCBIm37/tophat2/NCBIm37.known -keys alignment_method -vals tophat2 \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#3.json && viv.pl -s -x -v 3 -o viv_12597_4#3.log run_12597_4#3.json  ) .
   q(&& perl -e '\"'\"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>12597,position=>4,sequence_file=>$ARGV[0],tag_index=>3); $o->execute(); $o->store($ARGV[-1]) '\"'\"' ) .
   qq($dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#3.cram $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc && ) .
   q(perl -e '\"'\"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>12597,position=>4,sequence_file=>$ARGV[0],subset=>q(phix),tag_index=>3); $o->execute(); $o->store($ARGV[-1]) '\"'\"' ) .
   qq($dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#3_phix.cram $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc ) .
-    q{&&   qc --check alignment_filter_metrics --qc_in $PWD --id_run 12597 --position 4 } .
-    qq{--qc_out $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc --tag_index 3 }.
-  qq('","4000":"bam_alignment.pl --id_run 12597 --position 4 --tag_index 0 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#0.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#0 --is_paired_read"});
+  q(&&   qc --check alignment_filter_metrics --qc_in $PWD --id_run 12597 --position 4 ) .
+  qq(--qc_out $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc --tag_index 3 ) .
+  qq('","4000":"bash -c ' mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#0 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#0 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e '\\"'\\"'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\\\d+)\\\\s*\\\\Z/sm;'\\"'\\"'` -keys br_numthreads_val -vals `perl -e '\\"'\\"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\\\d+)\\\\s*\\\\Z/sm unless \$n; \$n-=1; \$n=int \$n/2; print \$n>1?\$n:1;'\\"'\\"'` -keys b2c_mt_val -vals `perl -e '\\"'\\"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\\\d+)\\\\s*\\\\Z/sm unless \$n; \$n-=2; \$n=int \$n/2; print \$n>1?\$n:1;'\\"'\\"'` -keys indatadir -vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4 -keys outdatadir -vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4 -keys af_metrics -vals 12597_4#0.bam_alignment_filter_metrics.json -keys rpt -vals 12597_4#0 -keys reference_dict -vals $dir/references/Mus_musculus/NCBIm37/all/picard/mm_ref_NCBI37_1.fasta.dict -keys reference_genome_fasta -vals $dir/references/Mus_musculus/NCBIm37/all/fasta/mm_ref_NCBI37_1.fasta -keys phix_reference_genome_fasta -vals $phix_ref -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Mus_musculus/NCBIm37/all/bwa0_6/mm_ref_NCBI37_1.fasta -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_aln \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#0.json && viv.pl -s -x -v 3 -o viv_12597_4#0.log run_12597_4#0.json  ) .
+  q(&& perl -e '\"'\"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>12597,position=>4,sequence_file=>$ARGV[0],tag_index=>0); $o->execute(); $o->store($ARGV[-1]) '\"'\"' ) .
+  qq($dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#0.cram $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc ) .
+  q(&& perl -e '\"'\"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>12597,position=>4,sequence_file=>$ARGV[0],subset=>q(phix),tag_index=>0); $o->execute(); $o->store($ARGV[-1]) '\"'\"' ) .
+  qq($dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/12597_4#0_phix.cram $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc &&   qc --check alignment_filter_metrics --qc_in \$PWD --id_run 12597 --position 4 --qc_out $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/qc --tag_index 0 '"});
 
 cmp_deeply(\@lines, [$json ], 'correct json file content (for dUTP library)');
 
@@ -135,14 +173,14 @@ cmp_deeply(\@lines, [$json ], 'correct json file content (for dUTP library)');
     )
   } 'no error creating an object (forcing on phix split)';
 
-#####  non-RNASeq libraries (i.e. not Illumina cDNA protocol (unstranded) and RNA-seq dUTP (stranded))  pattern match looks for /(?:cD|R)NA/sxm
+#####  phiX control libraries
 
-  $args->{'5040'} = qq{bam_alignment.pl --spiked_phix_split --id_run 12597 --position 5 --tag_index 40 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane5/12597_5#40.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane5/12597_5#40 --is_paired_read};
+  $args->{'5168'} = qq{bam_alignment.pl --id_run 12597 --position 5 --tag_index 168 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane5/12597_5#168.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane5/12597_5#168 --is_paired_read};
  
   lives_ok {$rna_gen->_generate_command_arguments([5])}
      'no error generating command arguments for non-RNASeq lane';
 
-  is ($rna_gen->_job_args->{'5040'},$args->{'5040'},'correct non-RNASeq lane args generated');
+  is ($rna_gen->_job_args->{'5168'},$args->{'5168'},'correct non-RNASeq lane args generated');
 
 #### monoplex (non-RNA Seq)
 
@@ -150,6 +188,9 @@ cmp_deeply(\@lines, [$json ], 'correct json file content (for dUTP library)');
      'no error generating command arguments for non-multiplex lane';
 
   $args->{'1'} = qq{bam_alignment.pl --spiked_phix_split --id_run 12597 --position 1 --input $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/12597_1.bam --output_prefix $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/12597_1 --is_paired_read};
+
+  $args->{'1'} = qq{bash -c ' mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_1 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_1 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e '"'"'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;'"'"'` -keys br_numthreads_val -vals `perl -e '"'"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm unless \$n; \$n-=1; \$n=int \$n/2; print \$n>1?\$n:1;'"'"'` -keys b2c_mt_val -vals `perl -e '"'"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm unless \$n; \$n-=2; \$n=int \$n/2; print \$n>1?\$n:1;'"'"'` -keys indatadir -vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal -keys outdatadir -vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive -keys af_metrics -vals 12597_1.bam_alignment_filter_metrics.json -keys rpt -vals 12597_1 -keys reference_dict -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa.dict -keys reference_genome_fasta -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa -keys phix_reference_genome_fasta -vals $dir/references/PhiX/Illumina/all/fasta/phix-illumina.fa -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_aln \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_1.json && viv.pl -s -x -v 3 -o viv_12597_1.log run_12597_1.json  && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my\$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>12597,position=>1,sequence_file=>\$ARGV[0]); \$o->execute(); \$o->store(\$ARGV[-1]) '"'"' $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/12597_1.cram $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/qc && perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my\$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>12597,position=>1,sequence_file=>\$ARGV[0],subset=>q(phix)); \$o->execute(); \$o->store(\$ARGV[-1]) '"'"' $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/12597_1_phix.cram $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/qc &&   qc --check alignment_filter_metrics --qc_in \$PWD --id_run 12597 --position 1 --qc_out $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/qc '};
+
 
   is ($rna_gen->_job_args->{'1'},$args->{'1'},'correct non-multiplex lane args generated');
 
@@ -193,9 +234,11 @@ my $ref_dir = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5','a
 `mkdir -p $ref_dir/fasta`;
 `mkdir $ref_dir/bowtie2`;
 `mkdir $ref_dir/picard`;
+`mkdir $ref_dir/bwa0_6`;
 `touch $ref_dir/fasta/hs37d5.fa`;
 `touch $ref_dir/bowtie2/hs37d5.fa`;
 `touch $ref_dir/picard/hs37d5.fa`;
+`touch $ref_dir/bwa0_6/hs37d5.fa`;
 
 my $ref = qq[$ref_dir/bowtie2/Homo_sapiens.GRCh37.NCBI.allchr_MT.fa];
 my $runfolder = q{140529_HS18_13066_A_C3C3KACXX};
@@ -246,6 +289,8 @@ my $rna_gen;
 
   cmp_deeply ($rna_gen->_job_args, $args,
     'correct command arguments for library RNASeq lane (unstranded Illumina cDNA library)');
+
+  is ($rna_gen->_using_alt_reference, 0, 'Not using alternate reference');
 }
 
 {  ##HiSeqX, run 16839_7
@@ -324,6 +369,8 @@ my $hsx_gen;
 
   cmp_deeply ($hsx_gen->_job_args, $args,
     'correct command arguments for HiSeqX lane 16839_7');
+
+  is ($hsx_gen->_using_alt_reference, 1, 'Using alternate reference');
 }
 
 {  ##HiSeq, run 16807_6 (newer flowcell)

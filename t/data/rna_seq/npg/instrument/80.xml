@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrument id_instrument="80" name="HS34" id_instrument_format="10" model="HiSeq" external_name="" serial="" iscurrent="1">
+
+<runs>
+<run id_run="13649" batch_id="29769" id_instrument="80" priority="4" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13649" id_run_status="182281" date="2014-08-11 21:34:52" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="lc2" loading_date="2014-08-08"/>
+
+
+<run id_run="13648" batch_id="29767" id_instrument="80" priority="4" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13648" id_run_status="182160" date="2014-08-11 08:44:50" id_run_status_dict="26" id_user="95" username="scw" description="qc in progress" loader="lc2" loading_date="2014-08-08"/>
+
+
+<run id_run="13631" batch_id="29614" id_instrument="80" priority="3" actual_cycle_count="158" expected_cycle_count="158" is_paired="0" id_run_pair="" team="C" name="HS34_13631" id_run_status="182191" date="2014-08-11 10:34:40" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ajw" loading_date="2014-08-07"/>
+
+
+<run id_run="13630" batch_id="29613" id_instrument="80" priority="3" actual_cycle_count="158" expected_cycle_count="158" is_paired="0" id_run_pair="" team="C" name="HS34_13630" id_run_status="182196" date="2014-08-11 11:17:03" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ajw" loading_date="2014-08-07"/>
+
+
+<run id_run="13619" batch_id="29655" id_instrument="80" priority="1" actual_cycle_count="158" expected_cycle_count="158" is_paired="0" id_run_pair="" team="A" name="HS34_13619" id_run_status="182077" date="2014-08-09 17:37:38" id_run_status_dict="26" id_user="95" username="scw" description="qc in progress" loader="gkh" loading_date="2014-08-06"/>
+
+
+<run id_run="13618" batch_id="29654" id_instrument="80" priority="1" actual_cycle_count="158" expected_cycle_count="158" is_paired="0" id_run_pair="" team="A" name="HS34_13618" id_run_status="181793" date="2014-08-07 18:11:37" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="gkh" loading_date="2014-08-06"/>
+
+
+<run id_run="13583" batch_id="29482" id_instrument="80" priority="1" actual_cycle_count="158" expected_cycle_count="158" is_paired="0" id_run_pair="" team="RAD" name="HS34_13583" id_run_status="181846" date="2014-08-08 09:17:41" id_run_status_dict="26" id_user="95" username="scw" description="qc in progress" loader="jb2" loading_date="2014-07-31"/>
+
+
+<run id_run="13582" batch_id="29481" id_instrument="80" priority="1" actual_cycle_count="158" expected_cycle_count="158" is_paired="0" id_run_pair="" team="RAD" name="HS34_13582" id_run_status="181847" date="2014-08-08 09:17:51" id_run_status_dict="26" id_user="95" username="scw" description="qc in progress" loader="jb2" loading_date="2014-07-31"/>
+
+
+<run id_run="13510" batch_id="28163" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13510" id_run_status="180638" date="2014-07-23 16:51:45" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="gkh" loading_date="2014-07-20"/>
+
+
+<run id_run="13509" batch_id="28162" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13509" id_run_status="180632" date="2014-07-23 15:50:21" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="gkh" loading_date="2014-07-20"/>
+
+
+<run id_run="13460" batch_id="28858" id_instrument="80" priority="1" actual_cycle_count="158" expected_cycle_count="158" is_paired="0" id_run_pair="" team="A" name="HS34_13460" id_run_status="181831" date="2014-08-08 06:57:23" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="melanie" loading_date="2014-07-11"/>
+
+
+<run id_run="13442" batch_id="28778" id_instrument="80" priority="1" actual_cycle_count="158" expected_cycle_count="158" is_paired="0" id_run_pair="" team="A" name="HS34_13442" id_run_status="181016" date="2014-07-30 11:56:23" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-07-09"/>
+
+
+<run id_run="13440" batch_id="28777" id_instrument="80" priority="1" actual_cycle_count="158" expected_cycle_count="158" is_paired="0" id_run_pair="" team="A" name="HS34_13440" id_run_status="181004" date="2014-07-30 10:24:28" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-07-09"/>
+
+
+<run id_run="13332" batch_id="27603" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13332" id_run_status="178204" date="2014-06-27 09:59:36" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="gkh" loading_date="2014-06-21"/>
+
+
+<run id_run="13331" batch_id="27602" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13331" id_run_status="178143" date="2014-06-26 18:49:14" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="gkh" loading_date="2014-06-21"/>
+
+
+<run id_run="13240" batch_id="27867" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13240" id_run_status="180159" date="2014-07-18 08:30:40" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="jb2" loading_date="2014-06-12"/>
+
+
+<run id_run="13239" batch_id="27854" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13239" id_run_status="176796" date="2014-06-14 20:54:19" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="jb2" loading_date="2014-06-12"/>
+
+
+<run id_run="13200" batch_id="27702" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13200" id_run_status="176440" date="2014-06-11 10:36:58" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="jb2" loading_date="2014-06-09"/>
+
+
+<run id_run="13199" batch_id="27701" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13199" id_run_status="176447" date="2014-06-11 11:53:38" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="jb2" loading_date="2014-06-09"/>
+
+
+<run id_run="13181" batch_id="27860" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13181" id_run_status="176021" date="2014-06-09 16:01:50" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-06-06"/>
+
+
+<run id_run="13180" batch_id="27859" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13180" id_run_status="176025" date="2014-06-09 16:17:51" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-06-06"/>
+
+
+<run id_run="13145" batch_id="27599" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13145" id_run_status="176328" date="2014-06-10 14:26:52" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="lc2" loading_date="2014-06-04"/>
+
+
+<run id_run="13144" batch_id="27598" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13144" id_run_status="176304" date="2014-06-10 13:30:58" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="lc2" loading_date="2014-06-04"/>
+
+
+<run id_run="13125" batch_id="27626" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13125" id_run_status="175336" date="2014-06-05 16:36:31" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="lc2" loading_date="2014-06-02"/>
+
+
+<run id_run="13124" batch_id="27597" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13124" id_run_status="176231" date="2014-06-10 10:49:25" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="lc2" loading_date="2014-06-02"/>
+
+
+<run id_run="13107" batch_id="27625" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13107" id_run_status="175332" date="2014-06-05 16:30:57" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-06-01"/>
+
+
+<run id_run="13106" batch_id="27596" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13106" id_run_status="175985" date="2014-06-09 15:24:30" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-06-01"/>
+
+
+<run id_run="13088" batch_id="27620" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13088" id_run_status="175313" date="2014-06-05 15:12:56" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-05-30"/>
+
+
+<run id_run="13087" batch_id="27595" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13087" id_run_status="176165" date="2014-06-10 08:45:36" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-05-30"/>
+
+
+<run id_run="13065" batch_id="27617" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13065" id_run_status="175175" date="2014-06-05 11:18:54" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-05-29"/>
+
+
+<run id_run="13063" batch_id="27594" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13063" id_run_status="175173" date="2014-06-05 11:13:00" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-05-29"/>
+
+
+<run id_run="13040" batch_id="27615" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13040" id_run_status="175056" date="2014-06-04 17:59:08" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="lc2" loading_date="2014-05-27"/>
+
+
+<run id_run="13039" batch_id="27592" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13039" id_run_status="175153" date="2014-06-05 10:36:34" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="lc2" loading_date="2014-05-27"/>
+
+
+<run id_run="13011" batch_id="26944" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13011" id_run_status="175321" date="2014-06-05 15:51:10" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="lc2" loading_date="2014-05-25"/>
+
+
+<run id_run="13010" batch_id="26943" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_13010" id_run_status="175282" date="2014-06-05 14:09:19" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="lc2" loading_date="2014-05-25"/>
+
+
+<run id_run="12998" batch_id="27382" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_12998" id_run_status="175981" date="2014-06-09 15:18:10" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-05-23"/>
+
+
+<run id_run="12997" batch_id="26942" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_12997" id_run_status="175278" date="2014-06-05 13:53:17" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-05-23"/>
+
+
+<run id_run="12976" batch_id="27383" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_12976" id_run_status="173195" date="2014-05-25 22:45:00" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-05-21"/>
+
+
+<run id_run="12975" batch_id="27379" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_12975" id_run_status="175262" date="2014-06-05 13:36:32" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="pav" loading_date="2014-05-21"/>
+
+
+<run id_run="12954" batch_id="27381" id_instrument="80" priority="1" actual_cycle_count="208" expected_cycle_count="208" is_paired="0" id_run_pair="" team="A" name="HS34_12954" id_run_status="173193" date="2014-05-25 22:44:12" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="lc2" loading_date="2014-05-20"/>
+
+</runs>
+
+<current_instrument_status id_instrument_status="31417" id_instrument="80" date="2014-08-12 10:16:03" id_instrument_status_dict="1" id_user="52" username="jb2" iscurrent="1" description="up" comment="automatic status update" />
+<instrument_statuses>
+ <instrument_status id_instrument_status="31417" id_instrument="80" date="2014-08-12 10:16:03" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="1" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="31416" id_instrument="80" date="2014-08-12 10:16:03" id_instrument_status_dict="4" id_user="52" user="jb2" iscurrent="0" description="wash performed" comment="volumes ok" />
+ <instrument_status id_instrument_status="31407" id_instrument="80" date="2014-08-11 11:56:50" id_instrument_status_dict="11" id_user="52" user="jb2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="31388" id_instrument="80" date="2014-08-09 14:53:34" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="31341" id_instrument="80" date="2014-08-08 09:59:20" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="31340" id_instrument="80" date="2014-08-08 09:59:20" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="NaOH washed, all volumes ok." />
+ <instrument_status id_instrument_status="31334" id_instrument="80" date="2014-08-08 09:11:22" id_instrument_status_dict="11" id_user="33" user="ajw" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="31331" id_instrument="80" date="2014-08-08 08:36:58" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="31301" id_instrument="80" date="2014-08-07 10:30:05" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="31300" id_instrument="80" date="2014-08-07 10:30:05" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="NaOH washed ,all volumes ok." />
+ <instrument_status id_instrument_status="31289" id_instrument="80" date="2014-08-07 07:47:40" id_instrument_status_dict="11" id_user="33" user="ajw" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="31288" id_instrument="80" date="2014-08-07 07:36:56" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="31196" id_instrument="80" date="2014-08-01 16:23:12" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="31195" id_instrument="80" date="2014-08-01 16:23:12" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="31194" id_instrument="80" date="2014-08-01 13:58:07" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="31191" id_instrument="80" date="2014-08-01 11:07:23" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="31002" id_instrument="80" date="2014-07-22 07:04:58" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="31001" id_instrument="80" date="2014-07-22 07:04:58" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="2 X NaOH washes performed all volumes were correct " />
+ <instrument_status id_instrument_status="30993" id_instrument="80" date="2014-07-21 14:36:54" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="30845" id_instrument="80" date="2014-07-12 11:49:14" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="30844" id_instrument="80" date="2014-07-12 11:49:14" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="Water bottles changed, 2 X NaOH washes performed all volumes were correct" />
+ <instrument_status id_instrument_status="30841" id_instrument="80" date="2014-07-12 07:37:23" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="30810" id_instrument="80" date="2014-07-10 17:05:20" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="30809" id_instrument="80" date="2014-07-10 17:05:20" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="30800" id_instrument="80" date="2014-07-10 13:43:14" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="30786" id_instrument="80" date="2014-07-10 09:22:52" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="30467" id_instrument="80" date="2014-06-24 13:23:36" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="30466" id_instrument="80" date="2014-06-24 13:23:36" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="30465" id_instrument="80" date="2014-06-24 13:23:26" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="30463" id_instrument="80" date="2014-06-24 12:49:50" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="30433" id_instrument="80" date="2014-06-23 12:12:43" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="30432" id_instrument="80" date="2014-06-23 12:12:43" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="30410" id_instrument="80" date="2014-06-23 07:31:23" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="30377" id_instrument="80" date="2014-06-21 07:40:32" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="30376" id_instrument="80" date="2014-06-21 07:40:32" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="Wash done primed ok" />
+ <instrument_status id_instrument_status="30326" id_instrument="80" date="2014-06-19 14:26:18" id_instrument_status_dict="3" id_user="52" user="jb2" iscurrent="0" description="wash required" comment="" />
+ <instrument_status id_instrument_status="30325" id_instrument="80" date="2014-06-19 14:26:12" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="30305" id_instrument="80" date="2014-06-19 11:12:18" id_instrument_status_dict="5" id_user="88" user="wg1" iscurrent="0" description="request approval" comment="V4 upgrade and PM complete." />
+ <instrument_status id_instrument_status="30242" id_instrument="80" date="2014-06-16 12:27:47" id_instrument_status_dict="10" id_user="52" user="jb2" iscurrent="0" description="down for service" comment="automatic status update" />
+ <instrument_status id_instrument_status="30241" id_instrument="80" date="2014-06-16 12:27:47" id_instrument_status_dict="9" id_user="52" user="jb2" iscurrent="0" description="planned service" comment=" PM and upgrade to V4" />
+ <instrument_status id_instrument_status="30240" id_instrument="80" date="2014-06-16 12:27:30" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="30238" id_instrument="80" date="2014-06-16 12:02:12" id_instrument_status_dict="5" id_user="88" user="wg1" iscurrent="0" description="request approval" comment="Auto centering incorrectly due to dirty flowcell, cleaned flowcell and fudicial was found and centering correctly." />
+ <instrument_status id_instrument_status="30190" id_instrument="80" date="2014-06-13 13:10:19" id_instrument_status_dict="8" id_user="7" user="pipeline" iscurrent="0" description="down for repair" comment="automatic status update" />
+ <instrument_status id_instrument_status="30173" id_instrument="80" date="2014-06-12 16:23:18" id_instrument_status_dict="7" id_user="52" user="jb2" iscurrent="0" description="planned repair" comment="FCB - left hand swath of both top/bottom surface poor data. Collectively,  sub 50% pf clusters on flowcell.
+ NOTE : PM and V4 upgrade whilst down" />
+ <instrument_status id_instrument_status="30138" id_instrument="80" date="2014-06-11 13:59:11" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="30137" id_instrument="80" date="2014-06-11 13:59:11" id_instrument_status_dict="4" id_user="52" user="jb2" iscurrent="0" description="wash performed" comment="volumes ok" />
+ <instrument_status id_instrument_status="30131" id_instrument="80" date="2014-06-11 13:06:40" id_instrument_status_dict="11" id_user="52" user="jb2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="30105" id_instrument="80" date="2014-06-10 14:07:09" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="30068" id_instrument="80" date="2014-06-09 11:02:52" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="30067" id_instrument="80" date="2014-06-09 11:02:52" id_instrument_status_dict="4" id_user="52" user="jb2" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="30059" id_instrument="80" date="2014-06-09 09:12:12" id_instrument_status_dict="11" id_user="52" user="jb2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="30035" id_instrument="80" date="2014-06-07 17:38:33" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29998" id_instrument="80" date="2014-06-06 11:50:42" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29997" id_instrument="80" date="2014-06-06 11:50:42" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="29983" id_instrument="80" date="2014-06-06 07:22:25" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29976" id_instrument="80" date="2014-06-05 16:38:19" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29926" id_instrument="80" date="2014-06-04 08:29:07" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29925" id_instrument="80" date="2014-06-04 08:29:07" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="Rapid NaOH wash performed all volumes were ok" />
+ <instrument_status id_instrument_status="29918" id_instrument="80" date="2014-06-03 21:24:12" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29882" id_instrument="80" date="2014-06-02 16:36:19" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29881" id_instrument="80" date="2014-06-02 16:36:19" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="Water bottles replaced 2 X Rapid NaOH washes performed all volumes  were ok" />
+ <instrument_status id_instrument_status="29877" id_instrument="80" date="2014-06-02 14:53:38" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29844" id_instrument="80" date="2014-06-01 10:30:21" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29843" id_instrument="80" date="2014-06-01 10:30:21" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="29835" id_instrument="80" date="2014-06-01 07:19:54" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29833" id_instrument="80" date="2014-05-31 20:07:53" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29806" id_instrument="80" date="2014-05-30 15:52:51" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29805" id_instrument="80" date="2014-05-30 15:52:51" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="29802" id_instrument="80" date="2014-05-30 15:00:19" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29801" id_instrument="80" date="2014-05-30 14:23:53" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29754" id_instrument="80" date="2014-05-29 06:54:18" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29753" id_instrument="80" date="2014-05-29 06:54:18" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="NaOH by wash Linda." />
+ <instrument_status id_instrument_status="29748" id_instrument="80" date="2014-05-28 17:54:16" id_instrument_status_dict="11" id_user="57" user="lc2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29744" id_instrument="80" date="2014-05-28 16:40:15" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29683" id_instrument="80" date="2014-05-27 08:16:47" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29682" id_instrument="80" date="2014-05-27 08:16:47" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="2 X Rapid NaOH washes performed all volumes were ok " />
+ <instrument_status id_instrument_status="29671" id_instrument="80" date="2014-05-26 16:26:31" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29637" id_instrument="80" date="2014-05-25 10:28:56" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29636" id_instrument="80" date="2014-05-25 10:28:56" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="2 X Rapid NaOH washes performed all volumes were ok" />
+ <instrument_status id_instrument_status="29628" id_instrument="80" date="2014-05-25 08:25:18" id_instrument_status_dict="11" id_user="57" user="lc2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29620" id_instrument="80" date="2014-05-24 14:23:47" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29600" id_instrument="80" date="2014-05-23 09:38:06" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29599" id_instrument="80" date="2014-05-23 09:38:06" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="29589" id_instrument="80" date="2014-05-23 07:10:53" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29585" id_instrument="80" date="2014-05-22 19:55:28" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29553" id_instrument="80" date="2014-05-21 16:26:15" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29552" id_instrument="80" date="2014-05-21 16:26:15" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="29547" id_instrument="80" date="2014-05-21 15:22:09" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29539" id_instrument="80" date="2014-05-21 13:54:07" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29490" id_instrument="80" date="2014-05-20 07:51:59" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29489" id_instrument="80" date="2014-05-20 07:51:59" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="2 X Rapid NaOH washes performed all volumes were ok" />
+ <instrument_status id_instrument_status="29478" id_instrument="80" date="2014-05-19 15:24:01" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29445" id_instrument="80" date="2014-05-18 11:35:02" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29444" id_instrument="80" date="2014-05-18 11:35:02" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="2 X NaOH washes performed all volumes were ok" />
+ <instrument_status id_instrument_status="29442" id_instrument="80" date="2014-05-18 10:00:50" id_instrument_status_dict="11" id_user="57" user="lc2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29439" id_instrument="80" date="2014-05-18 08:53:30" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29416" id_instrument="80" date="2014-05-16 14:04:07" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29415" id_instrument="80" date="2014-05-16 14:04:07" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="29409" id_instrument="80" date="2014-05-16 10:27:28" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29365" id_instrument="80" date="2014-05-14 16:08:50" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29364" id_instrument="80" date="2014-05-14 16:08:50" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="NaOH wash performed all volumes were ok" />
+ <instrument_status id_instrument_status="29340" id_instrument="80" date="2014-05-13 16:08:19" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29317" id_instrument="80" date="2014-05-12 12:45:40" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29316" id_instrument="80" date="2014-05-12 12:45:40" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment=" NaOH wash performed all volumes were ok " />
+ <instrument_status id_instrument_status="29304" id_instrument="80" date="2014-05-11 17:24:29" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29276" id_instrument="80" date="2014-05-10 10:18:36" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29275" id_instrument="80" date="2014-05-10 10:18:36" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="2 X NaOH washes performed all volumes were ok " />
+ <instrument_status id_instrument_status="29274" id_instrument="80" date="2014-05-10 10:18:00" id_instrument_status_dict="11" id_user="57" user="lc2" iscurrent="0" description="wash in progress" comment="2 X NaOH washes performed all volumes were ok " />
+ <instrument_status id_instrument_status="29264" id_instrument="80" date="2014-05-09 15:07:56" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29181" id_instrument="80" date="2014-05-04 15:55:25" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29180" id_instrument="80" date="2014-05-04 15:55:25" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="2 X NaOH washes performed all volumes were ok" />
+ <instrument_status id_instrument_status="29167" id_instrument="80" date="2014-05-03 20:09:45" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29135" id_instrument="80" date="2014-05-02 16:35:05" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29134" id_instrument="80" date="2014-05-02 16:35:05" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="Rapid NaOH primed ok" />
+ <instrument_status id_instrument_status="29133" id_instrument="80" date="2014-05-02 15:39:56" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29109" id_instrument="80" date="2014-05-01 10:27:05" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29108" id_instrument="80" date="2014-05-01 10:27:05" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="NaOH wash performed all volumes were ok" />
+ <instrument_status id_instrument_status="29105" id_instrument="80" date="2014-05-01 07:54:34" id_instrument_status_dict="11" id_user="57" user="lc2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29103" id_instrument="80" date="2014-04-30 20:23:24" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29083" id_instrument="80" date="2014-04-29 16:40:34" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29082" id_instrument="80" date="2014-04-29 16:40:34" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="29081" id_instrument="80" date="2014-04-29 15:53:23" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29079" id_instrument="80" date="2014-04-29 15:23:04" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29045" id_instrument="80" date="2014-04-28 09:44:52" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29044" id_instrument="80" date="2014-04-28 09:44:52" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="29043" id_instrument="80" date="2014-04-28 09:44:42" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29040" id_instrument="80" date="2014-04-27 19:10:33" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="29029" id_instrument="80" date="2014-04-26 15:21:05" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="29028" id_instrument="80" date="2014-04-26 15:21:05" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="Rapid NaOH wash primes ok" />
+ <instrument_status id_instrument_status="29025" id_instrument="80" date="2014-04-26 13:37:37" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="28903" id_instrument="80" date="2014-04-21 07:54:19" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="28902" id_instrument="80" date="2014-04-21 07:54:19" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="NaOH washed all volumes ok" />
+ <instrument_status id_instrument_status="28868" id_instrument="80" date="2014-04-19 06:56:38" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="28809" id_instrument="80" date="2014-04-16 11:04:55" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="28804" id_instrument="80" date="2014-04-16 09:59:41" id_instrument_status_dict="5" id_user="75" user="cs26" iscurrent="0" description="request approval" comment="Removed USB devices from PC. Removed ports and rebooted system. Allowed ports to repopulate then connected USB devices. Run resumed." />
+ <instrument_status id_instrument_status="28803" id_instrument="80" date="2014-04-16 09:58:16" id_instrument_status_dict="8" id_user="75" user="cs26" iscurrent="0" description="down for repair" comment="FTDI errors relating to port drop out." />
+ <instrument_status id_instrument_status="28648" id_instrument="80" date="2014-04-09 05:53:34" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="28647" id_instrument="80" date="2014-04-09 05:53:34" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="NaOH washed all volumes ok." />
+ <instrument_status id_instrument_status="28638" id_instrument="80" date="2014-04-08 15:21:32" id_instrument_status_dict="11" id_user="33" user="ajw" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="28626" id_instrument="80" date="2014-04-08 08:38:30" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="28415" id_instrument="80" date="2014-03-30 14:51:13" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="28414" id_instrument="80" date="2014-03-30 14:51:13" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="NaOH washed ,all volumes ok." />
+ <instrument_status id_instrument_status="28407" id_instrument="80" date="2014-03-30 11:28:24" id_instrument_status_dict="11" id_user="33" user="ajw" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="28363" id_instrument="80" date="2014-03-28 11:12:54" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="28019" id_instrument="80" date="2014-03-10 17:48:04" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="28018" id_instrument="80" date="2014-03-10 17:48:04" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="NaOH washed, all volumes ok. " />
+ <instrument_status id_instrument_status="27985" id_instrument="80" date="2014-03-09 16:53:36" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="27890" id_instrument="80" date="2014-03-04 17:15:50" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="27889" id_instrument="80" date="2014-03-04 17:15:50" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="27883" id_instrument="80" date="2014-03-04 16:15:21" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="27870" id_instrument="80" date="2014-03-03 16:27:00" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="27591" id_instrument="80" date="2014-02-20 14:01:26" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="27590" id_instrument="80" date="2014-02-20 14:01:26" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="NaoH Wash new gaskets primed ok" />
+ <instrument_status id_instrument_status="27571" id_instrument="80" date="2014-02-20 08:25:25" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="27368" id_instrument="80" date="2014-02-11 08:37:39" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="27367" id_instrument="80" date="2014-02-11 08:37:39" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="NaOH washed, all volumes ok." />
+ <instrument_status id_instrument_status="27363" id_instrument="80" date="2014-02-10 16:31:15" id_instrument_status_dict="11" id_user="33" user="ajw" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="27362" id_instrument="80" date="2014-02-10 16:11:38" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="27129" id_instrument="80" date="2014-01-28 11:06:15" id_instrument_status_dict="1" id_user="56" user="sh2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="27128" id_instrument="80" date="2014-01-28 11:06:15" id_instrument_status_dict="4" id_user="56" user="sh2" iscurrent="0" description="wash performed" comment="NaOH wash performed" />
+ <instrument_status id_instrument_status="27120" id_instrument="80" date="2014-01-28 07:48:00" id_instrument_status_dict="11" id_user="56" user="sh2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="27118" id_instrument="80" date="2014-01-28 06:53:30" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="26973" id_instrument="80" date="2014-01-18 12:56:40" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="26972" id_instrument="80" date="2014-01-18 12:56:40" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="NaOH Wash new gaskets primes ok" />
+ <instrument_status id_instrument_status="26946" id_instrument="80" date="2014-01-17 14:38:49" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="26697" id_instrument="80" date="2014-01-03 08:19:27" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="26696" id_instrument="80" date="2014-01-03 08:19:27" id_instrument_status_dict="4" id_user="52" user="jb2" iscurrent="0" description="wash performed" comment="wash finished js2" />
+ <instrument_status id_instrument_status="26655" id_instrument="80" date="2014-01-02 10:09:10" id_instrument_status_dict="11" id_user="15" user="js2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="26649" id_instrument="80" date="2013-12-31 14:37:47" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="26372" id_instrument="80" date="2013-12-15 17:16:11" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="26371" id_instrument="80" date="2013-12-15 17:16:11" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="26369" id_instrument="80" date="2013-12-15 16:37:35" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="26346" id_instrument="80" date="2013-12-13 14:42:12" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="26290" id_instrument="80" date="2013-12-12 08:37:41" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="26289" id_instrument="80" date="2013-12-12 08:37:41" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="26287" id_instrument="80" date="2013-12-12 07:30:16" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="26281" id_instrument="80" date="2013-12-11 20:39:09" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="26235" id_instrument="80" date="2013-12-10 16:32:38" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="26234" id_instrument="80" date="2013-12-10 16:32:38" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="Rapid NaOH primes ok" />
+ <instrument_status id_instrument_status="26227" id_instrument="80" date="2013-12-10 14:58:18" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="26170" id_instrument="80" date="2013-12-09 09:22:16" id_instrument_status_dict="1" id_user="15" user="js2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="26169" id_instrument="80" date="2013-12-09 09:22:16" id_instrument_status_dict="4" id_user="15" user="js2" iscurrent="0" description="wash performed" comment="NaOH wash completed." />
+ <instrument_status id_instrument_status="26166" id_instrument="80" date="2013-12-09 06:35:59" id_instrument_status_dict="11" id_user="15" user="js2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="26163" id_instrument="80" date="2013-12-08 18:24:39" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="26134" id_instrument="80" date="2013-12-07 14:42:39" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="26133" id_instrument="80" date="2013-12-07 14:42:39" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="26132" id_instrument="80" date="2013-12-07 14:42:21" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="26131" id_instrument="80" date="2013-12-07 13:57:50" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="26091" id_instrument="80" date="2013-12-06 08:07:19" id_instrument_status_dict="1" id_user="15" user="js2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="26090" id_instrument="80" date="2013-12-06 08:07:19" id_instrument_status_dict="4" id_user="15" user="js2" iscurrent="0" description="wash performed" comment="NaOH wash complete." />
+ <instrument_status id_instrument_status="26089" id_instrument="80" date="2013-12-06 08:06:59" id_instrument_status_dict="11" id_user="15" user="js2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="26084" id_instrument="80" date="2013-12-05 20:24:14" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="26060" id_instrument="80" date="2013-12-04 16:17:38" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="26059" id_instrument="80" date="2013-12-04 16:17:38" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="26058" id_instrument="80" date="2013-12-04 16:17:26" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="26051" id_instrument="80" date="2013-12-04 13:57:55" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="26020" id_instrument="80" date="2013-12-03 10:27:16" id_instrument_status_dict="1" id_user="15" user="js2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="26019" id_instrument="80" date="2013-12-03 10:27:16" id_instrument_status_dict="4" id_user="15" user="js2" iscurrent="0" description="wash performed" comment="NaOH wash completed." />
+ <instrument_status id_instrument_status="26018" id_instrument="80" date="2013-12-03 10:26:45" id_instrument_status_dict="11" id_user="15" user="js2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="26001" id_instrument="80" date="2013-12-02 14:40:30" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25964" id_instrument="80" date="2013-12-01 08:25:13" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25963" id_instrument="80" date="2013-12-01 08:25:13" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="Rapid NoAH primed ok" />
+ <instrument_status id_instrument_status="25957" id_instrument="80" date="2013-11-30 18:26:00" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25923" id_instrument="80" date="2013-11-29 14:20:51" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25922" id_instrument="80" date="2013-11-29 14:20:51" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="25920" id_instrument="80" date="2013-11-29 11:57:19" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25916" id_instrument="80" date="2013-11-29 11:26:27" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25875" id_instrument="80" date="2013-11-28 08:11:03" id_instrument_status_dict="1" id_user="15" user="js2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25874" id_instrument="80" date="2013-11-28 08:11:03" id_instrument_status_dict="4" id_user="15" user="js2" iscurrent="0" description="wash performed" comment="NaOH wash completed." />
+ <instrument_status id_instrument_status="25870" id_instrument="80" date="2013-11-28 07:28:55" id_instrument_status_dict="11" id_user="15" user="js2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25867" id_instrument="80" date="2013-11-27 19:08:43" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25821" id_instrument="80" date="2013-11-26 15:10:47" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25820" id_instrument="80" date="2013-11-26 15:10:47" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="25819" id_instrument="80" date="2013-11-26 15:10:36" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25814" id_instrument="80" date="2013-11-26 13:15:00" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25771" id_instrument="80" date="2013-11-25 09:40:28" id_instrument_status_dict="1" id_user="15" user="js2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25770" id_instrument="80" date="2013-11-25 09:40:28" id_instrument_status_dict="4" id_user="15" user="js2" iscurrent="0" description="wash performed" comment="NaOH wash completed." />
+ <instrument_status id_instrument_status="25761" id_instrument="80" date="2013-11-25 07:19:54" id_instrument_status_dict="11" id_user="15" user="js2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25757" id_instrument="80" date="2013-11-24 18:09:16" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25727" id_instrument="80" date="2013-11-23 14:22:05" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25726" id_instrument="80" date="2013-11-23 14:22:05" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="NaOH wash primed ok" />
+ <instrument_status id_instrument_status="25722" id_instrument="80" date="2013-11-23 11:12:27" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25687" id_instrument="80" date="2013-11-22 07:15:24" id_instrument_status_dict="1" id_user="15" user="js2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25686" id_instrument="80" date="2013-11-22 07:15:24" id_instrument_status_dict="4" id_user="15" user="js2" iscurrent="0" description="wash performed" comment="NaOH wash completed." />
+ <instrument_status id_instrument_status="25685" id_instrument="80" date="2013-11-22 07:15:03" id_instrument_status_dict="11" id_user="15" user="js2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25684" id_instrument="80" date="2013-11-21 18:43:09" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25644" id_instrument="80" date="2013-11-20 15:25:00" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25643" id_instrument="80" date="2013-11-20 15:25:00" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="25642" id_instrument="80" date="2013-11-20 15:24:51" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25631" id_instrument="80" date="2013-11-20 12:11:31" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25588" id_instrument="80" date="2013-11-19 08:22:58" id_instrument_status_dict="1" id_user="15" user="js2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25587" id_instrument="80" date="2013-11-19 08:22:58" id_instrument_status_dict="4" id_user="15" user="js2" iscurrent="0" description="wash performed" comment="NaOH wash completed, all volumes correct." />
+ <instrument_status id_instrument_status="25584" id_instrument="80" date="2013-11-19 06:05:24" id_instrument_status_dict="11" id_user="15" user="js2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25562" id_instrument="80" date="2013-11-18 11:57:58" id_instrument_status_dict="3" id_user="52" user="jb2" iscurrent="0" description="wash required" comment="" />
+ <instrument_status id_instrument_status="25561" id_instrument="80" date="2013-11-18 11:57:52" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="25560" id_instrument="80" date="2013-11-18 11:32:43" id_instrument_status_dict="5" id_user="75" user="cs26" iscurrent="0" description="request approval" comment="All comm ports removed. System restarted. Comm ports populated correctly and software initialised." />
+ <instrument_status id_instrument_status="25484" id_instrument="80" date="2013-11-16 08:39:26" id_instrument_status_dict="8" id_user="14" user="pnc" iscurrent="0" description="down for repair" comment="Instrument will not initialize, USB errors as well." />
+ <instrument_status id_instrument_status="25470" id_instrument="80" date="2013-11-15 16:11:43" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25414" id_instrument="80" date="2013-11-14 13:21:15" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25413" id_instrument="80" date="2013-11-14 13:21:15" id_instrument_status_dict="4" id_user="52" user="jb2" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="25398" id_instrument="80" date="2013-11-14 11:53:32" id_instrument_status_dict="11" id_user="52" user="jb2" iscurrent="0" description="wash in progress" comment="gaskets replaced" />
+ <instrument_status id_instrument_status="25394" id_instrument="80" date="2013-11-14 11:38:17" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25321" id_instrument="80" date="2013-11-13 08:05:15" id_instrument_status_dict="1" id_user="15" user="js2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25320" id_instrument="80" date="2013-11-13 08:05:15" id_instrument_status_dict="4" id_user="15" user="js2" iscurrent="0" description="wash performed" comment="NaOH wash completed, all volumes correct." />
+ <instrument_status id_instrument_status="25319" id_instrument="80" date="2013-11-13 08:04:29" id_instrument_status_dict="11" id_user="15" user="js2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25314" id_instrument="80" date="2013-11-12 20:37:43" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25255" id_instrument="80" date="2013-11-11 16:55:58" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25254" id_instrument="80" date="2013-11-11 16:55:57" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="25253" id_instrument="80" date="2013-11-11 16:55:50" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25251" id_instrument="80" date="2013-11-11 15:43:51" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25203" id_instrument="80" date="2013-11-10 09:27:31" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25202" id_instrument="80" date="2013-11-10 09:27:31" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="25201" id_instrument="80" date="2013-11-10 09:27:15" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25200" id_instrument="80" date="2013-11-10 09:27:03" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25199" id_instrument="80" date="2013-11-10 09:27:03" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="25198" id_instrument="80" date="2013-11-10 09:26:48" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25193" id_instrument="80" date="2013-11-09 20:41:27" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25161" id_instrument="80" date="2013-11-08 16:11:38" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25160" id_instrument="80" date="2013-11-08 16:11:38" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="New gaskets, NaOH Wash performed all volumes were correct " />
+ <instrument_status id_instrument_status="25157" id_instrument="80" date="2013-11-08 14:46:13" id_instrument_status_dict="11" id_user="57" user="lc2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25156" id_instrument="80" date="2013-11-08 13:54:14" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25110" id_instrument="80" date="2013-11-07 08:39:27" id_instrument_status_dict="1" id_user="46" user="gkh" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25109" id_instrument="80" date="2013-11-07 08:39:27" id_instrument_status_dict="4" id_user="46" user="gkh" iscurrent="0" description="wash performed" comment="NaOH Wash new gaskets primes ok" />
+ <instrument_status id_instrument_status="25103" id_instrument="80" date="2013-11-06 20:09:23" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25062" id_instrument="80" date="2013-11-05 15:39:35" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25061" id_instrument="80" date="2013-11-05 15:39:35" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="New gaskets on, volumes ok." />
+ <instrument_status id_instrument_status="25060" id_instrument="80" date="2013-11-05 15:39:05" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="25056" id_instrument="80" date="2013-11-05 14:55:00" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="25006" id_instrument="80" date="2013-11-04 10:05:24" id_instrument_status_dict="1" id_user="15" user="js2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="25005" id_instrument="80" date="2013-11-04 10:05:24" id_instrument_status_dict="4" id_user="15" user="js2" iscurrent="0" description="wash performed" comment="NaOH wash completed, all volumes correct." />
+ <instrument_status id_instrument_status="25001" id_instrument="80" date="2013-11-04 09:50:06" id_instrument_status_dict="11" id_user="15" user="js2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="24997" id_instrument="80" date="2013-11-03 19:26:24" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="24969" id_instrument="80" date="2013-11-02 16:01:24" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="24968" id_instrument="80" date="2013-11-02 16:01:24" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="New gaskets on, volumes ok." />
+ <instrument_status id_instrument_status="24967" id_instrument="80" date="2013-11-02 16:01:02" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="24959" id_instrument="80" date="2013-11-02 13:40:30" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="24915" id_instrument="80" date="2013-11-01 09:20:45" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="24914" id_instrument="80" date="2013-11-01 09:20:45" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment=" New gaskets, NaOH wash performed all volumes were ok " />
+ <instrument_status id_instrument_status="24913" id_instrument="80" date="2013-11-01 08:14:44" id_instrument_status_dict="11" id_user="57" user="lc2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="24908" id_instrument="80" date="2013-10-31 20:11:11" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="24878" id_instrument="80" date="2013-10-30 16:27:17" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="24877" id_instrument="80" date="2013-10-30 16:27:17" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="New gaskets, NaOH wash performed all volumes were ok" />
+ <instrument_status id_instrument_status="24871" id_instrument="80" date="2013-10-30 15:06:36" id_instrument_status_dict="11" id_user="57" user="lc2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="24869" id_instrument="80" date="2013-10-30 14:38:40" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="24813" id_instrument="80" date="2013-10-29 10:37:11" id_instrument_status_dict="1" id_user="57" user="lc2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="24812" id_instrument="80" date="2013-10-29 10:37:11" id_instrument_status_dict="4" id_user="57" user="lc2" iscurrent="0" description="wash performed" comment="New gaskets, NaOH wash performed all volumes were ok" />
+ <instrument_status id_instrument_status="24799" id_instrument="80" date="2013-10-29 08:30:37" id_instrument_status_dict="11" id_user="57" user="lc2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="24790" id_instrument="80" date="2013-10-28 18:55:36" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="24751" id_instrument="80" date="2013-10-27 11:27:35" id_instrument_status_dict="1" id_user="28" user="pav" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="24750" id_instrument="80" date="2013-10-27 11:27:35" id_instrument_status_dict="4" id_user="28" user="pav" iscurrent="0" description="wash performed" comment="New gaskets on, volumes ok." />
+ <instrument_status id_instrument_status="24749" id_instrument="80" date="2013-10-27 11:27:01" id_instrument_status_dict="11" id_user="28" user="pav" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="24747" id_instrument="80" date="2013-10-26 17:25:35" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="24690" id_instrument="80" date="2013-10-23 18:09:35" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="24689" id_instrument="80" date="2013-10-23 18:09:35" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="NaOH washed ,all volumes ok. new gaskets " />
+ <instrument_status id_instrument_status="24684" id_instrument="80" date="2013-10-23 12:04:05" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="24589" id_instrument="80" date="2013-10-20 14:45:58" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="24588" id_instrument="80" date="2013-10-20 14:45:58" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="24587" id_instrument="80" date="2013-10-20 13:07:24" id_instrument_status_dict="11" id_user="11" user="tkb" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="24583" id_instrument="80" date="2013-10-20 06:25:50" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="24540" id_instrument="80" date="2013-10-18 09:59:10" id_instrument_status_dict="1" id_user="56" user="sh2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="24539" id_instrument="80" date="2013-10-18 09:59:10" id_instrument_status_dict="4" id_user="56" user="sh2" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="24515" id_instrument="80" date="2013-10-17 10:57:16" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="24470" id_instrument="80" date="2013-10-15 16:02:06" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="24469" id_instrument="80" date="2013-10-15 16:02:06" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="NaOH washed ,all volumes ok. new gaskets" />
+ <instrument_status id_instrument_status="24462" id_instrument="80" date="2013-10-15 13:37:26" id_instrument_status_dict="11" id_user="33" user="ajw" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="24456" id_instrument="80" date="2013-10-15 09:25:16" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="24423" id_instrument="80" date="2013-10-14 09:11:15" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="24422" id_instrument="80" date="2013-10-14 09:11:15" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="NaOH washed new gaskets all volumes ok." />
+ <instrument_status id_instrument_status="24419" id_instrument="80" date="2013-10-14 07:15:16" id_instrument_status_dict="11" id_user="33" user="ajw" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="24359" id_instrument="80" date="2013-10-11 11:11:47" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="24309" id_instrument="80" date="2013-10-09 18:09:35" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="24308" id_instrument="80" date="2013-10-09 18:09:35" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="Waste Volumes OK, new gaskets" />
+ <instrument_status id_instrument_status="24282" id_instrument="80" date="2013-10-08 15:28:52" id_instrument_status_dict="11" id_user="52" user="jb2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="24281" id_instrument="80" date="2013-10-08 15:28:47" id_instrument_status_dict="3" id_user="52" user="jb2" iscurrent="0" description="wash required" comment="" />
+ <instrument_status id_instrument_status="24280" id_instrument="80" date="2013-10-08 15:28:41" id_instrument_status_dict="1" id_user="52" user="jb2" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="24279" id_instrument="80" date="2013-10-08 15:05:43" id_instrument_status_dict="5" id_user="88" user="wg1" iscurrent="0" description="request approval" comment="Replace FCB gaskets, front and back, both sides wash volumes checked and correct, 19ml." />
+ <instrument_status id_instrument_status="24266" id_instrument="80" date="2013-10-08 12:58:30" id_instrument_status_dict="8" id_user="52" user="jb2" iscurrent="0" description="down for repair" comment="incorrect wash volumes on FCA and FCB (FCB more so)" />
+ <instrument_status id_instrument_status="24265" id_instrument="80" date="2013-10-08 12:06:54" id_instrument_status_dict="11" id_user="52" user="jb2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="24194" id_instrument="80" date="2013-10-04 16:43:44" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update : initial new instrument status" />
+</instrument_statuses>
+<instrument_mods>
+ <instrument_mod id_instrument_mod="1202" id_instrument="80" type="Camera" revision="515" date_added="2014-03-06 11:33:30" date_removed="" operator="mdf" iscurrent="1" />
+ <instrument_mod id_instrument_mod="1218" id_instrument="80" type="Instrument Upgrade" revision="HiSeq2500" date_added="2014-07-10 17:01:00" date_removed="" operator="dj3" iscurrent="1" />
+ <instrument_mod id_instrument_mod="1222" id_instrument="80" type="HCS" revision="v2.2.38" date_added="2014-07-15 09:24:59" date_removed="" operator="mg19" iscurrent="1" />
+</instrument_mods>
+<designations>
+ <designation id_designation="4" description="Accepted" />
+ <designation id_designation="8" description="GCLP" />
+</designations>
+</instrument>

@@ -1,9 +1,15 @@
 LIST OF CHANGES
 ---------------
 
+ - use threading for bam and cram creation in seq_alignment
+ - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt
+   references and GCLP
+ - add attribute "gclp" common to analysis and archival scripts
+ - function list config files always contain pipeline module name e.g. central
+
+release 49.6
  - pass RG paramater to illumina2bam
  - add archive::file::logs
- - use threading for bam and cram creation in seq_alignment
 
 release 49.5
  - correctly determine path to SplitBamByChromosomes.jar
