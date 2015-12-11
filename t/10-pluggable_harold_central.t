@@ -106,7 +106,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
     no_bsub => 1,
     olb     => 1,
   );
-  is ($pipeline->function_list, getcwd() . '/data/config_files/function_list_olb.yml',
+  is ($pipeline->function_list, getcwd() . '/data/config_files/function_list_central_olb.yml',
     'olb function list');
   $bool = any {$_ =~ /bustard/} @{$pipeline->function_order()};
   ok( $bool, 'bustard functions are in');

@@ -18,7 +18,7 @@ sub submit_to_lsf {
 sub _generate_bsub_command {
   my ($self, $arg_refs) = @_;
 
-  my $irodsinstance = $self->function_list() =~ /gclp/ismx ? q(gclp) : q();
+  my $irodsinstance = $self->gclp() ? q(gclp) : q();
   my $id_run = $self->id_run();
   my @positions = $self->positions();
 
