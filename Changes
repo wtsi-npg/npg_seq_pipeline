@@ -1,7 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+release 49.7
  - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt references
+ - bug fix after passing RG paramater to illumina2bam: change SplitBamByReadGroup options:
+     do not set OUTPUT_COMMON_RG_HEAD_TO_TRIM, strip last component (runid_lane) from
+     OUTPUT_PREFIX
 
 release 49.6
  - pass RG paramater to illumina2bam
