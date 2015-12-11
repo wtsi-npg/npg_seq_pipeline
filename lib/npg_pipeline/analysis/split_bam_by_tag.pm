@@ -4,7 +4,6 @@ use Moose;
 use Carp;
 use English qw{-no_match_vars};
 use Readonly;
-use List::Util qw(max);
 
 use npg_common::roles::software_location;
 use npg_pipeline::lsf_job;
@@ -14,7 +13,7 @@ extends q{npg_pipeline::base};
 our $VERSION  = '0';
 
 Readonly::Scalar our $DEFAULT_RESOURCES => 4;
-Readonly::Scalar our $JAVA_CMD          =>q{java};
+Readonly::Scalar our $JAVA_CMD          => q{java};
 
 sub generate {
   my ($self, $arg_refs) = @_;
@@ -55,10 +54,10 @@ sub generate {
   # submits a job (in an array) for each multiplex lane
   if ( scalar @indexed_lanes ) {
 
-    $arg_refs->{array_string} = npg_pipeline::lsf_job->create_array_string( @indexed_lanes );
-    $arg_refs->{fs_resource} = $DEFAULT_RESOURCES;
-    $arg_refs->{bam} = $self->recalibrated_path().q{/}.$self->id_run().q{_}.$position.q{.bam};
-    $arg_refs->{output_prefix} = $output_dir.q{/}.$self->id_run().q{_}.$position;
+    $arg_refs->{'array_string'} = npg_pipeline::lsf_job->create_array_string( @indexed_lanes );
+    $arg_refs->{'fs_resource'} = $DEFAULT_RESOURCES;
+    $arg_refs->{'bam'} = $self->recalibrated_path().q{/}.$self->id_run().q{_}.$position.q{.bam};
+    $arg_refs->{'output_prefix'} = $output_dir.q{/};
 
     my $job_sub = $self->_generate_bsub_command( $arg_refs );
     push @job_ids, $self->submit_bsub_command( $job_sub );
@@ -84,15 +83,15 @@ sub _build__split_bam_cmd {
 
    return $JAVA_CMD . q{ -Xmx1024m}
                     . q{ -jar } . $self->_split_bam_jar()
-                    . q{ TRIM=1 CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT};
+                    . q{ CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT};
 }
 
 sub _generate_bsub_command {
   my ($self, $arg_refs) = @_;
 
-  my $required_job_completion = $arg_refs->{required_job_completion};
-  my $bam                     = $arg_refs->{bam};
-  my $output_prefix           = $arg_refs->{output_prefix};
+  my $required_job_completion = $arg_refs->{'required_job_completion'};
+  my $bam                     = $arg_refs->{'bam'};
+  my $output_prefix           = $arg_refs->{'output_prefix'};
 
   my $timestamp = $self->timestamp();
 
@@ -102,11 +101,11 @@ sub _generate_bsub_command {
 
   my $job_command = $self->_split_bam_cmd() . qq{  I=$bam O=$output_prefix};
 
-  $job_name .= $arg_refs->{array_string};
+  $job_name .= $arg_refs->{'array_string'};
 
   my $job_sub = q{bsub -q } . $self->lsf_queue() . q{ };
   $job_sub .=  ( $self->fs_resource_string( {
-                   counter_slots_per_job => $arg_refs->{fs_resource},
+                   counter_slots_per_job => $arg_refs->{'fs_resource'},
                } ) );
   $job_sub .= q{ };
   $job_sub .= qq{$required_job_completion -J $job_name -o $outfile '$job_command'};
@@ -156,8 +155,6 @@ Object module which knows how to construct and submits the command line to LSF f
 =item Readonly
 
 =item Moose
-
-=item List::Util
 
 =item npg_common::roles::software_location
 
