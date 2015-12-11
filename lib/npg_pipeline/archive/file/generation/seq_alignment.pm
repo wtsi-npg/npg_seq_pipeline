@@ -188,8 +188,8 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       not $spike_tag #or allow old school if this is the phix spike
     )){
 
-    # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp)
-    my $bwa = ($self->is_hiseqx_run or $self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
+    # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp) unless GCLP
+    my $bwa = ($self->gclp or $self->is_hiseqx_run or $self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
               ? 'bwa_mem'
               : 'bwa_aln';
 
@@ -233,6 +233,8 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                              q{-keys samtools_executable -vals samtools1},
                              q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
                              q(-keys aligner_numthreads -vals), q{`}. q[perl -e '"'"'print scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'"'"'] .q{`},
+                             q(-keys br_numthreads_val -vals), q{`}. q[perl -e '"'"'my$].q[n=scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg); ($].q[n)=$].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm unless $].q[n; $].q[n-=1; $].q[n=int $].q[n/2; print $].q[n>1?$].q[n:1;'"'"'] .q{`},
+                             q(-keys b2c_mt_val -vals), q{`}. q[perl -e '"'"'my$].q[n=scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg); ($].q[n)=$].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm unless $].q[n; $].q[n-=2; $].q[n=int $].q[n/2; print $].q[n>1?$].q[n:1;'"'"'] .q{`},
                              q(-keys indatadir -vals), $input_path,
                              q(-keys outdatadir -vals), $archive_path,
                              q(-keys af_metrics -vals), $name_root.q{.bam_alignment_filter_metrics.json},

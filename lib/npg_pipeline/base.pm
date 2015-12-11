@@ -29,7 +29,7 @@ with q{npg_pipeline::roles::business::flag_options};
 
 Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
 Readonly::Scalar my $CONF_DIR                   => q{data/config_files};
-Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ olb qc_run /;
+Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ olb qc_run gclp /;
 
 $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
 
@@ -240,8 +240,13 @@ Boolean decision to force on P4 pipeline usage
 has q{force_p4}  => (
   isa           => q{Bool},
   is            => q{ro},
-  documentation => q{Boolean decision to force on P4 pipeline usage},
+  lazy_build    => 1,
+  documentation => q{Boolean decision to force on P4 pipeline usage, default true iff GCLP},
 );
+sub _build_force_p4 {
+  my ($self) = @_;
+  return $self->gclp;
+}
 
 =head2 verbose
 
@@ -367,12 +372,13 @@ has 'function_list' => (
 );
 sub _build_function_list {
   my $self = shift;
+  my $suffix = q();
   foreach my $flag (@FLAG2FUNCTION_LIST) {
     if ($self->can($flag) && $self->$flag) {
-      return $flag;
+      $suffix .= "_$flag";
     }
   }
-  return $self->pipeline_name;
+  return $self->pipeline_name . $suffix;
 }
 around 'function_list' => sub {
   my $orig = shift;
@@ -392,6 +398,10 @@ around 'function_list' => sub {
   }
   return $file;
 };
+sub _build_gclp {
+  my ($self) = @_;
+  return $self->has_function_list && $self->function_list =~ /gclp/ismx;
+}
 
 =head2 function_list_conf
 
