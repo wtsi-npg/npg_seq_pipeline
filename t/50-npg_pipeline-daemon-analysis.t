@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 51;
+use Test::More tests => 52;
 use Test::Exception;
 use Cwd;
 use File::Path qw/make_path/;
@@ -61,11 +61,19 @@ package main;
   ) } q{object creation ok};
   isa_ok($runner, q{test_analysis_runner}, q{$runner});
 
-  my $command_start = 'npg_pipeline_central --verbose --job_priority 50 --runfolder_path';  
+  my $command_start = 'npg_pipeline_central --verbose --job_priority 50 --runfolder_path';
+
+  throws_ok { $runner->_generate_command( {
+                     rf_path      => $rf_path,
+                     job_priority => 50,
+                                       } )
+            } qr/Lims flowcell id is missing/,
+    'non-gclp run and lims flowcell id is missing - error';
 
   like($runner->_generate_command( {
     rf_path      => $rf_path,
     job_priority => 50,
+    id           => 1480,
   } ), qr/$command_start $rf_path/,
     q{generated command is correct});
 
@@ -73,7 +81,7 @@ package main;
     rf_path      => $rf_path,
     job_priority => 50,
     gclp         => 1,
-  } ), qr/$command_start $rf_path --function_list gclp --force_p4/,
+  } ), qr/$command_start $rf_path --gclp/,
     q{generated command is correct});
 
   like($runner->_generate_command( {
@@ -81,7 +89,7 @@ package main;
     job_priority => 50,
     gclp         => 1,
     id           => 22,
-  } ), qr/$command_start $rf_path --function_list gclp --force_p4/,
+  } ), qr/$command_start $rf_path --gclp/,
     q{generated command is correct});
 
   ok($runner->green_host,'running on a host in a green datacentre');

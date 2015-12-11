@@ -139,8 +139,15 @@ sub check_lims_link {
   }
 
   my $lims = {};
-  $lims->{'id'}   = $batch_id || 0;
-  $lims->{'gclp'} = $fcell_row ? $fcell_row->from_gclp : 0;
+  $lims->{'id'} = $batch_id || 0;
+  if ($fcell_row) {
+    $lims->{'gclp'} = $fcell_row->from_gclp;
+  } else {
+    $lims->{'qc_run'} = $self->is_qc_run($lims->{'id'});
+    if (!$lims->{'qc_run'}) {
+      croak q{Not QC run and not in the ml warehouse};
+    }
+  }
 
   return $lims;
 }

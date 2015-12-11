@@ -4,6 +4,7 @@ use Moose;
 use Moose::Meta::Class;
 use Try::Tiny;
 use Readonly;
+use Carp;
 
 use npg_tracking::illumina::run::folder::location;
 use npg_tracking::illumina::run::short_info;
@@ -94,9 +95,17 @@ sub _generate_command {
 
   if ( $arg_refs->{'gclp'} ) {
     $self->logger->info('GCLP run');
-    $cmd .= ' --function_list gclp --force_p4';
-  } elsif ( $arg_refs->{'id'} ) {
+    $cmd .= ' --gclp';
+  } else {
     $self->logger->info('Non-GCLP run');
+    if (!$arg_refs->{'id'}) {
+      # Batch id is needed for MiSeq runs, including qc runs
+      croak 'Lims flowcell id is missing';
+    }
+    if ($arg_refs->{'qc_run'}) {
+      $cmd .= ' --qc_run';
+      $self->logger->info('QC run');
+    }
     $cmd .= ' --id_flowcell_lims ' . $arg_refs->{'id'};
   }
 
@@ -148,6 +157,8 @@ status. Runs for which LIMS data are not available are skipped.
 =item Try::Tiny
 
 =item Readonly
+
+=item Carp
 
 =item Moose::Meta::Class
 

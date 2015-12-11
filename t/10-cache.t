@@ -56,24 +56,24 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   my $cache = npg_pipeline::cache->new(id_run           => 12376,
                                        mlwh_schema      => $wh_schema,
                                        lims_driver_type => 'ml_warehouse',
-                                       lims_id          => 'XXXXXXXX',
+                                       id_flowcell_lims => 'XXXXXXXX',
                                        cache_location   => $tempdir);
   throws_ok { $cache->lims }
-    qr/No record retrieved for st::api::lims::ml_warehouse flowcell_barcode XXXXXXXX/,
+    qr/No record retrieved for st::api::lims::ml_warehouse id_flowcell_lims XXXXXXXX/,
     'cannot retrieve lims objects';
 
-  $cache = npg_pipeline::cache->new(id_run              => 12376,
-                                       mlwh_schema      => $wh_schema,
-                                       lims_driver_type => 'ml_warehouse',
-                                       cache_location   => $tempdir);
+  $cache = npg_pipeline::cache->new(id_run           => 12376,
+                                    mlwh_schema      => $wh_schema,
+                                    lims_driver_type => 'ml_warehouse',
+                                    cache_location   => $tempdir);
   throws_ok { $cache->lims }
-    qr/lims_id accessor should be defined for ml_warehouse driver/,
+    qr/Neither flowcell barcode nor lims flowcell id is known/,
     'cannot retrieve lims objects';
 
   $cache = npg_pipeline::cache->new(id_run           => 12376, 
                                     mlwh_schema      => $wh_schema,
                                     lims_driver_type => 'ml_warehouse',
-                                    lims_id          => 'HBF2DADXX',
+                                    flowcell_barcode => 'HBF2DADXX',
                                     cache_location   => $tempdir);
   lives_ok { $clims = $cache->lims() } 'can retrieve lims objects';
   ok( $clims, 'lims objects returned');
@@ -82,7 +82,7 @@ for my $type (qw/xml warehouse mlwarehouse/) {
 
   my $oldwh_schema = t::dbic_util->new()->test_schema_wh('t/data/fixtures/wh');
 
-  $cache = npg_pipeline::cache->new(lims_id          => '3980331130775',
+  $cache = npg_pipeline::cache->new(id_flowcell_lims => '3980331130775',
                                     wh_schema        => $oldwh_schema,
                                     id_run           => 12376,
                                     lims_driver_type => 'warehouse',
@@ -92,7 +92,7 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   is( scalar @{$clims}, 1, 'one lims object returned');
   is( $clims->[0]->driver_type, 'warehouse', 'correct driver type');
 
-  $cache = npg_pipeline::cache->new(lims_id          => '9870331130775',
+  $cache = npg_pipeline::cache->new(id_flowcell_lims => '9870331130775',
                                     wh_schema        => $oldwh_schema,
                                     id_run           => 12376,
                                     lims_driver_type => 'warehouse',
@@ -101,7 +101,7 @@ for my $type (qw/xml warehouse mlwarehouse/) {
     qr/EAN13 barcode checksum fail for code 9870331130775/,
     'cannot retrieve lims objects';
 
-  $cache = npg_pipeline::cache->new(lims_id          => '5260271901788',
+  $cache = npg_pipeline::cache->new(id_flowcell_lims => '5260271901788',
                                     wh_schema        => $oldwh_schema,
                                     id_run           => 12376,
                                     lims_driver_type => 'warehouse',
@@ -111,18 +111,24 @@ for my $type (qw/xml warehouse mlwarehouse/) {
     'cannot retrieve lims objects';
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/cache/xml';
-  $cache = npg_pipeline::cache->new(lims_id          => 26195,
+  $cache = npg_pipeline::cache->new(id_flowcell_lims => 26195,
                                     id_run           => 12376,
                                     cache_location   => $tempdir);
-  is ($cache->lims_driver_type, 'xml', 'driver type defaults to xml');
+  is ($cache->lims_driver_type, 'ml_warehouse',
+    'driver type defaults to ml_warehouse');
+
+  $cache = npg_pipeline::cache->new(id_flowcell_lims => 26195,
+                                    id_run           => 12376,
+                                    lims_driver_type => 'xml',
+                                    cache_location   => $tempdir);
   lives_ok { $clims = $cache->lims() } 'can retrieve lims objects';
   ok( $clims, 'lims objects returned');
   is( scalar @{$clims}, 1, 'one lims object returned');
   is( $clims->[0]->driver_type, 'xml', 'correct driver type');
 
   $cache = npg_pipeline::cache->new(id_run           => 12376,
+                                    lims_driver_type => 'xml',
                                     cache_location   => $tempdir);
-  is ($cache->lims_driver_type, 'xml', 'driver type defaults to xml');
   lives_ok { $clims = $cache->lims() } 'can retrieve lims objects';
   ok( $clims, 'lims objects returned');
   is( scalar @{$clims}, 1, 'one lims object returned');
@@ -134,7 +140,7 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   my $ss_path = join q[/],$tempdir,'ss.csv';
   my $cache = npg_pipeline::cache->new(
       id_run => 12376,
-      lims => \@lchildren,
+      lims   => \@lchildren,
       samplesheet_file_path => $ss_path);
 
   isa_ok($cache, 'npg_pipeline::cache');
@@ -186,9 +192,9 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = '';
   $cache = npg_pipeline::cache->new(id_run           => 12376,
                                     mlwh_schema      => $wh_schema,
-                                    lims_driver_type => 'ml_warehouse',
-                                    lims_id          => 'HBF2DADXX',
+                                    flowcell_barcode => 'HBF2DADXX',
                                     cache_location   => $tempdir);
+  is ($cache->lims_driver_type, 'ml_warehouse', 'default driver type is set');
   is ($cache->reuse_cache, 1, 'reuse_cache true by default');
   lives_ok {$cache->setup} 'no error reusing existing cache';
   my @messages = @{$cache->messages};

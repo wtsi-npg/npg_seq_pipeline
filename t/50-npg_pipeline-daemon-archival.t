@@ -59,7 +59,7 @@ package main;
     q{generated command is correct});
   like($runner->_generate_command(1234), qr/npg_pipeline_post_qc_review --verbose --runfolder_path \/some\/path/,
     q{generated command is correct});
-  like($runner->_generate_command(1234,1), qr/npg_pipeline_post_qc_review --function_list post_qc_review_gclp --verbose --runfolder_path \/some\/path/,
+  like($runner->_generate_command(1234,1), qr/npg_pipeline_post_qc_review --gclp --verbose --runfolder_path \/some\/path/,
     q{generated gclp command is correct});
   ok(!$runner->green_host, 'host is not in green datacentre');
 

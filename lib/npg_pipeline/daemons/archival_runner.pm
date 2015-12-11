@@ -44,7 +44,7 @@ sub _generate_command {
   $self->logger->info($gclp ? 'GCLP run' : 'Non-GCLP run');
 
   my $cmd = $self->pipeline_script_name();
-  $cmd = $cmd . ($gclp ? q{ --function_list post_qc_review_gclp} : q());
+  $cmd = $cmd . ($gclp ? q{ --gclp} : q());
   $cmd = $cmd . q{ --verbose --runfolder_path } . $self->_runfolder_path($id_run);
   my $path = join q[:], $self->local_path(), $ENV{PATH};
   my $prefix = $self->daemon_conf()->{'command_prefix'};

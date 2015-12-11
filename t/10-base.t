@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 88;
+use Test::More tests => 92;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use File::Copy qw(cp);
@@ -236,17 +236,23 @@ package main;
 
 {
   my $base = npg_pipeline::base->new(flowcell_id  => 'HBF2DADXX');
-  ok( !$base->is_qc_run, 'looking on flowcell lims id: not qc run');
+  ok( !$base->is_qc_run(), 'looking on flowcell lims id: not qc run');
   ok( !$base->qc_run, 'not qc run');
+  ok( $base->is_qc_run('3980331130775'), 'looking on argument - qc run');
   
   $base = npg_pipeline::base->new(id_flowcell_lims => 3456);
-  ok( !$base->is_qc_run, 'looking on flowcell lims id: not qc run');
+  ok( !$base->is_qc_run(), 'looking on flowcell lims id: not qc run');
   ok( !$base->qc_run, 'not qc run');
+  ok( !$base->is_qc_run(3456), 'looking on argument: not qc run');
 
   $base = mytest::central->new(id_flowcell_lims => 3456, qc_run => 1);
-  ok( !$base->is_qc_run, 'looking on flowcell lims id: not qc run');
+  ok( !$base->is_qc_run(), 'looking on flowcell lims id: not qc run');
   my $fl = getcwd() . '/data/config_files/function_list_central_qc_run.yml';
   is( $base->function_list, $fl, 'qc function list');
+  
+  $base = mytest::central->new(id_flowcell_lims => 3456, gclp => 1);
+  my $gfl = getcwd() . '/data/config_files/function_list_central_gclp.yml';
+  is( $base->function_list, $gfl, 'gclp function list');
   
   $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775');
   my $path = getcwd() . '/data/config_files/function_list_base_qc_run.yml';
@@ -254,9 +260,10 @@ package main;
     qr/File $path does not exist or is not readable/,
     'error when default function list does not exist';
   $base = mytest::central->new(id_flowcell_lims => '3980331130775');
-  ok( $base->is_qc_run, 'looking on flowcell lims id: qc run');
+  ok( $base->is_qc_run(), 'looking on flowcell lims id: qc run');
   ok( $base->qc_run, 'qc run');
   is( $base->function_list, $fl, 'qc function list');
+  ok( $base->is_qc_run('3980331130775'), 'looking on argument: qc run');
 }
 
 {
