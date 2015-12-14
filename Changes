@@ -1,6 +1,16 @@
 LIST OF CHANGES
 ---------------
 
+release 49.7
+ - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt references
+ - bug fix after passing RG paramater to illumina2bam: change SplitBamByReadGroup options:
+     do not set OUTPUT_COMMON_RG_HEAD_TO_TRIM, strip last component (runid_lane) from
+     OUTPUT_PREFIX
+ - use threading for bam and cram creation in seq_alignment
+   references and GCLP
+ - add attribute "gclp" common to analysis and archival scripts
+ - function list config files always contain pipeline module name e.g. central
+
 release 49.6
  - pass RG paramater to illumina2bam
  - add archive::file::logs
