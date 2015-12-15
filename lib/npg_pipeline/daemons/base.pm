@@ -139,7 +139,7 @@ sub check_lims_link {
   }
 
   my $lims = {};
-  $lims->{'id'} = $batch_id || 0;
+  $lims->{'id'} = $batch_id;
   if ($fcell_row) {
     $lims->{'gclp'} = $fcell_row->from_gclp;
   } else {

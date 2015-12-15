@@ -6,9 +6,14 @@ LIST OF CHANGES
  - simpler name for the archival daemon module
  - parent class for pipeline daemons
  - consistent behaviour of the archival and analysis daemons
-   when LIMs data are not available in the ml warehouse -
-   the run is skipped
+   when LIMs data are not available in the ml warehouse and
+   the run is not a QC run, the run is skipped
+ - the pipeline daemons define the type of the pipeline to run
+   (default, gclp, qc) and set appropriate flag for the pipeline
+   script (formerly the function list was specified)
  - Log::Log4perl logger is used in pipeline daemons
+ - cached samplesheet generation - use ml warehouse for all
+   runs except QC runs, for which the old warehouse is still used
 
 release 49.7
  - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt references

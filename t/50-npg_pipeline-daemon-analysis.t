@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 52;
+use Test::More tests => 55;
 use Test::Exception;
 use Cwd;
 use File::Path qw/make_path/;
@@ -10,7 +10,9 @@ use Log::Log4perl qw(:easy);
 use t::util;
 use t::dbic_util;
 
-Log::Log4perl->easy_init($ERROR);
+$ENV{'http_proxy'} = 'http://wibble.com'.
+
+Log::Log4perl->easy_init($INFO);
 
 my $package = 'npg_pipeline::daemons::analysis';
 
@@ -30,6 +32,7 @@ local $ENV{PATH} = join q[:], $temp_directory, $current_dir.'/t/bin', $ENV{PATH}
 
 my $dbic_util = t::dbic_util->new();
 my $schema = $dbic_util->test_schema();
+my $wh_schema = $dbic_util->test_schema_mlwh('t/data/fixtures/mlwh');
 my $test_run = $schema->resultset(q[Run])->find(1234);
 $test_run->update_run_status('analysis pending', 'pipeline',);
 is($test_run->current_run_status_description,
@@ -45,7 +48,6 @@ my $rf_path = '/some/path';
 package test_analysis_runner;
 use Moose;
 extends 'npg_pipeline::daemons::analysis';
-sub check_lims_link{ return {'id' => 0}; }
 sub _runfolder_path { return '/some/path' };
 
 ########test class definition end########
@@ -58,6 +60,7 @@ package main;
   my $runner;
   lives_ok { $runner = test_analysis_runner->new(
       npg_tracking_schema => $schema,
+      iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
   ) } q{object creation ok};
   isa_ok($runner, q{test_analysis_runner}, q{$runner});
 
@@ -115,12 +118,14 @@ package main;
   $runner = test_analysis_runner->new(
       pipeline_script_name => '/bin/true',
       npg_tracking_schema  => $schema,
+      iseq_flowcell        => $wh_schema->resultset('IseqFlowcell')
   );
   lives_ok { $runner->run(); } q{no croak on $runner->run()};
 
   local $ENV{PATH} = join q[:], $current_dir.'/t/bin/red', $ENV{PATH};
   lives_ok { $runner = test_analysis_runner->new(
       npg_tracking_schema => $schema,
+      iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
   ) } q{object creation ok};
   like($runner->_generate_command( {
     rf_path      => $rf_path,
@@ -137,26 +142,9 @@ package main;
   local $ENV{PATH} = join q[:], $current_dir.'/t/bin/dodo', $ENV{PATH};
   $runner = test_analysis_runner->new(
       npg_tracking_schema => $schema,
+      iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
   );
   ok(!$runner->green_host, 'host is not in green datacentre');
-}
-
-{
-  local $ENV{PATH} = join q[:], $current_dir.'/t/bin/red', $ENV{PATH};
-  my $runner = test_analysis_runner->new(
-    pipeline_script_name => '/bin/true',
-    npg_tracking_schema  => $schema,
-  );
-  ok($runner->staging_host_match($folder_path_glob),
-    'staging matches host for a test run');
-
-  lives_ok {
-    $runner->run();
-    sleep 1;
-    $runner->run();
-  } q{no croak running through twice - potentially as a daemon process};
-
-  is (join(q[ ],sort keys %{$runner->seen}), '1234', 'correct list of seen runs');
 }
 
 ########test class definition start########
@@ -176,6 +164,7 @@ package main;
   my $runner = test_analysis_anotherrunner->new(
     pipeline_script_name => '/bin/true',
     npg_tracking_schema  => $schema,
+    iseq_flowcell        => $wh_schema->resultset('IseqFlowcell')
   );
 
   lives_ok { $runner->run(); } 'one run is processed';
@@ -184,9 +173,6 @@ package main;
 }
 
 {
-  my $wh_schema = $dbic_util->test_schema_mlwh('t/data/fixtures/mlwh');
-  my $fc_row = $wh_schema->resultset('IseqFlowcell')->search()->next;
-
   my $runner;
   lives_ok { $runner = $package->new(
                npg_tracking_schema => $schema,
@@ -194,48 +180,81 @@ package main;
              );
   } 'object created';
 
-  my $fc = 'dummy_flowcell1';
-  is ($test_run->flowcell_id, $fc, 'test prereq. - tracking flowcell id');
-  is ($test_run->batch_id, 55, 'test prereq. - tracking batch id');
-  is ($wh_schema->resultset('IseqFlowcell')->search({'flowcell_barcode' => $fc})->count,
-    0, 'test prereq. - no rows with this barcode in the lims table');
-
-  my $lims_data = $runner->check_lims_link($test_run);
-  is ($lims_data->{'id'}, 55, 'batch id returned');
-  ok (!exists $lims_data->{'message'}, 'no message');
-  is ($lims_data->{'gclp'}, 0, 'gclp flag is set to false');
-
-  $fc_row->update({'flowcell_barcode' => $fc});
-
-  $lims_data = $runner->check_lims_link($test_run);
-  is ($lims_data->{'id'}, 55, 'batch id is returned');
-  ok (!exists $lims_data->{'message'}, 'no message');
-  is ($lims_data->{'gclp'}, 0, 'gclp flag is set to false');
-
-  $wh_schema->resultset('IseqFlowcell')->search()->update({'id_lims' => 'C_GCLP'});
-
-  $lims_data = $runner->check_lims_link($test_run);
-  is ($lims_data->{'gclp'}, 0, 'gclp flag is set to false');
-
-  $test_run->update({batch_id => undef,});
-  ok (!defined $test_run->batch_id, 'test prereq. - tracking batch id undefined');
-
-  $lims_data = $runner->check_lims_link($test_run);
-  is ($lims_data->{'id'}, 0, 'no batch id - no problem');
-  ok (!exists $lims_data->{'message'}, 'no message');
-  is ($lims_data->{'gclp'}, 1, 'gclp flag is set to true');
-
-  $fc_row->update({flowcell_barcode => 'some value'});
-
-  throws_ok { $runner->check_lims_link($test_run) }
-    qr/No matching flowcell LIMs record is found/,
-    'no lims record - error';
-
-  $test_run->update({flowcell_id => undef,});
-  ok (!defined $test_run->batch_id, 'test prereq. - tracking flowcell id undefined');
-  throws_ok { $runner->check_lims_link($test_run) }
+  $test_run->update({'flowcell_id' => undef});
+  throws_ok {$runner->check_lims_link($test_run)}
     qr/No flowcell barcode/,
     'no barcode in tracking db - error';
+
+  my $fc = 'dummy_flowcell1';
+ 
+  $test_run->update({'flowcell_id' => $fc});
+  $test_run->update({'batch_id' => 0});
+  throws_ok {$runner->check_lims_link($test_run)}
+    qr/No matching flowcell LIMs record is found/,
+    'no batch id and no mlwh record - error';
+
+  $test_run->update({'batch_id' => 1234567891234});
+  my $lims_data = $runner->check_lims_link($test_run);
+  is ($lims_data->{'id'}, '1234567891234', 'lims id');
+  is ($lims_data->{'qc_run'}, 1, 'is qc run');
+  ok(!$lims_data->{'gclp'}, 'gclp flag is false');
+
+  $test_run->update({'batch_id' => 55});
+  is ($wh_schema->resultset('IseqFlowcell')->search({'flowcell_barcode' => $fc})->count,
+    0, 'test prereq. - no rows with this barcode in the lims table');
+  throws_ok {$runner->check_lims_link($test_run)}
+    qr/Not QC run and not in the ml warehouse/,
+    'non-qc run not in mlwh - error';
+
+  $test_run->update({'batch_id' => undef});
+  my $fc_row = $wh_schema->resultset('IseqFlowcell')->search()->next;
+  $fc_row->update({'flowcell_barcode' => $fc});
+  is ($wh_schema->resultset('IseqFlowcell')->search({'flowcell_barcode' => $fc})->count,
+    1, 'test prereq. - one row with this barcode in the lims table');
+
+  $fc_row->update({'id_lims' => 'SSCAPE'});
+  $lims_data = $runner->check_lims_link($test_run);
+  is ($lims_data->{'id'}, undef, 'lims id is undefined');
+  ok(!$lims_data->{'gclp'}, 'gclp flag is false');
+  is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
+
+  $fc_row->update({'id_lims' => 'C_GCLP'});
+  $lims_data = $runner->check_lims_link($test_run);
+  is ($lims_data->{'id'}, undef, 'lims id is undefined');
+  is ($lims_data->{'gclp'}, 1, 'gclp flag is set to true');
+  is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
+
+  $test_run->update({'batch_id' => 55});
+  $fc_row->update({'id_flowcell_lims' => 55});
+  $lims_data = $runner->check_lims_link($test_run);
+  is ($lims_data->{'id'}, 55, 'lims id is set');
+  is ($lims_data->{'gclp'}, 1, 'gclp flag is set to true');
+  is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
+
+  $fc_row->update({'id_lims' => 'SSCAPE'});
+  $lims_data = $runner->check_lims_link($test_run);
+  is ($lims_data->{'id'}, 55, 'lims id is set');
+  ok (!$lims_data->{'gclp'}, 'gclp flag is false');
+  is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
+}
+
+{
+  local $ENV{PATH} = join q[:], $current_dir.'/t/bin/red', $ENV{PATH};
+  my $runner = test_analysis_runner->new(
+    pipeline_script_name => '/bin/true',
+    npg_tracking_schema  => $schema,
+    iseq_flowcell        => $wh_schema->resultset('IseqFlowcell')
+  );
+  ok($runner->staging_host_match($folder_path_glob),
+    'staging matches host for a test run');
+  
+  lives_ok {
+    $runner->run();
+    sleep 1;
+    $runner->run();
+  } q{no croak running through twice - potentially as a daemon process};
+
+  is (join(q[ ],sort keys %{$runner->seen}), '1234', 'correct list of seen runs');
 }
 
 {
@@ -250,6 +269,7 @@ package main;
 
   my $runner = $package->new(
                npg_tracking_schema => $schema,
+               iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
              );
   is( $runner->_runfolder_path(1234), $rf, 'runfolder path is correct');
 }

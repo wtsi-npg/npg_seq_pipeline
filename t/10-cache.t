@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 115;
+use Test::More tests => 98;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path remove_tree/;
@@ -25,7 +25,7 @@ my $lims_driver = st::api::lims::ml_warehouse->new(
                      mlwh_schema      => $wh_schema,
                      id_flowcell_lims => undef,
                      flowcell_barcode => 'HBF2DADXX'
-                                                   );
+                                                  );
  my @lchildren = st::api::lims->new(
                      id_flowcell_lims => undef,
                      flowcell_barcode => 'HBF2DADXX',
@@ -43,7 +43,7 @@ make_path $in_path;
 cp 't/data/cache/xml/npg/run/12376.xml', $run_path;
 cp 't/data/cache/xml/npg/instrument/103.xml', $in_path;
 
-for my $type (qw/xml warehouse mlwarehouse/) {
+for my $type (qw/warehouse mlwarehouse/) {
   my $method = $type . '_driver_name';
   my $expected = $type eq 'mlwarehouse' ? 'ml_warehouse' : $type;
   is(npg_pipeline::cache->$method, $expected, "driver name for $type");
@@ -51,13 +51,18 @@ for my $type (qw/xml warehouse mlwarehouse/) {
 
 {
   my $tempdir = tempdir( CLEANUP => 1);
-  my $clims;
 
   my $cache = npg_pipeline::cache->new(id_run           => 12376,
                                        mlwh_schema      => $wh_schema,
-                                       lims_driver_type => 'ml_warehouse',
                                        id_flowcell_lims => 'XXXXXXXX',
                                        cache_location   => $tempdir);
+  is( $cache->lims_driver_type(), 'ml_warehouse', 'correct default driver');
+
+  $cache = npg_pipeline::cache->new(id_run           => 12376,
+                                    mlwh_schema      => $wh_schema,
+                                    lims_driver_type => 'ml_warehouse',
+                                    id_flowcell_lims => 'XXXXXXXX',
+                                    cache_location   => $tempdir);
   throws_ok { $cache->lims }
     qr/No record retrieved for st::api::lims::ml_warehouse id_flowcell_lims XXXXXXXX/,
     'cannot retrieve lims objects';
@@ -69,6 +74,8 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   throws_ok { $cache->lims }
     qr/Neither flowcell barcode nor lims flowcell id is known/,
     'cannot retrieve lims objects';
+
+  my $clims;
 
   $cache = npg_pipeline::cache->new(id_run           => 12376, 
                                     mlwh_schema      => $wh_schema,
@@ -87,6 +94,7 @@ for my $type (qw/xml warehouse mlwarehouse/) {
                                     id_run           => 12376,
                                     lims_driver_type => 'warehouse',
                                     cache_location   => $tempdir);
+  is( $cache->lims_driver_type(), 'warehouse', 'driver as set');
   lives_ok { $clims = $cache->lims() } 'can retrieve lims objects';
   ok( $clims, 'lims objects returned');
   is( scalar @{$clims}, 1, 'one lims object returned');
@@ -109,43 +117,20 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   throws_ok { $clims = $cache->lims() }
     qr/Single tube not found from barcode 271901/,
     'cannot retrieve lims objects';
-
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/cache/xml';
-  $cache = npg_pipeline::cache->new(id_flowcell_lims => 26195,
-                                    id_run           => 12376,
-                                    cache_location   => $tempdir);
-  is ($cache->lims_driver_type, 'ml_warehouse',
-    'driver type defaults to ml_warehouse');
-
-  $cache = npg_pipeline::cache->new(id_flowcell_lims => 26195,
-                                    id_run           => 12376,
-                                    lims_driver_type => 'xml',
-                                    cache_location   => $tempdir);
-  lives_ok { $clims = $cache->lims() } 'can retrieve lims objects';
-  ok( $clims, 'lims objects returned');
-  is( scalar @{$clims}, 1, 'one lims object returned');
-  is( $clims->[0]->driver_type, 'xml', 'correct driver type');
-
-  $cache = npg_pipeline::cache->new(id_run           => 12376,
-                                    lims_driver_type => 'xml',
-                                    cache_location   => $tempdir);
-  lives_ok { $clims = $cache->lims() } 'can retrieve lims objects';
-  ok( $clims, 'lims objects returned');
-  is( scalar @{$clims}, 1, 'one lims object returned');
-  is( $clims->[0]->driver_type, 'xml', 'correct driver type');
 }
 
 {
   my $tempdir = tempdir( CLEANUP => 1);
   my $ss_path = join q[/],$tempdir,'ss.csv';
   my $cache = npg_pipeline::cache->new(
-      id_run => 12376,
-      lims   => \@lchildren,
+      id_run      => 12376,
+      mlwh_schema => $wh_schema,
+      lims        => \@lchildren,
       samplesheet_file_path => $ss_path);
 
   isa_ok($cache, 'npg_pipeline::cache');
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/cache/xml';
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $ca; # npg xml feeds only
   lives_ok { $cache->_samplesheet() } 'samplesheet generated';
   ok(-e $ss_path, 'samplesheet file exists');
 }
@@ -154,6 +139,7 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   my $tempdir = tempdir( CLEANUP => 1);
   my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
   my $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                       mlwh_schema    => $wh_schema,
                                        lims           => \@lchildren,
                                        cache_location => $tempdir);
   is ($cache->cache_dir_path, $cache_dir, 'cache directory path is correct');
@@ -181,6 +167,7 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   my $tempdir = tempdir( CLEANUP => 1);
   my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
   my $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                       mlwh_schema    => $wh_schema,
                                        lims           => \@lchildren,
                                        cache_location => $tempdir);
   isa_ok ($cache, 'npg_pipeline::cache');
@@ -208,6 +195,7 @@ for my $type (qw/xml warehouse mlwarehouse/) {
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $ca; # npg xml feeds only
   $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                    mlwh_schema    => $wh_schema,
                                     lims           => \@lchildren,
                                     reuse_cache    => 0,
                                     cache_location => $tempdir);
@@ -235,6 +223,7 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   sleep(1);
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $ca; # npg xml feeds only
   $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                    mlwh_schema    => $wh_schema,
                                     lims           => \@lchildren,
                                     reuse_cache    => 1,
                                     set_env_vars   => 1,
@@ -259,6 +248,7 @@ for my $type (qw/xml warehouse mlwarehouse/) {
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = '';
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                    mlwh_schema    => $wh_schema,
                                     lims           => \@lchildren,
                                     reuse_cache    => 1,
                                     set_env_vars   => 1,
@@ -279,10 +269,12 @@ for my $type (qw/xml warehouse mlwarehouse/) {
 
 $lims_driver = st::api::lims::ml_warehouse->new(
                      mlwh_schema      => $wh_schema,
+                     id_run           => 12376,
                      id_flowcell_lims => 35053,
                      flowcell_barcode => 'undef'
                                                );
 @lchildren = st::api::lims->new(
+                     id_run           => 12376,
                      id_flowcell_lims => 35053,
                      flowcell_barcode => undef,
                      driver           => $lims_driver,
@@ -294,6 +286,7 @@ $lims_driver = st::api::lims::ml_warehouse->new(
   local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = 't/data/cache/xml';
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/cache/my_samplesheet_12376.csv';
   my $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                       mlwh_schema    => $wh_schema,
                                        lims           => \@lchildren,
                                        reuse_cache    => 1,
                                        set_env_vars   => 1,
@@ -317,6 +310,7 @@ $lims_driver = st::api::lims::ml_warehouse->new(
   local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = 't/data/cache/xml';
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/cache/my_samplesheet_12376.csv';
   my $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                       mlwh_schema    => $wh_schema,
                                        lims           => \@lchildren,
                                        reuse_cache    => 1,
                                        set_env_vars   => 1,
@@ -337,6 +331,7 @@ $lims_driver = st::api::lims::ml_warehouse->new(
   local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = 't/data/cache/xml';
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   my $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                       mlwh_schema    => $wh_schema,
                                        lims           => \@lchildren,
                                        reuse_cache    => 0,
                                        set_env_vars   => 1,
@@ -355,11 +350,13 @@ $lims_driver = st::api::lims::ml_warehouse->new(
     'NPG_CACHED_SAMPLESHEET_FILE is set');
 }
 
+my $tempdir = tempdir( CLEANUP => 1);
+
 {
-  my $tempdir = tempdir( CLEANUP => 1);
   local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = 't/data/cache/xml';
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/cache/my_samplesheet_12376.csv';
   my $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                       mlwh_schema    => $wh_schema,
                                        reuse_cache    => 1,
                                        set_env_vars   => 1,
                                        cache_location => $tempdir);
@@ -379,30 +376,13 @@ $lims_driver = st::api::lims::ml_warehouse->new(
 }
 
 {
-  my $tempdir = tempdir( CLEANUP => 1);
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = 't/data/cache/xml';
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
-  my $cache = npg_pipeline::cache->new(id_run         => 12376,
-                                       reuse_cache    => 0,
-                                       set_env_vars   => 1,
-                                       cache_location => $tempdir);
-  lives_ok {$cache->setup()} 'no error when NPG_WEBSERVICE_CACHE_DIR is set, but no NPG_CACHED_SAMPLESHEET_FILE is set';
   my $cache_dir = join q[/], $tempdir, 'metadata_cache_12376';
   my $sh = join(q[/], $cache_dir, 'samplesheet_12376.csv');
-  ok (-e $sh, 'samplesheet created');
-  ok (-e join(q[/], $cache_dir, 'npg/instrument/103.xml'), 'instrument xml copied');
-  ok (-e join(q[/], $cache_dir, 'npg/run/12376.xml'), 'run xml copied');
-  ok (-e join(q[/], $cache_dir, 'npg/run_status_dict.xml'), 'run status xml copied');
-  ok (!-e join(q[/], $cache_dir, 'st/batches/26195.xml'), 'batch xml is copied');
-  is (scalar @{$cache->messages}, 5, 'five messages saved') or diag explain $cache->messages;
-  is ($ENV{NPG_WEBSERVICE_CACHE_DIR}, $cache_dir,
-    'NPG_WEBSERVICE_CACHE_DIR is set correctly');
-  is ($ENV{NPG_CACHED_SAMPLESHEET_FILE}, $sh,
-    'NPG_CACHED_SAMPLESHEET_FILE is set');
-
+ 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = '';
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
-  $cache = npg_pipeline::cache->new(id_run            => 12376,
+  my $cache = npg_pipeline::cache->new(id_run         => 12376,
+                                    mlwh_schema       => $wh_schema,
                                     reuse_cache       => 1,
                                     reuse_cache_only  => 1,
                                     set_env_vars      => 1,
@@ -417,6 +397,7 @@ $lims_driver = st::api::lims::ml_warehouse->new(
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   unlink $sh;
   $cache = npg_pipeline::cache->new(id_run            => 12376,
+                                    mlwh_schema       => $wh_schema,
                                     reuse_cache       => 1,
                                     reuse_cache_only  => 1,
                                     set_env_vars      => 1,
@@ -428,6 +409,7 @@ $lims_driver = st::api::lims::ml_warehouse->new(
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   remove_tree $cache_dir;
   $cache = npg_pipeline::cache->new(id_run            => 12376,
+                                    mlwh_schema       => $wh_schema,
                                     reuse_cache       => 1,
                                     reuse_cache_only  => 1,
                                     set_env_vars      => 1,

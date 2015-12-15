@@ -46,12 +46,19 @@ npg_pipeline::cache
                            cache_location => 'my_dir',
                           )->setup;
 
-  or, to generate the samplesheet from xml feeds,
+  npg_pipeline::cache->new(id_run           => 78,
+                           id_flowcell_lims => '5260271901788',
+                           lims_driver_type => 'warehouse',
+                           set_env_vars     => 1,
+                           reuse_cache      => 1,
+                           cache_location   => 'my_dir',
+                          )->setup;
 
-  npg_pipeline::cache->new(id_run         => 78,
-                           set_env_vars   => 1,
-                           reuse_cache    => 1,
-                           cache_location => 'my_dir',
+  npg_pipeline::cache->new(id_run           => 78,
+                           flowcell_barcode => 'HBF2DADXX',
+                           set_env_vars     => 1,
+                           reuse_cache      => 0,
+                           cache_location   => 'my_dir',
                           )->setup;
 
 =head1 SUBROUTINES/METHODS
@@ -78,7 +85,7 @@ defaults to xml.
 has 'lims_driver_type'  => (isa        => 'Str',
                             is         => 'ro',
                             required   => 0,
-                            default    => sub { mlwarehouse_driver_name() });
+                            default    => sub { mlwarehouse_driver_name() },);
 
 =head2 wh_schema
  
@@ -146,7 +153,7 @@ sub _build_lims {
     $clims = [$lims->children];
 
   } elsif ($driver_type eq $self->warehouse_driver_name) {
-    
+
     if (!$self->id_flowcell_lims) {
       croak "lims_id accessor should be defined for $driver_type driver";
     }
@@ -284,17 +291,11 @@ has 'messages'  => (isa        => 'ArrayRef[Str]',
                     is         => 'ro',
                     default    => sub { [] },);
 
-=head2 xml_driver_name
-
 =head2 warehouse_driver_name
 
 =head2 mlwarehouse_driver_name
 
 =cut
-
-sub xml_driver_name {
-  return 'xml';
-}
 sub warehouse_driver_name {
   return 'warehouse';
 }
@@ -462,16 +463,6 @@ sub _xml_feeds {
   $run->current_run_status();
   $run->instrument()->model();
   npg::api::run_status_dict->new()->run_status_dicts();
-
-  if ($self->lims_driver_type eq $self->xml_driver_name) {
-    my $lims = st::api::lims->new($self->_lims_xml_options);
-    my @methods = $lims->method_list();
-    foreach my $l ( $lims->associated_lims() ) {
-      foreach my $method ( @methods ) {
-        $l->$method;
-      }
-    }
-  }
 
   return;
 }

@@ -46,7 +46,7 @@ sub _process_one_run {
   my $id_run = $run->id_run();
   $self->logger->info(qq{Considering run $id_run});
   if ($self->seen->{$id_run}) {
-    $self->ogger->info(qq{Already seen run $id_run, skipping...});
+    $self->logger->info(qq{Already seen run $id_run, skipping...});
     return;
   }
 

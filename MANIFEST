@@ -123,11 +123,6 @@ t/data/bam_flagstats/1234_4_bam_flagstats.json
 t/data/cache/xml/npg/instrument/103.xml
 t/data/cache/xml/npg/run/12376.xml
 t/data/cache/xml/npg/run_status_dict.xml
-t/data/cache/xml/st/batches/26195.xml
-t/data/cache/xml/st/projects/919.xml
-t/data/cache/xml/st/samples/1882516.xml
-t/data/cache/xml/st/samples/1882517.xml
-t/data/cache/xml/st/studies/1980.xml
 t/data/cache/my_samplesheet_12376.csv
 t/data/dbic_fixtures/000-Designation.yml
 t/data/dbic_fixtures/000-EntityType.yml
