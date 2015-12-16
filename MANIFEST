@@ -68,6 +68,7 @@ t/10-pluggable.t
 t/10-pluggable_harold.t
 t/10-pluggable_harold_central.t
 t/10-pluggable_harold_post_qc_review.t
+t/10-script-job_env_to_threads.t
 t/15-pipeline_launcher_scripts.t
 t/20-archive-fastqcheck.t
 t/20-archive_auto_qc_to_db.t

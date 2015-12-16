@@ -4,19 +4,27 @@ use strict;
 use warnings;
 use Getopt::Long;
 
-my$exclude_count=0;
-my$divide_by=1;
+our $VERSION = '0';
+
+my $exclude_count = 0;
+my $divide_by = 1;
 
 GetOptions(
   'exclude_count=i' => \$exclude_count,
   'divide_by=i'     => \$divide_by
 ) or die "Problem with command line arguments\n";
 
-my$n=0;
-if(my$bindvar=$ENV{'LSB_BIND_CPU_LIST'}) {
-  $n=scalar(()=$bindvar=~/\d+/smg);
+my $n = 0;
+if( my$bindvar = $ENV{'LSB_BIND_CPU_LIST'} ) {
+  $n = scalar(() = $bindvar=~/\d+/smxg);
 }
-($n)=$ENV{'LSB_MCPU_HOSTS'}=~/(\d+)\s*\Z/sm unless $n;
-$n-=$exclude_count;
-$n=int $n/$divide_by;
-print $n>1?$n:1;
+if ( !$n ) {
+  ($n) = $ENV{'LSB_MCPU_HOSTS'}=~/(\d+)\s*\Z/smx;
+}
+$n -= $exclude_count;
+$n = int $n/$divide_by;
+$n = $n>1 ? $n : 1;
+print $n or die"Cannot print out threads to use\n";
+0;
+
+__END__
