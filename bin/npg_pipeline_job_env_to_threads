@@ -1,0 +1,22 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use Getopt::Long;
+
+my$exclude_count=0;
+my$divide_by=1;
+
+GetOptions(
+  'exclude_count=i' => \$exclude_count,
+  'divide_by=i'     => \$divide_by
+) or die "Problem with command line arguments\n";
+
+my$n=0;
+if(my$bindvar=$ENV{'LSB_BIND_CPU_LIST'}) {
+  $n=scalar(()=$bindvar=~/\d+/smg);
+}
+($n)=$ENV{'LSB_MCPU_HOSTS'}=~/(\d+)\s*\Z/sm unless $n;
+$n-=$exclude_count;
+$n=int $n/$divide_by;
+print $n>1?$n:1;
