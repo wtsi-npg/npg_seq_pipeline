@@ -8,9 +8,11 @@ our $VERSION = '0';
 
 my $exclude_count = 0;
 my $divide_by = 1;
+my $maximum = 0;
 
 GetOptions(
   'exclude_count=i' => \$exclude_count,
+  'maximum=i'       => \$maximum,
   'divide_by=i'     => \$divide_by
 ) or die "Problem with command line arguments\n";
 
@@ -20,6 +22,9 @@ if( my$bindvar = $ENV{'LSB_BIND_CPU_LIST'} ) {
 }
 if ( !$n ) {
   ($n) = $ENV{'LSB_MCPU_HOSTS'}=~/(\d+)\s*\Z/smx;
+}
+if ($maximum and $n > $maximum) {
+  $n = $maximum;
 }
 $n -= $exclude_count;
 $n = int $n/$divide_by;

@@ -170,7 +170,7 @@ sub _make_command {
     ##use critic
   });
   if ($deps) { push @command, $deps; }
-  push @command, q['make -j `]. q[perl -e '"'"'print scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'"'"'] .qq[` $target'];
+  push @command, q['make -j `npg_pipeline_job_env_to_threads` ] . qq[$target'];
   return join q[ ], @command;
 }
 
