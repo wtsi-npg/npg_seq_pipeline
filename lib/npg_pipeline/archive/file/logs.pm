@@ -23,6 +23,14 @@ sub submit_to_lsf {
   return ($job_id);
 }
 
+sub _outgoing_path {
+  my $path = shift;
+  if ($path) {
+    $path =~ s/\/analysis\//\/outgoing\//xms;
+  }
+  return $path;
+}
+
 sub _generate_bsub_command {
   my ($self, $arg_refs) = @_;
 
@@ -36,6 +44,7 @@ sub _generate_bsub_command {
   my $job_name = $job_name_prefix . q{_} . $timestamp;
 
   my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
+  $location_of_logs = _outgoing_path($location_of_logs);
   my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name };
 
   $bsub_command .=  ( $self->fs_resource_string( {
@@ -50,7 +59,7 @@ sub _generate_bsub_command {
     $bsub_command .= q{irodsEnvFile=$}.q{HOME/.irods/.irodsEnv-} . $irodsinstance . q{-iseq-logs };
   }
 
-  $bsub_command .=  $archive_script . q{ --runfolder_path } . $self->runfolder_path() . q{ --id_run } . $self->id_run();
+  $bsub_command .=  $archive_script . q{ --runfolder_path } . _outgoing_path($self->runfolder_path()) . q{ --id_run } . $self->id_run();
 
   $bsub_command .= q{ --irods_root } . $self->irods_root();
 
