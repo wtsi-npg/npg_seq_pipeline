@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - seq-alignment now uses bwa_aln_se for single paired runs
+
 release 49.7
  - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt references
  - bug fix after passing RG paramater to illumina2bam: change SplitBamByReadGroup options:
