@@ -53,13 +53,17 @@ sub _generate_bsub_command {
   } ) ) . q{ };
 
   $bsub_command .=  q{-o } . $location_of_logs . qq{/$job_name.out };
+
+  my $future_path = _outgoing_path($self->runfolder_path());
+  $bsub_command .= qq{-E "[ -d '$future_path' ]" };
+
   $bsub_command .=  q{'};
 
   if ($irodsinstance) {
     $bsub_command .= q{irodsEnvFile=$}.q{HOME/.irods/.irodsEnv-} . $irodsinstance . q{-iseq-logs };
   }
 
-  $bsub_command .=  $archive_script . q{ --runfolder_path } . _outgoing_path($self->runfolder_path()) . q{ --id_run } . $self->id_run();
+  $bsub_command .=  $archive_script . q{ --runfolder_path } . $future_path . q{ --id_run } . $self->id_run();
 
   $bsub_command .= q{ --irods_root } . $self->irods_root();
 

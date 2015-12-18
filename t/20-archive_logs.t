@@ -18,6 +18,8 @@ my $analysis_runfolder_path = $util->analysis_runfolder_path();
 my $pb_cal = q[/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal];
 my $pb_cal_path = $analysis_runfolder_path . $pb_cal;
 
+my $rfpath = '/nfs/sf45/IL2/outgoing/123456_IL2_1234';
+
 sub create_analysis {
   `rm -rf $tmp_dir/nfs/sf45`;
   `mkdir -p $analysis_runfolder_path/$pb_cal/archive`;
@@ -53,7 +55,7 @@ sub create_analysis {
   is(scalar@jids, 1, q{only one job submitted});
 
   my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-  my $expected_command = q{bsub -q lowload -w'done(123) && done(321)' -J npg_irods_log_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -o /nfs/sf45/IL2/outgoing/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/npg_irods_log_loader.pl_1234_20090709-123456.out 'npg_irods_log_loader.pl --runfolder_path /nfs/sf45/IL2/outgoing/123456_IL2_1234 --id_run 1234 --irods_root /seq/'};
+  my $expected_command = qq{bsub -q lowload -w'done(123) && done(321)' -J npg_irods_log_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -o ${rfpath}/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/npg_irods_log_loader.pl_1234_20090709-123456.out -E "[ -d '$rfpath' ]" 'npg_irods_log_loader.pl --runfolder_path $rfpath --id_run 1234 --irods_root /seq/'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct});
 }
 
@@ -83,7 +85,7 @@ sub create_analysis {
   is(scalar@jids, 1, q{only one job submitted});
 
   my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-  my $expected_command = q{bsub -q lowload -w'done(123) && done(321)' -J npg_irods_log_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -o /nfs/sf45/IL2/outgoing/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/npg_irods_log_loader.pl_1234_20090709-123456.out 'npg_irods_log_loader.pl --runfolder_path /nfs/sf45/IL2/outgoing/123456_IL2_1234 --id_run 1234 --irods_root /test/'};
+  my $expected_command = qq{bsub -q lowload -w'done(123) && done(321)' -J npg_irods_log_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -o ${rfpath}/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/npg_irods_log_loader.pl_1234_20090709-123456.out -E "[ -d '$rfpath' ]" 'npg_irods_log_loader.pl --runfolder_path $rfpath --id_run 1234 --irods_root /test/'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 
@@ -104,7 +106,7 @@ sub create_analysis {
   };
 
   my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-  my $expected_command = q{bsub -q lowload -w'done(123) && done(321)' -J npg_irods_log_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -o /nfs/sf45/IL2/outgoing/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/npg_irods_log_loader.pl_1234_20090709-123456.out 'irodsEnvFile=$HOME/.irods/.irodsEnv-gclp-iseq-logs npg_irods_log_loader.pl --runfolder_path /nfs/sf45/IL2/outgoing/123456_IL2_1234 --id_run 1234 --irods_root /gseq/'};
+  my $expected_command = qq{bsub -q lowload -w'done(123) && done(321)' -J npg_irods_log_loader.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -o ${rfpath}/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/npg_irods_log_loader.pl_1234_20090709-123456.out -E "[ -d '$rfpath' ]" 'irodsEnvFile=\$HOME/.irods/.irodsEnv-gclp-iseq-logs npg_irods_log_loader.pl --runfolder_path $rfpath --id_run 1234 --irods_root /gseq/'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 
