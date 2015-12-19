@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 48;
+use Test::More tests => 53;
 use Test::Exception;
 use Test::Deep;
 use File::Temp qw/tempdir/;
@@ -291,6 +291,53 @@ my $rna_gen;
     'correct command arguments for library RNASeq lane (unstranded Illumina cDNA library)');
 
   is ($rna_gen->_using_alt_reference, 0, 'Not using alternate reference');
+}
+
+{  ## single ended v. short , old flowcell, CRIPSR
+
+my $runfolder = q{151215_HS38_18472_A_H55HVADXX};
+my $runfolder_path = join q[/], q(t/data/example_runfolder), $runfolder;
+`cp -r $runfolder_path $dir`;
+$runfolder_path = join q[/], $dir, $runfolder;
+my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20151215-215034';
+my $cache_dir = join q[/], $bc_path, 'metadata_cache_18472';
+`mkdir -p $dir/references/Homo_sapiens/GRCh38_15/all/{bwa0_6,fasta,picard}/`;
+`touch $dir/references/Homo_sapiens/GRCh38_15/all/{bwa0_6,fasta}/Homo_sapiens.GRCh38_15.fa`;
+`touch $dir/references/Homo_sapiens/GRCh38_15/all/picard/Homo_sapiens.GRCh38_15.fa.dict`;
+
+local $ENV{'NPG_WEBSERVICE_CACHE_DIR'}  = join q[/], $cache_dir;
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = join q[/], $cache_dir, q[samplesheet_18472.csv];
+
+my $se_gen;
+  lives_ok {
+    $se_gen = npg_pipeline::archive::file::generation::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => "$bc_path/no_cal",
+      timestamp         => q{2015},
+      repository        => $dir,
+      no_bsub           => 1,
+    )
+  } 'no error creating an object';
+
+  is ($se_gen->id_run, 18472, 'id_run inferred correctly');
+
+  my $args = qq{bash -c ' mkdir -p $bc_path/no_cal/archive/tmp_\$LSB_JOBID/18472_2#1 ; cd $bc_path/no_cal/archive/tmp_\$LSB_JOBID/18472_2#1 && vtfp.pl -s -keys samtools_executable -vals samtools1 -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `perl -e '"'"'print scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg) || \$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm;'"'"'` -keys br_numthreads_val -vals `perl -e '"'"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm unless \$n; \$n-=1; \$n=int \$n/2; print \$n>1?\$n:1;'"'"'` -keys b2c_mt_val -vals `perl -e '"'"'my\$n=scalar(()=\$ENV{LSB_BIND_CPU_LIST}=~/\\d+/smg); (\$n)=\$ENV{LSB_MCPU_HOSTS}=~/(\\d+)\\s*\\Z/sm unless \$n; \$n-=2; \$n=int \$n/2; print \$n>1?\$n:1;'"'"'` -keys indatadir -vals $bc_path/no_cal/lane2 -keys outdatadir -vals $bc_path/no_cal/archive/lane2 -keys af_metrics -vals 18472_2#1.bam_alignment_filter_metrics.json -keys rpt -vals 18472_2#1 -keys reference_dict -vals $dir/references/Homo_sapiens/GRCh38_15/all/picard/Homo_sapiens.GRCh38_15.fa.dict -keys reference_genome_fasta -vals $dir/references/Homo_sapiens/GRCh38_15/all/fasta/Homo_sapiens.GRCh38_15.fa -keys phix_reference_genome_fasta -vals $phix_ref -keys alignment_filter_jar -vals $odir/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/AlignmentFilter.jar -keys alignment_reference_genome -vals $dir/references/Homo_sapiens/GRCh38_15/all/bwa0_6/Homo_sapiens.GRCh38_15.fa -keys bwa_executable -vals bwa0_6 -keys alignment_method -vals bwa_aln_se -nullkeys bwa_mem_p_flag \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_18472_2#1.json && viv.pl -s -x -v 3 -o viv_18472_2#1.log run_18472_2#1.json  } .
+    q{&& perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>18472,position=>2,sequence_file=>$ARGV[0],tag_index=>1); $o->execute(); $o->store($ARGV[-1]) '"'"' } .
+    qq{$bc_path/no_cal/archive/lane2/18472_2#1.cram $bc_path/no_cal/archive/lane2/qc && } .
+    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(id_run=>18472,position=>2,sequence_file=>$ARGV[0],subset=>q(phix),tag_index=>1); $o->execute(); $o->store($ARGV[-1]) '"'"' } .
+    qq{$bc_path/no_cal/archive/lane2/18472_2#1_phix.cram $bc_path/no_cal/archive/lane2/qc } .
+    q{&&   qc --check alignment_filter_metrics --qc_in $PWD --id_run 18472 --position 2 } .
+    qq{--qc_out $bc_path/no_cal/archive/lane2/qc --tag_index 1 }.
+    q{'};
+
+  lives_ok {$se_gen->_generate_command_arguments([2])}
+     'no error generating command arguments';
+
+  is($se_gen->_job_args->{'2001'}, $args,
+    'correct command arguments for plex of short single read run');
+
+  ok(!$se_gen->_using_alt_reference, 'Not using alternate reference');
 }
 
 {  ##HiSeqX, run 16839_7
