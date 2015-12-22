@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 49.8
  - seq-alignment now uses bwa_aln_se for single read runs
  - disable log archival pending enhancements
 
