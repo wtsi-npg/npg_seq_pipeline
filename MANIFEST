@@ -188,6 +188,11 @@ t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/RunInfo.xml
 t/data/example_runfolder/130917_MS6_10808_A_MS2030455-300V2/RunInfo.xml
 t/data/example_runfolder/131010_HS34_11018_B_H722AADXX/RunInfo.xml
 t/data/example_runfolder/131021_MS5_11123_A_MS2000187-150V3/RunInfo.xml
+t/data/example_runfolder/151215_HS38_18472_A_H55HVADXX/Data/Intensities/BAM_basecalls_20151215-215034/metadata_cache_18472/npg/instrument/120.xml
+t/data/example_runfolder/151215_HS38_18472_A_H55HVADXX/Data/Intensities/BAM_basecalls_20151215-215034/metadata_cache_18472/npg/run/18472.xml
+t/data/example_runfolder/151215_HS38_18472_A_H55HVADXX/Data/Intensities/BAM_basecalls_20151215-215034/metadata_cache_18472/npg/run_status_dict.xml
+t/data/example_runfolder/151215_HS38_18472_A_H55HVADXX/Data/Intensities/BAM_basecalls_20151215-215034/metadata_cache_18472/samplesheet_18472.csv
+t/data/example_runfolder/151215_HS38_18472_A_H55HVADXX/RunInfo.xml
 t/data/fix_configs/data_intensities_basecalls_config.xml
 t/data/fix_configs/data_intensities_basecalls_diff_last_cycle_config.xml
 t/data/fix_configs/data_intensities_config.xml

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="18472" batch_id="42641" id_instrument="120" expected_cycle_count="28" actual_cycle_count="28" priority="3" id_run_pair="0" is_paired="0" team="C" id_instrument_format="10" flowcell_id="H55HVADXX" folder_name="151215_HS38_18472_A_H55HVADXX" folder_path_glob="/{export,nfs}/sf54/ILorHSany_sf54/*/" name="HS38_18472" loader="ajw" loading_date="2015-12-15" run_folder="151215_HS38_18472_A_H55HVADXX">
+ <instrument id_instrument="120" name="HS38" id_instrument_format="10" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="111364" id_run="18472" tile_count="48" tracks="6" position="1" />
+<run_lane id_run_lane="111365" id_run="18472" tile_count="48" tracks="6" position="2" />
+</run_lanes>
+ <current_run_status id_run_status="248151" id_run="18472" date="2015-12-15 21:36:46" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="1" description="analysis pending" />
+ <run_statuses>
+ <run_status id_run_status="248150" id_run="18472" date="2015-12-15 21:36:46" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="248151" id_run="18472" date="2015-12-15 21:36:46" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="1" description="analysis pending" />
+ <run_status id_run_status="248147" id_run="18472" date="2015-12-15 21:08:01" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete" />
+ <run_status id_run_status="248132" id_run="18472" date="2015-12-15 17:51:54" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="248082" id_run="18472" date="2015-12-15 13:57:19" id_run_status_dict="1" id_user="33" username="pipeline" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ </annotations>
+ <tags>
+   <tag id_tag="22" description="fc_slotA" />
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="18" description="single_read" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>
