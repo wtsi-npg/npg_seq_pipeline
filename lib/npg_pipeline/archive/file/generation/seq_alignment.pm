@@ -188,10 +188,11 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       not $spike_tag #or allow old school if this is the phix spike
     )){
 
+    my $hs_bwa = ($self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se');
     # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp) unless GCLP
     my $bwa = ($self->gclp or $self->is_hiseqx_run or $self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
               ? 'bwa_mem'
-              : 'bwa_aln';
+              : $hs_bwa;
 
     # There will be a new exception to the use of "aln": if you specify a reference
     # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla, then we will use
@@ -257,7 +258,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                                   ($nchs? (q(-keys hs_alignment_reference_genome -vals), _default_human_split_ref(q{bwa0_6}, $self->repository)): ()),   # always human default
                                   q(-keys bwa_executable -vals bwa0_6),
                                   q(-keys alignment_method -vals), $bwa,
-                                  ($nchs ? q(-keys alignment_hs_method -vals bwa_aln) : ()),
+                                  ($nchs ? qq(-keys alignment_hs_method -vals $hs_bwa) : ()),
                              ) ),
                              (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
                              $human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : (),

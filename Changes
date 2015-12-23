@@ -5,6 +5,10 @@ LIST OF CHANGES
    staging daemon) - paths adjusted and job preexec checking for the existence of the
    runfolder in outgoing is added
 
+release 49.8
+ - seq-alignment now uses bwa_aln_se for single read runs
+ - disable log archival pending enhancements
+
 release 49.7
  - seq-alignment - P4 and new bwa for older chemistries & forcing mem for alt references
  - bug fix after passing RG paramater to illumina2bam: change SplitBamByReadGroup options:
