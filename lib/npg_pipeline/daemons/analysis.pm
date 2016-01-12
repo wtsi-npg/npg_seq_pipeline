@@ -75,7 +75,7 @@ sub _runfolder_path {
                   npg_tracking::illumina::run::short_info/ ]
   );
   $class->add_attribute(q(npg_tracking_schema),
-                        {isa => 'npg_tracking::Schema', is=>q(ro)});
+                        {isa => 'npg_tracking::Schema', is => q(ro)});
 
   my $path = $class->new_object(
     npg_tracking_schema => $self->npg_tracking_schema,
@@ -95,7 +95,7 @@ sub _generate_command {
 
   if ( $arg_refs->{'gclp'} ) {
     $self->logger->info('GCLP run');
-    $cmd .= ' --gclp';
+    $cmd .= ' --function_list gclp';
   } else {
     $self->logger->info('Non-GCLP run');
     if (!$arg_refs->{'id'}) {

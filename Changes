@@ -5,12 +5,13 @@ LIST OF CHANGES
  - add study analysis configuration accessor
  - simpler name for the archival daemon module
  - parent class for pipeline daemons
+ - dry_run option for daemons
  - consistent behaviour of the archival and analysis daemons
    when LIMs data are not available in the ml warehouse and
    the run is not a QC run, the run is skipped
  - the pipeline daemons define the type of the pipeline to run
-   (default, gclp, qc) and set appropriate flag for the pipeline
-   script (formerly the function list was specified)
+   (default, gclp, qc) and set appropriate backward-compatible
+   options for the pipeline script
  - Log::Log4perl logger is used in pipeline daemons
  - cached samplesheet generation - use ml warehouse for all
    runs except QC runs, for which the old warehouse is still used

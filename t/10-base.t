@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 92;
+use Test::More tests => 93;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use File::Copy qw(cp);
@@ -252,6 +252,9 @@ package main;
   
   $base = mytest::central->new(id_flowcell_lims => 3456, gclp => 1);
   my $gfl = getcwd() . '/data/config_files/function_list_central_gclp.yml';
+  is( $base->function_list, $gfl, 'gclp function list');
+
+  $base = mytest::central->new(id_flowcell_lims => 3456, function_list => 'gclp');
   is( $base->function_list, $gfl, 'gclp function list');
   
   $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775');

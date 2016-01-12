@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 55;
+use Test::More tests => 59;
 use Test::Exception;
 use Cwd;
 use File::Path qw/make_path/;
@@ -63,6 +63,7 @@ package main;
       iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
   ) } q{object creation ok};
   isa_ok($runner, q{test_analysis_runner}, q{$runner});
+  ok(!$runner->dry_run, 'dry_run mode switched off by default');
 
   my $command_start = 'npg_pipeline_central --verbose --job_priority 50 --runfolder_path';
 
@@ -84,7 +85,7 @@ package main;
     rf_path      => $rf_path,
     job_priority => 50,
     gclp         => 1,
-  } ), qr/$command_start $rf_path --gclp/,
+  } ), qr/$command_start $rf_path --function_list gclp/,
     q{generated command is correct});
 
   like($runner->_generate_command( {
@@ -92,7 +93,7 @@ package main;
     job_priority => 50,
     gclp         => 1,
     id           => 22,
-  } ), qr/$command_start $rf_path --gclp/,
+  } ), qr/$command_start $rf_path --function_list gclp/,
     q{generated command is correct});
 
   ok($runner->green_host,'running on a host in a green datacentre');
@@ -255,6 +256,21 @@ package main;
   } q{no croak running through twice - potentially as a daemon process};
 
   is (join(q[ ],sort keys %{$runner->seen}), '1234', 'correct list of seen runs');
+
+  $runner = test_analysis_runner->new(
+    pipeline_script_name => '/bin/true',
+    npg_tracking_schema  => $schema,
+    iseq_flowcell        => $wh_schema->resultset('IseqFlowcell'),
+    dry_run              => 1
+  );
+  ok($runner->dry_run, 'dry_run mode switched on');
+  lives_ok {
+    $runner->run();
+    sleep 1;
+    $runner->run();
+  } q{no croak running (dry) through twice};
+
+  is (join(q[ ],sort keys %{$runner->seen}), '1234', 'correct list of seen runs');
 }
 
 {
@@ -265,7 +281,8 @@ package main;
   
   my $row = $schema->resultset('Run')->find(1234);
   $row->set_tag('pipeline','staging');
-  $row->update({folder_path_glob => $temp . q[/sf33/ILorHSany_sf33/*/], folder_name => $name});
+  $row->update(
+    {folder_path_glob => $temp . q[/sf33/ILorHSany_sf33/*/], folder_name => $name});
 
   my $runner = $package->new(
                npg_tracking_schema => $schema,

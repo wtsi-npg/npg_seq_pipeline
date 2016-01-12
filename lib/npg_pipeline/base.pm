@@ -393,7 +393,16 @@ around 'function_list' => sub {
     if ($v !~ /\A\w+\Z/smx) {
       croak "Bad function list name: $v";
     }
-    $file = $self->_conf_file_path( 'function_list_' . $v . '.yml');
+    try {
+      $file = $self->_conf_file_path((join q[_],'function_list',$v) . '.yml');
+    } catch {
+      my $pipeline_name = $self->pipeline_name;
+      if ($v !~ /^$pipeline_name/smx) {
+        $file = $self->_conf_file_path((join q[_],'function_list',$self->pipeline_name,$v) . '.yml');
+      } else {
+        croak $_;
+      }
+    };
   }
   if ($self->verbose) {
     $self->log("Will use function list $file");

@@ -29,12 +29,22 @@ Readonly::Scalar my $NO_LIMS_LINK => -1;
 class_has 'pipeline_script_name' => (
   isa        => q{Str},
   is         => q{ro},
+  metaclass  => 'NoGetopt',
   lazy_build => 1,
+);
+
+has 'dry_run' => (
+  isa        => q{Bool},
+  is         => q{ro},
+  required   => 0,
+  default    => 0,
+  documentation => 'Dry run mode flag, false by default',
 );
 
 has 'logger' => (
   isa        => q{Log::Log4perl::Logger},
   is         => q{ro},
+  metaclass  => 'NoGetopt',
   default    => sub { Log::Log4perl->get_logger() },
 );
 
@@ -46,14 +56,17 @@ around 'log' => sub {
 };
 
 has 'seen' => (
-  isa     => q{HashRef},
-  is      => q{rw},
-  default => sub { return {}; },
+  isa       => q{HashRef},
+  is        => q{ro},
+  init_arg  => undef,
+  metaclass => 'NoGetopt',
+  default   => sub { return {}; },
 );
 
 has q{green_host} => (
   isa        => q{Bool},
   is         => q{ro},
+  metaclass  => 'NoGetopt',
   lazy_build => 1,
 );
 sub _build_green_host {
@@ -70,6 +83,7 @@ sub _build_green_host {
 has 'iseq_flowcell' => (
   isa        => q{DBIx::Class::ResultSet},
   is         => q{ro},
+  metaclass  => 'NoGetopt',
   lazy_build => 1,
 );
 sub _build_iseq_flowcell {
@@ -79,6 +93,7 @@ sub _build_iseq_flowcell {
 has 'lims_query_class' => (
   isa        => q{Moose::Meta::Class},
   is         => q{ro},
+  metaclass  => 'NoGetopt',
   default    => sub {
     my $package_name = 'npg_pipeline::mlwh_query';
     my $class=Moose::Meta::Class->create($package_name);
@@ -156,17 +171,21 @@ sub run_command {
   my ( $self, $id_run, $cmd ) = @_;
 
   $self->logger->info(qq{COMMAND: $cmd});
-  my $output = `$cmd`;
+  my ($output, $error);
 
-  if ( $CHILD_ERROR ) {
+  if (!$self->dry_run) {
+    $output = `$cmd`;
+    $error  = $CHILD_ERROR;
+  }
+  if ( $error ) {
     $self->logger->warn(
-      qq{Error $CHILD_ERROR occured. Will try $id_run again on next loop.});
+      qq{Error $error occured. Will try $id_run again on next loop.});
   }else{
     $self->seen->{$id_run}++;
   }
 
   if ($output) {
-    $self->logger->info(qq{Output:$output});
+    $self->logger->info(qq{COMMAND OUTPUT: $output});
   }
 
   return;
@@ -201,6 +220,10 @@ A Moose parent class for npg_pipeline daemons.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 dry_run
+
+Dry run mode flag, false by default.
+
 =head2 run_command
 
 =head2 runs_with_status
@@ -213,8 +236,8 @@ A Moose parent class for npg_pipeline daemons.
 
 =head2 local_path
 
- Returns a list with paths to bin the code is running from
- and perl executable the code is running under
+Returns a list with paths to bin the code is running from
+and perl executable the code is running under
 
 =head1 DIAGNOSTICS
 
