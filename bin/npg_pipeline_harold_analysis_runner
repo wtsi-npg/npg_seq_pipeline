@@ -16,11 +16,14 @@ Readonly::Scalar our $SLEEPY_TIME => 900;
 
 Log::Log4perl->easy_init($INFO);
 
-my $runner =  npg_pipeline::daemons::analysis->new();
+my $runner =  npg_pipeline::daemons::analysis->new_with_options();
 
 while (1) {
   try {
     $runner->logger->info(q{Analysis daemon running...});
+    if ($runner->dry_run) {
+      $runner->logger->info(q{DRY RUN});
+    }
     $runner->run();
   } catch {
     $runner->logger->warn(
@@ -53,6 +56,10 @@ Captures errors and starts again after a short interval.
 =head1 EXIT STATUS
 
 =head1 SUBROUTINES/METHODS
+
+=head2 dry_run
+
+Dry run mode, the pipeline script is not called.
 
 =head1 DIAGNOSTICS
 

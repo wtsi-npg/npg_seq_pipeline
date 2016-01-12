@@ -177,7 +177,7 @@ sub run_command {
     $output = `$cmd`;
     $error  = $CHILD_ERROR;
   }
-  if ( $error ) {
+  if ($error) {
     $self->logger->warn(
       qq{Error $error occured. Will try $id_run again on next loop.});
   }else{
