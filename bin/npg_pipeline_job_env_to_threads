@@ -1,0 +1,35 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use Getopt::Long;
+
+our $VERSION = '0';
+
+my $exclude_count = 0;
+my $divide_by = 1;
+my $maximum = 0;
+
+GetOptions(
+  'exclude_count=i' => \$exclude_count,
+  'maximum=i'       => \$maximum,
+  'divide_by=i'     => \$divide_by
+) or die "Problem with command line arguments\n";
+
+my $n = 0;
+if( my$bindvar = $ENV{'LSB_BIND_CPU_LIST'} ) {
+  $n = scalar(() = $bindvar=~/\d+/smxg);
+}
+if ( !$n ) {
+  ($n) = $ENV{'LSB_MCPU_HOSTS'}=~/(\d+)\s*\Z/smx;
+}
+if ($maximum and $n > $maximum) {
+  $n = $maximum;
+}
+$n -= $exclude_count;
+$n = int $n/$divide_by;
+$n = $n>1 ? $n : 1;
+print $n or die"Cannot print out threads to use\n";
+0;
+
+__END__
