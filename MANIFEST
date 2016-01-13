@@ -1,8 +1,9 @@
 bin/create_summary_link
 bin/npg_pipeline_archival_runner
+bin/npg_pipeline_central
 bin/npg_pipeline_check_bam_file_cluster_count
 bin/npg_pipeline_harold_analysis_runner
-bin/npg_pipeline_central
+bin/npg_pipeline_job_env_to_threads
 bin/npg_pipeline_post_qc_review
 bin/npg_pipeline_preexec_references
 bin/npg_pipeline_seqchksum_comparator
@@ -67,6 +68,7 @@ t/10-pluggable.t
 t/10-pluggable_harold.t
 t/10-pluggable_harold_central.t
 t/10-pluggable_harold_post_qc_review.t
+t/10-script-job_env_to_threads.t
 t/15-pipeline_launcher_scripts.t
 t/20-archive-fastqcheck.t
 t/20-archive_auto_qc_to_db.t

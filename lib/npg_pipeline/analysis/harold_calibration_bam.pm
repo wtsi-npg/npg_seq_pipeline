@@ -338,10 +338,8 @@ sub _alignment_file_bsub_command {
   my @command;
   push @command, q{cd}, $self->pb_cal_path(), q{&&};
   push @command, $self->pb_calibration_bin() . q{/} . $self->alignment_script();
-  ##no critic (RequireInterpolationOfMetachars)
-  push @command,  q{--aln_parms "-t "`}. q[perl -e 'print scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'] .q{` };
-  push @command,  q{--sam_parms "-t "`}. q[perl -e 'my$n= scalar(()=$].q[ENV{LSB_BIND_CPU_LIST}=~/\d+/smg); ($n)=$].q[ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm unless $n; print $n>8?8:$n'] .q{` };
-  ## use critic
+  push @command,  q{--aln_parms "-t "`npg_pipeline_job_env_to_threads` };
+  push @command,  q{--sam_parms "-t "`npg_pipeline_job_env_to_threads --maximum 8` };
   if ($self->spatial_filter) {
     push @command, q{--spatial_filter};
     push @command,  q{--sf_parms "} . q{--region_size } . $self->pb_cal_pipeline_conf()->{region_size} . q{ }
