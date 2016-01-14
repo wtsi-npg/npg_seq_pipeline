@@ -1,53 +1,50 @@
 package npg_pipeline::daemons::archival_runner;
 
 use Moose;
-use Carp;
-use English qw{-no_match_vars};
 use Readonly;
+use Try::Tiny;
 
-extends qw{npg_pipeline::daemons::harold_analysis_runner};
+extends qw{npg_pipeline::daemons::base};
 
 our $VERSION = '0';
 
-Readonly::Scalar our $POST_QC_REVIEW_SCRIPT       => q{npg_pipeline_post_qc_review};
-Readonly::Scalar our $ARCHIVAL_PENDING            => q{archival pending};
+Readonly::Scalar our $POST_QC_REVIEW_SCRIPT => q{npg_pipeline_post_qc_review};
+Readonly::Scalar our $ARCHIVAL_PENDING      => q{archival pending};
 
 sub _build_pipeline_script_name {
   return $POST_QC_REVIEW_SCRIPT;
 }
 
 sub run {
-  my ($self) = @_;
-  $self->log(q{Archival daemon running...});
+  my $self = shift;
+
   foreach my $run ($self->runs_with_status($ARCHIVAL_PENDING)) {
     my $id_run = $run->id_run();
-    eval {
-      $self->log(qq{Considering run $id_run});
+    try {
+      $self->logger->info(qq{Considering run $id_run});
       if ($self->seen->{$id_run}) {
-        $self->log(qq{Already seen run $id_run, skipping...});
-        next;
+        $self->logger->info(qq{Already seen run $id_run, skipping...});
+      } else {
+        if ( $self->staging_host_match($run->folder_path_glob)) {
+          my $lims = $self->check_lims_link($run);
+          $self->run_command($id_run, $self->_generate_command($id_run, $lims->{'gclp'}));
+        }
       }
-      if ( $self->staging_host_match($run->folder_path_glob)) {
-        my $lims = $self->check_lims_link($run);
-        $self->run_command($id_run, $self->_generate_command($id_run, $lims->{'gclp'}));
-      }
-      1;
-    } or do {
-      $self->log('Problems to process one run ' . $run->id_run() );
-      $self->log($EVAL_ERROR);
-      next;
+    } catch {
+      $self->logger->error("Error processing run ${id_run}: $_");
     };
   }
-  return 1;
+
+  return;
 }
 
 sub _generate_command {
   my ($self, $id_run, $gclp) = @_;
 
-  $self->log($gclp ? 'GCLP run' : 'Non-GCLP run');
+  $self->logger->info($gclp ? 'GCLP run' : 'Non-GCLP run');
 
   my $cmd = $self->pipeline_script_name();
-  $cmd = $cmd . ($gclp ? q{ --function_list post_qc_review_gclp} : q());
+  $cmd = $cmd . ($gclp ? q{ --function_list gclp} : q());
   $cmd = $cmd . q{ --verbose --runfolder_path } . $self->_runfolder_path($id_run);
   my $path = join q[:], $self->local_path(), $ENV{PATH};
   my $prefix = $self->daemon_conf()->{'command_prefix'};
@@ -60,6 +57,7 @@ sub _generate_command {
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
+
 __END__
 
 =head1 NAME
@@ -73,11 +71,14 @@ npg_pipeline::daemons::archival_runner
 
 =head1 DESCRIPTION
 
-This module interrogates the npg database for runs with a status of archival pending, and then runs the npg_pipeline_post_qc_review script on each of them
+Daemon for invoking the archival pipeline.
 
 =head1 SUBROUTINES/METHODS
 
-=head2 run - the only method and the only one you need. It does everything.
+=head2 run
+
+Continiously monitors run statuses. Invokes the archival pipeline for
+runs with a status 'archival pending'.
 
 =head1 DIAGNOSTICS
 
@@ -89,9 +90,7 @@ This module interrogates the npg database for runs with a status of archival pen
 
 =item Moose
 
-=item Carp
-
-=item English -no_match_vars
+=item Try::Tiny
 
 =item Readonly
 
@@ -108,7 +107,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd.
+Copyright (C) 2015 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -24,7 +24,10 @@ use npg_warehouse::Schema;
 use WTSI::DNAP::Warehouse::Schema;
 use npg::samplesheet;
 
-with 'npg_tracking::glossary::run';
+with qw/
+         npg_tracking::glossary::run
+         npg_tracking::glossary::flowcell
+       /;
 
 our $VERSION = '0';
 
@@ -43,12 +46,19 @@ npg_pipeline::cache
                            cache_location => 'my_dir',
                           )->setup;
 
-  or, to generate the samplesheet from xml feeds,
+  npg_pipeline::cache->new(id_run           => 78,
+                           id_flowcell_lims => '5260271901788',
+                           lims_driver_type => 'warehouse',
+                           set_env_vars     => 1,
+                           reuse_cache      => 1,
+                           cache_location   => 'my_dir',
+                          )->setup;
 
-  npg_pipeline::cache->new(id_run         => 78,
-                           set_env_vars   => 1,
-                           reuse_cache    => 1,
-                           cache_location => 'my_dir',
+  npg_pipeline::cache->new(id_run           => 78,
+                           flowcell_barcode => 'HBF2DADXX',
+                           set_env_vars     => 1,
+                           reuse_cache      => 0,
+                           cache_location   => 'my_dir',
                           )->setup;
 
 =head1 SUBROUTINES/METHODS
@@ -57,21 +67,13 @@ npg_pipeline::cache
  
 Integer run id, required.
 
-=head2 lims_id
+=head2 flowcell_barcode
 
-Lims id to be used to build lims accessor.
-Required for warehouse and ml_warehouse lims driver types.
-Semantics by lims driver type:
+Manufacturer flowcell barcode/id
 
-  ml_warehouse - flowcell barcode,   required
-  warehouse    - tube_ean13_barcode, required
-  xml          - batch id,           optional
+=head2 id_flowcell_lims
 
-=cut
-
-has 'lims_id'        => (isa      => 'Str',
-                         is       => 'ro',
-                         required => 0,);
+LIMs specific flowcell id.
 
 =head2 lims_driver_type
  
@@ -83,7 +85,7 @@ defaults to xml.
 has 'lims_driver_type'  => (isa        => 'Str',
                             is         => 'ro',
                             required   => 0,
-                            default    => 'xml',);
+                            default    => sub { mlwarehouse_driver_name() },);
 
 =head2 wh_schema
  
@@ -131,33 +133,36 @@ sub _build_lims {
 
   my $clims;
   my $driver_type = $self->lims_driver_type;
-  my $lims_id = $self->lims_id;
-
-  if ($driver_type =~ /warehouse/xms && !$lims_id) {
-    croak "lims_id accessor should be defined for $driver_type driver";
-  }
 
   if ($driver_type eq $self->mlwarehouse_driver_name) {
 
+    if (!($self->id_flowcell_lims || $self->flowcell_barcode)) {
+      croak 'Neither flowcell barcode nor lims flowcell id is known';
+    }
+
     my $driver = st::api::lims::ml_warehouse->new(
          mlwh_schema      => $self->mlwh_schema,
-         id_flowcell_lims => undef,
-         flowcell_barcode => $self->lims_id );
+         id_flowcell_lims => $self->id_flowcell_lims,
+         flowcell_barcode => $self->flowcell_barcode );
 
     my $lims = st::api::lims->new(
-        id_flowcell_lims => undef,
-        flowcell_barcode => $self->lims_id,
+        id_flowcell_lims => $self->id_flowcell_lims,
+        flowcell_barcode => $self->flowcell_barcode,
         driver           => $driver,
         driver_type      => $driver_type );
     $clims = [$lims->children];
 
   } elsif ($driver_type eq $self->warehouse_driver_name) {
 
+    if (!$self->id_flowcell_lims) {
+      croak "lims_id accessor should be defined for $driver_type driver";
+    }
+
     my $position = 1; # MiSeq runs only
     my $driver =  st::api::lims::warehouse->new(
         npg_warehouse_schema => $self->wh_schema,
         position             => $position,
-        tube_ean13_barcode   => $lims_id );
+        tube_ean13_barcode   => $self->id_flowcell_lims );
 
     my $lims = st::api::lims->new(
         position    => $position,
@@ -165,8 +170,19 @@ sub _build_lims {
         driver_type => $driver_type );
     $clims = [$lims];
 
+  } elsif ($driver_type eq $self->xml_driver_name) {
+
+    my $ref = {
+      driver_type => $driver_type,
+      id_run      => $self->id_run,
+    };
+    if ($self->id_flowcell_lims) {
+      $ref->{'batch_id'} = $self->id_flowcell_lims;
+    }
+    $clims = [st::api::lims->new($ref)->children];
+
   } else {
-    $clims = [st::api::lims->new($self->_lims_xml_options)->children];
+    croak "Unknown driver type $driver_type";
   }
 
   return $clims;
@@ -275,17 +291,11 @@ has 'messages'  => (isa        => 'ArrayRef[Str]',
                     is         => 'ro',
                     default    => sub { [] },);
 
-=head2 xml_driver_name
-
 =head2 warehouse_driver_name
 
 =head2 mlwarehouse_driver_name
 
 =cut
-
-sub xml_driver_name {
-  return 'xml';
-}
 sub warehouse_driver_name {
   return 'warehouse';
 }
@@ -414,24 +424,6 @@ sub env_vars {
   return (npg::api::request->cache_dir_var_name(), st::api::lims->cached_samplesheet_var_name());
 }
 
-sub _lims_xml_options {
-  my $self = shift;
-
-  my $driver_type = $self->lims_driver_type;
-  my $expected_driver_type =  $self->xml_driver_name;
-  if ($driver_type ne $expected_driver_type) {
-    croak "lims driver type conflict - got '$driver_type', expected '$expected_driver_type'";
-  }
-  my $ref = {
-    driver_type => $driver_type,
-    id_run      => $self->id_run,
-  };
-  if ($self->lims_id) {
-    $ref->{'batch_id'} = $self->lims_id;
-  }
-  return $ref;
-}
-
 sub _samplesheet {
   my ($self) = @_;
   if(not -e $self->samplesheet_file_path){
@@ -471,16 +463,6 @@ sub _xml_feeds {
   $run->current_run_status();
   $run->instrument()->model();
   npg::api::run_status_dict->new()->run_status_dicts();
-
-  if ($self->lims_driver_type eq $self->xml_driver_name) {
-    my $lims = st::api::lims->new($self->_lims_xml_options);
-    my @methods = $lims->method_list();
-    foreach my $l ( $lims->associated_lims() ) {
-      foreach my $method ( @methods ) {
-        $l->$method;
-      }
-    }
-  }
 
   return;
 }

@@ -1,6 +1,20 @@
 LIST OF CHANGES
 ---------------
 
+ - require minimum version 5.10 for perl
+ - add study analysis configuration accessor
+ - simpler name for the archival daemon module
+ - parent class for pipeline daemons
+ - dry_run option for daemons
+ - consistent behaviour of the archival and analysis daemons
+   when LIMs data are not available in the ml warehouse and
+   the run is not a QC run, the run is skipped
+ - the pipeline daemons define the type of the pipeline to run
+   (default, gclp, qc) and set appropriate backward-compatible
+   options for the pipeline script
+ - Log::Log4perl logger is used in pipeline daemons
+ - cached samplesheet generation - use ml warehouse for all
+   runs except QC runs, for which the old warehouse is still used
  - add npg_pipeline_job_env_to_threads script (to avoid excessive repeated perl one-
    liners in command arguments).
  - archival of logs should run after an asynchronous move to outgoing (peformed by the

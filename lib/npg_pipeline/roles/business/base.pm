@@ -85,7 +85,7 @@ has q{qc_run} => (isa        => q{Bool},
                     q{will be built if not supplied},);
 sub _build_qc_run {
   my $self = shift;
-  return $self->is_qc_run;
+  return $self->is_qc_run();
 }
 
 =head2 is_qc_run
@@ -96,8 +96,8 @@ returns true, otherwise returns false.
 =cut
 
 sub is_qc_run {
-  my $self = shift;
-  my $lims_id = $self->id_flowcell_lims;
+  my ($self, $lims_id) = @_;
+  $lims_id ||= $self->id_flowcell_lims;
   return $lims_id && $lims_id =~ /\A\d{13}\z/smx; # it's a tube barcode
 }
 
