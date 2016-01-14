@@ -51,7 +51,7 @@ has 'logger' => (
 around 'log' => sub {
    my $orig = shift;
    my $self = shift;
-   $self->logger->info('"log" method is depricated');
+   $self->logger->info('"log" method is deprecated');
    return $self->logger->warn(@_);
 };
 
