@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - purge carriage returns (as well line feeds) from study descriptions for RG header
+   records (xml lims driver has previously done this as part of XML parsing)
  - require minimum version 5.10 for perl
  - add study analysis configuration accessor
  - simpler name for the archival daemon module
