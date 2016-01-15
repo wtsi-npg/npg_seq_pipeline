@@ -354,6 +354,7 @@ sub get_study_library_sample_names {
      my $study_description = $al->is_control ? 'SPIKED_CONTROL' : $al->study_description;
      if( $study_name ){
         if( $study_description ){
+           $study_description =~ s/\r//gmxs;
            $study_description =~ s/\n/\ /gmxs;
            $study_description =~ s/\t/\ /gmxs;
            $study_name .= q{: }.$study_description;
