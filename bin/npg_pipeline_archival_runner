@@ -4,23 +4,33 @@ use strict;
 use warnings;
 use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
-use English qw{-no_match_vars};
+use Try::Tiny;
 use Readonly;
+use Log::Log4perl qw(:easy);
+
 use npg_pipeline::daemons::archival_runner;
 
 our $VERSION = '0';
 
-Readonly::Scalar our $SLEEPY_TIME => 900;
+Readonly::Scalar my $SLEEPY_TIME => 900;
 
-my $runner = npg_pipeline::daemons::archival_runner->new();
+Log::Log4perl->easy_init($INFO);
+
+my $runner = npg_pipeline::daemons::archival_runner->new_with_options();
 while (1) {
-  eval {
+  try {
+    $runner->logger->info(q{Archival daemon running...});
+    if ($runner->dry_run) {
+      $runner->logger->info(q{DRY RUN});
+    }
     $runner->run();
-  } or do {
-    $runner->log( q{Error running archival runner: } . $EVAL_ERROR . q{ - Going to sleep} );
+  } catch {
+    $runner->logger->warn(
+      qq{Error in pipeline archival daemon: $_ - Going to sleep} );
   };
   sleep $SLEEPY_TIME;
 }
+
 0;
 
 __END__
@@ -33,8 +43,8 @@ npg_pipeline_archival_runnner
 
 =head1 DESCRIPTION
 
-Script to run as a daemon which will interrogate npg for runs which have a status of archival_pending, and then
-fire off archival pipeline for each
+Daemon for invoking archival pipeline for runs which have a status of
+'archival pending'.
 
 =head1 USAGE
 
@@ -45,6 +55,10 @@ fire off archival pipeline for each
 =head1 EXIT STATUS
 
 =head1 SUBROUTINES/METHODS
+
+=head2 dry_run
+
+Dry run mode, the pipeline script is not called.
 
 =head1 DIAGNOSTICS
 
@@ -58,13 +72,15 @@ fire off archival pipeline for each
 
 =item warnings
 
-=item English -no_match_vars
+=item Try::Tiny
 
 =item FindBin
 
 =item Readonly
 
 =item lib
+
+=item Log::Log4perl
 
 =item npg_pipeline::daemons::archival_runner
 
@@ -77,10 +93,11 @@ fire off archival pipeline for each
 =head1 AUTHOR
 
 Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Limited
+Copyright (C) 2015 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

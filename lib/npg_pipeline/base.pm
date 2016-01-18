@@ -12,6 +12,8 @@ use Cwd qw(abs_path);
 use File::Slurp;
 use FindBin qw($Bin);
 use Readonly;
+use Try::Tiny;
+
 use npg_tracking::util::abs_path qw(network_abs_path);
 
 our $VERSION = '0';
@@ -391,7 +393,16 @@ around 'function_list' => sub {
     if ($v !~ /\A\w+\Z/smx) {
       croak "Bad function list name: $v";
     }
-    $file = $self->_conf_file_path( 'function_list_' . $v . '.yml');
+    try {
+      $file = $self->_conf_file_path((join q[_],'function_list',$v) . '.yml');
+    } catch {
+      my $pipeline_name = $self->pipeline_name;
+      if ($v !~ /^$pipeline_name/smx) {
+        $file = $self->_conf_file_path((join q[_],'function_list',$self->pipeline_name,$v) . '.yml');
+      } else {
+        croak $_;
+      }
+    };
   }
   if ($self->verbose) {
     $self->log("Will use function list $file");
@@ -406,7 +417,16 @@ sub _build_gclp {
 =head2 function_list_conf
 
 =cut
-has 'function_list_conf' => (
+
+=head2 study_analysis_conf
+
+Returns an array ref of study analysis configuration details. If the configuration file is not
+found or is not readable, an empty array is returned.
+
+=cut 
+
+has [qw { function_list_conf
+          study_analysis_conf } ] => (
   isa        => q{ArrayRef},
   is         => q{ro},
   lazy_build => 1,
@@ -416,6 +436,25 @@ has 'function_list_conf' => (
 sub _build_function_list_conf {
   my ( $self ) = @_;
   return $self->_read_config( $self->function_list );
+}
+sub _build_study_analysis_conf {
+  my ( $self ) = @_;
+
+  my $config = [];
+  my $path;
+  try {
+    $path = $self->_conf_file_path( $self->_conf_file_path(q{study_analysis.yml}) );
+  } catch {
+    if ($self->verbose) {
+      $self->log(qq[Failed to retrieve study analysis configuration: $_]);
+    }
+  };
+
+  if ($path) {
+    $config = $self->_read_config($path);
+  }
+
+  return $config;
 }
 
 =head2 general_values_conf
@@ -455,7 +494,6 @@ sub _build_parallelisation_conf {
   my ( $self ) = @_;
   return $self->_read_config( $self->_conf_file_path(q{parallelisation.yml}) );
 }
-
 sub _build_daemon_conf { # this file is optional
   my ( $self ) = @_;
   my $path = abs_path( catfile($self->conf_path(), 'daemon.ini') );

@@ -82,10 +82,10 @@ sub set_staging_analysis_area {
 
   my $mem = 13800;
   my $mem_limit = npg_pipeline::lsf_job->new(memory => $mem, memory_units =>$mem_units)->_scale_mem_limit();
-  $expected_cmd = q{bsub -n 8,16 -q srpipeline -o log/bustard_basecalls_all_1234_20091028-101635.%J.out -J bustard_basecalls_all_1234_20091028-101635 -R 'select[mem>}.$mem.q{] rusage[mem=}.$mem.q{,nfs_12=8]' -M}.$mem_limit.q{ -R 'span[hosts=1]' -w'done(123) && done(321)' 'make -j `perl -e '"'"'print scalar(()=$ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'"'"'` all'};
+  $expected_cmd = q{bsub -n 8,16 -q srpipeline -o log/bustard_basecalls_all_1234_20091028-101635.%J.out -J bustard_basecalls_all_1234_20091028-101635 -R 'select[mem>}.$mem.q{] rusage[mem=}.$mem.q{,nfs_12=8]' -M}.$mem_limit.q{ -R 'span[hosts=1]' -w'done(123) && done(321)' 'make -j `npg_pipeline_job_env_to_threads` all'};
   is( $bustard->_make_command('basecalls_all', $req_job_completion), $expected_cmd, q{command for basecalls all generated correctly});
 
-  $expected_cmd = q{bsub -n 8,16 -q srpipeline -o log/bustard_basecalls_lanes_1234_20091028-101635.%I.%J.out -J bustard_basecalls_lanes_1234_20091028-101635[1,2,3,4,5,6,7,8] -R 'select[mem>}.$mem.q{] rusage[mem=}.$mem.q{,nfs_12=8]' -M}.$mem_limit.q{ -R 'span[hosts=1]' -w'done(123) && done(321)' 'make -j `perl -e '"'"'print scalar(()=$ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'"'"'` s_} . $lsf_index_string . q{'};
+  $expected_cmd = q{bsub -n 8,16 -q srpipeline -o log/bustard_basecalls_lanes_1234_20091028-101635.%I.%J.out -J bustard_basecalls_lanes_1234_20091028-101635[1,2,3,4,5,6,7,8] -R 'select[mem>}.$mem.q{] rusage[mem=}.$mem.q{,nfs_12=8]' -M}.$mem_limit.q{ -R 'span[hosts=1]' -w'done(123) && done(321)' 'make -j `npg_pipeline_job_env_to_threads` s_} . $lsf_index_string . q{'};
   is( $bustard->_make_command('basecalls_lanes', $req_job_completion), $expected_cmd, q{command for basecall lanes generated correctly});
 
   $bustard = npg_pipeline::analysis::bustard4pbcb->new(
@@ -101,10 +101,10 @@ sub set_staging_analysis_area {
   $expected_cmd = qq{LOGNAME=101635 bustard_script --make --CIF --keep-dif-files --no-eamss --phasing=lane --matrix=lane --tiles=s_1,s_3,s_5 $bustard_home > $bustard_home/bustard_output_20091028-101635.txt 2>&1};
   is( $bustard->_bustard_command(), $expected_cmd, q{bustard command});
 
-  $expected_cmd = q{bsub -n 8,16 -q srpipeline -o log/bustard_matrix_lanes_1234_20091028-101635.%I.%J.out -J bustard_matrix_lanes_1234_20091028-101635[1,3,5] -R 'select[mem>}.$mem.q{] rusage[mem=}.$mem.q{,nfs_12=8]' -M}.$mem_limit.q{ -R 'span[hosts=1]' 'make -j `perl -e '"'"'print scalar(()=$ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'"'"'` matrix_`echo $LSB_JOBINDEX`_finished.txt'};
+  $expected_cmd = q{bsub -n 8,16 -q srpipeline -o log/bustard_matrix_lanes_1234_20091028-101635.%I.%J.out -J bustard_matrix_lanes_1234_20091028-101635[1,3,5] -R 'select[mem>}.$mem.q{] rusage[mem=}.$mem.q{,nfs_12=8]' -M}.$mem_limit.q{ -R 'span[hosts=1]' 'make -j `npg_pipeline_job_env_to_threads` matrix_`echo $LSB_JOBINDEX`_finished.txt'};
   is ($bustard->_make_command('matrix_lanes'), $expected_cmd, 'matrix lane command');
 
-  $expected_cmd = q{bsub -n 8,16 -q srpipeline -o log/bustard_phasing_all_1234_20091028-101635.%J.out -J bustard_phasing_all_1234_20091028-101635 -R 'select[mem>}.$mem.q{] rusage[mem=}.$mem.q{,nfs_12=8]' -M}.$mem_limit.q{ -R 'span[hosts=1]' 'make -j `perl -e '"'"'print scalar(()=$ENV{LSB_BIND_CPU_LIST}=~/\d+/smg) || $ENV{LSB_MCPU_HOSTS}=~/(\d+)\s*\Z/sm;'"'"'` phasing_finished.txt'};
+  $expected_cmd = q{bsub -n 8,16 -q srpipeline -o log/bustard_phasing_all_1234_20091028-101635.%J.out -J bustard_phasing_all_1234_20091028-101635 -R 'select[mem>}.$mem.q{] rusage[mem=}.$mem.q{,nfs_12=8]' -M}.$mem_limit.q{ -R 'span[hosts=1]' 'make -j `npg_pipeline_job_env_to_threads` phasing_finished.txt'};
   is ($bustard->_make_command('phasing_all'), $expected_cmd, 'phasing all command');
 }
 

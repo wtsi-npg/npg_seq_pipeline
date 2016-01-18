@@ -20,6 +20,7 @@ my $builder = $class->new(
          'dist'                => { COMPRESS => 'gzip', SUFFIX => 'gz', },
 
          'requires'            => {
+          'perl'                         => 5.010,
           'autodie'                      => 0,
           'Carp'                         => 1.04,
           'Cwd'                          => 0,
@@ -41,6 +42,7 @@ my $builder = $class->new(
           'lib'                          => 0,
           'List::MoreUtils'              => 0,
           'List::Util'                   => 0,
+          'Log::Log4perl'                => 0,
           'Moose'                        => 0.93,
           'Moose::Meta::Class'           => 0,
           'Moose::Role'                  => 0,
