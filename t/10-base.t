@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 93;
+use Test::More tests => 90;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use File::Copy qw(cp);
@@ -47,17 +47,9 @@ use_ok(q{npg_pipeline::base});
     general_values_conf
     illumina_pipeline_conf
     pb_cal_pipeline_conf
-    daemon_conf
   } ) {
     isa_ok( $base->$config_group(), q{HASH}, q{$} . qq{base->$config_group} );
   }
-
-  my $tempdir = tempdir( CLEANUP => 1 );
-  $base = npg_pipeline::base->new(conf_path => $tempdir, verbose => 0);
-  is_deeply($base->study_analysis_conf(), [],
-    'no study analysis config file - empty array returned');
-  $base = npg_pipeline::base->new(conf_path => 't/data/study_analysis_conf');
-  isa_ok($base->study_analysis_conf(), 'ARRAY', 'array of study configurations');
 }
 
 {

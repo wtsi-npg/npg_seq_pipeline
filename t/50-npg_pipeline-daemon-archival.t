@@ -9,15 +9,11 @@ use Log::Log4perl qw(:easy);
 use t::dbic_util;
 use t::util;
 
-BEGIN {
-  use_ok('npg_pipeline::daemons::archival_runner');
-}
-
 Log::Log4perl->easy_init($ERROR);
 
 my $script_name = q[npg_pipeline_post_qc_review];
-is (npg_pipeline::daemons::archival_runner->pipeline_script_name(),
-            $script_name, 'pipeline script name correct'); 
+
+use_ok('npg_pipeline::daemon::archival');
 
 my $util = t::util->new();
 my $temp_directory = $util->temp_directory();
@@ -37,7 +33,7 @@ is($test_run->current_run_status_description, 'archival pending', 'test run is a
 
 package test_archival_runner;
 use Moose;
-extends 'npg_pipeline::daemons::archival_runner';
+extends 'npg_pipeline::daemon::archival';
 sub _runfolder_path { return '/some/path' }
 sub check_lims_link { return {}; } #to prevent access to ml_warehouse
 
@@ -48,11 +44,9 @@ package main;
 {
   my $runner;
   lives_ok { $runner = test_archival_runner->new(
-    log_file_path       => $temp_directory,
-    log_file_name       => q{archival_daemon.log},
-    npg_tracking_schema => $schema, 
-  ); } q{object creation ok};
+    npg_tracking_schema => $schema) } q{object creation ok};
   isa_ok($runner, q{test_archival_runner});
+  is($runner->pipeline_script_name(), $script_name, 'pipeline script name correct'); 
   lives_ok { $runner->run(); } q{no croak on $runner->run()};
   my $prefix = $runner->daemon_conf()->{command_prefix};
   like($runner->_generate_command(1234), qr/;\s*\Q$prefix\Enpg_pipeline_/,
@@ -84,9 +78,7 @@ package main;
     'run 3 folder path glob undefined, will never match any host');
   my $runner = test_archival_runner->new(
     pipeline_script_name => '/bin/true',
-    log_file_path        => $temp_directory,
-    log_file_name        => q{archival_daemon.log},
-    npg_tracking_schema  => $schema,
+    npg_tracking_schema  => $schema
   );
 
   lives_ok {

@@ -1,11 +1,11 @@
 use strict;
 use warnings;
-use Test::More tests => 59;
+use Test::More tests => 62;
 use Test::Exception;
 use Cwd;
-use File::Path qw/make_path/;
-use List::MoreUtils qw{any};
-use Log::Log4perl qw(:easy);
+use File::Path qw{ make_path };
+use List::MoreUtils qw{ any };
+use Log::Log4perl qw{ :easy };
 
 use t::util;
 use t::dbic_util;
@@ -14,13 +14,10 @@ $ENV{'http_proxy'} = 'http://wibble.com'.
 
 Log::Log4perl->easy_init($INFO);
 
-my $package = 'npg_pipeline::daemons::analysis';
+my $package = 'npg_pipeline::daemon::analysis';
+my $script_name = q[npg_pipeline_central];
 
 use_ok($package);
-
-my $script_name = q[npg_pipeline_central];
-is ($package->pipeline_script_name(),
-    $script_name, 'pipeline script name correct'); 
 
 my $util = t::util->new();
 my $temp_directory = $util->temp_directory();
@@ -47,7 +44,7 @@ my $rf_path = '/some/path';
 
 package test_analysis_runner;
 use Moose;
-extends 'npg_pipeline::daemons::analysis';
+extends 'npg_pipeline::daemon::analysis';
 sub _runfolder_path { return '/some/path' };
 
 ########test class definition end########
@@ -63,6 +60,7 @@ package main;
       iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
   ) } q{object creation ok};
   isa_ok($runner, q{test_analysis_runner}, q{$runner});
+  is($runner->pipeline_script_name, $script_name, 'script name');
   ok(!$runner->dry_run, 'dry_run mode switched off by default');
 
   my $command_start = 'npg_pipeline_central --verbose --job_priority 50 --runfolder_path';
@@ -153,7 +151,7 @@ package main;
 package test_analysis_anotherrunner;
 use Moose;
 use Carp;
-extends 'npg_pipeline::daemons::analysis';
+extends 'npg_pipeline::daemon::analysis';
 sub check_lims_link{ croak 'No LIMs link'; }
 sub _runfolder_path { return '/some/path'; }
 
@@ -289,6 +287,19 @@ package main;
                iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
              );
   is( $runner->_runfolder_path(1234), $rf, 'runfolder path is correct');
+}
+
+{
+
+  my $d = npg_pipeline::daemon::analysis->new();
+  isa_ok( $d->daemon_conf(), q{HASH}, q{$} . qq{base->daemon_conf} );
+
+  $d = npg_pipeline::daemon::analysis->new(conf_path => $temp_directory);
+  is_deeply($d->study_analysis_conf(), [],
+    'no study analysis config file - empty array returned');
+
+  $d = npg_pipeline::daemon::analysis->new(conf_path => 't/data/study_analysis_conf');
+  isa_ok($d->study_analysis_conf(), 'ARRAY', 'array of study configurations');
 }
 
 1;

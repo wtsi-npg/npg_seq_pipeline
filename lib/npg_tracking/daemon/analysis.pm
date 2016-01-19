@@ -7,7 +7,7 @@ extends 'npg_tracking::daemon';
 
 our $VERSION = '0';
 
-Readonly::Scalar our $SCRIPT_NAME => q[npg_pipeline_harold_analysis_runner];
+Readonly::Scalar our $SCRIPT_NAME => q[npg_pipeline_analysis_runner];
 
 override '_build_hosts' => sub { return ['sf2-farm-srv1', 'sf2-farm-srv2']; };
 override 'daemon_name'  => sub { return $SCRIPT_NAME; };

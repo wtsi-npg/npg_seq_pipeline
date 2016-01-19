@@ -1,17 +1,17 @@
-package npg_pipeline::daemons::archival_runner;
+package npg_pipeline::daemon::archival;
 
 use Moose;
 use Readonly;
 use Try::Tiny;
 
-extends qw{npg_pipeline::daemons::base};
+extends qw{npg_pipeline::daemon};
 
 our $VERSION = '0';
 
 Readonly::Scalar our $POST_QC_REVIEW_SCRIPT => q{npg_pipeline_post_qc_review};
 Readonly::Scalar our $ARCHIVAL_PENDING      => q{archival pending};
 
-sub _build_pipeline_script_name {
+sub build_pipeline_script_name {
   return $POST_QC_REVIEW_SCRIPT;
 }
 
@@ -62,23 +62,26 @@ __END__
 
 =head1 NAME
 
-npg_pipeline::daemons::archival_runner
+npg_pipeline::daemon::archival
 
 =head1 SYNOPSIS
 
-  my $runner = npg_pipeline::archival_runner->new();
-  $runner->run();
+  my $runner = npg_pipeline::daemon::archival->new();
+  $runner->loop();
 
 =head1 DESCRIPTION
 
 Daemon for invoking the archival pipeline.
+Inherits most of functionality, including the loop() method,
+from npg_pipeline::base.
 
 =head1 SUBROUTINES/METHODS
 
 =head2 run
 
-Continiously monitors run statuses. Invokes the archival pipeline for
-runs with a status 'archival pending'.
+Invokes the archival pipeline for runs with a status 'archival pending'.
+
+=head2 build_pipeline_script_name
 
 =head1 DIAGNOSTICS
 
@@ -107,7 +110,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2015 Genome Research Ltd.
+Copyright (C) 2016 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
