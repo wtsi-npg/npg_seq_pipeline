@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - Add Broad Institute's RNA-SeQC to list of QC checks to run and to central.
+   The QC check is Carried out only on RNA library types and mouse or human
+   samples. Tophat-generated transcriptome and GTF/GFF annotation files are required.
+
 release 50.2
  - names of the pipeline daemon modules and scripts harmonised
  - the daemon module does not inherit from the pipeline base class thus
