@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 50.1
+ - bug fix to allow archival daemon to work (restore availabilty of run folder
+   finding method)
+
 release 50.0
  - purge carriage returns (as well line feeds) from study descriptions for RG header
    records (xml lims driver has previously done this as part of XML parsing)
