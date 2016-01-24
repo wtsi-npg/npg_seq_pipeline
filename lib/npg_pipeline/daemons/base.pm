@@ -198,6 +198,24 @@ sub local_path {
   return @paths;
 }
 
+sub runfolder_path {
+  my ($self, $id_run) = @_;
+
+  my $class =  Moose::Meta::Class->create_anon_class(
+    roles => [ qw/npg_tracking::illumina::run::folder::location
+                  npg_tracking::illumina::run::short_info/ ]
+  );
+  $class->add_attribute(q(npg_tracking_schema),
+                        {isa => 'npg_tracking::Schema', is => q(ro)});
+
+  my $path = $class->new_object(
+    npg_tracking_schema => $self->npg_tracking_schema,
+    id_run              => $id_run,
+  )->runfolder_path;
+
+  return abs_path($path);
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
@@ -238,6 +256,10 @@ Dry run mode flag, false by default.
 
 Returns a list with paths to bin the code is running from
 and perl executable the code is running under
+
+=head2 runfolder_path
+
+Returns runfolder path for given id_run
 
 =head1 DIAGNOSTICS
 
