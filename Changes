@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 50.0
  - purge carriage returns (as well line feeds) from study descriptions for RG header
    records (xml lims driver has previously done this as part of XML parsing)
  - require minimum version 5.10 for perl
