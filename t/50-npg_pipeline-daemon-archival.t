@@ -38,7 +38,7 @@ is($test_run->current_run_status_description, 'archival pending', 'test run is a
 package test_archival_runner;
 use Moose;
 extends 'npg_pipeline::daemons::archival_runner';
-sub runfolder_path { return '/some/path' }
+sub runfolder_path4run { return '/some/path' }
 sub check_lims_link { return {}; } #to prevent access to ml_warehouse
 
 ########test class definition end########

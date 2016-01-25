@@ -198,7 +198,7 @@ sub local_path {
   return @paths;
 }
 
-sub runfolder_path {
+sub runfolder_path4run {
   my ($self, $id_run) = @_;
 
   my $class =  Moose::Meta::Class->create_anon_class(
@@ -257,7 +257,7 @@ Dry run mode flag, false by default.
 Returns a list with paths to bin the code is running from
 and perl executable the code is running under
 
-=head2 runfolder_path
+=head2 runfolder_path4run
 
 Returns runfolder path for given id_run
 

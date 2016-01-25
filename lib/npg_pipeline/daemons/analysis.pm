@@ -1,14 +1,9 @@
 package npg_pipeline::daemons::analysis;
 
 use Moose;
-use Moose::Meta::Class;
 use Try::Tiny;
 use Readonly;
 use Carp;
-
-use npg_tracking::illumina::run::folder::location;
-use npg_tracking::illumina::run::short_info;
-use npg_tracking::util::abs_path qw/abs_path/;
 
 extends qw{npg_pipeline::daemons::base};
 
@@ -60,7 +55,7 @@ sub _process_one_run {
     $arg_refs->{'job_priority'} += $inherited_priority;
   }
 
-  $arg_refs->{'rf_path'} = $self->runfolder_path($id_run);
+  $arg_refs->{'rf_path'} = $self->runfolder_path4run($id_run);
 
   $self->run_command( $id_run, $self->_generate_command( $arg_refs ) );
 
@@ -141,14 +136,6 @@ status. Runs for which LIMS data are not available are skipped.
 =item Readonly
 
 =item Carp
-
-=item Moose::Meta::Class
-
-=item npg_tracking::illumina::run::folder::location
-
-=item npg_tracking::illumina::run::short_info
-
-=item use npg_tracking::util::abs_path
 
 =back
 
