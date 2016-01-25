@@ -48,7 +48,7 @@ my $rf_path = '/some/path';
 package test_analysis_runner;
 use Moose;
 extends 'npg_pipeline::daemons::analysis';
-sub _runfolder_path { return '/some/path' };
+sub runfolder_path4run { return '/some/path' };
 
 ########test class definition end########
 
@@ -155,7 +155,7 @@ use Moose;
 use Carp;
 extends 'npg_pipeline::daemons::analysis';
 sub check_lims_link{ croak 'No LIMs link'; }
-sub _runfolder_path { return '/some/path'; }
+sub runfolder_path4run { return '/some/path'; }
 
 ########test class definition end########
 
@@ -288,7 +288,7 @@ package main;
                npg_tracking_schema => $schema,
                iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
              );
-  is( $runner->_runfolder_path(1234), $rf, 'runfolder path is correct');
+  is( $runner->runfolder_path4run(1234), $rf, 'runfolder path is correct');
 }
 
 1;

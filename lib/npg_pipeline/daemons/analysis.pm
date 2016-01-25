@@ -1,14 +1,9 @@
 package npg_pipeline::daemons::analysis;
 
 use Moose;
-use Moose::Meta::Class;
 use Try::Tiny;
 use Readonly;
 use Carp;
-
-use npg_tracking::illumina::run::folder::location;
-use npg_tracking::illumina::run::short_info;
-use npg_tracking::util::abs_path qw/abs_path/;
 
 extends qw{npg_pipeline::daemons::base};
 
@@ -60,29 +55,11 @@ sub _process_one_run {
     $arg_refs->{'job_priority'} += $inherited_priority;
   }
 
-  $arg_refs->{'rf_path'} = $self->_runfolder_path($id_run);
+  $arg_refs->{'rf_path'} = $self->runfolder_path4run($id_run);
 
   $self->run_command( $id_run, $self->_generate_command( $arg_refs ) );
 
   return;
-}
-
-sub _runfolder_path {
-  my ($self, $id_run) = @_;
-
-  my $class =  Moose::Meta::Class->create_anon_class(
-    roles => [ qw/npg_tracking::illumina::run::folder::location
-                  npg_tracking::illumina::run::short_info/ ]
-  );
-  $class->add_attribute(q(npg_tracking_schema),
-                        {isa => 'npg_tracking::Schema', is => q(ro)});
-
-  my $path = $class->new_object(
-    npg_tracking_schema => $self->npg_tracking_schema,
-    id_run              => $id_run,
-  )->runfolder_path;
-
-  return abs_path($path);
 }
 
 sub _generate_command {
@@ -159,14 +136,6 @@ status. Runs for which LIMS data are not available are skipped.
 =item Readonly
 
 =item Carp
-
-=item Moose::Meta::Class
-
-=item npg_tracking::illumina::run::folder::location
-
-=item npg_tracking::illumina::run::short_info
-
-=item use npg_tracking::util::abs_path
 
 =back
 

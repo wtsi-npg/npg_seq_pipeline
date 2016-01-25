@@ -45,7 +45,7 @@ sub _generate_command {
 
   my $cmd = $self->pipeline_script_name();
   $cmd = $cmd . ($gclp ? q{ --function_list gclp} : q());
-  $cmd = $cmd . q{ --verbose --runfolder_path } . $self->_runfolder_path($id_run);
+  $cmd = $cmd . q{ --verbose --runfolder_path } . $self->runfolder_path4run($id_run);
   my $path = join q[:], $self->local_path(), $ENV{PATH};
   my $prefix = $self->daemon_conf()->{'command_prefix'};
   if (not defined $prefix) { $prefix=q(); }
