@@ -3,14 +3,12 @@ package npg_pipeline::base;
 use Moose;
 use Moose::Meta::Class;
 use Carp;
-use Config::Any;
 use English qw{-no_match_vars};
 use POSIX qw(strftime);
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
-use File::Spec::Functions qw(splitdir catfile);
+use File::Spec::Functions qw(splitdir);
 use Cwd qw(abs_path);
 use File::Slurp;
-use FindBin qw($Bin);
 use Readonly;
 use Try::Tiny;
 
@@ -24,6 +22,7 @@ with qw{
         npg_common::roles::log
         npg_tracking::illumina::run::short_info
         npg_tracking::illumina::run::folder
+        npg_pipeline::roles::accessor
         npg_pipeline::roles::business::base
        };
 with qw{npg_tracking::illumina::run::long_info};
@@ -55,6 +54,19 @@ Create derived class object
 A base class to provide basic functionality to any derived objects within npg_pipeline
 
 =head1 SUBROUTINES/METHODS
+
+=head2 conf_path
+
+An attribute inherited from npg_pipeline::roles::accesor,
+a full path to directory containing config files.
+
+=head2 conf_file_path
+
+Method inherited from npg_pipeline::roles::accessor.
+
+=head2 read_config
+
+Method inherited from npg_pipeline::roles::accessor.
 
 =cut
 
@@ -394,11 +406,11 @@ around 'function_list' => sub {
       croak "Bad function list name: $v";
     }
     try {
-      $file = $self->_conf_file_path((join q[_],'function_list',$v) . '.yml');
+      $file = $self->conf_file_path((join q[_],'function_list',$v) . '.yml');
     } catch {
       my $pipeline_name = $self->pipeline_name;
       if ($v !~ /^$pipeline_name/smx) {
-        $file = $self->_conf_file_path((join q[_],'function_list',$self->pipeline_name,$v) . '.yml');
+        $file = $self->conf_file_path((join q[_],'function_list',$self->pipeline_name,$v) . '.yml');
       } else {
         croak $_;
       }
@@ -418,15 +430,7 @@ sub _build_gclp {
 
 =cut
 
-=head2 study_analysis_conf
-
-Returns an array ref of study analysis configuration details. If the configuration file is not
-found or is not readable, an empty array is returned.
-
-=cut 
-
-has [qw { function_list_conf
-          study_analysis_conf } ] => (
+has [qw { function_list_conf } ] => (
   isa        => q{ArrayRef},
   is         => q{ro},
   lazy_build => 1,
@@ -435,26 +439,7 @@ has [qw { function_list_conf
 );
 sub _build_function_list_conf {
   my ( $self ) = @_;
-  return $self->_read_config( $self->function_list );
-}
-sub _build_study_analysis_conf {
-  my ( $self ) = @_;
-
-  my $config = [];
-  my $path;
-  try {
-    $path = $self->_conf_file_path( $self->_conf_file_path(q{study_analysis.yml}) );
-  } catch {
-    if ($self->verbose) {
-      $self->log(qq[Failed to retrieve study analysis configuration: $_]);
-    }
-  };
-
-  if ($path) {
-    $config = $self->_read_config($path);
-  }
-
-  return $config;
+  return $self->read_config( $self->function_list );
 }
 
 =head2 general_values_conf
@@ -469,7 +454,6 @@ Returns a hashref of configuration details from the relevant configuration file
 has [ qw{ general_values_conf
           illumina_pipeline_conf
           pb_cal_pipeline_conf
-          daemon_conf
           parallelisation_conf } ] => (
 
   isa        => q{HashRef},
@@ -480,66 +464,19 @@ has [ qw{ general_values_conf
 );
 sub _build_general_values_conf {
   my ( $self ) = @_;
-  return $self->_read_config( $self->_conf_file_path(q{general_values.ini}) );
+  return $self->read_config( $self->conf_file_path(q{general_values.ini}) );
 }
 sub _build_illumina_pipeline_conf {
   my ( $self ) = @_;
-  return $self->_read_config( $self->_conf_file_path(q{illumina_pipeline.ini}) );
+  return $self->read_config( $self->conf_file_path(q{illumina_pipeline.ini}) );
 }
 sub _build_pb_cal_pipeline_conf {
   my ( $self ) = @_;
-  return $self->_read_config( $self->_conf_file_path(q{pb_cal_pipeline.ini}) );
+  return $self->read_config( $self->conf_file_path(q{pb_cal_pipeline.ini}) );
 }
 sub _build_parallelisation_conf {
   my ( $self ) = @_;
-  return $self->_read_config( $self->_conf_file_path(q{parallelisation.yml}) );
-}
-sub _build_daemon_conf { # this file is optional
-  my ( $self ) = @_;
-  my $path = abs_path( catfile($self->conf_path(), 'daemon.ini') );
-  $path ||= q{};
-  my $config = $self->_read_config( $path );
-  if (ref $config ne 'HASH') {
-    $config = {};
-  }
-  return $config;
-}
-
-sub _conf_file_path {
-  my ( $self, $conf_name ) = @_;
-  my $path = abs_path( catfile($self->conf_path(), $conf_name) );
-  $path ||= q{};
-  if (!$path || !-f $path) {
-    croak "File $path does not exist or is not readable";
-  }
-  return $path;
-}
-
-sub _read_config {
-  my ( $self, $path ) = @_;
-
-  my $config = Config::Any->load_files({files => [$path], use_ext => 1, });
-  if ( scalar @{ $config } ) {
-    $config = $config->[0]->{ $path };
-  }
-
-  return $config;
-}
-
-=head2 config_path
-
-Path of the directory with the config files.
-
-=cut
-has q{conf_path} => (
-  isa           => q{Str},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{full path to directory containing config files},
-);
-sub _build_conf_path {
-  my $self = shift;
-  return "$Bin/../$CONF_DIR";
+  return $self->read_config( $self->conf_file_path(q{parallelisation.yml}) );
 }
 
 =head2 fix_broken_files
@@ -715,8 +652,6 @@ __END__
 
 =item Carp
 
-=item Config::Any
-
 =item English qw{-no_match_vars}
 
 =item File::Slurp
@@ -741,11 +676,13 @@ __END__
 
 =item npg_tracking::illumina::run::short_info
 
-=item npg_pipeline::roles::business::base
-
 =item npg_tracking::illumina::run::folder
 
+=item npg_pipeline::roles::business::base
+
 =item npg_pipeline::roles::business::flag_options
+
+=item npg_pipeline::roles::accessor
 
 =back
 
@@ -760,7 +697,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2016 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

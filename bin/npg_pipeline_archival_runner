@@ -4,32 +4,15 @@ use strict;
 use warnings;
 use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
-use Try::Tiny;
-use Readonly;
 use Log::Log4perl qw(:easy);
 
-use npg_pipeline::daemons::archival_runner;
+use npg_pipeline::daemon::archival;
 
 our $VERSION = '0';
 
-Readonly::Scalar my $SLEEPY_TIME => 900;
-
 Log::Log4perl->easy_init($INFO);
 
-my $runner = npg_pipeline::daemons::archival_runner->new_with_options();
-while (1) {
-  try {
-    $runner->logger->info(q{Archival daemon running...});
-    if ($runner->dry_run) {
-      $runner->logger->info(q{DRY RUN});
-    }
-    $runner->run();
-  } catch {
-    $runner->logger->warn(
-      qq{Error in pipeline archival daemon: $_ - Going to sleep} );
-  };
-  sleep $SLEEPY_TIME;
-}
+npg_pipeline::daemon::archival->new_with_options()->loop();
 
 0;
 
@@ -60,6 +43,10 @@ Daemon for invoking archival pipeline for runs which have a status of
 
 Dry run mode, the pipeline script is not called.
 
+=head2 conf_path
+
+A full path to directory containing config files.
+
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION
@@ -72,17 +59,13 @@ Dry run mode, the pipeline script is not called.
 
 =item warnings
 
-=item Try::Tiny
-
 =item FindBin
-
-=item Readonly
 
 =item lib
 
 =item Log::Log4perl
 
-=item npg_pipeline::daemons::archival_runner
+=item npg_pipeline::daemon::archival
 
 =back
 
@@ -97,7 +80,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2015 Genome Research Limited
+Copyright (C) 2016 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
