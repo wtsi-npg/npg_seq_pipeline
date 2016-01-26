@@ -1,11 +1,11 @@
-package npg_pipeline::daemons::analysis;
+package npg_pipeline::daemon::analysis;
 
 use Moose;
-use Try::Tiny;
-use Readonly;
 use Carp;
+use Readonly;
+use Try::Tiny;
 
-extends qw{npg_pipeline::daemons::base};
+extends qw{npg_pipeline::daemon};
 
 our $VERSION = '0';
 
@@ -14,8 +14,33 @@ Readonly::Scalar my $DEFAULT_JOB_PRIORITY   => 50;
 Readonly::Scalar my $RAPID_RUN_JOB_PRIORITY => 60;
 Readonly::Scalar my $ANALYSIS_PENDING       => q{analysis pending};
 
-sub _build_pipeline_script_name {
+sub build_pipeline_script_name {
   return $PIPELINE_SCRIPT;
+}
+
+has 'study_analysis_conf' => (
+  isa        => q{ArrayRef},
+  is         => q{ro},
+  lazy_build => 1,
+  metaclass  => 'NoGetopt',
+  init_arg   => undef,
+);
+sub _build_study_analysis_conf {
+  my ( $self ) = @_;
+
+  my $config = [];
+  my $path;
+  try {
+    $path = $self->conf_file_path( $self->conf_file_path(q{study_analysis.yml}) );
+  } catch {
+    $self->logger->warn(qq[Failed to retrieve study analysis configuration: $_]);
+  };
+
+  if ($path) {
+    $config = $self->read_config($path);
+  }
+
+  return $config;
 }
 
 sub run {
@@ -101,20 +126,28 @@ __END__
 
 =head1 NAME
 
-npg_pipeline::daemons::analysis
+npg_pipeline::daemon::analysis
 
 =head1 SYNOPSIS
 
-  my $runner = npg_pipeline::daemons::analysis->new();
-  $runner->run();
+  my $runner = npg_pipeline::daemon::analysis->new();
+  $runner->loop();
 
 =head1 DESCRIPTION
 
-Runner for the analysis pipeline. The run method can be invoked
-repeatedly thus creating a daemon that continiously monitors
-the runs and invokes the analysis pipeline.
+Runner for the analysis pipeline.
+Inherits most of functionality, including the loop() method,
+from npg_pipeline::base.
 
 =head1 SUBROUTINES/METHODS
+
+=head2 build_pipeline_script_name
+
+=head2 study_analysis_conf
+
+Returns an array ref of study analysis configuration details.
+If the configuration file is not found or is not readable,
+an empty array is returned.
 
 =head2 run
 
@@ -150,7 +183,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2015 Genome Research Ltd.
+Copyright (C) 2016 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

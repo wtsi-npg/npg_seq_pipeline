@@ -1,22 +1,30 @@
-package npg_pipeline::daemons::base;
+package npg_pipeline::daemon;
 
 use Moose;
-use MooseX::ClassAttribute;
 use Moose::Meta::Class;
+use MooseX::StrictConstructor;
 use Carp;
 use English qw/-no_match_vars/;
-use List::MoreUtils  qw/none/;
+use File::Spec::Functions qw/catfile/;
 use FindBin qw/$Bin/;
-use Readonly;
+use List::MoreUtils  qw/none/;
 use Log::Log4perl;
+use Readonly;
+use Try::Tiny;
 
 use npg_tracking::illumina::run::folder::location;
 use npg_tracking::illumina::run::short_info;
 use npg_tracking::util::abs_path qw/abs_path/;
+use npg_tracking::Schema;
 use WTSI::DNAP::Warehouse::Schema;
 use WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell;
 
-extends qw{npg_pipeline::base};
+use npg_pipeline::roles::business::base;
+
+with qw{ 
+         MooseX::Getopt
+         npg_pipeline::roles::accessor
+       };
 
 our $VERSION = '0';
 
@@ -24,13 +32,15 @@ Readonly::Scalar my $GREEN_DATACENTRE  => q[green];
 Readonly::Array  my @GREEN_STAGING     =>
    qw(sf18 sf19 sf20 sf21 sf22 sf23 sf24 sf25 sf26 sf27 sf28 sf29 sf30 sf31 sf46 sf47 sf49 sf50 sf51);
 
+Readonly::Scalar my $SLEEPY_TIME  => 900;
 Readonly::Scalar my $NO_LIMS_LINK => -1;
 
-class_has 'pipeline_script_name' => (
+has 'pipeline_script_name' => (
   isa        => q{Str},
   is         => q{ro},
   metaclass  => 'NoGetopt',
   lazy_build => 1,
+  builder    => 'build_pipeline_script_name',
 );
 
 has 'dry_run' => (
@@ -38,7 +48,7 @@ has 'dry_run' => (
   is         => q{ro},
   required   => 0,
   default    => 0,
-  documentation => 'Dry run mode flag, false by default',
+  documentation => 'dry run mode flag, false by default',
 );
 
 has 'logger' => (
@@ -48,12 +58,23 @@ has 'logger' => (
   default    => sub { Log::Log4perl->get_logger() },
 );
 
-around 'log' => sub {
-   my $orig = shift;
-   my $self = shift;
-   $self->logger->info('"log" method is deprecated');
-   return $self->logger->warn(@_);
-};
+has 'daemon_conf' => (
+  isa        => q{HashRef},
+  is         => q{ro},
+  lazy_build => 1,
+  metaclass  => 'NoGetopt',
+  init_arg   => undef,
+);
+sub _build_daemon_conf { # this file is optional
+  my ( $self ) = @_;
+  my $path = abs_path( catfile($self->conf_path(), 'daemon.ini') );
+  $path ||= q{};
+  my $config = $self->read_config( $path );
+  if (ref $config ne 'HASH') {
+    $config = {};
+  }
+  return $config;
+}
 
 has 'seen' => (
   isa       => q{HashRef},
@@ -78,6 +99,16 @@ sub _build_green_host {
   }
   $self->logger->warn(q{Do not know what datacentre I am running in});
   return;
+}
+
+has 'npg_tracking_schema' => (
+  isa        => q{npg_tracking::Schema},
+  is         => q{ro},
+  metaclass  => 'NoGetopt',
+  lazy_build => 1,
+);
+sub _build_npg_tracking_schema {
+  return npg_tracking::Schema->connect();
 }
 
 has 'iseq_flowcell' => (
@@ -158,7 +189,8 @@ sub check_lims_link {
   if ($fcell_row) {
     $lims->{'gclp'} = $fcell_row->from_gclp;
   } else {
-    $lims->{'qc_run'} = $self->is_qc_run($lims->{'id'});
+    $lims->{'qc_run'} =
+      npg_pipeline::roles::business::base->is_qc_run($lims->{'id'});
     if (!$lims->{'qc_run'}) {
       croak q{Not QC run and not in the ml warehouse};
     }
@@ -216,6 +248,31 @@ sub runfolder_path4run {
   return abs_path($path);
 }
 
+sub run {
+  return;
+}
+
+sub loop {
+  my $self = shift;
+
+  my $class = ref $self;
+  while (1) {
+    try {
+      $self->logger->info(qq{$class running});
+      if ($self->dry_run) {
+        $self->logger->info(q{DRY RUN});
+      }
+      $self->run();
+    } catch {
+      $self->logger->warn(qq{Error in $class : $_} );
+    };
+    $self->logger->info(qq{Going to sleep for $SLEEPY_TIME secs});
+    sleep $SLEEPY_TIME;
+  }
+
+  return;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
@@ -224,13 +281,13 @@ __END__
 
 =head1 NAME
 
-npg_pipeline::daemons::base
+npg_pipeline::daemon
 
 =head1 SYNOPSIS
 
   package npg_pipeline::daemons::my_pipeline;
   use Moose;
-  extends 'npg_pipeline::daemons::base';
+  extends 'npg_pipeline::daemon';
 
 =head1 DESCRIPTION
 
@@ -241,6 +298,36 @@ A Moose parent class for npg_pipeline daemons.
 =head2 dry_run
 
 Dry run mode flag, false by default.
+
+=head2 pipeline_script_name
+
+An attribute
+
+=head2 build_pipeline_script_name
+
+Builder method for the pipeline_script_name attribute, should be
+implemented by children.
+
+=head2 conf_path
+
+An attribute inherited from npg_pipeline::roles::accesor,
+a full path to directory containing config files.
+
+=head2 conf_file_path
+
+Method inherited from npg_pipeline::roles::accessor.
+
+=head2 read_config
+
+Method inherited from npg_pipeline::roles::accessor.
+
+=head2 daemon_conf
+
+=head2 seen
+
+=head2 npg_tracking_schema
+
+=head2 iseq_flowcell
 
 =head2 run_command
 
@@ -261,6 +348,17 @@ and perl executable the code is running under
 
 Returns runfolder path for given id_run
 
+=head2 run
+
+Single pass through the eligible runs. An empty implementation in
+this class. Should be implemented by children.
+
+=head2 loop
+
+An indefinite loop of calling run() method with 15 mins pauses
+between the repetitions. Any errors in the run() method are
+captured and printed to the log.
+
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT
@@ -271,9 +369,15 @@ Returns runfolder path for given id_run
 
 =item Moose
 
-=item MooseX::ClassAttribute
+=item Moose::Meta::Class
+
+=item MooseX::StrictConstructor
+
+=item MooseX::Getopt
 
 =item Carp
+
+=item File::Spec::Functions
 
 =item FindBin
 
@@ -281,17 +385,19 @@ Returns runfolder path for given id_run
 
 =item List::MoreUtils
 
+=item Log::Log4perl
+
 =item Readonly
 
-=item Moose::Meta::Class
-
-=item Log::Log4perl
+=item Try::Tiny
 
 =item npg_tracking::illumina::run::folder::location
 
 =item npg_tracking::illumina::run::short_info
 
 =item use npg_tracking::util::abs_path
+
+=item npg_tracking::Schema
 
 =item WTSI::DNAP::Warehouse::Schema
 
@@ -309,7 +415,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2015 Genome Research Ltd.
+Copyright (C) 2016 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
