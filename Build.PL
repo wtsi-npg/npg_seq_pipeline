@@ -48,7 +48,6 @@ my $builder = $class->new(
           'Moose::Role'                  => 0,
           'Moose::Util::TypeConstraints' => 0,
           'MooseX::AttributeCloner'      => 0.17,
-          'MooseX::ClassAttribute'       => 0,
           'MooseX::Getopt'               => 0,
           'MooseX::StrictConstructor'    => 0,
           'Perl6::Slurp'                 => 0,

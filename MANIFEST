@@ -2,7 +2,7 @@ bin/create_summary_link
 bin/npg_pipeline_archival_runner
 bin/npg_pipeline_central
 bin/npg_pipeline_check_bam_file_cluster_count
-bin/npg_pipeline_harold_analysis_runner
+bin/npg_pipeline_analysis_runner
 bin/npg_pipeline_job_env_to_threads
 bin/npg_pipeline_post_qc_review
 bin/npg_pipeline_preexec_references
@@ -39,9 +39,9 @@ lib/npg_pipeline/archive/qc/fastqcheck_loader.pm
 lib/npg_pipeline/archive/qc/illumina_analysis.pm
 lib/npg_pipeline/base.pm
 lib/npg_pipeline/cache.pm
-lib/npg_pipeline/daemons/archival_runner.pm
-lib/npg_pipeline/daemons/analysis.pm
-lib/npg_pipeline/daemons/base.pm
+lib/npg_pipeline/daemon/archival.pm
+lib/npg_pipeline/daemon/analysis.pm
+lib/npg_pipeline/daemon.pm
 lib/npg_pipeline/dispatch_tree.pm
 lib/npg_pipeline/launcher/status.pm
 lib/npg_pipeline/lsf_job.pm
@@ -49,6 +49,7 @@ lib/npg_pipeline/pluggable.pm
 lib/npg_pipeline/pluggable/harold.pm
 lib/npg_pipeline/pluggable/harold/central.pm
 lib/npg_pipeline/pluggable/harold/post_qc_review.pm
+lib/npg_pipeline/roles/accessor.pm
 lib/npg_pipeline/roles/business/base.pm
 lib/npg_pipeline/roles/business/flag_options.pm
 lib/npg_pipeline/roles/business/harold_calibration_reqs.pm

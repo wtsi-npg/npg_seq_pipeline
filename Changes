@@ -1,6 +1,13 @@
 LIST OF CHANGES
 ---------------
 
+release 50.2
+ - names of the pipeline daemon modules and scripts harmonised
+ - the daemon module does not inherit from the pipeline base class thus
+   reducing the number of command line script options
+ - common code moved from the daemon scripts to the daemon module
+ - a new role for common accessors
+
 release 50.1
  - bug fix to allow archival daemon to work (restore availabilty of run folder
    finding method)
