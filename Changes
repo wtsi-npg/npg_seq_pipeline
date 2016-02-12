@@ -1,5 +1,7 @@
 LIST OF CHANGES
 ---------------
+ 
+ - study-specific software stack for the analysis pipeline
 
 release 50.2
  - names of the pipeline daemon modules and scripts harmonised

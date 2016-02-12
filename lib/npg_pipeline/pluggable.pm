@@ -355,7 +355,16 @@ sub schedule_functions {
 
 =cut
 sub prepare {
-  return 1;
+  my $self = shift;
+  if ($self->verbose) {
+    my $s = '***************************************************';
+    $self->log("\n" . $s);
+    foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
+      $self->log(sprintf '*** %s: %s', $name, $ENV{$name});
+    }
+    $self->log($s . "\n");
+  }
+  return;
 }
 
 =head2 main
@@ -428,7 +437,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2016 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

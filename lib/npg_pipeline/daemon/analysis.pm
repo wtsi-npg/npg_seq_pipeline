@@ -4,6 +4,9 @@ use Moose;
 use Carp;
 use Readonly;
 use Try::Tiny;
+use List::MoreUtils qw/uniq/;
+
+use npg_tracking::util::abs_path qw/abs_path/;
 
 extends qw{npg_pipeline::daemon};
 
@@ -13,32 +16,29 @@ Readonly::Scalar my $PIPELINE_SCRIPT        => q{npg_pipeline_central};
 Readonly::Scalar my $DEFAULT_JOB_PRIORITY   => 50;
 Readonly::Scalar my $RAPID_RUN_JOB_PRIORITY => 60;
 Readonly::Scalar my $ANALYSIS_PENDING       => q{analysis pending};
+Readonly::Scalar my $GCLP_STUDY_KEY         => q{gclp_all_studies};
+Readonly::Scalar my $PATH_DELIM             => q{:};
 
 sub build_pipeline_script_name {
   return $PIPELINE_SCRIPT;
 }
 
 has 'study_analysis_conf' => (
-  isa        => q{ArrayRef},
+  isa        => q{HashRef},
   is         => q{ro},
   lazy_build => 1,
   metaclass  => 'NoGetopt',
   init_arg   => undef,
 );
 sub _build_study_analysis_conf {
-  my ( $self ) = @_;
+  my $self = shift;
 
-  my $config = [];
-  my $path;
+  my $config = {};
   try {
-    $path = $self->conf_file_path( $self->conf_file_path(q{study_analysis.yml}) );
+    $config = $self->read_config($self->conf_file_path(q{study_analysis.yml}));
   } catch {
-    $self->logger->warn(qq[Failed to retrieve study analysis configuration: $_]);
+    $self->logger->warn(qq{Failed to retrieve study analysis configuration: $_});
   };
-
-  if ($path) {
-    $config = $self->read_config($path);
-  }
 
   return $config;
 }
@@ -53,7 +53,7 @@ sub run {
       }
     } catch {
       $self->logger->warn(
-        join q[ ], 'Error processing run', $run->id_run(), q[:], $_ );
+        sprintf 'Error processing run %i: %s', $run->id_run(), $_ );
     };
   }
 
@@ -79,12 +79,53 @@ sub _process_one_run {
   if ($inherited_priority > 0) { #not sure we curate what we get from LIMs
     $arg_refs->{'job_priority'} += $inherited_priority;
   }
+  $arg_refs->{'rf_path'}  = $self->runfolder_path4run($id_run);
+  $arg_refs->{'software'} = $self->_software_bundle($arg_refs->{'gclp'} ? 1 : 0, $arg_refs->{'studies'});
 
-  $arg_refs->{'rf_path'} = $self->runfolder_path4run($id_run);
-
-  $self->run_command( $id_run, $self->_generate_command( $arg_refs ) );
+  $self->run_command( $id_run, $self->_generate_command( $arg_refs ));
 
   return;
+}
+
+sub _software_bundle {
+  my ($self, $is_gclp_run, $studies) = @_;
+
+  if (!defined $is_gclp_run) {
+    croak 'GCLP flag is not defined';
+  }
+  if (!$studies || !@{$studies}) {
+    croak 'Study ids are missing';
+  }
+
+  my @s = $is_gclp_run ? ($GCLP_STUDY_KEY) : @{$studies};
+
+  my $conf = $self->study_analysis_conf();
+
+  my @software = uniq map { $conf->{$_} || q[] } @s;
+  if (@software > 1) {
+    croak q{Multiple software bundles for a run};
+  }
+
+  my $software_dir = @software ? $software[0] : q[];
+  if ($is_gclp_run && !$software_dir) {
+    croak q{GCLP run needs explicit software bundle};
+  }
+
+  if ($software_dir && !-d $software_dir) {
+    croak qq{Directory '$software_dir' does not exist};
+  }
+
+  return abs_path($software_dir);
+}
+
+##########
+# Remove from the PATH the bin the daemon is running from
+#
+sub _clean_path {
+  my ($self, $path) = @_;
+  my $bin = $self->local_bin;
+  my @path_components  = split /$PATH_DELIM/smx, $path;
+  return join $PATH_DELIM, grep { abs_path($_) ne $bin} @path_components;
 }
 
 sub _generate_command {
@@ -97,24 +138,33 @@ sub _generate_command {
 
   if ( $arg_refs->{'gclp'} ) {
     $self->logger->info('GCLP run');
-    $cmd .= ' --function_list gclp';
+    $cmd .= q{ --function_list gclp};
   } else {
     $self->logger->info('Non-GCLP run');
     if (!$arg_refs->{'id'}) {
       # Batch id is needed for MiSeq runs, including qc runs
-      croak 'Lims flowcell id is missing';
+      croak q{Lims flowcell id is missing};
     }
     if ($arg_refs->{'qc_run'}) {
-      $cmd .= ' --qc_run';
+      $cmd .= q{ --qc_run};
       $self->logger->info('QC run');
     }
-    $cmd .= ' --id_flowcell_lims ' . $arg_refs->{'id'};
+    $cmd .= q{ --id_flowcell_lims } . $arg_refs->{'id'};
   }
 
-  my $path = join q[:], $self->local_path(), $ENV{'PATH'};
-  my $prefix = $self->daemon_conf()->{'command_prefix'};
-  if (not defined $prefix) { $prefix=q(); }
+  my $path = join $PATH_DELIM, $self->local_path(), $ENV{'PATH'};
+  my $analysis_path_root = $arg_refs->{'software'};
+  if ($analysis_path_root) {
+    $path = join $PATH_DELIM, "${analysis_path_root}/bin", $self->_clean_path($path);
+  }
+  my $prefix = $self->daemon_conf()->{'command_prefix'} || q();
   $cmd = qq{export PATH=$path; $prefix$cmd};
+  if ($analysis_path_root) {
+    $cmd = join q[; ],
+           qq[export PERL5LIB=${analysis_path_root}/lib/perl5],
+           qq[export CLASSPATH=${analysis_path_root}/jars],
+           $cmd;
+  }
   return $cmd;
 }
 
@@ -145,9 +195,9 @@ from npg_pipeline::base.
 
 =head2 study_analysis_conf
 
-Returns an array ref of study analysis configuration details.
+Returns a hash ref of study analysis configuration details.
 If the configuration file is not found or is not readable,
-an empty array is returned.
+an empty hash is returned.
 
 =head2 run
 
@@ -169,6 +219,10 @@ status. Runs for which LIMS data are not available are skipped.
 =item Readonly
 
 =item Carp
+
+=item List::MoreUtils
+
+=item npg_tracking::util::abs_path
 
 =back
 
