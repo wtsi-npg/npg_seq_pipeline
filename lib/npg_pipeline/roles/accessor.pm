@@ -8,6 +8,8 @@ use FindBin qw($Bin);
 use File::Spec::Functions qw(catfile);
 use Readonly;
 
+use npg_tracking::util::abs_path qw/abs_path/;
+
 our $VERSION = '0';
 
 Readonly::Scalar my $CONF_DIR => q{data/config_files};
@@ -28,6 +30,22 @@ A Moose role providing accessors for pipeline's sources of information.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 local_bin
+
+Absolute path to directory containing the currently running script.
+
+=cut
+
+has q{local_bin} => (
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{abs path to directory containing the currently running script},
+);
+sub _build_local_bin {
+  return abs_path($Bin);
+}
+
 =head2 conf_path
 
 Path of the directory with the pipeline's configuration files.
@@ -39,11 +57,11 @@ has q{conf_path} => (
   isa           => q{Str},
   is            => q{ro},
   lazy_build    => 1,
-  documentation => q{full path to directory containing config files},
+  documentation => q{a full path to directory containing config files},
 );
 sub _build_conf_path {
   my $self = shift;
-  return "$Bin/../$CONF_DIR";
+  return $self->local_bin . "/../$CONF_DIR";
 }
 
 =head2 conf_file_path
@@ -105,6 +123,8 @@ __END__
 =item FindBin
 
 =item Readonly
+
+=item npg_tracking::util::abs_path
 
 =back
 
