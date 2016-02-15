@@ -599,7 +599,7 @@ Module which knows how to construct and submit the command line to LSF for creat
 
 =head1 AUTHOR
 
-Guoying Qi
+Kevin Lewis
 
 =head1 LICENSE AND COPYRIGHT
 
