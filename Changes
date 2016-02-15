@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - added new module for p4 stage1 analysis
  - names of the pipeline daemon modules and scripts harmonised
  - the daemon module does not inherit from the pipeline base class thus
    reducing the number of command line script options
