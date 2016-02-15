@@ -46,6 +46,8 @@ sub _build_study_analysis_conf {
 sub run {
   my $self = shift;
 
+  $self->study_analysis_conf();
+
   foreach my $run ($self->runs_with_status($ANALYSIS_PENDING)) {
     try {
       if ( $self->staging_host_match($run->folder_path_glob)) {
@@ -93,7 +95,7 @@ sub _software_bundle {
   if (!defined $is_gclp_run) {
     croak 'GCLP flag is not defined';
   }
-  if (!$studies || !@{$studies}) {
+  if (!$studies) {
     croak 'Study ids are missing';
   }
 
@@ -115,7 +117,7 @@ sub _software_bundle {
     croak qq{Directory '$software_dir' does not exist};
   }
 
-  return abs_path($software_dir);
+  return $software_dir ? abs_path($software_dir) : q[];
 }
 
 ##########

@@ -296,12 +296,19 @@ subtest 'retrieve study analysis configuration' => sub {
 };
 
 subtest 'get software bundle' => sub {
-  plan tests => 9;
+  plan tests => 11;
+
+  my $conf_file = join q[/], $temp_directory, 'study_conf.yml';
+  open my $fh, '>', $conf_file;
+  print $fh "---\n";
+  print $fh "12345: t\n";
+  close $fh;
 
   my $runner  = $package->new(
     pipeline_script_name => '/bin/true',
     npg_tracking_schema  => $schema,
     mlwh_schema          => $wh_schema,
+    conf_path            => $conf_file,
   );
 
   throws_ok { $runner->_software_bundle() }
@@ -310,9 +317,11 @@ subtest 'get software bundle' => sub {
   throws_ok { $runner->_software_bundle(1) }
     qr/Study ids are missing/,
     'error if no study array is given';
-  throws_ok { $runner->_software_bundle(1, ()) }
-    qr/Study ids are missing/,
-    'error if study array is empty';
+  lives_ok { $runner->_software_bundle(0, []) }
+    'no error if study array is empty';
+  throws_ok { $runner->_software_bundle(1, []) }
+    qr/GCLP run needs explicit software bundle/,
+    'GCLP run: no study info - error';
   throws_ok { $runner->_software_bundle(1, [qw/3/]) }
     qr/GCLP run needs explicit software bundle/,
     'no GCLP conf - error';
@@ -334,6 +343,7 @@ subtest 'get software bundle' => sub {
     qr/Directory \'\/some\/dir\' does not exist/,
     'directory does not exist - error';
 
+  is($runner->_software_bundle(0, []), q[], 'no study info - no path');
   is($runner->_software_bundle(0, [qw/12346 12347/]),
     "${current_dir}/t/data/cache", 'study analysis directory retrieved');
   is($runner->_software_bundle(1, [qw/12346 12347/]),
