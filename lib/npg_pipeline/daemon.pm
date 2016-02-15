@@ -116,6 +116,9 @@ has 'mlwh_schema' => (
   metaclass  => 'NoGetopt',
   lazy_build => 1,
 );
+sub _build_mlwh_schema {
+  return WTSI::DNAP::Warehouse::Schema->connect();
+}
 
 has 'iseq_flowcell' => (
   isa        => q{DBIx::Class::ResultSet},
@@ -207,7 +210,8 @@ sub check_lims_link {
 
   my @studies = ();
   if (!$lims->{'qc_run'}) {
-    @studies = sort uniq map { $_->study_id } grep { !$_->is_control } @fcell_rows;
+    @studies = uniq map { $_->study_id } grep { !$_->is_control } @fcell_rows;
+    @studies = sort @studies;
   }
   $lims->{'studies'} = \@studies;
 
