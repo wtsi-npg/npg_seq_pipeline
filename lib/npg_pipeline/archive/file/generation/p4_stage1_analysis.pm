@@ -32,7 +32,6 @@ sub generate {
   $self->_create_lane_dirs();
 
   my $alims = $self->lims->children_ia;
-  my @job_ids;
   for my $p ($self->positions()) {
     my $tag_list_file;
     if ($self->is_multiplexed_lane($p)) {
@@ -234,7 +233,7 @@ sub _generate_command_params {
                     teepot_wval => q{500},
                     teepot_mval => q{2G},
                     reference_phix => _default_phix_ref(q{bwa0_6}, $self->repository),
-                    scramble_reference_fasta => _default_phix_ref(q{fasta}, $self->repository)
+                    scramble_reference_fasta => _default_phix_ref(q{fasta}, $self->repository),
                   );
   my %i2b_flag_map = (
     I => q[i2b_intensity_dir],
@@ -303,8 +302,8 @@ sub _generate_command_params {
   $p4_params{$i2b_flag_map{q/I/}} = $intensity_path;
   $p4_params{$i2b_flag_map{q/L/}} = $position;
   $p4_params{$i2b_flag_map{q/B/}} = $self->basecall_path;
-  $p4_params{$i2b_flag_map{q/RG/}} = join(q[_], $id_run, $position);
-  $p4_params{$i2b_flag_map{q/PU/}} = join(q[_], $self->run_folder, $position);
+  $p4_params{$i2b_flag_map{q/RG/}} = join q[_], $id_run, $position;
+  $p4_params{$i2b_flag_map{q/PU/}} = join q[_], $self->run_folder, $position;
 
   my $st_names = $self->_get_library_sample_study_names($lane_lims);
 
@@ -388,7 +387,7 @@ sub _generate_command_params {
     if (!$tag_list_file) {
       croak 'Tag list file path should be defined for multiplexed lane ', $position;
     }
- 
+
     $p4_params{bamindexdecoder_jar} = $self->_BamIndexDecoder_jar;
     $p4_params{$bid_flag_map{q/BARCODE_FILE/}} = $tag_list_file;
     $p4_params{$bid_flag_map{q/METRICS_FILE/}} = $full_bam_name . q{.tag_decode.metrics};
@@ -557,7 +556,7 @@ Module which knows how to construct and submit the command line to LSF for creat
 
 =head2 generate - generates the bsub jobs and submits them for creating the bam files, returning LSF job ID for an array of jobs.
 
-  my @job_ids = $oAfgfq->generate({
+  my $job_id = $oAfgfq->generate({
     required_job_completion} => q{-w (123 && 321)};
   });
 
