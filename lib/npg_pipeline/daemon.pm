@@ -200,6 +200,7 @@ sub check_lims_link {
   $lims->{'id'} = $batch_id;
   if ($fcell_row) {
     $lims->{'gclp'} = $fcell_row->from_gclp;
+    $lims->{'qc_run'} = ($fcell_row->purpose eq 'qc') ? 1 : undef;
   } else {
     $lims->{'qc_run'} =
       npg_pipeline::roles::business::base->is_qc_run($lims->{'id'});

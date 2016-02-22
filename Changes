@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
  
+ - use 'purpose' field to decide if qc_run
  - study-specific software stack for the analysis pipeline
 
 release 50.2
