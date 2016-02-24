@@ -7,6 +7,7 @@ use Readonly;
 use File::Spec;
 use List::MoreUtils qw{none};
 use Class::Load qw/load_class/;
+use File::Path qw/make_path/;
 
 use npg_pipeline::lsf_job;
 
@@ -25,6 +26,10 @@ Readonly::Scalar my $NO_REFERENCE_REPOS_DEPENDENCY => {
   upstream_tags => 1,
 };
 
+Readonly::Scalar my $REQUIRES_QC_OUT_PATH => {
+  rna_seqc => 1,
+};
+
 has q{qc_to_run} => (isa => q{Str}, is => q{ro}, required => 1);
 
 sub run_qc {
@@ -35,10 +40,26 @@ sub run_qc {
   $self->log(qq{Running qc test $qc_to_run on Run $id_run});
 
   foreach my $position ($self->positions()) {
-    if ( $self->is_multiplexed_lane($position) && (-e $self->lane_archive_path( $position ) ) ) {
-      my $lane_qc_dir = $self->lane_qc_path( $position );
-      if (!-e $lane_qc_dir) {
-        mkdir $lane_qc_dir;
+    my @archive_qc_path = ($self->archive_path, q[qc], (%{$REQUIRES_QC_OUT_PATH})[0]);
+    my $lane_dir = join q[_], $self->id_run(), $position;
+    my $qc_out_dir;
+    if ($REQUIRES_QC_OUT_PATH->{$self->qc_to_run()}) {
+      $qc_out_dir = File::Spec->catdir(@archive_qc_path, $lane_dir);
+      if (! -d $qc_out_dir) { make_path($qc_out_dir); }
+    }
+    if ($self->is_multiplexed_lane($position)) {
+      if (-e $self->lane_archive_path($position)) {
+        my $lane_qc_dir = $self->lane_qc_path( $position );
+        if (!-e $lane_qc_dir) {
+          mkdir $lane_qc_dir;
+        }
+      }
+      if ($REQUIRES_QC_OUT_PATH->{$self->qc_to_run()}) {
+        foreach my $tag (@{$self->get_tag_index_list($position)}) {
+          my $lane_tag_dir = join q[#], $lane_dir, $tag;
+          $qc_out_dir = File::Spec->catdir(@archive_qc_path, $lane_dir, $lane_tag_dir);
+          if (! -d $qc_out_dir) { make_path($qc_out_dir); }
+        }
       }
     }
   }
@@ -121,26 +142,31 @@ sub _qc_command {
   my $qc_out;
   my $archive_path      = $self->archive_path;
   my $recalibrated_path = $self->recalibrated_path;
-  my @rna_seqc_path = ($archive_path, q[qc], q[rna_seqc]);
+  my $lanestr           = $self->_position_decode_string();
+  my @rna_seqc_archive  = ($archive_path, q[qc], q[rna_seqc]);
+  my $rna_seqc_lane     = join q[_], $self->id_run(), $lanestr;
+  my $rna_seqc_qc_out;
 
   if ( defined $indexed ) {
     my $tagstr = $self->_tag_index_decode_string();
-    my $lanestr = $self->_position_decode_string();
     my $lane_archive_path = File::Spec->catfile($archive_path, q[lane] . $lanestr);
+    my $rna_seqc_tag = join q[#], $rna_seqc_lane, $tagstr;
+    $rna_seqc_qc_out = File::Spec->catdir(@rna_seqc_archive, $rna_seqc_lane, $rna_seqc_tag);
     $qc_in = ( $self->qc_to_run() eq q[adapter]) ?
-	  File::Spec->catfile($recalibrated_path, q[lane] . $lanestr) : $lane_archive_path;
-    $qc_out = $self->qc_to_run() eq q[rna_seqc] ? File::Spec->catdir(@rna_seqc_path) : File::Spec->catfile($lane_archive_path, q[qc]);
+        File::Spec->catfile($recalibrated_path, q[lane] . $lanestr) : $lane_archive_path;
+    $qc_out = $self->qc_to_run() eq q[rna_seqc] ?
+        $rna_seqc_qc_out : File::Spec->catfile($lane_archive_path, q[qc]);
     $c .= q{ --position=}  . $lanestr;
     $c .= q{ --tag_index=} . $tagstr;
   } else {
     $c .= q{ --position=}  . $self->lsb_jobindex();
+    $rna_seqc_qc_out = File::Spec->catdir(@rna_seqc_archive, $rna_seqc_lane);
     $qc_in  = $self->qc_to_run() eq q{tag_metrics} ? $self->bam_basecall_path :
         (($self->qc_to_run() eq q[adapter]) ? $recalibrated_path : $archive_path);
-    $qc_out = $self->qc_to_run() eq q[rna_seqc] ? File::Spec->catdir(@rna_seqc_path) : $self->qc_path();
+    $qc_out = $self->qc_to_run() eq q[rna_seqc] ?
+        $rna_seqc_qc_out : $self->qc_path();
   }
-
   $c .= qq{ --qc_in=$qc_in --qc_out=$qc_out};
-
   return ($c, $qc_in, $qc_out);
 }
 
@@ -166,23 +192,21 @@ sub _can_run {
   my $p = q{npg_qc::autoqc::checks::} . $qc;
   load_class($p);
 
-  # define init_hash conditionally as only 
-  # rna_seqc check requires qc_out attribute
   my $init_hash = {};
-  if ($qc =~ /^rna_seqc$/smx) {
+  if (!$REQUIRES_QC_OUT_PATH->{$self->qc_to_run()}) {
     $init_hash = {
-        path      => $qc_in,
-        position  => $position,
-        check     => $qc,
-        id_run    => $self->id_run(),
-        qc_out    => $qc_out,
+      path      => $qc_in,
+      position  => $position,
+      check     => $qc,
+      id_run    => $self->id_run(),
+      qc_out    => $qc_out,
     };
   } else {
     $init_hash = {
-        path      => $qc_in,
-        position  => $position,
-        check     => $qc,
-        id_run    => $self->id_run(),
+      path      => $qc_in,
+      position  => $position,
+      check     => $qc,
+      id_run    => $self->id_run(),
     };
   }
   if ( defined $tag_index ) {
@@ -302,6 +326,8 @@ Object module responsible for launching jobs to LSF for qc'ing fastq/fastqcheck 
 =item List::MoreUtils
 
 =item Class::Load
+
+=item File::Path
 
 =back
 
