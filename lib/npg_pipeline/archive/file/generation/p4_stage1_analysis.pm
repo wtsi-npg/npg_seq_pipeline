@@ -286,6 +286,7 @@ sub _generate_command_params {
   $p4_params{tileviz_dir} = $qc_path . q[/tileviz/] . $id_run . q[_] . $position ; # used by tileviz
   $p4_params{outdatadir} = $no_cal_path; # base for all (most?) outputs
   $p4_params{spatial_filter_file} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.filter}; # full name for the spatial filter file
+  my $spatial_filter_stats_file = $p4_params{spatial_filter_stats} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.filter.stats}; # full name for the spatial filter stats file (for qc check)
   $p4_params{seqchksum_file} = $bam_basecall_path . q[/] . $id_run . q[_] . $position . q{.post_i2b.seqchksum}; # full name for the lane-level seqchksum file
   $p4_params{filtered_bam} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam}; # full name for the spatially filtered lane-level file
   $p4_params{md5filename} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.md5}; # full name for the md5 for the spatially filtered lane-level file
@@ -383,6 +384,7 @@ sub _generate_command_params {
     }
   }
 
+
   if($self->is_multiplexed_lane($position)) {
     if (!$tag_list_file) {
       croak 'Tag list file path should be defined for multiplexed lane ', $position;
@@ -430,7 +432,10 @@ sub _generate_command_params {
                            qq(-keys br_numthreads_val -vals $bamrecompress_slots),
                            q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/bcl2bam_phix_deplex_wtsi_stage1_template.json},
                            q{&&},
-                           qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json), q(');
+                           qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json),
+                           q{&&},
+                           qq{qc --check spatial_filter --id_run $id_run --position $position --qc_out $qc_path < $spatial_filter_stats_file},
+                           q(');
 
   $self->_job_args->{_param_vals}->{$position}->{assign} = [ \%p4_params ];
 
