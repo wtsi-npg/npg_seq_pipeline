@@ -134,7 +134,7 @@ has 'p4_stage1_errlog_paths'  => (
 sub _build_p4_stage1_errlog_paths {
   my $self = shift;
 
-  my %p4_stage1_errlog_paths = map { $_=> $self->p4_stage1_analysis_log_base . q[/lane] . $_ . q[/errlog]; } $self->positions;
+  my %p4_stage1_errlog_paths = map { $_=> $self->p4_stage1_analysis_log_base . q[/lane] . $_ . q[/log]; } $self->positions;
 
   return \%p4_stage1_errlog_paths;
 }
