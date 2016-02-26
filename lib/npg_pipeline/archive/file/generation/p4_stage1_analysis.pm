@@ -289,6 +289,7 @@ sub _generate_command_params {
   my $spatial_filter_stats_file = $p4_params{spatial_filter_stats} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.filter.stats}; # full name for the spatial filter stats file (for qc check)
   $p4_params{seqchksum_file} = $bam_basecall_path . q[/] . $id_run . q[_] . $position . q{.post_i2b.seqchksum}; # full name for the lane-level seqchksum file
   $p4_params{filtered_bam} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam}; # full name for the spatially filtered lane-level file
+  $p4_params{unfiltered_cram_file} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.unfiltered.cram}; # full name for spatially unfiltered lane-level cram file
   $p4_params{md5filename} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.md5}; # full name for the md5 for the spatially filtered lane-level file
   $p4_params{split_prefix} = $no_cal_path . q[/lane] . $position; # location for split bam files
 
