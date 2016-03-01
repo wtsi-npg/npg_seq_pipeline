@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
  
  - study-specific software stack for the analysis pipeline
+ - added new module for p4 stage1 analysis
 
 release 50.2
  - names of the pipeline daemon modules and scripts harmonised
