@@ -177,7 +177,7 @@ subtest 'failure to retrive lims data' => sub {
 };
 
 subtest 'retrieve lims data' => sub {
-  plan tests => 25;
+  plan tests => 28;
 
   my $runner;
   lives_ok { $runner = $package->new(
@@ -247,6 +247,15 @@ subtest 'retrieve lims data' => sub {
   is ($lims_data->{'id'}, 55, 'lims id is set');
   ok (!$lims_data->{'gclp'}, 'gclp flag is false');
   is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
+
+  $fc_row->update({'id_lims' => 'SSCAPE'});
+  $fc_row->update({'purpose' => 'qc'});
+  $lims_data = $runner->check_lims_link($test_run);
+  is ($lims_data->{'id'}, 55, 'lims id is set');
+  ok (!$lims_data->{'gclp'}, 'gclp flag is false');
+  is ($lims_data->{'qc_run'}, 1, 'qc run flag is set');
+
+
 };
 
 subtest 'generate command' => sub {
@@ -265,7 +274,7 @@ subtest 'generate command' => sub {
   my $perl_bin = $EXECUTABLE_NAME;
   $perl_bin =~ s/\/perl\Z//smx;
   my $path = join q[:], "${current_dir}/t", $perl_bin, $original_path;
-  my $command = q[/bin/true --verbose --job_priority 4 --runfolder_path t --id_flowcell_lims 55];
+  my $command = q[/bin/true --verbose --job_priority 4 --runfolder_path t --qc_run --id_flowcell_lims 55];
   is($runner->_generate_command($lims_data),
     qq[export PATH=${path}; $command],
     'command without changing software bundle');
