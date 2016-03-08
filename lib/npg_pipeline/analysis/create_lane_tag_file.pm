@@ -5,6 +5,7 @@ use Carp;
 use File::Spec::Functions;
 use List::Util qw(max min);
 use Readonly;
+use open q(:encoding(UTF8));
 
 use npg_pipeline::roles::business::base;
 
