@@ -6,6 +6,7 @@ use English qw{-no_match_vars};
 use Readonly;
 use File::Slurp;
 use JSON::XS;
+use open q(:encoding(UTF8));
 
 use st::api::lims;
 use npg_common::roles::software_location;
@@ -70,7 +71,7 @@ sub _command2submit {
   return  q{bsub -q } . $self->lsf_queue()
     .  q{ } . $self->ref_adapter_pre_exec_string()
     . qq{ $resources $required_job_completion -J $job_name -o $outfile}
-    .  q{ 'perl -Mstrict -MJSON -MFile::Slurp -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"'}
+    .  q{ 'perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"'}
     .  q{ }.(join q[/],$self->bam_basecall_path, $self->job_name_root).q{_$}.q{LSB_JOBID}
     .  q{ $}.q{LSB_JOBINDEX'} ;
 }
