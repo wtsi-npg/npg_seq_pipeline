@@ -13,7 +13,7 @@ my $dir = $util->temp_directory();
 $ENV{TEST_DIR} = $dir;
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/p4_stage1_analysis';
-#local $ENV{CLASSPATH} = q{t/bin/software/solexa/bin/aligners/illumina2bam/current};
+local $ENV{CLASSPATH} = q{t/bin/software/solexa/bin/aligners/illumina2bam/current};
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 
 use_ok('npg_pipeline::archive::file::generation::p4_stage1_analysis');
