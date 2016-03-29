@@ -1,0 +1,106 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use Log::Log4perl qw(:easy);
+
+use npg_pipeline::daemon::libmerge;
+
+our $VERSION = '0';
+
+Log::Log4perl->easy_init($INFO);
+
+npg_pipeline::daemon::libmerge->new_with_options()->loop();
+
+0;
+
+__END__
+
+=head1 NAME
+
+library_merging_runnner
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+Starts library merging pipeline for studies.
+
+=head1 USAGE
+
+library_merging_runner  [--conf_path /path/to/config/dir] --dry_run [--local_bin /library/merging/scripts/containing/bin]  --sleep_time 21600
+
+Configuration file library_merge.yml example:
+
+-run_dir: /path/to/study/subdir/location
+-software: /software/npg/$datestamp                #optional
+-study_name:SEQCAP_WGS_GDAP_Khoe-San
+ minimum_component_count: 12                       #optional default 6
+-study_name: 'IHTP_WGS_INTERVAL Cohort (15x)'
+
+=head1 REQUIRED ARGUMENTS
+
+=head1 OPTIONS
+
+=head1 EXIT STATUS
+
+=head1 SUBROUTINES/METHODS
+
+=head2 dry_run
+
+Dry run mode, the pipeline script is not called.
+
+=head2 conf_path
+
+An attribute inherited from npg_pipeline::roles::accessor.
+Path of the directory with the pipeline's configuration files. Defaults to
+data/config_files relative to the bin directory.
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item FindBin
+
+=item lib
+
+=item Log::Log4perl
+
+=item npg_pipeline::daemon::libmerge
+
+=back
+
+=head1 INCOMPATIBILITIES
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 AUTHOR
+
+Jillian Durham
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2016 Genome Research Limited
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
