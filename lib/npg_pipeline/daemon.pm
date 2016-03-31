@@ -34,6 +34,14 @@ Readonly::Array  my @GREEN_STAGING     =>
 Readonly::Scalar my $SLEEPY_TIME  => 900;
 Readonly::Scalar my $NO_LIMS_LINK => -1;
 
+has 'sleep_time' => (
+  isa        => q{Int},
+  is         => q{ro},
+  required   => 0,
+  default    => $SLEEPY_TIME,
+  documentation => "sleep interval, default $SLEEPY_TIME seconds",
+);
+
 has 'pipeline_script_name' => (
   isa        => q{Str},
   is         => q{ro},
@@ -275,6 +283,7 @@ sub run {
 sub loop {
   my $self = shift;
 
+  my $sleep = $self->sleep_time;
   my $class = ref $self;
   while (1) {
     try {
@@ -286,8 +295,8 @@ sub loop {
     } catch {
       $self->logger->warn(qq{Error in $class : $_} );
     };
-    $self->logger->info(qq{Going to sleep for $SLEEPY_TIME secs});
-    sleep $SLEEPY_TIME;
+    $self->logger->info(qq{Going to sleep for $sleep secs});
+    sleep $sleep;
   }
 
   return;
