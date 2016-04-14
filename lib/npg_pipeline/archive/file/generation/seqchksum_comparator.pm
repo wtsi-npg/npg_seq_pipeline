@@ -139,7 +139,7 @@ sub _compare_lane {
     }
   }
 
-  my $compare_cmd = q{diff -u <(grep '.all' } . $input_lane_seqchksum_file_name . q{) <(grep '.all' } . $lane_seqchksum_file_name . q{)};
+  my $compare_cmd = q{diff -u <(grep '.all' } . $input_lane_seqchksum_file_name . q{ | sort) <(grep '.all' } . $lane_seqchksum_file_name . q{ | sort)};
   $self->log($compare_cmd);
 
   my $compare_ret = system qq[/bin/bash -c "$compare_cmd"];
