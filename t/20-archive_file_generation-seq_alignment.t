@@ -123,7 +123,7 @@ my $rna_gen;
 
   my $required_job_completion = 55;
   my $mem = 32000;
-  my $expected = qq{bsub -q srpipeline -E 'npg_pipeline_preexec_references --repository $dir' -R 'select[mem>$mem] rusage[mem=$mem,nfs-sf3=4]' -M$mem -R 'span[hosts=1]'}.qq{ -n12,16 $required_job_completion -J 'seq_alignment_12597_2014[4000,4003]' -o $bc_path/archive/log/seq_alignment_12597_2014.%I.%J.out }.q('perl -Mstrict -MJSON -MFile::Slurp -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"' ) . $bc_path . q{/seq_alignment_12597_2014_$LSB_JOBID $LSB_JOBINDEX'}; 
+  my $expected = qq{bsub -q srpipeline -E 'npg_pipeline_preexec_references --repository $dir' -R 'select[mem>$mem] rusage[mem=$mem,nfs-sf3=4]' -M$mem -R 'span[hosts=1]'}.qq{ -n12,16 $required_job_completion -J 'seq_alignment_12597_2014[4000,4003]' -o $bc_path/archive/log/seq_alignment_12597_2014.%I.%J.out }.q('perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"' ) . $bc_path . q{/seq_alignment_12597_2014_$LSB_JOBID $LSB_JOBINDEX'}; 
 
   is($rna_gen->_command2submit($required_job_completion), $expected, 'command to submit is correct');
 

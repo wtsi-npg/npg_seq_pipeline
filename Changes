@@ -1,5 +1,10 @@
 LIST OF CHANGES
 ---------------
+ 
+release 50.3
+ - use 'purpose' field to decide if qc_run
+ - study-specific software stack for the analysis pipeline
+ - added new module for p4 stage1 analysis
 
 release 50.2
  - names of the pipeline daemon modules and scripts harmonised

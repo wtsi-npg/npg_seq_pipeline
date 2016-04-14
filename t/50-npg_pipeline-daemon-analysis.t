@@ -1,11 +1,12 @@
 use strict;
 use warnings;
-use Test::More tests => 62;
+use Test::More tests => 11;
 use Test::Exception;
 use Cwd;
 use File::Path qw{ make_path };
 use List::MoreUtils qw{ any };
 use Log::Log4perl qw{ :easy };
+use English qw{ -no_match_vars };
 
 use t::util;
 use t::dbic_util;
@@ -51,14 +52,16 @@ sub runfolder_path4run { return '/some/path' };
 
 package main;
 
-{
+subtest 'staging host matching' => sub {
+  plan tests => 26;
+
   my $path49 = '/{export,nfs}/sf49/ILorHSany_sf49/*/';
   my $path32 = '/{export,nfs}/sf32/ILorHSany_sf32/*/';
   my $runner;
   lives_ok { $runner = test_analysis_runner->new(
       npg_tracking_schema => $schema,
       iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
-  ) } q{object creation ok};
+  )} q{object creation ok};
   isa_ok($runner, q{test_analysis_runner}, q{$runner});
   is($runner->pipeline_script_name, $script_name, 'script name');
   ok(!$runner->dry_run, 'dry_run mode switched off by default');
@@ -68,8 +71,7 @@ package main;
   throws_ok { $runner->_generate_command( {
                      rf_path      => $rf_path,
                      job_priority => 50,
-                                       } )
-            } qr/Lims flowcell id is missing/,
+  }) } qr/Lims flowcell id is missing/,
     'non-gclp run and lims flowcell id is missing - error';
 
   like($runner->_generate_command( {
@@ -91,7 +93,7 @@ package main;
     job_priority => 50,
     gclp         => 1,
     id           => 22,
-  } ), qr/$command_start $rf_path --function_list gclp/,
+  }), qr/$command_start $rf_path --function_list gclp/,
     q{generated command is correct});
 
   ok($runner->green_host,'running on a host in a green datacentre');
@@ -125,12 +127,12 @@ package main;
   lives_ok { $runner = test_analysis_runner->new(
       npg_tracking_schema => $schema,
       iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
-  ) } q{object creation ok};
+  )} q{object creation ok};
   like($runner->_generate_command( {
     rf_path      => $rf_path,
     job_priority => 50,
     id           => 56,
-  } ), qr/$command_start $rf_path --id_flowcell_lims 56/,
+  }), qr/$command_start $rf_path --id_flowcell_lims 56/,
     q{generated command is correct});
   ok(!$runner->green_host, 'host is not in green datacentre');
   ok(!$runner->staging_host_match($path49), 'staging does not match host');
@@ -144,7 +146,7 @@ package main;
       iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
   );
   ok(!$runner->green_host, 'host is not in green datacentre');
-}
+};
 
 ########test class definition start########
 
@@ -158,7 +160,10 @@ sub runfolder_path4run { return '/some/path'; }
 ########test class definition end########
 
 package main;
-{
+
+subtest 'failure to retrive lims data' => sub {
+  plan tests => 2;
+
   local $ENV{PATH} = join q[:], $current_dir.'/t/bin/red', $ENV{PATH};
   my $runner = test_analysis_anotherrunner->new(
     pipeline_script_name => '/bin/true',
@@ -169,15 +174,16 @@ package main;
   lives_ok { $runner->run(); } 'one run is processed';
   is(scalar keys %{$runner->seen}, 0,
     'no lims link - run is not listed as seen');
-}
+};
 
-{
+subtest 'retrieve lims data' => sub {
+  plan tests => 28;
+
   my $runner;
   lives_ok { $runner = $package->new(
                npg_tracking_schema => $schema,
-               iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
-             );
-  } 'object created';
+               mlwh_schema         => $wh_schema,
+  )} 'object created';
 
   $test_run->update({'flowcell_id' => undef});
   throws_ok {$runner->check_lims_link($test_run)}
@@ -197,6 +203,7 @@ package main;
   is ($lims_data->{'id'}, '1234567891234', 'lims id');
   is ($lims_data->{'qc_run'}, 1, 'is qc run');
   ok(!$lims_data->{'gclp'}, 'gclp flag is false');
+  is_deeply($lims_data->{'studies'}, [], 'studies not retrieved');
 
   $test_run->update({'batch_id' => 55});
   is ($wh_schema->resultset('IseqFlowcell')->search({'flowcell_barcode' => $fc})->count,
@@ -206,7 +213,9 @@ package main;
     'non-qc run not in mlwh - error';
 
   $test_run->update({'batch_id' => undef});
-  my $fc_row = $wh_schema->resultset('IseqFlowcell')->search()->next;
+  my $rs = $wh_schema->resultset('IseqFlowcell')->search();
+  $rs->next;
+  my $fc_row = $rs->next;
   $fc_row->update({'flowcell_barcode' => $fc});
   is ($wh_schema->resultset('IseqFlowcell')->search({'flowcell_barcode' => $fc})->count,
     1, 'test prereq. - one row with this barcode in the lims table');
@@ -216,12 +225,14 @@ package main;
   is ($lims_data->{'id'}, undef, 'lims id is undefined');
   ok(!$lims_data->{'gclp'}, 'gclp flag is false');
   is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
+  is(join(q[:], @{$lims_data->{'studies'}}), '2967', 'studies retrieved');
 
   $fc_row->update({'id_lims' => 'C_GCLP'});
   $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, undef, 'lims id is undefined');
   is ($lims_data->{'gclp'}, 1, 'gclp flag is set to true');
   is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
+  is(join(q[:], @{$lims_data->{'studies'}}), '2967', 'studies retrieved');
 
   $test_run->update({'batch_id' => 55});
   $fc_row->update({'id_flowcell_lims' => 55});
@@ -229,15 +240,128 @@ package main;
   is ($lims_data->{'id'}, 55, 'lims id is set');
   is ($lims_data->{'gclp'}, 1, 'gclp flag is set to true');
   is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
+  is(join(q[:], @{$lims_data->{'studies'}}), '2967', 'studies retrieved');
 
   $fc_row->update({'id_lims' => 'SSCAPE'});
   $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, 55, 'lims id is set');
   ok (!$lims_data->{'gclp'}, 'gclp flag is false');
   is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
-}
 
-{
+  $fc_row->update({'id_lims' => 'SSCAPE'});
+  $fc_row->update({'purpose' => 'qc'});
+  $lims_data = $runner->check_lims_link($test_run);
+  is ($lims_data->{'id'}, 55, 'lims id is set');
+  ok (!$lims_data->{'gclp'}, 'gclp flag is false');
+  is ($lims_data->{'qc_run'}, 1, 'qc run flag is set');
+
+
+};
+
+subtest 'generate command' => sub {
+  plan tests => 2;
+
+  my $runner  = $package->new(
+               pipeline_script_name => '/bin/true',
+               npg_tracking_schema  => $schema,
+               mlwh_schema          => $wh_schema,
+  );
+  my $lims_data = $runner->check_lims_link($test_run);
+  $lims_data->{'job_priority'} = 4;
+  $lims_data->{'rf_path'} = 't';
+  $lims_data->{'software'} = q[];
+  my $original_path = $ENV{'PATH'};
+  my $perl_bin = $EXECUTABLE_NAME;
+  $perl_bin =~ s/\/perl\Z//smx;
+  my $path = join q[:], "${current_dir}/t", $perl_bin, $original_path;
+  my $command = q[/bin/true --verbose --job_priority 4 --runfolder_path t --qc_run --id_flowcell_lims 55];
+  is($runner->_generate_command($lims_data),
+    qq[export PATH=${path}; $command],
+    'command without changing software bundle');
+
+  $lims_data->{'software'} = q[t/data];
+  $path = join q[:], $perl_bin, $original_path;
+  is($runner->_generate_command($lims_data),
+    qq[export PERL5LIB=t/data/lib/perl5; export CLASSPATH=t/data/jars; export PATH=t/data/bin:${path}; $command],
+    'command with software bundle');
+};
+
+subtest 'retrieve study analysis configuration' => sub {
+  plan tests => 6;
+
+  my $d = npg_pipeline::daemon::analysis->new();
+  isa_ok( $d->daemon_conf(), q{HASH}, q{$} . qq{base->daemon_conf} );
+
+  $d = npg_pipeline::daemon::analysis->new(conf_path => $temp_directory);
+  is_deeply($d->study_analysis_conf(), {},
+    'no study analysis config file - empty array returned');
+
+  $d = npg_pipeline::daemon::analysis->new(conf_path => 't/data/study_analysis_conf');
+  my $conf = $d->study_analysis_conf();
+  isa_ok($conf, 'HASH', 'HASH of study configurations');
+  is($conf->{'gclp_all_studies'}, 't/data', 'dated directory name for gclp runs');
+  is($conf->{'12345'}, 't', 'dated directory name for study 12345');
+  is($conf->{'XY345'}, '/some/dir', 'dated directory name for study 12345');
+};
+
+subtest 'get software bundle' => sub {
+  plan tests => 11;
+
+  my $conf_file = join q[/], $temp_directory, 'study_conf.yml';
+  open my $fh, '>', $conf_file;
+  print $fh "---\n";
+  print $fh "12345: t\n";
+  close $fh;
+
+  my $runner  = $package->new(
+    pipeline_script_name => '/bin/true',
+    npg_tracking_schema  => $schema,
+    mlwh_schema          => $wh_schema,
+    conf_path            => $conf_file,
+  );
+
+  throws_ok { $runner->_software_bundle() }
+    qr/GCLP flag is not defined/,
+    'error if gclp flag is not defined';
+  throws_ok { $runner->_software_bundle(1) }
+    qr/Study ids are missing/,
+    'error if no study array is given';
+  lives_ok { $runner->_software_bundle(0, []) }
+    'no error if study array is empty';
+  throws_ok { $runner->_software_bundle(1, []) }
+    qr/GCLP run needs explicit software bundle/,
+    'GCLP run: no study info - error';
+  throws_ok { $runner->_software_bundle(1, [qw/3/]) }
+    qr/GCLP run needs explicit software bundle/,
+    'no GCLP conf - error';
+
+  $runner  = $package->new(
+    pipeline_script_name => '/bin/true',
+    npg_tracking_schema  => $schema,
+    mlwh_schema          => $wh_schema,
+    conf_path            => 't/data/study_analysis_conf',
+  );
+
+  throws_ok { $runner->_software_bundle(0, [qw/3 12345/]) }
+    qr/Multiple software bundles for a run/,
+    'Software and no software - error';
+  throws_ok { $runner->_software_bundle(0, [qw/12345 12346/]) }
+    qr/Multiple software bundles for a run/,
+    'Multiple software bundles - error';
+  throws_ok { $runner->_software_bundle(0, [qw/XY345/]) }
+    qr/Directory \'\/some\/dir\' does not exist/,
+    'directory does not exist - error';
+
+  is($runner->_software_bundle(0, []), q[], 'no study info - no path');
+  is($runner->_software_bundle(0, [qw/12346 12347/]),
+    "${current_dir}/t/data/cache", 'study analysis directory retrieved');
+  is($runner->_software_bundle(1, [qw/12346 12347/]),
+    "${current_dir}/t/data", 'GCLP study analysis directory retrieved');  
+};
+
+subtest 'mock continious running' => sub {
+  plan tests => 6;
+
   local $ENV{PATH} = join q[:], $current_dir.'/t/bin/red', $ENV{PATH};
   my $runner = test_analysis_runner->new(
     pipeline_script_name => '/bin/true',
@@ -269,9 +393,11 @@ package main;
   } q{no croak running (dry) through twice};
 
   is (join(q[ ],sort keys %{$runner->seen}), '1234', 'correct list of seen runs');
-}
+};
 
-{
+subtest 'compute runfolder path' => sub {
+  plan tests => 1;
+
   my $temp = t::util->new()->temp_directory();
   my $name = '150227_HS35_1234_A_HBFJ3ADXX';
   my $rf = join q[/], $temp, 'sf33/ILorHSany_sf33/outgoing', $name;
@@ -287,19 +413,6 @@ package main;
                iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
              );
   is( $runner->runfolder_path4run(1234), $rf, 'runfolder path is correct');
-}
-
-{
-
-  my $d = npg_pipeline::daemon::analysis->new();
-  isa_ok( $d->daemon_conf(), q{HASH}, q{$} . qq{base->daemon_conf} );
-
-  $d = npg_pipeline::daemon::analysis->new(conf_path => $temp_directory);
-  is_deeply($d->study_analysis_conf(), [],
-    'no study analysis config file - empty array returned');
-
-  $d = npg_pipeline::daemon::analysis->new(conf_path => 't/data/study_analysis_conf');
-  isa_ok($d->study_analysis_conf(), 'ARRAY', 'array of study configurations');
-}
+};
 
 1;

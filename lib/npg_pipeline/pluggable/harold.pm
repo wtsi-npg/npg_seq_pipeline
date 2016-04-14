@@ -216,7 +216,9 @@ sub run_spider {
     'set_env_vars'     => 1,
     'cache_location'   => $self->analysis_path,
     'lims_driver_type' => $self->qc_run ?
-                            npg_pipeline::cache->warehouse_driver_name :
+                            ($self->is_qc_run($self->id_flowcell_lims) ? npg_pipeline::cache->warehouse_driver_name
+                                                                       : npg_pipeline::cache->mlwarehouse_driver_name
+                            ):
                             npg_pipeline::cache->mlwarehouse_driver_name,
     'id_flowcell_lims' => $self->id_flowcell_lims,
     'flowcell_barcode' => $self->flowcell_id
