@@ -186,9 +186,9 @@ sub drop_temp_part_from_paths {
   my ( $self, $path ) = @_;
   my $temp_dir = $self->temp_directory();
   my $cwd = $self->cwd();
-  $path =~ s{$temp_dir}{}gxms;
-  $path =~ s{$cwd/}{}gxms;
-  $path =~ s{$cwd}{}gxms;
+  $path =~ s{\Q$temp_dir\E}{}gxms;
+  $path =~ s{\Q$cwd/\E}{}gxms;
+  $path =~ s{\Q$cwd\E}{}gxms;
   return $path;
 }
 
