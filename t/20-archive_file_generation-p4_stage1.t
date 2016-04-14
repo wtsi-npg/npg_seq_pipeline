@@ -65,7 +65,7 @@ my $current = getcwd();
   $bsub_command = $util->drop_temp_part_from_paths($bsub_command);
 
   my $bc_path = q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls};
-  my $expected_cmd = q{bsub -q srpipeline -E 'npg_pipeline_preexec_references' -R 'select[mem>12000] rusage[mem=12000,nfs_12=5]' -M12000 -R 'span[hosts=1]' -n8,16 -w'done(123) && done(321)' -J 'p4_stage1_analysis_1234_20090709-123456[1]' -o } . $bc_path . q{/log/p4_stage1_analysis_1234_20090709-123456.%I.%J.out 'perl -Mstrict -MJSON -MFile::Slurp -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"' } . $bc_path . q{/p4_stage1_analysis_1234_20090709-123456_$LSB_JOBID $LSB_JOBINDEX'};
+  my $expected_cmd = q{bsub -q srpipeline -E 'npg_pipeline_preexec_references' -R 'select[mem>12000] rusage[mem=12000,nfs_12=5]' -M12000 -R 'span[hosts=1]' -n8,16 -w'done(123) && done(321)' -J 'p4_stage1_analysis_1234_20090709-123456[1]' -o } . $bc_path . q{/log/p4_stage1_analysis_1234_20090709-123456.%I.%J.out 'perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"' } . $bc_path . q{/p4_stage1_analysis_1234_20090709-123456_$LSB_JOBID $LSB_JOBINDEX'};
 
   eq_or_diff([split" ",$bsub_command], [split" ",$expected_cmd], 'correct bsub command for lane 8');
 }
