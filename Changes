@@ -1,6 +1,13 @@
 LIST OF CHANGES
 ---------------
- 
+
+ - in archival function order
+   move the ml_warehouse loader upstream of
+     iRODS loader for data files so that the former can use manual
+     qc outcomes from the warehouse
+   move the old warehouse loader upstream so that it runs while the
+     run is still in the analysis folder, meaning that the job's
+     logs are not lost
 release 50.3
  - use 'purpose' field to decide if qc_run
  - study-specific software stack for the analysis pipeline
