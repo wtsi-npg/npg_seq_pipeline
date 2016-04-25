@@ -65,6 +65,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
     qc_gc_fraction
     qc_ref_match
     seq_alignment
+    update_ml_warehouse
     bam_cluster_counter_check
     seqchksum_comparator
     qc_gc_bias
