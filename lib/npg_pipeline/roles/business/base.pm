@@ -442,6 +442,20 @@ sub fq_filename {
     defined $tag_index ? "#$tag_index" : q[];
 }
 
+=head2 path_in_outgoing
+
+Given a path in analysis directory changes it to outgoing directory.
+
+=cut
+
+sub path_in_outgoing {
+  my ($self, $path) = @_;
+  if ($path) {
+    $path =~ s{/analysis/}{/outgoing/}xms;
+  }
+  return $path;
+}
+
 1;
 __END__
 

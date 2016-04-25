@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 17;
+use Test::More tests => 19;
 use Test::Deep;
 use Test::Exception;
 use Cwd;
@@ -53,19 +53,40 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
 
   my $timestamp = $post_qc_review->timestamp;
   my $recalibrated_path = $post_qc_review->recalibrated_path();
-  my $log_dir = $post_qc_review->make_log_dir( $recalibrated_path );
-  my $unset_string = 'unset NPG_WEBSERVICE_CACHE_DIR; unset NPG_CACHED_SAMPLESHEET_FILE;';
-  my $expected = q[bsub -q lowload 50 -J warehouse_loader_1234_post_qc_review ] .
-                qq[-o $log_dir/warehouse_loader_1234_post_qc_review_] . $timestamp . 
-                qq[.out '$unset_string warehouse_loader --verbose --id_run 1234'];
-  is($post_qc_review->_update_warehouse_command(50,'warehouse_loader', $unset_string),
-    $expected, 'update warehouse command');
+  my $log_dir = $post_qc_review->make_log_dir($recalibrated_path);
+  my $log_dir_in_outgoing = $log_dir;
+  $log_dir_in_outgoing =~ s{/analysis/}{/outgoing/}smx;
+  my $job_name = 'warehouse_loader_1234_post_qc_review';
+  my $unset_string = 'unset NPG_WEBSERVICE_CACHE_DIR;unset NPG_CACHED_SAMPLESHEET_FILE;';
+  my $prefix = qq[bsub -q lowload 50 -J $job_name ] .
+    qq[-o $log_dir/${job_name}_${timestamp}.out];
+  my $command = qq['${unset_string}warehouse_loader --verbose --id_run 1234'];
+  is($post_qc_review->_update_warehouse_command('warehouse_loader', (50)),
+    qq[$prefix  $command], 'update warehouse command');
+  
+  $job_name .= '_postqccomplete';
+  $prefix = qq[bsub -q lowload 50 -J $job_name ] .
+    qq[-o $log_dir_in_outgoing/${job_name}_${timestamp}.out];
+  my $preexec = qq(-E "[ -d '${log_dir_in_outgoing}' ]");
+  is($post_qc_review->_update_warehouse_command(
+    'warehouse_loader', (50, {}, {'post_qc_complete' => 1})),
+    join(q[ ],$prefix,$preexec,$command),
+    'update warehouse command with preexec and change to outgoing');
 
-  $expected = q[bsub -q lowload 50 -J npg_runs2mlwarehouse_1234_post_qc_review ] .
-             qq[-o $log_dir/npg_runs2mlwarehouse_1234_post_qc_review_] . $timestamp . 
-              q[.out 'npg_runs2mlwarehouse --verbose --id_run 1234'];
-  is($post_qc_review->_update_warehouse_command(50,'npg_runs2mlwarehouse'),
-    $expected, 'update ml_warehouse command');
+  $job_name = 'npg_runs2mlwarehouse_1234_post_qc_review';
+  $prefix = qq[bsub -q lowload 50 -J $job_name ] .
+            qq[-o $log_dir/${job_name}_${timestamp}.out];
+  $command = q['npg_runs2mlwarehouse --verbose --id_run 1234'];
+  is($post_qc_review->_update_warehouse_command('npg_runs2mlwarehouse', (50)),
+    qq[$prefix  $command], 'update ml_warehouse command');
+
+  $job_name .= '_postqccomplete';
+  $prefix = qq[bsub -q lowload 50 -J $job_name ] .
+            qq[-o $log_dir_in_outgoing/${job_name}_${timestamp}.out];
+  is($post_qc_review->_update_warehouse_command(
+    'npg_runs2mlwarehouse', (50, {'post_qc_complete' => 1})),
+    join(q[ ],$prefix,$preexec,$command),
+    'update ml_warehouse command with preexec and change to outgoing');
 
   $log_dir = $post_qc_review->make_log_dir( $runfolder_path );
   is($post_qc_review->_interop_command, qq[bsub -q lowload  -J interop_1234_post_qc_review -R 'rusage[nfs_12=1,seq_irods=15]' -o $log_dir/interop_1234_post_qc_review_] . $timestamp . qq[.out 'irods_interop_loader.pl --id_run 1234 --runfolder_path $runfolder_path'], 'irods_interop_loader.pl command');

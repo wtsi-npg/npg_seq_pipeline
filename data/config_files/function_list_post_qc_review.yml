@@ -6,7 +6,8 @@
 - upload_fastqcheck_to_qc_database
 - upload_illumina_analysis_to_qc_database
 - upload_auto_qc_to_qc_database
-- update_warehouse
 - run_run_archived
 - run_qc_complete
+- update_ml_warehouse_post_qc_complete
+- update_warehouse_post_qc_complete
 - archive_logs
