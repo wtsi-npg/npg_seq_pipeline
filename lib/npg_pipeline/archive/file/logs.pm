@@ -23,14 +23,6 @@ sub submit_to_lsf {
   return ($job_id);
 }
 
-sub _outgoing_path {
-  my $path = shift;
-  if ($path) {
-    $path =~ s/\/analysis\//\/outgoing\//xms;
-  }
-  return $path;
-}
-
 sub _generate_bsub_command {
   my ($self, $arg_refs) = @_;
 
@@ -44,7 +36,7 @@ sub _generate_bsub_command {
   my $job_name = $job_name_prefix . q{_} . $timestamp;
 
   my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
-  $location_of_logs = _outgoing_path($location_of_logs);
+  $location_of_logs = $self->path_in_outgoing($location_of_logs);
   my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name };
 
   $bsub_command .=  ( $self->fs_resource_string( {
@@ -54,7 +46,7 @@ sub _generate_bsub_command {
 
   $bsub_command .=  q{-o } . $location_of_logs . qq{/$job_name.out };
 
-  my $future_path = _outgoing_path($self->runfolder_path());
+  my $future_path = $self->path_in_outgoing($self->runfolder_path());
   $bsub_command .= qq{-E "[ -d '$future_path' ]" };
 
   $bsub_command .=  q{'};
