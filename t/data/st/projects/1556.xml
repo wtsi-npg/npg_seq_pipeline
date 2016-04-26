@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project api_version="0.6">
+  <id>1556</id>
+  <name>Team 51 - Development</name>
+  <approved>true</approved>
+  <state>active</state>
+  <descriptors>
+    <descriptor>
+      <name>Funding comments</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Collaborators</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>External funding source</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Sequencing budget cost centre</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Project funding model</name>
+      <value>Internal</value>
+    </descriptor>
+    <descriptor>
+      <name>Genotyping committee Tracking ID</name>
+      <value></value>
+    </descriptor>
+  </descriptors>
+</project>

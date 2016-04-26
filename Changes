@@ -1,7 +1,9 @@
 LIST OF CHANGES
 ---------------
 
- - in both thhe analysis and archival function order have an extra
+ - provide appropiately changed second index read tags for ordered flowcell
+   instruments (typically rev. complement)
+ - in both the analysis and archival function order have an extra
    ml warehouse loader job to set the stage for loading to iRODS
  - warehouse loaders that are run after setting qc complete date
    wait for the runfolder to be moved to outgoing, their log location
