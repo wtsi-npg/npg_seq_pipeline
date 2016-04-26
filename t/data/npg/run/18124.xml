@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="18124" batch_id="42225" id_instrument="130" expected_cycle_count="318" actual_cycle_count="318" priority="1" id_run_pair="0" is_paired="0" team="RAD" id_instrument_format="12" flowcell_id="HG2V2CCXX" folder_name="151104_HX9_18124_A_HG2V2CCXX" folder_path_glob="/{export,nfs}/sf26/ILorHSany_sf26/*/" name="HX9_18124" loader="ls7" loading_date="2015-11-04" run_folder="151104_HX9_18124_A_HG2V2CCXX">
+ <instrument id_instrument="130" name="HX9" id_instrument_format="12" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="109889" id_run="18124" tile_count="96" tracks="4" position="1" />
+<run_lane id_run_lane="109890" id_run="18124" tile_count="96" tracks="4" position="2" />
+<run_lane id_run_lane="109891" id_run="18124" tile_count="96" tracks="4" position="3" />
+<run_lane id_run_lane="109892" id_run="18124" tile_count="96" tracks="4" position="4" />
+<run_lane id_run_lane="109893" id_run="18124" tile_count="96" tracks="4" position="5" />
+<run_lane id_run_lane="109894" id_run="18124" tile_count="96" tracks="4" position="6" />
+<run_lane id_run_lane="109895" id_run="18124" tile_count="96" tracks="4" position="7" />
+<run_lane id_run_lane="109896" id_run="18124" tile_count="96" tracks="4" position="8" />
+</run_lanes>
+ <current_run_status id_run_status="245979" id_run="18124" date="2015-11-29 14:10:05" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_statuses>
+ <run_status id_run_status="245979" id_run="18124" date="2015-11-29 14:10:05" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_status id_run_status="245978" id_run="18124" date="2015-11-29 14:10:04" id_run_status_dict="12" id_user="7" username="pipeline" iscurrent="0" description="run archived" />
+ <run_status id_run_status="245975" id_run="18124" date="2015-11-29 14:06:44" id_run_status_dict="18" id_user="7" username="pipeline" iscurrent="0" description="archival in progress" />
+ <run_status id_run_status="245972" id_run="18124" date="2015-11-29 14:00:07" id_run_status_dict="17" id_user="7" username="pipeline" iscurrent="0" description="archival pending" />
+ <run_status id_run_status="244007" id_run="18124" date="2015-11-10 12:38:19" id_run_status_dict="19" id_user="7" username="pipeline" iscurrent="0" description="qc review pending" />
+ <run_status id_run_status="244006" id_run="18124" date="2015-11-10 12:37:47" id_run_status_dict="9" id_user="7" username="pipeline" iscurrent="0" description="analysis complete" />
+ <run_status id_run_status="243859" id_run="18124" date="2015-11-09 08:24:56" id_run_status_dict="24" id_user="7" username="pipeline" iscurrent="0" description="secondary analysis in progress" />
+ <run_status id_run_status="243811" id_run="18124" date="2015-11-08 20:04:56" id_run_status_dict="7" id_user="7" username="pipeline" iscurrent="0" description="analysis in progress" />
+ <run_status id_run_status="243810" id_run="18124" date="2015-11-08 19:59:58" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="0" description="analysis pending" />
+ <run_status id_run_status="243809" id_run="18124" date="2015-11-08 19:59:57" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="243808" id_run="18124" date="2015-11-08 19:38:05" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete" />
+ <run_status id_run_status="243402" id_run="18124" date="2015-11-04 16:56:17" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="243310" id_run="18124" date="2015-11-04 09:38:59" id_run_status_dict="1" id_user="77" username="pipeline" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ <annotation id_run_annotation="70973" id_run="18124" id_annotation="71442" date="2015-11-05 09:23:28" id_user="52" username="jb2" comment="r+d test run ( dual index)
+ Poor bottom surface, with bad intensities. Overall pf at below 40% as a result" attachment_name="" run_current_ok="" current_cycle="82" />
+ </annotations>
+ <tags>
+   <tag id_tag="22" description="fc_slotA" />
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>

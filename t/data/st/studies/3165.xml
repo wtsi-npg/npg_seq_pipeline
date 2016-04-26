@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<study api_version="0.6">
+  <id>3165</id>
+  <name>HX Test Plan</name>
+  <active>true</active>
+  <user_id>141</user_id>
+  <!-- Family has been deprecated -->
+  <family_id></family_id>
+  <created_at>2014-06-05 14:16:43 +0100</created_at>
+  <updated_at>2015-10-07 13:08:04 +0100</updated_at>
+  <descriptors>
+    <descriptor>
+      <name>Prelim ID</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Study description</name>
+      <value>Development of sequencing and library prep protocols using Human DNA </value>
+    </descriptor>
+    <descriptor>
+      <name>Does this study contain samples that are contaminated with human DNA which must be removed prior to analysis?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>Does this study require the removal of X chromosome and autosome sequence?</name>
+      <value>No</value>
+    </descriptor>
+    <descriptor>
+      <name>Does this study require y chromosome data to be separated from x and autosomal data before archival?</name>
+      <value>false</value>
+    </descriptor>
+    <descriptor>
+      <name>ENA Project ID</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Abstract</name>
+      <value>Development of sequencing and library prep protocols using Human DNA</value>
+    </descriptor>
+    <descriptor>
+      <name>Title</name>
+      <value>HX Test Plan</value>
+    </descriptor>
+    <descriptor>
+      <name>ENA Study Accession Number</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Study Visibility</name>
+      <value>Hold</value>
+    </descriptor>
+    <descriptor>
+      <name>Do any of the samples in this study contain human DNA?</name>
+      <value>Yes</value>
+    </descriptor>
+    <descriptor>
+      <name>Are all the samples to be used in this study commercially available, unlinked anonymised cell-lines?</name>
+      <value>Yes</value>
+    </descriptor>
+    <descriptor>
+      <name>Study name abbreviation</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>What is the data release strategy for this study?</name>
+      <value>not applicable</value>
+    </descriptor>
+    <descriptor>
+      <name>Will you be using WTSI's standard access agreement?</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>How is the data release to be timed?</name>
+      <value>never</value>
+    </descriptor>
+    <descriptor>
+      <name>Reason for delaying release</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Delay for</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Alignments in BAM</name>
+      <value>true</value>
+    </descriptor>
+    <descriptor>
+      <name>Please explain the reason for delaying release</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Comment regarding data release timing and approval</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Policy Url</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Policy title</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>EGA DAC Accession Number</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>EGA Policy Accession Number</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>ArrayExpress Accession Number</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Has the delay period been approved by the data sharing committee for this project?</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>What is the reason for preventing data release?</name>
+      <value>data validity</value>
+    </descriptor>
+    <descriptor>
+      <name>Has this been approved?</name>
+      <value>Yes</value>
+    </descriptor>
+    <descriptor>
+      <name>Comment regarding prevention of data release and approval</name>
+      <value>Development of sequencing and library prep protocols using Human DNA</value>
+    </descriptor>
+    <descriptor>
+      <name>Data access group</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>SNP study ID</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>SNP parent study ID</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Number of gigabases per sample (minimum 0.15)</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>HMDMC approval number</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Study Type</name>
+      <value>Whole Genome Sequencing</value>
+    </descriptor>
+    <descriptor>
+      <name>What sort of study is this?</name>
+      <value>genomic sequencing</value>
+    </descriptor>
+    <descriptor>
+      <name>Reference Genome</name>
+      <value></value>
+    </descriptor>
+    <descriptor>
+      <name>Faculty Sponsor</name>
+      <value>None</value>
+    </descriptor>
+  </descriptors>
+</study>
