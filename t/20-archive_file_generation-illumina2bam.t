@@ -23,7 +23,8 @@ my $current = getcwd();
   my $new = "$dir/1234_samplesheet.csv";
   copy 't/data/illumina2bam/1234_samplesheet.csv', $new;
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $new;
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
+  `cp -R t/data/illumina2bam/npg $dir`;
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $dir;
 
   $util->create_analysis();
   my $runfolder = $util->analysis_runfolder_path() . '/';
