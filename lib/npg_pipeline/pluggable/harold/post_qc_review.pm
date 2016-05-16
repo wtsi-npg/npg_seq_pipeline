@@ -151,7 +151,7 @@ sub update_ml_warehouse {
     return ();
   }
   return $self->submit_bsub_command(
-    $self->_update_warehouse_command('npg_runs2mlwarehouse'), @args);
+    $self->_update_warehouse_command('npg_runs2mlwarehouse', @args));
 }
 
 =head2 update_ml_warehouse_post_qc_complete

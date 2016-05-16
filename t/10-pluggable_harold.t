@@ -174,7 +174,7 @@ $util->set_staging_analysis_area({with_latest_summary => 1});
       no_bsub => 1,
       repository => q{t/data/sequence},
       id_flowcell_lims => 2015,
-      spider           => 1,
+      spider           => 0,
     );
   } q{no croak on new creation};
   mkdir $qc->archive_path;
