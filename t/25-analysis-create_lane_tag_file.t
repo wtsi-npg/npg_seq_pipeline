@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 52;
+use Test::More tests => 56;
 use Test::Exception;
 use File::Slurp;
 use File::Temp qw(tempdir);
@@ -182,8 +182,6 @@ my $dir = tempdir( CLEANUP => 1 );
   my $file_contents;
   lives_ok {$file_contents = read_file($tag_list);} 'reading tag list file';
   my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATCACG\t1\t214599\tYeast\tRapid high-resolution QTL mapping in yeast: Sequencing DNA from an entire pool of segregants before and after a selection step to map alleles responsible for increased growth in a restrictive condition.\nCGATGT\t2\t214599\tYeast\tRapid high-resolution QTL mapping in yeast: Sequencing DNA from an entire pool of segregants before and after a selection step to map alleles responsible for increased growth in a restrictive condition.];
-  my @expected=split("", $expected);
-  my @file_contents=split("", $file_contents);
   is($file_contents, $expected, 'tag list file contents as expected');
 
   my $tags_length_checked;
@@ -296,5 +294,26 @@ my $dir = tempdir( CLEANUP => 1 );
   } qr{AAAAAC:AAAAA:AAAAA:AAAA}, q{3 different lengths};
 }
 
+{
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
+  my $lims = st::api::lims->new(id_run => 18124, batch_id=>42225)->children_ia;
+  my $create_lane  = npg_pipeline::analysis::create_lane_tag_file->new(
+      lane_lims     => $lims->{1},
+      index_length => 16,
+      location     => $dir,
+      hiseqx       => 1,
+  );
+
+  my $tag_list;
+  lives_ok {
+    $tag_list = $create_lane->generate();
+  } q{hiseqx dual index no croak running generate() for batch 42225};
+
+  is($tag_list, "$dir/lane_1.taglist", 'hiseqx dual index tag list file path');
+  my $file_contents;
+  lives_ok {$file_contents = read_file($tag_list);} 'hiseqx dual index reading tag list file';
+  my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACTCGAGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACGCAAGATCTCG\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
+  is($file_contents, $expected, 'hiseqx dual index tag list file contents as expected');
+}
 1;
 

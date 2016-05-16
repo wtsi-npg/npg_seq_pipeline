@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<batch>
+  <id>42225</id>
+  <status>released</status>
+  <lanes>
+    <lane position="1" id="15174700" priority="0">
+      <pool id="15144165" name="" request_id="9410424" qc_state="">
+        <sample sample_id="2456181" library_id="15144164" library_name="" library_type="standard" study_id="3165" project_id="1556" consent_withdrawn="false">
+          <tag tag_id="2226">
+            <index>1</index>
+            <expected_sequence>ATTACTCG</expected_sequence>
+            <tag_group_id>37</tag_group_id>
+          </tag>
+          <tag tag2_id="2227">
+            <index>1</index>
+            <expected_sequence>TATAGCCT</expected_sequence>
+            <tag_group_id>38</tag_group_id>
+          </tag>
+          <insert_size from="350" to="450"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="14890483">
+        <sample sample_id="1255141" library_id="12172503" library_name="PhiXBPS24Oct14" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="3906">
+            <index>888</index>
+            <expected_sequence>ACAACGCAATC</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="2" id="15174701" priority="0">
+      <pool id="15144165" name="" request_id="9410425" qc_state="">
+        <sample sample_id="2456181" library_id="15144164" library_name="" library_type="standard" study_id="3165" project_id="1556" consent_withdrawn="false">
+          <tag tag_id="2226">
+            <index>1</index>
+            <expected_sequence>ATTACTCG</expected_sequence>
+            <tag_group_id>37</tag_group_id>
+          </tag>
+          <tag tag2_id="2227">
+            <index>1</index>
+            <expected_sequence>TATAGCCT</expected_sequence>
+            <tag_group_id>38</tag_group_id>
+          </tag>
+          <insert_size from="350" to="450"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="14890483">
+        <sample sample_id="1255141" library_id="12172503" library_name="PhiXBPS24Oct14" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="3906">
+            <index>888</index>
+            <expected_sequence>ACAACGCAATC</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="3" id="15174702" priority="0">
+      <pool id="15144165" name="" request_id="9410426" qc_state="">
+        <sample sample_id="2456181" library_id="15144164" library_name="" library_type="standard" study_id="3165" project_id="1556" consent_withdrawn="false">
+          <tag tag_id="2226">
+            <index>1</index>
+            <expected_sequence>ATTACTCG</expected_sequence>
+            <tag_group_id>37</tag_group_id>
+          </tag>
+          <tag tag2_id="2227">
+            <index>1</index>
+            <expected_sequence>TATAGCCT</expected_sequence>
+            <tag_group_id>38</tag_group_id>
+          </tag>
+          <insert_size from="350" to="450"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="14890483">
+        <sample sample_id="1255141" library_id="12172503" library_name="PhiXBPS24Oct14" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="3906">
+            <index>888</index>
+            <expected_sequence>ACAACGCAATC</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="4" id="15174703" priority="0">
+      <pool id="15144165" name="" request_id="9410427" qc_state="">
+        <sample sample_id="2456181" library_id="15144164" library_name="" library_type="standard" study_id="3165" project_id="1556" consent_withdrawn="false">
+          <tag tag_id="2226">
+            <index>1</index>
+            <expected_sequence>ATTACTCG</expected_sequence>
+            <tag_group_id>37</tag_group_id>
+          </tag>
+          <tag tag2_id="2227">
+            <index>1</index>
+            <expected_sequence>TATAGCCT</expected_sequence>
+            <tag_group_id>38</tag_group_id>
+          </tag>
+          <insert_size from="350" to="450"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="14890483">
+        <sample sample_id="1255141" library_id="12172503" library_name="PhiXBPS24Oct14" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="3906">
+            <index>888</index>
+            <expected_sequence>ACAACGCAATC</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="5" id="15174704" priority="0">
+      <pool id="15144165" name="" request_id="9410428" qc_state="">
+        <sample sample_id="2456181" library_id="15144164" library_name="" library_type="standard" study_id="3165" project_id="1556" consent_withdrawn="false">
+          <tag tag_id="2226">
+            <index>1</index>
+            <expected_sequence>ATTACTCG</expected_sequence>
+            <tag_group_id>37</tag_group_id>
+          </tag>
+          <tag tag2_id="2227">
+            <index>1</index>
+            <expected_sequence>TATAGCCT</expected_sequence>
+            <tag_group_id>38</tag_group_id>
+          </tag>
+          <insert_size from="350" to="450"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="14890483">
+        <sample sample_id="1255141" library_id="12172503" library_name="PhiXBPS24Oct14" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="3906">
+            <index>888</index>
+            <expected_sequence>ACAACGCAATC</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="6" id="15174705" priority="0">
+      <pool id="15144165" name="" request_id="9410429" qc_state="">
+        <sample sample_id="2456181" library_id="15144164" library_name="" library_type="standard" study_id="3165" project_id="1556" consent_withdrawn="false">
+          <tag tag_id="2226">
+            <index>1</index>
+            <expected_sequence>ATTACTCG</expected_sequence>
+            <tag_group_id>37</tag_group_id>
+          </tag>
+          <tag tag2_id="2227">
+            <index>1</index>
+            <expected_sequence>TATAGCCT</expected_sequence>
+            <tag_group_id>38</tag_group_id>
+          </tag>
+          <insert_size from="350" to="450"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="14890483">
+        <sample sample_id="1255141" library_id="12172503" library_name="PhiXBPS24Oct14" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="3906">
+            <index>888</index>
+            <expected_sequence>ACAACGCAATC</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="7" id="15174706" priority="0">
+      <pool id="15144165" name="" request_id="9410430" qc_state="">
+        <sample sample_id="2456181" library_id="15144164" library_name="" library_type="standard" study_id="3165" project_id="1556" consent_withdrawn="false">
+          <tag tag_id="2226">
+            <index>1</index>
+            <expected_sequence>ATTACTCG</expected_sequence>
+            <tag_group_id>37</tag_group_id>
+          </tag>
+          <tag tag2_id="2227">
+            <index>1</index>
+            <expected_sequence>TATAGCCT</expected_sequence>
+            <tag_group_id>38</tag_group_id>
+          </tag>
+          <insert_size from="350" to="450"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="14890483">
+        <sample sample_id="1255141" library_id="12172503" library_name="PhiXBPS24Oct14" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="3906">
+            <index>888</index>
+            <expected_sequence>ACAACGCAATC</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+    <lane position="8" id="15174707" priority="0">
+      <pool id="15144165" name="" request_id="9410431" qc_state="">
+        <sample sample_id="2456181" library_id="15144164" library_name="" library_type="standard" study_id="3165" project_id="1556" consent_withdrawn="false">
+          <tag tag_id="2226">
+            <index>1</index>
+            <expected_sequence>ATTACTCG</expected_sequence>
+            <tag_group_id>37</tag_group_id>
+          </tag>
+          <tag tag2_id="2227">
+            <index>1</index>
+            <expected_sequence>TATAGCCT</expected_sequence>
+            <tag_group_id>38</tag_group_id>
+          </tag>
+          <insert_size from="350" to="450"/>
+        </sample>
+      </pool>
+      <hyb_buffer id="14890483">
+        <sample sample_id="1255141" library_id="12172503" library_name="PhiXBPS24Oct14" library_type="" study_id="198" project_id="" consent_withdrawn="false">
+          <tag tag_id="3906">
+            <index>888</index>
+            <expected_sequence>ACAACGCAATC</expected_sequence>
+            <tag_group_id>42</tag_group_id>
+          </tag>
+        </sample>
+      </hyb_buffer>
+    </lane>
+  </lanes>
+</batch>

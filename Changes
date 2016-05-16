@@ -1,6 +1,16 @@
 LIST OF CHANGES
 ---------------
- 
+
+release 51.0
+ - use npg_irods npg_publish_illumina_run.pl in place of data_handling irods_bam_loader.pl
+ - provide appropiately changed second index read tags for ordered flowcell
+   instruments (typically rev. complement) e.g. HiSeqX
+ - in both the analysis and archival function order have an extra
+   ml warehouse loader job to set the stage for loading to iRODS
+ - warehouse loaders that are run after setting qc complete date
+   wait for the runfolder to be moved to outgoing, their log location
+   is updated accordingly
+
 release 50.3
  - use 'purpose' field to decide if qc_run
  - study-specific software stack for the analysis pipeline

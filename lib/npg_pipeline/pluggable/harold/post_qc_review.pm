@@ -123,12 +123,20 @@ sub update_warehouse {
     $self->log(q{Update to warehouse is switched off.});
     return ();
   }
-  my $required_job_completion = shift @args;
-  # Currently, we nees pool library name and link to plexes in SeqQC.
-  # Therefore, we need to run live.
-  my $command = join q[ ], map {q[unset ] . $_ . q[;]} npg_pipeline::cache->env_vars;
-  $command = $self->_update_warehouse_command($required_job_completion, 'warehouse_loader', $command);
-  return $self->submit_bsub_command($command);
+  return $self->submit_bsub_command(
+    $self->_update_warehouse_command('warehouse_loader', @args));
+}
+
+=head2 update_warehouse_post_qc_complete
+
+Updates run data in the npg tables of the ml_warehouse.
+Runs when the runfolder is moved to the outgoing directory.
+
+=cut
+sub update_warehouse_post_qc_complete {
+  my ($self, @args) = @_;
+  push @args, {'post_qc_complete' => 1};
+  return $self->update_warehouse(@args);
 }
 
 =head2 update_ml_warehouse
@@ -142,22 +150,49 @@ sub update_ml_warehouse {
     $self->log(q{Update to warehouse is switched off.});
     return ();
   }
-  my $required_job_completion = shift @args;
-  my $command = $self->_update_warehouse_command($required_job_completion, 'npg_runs2mlwarehouse');
-  return $self->submit_bsub_command($command);
+  return $self->submit_bsub_command(
+    $self->_update_warehouse_command('npg_runs2mlwarehouse', @args));
 }
 
+=head2 update_ml_warehouse_post_qc_complete
+
+Updates run data in the npg tables of the ml_warehouse.
+Runs when the runfolder is moved to the outgoing directory.
+
+=cut
+sub update_ml_warehouse_post_qc_complete {
+  my ($self, @args) = @_;
+  push @args, {'post_qc_complete' => 1};
+  return $self->update_ml_warehouse(@args);
+}
 
 sub _update_warehouse_command {
-  my ($self, $required_job_completion, $loader_name, $command) = @_;
+  my ($self, $loader_name, @args) = @_;
 
+  my $required_job_completion = shift @args;
+  my $option = pop @args;
+  my $post_qc_complete = $option and (ref $option eq 'HASH') and $option->{'post_qc_complete'} ? 1 : 0;
   my $id_run = $self->id_run;
-  $command = $command ? "$command " : q[];
+
+  my $command = q[];
+  if ($loader_name eq 'warehouse_loader') {
+    # Currently, we need pool library name and link to plexes in SeqQC.
+    # Therefore, we need to run live.
+    $command = join q[], map {q[unset ] . $_ . q[;]} npg_pipeline::cache->env_vars;
+  }
+
   $command .= qq{$loader_name --verbose --id_run $id_run};
   my $job_name = join q{_}, $loader_name, $id_run, $self->pipeline_name;
+  my $path = $self->make_log_dir($self->recalibrated_path());
+  my $prereq = q[];
+  if ($post_qc_complete) {
+    $path = $self->path_in_outgoing($path);
+    $job_name .= '_postqccomplete';
+    $prereq = qq(-E "[ -d '$path' ]");
+  }
   my $out = join q{_}, $job_name, $self->timestamp . q{.out};
-  $out =  File::Spec->catfile($self->make_log_dir( $self->recalibrated_path()), $out );
-  return q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name -o $out '$command'};
+  $out =  File::Spec->catfile($path, $out);
+  return q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name -o $out $prereq '$command'};
 }
 
 =head2 copy_interop_files_to_irods

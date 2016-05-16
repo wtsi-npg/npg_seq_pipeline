@@ -65,6 +65,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
     qc_gc_fraction
     qc_ref_match
     seq_alignment
+    update_ml_warehouse
     bam_cluster_counter_check
     seqchksum_comparator
     qc_gc_bias
@@ -159,11 +160,11 @@ my $runfolder_path = $util->analysis_runfolder_path();
   my $timestamp = $pb->timestamp;
   my $recalibrated_path = $pb->recalibrated_path();
   my $log_dir = $pb->make_log_dir( $recalibrated_path );
-  my $unset_string = 'unset NPG_WEBSERVICE_CACHE_DIR; unset NPG_CACHED_SAMPLESHEET_FILE;';
+  my $unset_string = 'unset NPG_WEBSERVICE_CACHE_DIR;unset NPG_CACHED_SAMPLESHEET_FILE;';
   my $expected_command = q[bsub -q lowload 50 -J warehouse_loader_1234_central ] .
                         qq[-o $log_dir/warehouse_loader_1234_central_] . $timestamp .
-                        qq[.out '$unset_string warehouse_loader --verbose --id_run 1234'];
-  is($pb->_update_warehouse_command(50, 'warehouse_loader', $unset_string),
+                        qq[.out  '${unset_string}warehouse_loader --verbose --id_run 1234'];
+  is($pb->_update_warehouse_command('warehouse_loader', (50)),
     $expected_command, 'update warehouse command');
 }
 
