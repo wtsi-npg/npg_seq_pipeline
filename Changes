@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+ - replaced bamcat .. by samtools1 cat .. in seqchksum comparision
+   previous command line was too long for large pools
+ - changes for pools with >999 samples, LSF job array index now 5 digits
+   modified tests
+
 release 51.0
  - use npg_irods npg_publish_illumina_run.pl in place of data_handling irods_bam_loader.pl
  - provide appropiately changed second index read tags for ordered flowcell
