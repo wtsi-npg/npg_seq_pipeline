@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 98;
+use Test::More tests => 99;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path remove_tree/;
@@ -418,5 +418,28 @@ my $tempdir = tempdir( CLEANUP => 1);
     'error when cache directory is not found';
 }
 
+subtest 'alternative driver type: ml_warehouse_fc_cache' => sub {
+  plan tests => 6;
+
+  my $dir = tempdir( CLEANUP => 1);
+  my $rs = $wh_schema->resultset('IseqProductMetric')->search({id_run => 12376});
+  is($rs->count, 0, 'no product rows for run 12376');
+  my $cache = npg_pipeline::cache->new(
+                                    id_run            => 12376,
+                                    mlwh_schema       => $wh_schema,
+                                    lims_driver_type  => 'ml_warehouse_fc_cache',
+                                    cache_location    => $dir);
+  throws_ok { $cache->lims } qr/No record retrieved for st::api::lims::ml_warehouse_fc_cache/,
+    'no records for the run - error';
+  $rs->create({id_run => 12376, position => 1});
+  throws_ok { $cache->lims } qr/No record retrieved for st::api::lims::ml_warehouse_fc_cache/,
+    'records for the run are not linked to the LIMs table - error';
+  $wh_schema->resultset('IseqProductMetric')->search({id_run => 12376})
+    ->first()->update({'id_iseq_flowcell_tmp' => 20301});
+  my $lims;
+  lives_ok { $lims = $cache->lims } 'records retrieved';
+  is (@{$lims}, 1, 'records for one lane retrieved');
+  is ($lims->[0]->library_type, 'Standard', 'correct library type');
+};
 
 1;

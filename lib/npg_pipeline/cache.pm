@@ -134,25 +134,7 @@ sub _build_lims {
   my $clims;
   my $driver_type = $self->lims_driver_type;
 
-  if ($driver_type eq $self->mlwarehouse_driver_name) {
-
-    if (!($self->id_flowcell_lims || $self->flowcell_barcode)) {
-      croak 'Neither flowcell barcode nor lims flowcell id is known';
-    }
-
-    my $driver = st::api::lims::ml_warehouse->new(
-         mlwh_schema      => $self->mlwh_schema,
-         id_flowcell_lims => $self->id_flowcell_lims,
-         flowcell_barcode => $self->flowcell_barcode );
-
-    my $lims = st::api::lims->new(
-        id_flowcell_lims => $self->id_flowcell_lims,
-        flowcell_barcode => $self->flowcell_barcode,
-        driver           => $driver,
-        driver_type      => $driver_type );
-    $clims = [$lims->children];
-
-  } elsif ($driver_type eq $self->warehouse_driver_name) {
+  if ($driver_type eq $self->warehouse_driver_name) {
 
     if (!$self->id_flowcell_lims) {
       croak "lims_id accessor should be defined for $driver_type driver";
@@ -169,6 +151,25 @@ sub _build_lims {
         driver      => $driver,
         driver_type => $driver_type );
     $clims = [$lims];
+
+  } elsif ($driver_type =~ /warehouse/smx ) {
+
+    if ($driver_type eq $self->mlwarehouse_driver_name &&
+        !($self->id_flowcell_lims || $self->flowcell_barcode)) {
+      croak 'Neither flowcell barcode nor lims flowcell id is known';
+    }
+
+    my $ref = {
+      driver_type      => $driver_type,
+      id_run           => $self->id_run,
+      mlwh_schema      => $self->mlwh_schema
+    };
+    for my $name (qw/id_flowcell_lims flowcell_barcode/) {
+      if ($self->$name) {
+        $ref->{$name} = $self->$name;
+      }
+    }
+    $clims = [st::api::lims->new($ref)->children];
 
   } elsif ($driver_type eq $self->xml_driver_name) {
 
@@ -593,7 +594,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2015 Genome Research Ltd
+Copyright (C) 2016 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
