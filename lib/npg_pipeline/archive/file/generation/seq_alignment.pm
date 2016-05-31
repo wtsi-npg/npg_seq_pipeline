@@ -457,7 +457,7 @@ sub _job_index {
     croak 'Position undefined or zero';
   }
   if (defined $tag_index) {
-    return sprintf q{%i%03i}, $position, $tag_index;
+    return sprintf q{%i%04i}, $position, $tag_index;
   }
   return $position;
 }

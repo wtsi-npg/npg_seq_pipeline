@@ -17,7 +17,7 @@ our $VERSION = '0';
 Readonly::Scalar my $QC_SCRIPT_NAME          => 'qc';
 Readonly::Scalar my $LSF_MEMORY_REQ          => 6000;
 Readonly::Scalar my $LSF_MEMORY_REQ_ADAPTER  => 1500;
-Readonly::Scalar my $LSF_INDEX_MULTIPLIER    => 1000;
+Readonly::Scalar my $LSF_INDEX_MULTIPLIER    => 10_000;
 
 Readonly::Scalar my $NO_REFERENCE_REPOS_DEPENDENCY => {
   qX_yield => 1,
