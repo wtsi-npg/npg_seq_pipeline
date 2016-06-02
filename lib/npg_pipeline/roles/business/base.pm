@@ -205,13 +205,14 @@ A boolean flag
 
 =cut
 
-has q{is_hiseqx_run} => (isa        => q{Bool},
-                         is         => q{ro},
-                         metaclass  => q{NoGetopt},
-                         lazy_build => 1,);
+has q{is_hiseqx_run} => (isa           => q{Bool},
+                         is            => q{ro},
+                         metaclass     => q{NoGetopt},
+                         lazy_build    => 1,
+                         documentation => q{modified to also identify HiSeq 4000 runs which start with HF},);
 sub _build_is_hiseqx_run {
   my ($self) = @_;
-  return $self->run->instrument->name =~ /\AHX/xms;
+  return $self->run->instrument->name =~ /\AH[XF]/xms;
 }
 
 =head2 gclp
