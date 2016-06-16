@@ -1,6 +1,7 @@
 a:
     illumina2bam: 1
     illumina_basecall_stats: 1 
+    p4_stage1_analysis: 1
 b:
     seq_alignment: 1
     qc_contamination: 1
