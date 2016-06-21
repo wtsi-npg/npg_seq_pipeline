@@ -239,7 +239,8 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
     #TODO: support this, and above "old school", various options in P4 analyses
     croak qq{only paired reads supported for RNA or non-consented human ($name_root)} if (not $self->is_paired_read) and ($do_rna or $nchs);
-# We should now be able to handle no target alignment
+
+# no target alignment can be handled now by p4, though --force_p4 must be used for it since default is still bam_alignment (DNA_ALIGNMENT_SCRIPT)
 #   croak qq{No alignments in bam only supported with human split ($name_root)} if (not $l->alignments_in_bam) and (not $nchs);
 #   croak qq{Reference required ($name_root)} if (not $self->_ref($l,q(fasta))) and (not $nchs);
 
