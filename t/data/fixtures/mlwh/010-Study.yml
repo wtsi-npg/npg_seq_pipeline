@@ -1,0 +1,188 @@
+---
+- abbreviation: 198STDY
+  abstract: ~
+  accession_number: ~
+  aligned: 1
+  array_express_accession_number: ~
+  contains_human_dna: 0
+  contaminated_human_dna: 0
+  created: 2008-11-13 13:27:48
+  data_access_group: ~
+  data_release_delay_period: ~
+  data_release_delay_reason: ~
+  data_release_sort_of_study: genotyping or cytogenetics
+  data_release_strategy: open
+  data_release_timing: standard
+  deleted_at: ~
+  description: None
+  ega_dac_accession_number: ~
+  ega_policy_accession_number: ~
+  ena_project_id: ~
+  ethically_approved: ~
+  faculty_sponsor: None
+  hmdmc_number: ~
+  id_lims: SQSCP
+  id_study_lims: 198
+  id_study_tmp: 177
+  last_updated: 2016-05-12 16:09:29
+  name: Illumina Controls
+  prelim_id: ~
+  recorded_at: 2016-05-12 16:09:29
+  reference_genome: ' '
+  remove_x_and_autosomes: 0
+  separate_y_chromosome_data: 0
+  state: active
+  study_title: ~
+  study_type: Resequencing
+  study_visibility: Hold
+  uuid_study_lims: 2aa1cd2e-a557-11df-8092-00144f01a414
+- abbreviation: 620STDY
+  abstract: 'Long insert whole genome sequencing for the several common laboratory mouse strains being sequenced by the Mouse Genomes Project www.sanger.ac.uk/mousegenomes. We strongly encourage researchers to contact us if there is any queries about referencing or publishing analysis based on pre-publication data. This data is part of a pre-publication release. For information on use of the data and the data release policy please see: http://www.sanger.ac.uk/resources/mouse/genomes/datarelease.html'
+  accession_number: ERP000255
+  aligned: 1
+  array_express_accession_number: ~
+  contains_human_dna: 0
+  contaminated_human_dna: 0
+  created: 2010-06-29 16:32:09
+  data_access_group: ~
+  data_release_delay_period: ~
+  data_release_delay_reason: ~
+  data_release_sort_of_study: genomic sequencing
+  data_release_strategy: open
+  data_release_timing: standard
+  deleted_at: ~
+  description: 'Long insert whole genome sequencing for the several common laboratory mouse strains being sequenced by the Mouse Genomes Project www.sanger.ac.uk/mousegenomes. We strongly encourage researchers to contact us if there is any queries about referencing or publishing analysis based on pre-publication data. This data is part of a pre-publication release. For information on use of the data and the data release policy please see: http://www.sanger.ac.uk/resources/mouse/genomes/datarelease.html. This data is part of a pre-publication release. For information on the proper use of pre-publication data shared by the Wellcome Trust Sanger Institute (including details of any publication moratoria), please see http://www.sanger.ac.uk/datasharing/'
+  ega_dac_accession_number: ~
+  ega_policy_accession_number: ~
+  ena_project_id: 0
+  ethically_approved: ~
+  faculty_sponsor: David Adams
+  hmdmc_number: ~
+  id_lims: SQSCP
+  id_study_lims: 620
+  id_study_tmp: 595
+  last_updated: 2016-05-12 16:10:31
+  name: Long Insert Mouse Genomes
+  prelim_id: ~
+  recorded_at: 2016-05-12 16:10:50
+  reference_genome: Mus_musculus (std_unmasked_NCBIm37)
+  remove_x_and_autosomes: 0
+  separate_y_chromosome_data: 0
+  state: active
+  study_title: Long Insert Mouse Genomes
+  study_type: Whole Genome Sequencing
+  study_visibility: Hold
+  uuid_study_lims: 2e53f92e-a557-11df-8092-00144f01a414
+- abbreviation: 2467STDY
+  abstract: R&D Testing
+  accession_number: ~
+  aligned: 1
+  array_express_accession_number: ~
+  contains_human_dna: 1
+  contaminated_human_dna: 0
+  created: 2012-12-10 16:22:49
+  data_access_group: team133
+  data_release_delay_period: ~
+  data_release_delay_reason: ~
+  data_release_sort_of_study: genomic sequencing
+  data_release_strategy: not applicable
+  data_release_timing: never
+  deleted_at: ~
+  description: R&D Testing
+  ega_dac_accession_number: ~
+  ega_policy_accession_number: ~
+  ena_project_id: ~
+  ethically_approved: ~
+  faculty_sponsor: Matthew Berriman
+  hmdmc_number: ~
+  id_lims: SQSCP
+  id_study_lims: 2467
+  id_study_tmp: 2436
+  last_updated: 2016-06-17 12:46:16
+  name: Team133 R&D
+  prelim_id: ~
+  recorded_at: 2016-06-17 12:46:16
+  reference_genome: ' '
+  remove_x_and_autosomes: 0
+  separate_y_chromosome_data: 0
+  state: active
+  study_title: Team133 R&D
+  study_type: Whole Genome Sequencing
+  study_visibility: Hold
+  uuid_study_lims: d6dae570-42e5-11e2-955a-68b59976a382
+- abbreviation: 2572STDY
+  abstract: 'For information on this project, contributing investigators and studies, sample details, and data sharing policies please visit http://www.malariagen.net/node/287'
+  accession_number: ERP002372
+  aligned: 1
+  array_express_accession_number: ~
+  contains_human_dna: 0
+  contaminated_human_dna: 0
+  created: 2013-03-19 15:19:11
+  data_access_group: ~
+  data_release_delay_period: ~
+  data_release_delay_reason: ~
+  data_release_sort_of_study: genomic sequencing
+  data_release_strategy: open
+  data_release_timing: standard
+  deleted_at: ~
+  description: 'This data is part of a pre-publication release. For information on the proper use of pre-publication data shared by the Wellcome Trust Sanger Institute (including details of any publication moratoria), please see http://www.sanger.ac.uk/datasharing/'
+  ega_dac_accession_number: ~
+  ega_policy_accession_number: ~
+  ena_project_id: 0
+  ethically_approved: ~
+  faculty_sponsor: Dominic Kwiatkowski
+  hmdmc_number: ~
+  id_lims: SQSCP
+  id_study_lims: 2572
+  id_study_tmp: 2541
+  last_updated: 2016-05-19 15:22:54
+  name: Ag 1000g
+  prelim_id: ~
+  recorded_at: 2016-05-19 15:22:54
+  reference_genome: Anopheles_gambiae (PEST)
+  remove_x_and_autosomes: 0
+  separate_y_chromosome_data: 0
+  state: active
+  study_title: Anopheles Genome Variation Project
+  study_type: Whole Genome Sequencing
+  study_visibility: Hold
+  uuid_study_lims: 5a4df4a0-90a8-11e2-b5c0-68b59976a382
+- abbreviation: GDAP_10x
+  abstract: 'Given the central importance of Africa to studies of human origins, genetic diversity and disease susceptibility, large-scale and representative characterisation of genetic diversity in Africa is needed. One of the biggest challenges in reconstructing genomes from short read data is the limited phasing information. The use of DNA libraries containing long range linkage information could present a significant advantage. These high coverage data for 1 Baganda (Uganda) trio with extensive pedigree data and already sequenced relatives and 1 Baganda child, whose parents have been already sequenced at high depth, have been generated from GemCode (10x Genomics) DNA libraries containing long range linkage information.'
+  accession_number: EGAS00001001828
+  aligned: 1
+  array_express_accession_number: ~
+  contains_human_dna: 1
+  contaminated_human_dna: 0
+  created: 2016-03-22 13:41:31
+  data_access_group: gdap-wgs
+  data_release_delay_period: ~
+  data_release_delay_reason: ~
+  data_release_sort_of_study: genomic sequencing
+  data_release_strategy: managed
+  data_release_timing: standard
+  deleted_at: ~
+  description: "High depth whole genome sequencing  from GemCode (10x Genomics) DNA libraries containing long range linkage information for one Baganda trio and one Baganda child (parent already sequenced at high depth).\r\nThis data is part of a pre-publication release. For information on the proper use of pre-publication data shared by the Wellcome Trust Sanger Institute (including details of any publication moratoria), please see http://www.sanger.ac.uk/datasharing/"
+  ega_dac_accession_number: ~
+  ega_policy_accession_number: ~
+  ena_project_id: 0
+  ethically_approved: 1
+  faculty_sponsor: Manj Sandhu
+  hmdmc_number: 11/022
+  id_lims: SQSCP
+  id_study_lims: 4151
+  id_study_tmp: 4129
+  last_updated: 2016-05-27 09:03:46
+  name: GDAP_10x_Baganda
+  prelim_id: I2448
+  recorded_at: 2016-05-27 09:03:47
+  reference_genome: Homo_sapiens (GRCh38_full_analysis_set_plus_decoy_hla)
+  remove_x_and_autosomes: 0
+  separate_y_chromosome_data: 0
+  state: active
+  study_title: 'Genome Diversity in Africa Project - GemCode libraries '
+  study_type: Population Genomics
+  study_visibility: Hold
+  uuid_study_lims: c97ae160-f033-11e5-8d8a-68b59976a384
+
+

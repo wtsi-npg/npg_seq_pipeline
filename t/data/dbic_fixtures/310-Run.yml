@@ -1,0 +1,29 @@
+---
+- actual_cycle_count: 218
+  batch_id: 46375
+  expected_cycle_count: 218
+  flowcell_id: H7FLFADXY
+  folder_name: 160526_HS31_19860_B_H7FLFADXY
+  folder_path_glob: '/{export,nfs}/sf50/ILorHSany_sf50/*/'
+  id_instrument: 108
+  id_instrument_format: 10
+  id_run: 19860
+  id_run_pair: ~
+  is_paired: 0
+  priority: 4
+  team: C
+- actual_cycle_count: 310
+  batch_id: 47208
+  expected_cycle_count: 310
+  flowcell_id: HNC52CCXX
+  folder_name: 160623_HX2_20148_A_HNC52CCXX
+  folder_path_glob: '/{export,nfs}/sf19/ILorHSany_sf19/*/'
+  id_instrument: 118
+  id_instrument_format: 12
+  id_run: 20148
+  id_run_pair: ~
+  is_paired: 0
+  priority: 1
+  team: A
+
+

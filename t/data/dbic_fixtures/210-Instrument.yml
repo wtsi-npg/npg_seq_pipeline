@@ -1,0 +1,27 @@
+---
+- external_name: ''
+  id_instrument: 108
+  id_instrument_format: 10
+  instrument_comp: hs31
+  ipaddr: ''
+  iscurrent: 1
+  latest_contact: 2016-06-30 16:51:39
+  mirroring_host: ~
+  name: HS31
+  percent_complete: ~
+  serial: ''
+  staging_dir: ~
+- external_name: ''
+  id_instrument: 118
+  id_instrument_format: 12
+  instrument_comp: hx2
+  ipaddr: ''
+  iscurrent: 1
+  latest_contact: 2016-06-30 16:52:36
+  mirroring_host: ~
+  name: HX2
+  percent_complete: ~
+  serial: ''
+  staging_dir: ~
+
+

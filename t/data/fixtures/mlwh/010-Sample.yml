@@ -1,0 +1,4095 @@
+---
+- accession_number: ERS1104014
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369565
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579031
+  id_sample_tmp: 2557757
+  last_updated: 2016-06-07 08:55:55
+  mother: ~
+  name: 2572STDY6369565
+  organism: ~
+  public_name: 73162
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369565
+  strain: ~
+  supplier_name: AC0350-C
+  taxon_id: 7165
+  uuid_sample_lims: a5a98b50-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104016
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369566
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579033
+  id_sample_tmp: 2557758
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369566
+  organism: ~
+  public_name: 73163
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369566
+  strain: ~
+  supplier_name: AC0351-C
+  taxon_id: 7165
+  uuid_sample_lims: a5af57b0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104017
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369567
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579034
+  id_sample_tmp: 2557759
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369567
+  organism: ~
+  public_name: 73164
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369567
+  strain: ~
+  supplier_name: AC0352-C
+  taxon_id: 7165
+  uuid_sample_lims: a5b5c050-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104019
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369568
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579036
+  id_sample_tmp: 2557760
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369568
+  organism: ~
+  public_name: 73165
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369568
+  strain: ~
+  supplier_name: AC0353-C
+  taxon_id: 7165
+  uuid_sample_lims: a5bc28f0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104021
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369569
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579038
+  id_sample_tmp: 2557761
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369569
+  organism: ~
+  public_name: 73166
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369569
+  strain: ~
+  supplier_name: AC0354-C
+  taxon_id: 7165
+  uuid_sample_lims: a5c21c60-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104023
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369570
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579040
+  id_sample_tmp: 2557762
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369570
+  organism: ~
+  public_name: 73167
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369570
+  strain: ~
+  supplier_name: AC0355-C
+  taxon_id: 7165
+  uuid_sample_lims: a5c80fd0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104024
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369571
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579041
+  id_sample_tmp: 2557763
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369571
+  organism: ~
+  public_name: 73168
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369571
+  strain: ~
+  supplier_name: AC0356-C
+  taxon_id: 7165
+  uuid_sample_lims: a5d1fae0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104027
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369572
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579044
+  id_sample_tmp: 2557764
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369572
+  organism: ~
+  public_name: 73169
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369572
+  strain: ~
+  supplier_name: AC0357-C
+  taxon_id: 7165
+  uuid_sample_lims: a5dbe5f0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104029
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369573
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579046
+  id_sample_tmp: 2557765
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369573
+  organism: ~
+  public_name: 73170
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369573
+  strain: ~
+  supplier_name: AC0358-C
+  taxon_id: 7165
+  uuid_sample_lims: a5e61f20-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104031
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369574
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579048
+  id_sample_tmp: 2557766
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369574
+  organism: ~
+  public_name: 73171
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369574
+  strain: ~
+  supplier_name: AC0359-C
+  taxon_id: 7165
+  uuid_sample_lims: a5ebeb80-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104033
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369575
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579050
+  id_sample_tmp: 2557767
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369575
+  organism: ~
+  public_name: 73172
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369575
+  strain: ~
+  supplier_name: AC0360-C
+  taxon_id: 7165
+  uuid_sample_lims: a5f64bc0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104035
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369576
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579052
+  id_sample_tmp: 2557768
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369576
+  organism: ~
+  public_name: 73173
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369576
+  strain: ~
+  supplier_name: AC0361-C
+  taxon_id: 7165
+  uuid_sample_lims: a5fbf110-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104037
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369577
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579054
+  id_sample_tmp: 2557769
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369577
+  organism: ~
+  public_name: 73174
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369577
+  strain: ~
+  supplier_name: AC0362-C
+  taxon_id: 7165
+  uuid_sample_lims: a6040760-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104038
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369578
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579056
+  id_sample_tmp: 2557770
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369578
+  organism: ~
+  public_name: 73175
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369578
+  strain: ~
+  supplier_name: AC0363-C
+  taxon_id: 7165
+  uuid_sample_lims: a60e4090-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104039
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369579
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579058
+  id_sample_tmp: 2557771
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369579
+  organism: ~
+  public_name: 73176
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369579
+  strain: ~
+  supplier_name: AC0364-C
+  taxon_id: 7165
+  uuid_sample_lims: a61b8700-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104040
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369580
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579061
+  id_sample_tmp: 2557772
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369580
+  organism: ~
+  public_name: 73177
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369580
+  strain: ~
+  supplier_name: AC0365-C
+  taxon_id: 7165
+  uuid_sample_lims: a6276de0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104041
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369581
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579063
+  id_sample_tmp: 2557773
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369581
+  organism: ~
+  public_name: 73178
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369581
+  strain: ~
+  supplier_name: AC0366-C
+  taxon_id: 7165
+  uuid_sample_lims: a63158f0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104042
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369582
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579066
+  id_sample_tmp: 2557774
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369582
+  organism: ~
+  public_name: 73179
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369582
+  strain: ~
+  supplier_name: AC0367-C
+  taxon_id: 7165
+  uuid_sample_lims: a63ccaa0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104043
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369583
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579068
+  id_sample_tmp: 2557775
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369583
+  organism: ~
+  public_name: 73180
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369583
+  strain: ~
+  supplier_name: AC0368-C
+  taxon_id: 7165
+  uuid_sample_lims: a646dcc0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104044
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369584
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579069
+  id_sample_tmp: 2557776
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369584
+  organism: ~
+  public_name: 73181
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369584
+  strain: ~
+  supplier_name: AC0369-C
+  taxon_id: 7165
+  uuid_sample_lims: a6518b20-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104045
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369585
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579071
+  id_sample_tmp: 2557777
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369585
+  organism: ~
+  public_name: 73182
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369585
+  strain: ~
+  supplier_name: AC0370-C
+  taxon_id: 7165
+  uuid_sample_lims: a65c1270-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104046
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369586
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579073
+  id_sample_tmp: 2557778
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369586
+  organism: ~
+  public_name: 73183
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369586
+  strain: ~
+  supplier_name: AC0371-C
+  taxon_id: 7165
+  uuid_sample_lims: a666e7e0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104047
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369587
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579075
+  id_sample_tmp: 2557779
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369587
+  organism: ~
+  public_name: 73184
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369587
+  strain: ~
+  supplier_name: AC0372-C
+  taxon_id: 7165
+  uuid_sample_lims: a6723280-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104048
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369588
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579077
+  id_sample_tmp: 2557780
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369588
+  organism: ~
+  public_name: 73185
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369588
+  strain: ~
+  supplier_name: AC0373-C
+  taxon_id: 7165
+  uuid_sample_lims: a67c6bb0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104049
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369589
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579079
+  id_sample_tmp: 2557781
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369589
+  organism: ~
+  public_name: 73186
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369589
+  strain: ~
+  supplier_name: AC0374-C
+  taxon_id: 7165
+  uuid_sample_lims: a688a0b0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104050
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369590
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579081
+  id_sample_tmp: 2557782
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369590
+  organism: ~
+  public_name: 73187
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369590
+  strain: ~
+  supplier_name: AC0375-C
+  taxon_id: 7165
+  uuid_sample_lims: a6943970-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104051
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369591
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579083
+  id_sample_tmp: 2557783
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369591
+  organism: ~
+  public_name: 73188
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369591
+  strain: ~
+  supplier_name: AC0376-C
+  taxon_id: 7165
+  uuid_sample_lims: a69c9de0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104052
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369592
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579085
+  id_sample_tmp: 2557784
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369592
+  organism: ~
+  public_name: 73189
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369592
+  strain: ~
+  supplier_name: AC0377-C
+  taxon_id: 7165
+  uuid_sample_lims: a6aaf5c0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104053
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369593
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579087
+  id_sample_tmp: 2557785
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369593
+  organism: ~
+  public_name: 73190
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369593
+  strain: ~
+  supplier_name: AC0378-C
+  taxon_id: 7165
+  uuid_sample_lims: a6b64060-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104054
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369594
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579089
+  id_sample_tmp: 2557786
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369594
+  organism: ~
+  public_name: 73191
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369594
+  strain: ~
+  supplier_name: AC0379-C
+  taxon_id: 7165
+  uuid_sample_lims: a6c29c70-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104055
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369595
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579091
+  id_sample_tmp: 2557787
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369595
+  organism: ~
+  public_name: 73192
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369595
+  strain: ~
+  supplier_name: AC0380-C
+  taxon_id: 7165
+  uuid_sample_lims: a6ce3530-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104056
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369596
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579093
+  id_sample_tmp: 2557788
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369596
+  organism: ~
+  public_name: 73193
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369596
+  strain: ~
+  supplier_name: AC0381-C
+  taxon_id: 7165
+  uuid_sample_lims: a6d9f500-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104057
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369597
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579094
+  id_sample_tmp: 2557789
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369597
+  organism: ~
+  public_name: 73194
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369597
+  strain: ~
+  supplier_name: AC0382-C
+  taxon_id: 7165
+  uuid_sample_lims: a6e2a790-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104058
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369598
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579096
+  id_sample_tmp: 2557790
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369598
+  organism: ~
+  public_name: 73195
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369598
+  strain: ~
+  supplier_name: AC0383-C
+  taxon_id: 7165
+  uuid_sample_lims: a6ea96d0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104059
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369599
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579098
+  id_sample_tmp: 2557791
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369599
+  organism: ~
+  public_name: 73196
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369599
+  strain: ~
+  supplier_name: AC0384-C
+  taxon_id: 7165
+  uuid_sample_lims: a6f2ad20-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104060
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369600
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579100
+  id_sample_tmp: 2557792
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369600
+  organism: ~
+  public_name: 73197
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369600
+  strain: ~
+  supplier_name: AC0385-C
+  taxon_id: 7165
+  uuid_sample_lims: a6f98af0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104061
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369601
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579102
+  id_sample_tmp: 2557793
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369601
+  organism: ~
+  public_name: 73198
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369601
+  strain: ~
+  supplier_name: AC0386-C
+  taxon_id: 7165
+  uuid_sample_lims: a7023d80-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104062
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369602
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579104
+  id_sample_tmp: 2557794
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369602
+  organism: ~
+  public_name: 73199
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369602
+  strain: ~
+  supplier_name: AC0387-C
+  taxon_id: 7165
+  uuid_sample_lims: a708a620-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104063
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369603
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579106
+  id_sample_tmp: 2557795
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369603
+  organism: ~
+  public_name: 73200
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369603
+  strain: ~
+  supplier_name: AC0388-C
+  taxon_id: 7165
+  uuid_sample_lims: a713a2a0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104064
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369604
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579108
+  id_sample_tmp: 2557796
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369604
+  organism: ~
+  public_name: 73201
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369604
+  strain: ~
+  supplier_name: AC0389-C
+  taxon_id: 7165
+  uuid_sample_lims: a71cf170-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104065
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:16
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369605
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579110
+  id_sample_tmp: 2557797
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369605
+  organism: ~
+  public_name: 73202
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369605
+  strain: ~
+  supplier_name: AC0390-C
+  taxon_id: 7165
+  uuid_sample_lims: a7244470-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104066
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:17
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369606
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579112
+  id_sample_tmp: 2557798
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369606
+  organism: ~
+  public_name: 73203
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369606
+  strain: ~
+  supplier_name: AC0391-C
+  taxon_id: 7165
+  uuid_sample_lims: a72fdd30-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104067
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:17
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369607
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579114
+  id_sample_tmp: 2557799
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369607
+  organism: ~
+  public_name: 73204
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369607
+  strain: ~
+  supplier_name: AC0392-C
+  taxon_id: 7165
+  uuid_sample_lims: a73841a0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1104068
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:17
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369608
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579116
+  id_sample_tmp: 2557800
+  last_updated: 2016-06-07 08:55:56
+  mother: ~
+  name: 2572STDY6369608
+  organism: ~
+  public_name: 73205
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369608
+  strain: ~
+  supplier_name: AC0393-C
+  taxon_id: 7165
+  uuid_sample_lims: a73e8330-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1103976
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:13
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369611
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2578993
+  id_sample_tmp: 2557803
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369611
+  organism: ~
+  public_name: 73208
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369611
+  strain: ~
+  supplier_name: AC0396-C
+  taxon_id: 7165
+  uuid_sample_lims: a4f83cb0-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1103978
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:13
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369612
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2578995
+  id_sample_tmp: 2557804
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369612
+  organism: ~
+  public_name: 73209
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369612
+  strain: ~
+  supplier_name: AC0397-C
+  taxon_id: 7165
+  uuid_sample_lims: a50471b0-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1103980
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:13
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369613
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2578997
+  id_sample_tmp: 2557805
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369613
+  organism: ~
+  public_name: 73210
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369613
+  strain: ~
+  supplier_name: AC0398-C
+  taxon_id: 7165
+  uuid_sample_lims: a512c990-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1103982
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:13
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369614
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2578999
+  id_sample_tmp: 2557806
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369614
+  organism: ~
+  public_name: 73211
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369614
+  strain: ~
+  supplier_name: AC0399-C
+  taxon_id: 7165
+  uuid_sample_lims: a51d9f00-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1103985
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:13
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369615
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579002
+  id_sample_tmp: 2557807
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369615
+  organism: ~
+  public_name: 73212
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369615
+  strain: ~
+  supplier_name: AC0400-C
+  taxon_id: 7165
+  uuid_sample_lims: a5254020-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1103987
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:13
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369616
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579004
+  id_sample_tmp: 2557808
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369616
+  organism: ~
+  public_name: 73213
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369616
+  strain: ~
+  supplier_name: AC0401-C
+  taxon_id: 7165
+  uuid_sample_lims: a52da490-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1103989
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:13
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369617
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579006
+  id_sample_tmp: 2557809
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369617
+  organism: ~
+  public_name: 73214
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369617
+  strain: ~
+  supplier_name: AC0402-C
+  taxon_id: 7165
+  uuid_sample_lims: a5351ea0-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1103992
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:13
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369618
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579009
+  id_sample_tmp: 2557810
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369618
+  organism: ~
+  public_name: 73215
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369618
+  strain: ~
+  supplier_name: AC0403-C
+  taxon_id: 7165
+  uuid_sample_lims: a5401b20-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1103994
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:13
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369619
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579011
+  id_sample_tmp: 2557811
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369619
+  organism: ~
+  public_name: 73216
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369619
+  strain: ~
+  supplier_name: AC0404-C
+  taxon_id: 7165
+  uuid_sample_lims: a55550d0-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1103996
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:13
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369620
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579013
+  id_sample_tmp: 2557812
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369620
+  organism: ~
+  public_name: 73217
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369620
+  strain: ~
+  supplier_name: AC0405-C
+  taxon_id: 7165
+  uuid_sample_lims: a55fd820-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1103999
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369621
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579016
+  id_sample_tmp: 2557813
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369621
+  organism: ~
+  public_name: 73218
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369621
+  strain: ~
+  supplier_name: AC0406-C
+  taxon_id: 7165
+  uuid_sample_lims: a569ea40-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104001
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369622
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579018
+  id_sample_tmp: 2557814
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369622
+  organism: ~
+  public_name: 73219
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369622
+  strain: ~
+  supplier_name: AC0407-C
+  taxon_id: 7165
+  uuid_sample_lims: a570ef20-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104004
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369623
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579021
+  id_sample_tmp: 2557815
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369623
+  organism: ~
+  public_name: 73220
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369623
+  strain: ~
+  supplier_name: AC0408-C
+  taxon_id: 7165
+  uuid_sample_lims: a580a690-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104006
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369624
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579023
+  id_sample_tmp: 2557816
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369624
+  organism: ~
+  public_name: 73221
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369624
+  strain: ~
+  supplier_name: AC0409-C
+  taxon_id: 7165
+  uuid_sample_lims: a58b06d0-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104008
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369625
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579025
+  id_sample_tmp: 2557817
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369625
+  organism: ~
+  public_name: 73222
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369625
+  strain: ~
+  supplier_name: AC0410-C
+  taxon_id: 7165
+  uuid_sample_lims: a5931d20-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104010
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369626
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579027
+  id_sample_tmp: 2557818
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369626
+  organism: ~
+  public_name: 73223
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369626
+  strain: ~
+  supplier_name: AC0411-C
+  taxon_id: 7165
+  uuid_sample_lims: a59a2200-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104012
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369627
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579029
+  id_sample_tmp: 2557819
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369627
+  organism: ~
+  public_name: 73224
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369627
+  strain: ~
+  supplier_name: AC0412-C
+  taxon_id: 7165
+  uuid_sample_lims: a5a25f60-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104015
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369628
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579032
+  id_sample_tmp: 2557820
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369628
+  organism: ~
+  public_name: 73225
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369628
+  strain: ~
+  supplier_name: AC0413-C
+  taxon_id: 7165
+  uuid_sample_lims: a5ab8720-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104018
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369629
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579035
+  id_sample_tmp: 2557821
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369629
+  organism: ~
+  public_name: 73226
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369629
+  strain: ~
+  supplier_name: AC0414-C
+  taxon_id: 7165
+  uuid_sample_lims: a5b6d1c0-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104020
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369630
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579037
+  id_sample_tmp: 2557822
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369630
+  organism: ~
+  public_name: 73227
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369630
+  strain: ~
+  supplier_name: AC0415-C
+  taxon_id: 7165
+  uuid_sample_lims: a5be24c0-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104022
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369631
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579039
+  id_sample_tmp: 2557823
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369631
+  organism: ~
+  public_name: 73228
+  recorded_at: 2016-06-07 08:56:18
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369631
+  strain: ~
+  supplier_name: AC0416-C
+  taxon_id: 7165
+  uuid_sample_lims: a5c7c1b0-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104025
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369632
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579042
+  id_sample_tmp: 2557824
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369632
+  organism: ~
+  public_name: 73229
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369632
+  strain: ~
+  supplier_name: AC0417-C
+  taxon_id: 7165
+  uuid_sample_lims: a5d1fae0-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104026
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369633
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579043
+  id_sample_tmp: 2557825
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369633
+  organism: ~
+  public_name: 73230
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369633
+  strain: ~
+  supplier_name: AC0418-C
+  taxon_id: 7165
+  uuid_sample_lims: a5d86380-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104028
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369634
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579045
+  id_sample_tmp: 2557826
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369634
+  organism: ~
+  public_name: 73231
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369634
+  strain: ~
+  supplier_name: AC0419-C
+  taxon_id: 7165
+  uuid_sample_lims: a5e13d20-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104030
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369635
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579047
+  id_sample_tmp: 2557827
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369635
+  organism: ~
+  public_name: 72990
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369635
+  strain: ~
+  supplier_name: AC0298-C
+  taxon_id: 7165
+  uuid_sample_lims: a5e7f3e0-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104032
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369636
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579049
+  id_sample_tmp: 2557828
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369636
+  organism: ~
+  public_name: 72991
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369636
+  strain: ~
+  supplier_name: AC0299-C
+  taxon_id: 7165
+  uuid_sample_lims: a5ef9500-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104034
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:14
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369637
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579051
+  id_sample_tmp: 2557829
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369637
+  organism: ~
+  public_name: 73206
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369637
+  strain: ~
+  supplier_name: AC0394-C
+  taxon_id: 7165
+  uuid_sample_lims: a5f7d260-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1104036
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:15
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369638
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579053
+  id_sample_tmp: 2557830
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369638
+  organism: ~
+  public_name: 73207
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369638
+  strain: ~
+  supplier_name: AC0395-C
+  taxon_id: 7165
+  uuid_sample_lims: a5ff9a90-ef67-11e5-bc69-3c4a9275d6c6
+- accession_number: ERS1106704
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:26
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369707
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579156
+  id_sample_tmp: 2557899
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369707
+  organism: ~
+  public_name: 74088
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369707
+  strain: ~
+  supplier_name: BL0246-C
+  taxon_id: 7165
+  uuid_sample_lims: acf95700-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106705
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:26
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369708
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579157
+  id_sample_tmp: 2557900
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369708
+  organism: ~
+  public_name: 74089
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369708
+  strain: ~
+  supplier_name: BL0247-C
+  taxon_id: 7165
+  uuid_sample_lims: ad01e280-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106706
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:26
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369709
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579158
+  id_sample_tmp: 2557901
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369709
+  organism: ~
+  public_name: 74093
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369709
+  strain: ~
+  supplier_name: BL0251-C
+  taxon_id: 7165
+  uuid_sample_lims: ad0a1fe0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106707
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:26
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369710
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579159
+  id_sample_tmp: 2557902
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369710
+  organism: ~
+  public_name: 74094
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369710
+  strain: ~
+  supplier_name: BL0252-C
+  taxon_id: 7165
+  uuid_sample_lims: ad0fc530-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106708
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:26
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369711
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579160
+  id_sample_tmp: 2557903
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369711
+  organism: ~
+  public_name: 74095
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369711
+  strain: ~
+  supplier_name: BL0253-C
+  taxon_id: 7165
+  uuid_sample_lims: ad159190-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106709
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:26
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369712
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579161
+  id_sample_tmp: 2557904
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369712
+  organism: ~
+  public_name: 74096
+  recorded_at: 2016-06-07 08:56:19
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369712
+  strain: ~
+  supplier_name: BL0254-C
+  taxon_id: 7165
+  uuid_sample_lims: ad1b0fd0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106710
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:26
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369713
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579162
+  id_sample_tmp: 2557905
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369713
+  organism: ~
+  public_name: 74097
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369713
+  strain: ~
+  supplier_name: BL0255-C
+  taxon_id: 7165
+  uuid_sample_lims: ad215160-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106711
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369714
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579163
+  id_sample_tmp: 2557906
+  last_updated: 2016-06-07 08:55:57
+  mother: ~
+  name: 2572STDY6369714
+  organism: ~
+  public_name: 74098
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369714
+  strain: ~
+  supplier_name: BL0256-C
+  taxon_id: 7165
+  uuid_sample_lims: ad2744d0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106712
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369715
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579164
+  id_sample_tmp: 2557907
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369715
+  organism: ~
+  public_name: 74099
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369715
+  strain: ~
+  supplier_name: BL0257-C
+  taxon_id: 7165
+  uuid_sample_lims: ad2dd480-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106713
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369716
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579165
+  id_sample_tmp: 2557908
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369716
+  organism: ~
+  public_name: 74100
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369716
+  strain: ~
+  supplier_name: BL0258-C
+  taxon_id: 7165
+  uuid_sample_lims: ad359cb0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106714
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369717
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579166
+  id_sample_tmp: 2557909
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369717
+  organism: ~
+  public_name: 74101
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369717
+  strain: ~
+  supplier_name: BL0259-C
+  taxon_id: 7165
+  uuid_sample_lims: ad3d64e0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106715
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369718
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579167
+  id_sample_tmp: 2557910
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369718
+  organism: ~
+  public_name: 74102
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369718
+  strain: ~
+  supplier_name: BL0260-C
+  taxon_id: 7165
+  uuid_sample_lims: ad4490d0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106716
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369719
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579168
+  id_sample_tmp: 2557911
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369719
+  organism: ~
+  public_name: 74103
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369719
+  strain: ~
+  supplier_name: BL0261-C
+  taxon_id: 7165
+  uuid_sample_lims: ad4cce30-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106717
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369720
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579169
+  id_sample_tmp: 2557912
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369720
+  organism: ~
+  public_name: 74105
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369720
+  strain: ~
+  supplier_name: BL0263-C
+  taxon_id: 7165
+  uuid_sample_lims: ad546f50-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106718
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369721
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579170
+  id_sample_tmp: 2557913
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369721
+  organism: ~
+  public_name: 74106
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369721
+  strain: ~
+  supplier_name: BL0264-C
+  taxon_id: 7165
+  uuid_sample_lims: ad5b4d20-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106719
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369722
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579171
+  id_sample_tmp: 2557914
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369722
+  organism: ~
+  public_name: 74108
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369722
+  strain: ~
+  supplier_name: BL0266-C
+  taxon_id: 7165
+  uuid_sample_lims: ad611980-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106720
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369723
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579172
+  id_sample_tmp: 2557915
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369723
+  organism: ~
+  public_name: 74109
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369723
+  strain: ~
+  supplier_name: BL0267-C
+  taxon_id: 7165
+  uuid_sample_lims: ad675b10-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106721
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369724
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579173
+  id_sample_tmp: 2557916
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369724
+  organism: ~
+  public_name: 74111
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369724
+  strain: ~
+  supplier_name: BL0269-C
+  taxon_id: 7165
+  uuid_sample_lims: ad6d4e80-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106722
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369725
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579174
+  id_sample_tmp: 2557917
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369725
+  organism: ~
+  public_name: 74113
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369725
+  strain: ~
+  supplier_name: BL0271-C
+  taxon_id: 7165
+  uuid_sample_lims: ad736900-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106723
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369726
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579175
+  id_sample_tmp: 2557918
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369726
+  organism: ~
+  public_name: 74114
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369726
+  strain: ~
+  supplier_name: BL0272-C
+  taxon_id: 7165
+  uuid_sample_lims: ad7e6580-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106724
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369727
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579176
+  id_sample_tmp: 2557919
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369727
+  organism: ~
+  public_name: 74115
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369727
+  strain: ~
+  supplier_name: BL0273-C
+  taxon_id: 7165
+  uuid_sample_lims: ad88ecd0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106725
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369728
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579177
+  id_sample_tmp: 2557920
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369728
+  organism: ~
+  public_name: 74117
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369728
+  strain: ~
+  supplier_name: BL0275-C
+  taxon_id: 7165
+  uuid_sample_lims: ad92fef0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106726
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369729
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579178
+  id_sample_tmp: 2557921
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369729
+  organism: ~
+  public_name: 74118
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369729
+  strain: ~
+  supplier_name: BL0276-C
+  taxon_id: 7165
+  uuid_sample_lims: ad994080-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106727
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369730
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579179
+  id_sample_tmp: 2557922
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369730
+  organism: ~
+  public_name: 74119
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369730
+  strain: ~
+  supplier_name: BL0277-C
+  taxon_id: 7165
+  uuid_sample_lims: ad9fd030-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106728
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369731
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579180
+  id_sample_tmp: 2557923
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369731
+  organism: ~
+  public_name: 74120
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369731
+  strain: ~
+  supplier_name: BL0278-C
+  taxon_id: 7165
+  uuid_sample_lims: ada59c90-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106729
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369732
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579181
+  id_sample_tmp: 2557924
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369732
+  organism: ~
+  public_name: 74122
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369732
+  strain: ~
+  supplier_name: BL0280-C
+  taxon_id: 7165
+  uuid_sample_lims: adab9000-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106730
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369733
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579182
+  id_sample_tmp: 2557925
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369733
+  organism: ~
+  public_name: 74123
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369733
+  strain: ~
+  supplier_name: BL0281-C
+  taxon_id: 7165
+  uuid_sample_lims: adb26dd0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106731
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:27
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369734
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579183
+  id_sample_tmp: 2557926
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369734
+  organism: ~
+  public_name: 74124
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369734
+  strain: ~
+  supplier_name: BL0282-C
+  taxon_id: 7165
+  uuid_sample_lims: adb9e7e0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106732
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:28
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369735
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579184
+  id_sample_tmp: 2557927
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369735
+  organism: ~
+  public_name: 74125
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369735
+  strain: ~
+  supplier_name: BL0283-C
+  taxon_id: 7165
+  uuid_sample_lims: adc50b70-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106733
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:28
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369736
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579185
+  id_sample_tmp: 2557928
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369736
+  organism: ~
+  public_name: 74126
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369736
+  strain: ~
+  supplier_name: BL0284-C
+  taxon_id: 7165
+  uuid_sample_lims: adcd21c0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106734
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:28
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369737
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579186
+  id_sample_tmp: 2557929
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369737
+  organism: ~
+  public_name: 74127
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369737
+  strain: ~
+  supplier_name: BL0285-C
+  taxon_id: 7165
+  uuid_sample_lims: add67090-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106735
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:28
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369738
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579187
+  id_sample_tmp: 2557930
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369738
+  organism: ~
+  public_name: 74128
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369738
+  strain: ~
+  supplier_name: BL0286-C
+  taxon_id: 7165
+  uuid_sample_lims: addd4e60-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106736
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:28
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369739
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579188
+  id_sample_tmp: 2557931
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369739
+  organism: ~
+  public_name: 74129
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369739
+  strain: ~
+  supplier_name: BL0287-C
+  taxon_id: 7165
+  uuid_sample_lims: ade3de10-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106737
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:28
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369740
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579189
+  id_sample_tmp: 2557932
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369740
+  organism: ~
+  public_name: 74130
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369740
+  strain: ~
+  supplier_name: BL0288-C
+  taxon_id: 7165
+  uuid_sample_lims: adea94d0-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106738
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:28
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369741
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579190
+  id_sample_tmp: 2557933
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369741
+  organism: ~
+  public_name: 74132
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369741
+  strain: ~
+  supplier_name: BL0290-C
+  taxon_id: 7165
+  uuid_sample_lims: adf2d230-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: ERS1106739
+  cohort: ~
+  common_name: Anopheles Gambiae
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-03-21 13:20:28
+  deleted_at: ~
+  description: ~
+  donor_id: 2572STDY6369742
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2579191
+  id_sample_tmp: 2557934
+  last_updated: 2016-06-07 08:55:58
+  mother: ~
+  name: 2572STDY6369742
+  organism: ~
+  public_name: 74133
+  recorded_at: 2016-06-07 08:56:20
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2572STDY6369742
+  strain: ~
+  supplier_name: BL0291-C
+  taxon_id: 7165
+  uuid_sample_lims: adfac170-ef67-11e5-88b1-3c4a9275d6c6
+- accession_number: EGAN00001409245
+  cohort: GPC
+  common_name: Homo sapiens
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: Uganda
+  created: 2016-03-23 09:39:12
+  deleted_at: ~
+  description: ~
+  donor_id: GDAP_10x6373047
+  ethnicity: Muganda
+  father: ~
+  gender: Male
+  geographical_region: Kyamulibwa
+  id_lims: SQSCP
+  id_sample_lims: 2582558
+  id_sample_tmp: 2561300
+  last_updated: 2016-06-06 12:25:16
+  mother: ~
+  name: GDAP_10x6373047
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-06 12:25:16
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: GDAP_10x6373047
+  strain: ~
+  supplier_name: APP5340278_A
+  taxon_id: 9606
+  uuid_sample_lims: 19899820-f0db-11e5-bc06-68b59976a384
+- accession_number: EGAN00001409246
+  cohort: GPC
+  common_name: Homo sapiens
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: Uganda
+  created: 2016-03-23 09:39:12
+  deleted_at: ~
+  description: ~
+  donor_id: GDAP_10x6373048
+  ethnicity: Muganda
+  father: ~
+  gender: Male
+  geographical_region: Kyamulibwa
+  id_lims: SQSCP
+  id_sample_lims: 2582559
+  id_sample_tmp: 2561301
+  last_updated: 2016-06-06 12:25:50
+  mother: ~
+  name: GDAP_10x6373048
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-06 12:25:50
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: GDAP_10x6373048
+  strain: ~
+  supplier_name: APP5340278_B
+  taxon_id: 9606
+  uuid_sample_lims: 19990170-f0db-11e5-bc06-68b59976a384
+- accession_number: EGAN00001409247
+  cohort: GPC
+  common_name: Homo sapiens
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: Uganda
+  created: 2016-03-23 09:39:12
+  deleted_at: ~
+  description: ~
+  donor_id: GDAP_10x6373049
+  ethnicity: Muganda
+  father: ~
+  gender: Male
+  geographical_region: Kyamulibwa
+  id_lims: SQSCP
+  id_sample_lims: 2582560
+  id_sample_tmp: 2561302
+  last_updated: 2016-06-06 12:26:23
+  mother: ~
+  name: GDAP_10x6373049
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-06 12:26:23
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: GDAP_10x6373049
+  strain: ~
+  supplier_name: APP5340278_C
+  taxon_id: 9606
+  uuid_sample_lims: 19a07b80-f0db-11e5-bc06-68b59976a384
+- accession_number: EGAN00001409248
+  cohort: GPC
+  common_name: Homo sapiens
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: Uganda
+  created: 2016-03-23 09:39:12
+  deleted_at: ~
+  description: ~
+  donor_id: GDAP_10x6373050
+  ethnicity: Muganda
+  father: ~
+  gender: Male
+  geographical_region: Kyamulibwa
+  id_lims: SQSCP
+  id_sample_lims: 2582561
+  id_sample_tmp: 2561303
+  last_updated: 2016-06-06 12:29:08
+  mother: ~
+  name: GDAP_10x6373050
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-06 12:29:08
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: GDAP_10x6373050
+  strain: ~
+  supplier_name: APP5340278_D
+  taxon_id: 9606
+  uuid_sample_lims: 19a75950-f0db-11e5-bc06-68b59976a384
+- accession_number: EGAN00001409249
+  cohort: GPC
+  common_name: Homo sapiens
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: Uganda
+  created: 2016-03-23 09:39:48
+  deleted_at: ~
+  description: ~
+  donor_id: GDAP_10x6373051
+  ethnicity: Muganda
+  father: ~
+  gender: Male
+  geographical_region: Kyamulibwa
+  id_lims: SQSCP
+  id_sample_lims: 2582562
+  id_sample_tmp: 2561304
+  last_updated: 2016-06-06 12:29:45
+  mother: ~
+  name: GDAP_10x6373051
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-06 12:29:45
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: GDAP_10x6373051
+  strain: ~
+  supplier_name: APP5292683_A
+  taxon_id: 9606
+  uuid_sample_lims: 2f748e60-f0db-11e5-bc06-68b59976a384
+- accession_number: EGAN00001409250
+  cohort: GPC
+  common_name: Homo sapiens
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: Uganda
+  created: 2016-03-23 09:39:49
+  deleted_at: ~
+  description: ~
+  donor_id: GDAP_10x6373052
+  ethnicity: Muganda
+  father: ~
+  gender: Male
+  geographical_region: Kyamulibwa
+  id_lims: SQSCP
+  id_sample_lims: 2582563
+  id_sample_tmp: 2561305
+  last_updated: 2016-06-06 12:30:14
+  mother: ~
+  name: GDAP_10x6373052
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-06 12:30:14
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: GDAP_10x6373052
+  strain: ~
+  supplier_name: APP5292683_B
+  taxon_id: 9606
+  uuid_sample_lims: 2f824a00-f0db-11e5-bc06-68b59976a384
+- accession_number: EGAN00001409251
+  cohort: GPC
+  common_name: Homo sapiens
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: Uganda
+  created: 2016-03-23 09:39:49
+  deleted_at: ~
+  description: ~
+  donor_id: GDAP_10x6373053
+  ethnicity: Muganda
+  father: ~
+  gender: Male
+  geographical_region: Kyamulibwa
+  id_lims: SQSCP
+  id_sample_lims: 2582564
+  id_sample_tmp: 2561306
+  last_updated: 2016-06-06 12:30:42
+  mother: ~
+  name: GDAP_10x6373053
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-06 12:30:42
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: GDAP_10x6373053
+  strain: ~
+  supplier_name: APP5292683_C
+  taxon_id: 9606
+  uuid_sample_lims: 2f8927d0-f0db-11e5-bc06-68b59976a384
+- accession_number: EGAN00001409252
+  cohort: GPC
+  common_name: Homo sapiens
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: Uganda
+  created: 2016-03-23 09:39:49
+  deleted_at: ~
+  description: ~
+  donor_id: GDAP_10x6373054
+  ethnicity: Muganda
+  father: ~
+  gender: Male
+  geographical_region: Kyamulibwa
+  id_lims: SQSCP
+  id_sample_lims: 2582565
+  id_sample_tmp: 2561307
+  last_updated: 2016-06-06 12:31:11
+  mother: ~
+  name: GDAP_10x6373054
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-06 12:31:11
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: Hold
+  sanger_sample_id: GDAP_10x6373054
+  strain: ~
+  supplier_name: APP5292683_D
+  taxon_id: 9606
+  uuid_sample_lims: 2f8fde90-f0db-11e5-bc06-68b59976a384
+- accession_number: ERS1211179
+  cohort: ~
+  common_name: Mus musculus castaneus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-14 13:45:02
+  deleted_at: ~
+  description: ~
+  donor_id: 620STDY6445336
+  ethnicity: ~
+  father: ~
+  gender: Female
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2654875
+  id_sample_tmp: 2633209
+  last_updated: 2016-06-17 13:34:12
+  mother: ~
+  name: 620STDY6445336
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-17 13:34:12
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 620STDY6445336
+  strain: ~
+  supplier_name: CAST_Ei_10x_A
+  taxon_id: 10091
+  uuid_sample_lims: 319aa520-3236-11e6-9bb9-68b599768938
+- accession_number: ERS1211181
+  cohort: ~
+  common_name: Mus musculus castaneus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-14 13:45:02
+  deleted_at: ~
+  description: ~
+  donor_id: 620STDY6445337
+  ethnicity: ~
+  father: ~
+  gender: Female
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2654876
+  id_sample_tmp: 2633210
+  last_updated: 2016-06-17 13:34:40
+  mother: ~
+  name: 620STDY6445337
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-17 13:34:40
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 620STDY6445337
+  strain: ~
+  supplier_name: CAST_Ei_10x_B
+  taxon_id: 10091
+  uuid_sample_lims: 31b1af90-3236-11e6-9bb9-68b599768938
+- accession_number: ERS1211182
+  cohort: ~
+  common_name: Mus musculus castaneus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-14 13:45:02
+  deleted_at: ~
+  description: ~
+  donor_id: 620STDY6445338
+  ethnicity: ~
+  father: ~
+  gender: Female
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2654877
+  id_sample_tmp: 2633211
+  last_updated: 2016-06-17 13:34:48
+  mother: ~
+  name: 620STDY6445338
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-17 13:34:48
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 620STDY6445338
+  strain: ~
+  supplier_name: CAST_Ei_10x_C
+  taxon_id: 10091
+  uuid_sample_lims: 31c1b520-3236-11e6-9bb9-68b599768938
+- accession_number: ERS1211180
+  cohort: ~
+  common_name: Mus musculus castaneus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-14 13:45:02
+  deleted_at: ~
+  description: ~
+  donor_id: 620STDY6445339
+  ethnicity: ~
+  father: ~
+  gender: Female
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2654878
+  id_sample_tmp: 2633212
+  last_updated: 2016-06-17 13:34:27
+  mother: ~
+  name: 620STDY6445339
+  organism: ~
+  public_name: ~
+  recorded_at: 2016-06-17 13:34:27
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 620STDY6445339
+  strain: ~
+  supplier_name: CAST_Ei_10x_D
+  taxon_id: 10091
+  uuid_sample_lims: 31d1bab0-3236-11e6-9bb9-68b599768938
+- accession_number: ~
+  cohort: ~
+  common_name: Haemonchus contortus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:34:51
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446208
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655792
+  id_sample_tmp: 2634126
+  last_updated: 2016-06-16 14:50:09
+  mother: ~
+  name: 2467STDY6446208
+  organism: ~
+  public_name: Haemonchus contortus
+  recorded_at: 2016-06-16 14:50:09
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446208
+  strain: MHco3(ISE)
+  supplier_name: Hc_mixed_ISE_512899A_ch
+  taxon_id: 6289
+  uuid_sample_lims: b8bbd860-33be-11e6-9c1b-68b599768938
+- accession_number: ~
+  cohort: ~
+  common_name: Haemonchus contortus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:34:51
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446209
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655793
+  id_sample_tmp: 2634127
+  last_updated: 2016-06-16 14:50:09
+  mother: ~
+  name: 2467STDY6446209
+  organism: ~
+  public_name: Haemonchus contortus
+  recorded_at: 2016-06-16 14:50:10
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446209
+  strain: MHco3(ISE)
+  supplier_name: Hc_mixed_ISE_512899B_ch
+  taxon_id: 6289
+  uuid_sample_lims: b8ce4ef0-33be-11e6-9c1b-68b599768938
+- accession_number: ~
+  cohort: ~
+  common_name: Haemonchus contortus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:34:51
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446210
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655794
+  id_sample_tmp: 2634128
+  last_updated: 2016-06-16 14:50:09
+  mother: ~
+  name: 2467STDY6446210
+  organism: ~
+  public_name: Haemonchus contortus
+  recorded_at: 2016-06-16 14:50:10
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446210
+  strain: MHco3(ISE)
+  supplier_name: Hc_mixed_ISE_512899C_ch
+  taxon_id: 6289
+  uuid_sample_lims: b8dddf50-33be-11e6-9c1b-68b599768938
+- accession_number: ~
+  cohort: ~
+  common_name: Haemonchus contortus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:34:52
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446211
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655795
+  id_sample_tmp: 2634129
+  last_updated: 2016-06-16 14:50:09
+  mother: ~
+  name: 2467STDY6446211
+  organism: ~
+  public_name: Haemonchus contortus
+  recorded_at: 2016-06-16 14:50:10
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446211
+  strain: MHco3(ISE)
+  supplier_name: Hc_mixed_ISE_512899D_ch
+  taxon_id: 6289
+  uuid_sample_lims: b8ed6fb0-33be-11e6-9c1b-68b599768938
+- accession_number: ~
+  cohort: ~
+  common_name: Haemonchus contortus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:35:38
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446212
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655796
+  id_sample_tmp: 2634130
+  last_updated: 2016-06-16 14:50:41
+  mother: ~
+  name: 2467STDY6446212
+  organism: ~
+  public_name: Haemonchus contortus
+  recorded_at: 2016-06-16 14:50:41
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446212
+  strain: MHco3(ISE).N1
+  supplier_name: HcinbredN1_512899Ach
+  taxon_id: 6289
+  uuid_sample_lims: d48eccf0-33be-11e6-b019-68b59976a384
+- accession_number: ~
+  cohort: ~
+  common_name: Haemonchus contortus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:35:38
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446213
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655797
+  id_sample_tmp: 2634131
+  last_updated: 2016-06-16 14:50:41
+  mother: ~
+  name: 2467STDY6446213
+  organism: ~
+  public_name: Haemonchus contortus
+  recorded_at: 2016-06-16 14:50:41
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446213
+  strain: MHco3(ISE).N1
+  supplier_name: HcinbredN1_512899Bch
+  taxon_id: 6289
+  uuid_sample_lims: d498b800-33be-11e6-b019-68b59976a384
+- accession_number: ~
+  cohort: ~
+  common_name: Haemonchus contortus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:35:38
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446214
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655798
+  id_sample_tmp: 2634132
+  last_updated: 2016-06-16 14:50:41
+  mother: ~
+  name: 2467STDY6446214
+  organism: ~
+  public_name: Haemonchus contortus
+  recorded_at: 2016-06-16 14:50:41
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446214
+  strain: MHco3(ISE).N1
+  supplier_name: HcinbredN1_512899Cch
+  taxon_id: 6289
+  uuid_sample_lims: d49fe3f0-33be-11e6-b019-68b59976a384
+- accession_number: ~
+  cohort: ~
+  common_name: Haemonchus contortus
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:35:38
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446215
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655799
+  id_sample_tmp: 2634133
+  last_updated: 2016-06-16 14:50:41
+  mother: ~
+  name: 2467STDY6446215
+  organism: ~
+  public_name: Haemonchus contortus
+  recorded_at: 2016-06-16 14:50:41
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446215
+  strain: MHco3(ISE).N1
+  supplier_name: HcinbredN1_512899Dch
+  taxon_id: 6289
+  uuid_sample_lims: d4a6e8d0-33be-11e6-b019-68b59976a384
+- accession_number: ~
+  cohort: ~
+  common_name: Teladorsagia circumcincta
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:36:23
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446216
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655800
+  id_sample_tmp: 2634134
+  last_updated: 2016-06-16 14:51:07
+  mother: ~
+  name: 2467STDY6446216
+  organism: ~
+  public_name: Teladorsagia circumcincta
+  recorded_at: 2016-06-16 14:51:07
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446216
+  strain: MTci2 (Weybridge)
+  supplier_name: Tc_512899_A_ch
+  taxon_id: 45464
+  uuid_sample_lims: ef5ed070-33be-11e6-b019-68b59976a384
+- accession_number: ~
+  cohort: ~
+  common_name: Teladorsagia circumcincta
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:36:23
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446217
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655801
+  id_sample_tmp: 2634135
+  last_updated: 2016-06-16 14:51:07
+  mother: ~
+  name: 2467STDY6446217
+  organism: ~
+  public_name: Teladorsagia circumcincta
+  recorded_at: 2016-06-16 14:51:07
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446217
+  strain: MTci2 (Weybridge)
+  supplier_name: Tc_512899_B_ch
+  taxon_id: 45464
+  uuid_sample_lims: ef670dd0-33be-11e6-b019-68b59976a384
+- accession_number: ~
+  cohort: ~
+  common_name: Teladorsagia circumcincta
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:36:23
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446218
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655802
+  id_sample_tmp: 2634136
+  last_updated: 2016-06-16 14:51:07
+  mother: ~
+  name: 2467STDY6446218
+  organism: ~
+  public_name: Teladorsagia circumcincta
+  recorded_at: 2016-06-16 14:51:07
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446218
+  strain: MTci2 (Weybridge)
+  supplier_name: Tc_512899_C_ch
+  taxon_id: 45464
+  uuid_sample_lims: ef6e60d0-33be-11e6-b019-68b59976a384
+- accession_number: ~
+  cohort: ~
+  common_name: Teladorsagia circumcincta
+  consent_withdrawn: 0
+  control: 0
+  country_of_origin: ~
+  created: 2016-06-16 12:36:23
+  deleted_at: ~
+  description: ~
+  donor_id: 2467STDY6446219
+  ethnicity: ~
+  father: ~
+  gender: ~
+  geographical_region: ~
+  id_lims: SQSCP
+  id_sample_lims: 2655803
+  id_sample_tmp: 2634137
+  last_updated: 2016-06-16 14:51:07
+  mother: ~
+  name: 2467STDY6446219
+  organism: ~
+  public_name: Teladorsagia circumcincta
+  recorded_at: 2016-06-16 14:51:07
+  reference_genome: ~
+  replicate: ~
+  sample_visibility: ~
+  sanger_sample_id: 2467STDY6446219
+  strain: MTci2 (Weybridge)
+  supplier_name: Tc_512899_D_ch
+  taxon_id: 45464
+  uuid_sample_lims: ef758cc0-33be-11e6-b019-68b59976a384
+
+

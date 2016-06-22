@@ -216,6 +216,18 @@ sub check_lims_link {
   }
   $lims->{'studies'} = \@studies;
 
+  #find library types by lane for appropriate analysis
+  #TODO: move to pipeline script code?
+  my %library_type_counts_by_position = ();
+  foreach my$fcr (grep { !$_->is_control } @fcell_rows) {
+    $library_type_counts_by_position{$fcr->position}->{$fcr->default_library_type}++
+  }
+  my %library_types_by_position = ();
+  while (my($k,$v)=each %library_type_counts_by_position) {
+    $library_types_by_position{$k} = [ uniq sort keys %{$v} ];
+  }
+  $lims->{'library_types_by_position'} = \%library_types_by_position;
+
   return $lims;
 }
 
