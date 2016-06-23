@@ -411,13 +411,6 @@ sub _generate_command_params {
     # This will avoid using BamIndexDecoder or attempting to split a non-muliplexed lane.
     $splice_flag = q[-splice_nodes '"'"'bamadapterfind:-bamcollate:'"'"'];
     $prune_flag = q[-prune_nodes '"'"'fs1p_tee_split:__SPLIT_BAM_OUT__-'"'"'];
-
-##############
-# temporary assignment of unused parameters
-#############
-    $p4_params{bamindexdecoder_jar} = $self->_BamIndexDecoder_jar;
-    $p4_params{$bid_flag_map{q/BARCODE_FILE/}} = q[dummy_value];
-    $p4_params{$bid_flag_map{q/METRICS_FILE/}} = $full_bam_name . q{.tag_decode.metrics};
   }
 
   if(!$self->is_paired_read) {
