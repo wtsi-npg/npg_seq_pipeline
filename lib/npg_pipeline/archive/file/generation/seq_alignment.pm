@@ -195,18 +195,15 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
 #############################
     my $no_tgtaln_splice_flag = q[];
     my $scramble_reference_unset = q[];
-    my $samtools_stats_reference_unset = q[];
+    my $stats_reference_unset = q[];
     my $af_target_in_flag = q[];
     my $af_unaln_out_flag_name = q[];
-    my $auxfilter_flag = q[];
     if(not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam) {
       $no_tgtaln_splice_flag = q[-splice_nodes '"'"'src_bam:-alignment_filter:__PHIX_BAM_IN__'"'"' ];
       $scramble_reference_unset = q[-keys scramble_reference_flag -vals '"'"'-x'"'"'];
       $stats_reference_unset = q[-nullkeys stats_reference_flag]; # both samtools and bam_stats
       $af_target_in_flag = q[-nullkeys af_target_in_flag]; # switch off AlignmentFilter target input
       $af_unaln_out_flag_name = q[-keys af_target_out_flag_name -vals '"'"'UNALIGNED'"'"']; # rename "target output" flag
-      # keep this auxfilter_flag for the time being, though it has no effect if the prealignment bamreset node is spliced out
-      $auxfilter_flag = q[-keys auxfilter_flag -vals '"'"'auxfilter=RG\,PG\,BC\,RT\,QT\,tr\,tq\,br\,qr\,a3\,aa\,af\,ah\,ar\,as'"'"'];
     }
 
     my $hs_bwa = ($self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se');
@@ -263,21 +260,21 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                              q(-keys outdatadir -vals), $archive_path,
                              q(-keys af_metrics -vals), $name_root.q{.bam_alignment_filter_metrics.json},
                              q(-keys rpt -vals), $name_root,
-                             ($do_target_alignment? (q(-keys reference_dict -vals), $self->_ref($l,q(picard)).q(.dict)): (q(-keys reference_dict -vals dummy))),
+                             ($do_target_alignment? (q(-keys reference_dict -vals), $self->_ref($l,q(picard)).q(.dict)): ()),
                              ($nchs? (q(-keys reference_dict_hs -vals), _default_human_split_ref(q{picard}, $self->repository),): ()),   # always human default
-                             ($do_target_alignment? (q(-keys reference_genome_fasta -vals), $self->_ref($l,q(fasta)),): (q(-keys reference_genome_fasta -vals dummy))),
+                             ($do_target_alignment? (q(-keys reference_genome_fasta -vals), $self->_ref($l,q(fasta)),): ()),
                              ($nchs? (q(-keys hs_reference_genome_fasta -vals), _default_human_split_ref(q{fasta}, $self->repository)): ()),   # always human default
                              q(-keys phix_reference_genome_fasta -vals), $self->phix_reference,
                              q(-keys alignment_filter_jar -vals), $self->_AlignmentFilter_jar,
                              ( $do_rna ? (
-                                  ($do_target_alignment? (q(-keys alignment_reference_genome -vals), $self->_ref($l,q(bowtie2)),): (q(-keys alignment_reference_genome -vals dummy))),
+                                  ($do_target_alignment? (q(-keys alignment_reference_genome -vals), $self->_ref($l,q(bowtie2)),): ()),
                                   ($nchs? (q(-keys hs_alignment_reference_genome -vals), _default_human_split_ref(q{bowtie2}, $self->repository)): ()),   # always human default
                                   q(-keys library_type -vals), ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) ),
                                   q(-keys transcriptome_val -vals), $self->_transcriptome($l)->transcriptome_index_name(),
                                   q(-keys alignment_method -vals tophat2),
                                   ($nchs ? q(-keys alignment_hs_method -vals tophat2) : ()),
                                ) : (
-                                  ($do_target_alignment? (q(-keys alignment_reference_genome -vals), $self->_ref($l,q(bwa0_6)),): (q(-keys alignment_reference_genome -vals dummy))),
+                                  ($do_target_alignment? (q(-keys alignment_reference_genome -vals), $self->_ref($l,q(bwa0_6)),): ()),
                                   ($nchs? (q(-keys hs_alignment_reference_genome -vals), _default_human_split_ref(q{bwa0_6}, $self->repository)): ()),   # always human default
                                   q(-keys bwa_executable -vals bwa0_6),
                                   q(-keys alignment_method -vals), $bwa,
@@ -286,7 +283,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                              (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
                              $human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : (),
                              $l->separate_y_chromosome_data ? (q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true -keys split_bam_by_chromosomes_jar -vals ), $self->_SplitBamByChromosomes_jar) : (),
-                             $no_tgtaln_splice_flag, $scramble_reference_unset, $samtools_stats_reference_unset, $af_target_in_flag, $af_unaln_out_flag_name, $auxfilter_flag, # empty unless no target alignment
+                             $no_tgtaln_splice_flag, $scramble_reference_unset, $stats_reference_unset, $af_target_in_flag, $af_unaln_out_flag_name, # empty unless no target alignment
                              q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
                              qq(> run_$name_root.json),
                            q{&&},
