@@ -20,9 +20,9 @@ my $output = q[];
 if ($opts->{own_job_name}) {
   $output = `bjobs -u prod_users -w -r | grep $opts->{job_name} | grep -v $opts->{own_job_name}`;
 } else {
-  # Attention! This will not prevent members of a job array from runnign concurrently.
+  # Attention! This will not prevent members of a job array from running concurrently.
   my $job_index_var = $ENV{'LSB_JOBID'};
-  $output = `bjobs -u prod_users -w -r | grep $opts->{job_name} | grep -v $job_index_var`;
+  $output = `bjobs -u prod_users -w -r | grep $opts->{job_name} | grep -vw "^$job_index_var"`;
 }
 if ($output) {
   exit 1;
