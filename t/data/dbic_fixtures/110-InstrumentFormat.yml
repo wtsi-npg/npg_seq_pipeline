@@ -1,0 +1,11 @@
+---
+- days_between_washes: 28
+  default_columns: 4
+  default_tiles: 96
+  id_instrument_format: 12
+  id_manufacturer: 10
+  iscurrent: 1
+  model: HiSeqX
+  runs_between_washes: 1
+
+

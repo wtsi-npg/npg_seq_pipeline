@@ -4,7 +4,7 @@ use Moose;
 use Carp;
 use Readonly;
 use Try::Tiny;
-use List::MoreUtils qw/uniq/;
+use List::MoreUtils qw/uniq any all/;
 
 use npg_tracking::util::abs_path qw/abs_path/;
 
@@ -18,6 +18,7 @@ Readonly::Scalar my $RAPID_RUN_JOB_PRIORITY => 60;
 Readonly::Scalar my $ANALYSIS_PENDING       => q{analysis pending};
 Readonly::Scalar my $GCLP_STUDY_KEY         => q{gclp_all_studies};
 Readonly::Scalar my $PATH_DELIM             => q{:};
+Readonly::Scalar my $ANALYSIS_ON_HOLD_LIBRARY_PATTERN => qr/\b(?:10xGenomics|Chromium)\b/smx;
 
 sub build_pipeline_script_name {
   return $PIPELINE_SCRIPT;
@@ -73,6 +74,29 @@ sub _process_one_run {
   }
 
   my $arg_refs = $self->check_lims_link($run);
+
+  #if lanes are 10X....
+  my @skip_lanes;
+  my @do_lanes;
+  my %library_types_by_position = %{ $arg_refs->{'library_types_by_position'}};
+  while ( my($lane, $lta) = each %library_types_by_position ){
+    if (any { m/$ANALYSIS_ON_HOLD_LIBRARY_PATTERN/smx} @{$lta} ) {
+      push @skip_lanes, $lane;
+    } else {
+      push @do_lanes, $lane;
+    }
+  }
+  if (@skip_lanes) {
+    if (@do_lanes) {
+      $arg_refs->{'lanes'} = \@do_lanes;
+    } else {
+      $self->logger->info(qq{Shifting run $id_run to analysis on hold});
+      my$r_run = $self->npg_tracking_schema->resultset(q(Run))->find({id_run=>$id_run});
+      $r_run->update_run_status('analysis on hold');
+      return;
+    }
+  }
+
   $arg_refs->{'script'} = $self->pipeline_script_name;
 
   $arg_refs->{'job_priority'} = $run->run_lanes->count <= 2 ?
@@ -84,9 +108,10 @@ sub _process_one_run {
   $arg_refs->{'rf_path'}  = $self->runfolder_path4run($id_run);
   $arg_refs->{'software'} = $self->_software_bundle($arg_refs->{'gclp'} ? 1 : 0, $arg_refs->{'studies'});
 
-  $self->run_command( $id_run, $self->_generate_command( $arg_refs ));
+  my $cmd = $self->_generate_command( $arg_refs );
+  $self->run_command( $id_run, $cmd);
 
-  return;
+  return $cmd; # return has value for benefit of test - yuk!
 }
 
 sub _software_bundle {
@@ -152,6 +177,9 @@ sub _generate_command {
       $self->logger->info('QC run');
     }
     $cmd .= q{ --id_flowcell_lims } . $arg_refs->{'id'};
+  }
+  if(my $lra = $arg_refs->{'lanes'}){
+    $cmd .= join q(),map {" --lanes $_"} sort @{$lra};
   }
 
   my $path = join $PATH_DELIM, $self->local_path(), $ENV{'PATH'};

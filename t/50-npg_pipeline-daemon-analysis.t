@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 11;
+use Test::More tests => 13;
 use Test::Exception;
 use Cwd;
 use File::Path qw{ make_path };
@@ -109,7 +109,7 @@ subtest 'staging host matching' => sub {
   $schema->resultset(q[Run])->find(3)->update_run_status('analysis pending', 'pipeline',);
   my @test_runs = ();
   lives_ok { @test_runs = $runner->runs_with_status('analysis pending') }
-    'can get runs with analysys pending status';
+    'can get runs with analysis pending status';
   ok(scalar @test_runs >= 3, 'at least three runs are analysis pending');
   foreach my $id (qw/2 3 1234/) {
     ok((any {$_->id_run == $id} @test_runs),
@@ -177,7 +177,7 @@ subtest 'failure to retrive lims data' => sub {
 };
 
 subtest 'retrieve lims data' => sub {
-  plan tests => 28;
+  plan tests => 31;
 
   my $runner;
   lives_ok { $runner = $package->new(
@@ -226,6 +226,7 @@ subtest 'retrieve lims data' => sub {
   ok(!$lims_data->{'gclp'}, 'gclp flag is false');
   is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
   is(join(q[:], @{$lims_data->{'studies'}}), '2967', 'studies retrieved');
+  is_deeply($lims_data->{'library_types_by_position'}, {'1'=>['Standard']}, 'library_types_by_position retrieved');
 
   $fc_row->update({'id_lims' => 'C_GCLP'});
   $lims_data = $runner->check_lims_link($test_run);
@@ -247,6 +248,7 @@ subtest 'retrieve lims data' => sub {
   is ($lims_data->{'id'}, 55, 'lims id is set');
   ok (!$lims_data->{'gclp'}, 'gclp flag is false');
   is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
+  is_deeply($lims_data->{'library_types_by_position'}, {'1'=>['Standard']}, 'library_types_by_position retrieved');
 
   $fc_row->update({'id_lims' => 'SSCAPE'});
   $fc_row->update({'purpose' => 'qc'});
@@ -254,7 +256,7 @@ subtest 'retrieve lims data' => sub {
   is ($lims_data->{'id'}, 55, 'lims id is set');
   ok (!$lims_data->{'gclp'}, 'gclp flag is false');
   is ($lims_data->{'qc_run'}, 1, 'qc run flag is set');
-
+  is_deeply($lims_data->{'library_types_by_position'}, {'1'=>['Standard']}, 'library_types_by_position retrieved');
 
 };
 
@@ -415,4 +417,61 @@ subtest 'compute runfolder path' => sub {
   is( $runner->runfolder_path4run(1234), $rf, 'runfolder path is correct');
 };
 
+######################### 10X - no automated analysis yet #####
+subtest 'skip command but do status change' => sub {
+  plan tests => 3;
+
+  $test_run = $schema->resultset(q[Run])->find(19860);
+  $test_run->update_run_status('analysis pending', 'pipeline',);
+  is($test_run->current_run_status_description,
+    'analysis pending', 'test run is analysis pending');
+
+  my $runner  = $package->new(
+               pipeline_script_name => '/bin/true',
+               npg_tracking_schema  => $schema,
+               mlwh_schema          => $wh_schema,
+               dry_run              => 1,
+  );
+  my $lims_data = $runner->check_lims_link($test_run);
+  lives_ok { $runner->_process_one_run($test_run) } 'process run to on hold';
+  is($test_run->current_run_status_description,
+    'analysis on hold', 'test run is analysis on hold');
+
+};
+
+subtest 'limit lanes analysed' => sub {
+  plan tests => 4;
+
+  $test_run = $schema->resultset(q[Run])->find(20148);
+  $test_run->update_run_status('analysis pending', 'pipeline',);
+  is($test_run->current_run_status_description,
+    'analysis pending', 'test run is analysis pending');
+
+  my $runner  = $package->new(
+               pipeline_script_name => '/bin/true',
+               npg_tracking_schema  => $schema,
+               mlwh_schema          => $wh_schema,
+               dry_run              => 1,
+  );
+  my $original_path = $ENV{'PATH'};
+  my $perl_bin = $EXECUTABLE_NAME;
+  $perl_bin =~ s/\/perl\Z//smx;
+  my $path = join q[:], "${current_dir}/t", $perl_bin, $original_path;
+  my $temp = t::util->new()->temp_directory();
+  my $name = $test_run->folder_name;
+  my $rf = join q[/], $temp, 'sf33/ILorHSany_sf33/outgoing', $name;
+  make_path $rf;
+  $test_run->update( {folder_path_glob => $temp . q[/sf33/ILorHSany_sf33/*/] });
+  $test_run->set_tag('pipeline','staging');
+
+  my $cmd_run;
+  lives_ok { $cmd_run = $runner->_process_one_run($test_run) } 'process run';
+  my $command = qq[/bin/true --verbose --job_priority 61 --runfolder_path $rf --id_flowcell_lims 47208 --lanes 1 --lanes 2 --lanes 3 --lanes 4 --lanes 5 --lanes 6];
+  is($cmd_run, qq[export PATH=${path}; $command], 'command with limited lanes');
+  is($test_run->current_run_status_description,
+    'analysis pending', 'test run is still analysis pending');
+
+};
+
+ 
 1;

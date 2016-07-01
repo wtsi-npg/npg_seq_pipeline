@@ -1,0 +1,171 @@
+---
+- email: thomas.keane@sanger.ac.uk
+  id_study_tmp: 595
+  id_study_users_tmp: 142181
+  last_updated: 2016-05-12 16:10:31
+  login: tk2
+  name: Thomas Keane
+  role: owner
+- email: da1@sanger.ac.uk
+  id_study_tmp: 595
+  id_study_users_tmp: 142182
+  last_updated: 2016-05-12 16:10:31
+  login: da1
+  name: David Adams
+  role: follower
+- email: thomas.keane@sanger.ac.uk
+  id_study_tmp: 595
+  id_study_users_tmp: 142183
+  last_updated: 2016-05-12 16:10:31
+  login: tk2
+  name: Thomas Keane
+  role: manager
+- email: ncb@sanger.ac.uk
+  id_study_tmp: 595
+  id_study_users_tmp: 142184
+  last_updated: 2016-05-12 16:10:31
+  login: ncb
+  name: Nathalie C Smerdon
+  role: manager
+- email: sarah@sanger.ac.uk
+  id_study_tmp: 2541
+  id_study_users_tmp: 167698
+  last_updated: 2016-05-19 15:22:54
+  login: sarah
+  name: Sarah Sims
+  role: manager
+- email: mjs@sanger.ac.uk
+  id_study_tmp: 2541
+  id_study_users_tmp: 167699
+  last_updated: 2016-05-19 15:22:54
+  login: mjs
+  name: Mandy Sanders
+  role: manager
+- email: mjs@sanger.ac.uk
+  id_study_tmp: 2541
+  id_study_users_tmp: 167700
+  last_updated: 2016-05-19 15:22:54
+  login: mjs
+  name: Mandy Sanders
+  role: owner
+- email: ekh@sanger.ac.uk
+  id_study_tmp: 2541
+  id_study_users_tmp: 167701
+  last_updated: 2016-05-19 15:22:54
+  login: ekh
+  name: Eleanor Howard
+  role: follower
+- email: mjs@sanger.ac.uk
+  id_study_tmp: 2541
+  id_study_users_tmp: 167702
+  last_updated: 2016-05-19 15:22:54
+  login: mjs
+  name: Mandy Sanders
+  role: follower
+- email: mk11@sanger.ac.uk
+  id_study_tmp: 2541
+  id_study_users_tmp: 167703
+  last_updated: 2016-05-19 15:22:54
+  login: mk11
+  name: Mihir Kekre
+  role: follower
+- email: sb40@sanger.ac.uk
+  id_study_tmp: 2541
+  id_study_users_tmp: 167704
+  last_updated: 2016-05-19 15:22:54
+  login: sb40
+  name: Sandra Bernaldo
+  role: follower
+- email: chc@sanger.ac.uk
+  id_study_tmp: 2541
+  id_study_users_tmp: 167705
+  last_updated: 2016-05-19 15:22:54
+  login: chc
+  name: Craig Corton
+  role: follower
+- email: neh@sanger.ac.uk
+  id_study_tmp: 2541
+  id_study_users_tmp: 167706
+  last_updated: 2016-05-19 15:22:54
+  login: neh
+  name: Nancy Holroyd
+  role: follower
+- email: slw@sanger.ac.uk
+  id_study_tmp: 4129
+  id_study_users_tmp: 168624
+  last_updated: 2016-05-27 09:03:46
+  login: slw
+  name: Siobhan Austin-Guest
+  role: manager
+- email: ms23@sanger.ac.uk
+  id_study_tmp: 4129
+  id_study_users_tmp: 168625
+  last_updated: 2016-05-27 09:03:46
+  login: ms23
+  name: Manjinder Sandhu
+  role: owner
+- email: njl@sanger.ac.uk
+  id_study_tmp: 4129
+  id_study_users_tmp: 168626
+  last_updated: 2016-05-27 09:03:46
+  login: njl
+  name: Nicola Corton
+  role: follower
+- email: mjs@sanger.ac.uk
+  id_study_tmp: 2436
+  id_study_users_tmp: 170141
+  last_updated: 2016-06-17 12:46:16
+  login: mjs
+  name: Mandy Sanders
+  role: manager
+- email: neh@sanger.ac.uk
+  id_study_tmp: 2436
+  id_study_users_tmp: 170142
+  last_updated: 2016-06-17 12:46:16
+  login: neh
+  name: Nancy Holroyd
+  role: manager
+- email: mjs@sanger.ac.uk
+  id_study_tmp: 2436
+  id_study_users_tmp: 170143
+  last_updated: 2016-06-17 12:46:16
+  login: mjs
+  name: Mandy Sanders
+  role: owner
+- email: ncb@sanger.ac.uk
+  id_study_tmp: 2436
+  id_study_users_tmp: 170144
+  last_updated: 2016-06-17 12:46:16
+  login: ncb
+  name: Nathalie C Smerdon
+  role: owner
+- email: neh@sanger.ac.uk
+  id_study_tmp: 2436
+  id_study_users_tmp: 170145
+  last_updated: 2016-06-17 12:46:16
+  login: neh
+  name: Nancy Holroyd
+  role: follower
+- email: hb6@sanger.ac.uk
+  id_study_tmp: 2436
+  id_study_users_tmp: 170146
+  last_updated: 2016-06-17 12:46:16
+  login: hb6
+  name: Hayley Bennett
+  role: follower
+- email: th4@sanger.ac.uk
+  id_study_tmp: 2436
+  id_study_users_tmp: 170147
+  last_updated: 2016-06-17 12:46:16
+  login: th4
+  name: Thomas Huckvale
+  role: follower
+- email: tc13@sanger.ac.uk
+  id_study_tmp: 2436
+  id_study_users_tmp: 170148
+  last_updated: 2016-06-17 12:46:16
+  login: tc13
+  name: Thomas Crellen
+  role: follower
+
+
