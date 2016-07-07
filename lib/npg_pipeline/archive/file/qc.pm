@@ -27,7 +27,7 @@ Readonly::Scalar my $NO_REFERENCE_REPOS_DEPENDENCY => {
 };
 
 Readonly::Scalar my $REQUIRES_QC_OUT_PATH => {
-  rna_seqc => 1,
+  rna_seqc => 'rna_seqc',
 };
 
 has q{qc_to_run} => (isa => q{Str}, is => q{ro}, required => 1);
@@ -40,30 +40,34 @@ sub run_qc {
   $self->log(qq{Running qc test $qc_to_run on Run $id_run});
 
   foreach my $position ($self->positions()) {
-    my @archive_qc_path = ($self->archive_path, q[qc], (%{$REQUIRES_QC_OUT_PATH})[0]);
-    my $lane_dir = join q[_], $self->id_run(), $position;
-    my $qc_out_dir;
-    if ($REQUIRES_QC_OUT_PATH->{$self->qc_to_run()}) {
-      $qc_out_dir = File::Spec->catdir(@archive_qc_path, $lane_dir);
-      if (! -d $qc_out_dir) { make_path($qc_out_dir); }
-    }
-    if ($self->is_multiplexed_lane($position)) {
-      if (-e $self->lane_archive_path($position)) {
-        my $lane_qc_dir = $self->lane_qc_path( $position );
-        if (!-e $lane_qc_dir) {
-          mkdir $lane_qc_dir;
-        }
-      }
-      if ($REQUIRES_QC_OUT_PATH->{$self->qc_to_run()}) {
-        foreach my $tag (@{$self->get_tag_index_list($position)}) {
-          my $lane_tag_dir = join q[#], $lane_dir, $tag;
-          $qc_out_dir = File::Spec->catdir(@archive_qc_path, $lane_dir, $lane_tag_dir);
-          if (! -d $qc_out_dir) { make_path($qc_out_dir); }
-        }
+    if ( $self->is_multiplexed_lane($position) && (-e $self->lane_archive_path( $position ) ) ) {
+      my $lane_qc_dir = $self->lane_qc_path( $position );
+      if (!-e $lane_qc_dir) {
+        mkdir $lane_qc_dir;
       }
     }
   }
 
+  if ($REQUIRES_QC_OUT_PATH->{$qc_to_run}) {
+    my @archive_qc_path = ($self->archive_path, q[qc], $REQUIRES_QC_OUT_PATH->{$qc_to_run});
+    foreach my $position ($self->positions()) {
+      my $lane_dir = join q[_], $self->id_run(), $position;
+      my $qc_out_dir = File::Spec->catdir(@archive_qc_path, $qc_to_run, $lane_dir);
+      if (! -d $qc_out_dir) {
+        make_path($qc_out_dir);
+      }
+      if ($self->is_multiplexed_lane($position)) {
+        foreach my $tag (@{$self->get_tag_index_list($position)}) {
+          my $lane_tag_dir = join q[#], $lane_dir, $tag;
+          my $qc_out_dir = File::Spec->catdir(@archive_qc_path, $lane_dir, $lane_tag_dir);
+          if (! -d $qc_out_dir) {
+            make_path($qc_out_dir);
+          }
+        }
+      }
+    }
+  }
+  
   my $required_job_completion = $arg_refs->{'required_job_completion'};
   $required_job_completion ||= q{};
 
@@ -192,28 +196,23 @@ sub _can_run {
   my $p = q{npg_qc::autoqc::checks::} . $qc;
   load_class($p);
 
-  my $init_hash = {};
-  if (!$REQUIRES_QC_OUT_PATH->{$self->qc_to_run()}) {
-    $init_hash = {
+  my $init_hash = {
       path      => $qc_in,
       position  => $position,
       check     => $qc,
       id_run    => $self->id_run(),
-      qc_out    => $qc_out,
-    };
-  } else {
-    $init_hash = {
-      path      => $qc_in,
-      position  => $position,
-      check     => $qc,
-      id_run    => $self->id_run(),
-    };
-  }
-  if ( defined $tag_index ) {
+  };
+
+  if (defined $tag_index) {
     $init_hash->{'tag_index'} = $tag_index;
   }
+
   if ($self->has_repository) {
     $init_hash->{'repository'} = $self->repository;
+  }
+
+  if ($REQUIRES_QC_OUT_PATH->{$qc}) {
+    $init_hash->{'qc_out'} = $qc_out;
   }
 
   my $return_value = 1;
