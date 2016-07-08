@@ -422,7 +422,7 @@ sub _generate_command_params {
   my $samtobam_slots = $self->general_values_conf()->{'p4_stage1_samtobam_slots'} || q[`npg_pipeline_job_env_to_threads --exclude -1 --divide 3`];
   my $bamsormadup_slots = $self->general_values_conf()->{'p4_stage1_bamsort_slots'} || q[`npg_pipeline_job_env_to_threads --divide 3`];
   my $bamrecompress_slots = $self->general_values_conf()->{'p4_stage1_bamrecompress_slots'} || q[`npg_pipeline_job_env_to_threads`];
-  my $i2b_implementation = $self->general_values_conf()->{'p4_stage1_i2b_implementation'} || q[bambi];
+  my $i2b_implementation = $self->general_values_conf()->{'p4_stage1_i2b_implementation'} || q[java];
   $self->_job_args->{_commands}->{$position} = join q( ), q(bash -c '),
                            q(cd), $self->p4_stage1_errlog_paths->{$position}, q{&&},
                            q(vtfp.pl),
