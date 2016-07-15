@@ -7,7 +7,6 @@ use Readonly;
 use File::Spec;
 use List::MoreUtils qw{none};
 use Class::Load qw/load_class/;
-use File::Path qw/make_path/;
 
 use npg_pipeline::lsf_job;
 
@@ -26,11 +25,13 @@ Readonly::Scalar my $NO_REFERENCE_REPOS_DEPENDENCY => {
   upstream_tags => 1,
 };
 
-Readonly::Scalar my $REQUIRES_QC_OUT_PATH => {
+Readonly::Scalar my $REQUIRES_REPORT_DIR => {
   rna_seqc => 'rna_seqc',
 };
 
 has q{qc_to_run} => (isa => q{Str}, is => q{ro}, required => 1);
+
+has q{_report_dir} => (isa => q{Str}, is => q{ro}, writer => q{_set_report_dir},);
 
 sub run_qc {
   my ($self, $arg_refs) = @_;
@@ -48,26 +49,6 @@ sub run_qc {
     }
   }
 
-  if ($REQUIRES_QC_OUT_PATH->{$qc_to_run}) {
-    my @archive_qc_path = ($self->archive_path, q[qc], $REQUIRES_QC_OUT_PATH->{$qc_to_run});
-    foreach my $position ($self->positions()) {
-      my $lane_dir = join q[_], $self->id_run(), $position;
-      my $qc_out_dir = File::Spec->catdir(@archive_qc_path, $qc_to_run, $lane_dir);
-      if (! -d $qc_out_dir) {
-        make_path($qc_out_dir);
-      }
-      if ($self->is_multiplexed_lane($position)) {
-        foreach my $tag (@{$self->get_tag_index_list($position)}) {
-          my $lane_tag_dir = join q[#], $lane_dir, $tag;
-          my $qc_out_dir = File::Spec->catdir(@archive_qc_path, $lane_dir, $lane_tag_dir);
-          if (! -d $qc_out_dir) {
-            make_path($qc_out_dir);
-          }
-        }
-      }
-    }
-  }
-  
   my $required_job_completion = $arg_refs->{'required_job_completion'};
   $required_job_completion ||= q{};
 
@@ -90,8 +71,8 @@ sub run_qc {
 sub _generate_bsub_command {
   my ($self, $required_job_completion, $indexed) = @_;
 
-  my ($command, $qc_in, $qc_out) = $self->_qc_command($indexed);
-  my $array_string = $self->_lsf_job_array($qc_in, $indexed, $qc_out);
+  my ($command, $qc_in) = $self->_qc_command($indexed);
+  my $array_string = $self->_lsf_job_array($qc_in, $indexed);
   if (!$array_string) {
     return;
   }
@@ -147,35 +128,43 @@ sub _qc_command {
   my $archive_path      = $self->archive_path;
   my $recalibrated_path = $self->recalibrated_path;
   my $lanestr           = $self->_position_decode_string();
-  my @rna_seqc_archive  = ($archive_path, q[qc], q[rna_seqc]);
-  my $rna_seqc_lane     = join q[_], $self->id_run(), $lanestr;
-  my $rna_seqc_qc_out;
+  my $tagstr            = $self->_tag_index_decode_string();
 
-  if ( defined $indexed ) {
-    my $tagstr = $self->_tag_index_decode_string();
+  if (defined $indexed) {
     my $lane_archive_path = File::Spec->catfile($archive_path, q[lane] . $lanestr);
-    my $rna_seqc_tag = join q[#], $rna_seqc_lane, $tagstr;
-    $rna_seqc_qc_out = File::Spec->catdir(@rna_seqc_archive, $rna_seqc_lane, $rna_seqc_tag);
     $qc_in = ( $self->qc_to_run() eq q[adapter]) ?
         File::Spec->catfile($recalibrated_path, q[lane] . $lanestr) : $lane_archive_path;
-    $qc_out = $self->qc_to_run() eq q[rna_seqc] ?
-        $rna_seqc_qc_out : File::Spec->catfile($lane_archive_path, q[qc]);
+    $qc_out = File::Spec->catfile($lane_archive_path, q[qc]);
     $c .= q{ --position=}  . $lanestr;
     $c .= q{ --tag_index=} . $tagstr;
   } else {
     $c .= q{ --position=}  . $self->lsb_jobindex();
-    $rna_seqc_qc_out = File::Spec->catdir(@rna_seqc_archive, $rna_seqc_lane);
     $qc_in  = $self->qc_to_run() eq q{tag_metrics} ? $self->bam_basecall_path :
         (($self->qc_to_run() eq q[adapter]) ? $recalibrated_path : $archive_path);
-    $qc_out = $self->qc_to_run() eq q[rna_seqc] ?
-        $rna_seqc_qc_out : $self->qc_path();
+    $qc_out = $self->qc_path();
   }
   $c .= qq{ --qc_in=$qc_in --qc_out=$qc_out};
-  return ($c, $qc_in, $qc_out);
+
+  if ($REQUIRES_REPORT_DIR->{$self->qc_to_run()}) {
+    my @rna_seqc_dir = ($archive_path, q[qc], q[rna_seqc]);
+    my $lane_dir     = join q[_], $self->id_run(), $lanestr;
+    my $tag_dir      = join q[#], $lane_dir, $tagstr;
+    my $report_dir   = File::Spec->catdir(@rna_seqc_dir, $lane_dir);
+    if (defined $indexed) {
+      $report_dir = File::Spec->catdir($report_dir, $tag_dir);
+    }
+    $self->_set_report_dir($report_dir);
+    if (! -d $report_dir) {
+      make_path($report_dir);
+    }
+    $c .= qq{ --report_dir=$report_dir};
+  }
+
+  return ($c, $qc_in);
 }
 
 sub _can_run {
-  my ($self, $qc_in, $qc_out, $position, $tag_index) = @_;
+  my ($self, $qc_in, $position, $tag_index) = @_;
 
   my $qc = $self->qc_to_run();
 
@@ -202,17 +191,14 @@ sub _can_run {
       check     => $qc,
       id_run    => $self->id_run(),
   };
-
   if (defined $tag_index) {
     $init_hash->{'tag_index'} = $tag_index;
   }
-
   if ($self->has_repository) {
     $init_hash->{'repository'} = $self->repository;
   }
-
-  if ($REQUIRES_QC_OUT_PATH->{$qc}) {
-    $init_hash->{'qc_out'} = $qc_out;
+  if ($REQUIRES_REPORT_DIR->{$qc}) {
+    $init_hash->{'report_dir'} = $self->_report_dir;
   }
 
   my $return_value = 1;
@@ -226,18 +212,18 @@ sub _can_run {
 }
 
 sub _lsf_job_array {
-  my ($self, $qc_in, $indexed, $qc_out) = @_;
+  my ($self, $qc_in, $indexed) = @_;
 
   my @lsf_indices = ();
   foreach my $lane ($self->positions()) {
     if ($indexed) {
       foreach my $tag (@{$self->get_tag_index_list($lane)}) {
-        if ( $self->_can_run($qc_in, $qc_out, $lane, $tag) ) {
+        if ( $self->_can_run($qc_in, $lane, $tag) ) {
           push @lsf_indices, ( $lane * $LSF_INDEX_MULTIPLIER ) + $tag;
         }
       }
     } else {
-      if ( $self->_can_run($qc_in, $qc_out, $lane) ) {
+      if ( $self->_can_run($qc_in, $lane) ) {
         push @lsf_indices, $lane;
       }
     }
