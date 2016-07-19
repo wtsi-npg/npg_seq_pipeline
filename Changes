@@ -1,7 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 51.2
  - patch to script_must_be_unique_runner - only ignore exact matches to the job id
+ - change function order to run p4 stage 1 analysis by default
 
 release 51.1.1
  - extended is_hiseqx_run to detect HiSeq 4000 runs
