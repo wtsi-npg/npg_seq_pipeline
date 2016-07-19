@@ -5,14 +5,9 @@
 - run_analysis_in_progress
 - lane_analysis_in_progress
 - illumina_basecall_stats
-- illumina2bam
-- qc_tag_metrics
+- p4_stage1_analysis
 - update_ml_warehouse
-- harold_alignment_files
-- harold_calibration_tables
-- harold_recalibration
 - run_secondary_analysis_in_progress
-- split_bam_by_tag
 - bam2fastqcheck_and_cached_fastq
 - qc_qX_yield
 - qc_insert_size
