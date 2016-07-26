@@ -372,15 +372,15 @@ sub _has_newer_flowcell { # is HiSeq High Throughput >= V4, Rapid Run >= V2
 sub _do_rna_analysis {
   my ($self, $l) = @_;
   my $lstring = $l->to_string;
-  if (!$l->library_type || $l->library_type !~ /(?:cD|R)NA/sxm) {
+  if (!$l->library_type || $l->library_type !~ /(?:(?:cD|R)NA|DAFT)/sxm) {
     if ($self->verbose) {
       $self->log(qq{$lstring - not RNA library type});
     }
     return 0;
   }
-  if((not $l->reference_genome) or (not $l->reference_genome =~ /Homo_sapiens|Mus_musculus/smx)){
+  if((not $l->reference_genome) or (not $l->reference_genome =~ /Homo_sapiens|Mus_musculus|Plasmodium_(?:falciparum|berghei)/smx)){
     if ($self->verbose) {
-      $self->log(qq{$lstring - Not human or mouse (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on all eukaryotes?
+      $self->log(qq{$lstring - Not human or mouse or plasmodium falciparum or berghei (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on all eukaryotes?
     }
     return 0;
   }

@@ -7,6 +7,7 @@ use Readonly;
 use File::Spec;
 use List::MoreUtils qw{none};
 use Class::Load qw/load_class/;
+use File::Path qw( make_path );
 
 use npg_pipeline::lsf_job;
 
@@ -33,6 +34,16 @@ has q{qc_to_run} => (isa => q{Str}, is => q{ro}, required => 1);
 
 has q{_report_dir} => (isa => q{Str}, is => q{ro}, writer => q{_set_report_dir},);
 
+has q{_report_dirs} => (isa => q{HashRef[Str]},
+                        is => q{ro},
+                        traits => [q{Hash}],
+                        default => sub { { } },
+                        handles => {
+                          _set_rpt_report_dir => q{set},
+                          _get_rpt_report_dir => q{get},
+                        },
+                       );
+
 sub run_qc {
   my ($self, $arg_refs) = @_;
 
@@ -45,6 +56,28 @@ sub run_qc {
       my $lane_qc_dir = $self->lane_qc_path( $position );
       if (!-e $lane_qc_dir) {
         mkdir $lane_qc_dir;
+      }
+    }
+  }
+
+  if ($REQUIRES_REPORT_DIR->{$qc_to_run}) {
+    my @archive_qc_path = ($self->archive_path, q[qc], $REQUIRES_REPORT_DIR->{$qc_to_run});
+    foreach my $position ($self->positions()) {
+      my $rp = join q[_], $self->id_run(), $position;
+      my $report_dir = File::Spec->catdir(@archive_qc_path, $rp);
+      if (! -d $report_dir) {
+        make_path($report_dir);
+        $self->_set_rpt_report_dir($rp, $report_dir);
+      }
+      if ($self->is_multiplexed_lane($position)) {
+        foreach my $tag (@{$self->get_tag_index_list($position)}) {
+          my $rpt = join q[#], $rp, $tag;
+          my $report_dir = File::Spec->catdir(@archive_qc_path, $rp, $rpt);
+          if (! -d $report_dir) {
+            make_path($report_dir);
+            $self->_set_rpt_report_dir($rpt, $report_dir);
+          }
+        }
       }
     }
   }
@@ -153,10 +186,6 @@ sub _qc_command {
     if (defined $indexed) {
       $report_dir = File::Spec->catdir($report_dir, $tag_dir);
     }
-    $self->_set_report_dir($report_dir);
-    if (! -d $report_dir) {
-      make_path($report_dir);
-    }
     $c .= qq{ --report_dir=$report_dir};
   }
 
@@ -198,7 +227,11 @@ sub _can_run {
     $init_hash->{'repository'} = $self->repository;
   }
   if ($REQUIRES_REPORT_DIR->{$qc}) {
-    $init_hash->{'report_dir'} = $self->_report_dir;
+    my $report_dir_key = join q[_], $self->id_run(), $position;
+    if (defined $tag_index) {
+      $report_dir_key = join q[#], $report_dir_key, $tag_index;
+    }
+    $init_hash->{'report_dir'} = $self->_get_rpt_report_dir($report_dir_key);
   }
 
   my $return_value = 1;
