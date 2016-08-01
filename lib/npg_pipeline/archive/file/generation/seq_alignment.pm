@@ -14,6 +14,7 @@ use open q(:encoding(UTF8));
 
 use npg_tracking::data::reference::find;
 use npg_tracking::data::transcriptome;
+use npg_tracking::data::bait;
 use npg_pipeline::lsf_job;
 use npg_common::roles::software_location;
 use st::api::lims;
@@ -189,7 +190,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
    my $af_target_in_flag = q[];
    my $af_unaln_out_flag_name = q[];
    if(not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam) {
-     $no_tgtaln_splice_flag = q[-splice_nodes '"'"'src_bam:-alignment_filter:__PHIX_BAM_IN__'"'"' ];
+     $no_tgtaln_splice_flag = q[-splice_nodes '"'"'src_bam:-alignment_filter:__PHIX_BAM_IN__'"'"'];
      $scramble_reference_unset = q[-keys scramble_reference_flag -vals '"'"'-x'"'"'];
      $stats_reference_unset = q[-nullkeys stats_reference_flag]; # both samtools and bam_stats
      $af_target_in_flag = q[-nullkeys af_target_in_flag]; # switch off AlignmentFilter target input
@@ -252,6 +253,12 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                           ($nchs? (q(-keys hs_reference_genome_fasta -vals), _default_human_split_ref(q{fasta}, $self->repository)): ()),   # always human default
                           q(-keys phix_reference_genome_fasta -vals), $self->phix_reference,
                           q(-keys alignment_filter_jar -vals), $self->_AlignmentFilter_jar,
+                          ($self->_do_bait_stats_analysis($l) ? (
+                              q(-keys bait_regions_file -vals), $self->_bait($l)->bait_intervals_path(),
+                              q(-prune_nodes '"'"'fopphx_samtools_stats_F0.*00_bait.*'"'"'),
+                          ) : ( ## wildcard prune 
+                              q(-prune_nodes '"'"'fop.*samtools_stats_F0.*00_bait.*'"'"'),
+                          )),
                           ( $do_rna ? (
                                ($do_target_alignment? (q(-keys alignment_reference_genome -vals), $self->_ref($l,q(bowtie2)),): ()),
                                ($nchs? (q(-keys hs_alignment_reference_genome -vals), _default_human_split_ref(q{bowtie2}, $self->repository)): ()),   # always human default
@@ -409,6 +416,43 @@ sub _transcriptome {
     return($t);
 }
 
+sub _do_bait_stats_analysis {
+  my ($self, $l) = @_;
+  my $lstring = $l->to_string;
+  if(not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam) {
+      if ($self->verbose) {
+          $self->log(qq{$lstring - no reference or no alignments set});
+      }
+      return 0;
+  }
+  if(not $self->_bait($l)->bait_name){
+      if ($self->verbose) {
+          $self->log(qq{$lstring - No bait set});
+      }
+      return 0;
+  }
+  if(not $self->_bait($l)->bait_path){
+      if ($self->verbose) {
+          $self->log(qq{$lstring - No bait path found});
+      }
+      return 0;
+  }
+  if ($self->verbose) {
+      $self->log(qq{$lstring - Doing optional bait stats analysis....});
+  }
+  return 1;
+}
+
+sub _bait{
+  my($self,$l) = @_;
+  return npg_tracking::data::bait->new (
+                {'id_run'     => $l->id_run,
+                 'position'   => $l->position,
+                 'tag_index'  => $l->tag_index,
+                 ( $self->repository ? ('repository' => $self->repository):())
+                });
+}
+
 sub _ref {
   my ($self, $l, $aligner) = @_;
   my $lstring = $l->to_string;
@@ -540,6 +584,8 @@ LSF job creation for seq alignment
 =item File::Slurp
 
 =item npg_tracking::data::reference::find
+
+=item npg_tracking::data::bait
 
 =back
 
