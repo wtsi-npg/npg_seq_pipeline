@@ -32,17 +32,15 @@ Readonly::Scalar my $REQUIRES_QC_REPORT_DIR => {
 
 has q{qc_to_run} => (isa => q{Str}, is => q{ro}, required => 1);
 
-has q{_qc_report_dir} => (isa => q{Str}, is => q{ro}, writer => q{_set_qc_report_dir},);
-
 has q{_qc_report_dirs} => (isa => q{HashRef[Str]},
-                        is => q{ro},
-                        traits => [q{Hash}],
-                        default => sub { { } },
-                        handles => {
-                          _set_rpt_qc_report_dir => q{set},
-                          _get_rpt_qc_report_dir => q{get},
-                        },
-                       );
+                           is => q{ro},
+                           traits => [q{Hash}],
+                           default => sub { { } },
+                           handles => {
+                             _set_rpt_qc_report_dir => q{set},
+                             _get_rpt_qc_report_dir => q{get},
+                           },
+                          );
 
 sub run_qc {
   my ($self, $arg_refs) = @_;
@@ -179,12 +177,12 @@ sub _qc_command {
   $c .= qq{ --qc_in=$qc_in --qc_out=$qc_out};
 
   if ($REQUIRES_QC_REPORT_DIR->{$self->qc_to_run()}) {
-    my @rna_seqc_dir = ($archive_path, q[qc], q[rna_seqc]);
-    my $lane_dir     = join q[_], $self->id_run(), $lanestr;
-    my $tag_dir      = join q[#], $lane_dir, $tagstr;
-    my $qc_report_dir   = File::Spec->catdir(@rna_seqc_dir, $lane_dir);
+    my @archive_qc_path = ($archive_path, q[qc], $REQUIRES_QC_REPORT_DIR->{$self->qc_to_run()});
+    my $rptstr          = join q[_], $self->id_run(), $lanestr;
+    my $qc_report_dir   = File::Spec->catdir(@archive_qc_path, $rptstr);
     if (defined $indexed) {
-      $qc_report_dir = File::Spec->catdir($qc_report_dir, $tag_dir);
+      $rptstr        = join q[#], $rptstr, $tagstr;
+      $qc_report_dir = File::Spec->catdir($qc_report_dir, $rptstr);
     }
     $c .= qq{ --qc_report_dir=$qc_report_dir};
   }
