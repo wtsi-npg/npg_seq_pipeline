@@ -1,6 +1,5 @@
 a:
-    illumina2bam: 1
-    illumina_basecall_stats: 1 
+    illumina_basecall_stats: 1
     p4_stage1_analysis: 1
 b:
     seq_alignment: 1
@@ -19,7 +18,6 @@ c:
     qc_genotype: 1
     qc_upstream_tags: 1
     qc_verify_bam_id: 1
-    qc_rna_seqc: 1
 d:
     upload_auto_qc_to_qc_database: 1
     upload_fastqcheck_to_qc_database: 1

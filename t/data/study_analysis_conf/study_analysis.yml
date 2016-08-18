@@ -1,15 +1,8 @@
 # Study analysis environment
 # for gseq farm
 ---
-- lims_id: SQSCP
-  is_gclp: 0
-  software: 20151123
-  study_id: 4567
-- lims_id: C_GCLPVL
-  is_gclp: 1
-  software: 20151023
-  study_id: 4567
-- lims_id: C_GCLP
-  is_gclp: 1
-  software: 20160113
-  study_id: A345
+gclp_all_studies: t/data
+12345: t
+12346: t/data/cache
+12347: t/data/cache
+XY345: /some/dir

@@ -298,6 +298,19 @@ sub create_archive_directory {
 }
 
 
+=head2 p4_stage1_analysis
+
+for stage 1 analysis using p4
+
+=cut
+
+sub p4_stage1_analysis {
+  my ($self, @args) = @_;
+  my $required_job_completion = shift @args;
+  return $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::generation::p4_stage1_analysis})
+           ->generate({required_job_completion => $required_job_completion,});
+}
+
 =head2 seq_alignment
 
 for each plex or a lane(non-indexed lane), do suitable alignment for data

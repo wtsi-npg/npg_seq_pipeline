@@ -101,6 +101,25 @@ sub is_qc_run {
   return $lims_id && $lims_id =~ /\A\d{13}\z/smx; # it's a tube barcode
 }
 
+=head2 lims_driver_type
+
+Optional lims driver type name
+
+=cut
+
+has q{lims_driver_type} => (isa           => q{Str},
+                            is            => q{ro},
+                            lazy_build    => 1,
+                            documentation => q{Optional lims driver type name},);
+sub _build_lims_driver_type {
+  my $self = shift;
+  return $self->qc_run ?
+    ($self->is_qc_run($self->id_flowcell_lims) ?
+       npg_pipeline::cache->warehouse_driver_name :
+       npg_pipeline::cache->mlwarehouse_driver_name
+    ) : npg_pipeline::cache->mlwarehouse_driver_name;
+}
+
 =head2 multiplexed_lanes
 
 An array of positions that correspond to, if the run is indexed, pooled lanes.
@@ -186,13 +205,14 @@ A boolean flag
 
 =cut
 
-has q{is_hiseqx_run} => (isa        => q{Bool},
-                         is         => q{ro},
-                         metaclass  => q{NoGetopt},
-                         lazy_build => 1,);
+has q{is_hiseqx_run} => (isa           => q{Bool},
+                         is            => q{ro},
+                         metaclass     => q{NoGetopt},
+                         lazy_build    => 1,
+                         documentation => q{modified to also identify HiSeq 4000 runs which start with HF},);
 sub _build_is_hiseqx_run {
   my ($self) = @_;
-  return $self->run->instrument->name =~ /\AHX/xms;
+  return $self->run->instrument->name =~ /\AH[XF]/xms;
 }
 
 =head2 gclp
@@ -442,6 +462,20 @@ sub fq_filename {
     defined $tag_index ? "#$tag_index" : q[];
 }
 
+=head2 path_in_outgoing
+
+Given a path in analysis directory changes it to outgoing directory.
+
+=cut
+
+sub path_in_outgoing {
+  my ($self, $path) = @_;
+  if ($path) {
+    $path =~ s{/analysis/}{/outgoing/}xms;
+  }
+  return $path;
+}
+
 1;
 __END__
 
@@ -481,7 +515,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2015 Genome Research Limited
+Copyright (C) 2016 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

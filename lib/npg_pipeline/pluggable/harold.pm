@@ -211,26 +211,21 @@ See npg_pipeline::cache for details.
 =cut
 
 sub run_spider {
-  my ( $self ) = @_;
-
-  my $cache = npg_pipeline::cache->new(
-    'id_run'           => $self->id_run,
-    'set_env_vars'     => 1,
-    'cache_location'   => $self->analysis_path,
-    'lims_driver_type' => $self->qc_run ?
-                            npg_pipeline::cache->warehouse_driver_name :
-                            npg_pipeline::cache->mlwarehouse_driver_name,
-    'id_flowcell_lims' => $self->id_flowcell_lims,
-    'flowcell_barcode' => $self->flowcell_id
-                                      );
-
+  my $self = shift;
   try {
+    my $cache = npg_pipeline::cache->new(
+      'id_run'           => $self->id_run,
+      'set_env_vars'     => 1,
+      'cache_location'   => $self->analysis_path,
+      'lims_driver_type' => $self->lims_driver_type,
+      'id_flowcell_lims' => $self->id_flowcell_lims,
+      'flowcell_barcode' => $self->flowcell_id
+     );
     $cache->setup();
     $self->log(join qq[\n], @{$cache->messages});
   } catch {
     croak qq[Error while spidering: $_];
   };
-
   return;
 }
 
@@ -346,7 +341,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2015 Genome Research Ltd
+Copyright (C) 2016 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

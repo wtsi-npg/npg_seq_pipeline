@@ -10,6 +10,7 @@ use File::Slurp;
 use JSON::XS;
 use List::Util qw(sum);
 use List::MoreUtils qw(any);
+use open q(:encoding(UTF8));
 
 use npg_tracking::data::reference::find;
 use npg_tracking::data::transcriptome;
@@ -137,7 +138,7 @@ sub _command2submit {
   return  q{bsub -q } . $self->lsf_queue()
     .  q{ } . $self->ref_adapter_pre_exec_string()
     . qq{ $resources $required_job_completion -J $job_name -o $outfile}
-    .  q{ 'perl -Mstrict -MJSON -MFile::Slurp -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"'}
+    .  q{ 'perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"'}
     .  q{ }.(join q[/],$self->input_path,$self->job_name_root).q{_$}.q{LSB_JOBID}
     .  q{ $}.q{LSB_JOBINDEX'} ;
 }
@@ -456,7 +457,7 @@ sub _job_index {
     croak 'Position undefined or zero';
   }
   if (defined $tag_index) {
-    return sprintf q{%i%03i}, $position, $tag_index;
+    return sprintf q{%i%04i}, $position, $tag_index;
   }
   return $position;
 }

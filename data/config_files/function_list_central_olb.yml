@@ -10,15 +10,10 @@
 - bustard_phasing_all
 - bustard_basecalls_lanes
 - bustard_basecalls_all
-- illumina2bam
-- qc_tag_metrics
+- p4_stage1_analysis
 - update_warehouse
 - update_ml_warehouse
-- harold_alignment_files
-- harold_calibration_tables
-- harold_recalibration
 - run_secondary_analysis_in_progress
-- split_bam_by_tag
 - bam2fastqcheck_and_cached_fastq
 - qc_qX_yield
 - qc_adapter
@@ -27,6 +22,7 @@
 - qc_gc_fraction
 - qc_ref_match
 - seq_alignment
+- update_ml_warehouse
 - bam_cluster_counter_check
 - seqchksum_comparator
 - qc_gc_bias

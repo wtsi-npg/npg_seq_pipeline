@@ -3,15 +3,17 @@ package npg_pipeline::analysis::create_lane_tag_file;
 use Moose;
 use Carp;
 use File::Spec::Functions;
-use List::Util qw(max min);
+use List::Util qw(max min sum);
 use Readonly;
+use open q(:encoding(UTF8));
 
 use npg_pipeline::roles::business::base;
 
 our $VERSION = '0';
 
-Readonly::Scalar my $TAG_LIST_FILE_HEADER  => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
-Readonly::Scalar my $SPIKED_PHIX_PADDED    => q{ACAACGCATCTTTCCC};
+Readonly::Scalar my $TAG_LIST_FILE_HEADER      => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
+Readonly::Scalar my $SPIKED_PHIX_PADDED        => q{ACAACGCATCTTTCCC};
+Readonly::Scalar my $SPIKED_PHIX_HISEQX_PADDED => q{ACAACGCAAGATCTCG};
 
 =head1 NAME
 
@@ -37,6 +39,15 @@ Creates a tag list file for a lane
 =cut
 
 has q{verbose}           => (isa        => q{Bool},
+                             is         => q{ro},
+                             required   => 0,
+                            );
+
+=head2 hiseqx
+
+=cut
+
+has q{hiseqx}            => (isa        => q{Bool},
                              is         => q{ro},
                              required   => 0,
                             );
@@ -98,8 +109,24 @@ sub generate {
     croak qq{No tag information available for lane $position};
   }
 
+  my $tags = $self->lane_lims->tags;
+
+  # on a HiSeqX the second index is sequenced in reverse complement order
+  if( $self->hiseqx ) {
+    foreach my $plex ($self->lane_lims->children) {
+      if (my $ti = $plex->tag_index){
+        my $tag_sequences = $plex->tag_sequences;
+        if ( @{$tag_sequences} == 2 ) {
+          $tag_sequences->[1] =~ tr/[ACGT]/[TGCA]/;
+          $tag_sequences->[1] = reverse $tag_sequences->[1];
+        }
+        $tags->{$ti} = join q[], @{$tag_sequences};
+      }
+    }
+  }
+
   my $spiked_phix_tag_index = $self->lane_lims->spiked_phix_tag_index();
-  my ($tag_index_list, $tag_seq_list) = $self->_process_tag_list($self->lane_lims->tags, $spiked_phix_tag_index);
+  my ($tag_index_list, $tag_seq_list) = $self->_process_tag_list($tags, $spiked_phix_tag_index);
 
   if  ($tag_index_list && $tag_seq_list) {
     if( scalar @{$tag_index_list} != scalar @{$tag_seq_list} ){
@@ -217,11 +244,12 @@ sub _check_tag_length {
       if ( $spiked_phix_tag_index && $tag_index == $spiked_phix_tag_index ) {
         my $max_length = $temp[0];
         $self->_log( qq{Longest tag length: $max_length} );
-        if ( $max_length > (length $SPIKED_PHIX_PADDED) ) {
-          croak qq{Padded sequence for spiked Phix $SPIKED_PHIX_PADDED is shorter than longest tag length of $max_length};
+        my $spiked_phix_padded = $self->hiseqx ? $SPIKED_PHIX_HISEQX_PADDED : $SPIKED_PHIX_PADDED;
+        if ( $max_length > (length $spiked_phix_padded) ) {
+          croak qq{Padded sequence for spiked Phix $spiked_phix_padded is shorter than longest tag length of $max_length};
 	}
         $self->_log( q{Yes - pad shortest tag to length of longest tag} );
-        @indexed_length_tags = map { length($_) < $max_length ? substr $SPIKED_PHIX_PADDED, 0, $max_length : $_ } @indexed_length_tags;
+        @indexed_length_tags = map { length($_) < $max_length ? substr $spiked_phix_padded, 0, $max_length : $_ } @indexed_length_tags;
         $tags_ok = 1;
       } else {
         $self->_log( q{No} . " tag_index=$tag_index spiked_phix_tag_index=" . ($spiked_phix_tag_index ? $spiked_phix_tag_index : q{}) );

@@ -151,7 +151,7 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   );
   my $indexed = 1;
   my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command($job_dep, $indexed) );
-  my $expected_command = q{bsub -q srpipeline -R 'select[mem>6000] rusage[mem=6000,nfs_12=1]' -M6000 -w'done(123) && done(321)' -J 'qc_ref_match_1234_20090709-123456[8000,8154]%8' -o } . $pbcal . q{/archive/qc/log/qc_ref_match_1234_20090709-123456.%I.%J.out -E 'npg_pipeline_preexec_references' 'qc --check=ref_match --id_run=1234 --position=`echo $LSB_JOBINDEX/1000 | bc` --tag_index=`echo $LSB_JOBINDEX%1000 | bc` --qc_in=} . $pbcal . q{/archive/lane`echo $LSB_JOBINDEX/1000 | bc` --qc_out=} . $pbcal . q{/archive/lane`echo $LSB_JOBINDEX/1000 | bc`/qc'};
+  my $expected_command = q{bsub -q srpipeline -R 'select[mem>6000] rusage[mem=6000,nfs_12=1]' -M6000 -w'done(123) && done(321)' -J 'qc_ref_match_1234_20090709-123456[80000,80154]%8' -o } . $pbcal . q{/archive/qc/log/qc_ref_match_1234_20090709-123456.%I.%J.out -E 'npg_pipeline_preexec_references' 'qc --check=ref_match --id_run=1234 --position=`echo $LSB_JOBINDEX/10000 | bc` --tag_index=`echo $LSB_JOBINDEX%10000 | bc` --qc_in=} . $pbcal . q{/archive/lane`echo $LSB_JOBINDEX/10000 | bc` --qc_out=} . $pbcal . q{/archive/lane`echo $LSB_JOBINDEX/10000 | bc`/qc'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct});
 
   $util->remove_staging;

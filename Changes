@@ -5,6 +5,36 @@ LIST OF CHANGES
    The QC check is Carried out only on RNA library types and mouse or human
    samples. Tophat-generated transcriptome and GTF/GFF annotation files are required.
 
+release 51.2
+ - patch to script_must_be_unique_runner - only ignore exact matches to the job id
+ - change function order to run p4 stage 1 analysis by default
+
+release 51.1.1
+ - extended is_hiseqx_run to detect HiSeq 4000 runs
+ - samtools1 cat .. doesn't work with different references, replaced by samtools1 merge ..
+
+release 51.1
+ - replaced bamcat .. by samtools1 cat .. in seqchksum comparision
+   previous command line was too long for large pools
+ - changes for pools with >999 samples, LSF job array index now 5 digits
+   modified tests
+ - added lims_driver_type cli option
+
+release 51.0
+ - use npg_irods npg_publish_illumina_run.pl in place of data_handling irods_bam_loader.pl
+ - provide appropiately changed second index read tags for ordered flowcell
+   instruments (typically rev. complement) e.g. HiSeqX
+ - in both the analysis and archival function order have an extra
+   ml warehouse loader job to set the stage for loading to iRODS
+ - warehouse loaders that are run after setting qc complete date
+   wait for the runfolder to be moved to outgoing, their log location
+   is updated accordingly
+
+release 50.3
+ - use 'purpose' field to decide if qc_run
+ - study-specific software stack for the analysis pipeline
+ - added new module for p4 stage1 analysis
+
 release 50.2
  - names of the pipeline daemon modules and scripts harmonised
  - the daemon module does not inherit from the pipeline base class thus

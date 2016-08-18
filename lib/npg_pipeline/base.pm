@@ -656,9 +656,7 @@ __END__
 
 =item File::Slurp
 
-=item File::Spec::Functions 
-
-=item FindBin qw($Bin)
+=item File::Spec::Functions
 
 =item Sys::Filesystem::MountPoint 
 

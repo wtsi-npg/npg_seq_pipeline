@@ -17,7 +17,6 @@
 - qc_gc_fraction
 - qc_ref_match
 - seq_alignment
-- update_ml_warehouse
 - bam_cluster_counter_check
 - seqchksum_comparator
 - qc_gc_bias
@@ -25,7 +24,6 @@
 - qc_genotype
 - qc_verify_bam_id
 - qc_upstream_tags
-- qc_rna_seqc
 - run_analysis_complete
 - update_ml_warehouse
 - archive_to_irods

@@ -6,8 +6,7 @@ use MooseX::StrictConstructor;
 use Carp;
 use English qw/-no_match_vars/;
 use File::Spec::Functions qw/catfile/;
-use FindBin qw/$Bin/;
-use List::MoreUtils  qw/none/;
+use List::MoreUtils  qw/none uniq/;
 use Log::Log4perl;
 use Readonly;
 use Try::Tiny;
@@ -111,6 +110,16 @@ sub _build_npg_tracking_schema {
   return npg_tracking::Schema->connect();
 }
 
+has 'mlwh_schema' => (
+  isa        => q{WTSI::DNAP::Warehouse::Schema},
+  is         => q{ro},
+  metaclass  => 'NoGetopt',
+  lazy_build => 1,
+);
+sub _build_mlwh_schema {
+  return WTSI::DNAP::Warehouse::Schema->connect();
+}
+
 has 'iseq_flowcell' => (
   isa        => q{DBIx::Class::ResultSet},
   is         => q{ro},
@@ -118,7 +127,9 @@ has 'iseq_flowcell' => (
   lazy_build => 1,
 );
 sub _build_iseq_flowcell {
-  return WTSI::DNAP::Warehouse::Schema->connect()->resultset('IseqFlowcell');
+  my $self = shift;
+  return $self->mlwh_schema->resultset('IseqFlowcell')
+              ->search({}, {'join' => 'study'});
 }
 
 has 'lims_query_class' => (
@@ -178,7 +189,8 @@ sub check_lims_link {
   $ref->{'id_flowcell_lims'} = $batch_id;
 
   my $obj = $self->lims_query_class()->new_object($ref);
-  my $fcell_row = $obj->query_resultset()->next;
+  my @fcell_rows = $obj->query_resultset()->all();
+  my $fcell_row = $fcell_rows[0];
 
   if ( !($batch_id || $fcell_row)  ) {
     croak q{No matching flowcell LIMs record is found};
@@ -188,6 +200,7 @@ sub check_lims_link {
   $lims->{'id'} = $batch_id;
   if ($fcell_row) {
     $lims->{'gclp'} = $fcell_row->from_gclp;
+    $lims->{'qc_run'} = (defined $fcell_row->purpose && $fcell_row->purpose eq 'qc') ? 1 : undef;
   } else {
     $lims->{'qc_run'} =
       npg_pipeline::roles::business::base->is_qc_run($lims->{'id'});
@@ -195,6 +208,13 @@ sub check_lims_link {
       croak q{Not QC run and not in the ml warehouse};
     }
   }
+
+  my @studies = ();
+  if (!$lims->{'qc_run'}) {
+    @studies = uniq map { $_->study_id } grep { !$_->is_control } @fcell_rows;
+    @studies = sort @studies;
+  }
+  $lims->{'studies'} = \@studies;
 
   return $lims;
 }
@@ -224,10 +244,10 @@ sub run_command {
 }
 
 sub local_path {
+  my $self = shift;
   my $perl_path = "$EXECUTABLE_NAME";
   $perl_path =~ s/\/perl$//xms;
-  my @paths = map { abs_path($_) } ($Bin, $perl_path);
-  return @paths;
+  return ($self->local_bin, abs_path($perl_path));
 }
 
 sub runfolder_path4run {
@@ -378,8 +398,6 @@ captured and printed to the log.
 =item Carp
 
 =item File::Spec::Functions
-
-=item FindBin
 
 =item English -no_match_vars
 

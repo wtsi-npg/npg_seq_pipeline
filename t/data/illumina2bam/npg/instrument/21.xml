@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrument id_instrument="21" name="IL18" id_instrument_format="4" model="HK" external_name="" serial="" iscurrent="0">
+
+<runs>
+</runs>
+
+<current_instrument_status id_instrument_status="6655" id_instrument="21" date="2010-08-13 10:23:34" id_instrument_status_dict="1" id_user="14" user="pnc" iscurrent="0" description="up" comment="automatic status update" />
+<instrument_statuses>
+</instrument_statuses>
+<instrument_mods>
+</instrument_mods>
+<designations>
+ <designation id_designation="4" description="Accepted" />
+</designations>
+</instrument>

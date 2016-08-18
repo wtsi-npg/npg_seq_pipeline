@@ -125,11 +125,9 @@ sub _compare_lane {
   my @crams = glob $cram_file_name_glob or croak "Cannot find any cram files using $cram_file_name_glob";
   $self->log("Building .all.seqchksum for lane $position from cram in $cram_file_name_glob ...");
 
-
-  my $cram_count = scalar @crams;
-  my $cram_plex_str = join q{ I=}, map { qq{<(scramble -u -I cram -O bam $_)} } @crams;
-  my $cmd = 'bamcat level=0 I=' . $cram_plex_str . ' streaming=1 ';
-  $cmd .= '| bamseqchksum > ' . $lane_seqchksum_file_name;
+  my $cram_plex_str = join q{ }, @crams;
+  my $cmd = 'samtools1 merge -c -u - ' . $cram_plex_str;
+  $cmd .= '| bamseqchksum inputformat=bam > ' . $lane_seqchksum_file_name;
 
   if ($cmd ne q{}) {
     $self->log("Running $cmd to generate $lane_seqchksum_file_name");
@@ -139,7 +137,7 @@ sub _compare_lane {
     }
   }
 
-  my $compare_cmd = q{diff -u <(grep '.all' } . $input_lane_seqchksum_file_name . q{) <(grep '.all' } . $lane_seqchksum_file_name . q{)};
+  my $compare_cmd = q{diff -u <(grep '.all' } . $input_lane_seqchksum_file_name . q{ | sort) <(grep '.all' } . $lane_seqchksum_file_name . q{ | sort)};
   $self->log($compare_cmd);
 
   my $compare_ret = system qq[/bin/bash -c "$compare_cmd"];
