@@ -165,9 +165,8 @@ sub _can_run {
   load_class($p);
 
   my $init_hash = {
-      path      => $qc_in,
+      qc_in     => $qc_in,
       position  => $position,
-      check     => $qc,
       id_run    => $self->id_run(),
   };
   if ( defined $tag_index ) {
