@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - qc jobs creation, can_run, check object instantiation:
+     do not supply path/qc_in, which is now optional
+     do not set attributes that the object does not have
+
 release 51.2
  - patch to script_must_be_unique_runner - only ignore exact matches to the job id
  - change function order to run p4 stage 1 analysis by default
