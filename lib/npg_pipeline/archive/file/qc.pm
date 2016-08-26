@@ -65,11 +65,12 @@ sub run_qc {
 sub _generate_bsub_command {
   my ($self, $required_job_completion, $indexed) = @_;
 
-  my ($command, $qc_in) = $self->_qc_command($indexed);
-  my $array_string = $self->_lsf_job_array($qc_in, $indexed);
+  my $array_string = $self->_lsf_job_array($indexed);
   if (!$array_string) {
     return;
   }
+
+  my $command = $self->_qc_command($indexed);
 
   $required_job_completion ||= q{};
   my $timestamp = $self->timestamp();
@@ -140,11 +141,11 @@ sub _qc_command {
 
   $c .= qq{ --qc_in=$qc_in --qc_out=$qc_out_dir};
 
-  return ($c, $qc_in);
+  return $c;
 }
 
 sub _can_run {
-  my ($self, $qc_in, $position, $tag_index) = @_;
+  my ($self, $position, $tag_index) = @_;
 
   my $qc = $self->qc_to_run();
 
@@ -165,15 +166,14 @@ sub _can_run {
   load_class($p);
 
   my $init_hash = {
-      path      => $qc_in,
       position  => $position,
-      check     => $qc,
       id_run    => $self->id_run(),
   };
   if ( defined $tag_index ) {
     $init_hash->{'tag_index'} = $tag_index;
   }
-  if ($self->has_repository) {
+  if ($self->has_repository &&
+      $p->meta()->find_attribute_by_name('repository') ) {
     $init_hash->{'repository'} = $self->repository;
   }
 
@@ -181,25 +181,25 @@ sub _can_run {
   try {
     $return_value = $p->new($init_hash)->can_run();
   } catch {
-    $self->log($_);
+    carp $_;
   };
 
   return $return_value;
 }
 
 sub _lsf_job_array {
-  my ($self, $qc_in, $indexed) = @_;
+  my ($self, $indexed) = @_;
 
   my @lsf_indices = ();
   foreach my $lane ($self->positions()) {
     if ($indexed) {
       foreach my $tag (@{$self->get_tag_index_list($lane)}) {
-        if ( $self->_can_run($qc_in, $lane, $tag) ) {
+        if ( $self->_can_run($lane, $tag) ) {
           push @lsf_indices, ( $lane * $LSF_INDEX_MULTIPLIER ) + $tag;
         }
       }
     } else {
-      if ( $self->_can_run($qc_in, $lane) ) {
+      if ( $self->_can_run($lane) ) {
         push @lsf_indices, $lane;
       }
     }
