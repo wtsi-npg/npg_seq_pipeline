@@ -328,6 +328,7 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   ok ($can, 'gc_fraction check can run');
   warnings_are { $can = $qc->_can_run(6,1) } q[], 'no warnings';
   ok ($can, 'gc_fraction check can run');
+
 }
 
 1;

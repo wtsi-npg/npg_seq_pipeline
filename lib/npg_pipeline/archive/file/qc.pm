@@ -7,6 +7,7 @@ use Readonly;
 use File::Spec;
 use List::MoreUtils qw{none};
 use Class::Load qw/load_class/;
+use File::Path qw( make_path );
 
 use npg_pipeline::lsf_job;
 
@@ -25,7 +26,21 @@ Readonly::Scalar my $NO_REFERENCE_REPOS_DEPENDENCY => {
   upstream_tags => 1,
 };
 
+Readonly::Scalar my $REQUIRES_QC_REPORT_DIR => {
+  rna_seqc => 'rna_seqc',
+};
+
 has q{qc_to_run} => (isa => q{Str}, is => q{ro}, required => 1);
+
+has q{_qc_report_dirs} => (isa => q{HashRef[Str]},
+                           is => q{ro},
+                           traits => [q{Hash}],
+                           default => sub { { } },
+                           handles => {
+                             _set_rpt_qc_report_dir => q{set},
+                             _get_rpt_qc_report_dir => q{get},
+                           },
+                          );
 
 sub run_qc {
   my ($self, $arg_refs) = @_;
@@ -39,6 +54,28 @@ sub run_qc {
       my $lane_qc_dir = $self->lane_qc_path( $position );
       if (!-e $lane_qc_dir) {
         mkdir $lane_qc_dir;
+      }
+    }
+  }
+
+  if ($REQUIRES_QC_REPORT_DIR->{$qc_to_run}) {
+    my @archive_qc_path = ($self->archive_path, q[qc], $REQUIRES_QC_REPORT_DIR->{$qc_to_run});
+    foreach my $position ($self->positions()) {
+      my $rp = join q[_], $self->id_run(), $position;
+      my $qc_report_dir = File::Spec->catdir(@archive_qc_path, $rp);
+      if (! -d $qc_report_dir) {
+        make_path($qc_report_dir);
+        $self->_set_rpt_qc_report_dir($rp, $qc_report_dir);
+      }
+      if ($self->is_multiplexed_lane($position)) {
+        foreach my $tag (@{$self->get_tag_index_list($position)}) {
+          my $rpt = join q[#], $rp, $tag;
+          $qc_report_dir = File::Spec->catdir(@archive_qc_path, $rp, $rpt);
+          if (! -d $qc_report_dir) {
+            make_path($qc_report_dir);
+            $self->_set_rpt_qc_report_dir($rpt, $qc_report_dir);
+          }
+        }
       }
     }
   }
@@ -79,9 +116,9 @@ sub _generate_bsub_command {
   my $job_name = join q{_},$QC_SCRIPT_NAME,$self->qc_to_run(),$id_run,$timestamp;
 
   $self->make_log_dir( $self->qc_path() );
-  my $qc_out = $self->qc_path() . q{/log};
+  my $qc_out_log = $self->qc_path() . q{/log};
   my $out_subscript = q{.%I.%J.out};
-  my $outfile = File::Spec->catfile($qc_out, $job_name . $out_subscript);
+  my $outfile = File::Spec->catfile($qc_out_log, $job_name . $out_subscript);
 
   $job_name = q{'} . $job_name . $array_string;
 
@@ -119,27 +156,37 @@ sub _qc_command {
   }
 
   my $qc_in;
-  my $qc_out_dir;
+  my $qc_out;
   my $archive_path      = $self->archive_path;
   my $recalibrated_path = $self->recalibrated_path;
+  my $lanestr           = $self->_position_decode_string();
+  my $tagstr            = $self->_tag_index_decode_string();
 
-  if ( defined $indexed ) {
-    my $tagstr = $self->_tag_index_decode_string();
-    my $lanestr = $self->_position_decode_string();
+  if (defined $indexed) {
     my $lane_archive_path = File::Spec->catfile($archive_path, q[lane] . $lanestr);
     $qc_in = ( $self->qc_to_run() eq q[adapter]) ?
-	  File::Spec->catfile($recalibrated_path, q[lane] . $lanestr) : $lane_archive_path;
-    $qc_out_dir =  File::Spec->catfile($lane_archive_path, q[qc]);
+        File::Spec->catfile($recalibrated_path, q[lane] . $lanestr) : $lane_archive_path;
+    $qc_out = File::Spec->catfile($lane_archive_path, q[qc]);
     $c .= q{ --position=}  . $lanestr;
     $c .= q{ --tag_index=} . $tagstr;
   } else {
     $c .= q{ --position=}  . $self->lsb_jobindex();
     $qc_in  = $self->qc_to_run() eq q{tag_metrics} ? $self->bam_basecall_path :
         (($self->qc_to_run() eq q[adapter]) ? $recalibrated_path : $archive_path);
-    $qc_out_dir = $self->qc_path();
+    $qc_out = $self->qc_path();
   }
+  $c .= qq{ --qc_in=$qc_in --qc_out=$qc_out};
 
-  $c .= qq{ --qc_in=$qc_in --qc_out=$qc_out_dir};
+  if ($REQUIRES_QC_REPORT_DIR->{$self->qc_to_run()}) {
+    my @archive_qc_path = ($archive_path, q[qc], $REQUIRES_QC_REPORT_DIR->{$self->qc_to_run()});
+    my $rptstr          = join q[_], $self->id_run(), $lanestr;
+    my $qc_report_dir   = File::Spec->catdir(@archive_qc_path, $rptstr);
+    if (defined $indexed) {
+      $rptstr        = join q[#], $rptstr, $tagstr;
+      $qc_report_dir = File::Spec->catdir($qc_report_dir, $rptstr);
+    }
+    $c .= qq{ --qc_report_dir=$qc_report_dir};
+  }
 
   return $c;
 }
@@ -149,9 +196,10 @@ sub _can_run {
 
   my $qc = $self->qc_to_run();
 
-  if ($qc =~ /^tag_metrics|upstream_tags|gc_bias|verify_bam_id|genotype|pulldown_metrics$/smx) {
+  if (($qc =~ /^tag_metrics|upstream_tags|gc_bias|verify_bam_id$/smx) ||
+      ($qc =~ /^genotype|pulldown_metrics|rna_seqc$/smx)) {
     my $is_multiplexed_lane = $self->is_multiplexed_lane($position);
-    if ($qc =~ /^gc_bias|verify_bam_id|genotype|pulldown_metrics$/smx) {
+    if ($qc =~ /^gc_bias|verify_bam_id|genotype|pulldown_metrics|rna_seqc$/smx) {
       my $can_run = ((!defined $tag_index) && !$is_multiplexed_lane) ||
 	  ((defined $tag_index) && $is_multiplexed_lane);
       if (!$can_run) {
@@ -169,12 +217,19 @@ sub _can_run {
       position  => $position,
       id_run    => $self->id_run(),
   };
-  if ( defined $tag_index ) {
+  if (defined $tag_index) {
     $init_hash->{'tag_index'} = $tag_index;
   }
   if ($self->has_repository &&
       $p->meta()->find_attribute_by_name('repository') ) {
     $init_hash->{'repository'} = $self->repository;
+  }
+  if ($REQUIRES_QC_REPORT_DIR->{$qc}) {
+    my $qc_report_dir_key = join q[_], $self->id_run(), $position;
+    if (defined $tag_index) {
+      $qc_report_dir_key = join q[#], $qc_report_dir_key, $tag_index;
+    }
+    $init_hash->{'qc_report_dir'} = $self->_get_rpt_qc_report_dir($qc_report_dir_key);
   }
 
   my $return_value = 1;
@@ -219,7 +274,7 @@ sub _lsf_options {
   my ($self, $qc_to_run) = @_;
 
   my $resources;
-  if ($qc_to_run =~ /insert_size|sequence_error|ref_match|pulldown_metrics/smx ) {
+  if ($qc_to_run =~ /insert_size|sequence_error|ref_match|pulldown_metrics|rna_seqc/smx ) {
     $resources = npg_pipeline::lsf_job->new(memory => $LSF_MEMORY_REQ)->memory_spec();
   } elsif ($qc_to_run eq q[adapter]) {
     $resources = npg_pipeline::lsf_job->new(memory => $LSF_MEMORY_REQ_ADAPTER)->memory_spec() .
@@ -287,6 +342,8 @@ Object module responsible for launching jobs to LSF for qc'ing fastq/fastqcheck 
 =item List::MoreUtils
 
 =item Class::Load
+
+=item File::Path
 
 =back
 
