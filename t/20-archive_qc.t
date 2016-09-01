@@ -1,9 +1,12 @@
 use strict;
 use warnings;
-use Test::More tests => 42;
+use Test::More tests => 59;
 use Test::Exception;
 use Test::Differences;
+use Test::Warn;
 use File::Path qw/make_path/;
+use File::Copy::Recursive qw/dircopy/;
+use File::Slurp;
 use Cwd;
 use t::util;
 
@@ -214,16 +217,21 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       qc_to_run => 'tag_metrics',
       is_indexed => 1
   );
-  ok( $qc->_can_run('some path', 1),    q{lane is indexed - run tag metrics on a lane} );
-  ok( !$qc->_can_run('some path', 1,1), q{lane is indexed - do not run tag metrics on a plex} );
+  my $can;
+  warnings_are { $can = $qc->_can_run(1) } q[], 'no warnings';
+  ok( $can,    q{lane is indexed - run tag metrics on a lane} );
+  warnings_are { $can = $qc->_can_run(1,1) } q[], 'no warnings';
+  ok( !$can, q{lane is indexed - do not run tag metrics on a plex} );
 
   $qc = npg_pipeline::archive::file::qc->new(
       id_run => $id_run,
       qc_to_run => 'tag_metrics',
       is_indexed => 0
   );
-  ok( !$qc->_can_run('some path', 1),   q{run is not indexed - do not run tag metrics on a lane} );
-  ok( !$qc->_can_run('some path', 1,1), q{run is not indexed - do not run tag metrics on a plex} );
+  warnings_are { $can = $qc->_can_run(1) } q[], 'no warnings';
+  ok( !$can,   q{run is not indexed - do not run tag metrics on a lane} );
+  warnings_are { $can = $qc->_can_run(1,1) } q[], 'no warnings';
+  ok( !$can, q{run is not indexed - do not run tag metrics on a plex} );
 
   mkdir join q[/], $tmp, 'lane1';
   mkdir join q[/], $tmp, 'lane1', 'qc';
@@ -238,8 +246,10 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
         is_indexed   => 1,
         archive_path => $tmp,
     );
-    ok( !$qc->_can_run('some path', 1),  q{lane is indexed - do not run gcbias on a lane} );
-    ok( $qc->_can_run('some path', 1,1), q{lane is indexed - run gcbias on a plex} );
+    warnings_are { $can = $qc->_can_run(1) } q[], 'no warnings';
+    ok( !$can,  q{lane is indexed - do not run gcbias on a lane} );
+    warnings_are { $can = $qc->_can_run(1,1) } q[], 'no warnings';
+    ok( $can, q{lane is indexed - run gcbias on a plex} );
 
     $qc = npg_pipeline::archive::file::qc->new(
         id_run => $id_run,
@@ -248,8 +258,10 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
         is_indexed => 0,
         archive_path => $tmp,
     );
-    ok( $qc->_can_run('some path', 1),   q{run is not indexed - run gcbias on a lane} );
-    ok( !$qc->_can_run('some path', 1,1),q{run is not indexed - do not run gcbias on a plex} );
+    warnings_are { $can = $qc->_can_run(1) } q[], 'no warnings';
+    ok( $can,   q{run is not indexed - run gcbias on a lane} );
+    warnings_are { $can = $qc->_can_run(1,1) } q[], 'no warnings';
+    ok( !$can,q{run is not indexed - do not run gcbias on a plex} );
   }
 }
 
@@ -266,6 +278,13 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   make_path($qc_dir);
   make_path($lane6_qc_dir);
 
+  my $destination = "$tmp/references";
+  dircopy('t/data/qc/references', $destination);
+  make_path("$tmp/genotypes");
+  my $new_dir = $destination . '/Homo_sapiens/CGP_GRCh37.NCBI.allchr_MT/all/fasta';
+  make_path($new_dir);
+  write_file("$new_dir/Homo_sapiens.GRCh37.NCBI.allchr_MT.fa", qw/some ref/);
+
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14043.csv';
 
@@ -276,24 +295,39 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       bam_basecall_path => $analysis_dir,
       archive_path => $archive_dir,
       is_indexed => 1,
-      repository => getcwd() . '/t/data/qc',
+      repository => 't',
       qc_to_run => q[genotype],
   };
 
   my $qc = npg_pipeline::archive::file::qc->new($init);
-  ok ($qc->_can_run('some path', 1), 'ref repository not available - genotype check _can_run defaults to true');
+  my $can;
+  warning_like { $can = $qc->_can_run(1) }
+    qr/Attribute \(ref_repository\) does not pass the type constraint/,
+    'error caught';
+  ok ($can, 'ref repository not available - genotype check _can_run defaults to true');
+
+  $init->{'repository'} = $tmp;
   $qc = npg_pipeline::archive::file::qc->new($init);
-  ok ($qc->_can_run('some path', 1), 'genotype check can run for a non-indexed lane');
-  ok (!$qc->_can_run('some path', 6), 'genotype check cannot run for an indexed lane');
-  ok ($qc->_can_run('some path', 6, 0), 'genotype check can run for tag 0 (the only plex is a human sample)');
-  ok ($qc->_can_run('some path', 6, 1), 'genotype check can run for tag 1 (human sample)');
-  ok (!$qc->_can_run('some path', 6, 168), 'genotype check cannot run for a spiked phix tag');
+
+  warnings_are { $can = $qc->_can_run(1) } q[], 'no warnings';
+  ok ($can, 'genotype check can run for a non-indexed lane');
+  warnings_are { $can = $qc->_can_run(6) } q[], 'no warnings';
+  ok (!$can, 'genotype check cannot run for an indexed lane');
+  warnings_are { $can = $qc->_can_run(6,0) } q[], 'no warnings';
+  ok ($can, 'genotype check can run for tag 0 (the only plex is a human sample)');
+  warnings_are { $can = $qc->_can_run(6,1) } q[], 'no warnings';
+  ok ($can, 'genotype check can run for tag 1 (human sample)');
+  warnings_are { $can = $qc->_can_run(6,168) } q[], 'no warnings';
+  ok (!$can, 'genotype check cannot run for a spiked phix tag');
 
   $init->{'qc_to_run'} = 'gc_fraction';
   $qc = npg_pipeline::archive::file::qc->new($init);
-  ok ($qc->_can_run($archive_dir, 6), 'gc_fraction check can run');
-  ok ($qc->_can_run($archive_dir, 6, 0), 'gc_fraction check can run');
-  ok ($qc->_can_run($archive_dir, 6, 1), 'gc_fraction check can run');
+  warnings_are { $can = $qc->_can_run(6) } q[], 'no warnings';
+  ok ($can, 'gc_fraction check can run');
+  warnings_are { $can = $qc->_can_run(6,0) } q[], 'no warnings';
+  ok ($can, 'gc_fraction check can run');
+  warnings_are { $can = $qc->_can_run(6,1) } q[], 'no warnings';
+  ok ($can, 'gc_fraction check can run');
 }
 
 1;
