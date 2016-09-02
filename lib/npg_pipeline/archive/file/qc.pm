@@ -1,13 +1,10 @@
 package npg_pipeline::archive::file::qc;
 
 use Moose;
-use Carp;
-use Try::Tiny;
 use Readonly;
 use File::Spec;
-use List::MoreUtils qw{none};
-use Class::Load qw/load_class/;
-use File::Path qw( make_path );
+use File::Path qw{make_path};
+use Class::Load qw{load_class};
 
 use npg_pipeline::lsf_job;
 
@@ -15,22 +12,45 @@ extends q{npg_pipeline::base};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $QC_SCRIPT_NAME          => 'qc';
+Readonly::Scalar my $QC_SCRIPT_NAME          => q{qc};
 Readonly::Scalar my $LSF_MEMORY_REQ          => 6000;
 Readonly::Scalar my $LSF_MEMORY_REQ_ADAPTER  => 1500;
 Readonly::Scalar my $LSF_INDEX_MULTIPLIER    => 10_000;
-
-Readonly::Scalar my $NO_REFERENCE_REPOS_DEPENDENCY => {
-  qX_yield => 1,
-  tag_metrics => 1,
-  upstream_tags => 1,
-};
-
 Readonly::Scalar my $REQUIRES_QC_REPORT_DIR => {
   rna_seqc => 'rna_seqc',
 };
 
-has q{qc_to_run} => (isa => q{Str}, is => q{ro}, required => 1);
+
+has q{qc_to_run}       => (isa      => q{Str},
+                           is       => q{ro},
+                           required => 1,);
+
+has q{_qc_module_name} => (isa        => q{Str},
+                           is         => q{ro},
+                           required   => 0,
+                           init_arg   => undef,
+                           lazy_build => 1,);
+sub _build__qc_module_name {
+  my $self = shift;
+  return q{npg_qc::autoqc::checks::} . $self->qc_to_run;
+}
+
+has q{_check_uses_refrepos} => (isa        => q{Bool},
+                                is         => q{ro},
+                                required   => 0,
+                                init_arg   => undef,
+                                lazy_build => 1,);
+sub _build__check_uses_refrepos {
+  my $self = shift;
+  return $self->_qc_module_name()->meta()
+    ->find_attribute_by_name('repository') ? 1 : 0;
+}
+
+sub BUILD {
+  my $self = shift;
+  load_class($self->_qc_module_name);
+  return;
+}
 
 has q{_qc_report_dirs} => (isa => q{HashRef[Str]},
                            is => q{ro},
@@ -134,7 +154,7 @@ sub _generate_bsub_command {
   my $job_sub = q{bsub -q } . ( $self->qc_to_run() eq q[upstream_tags] ? $self->lowload_lsf_queue() : $self->lsf_queue() ) . q{ } .
     #lowload queue for upstream tags as it has qc and tracking db access
     $self->_lsf_options($self->qc_to_run()) . qq{ $required_job_completion -J $job_name -o $outfile};
-  if ( ! $NO_REFERENCE_REPOS_DEPENDENCY->{ $self->qc_to_run() } ) {
+  if ( $self->_check_uses_refrepos() || ($self->qc_to_run eq 'adapter') ) {
     $job_sub .= q{ } . $self->ref_adapter_pre_exec_string();
   }
 
@@ -191,7 +211,7 @@ sub _qc_command {
   return $c;
 }
 
-sub _can_run {
+sub _should_run {
   my ($self, $position, $tag_index) = @_;
 
   my $qc = $self->qc_to_run();
@@ -210,18 +230,14 @@ sub _can_run {
     }
   }
 
-  my $p = q{npg_qc::autoqc::checks::} . $qc;
-  load_class($p);
-
   my $init_hash = {
-      position  => $position,
-      id_run    => $self->id_run(),
+    position  => $position,
+    id_run    => $self->id_run(),
   };
   if (defined $tag_index) {
     $init_hash->{'tag_index'} = $tag_index;
   }
-  if ($self->has_repository &&
-      $p->meta()->find_attribute_by_name('repository') ) {
+  if ($self->has_repository && $self->_check_uses_refrepos()) {
     $init_hash->{'repository'} = $self->repository;
   }
   if ($REQUIRES_QC_REPORT_DIR->{$qc}) {
@@ -232,14 +248,7 @@ sub _can_run {
     $init_hash->{'qc_report_dir'} = $self->_get_rpt_qc_report_dir($qc_report_dir_key);
   }
 
-  my $return_value = 1;
-  try {
-    $return_value = $p->new($init_hash)->can_run();
-  } catch {
-    carp $_;
-  };
-
-  return $return_value;
+  return $self->_qc_module_name()->new($init_hash)->can_run();
 }
 
 sub _lsf_job_array {
@@ -249,12 +258,12 @@ sub _lsf_job_array {
   foreach my $lane ($self->positions()) {
     if ($indexed) {
       foreach my $tag (@{$self->get_tag_index_list($lane)}) {
-        if ( $self->_can_run($lane, $tag) ) {
+        if ( $self->_should_run($lane, $tag) ) {
           push @lsf_indices, ( $lane * $LSF_INDEX_MULTIPLIER ) + $tag;
         }
       }
     } else {
-      if ( $self->_can_run($lane) ) {
+      if ( $self->_should_run($lane) ) {
         push @lsf_indices, $lane;
       }
     }
@@ -297,29 +306,34 @@ npg_pipeline::archive::file::qc
 =head1 SYNOPSIS
 
   my @job_ids;
-  eval {
-    $aqc = npg_pipeline::archive::file::qc->new(
-      run_folder => $run_folder,
-      qc_to_run => q{test},
-    );
-    my $arg_refs = {
-      required_job_completion  => q{-w'done(123) && done(321)'},
-      timestamp                => q{20090709-123456},
-      id_run                   => 1234,
-    }
-
-    @job_ids = $aqc->run_qc($arg_refs);
-  } or do {
-    # your error handling here
-  };
+  $aqc = npg_pipeline::archive::file::qc->new(
+    run_folder => $run_folder,
+    qc_to_run => q{test},
+  );
+  my $arg_refs = {
+    required_job_completion  => q{-w'done(123) && done(321)'},
+    timestamp                => q{20090709-123456},
+    id_run                   => 1234,
+  }
+  @job_ids = $aqc->run_qc($arg_refs);
 
 =head1 DESCRIPTION
 
-Object module responsible for launching jobs to LSF for qc'ing fastq/fastqcheck files generated from illumina runs
+Object module responsible for launching LSF autoqc jobs to LSF.
 
 =head1 SUBROUTINES/METHODS
 
-=head2 run_qc - handler to submit perform the operation to launch the qc jobs
+=head2 qc_to_run
+
+Name of the QC check to run.
+
+=head2 BUILD
+
+Constructor helper.
+
+=head2 run_qc
+
+Launches the qc jobs.
 
 =head1 DIAGNOSTICS
 
@@ -331,15 +345,9 @@ Object module responsible for launching jobs to LSF for qc'ing fastq/fastqcheck 
 
 =item Moose
 
-=item Carp
-
-=item Try::Tiny
-
 =item Readonly
 
 =item File::Spec
-
-=item List::MoreUtils
 
 =item Class::Load
 
@@ -357,7 +365,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2015 Genome Research Limited
+Copyright (C) 2016 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
