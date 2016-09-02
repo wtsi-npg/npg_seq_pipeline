@@ -38,7 +38,7 @@ has q{_check_uses_refrepos} => (isa        => q{Bool},
 sub _build__check_uses_refrepos {
   my $self = shift;
   return $self->_qc_module_name()->meta()
-    ->find_attribute_by_name('repository') || ($self->qc_to_run eq 'adapter') ? 1 : 0;
+    ->find_attribute_by_name('repository') ? 1 : 0;
 }
 
 sub BUILD {
@@ -117,7 +117,7 @@ sub _generate_bsub_command {
   my $job_sub = q{bsub -q } . ( $self->qc_to_run() eq q[upstream_tags] ? $self->lowload_lsf_queue() : $self->lsf_queue() ) . q{ } .
     #lowload queue for upstream tags as it has qc and tracking db access
     $self->_lsf_options($self->qc_to_run()) . qq{ $required_job_completion -J $job_name -o $outfile};
-  if ( $self->_check_uses_refrepos() ) {
+  if ( $self->_check_uses_refrepos() || ($self->qc_to_run eq 'adapter') ) {
     $job_sub .= q{ } . $self->ref_adapter_pre_exec_string();
   }
 
