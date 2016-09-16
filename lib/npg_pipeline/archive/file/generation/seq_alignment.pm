@@ -25,6 +25,7 @@ Readonly::Scalar our $DNA_ALIGNMENT_SCRIPT         => q{bam_alignment.pl};
 Readonly::Scalar our $NUM_SLOTS                    => q(12,16);
 Readonly::Scalar our $MEMORY                       => q{32000}; # memory in megabytes
 Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
+Readonly::Scalar my  $QC_SCRIPT_NAME               => q{qc};
 
 =head2 phix_reference
 
@@ -269,17 +270,17 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                            q{&&},
                            qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
                            q{&&},
-			   _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex),
+			   _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex),
                            q{&&},
-                           _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex, 'phix'),
+                           _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, 'phix'),
                            q{&&},
-                           $human_split ? join q( ),
-                           _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex, $human_split),
-                           q{&&} : q(),
-                           $nchs        ? join q( ),
-                           _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex, $nchs_outfile_label),
-                           q{&&} : q(),
-                           q{qc --check alignment_filter_metrics --qc_in $}.q{PWD --id_run}, $self->id_run, qq{--position $position --qc_out $qcpath}, ($is_plex ? (qq{--tag_index $tag_index}) : ()),
+                           $human_split ?
+                             _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, $human_split).q{ &&}
+                             : q(),
+                           $nchs        ?
+                             _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, $nchs_outfile_label).q{ &&}
+                             : q(),
+                           _qc_command('alignment_filter_metrics', undef, $qcpath, $l, $is_plex),
                          q(');
   } else {
     return join q( ),    $DNA_ALIGNMENT_SCRIPT,
@@ -294,32 +295,28 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
 
 }
 
-sub _bfs_command {##no critic (Subroutines::ProhibitManyArgs)
-  my ($archive_path, $qc_path, $name_root, $l, $is_plex, $subset) = @_;
+sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
+  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset) = @_;
 
-  if ($subset) {
-    $name_root .= q(_) . $subset;
-  }
-  my $bfs_args = {id_run => $l->id_run, position => $l->position};
+  my $args = {'id_run' => $l->id_run, 'position' => $l->position};
   if ($is_plex && defined $l->tag_index) {
-    $bfs_args->{'tag_index'} = $l->tag_index;
+    $args->{'tag_index'} = $l->tag_index;
   }
-  if ($subset) {
-    $bfs_args->{'subset'} = 'q(' . $subset . ')';
+  if ($check_name eq 'bam_flagstats') {
+    if ($subset) {
+      $args->{'subset'} = $subset;
+    }
+    $args->{'qc_in'}  = $qc_in;
+  } else {
+    $args->{'qc_in'}  = q[$] . 'PWD';
   }
-  $bfs_args->{'sequence_file'} = q[$] . 'ARGV[0]';
-  my $args4new = JSON::XS->new()->canonical(1)->encode($bfs_args);
-  $args4new =~ s/:/=>/gxms;
-  ##no critic (RegularExpressions::ProhibitEscapedMetacharacters)
-  $args4new =~ s/["\{\}]//gxms;
-  ##use critic
-  ##no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-
-  #TODO: shift this horrendous inlining of perl scripts to a qc check the same as alignment_filer_metrics
-  return join q[ ],
-    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(} . $args4new .q{); $o->execute(); $o->store($ARGV[-1]) '"'"'},
-    join(q[/], $archive_path,  $name_root . '.cram'),
-    $qc_path;
+  $args->{'qc_out'} = $qc_out;
+  $args->{'check'}  = $check_name;
+  my $command = q[];
+  foreach my $arg (sort keys %{$args}) {
+    $command .= join q[ ], q[ --].$arg, $args->{$arg};
+  }
+  return $QC_SCRIPT_NAME . $command;
 }
 
 sub _generate_command_arguments {
@@ -558,7 +555,7 @@ David K. Jackson (david.jackson@sanger.ac.uk)
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2016 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
