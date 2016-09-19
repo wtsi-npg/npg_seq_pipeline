@@ -425,6 +425,8 @@ sub _generate_command_params {
   my $samtobam_slots = $self->general_values_conf()->{'p4_stage1_samtobam_slots'} || q[`npg_pipeline_job_env_to_threads --exclude -1 --divide 3`];
   my $bamsormadup_slots = $self->general_values_conf()->{'p4_stage1_bamsort_slots'} || q[`npg_pipeline_job_env_to_threads --divide 3`];
   my $bamrecompress_slots = $self->general_values_conf()->{'p4_stage1_bamrecompress_slots'} || q[`npg_pipeline_job_env_to_threads`];
+  my $i2b_implementation_flag = ($self->general_values_conf()->{'p4_stage1_i2b_implementation'} ? qq(-keys i2b_implementation -vals $self->general_values_conf()->{'p4_stage1_i2b_implementation'}) : q[]); # illumina2bam (java|bambi)
+  my $bid_implementation_flag = ($self->general_values_conf()->{'p4_stage1_bid_implementation'} ? qq(-keys bid_implementation -vals $self->general_values_conf()->{'p4_stage1_bid_implementation'}) : q[]); # bamindexdecoder (java|bambi)
   $self->_job_args->{_commands}->{$position} = join q( ), q(bash -c '),
                            q(cd), $self->p4_stage1_errlog_paths->{$position}, q{&&},
                            q(vtfp.pl),
@@ -437,6 +439,8 @@ sub _generate_command_params {
                            qq(-keys s2b_mt_val -vals $samtobam_slots),
                            qq(-keys bamsormadup_numthreads -vals $bamsormadup_slots),
                            qq(-keys br_numthreads_val -vals $bamrecompress_slots),
+                           $i2b_implementation_flag,
+                           $bid_implementation_flag,
                            q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/bcl2bam_phix_deplex_wtsi_stage1_template.json},
                            q{&&},
                            qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json),
