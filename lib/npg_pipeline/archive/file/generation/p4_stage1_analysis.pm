@@ -388,6 +388,8 @@ sub _generate_command_params {
   }
 
 
+  my $splice_flag = q[];
+  my $prune_flag = q[];
   if($self->is_multiplexed_lane($position)) {
     if (!$tag_list_file) {
       croak 'Tag list file path should be defined for multiplexed lane ', $position;
@@ -405,9 +407,10 @@ sub _generate_command_params {
   }
   else {
     $self->log(q{P4 stage1 analysis on non-plexed lane});
-    # This should avoid using BamIndexDecoder or attempting to split a non-muliplexed lane.
-    $p4_params{bid_opt} = q[passthrough]; # don't do bamindexdecoding
-    $p4_params{fs1p} = q[final_stage1_process_nosplit.json]; # no plex splitting
+
+    # This will avoid using BamIndexDecoder or attempting to split a non-muliplexed lane.
+    $splice_flag = q[-splice_nodes '"'"'bamadapterfind:-bamcollate:'"'"'];
+    $prune_flag = q[-prune_nodes '"'"'fs1p_tee_split:__SPLIT_BAM_OUT__-'"'"'];
   }
 
   if(!$self->is_paired_read) {
@@ -425,6 +428,7 @@ sub _generate_command_params {
   $self->_job_args->{_commands}->{$position} = join q( ), q(bash -c '),
                            q(cd), $self->p4_stage1_errlog_paths->{$position}, q{&&},
                            q(vtfp.pl),
+                           $splice_flag, $prune_flag,
                            qq(-o run_$name_root.json),
                            q(-param_vals), (join q{/}, $self->p4_stage1_params_paths->{$position}, $name_root.q{_p4s1_pv_in.json}),
                            q(-export_param_vals), $name_root.q{_p4s1_pv_out_$}.q/{LSB_JOBID}.json/,

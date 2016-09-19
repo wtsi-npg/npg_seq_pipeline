@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - support generation of targeted stats files in seq_alignment.pm with p4
  - qc jobs creation, can_run, check object instantiation:
      do not supply path/qc_in, which is now optional
      do not set attributes that the object does not have
