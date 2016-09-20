@@ -180,10 +180,8 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   croak qq{Nonconsented human split must not have Homo sapiens reference ($name_root)} if ($l->contains_nonconsented_human and $l->reference_genome and $l->reference_genome=~/Homo_sapiens/smx );
   my $do_rna = $self->_do_rna_analysis($l);
 
-#############################
-# no target alignment - splice out unneeded p4 nodes, add -x flag to scramble,
-#  unset the reference for bam_stats and amend the AlignmentFilter command
-#############################
+   # when no target alignment - splice out unneeded p4 nodes, add -x flag to scramble,
+   #  unset the reference for bam_stats and amend the AlignmentFilter command
    my $no_tgtaln_splice_flag = q[];
    my $scramble_reference_unset = q[];
    my $stats_reference_unset = q[];
@@ -225,7 +223,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
    my $nchs_outfile_label = $nchs? q{human}: q{};
 
    #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
-   #TODO: support this, and above "old school", various options in P4 analyses
+   #TODO: support these various options below in P4 analyses
    croak qq{only paired reads supported for RNA or non-consented human ($name_root)} if (not $self->is_paired_read) and ($do_rna or $nchs);
 
    $self->log(q[Using p4]);
