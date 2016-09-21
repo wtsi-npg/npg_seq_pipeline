@@ -5,11 +5,10 @@ LIST OF CHANGES
  - qc jobs creation, can_run, check object instantiation:
      do not supply path/qc_in, which is now optional
      do not set attributes that the object does not have
- - Add Broad Institute's RNA-SeQC to list of QC checks to run and to central.
-   The QC check is carried out only on RNA library types and mouse or human
-   samples. Tophat-generated transcriptome and GTF/GFF annotation files are required.
  - allow specification of implementation (java or bambi) of illumina2bam and bamindexdecoder
     in p4 stage 1 via general_values.ini
+ - add Broad Institute's RNA-SeQC to list of autoqc checks
+ - run bam_flagstats autoqc check via the qc script
 
 release 51.2
  - patch to script_must_be_unique_runner - only ignore exact matches to the job id
