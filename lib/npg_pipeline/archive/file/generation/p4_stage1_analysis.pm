@@ -81,7 +81,14 @@ sub _save_arguments {
   my ($self, $job_id) = @_;
   my $file_name = join q[_], $self->job_name_root, $job_id;
   $file_name = join q[/], $self->bam_basecall_path, $file_name;
-  write_file($file_name, encode_json $self->_job_args->{_commands});
+  if($self->verbose) { $self->log(qq[Arguments will be written to $file_name]); }
+  my ($ja,$commands);
+  if($ja=$self->_job_args and defined $ja->{_commands} and $commands = encode_json $self->_job_args->{_commands}) {
+    write_file($file_name, $commands);
+  }
+  else {
+    croak q[Failed to generate commands for saving to arguments file ], $file_name;
+  }
   if($self->verbose) {
     $self->log(qq[Arguments written to $file_name]);
   }
@@ -425,8 +432,18 @@ sub _generate_command_params {
   my $samtobam_slots = $self->general_values_conf()->{'p4_stage1_samtobam_slots'} || q[`npg_pipeline_job_env_to_threads --exclude -1 --divide 3`];
   my $bamsormadup_slots = $self->general_values_conf()->{'p4_stage1_bamsort_slots'} || q[`npg_pipeline_job_env_to_threads --divide 3`];
   my $bamrecompress_slots = $self->general_values_conf()->{'p4_stage1_bamrecompress_slots'} || q[`npg_pipeline_job_env_to_threads`];
-  my $i2b_implementation_flag = ($self->general_values_conf()->{'p4_stage1_i2b_implementation'} ? qq(-keys i2b_implementation -vals $self->general_values_conf()->{'p4_stage1_i2b_implementation'}) : q[]); # illumina2bam (java|bambi)
-  my $bid_implementation_flag = ($self->general_values_conf()->{'p4_stage1_bid_implementation'} ? qq(-keys bid_implementation -vals $self->general_values_conf()->{'p4_stage1_bid_implementation'}) : q[]); # bamindexdecoder (java|bambi)
+
+  my $i2b_implementation_flag = q[];
+  if(my $val = $self->general_values_conf()->{'p4_stage1_i2b_implementation'}) {
+    $p4_params{i2b_implementation} = $val;
+  }
+
+  my $bid_implementation_flag = q[];
+  if(my $val = $self->general_values_conf()->{'p4_stage1_bid_implementation'}) {
+    $p4_params{bid_implementation} = $val;
+  }
+
+
   $self->_job_args->{_commands}->{$position} = join q( ), q(bash -c '),
                            q(cd), $self->p4_stage1_errlog_paths->{$position}, q{&&},
                            q(vtfp.pl),
