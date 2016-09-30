@@ -5,7 +5,9 @@ use Carp;
 use English qw{-no_match_vars};
 use File::Spec;
 
+use npg_pipeline::archive::file::to_irods;
 use npg_pipeline::cache;
+
 extends qw{npg_pipeline::pluggable::harold};
 
 our $VERSION = '0';
@@ -26,12 +28,13 @@ Pluggable pipeline module for the post_qc_review pipeline
 
 =head2 archive_to_irods
 
-upload all archival files to irods
+ upload all archival files to irods (used by GCLP only)
 
 =cut
 
 sub archive_to_irods {
   my ($self, @args) = @_;
+
   if ($self->no_irods_archival) {
     $self->log(q{Archival to iRODS is switched off.});
     return ();
@@ -41,8 +44,59 @@ sub archive_to_irods {
   my @job_ids = $ats->submit_to_lsf({
     required_job_completion => $required_job_completion,
   });
+
   return @job_ids;
 }
+
+=head2 archive_to_irods_samplesheet
+
+upload all archival files using the samplesheet LIMS driver
+
+=cut
+
+sub archive_to_irods_samplesheet {
+  my ($self, $required_job_completion) = @_;
+
+  return $self->_archive_to_irods($required_job_completion,
+                                  lims_driver_type => 'samplesheet');
+}
+
+=head2 archive_to_irods_ml_warehouse
+
+upload all archival files using the ml_warehouse LIMS driver
+
+=cut
+
+sub archive_to_irods_ml_warehouse {
+  my ($self, $required_job_completion) = @_;
+
+  return $self->_archive_to_irods($required_job_completion,
+                                  lims_driver_type => 'ml_warehouse_fc_cache');
+}
+
+sub _archive_to_irods {
+  my ($self, $required_job_completion, @args) = @_;
+
+  if ($self->no_irods_archival) {
+    $self->log(q{Archival to iRODS is switched off.});
+    return ();
+  }
+
+  my $handler = npg_pipeline::archive::file::to_irods->new
+    (archive_path     => $self->archive_path,
+     id_run           => $self->id_run,
+     run_folder       => $self->run_folder,
+     timestamp        => $self->timestamp,
+     qc_run           => $self->qc_run,
+     positions        => $self->positions,
+     @args);
+
+  my @job_ids = $handler->submit_to_lsf({
+    required_job_completion => $required_job_completion
+  });
+  return @job_ids;
+}
+
 
 =head2 archive_logs
 

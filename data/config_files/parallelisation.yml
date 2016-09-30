@@ -1,6 +1,6 @@
 a:
     illumina2bam: 1
-    illumina_basecall_stats: 1 
+    illumina_basecall_stats: 1
     p4_stage1_analysis: 1
 b:
     seq_alignment: 1
@@ -25,5 +25,5 @@ d:
     upload_fastqcheck_to_qc_database: 1
     upload_illumina_analysis_to_qc_database: 1
 e:
-    archive_to_irods: 1
+    archive_to_irods_samplesheet: 1
     run_qc_review_pending: 1
