@@ -75,22 +75,15 @@ sub archive_to_irods_ml_warehouse {
 }
 
 sub _archive_to_irods {
-  my ($self, $required_job_completion, @args) = @_;
+  my ($self, $required_job_completion, @extra_to_irods_attributes) = @_;
 
   if ($self->no_irods_archival) {
     $self->log(q{Archival to iRODS is switched off.});
     return ();
   }
 
-  my $handler = npg_pipeline::archive::file::to_irods->new
-    (archive_path     => $self->archive_path,
-     id_run           => $self->id_run,
-     run_folder       => $self->run_folder,
-     timestamp        => $self->timestamp,
-     qc_run           => $self->qc_run,
-     positions        => $self->positions,
-     @args);
-
+  my $handler = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::to_irods},
+    {@extra_to_irods_attributes});
   my @job_ids = $handler->submit_to_lsf({
     required_job_completion => $required_job_completion
   });
@@ -136,7 +129,7 @@ sub upload_illumina_analysis_to_qc_database {
 
 =head2 upload_fastqcheck_to_qc_database
 
-upload fastqcheck files to teh qc database
+upload fastqcheck files to the qc database
 
 =cut
 
