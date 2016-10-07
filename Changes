@@ -9,6 +9,7 @@ LIST OF CHANGES
     in p4 stage 1 via general_values.ini
  - add Broad Institute's RNA-SeQC to list of autoqc checks
  - run bam_flagstats autoqc check via the qc script
+ - tweak for targeted stats files and also human split
 
 release 51.2
  - patch to script_must_be_unique_runner - only ignore exact matches to the job id
