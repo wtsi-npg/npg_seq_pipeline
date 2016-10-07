@@ -181,21 +181,6 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   croak qq{Nonconsented human split must not have Homo sapiens reference ($name_root)} if ($l->contains_nonconsented_human and $l->reference_genome and $l->reference_genome=~/Homo_sapiens/smx );
   my $do_rna = $self->_do_rna_analysis($l);
 
-   # when no target alignment - splice out unneeded p4 nodes, add -x flag to scramble,
-   #  unset the reference for bam_stats and amend the AlignmentFilter command
-   my $no_tgtaln_splice_flag = q[];
-   my $scramble_reference_unset = q[];
-   my $stats_reference_unset = q[];
-   my $af_target_in_flag = q[];
-   my $af_unaln_out_flag_name = q[];
-   if(not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam) {
-     $no_tgtaln_splice_flag = q[-splice_nodes '"'"'src_bam:-alignment_filter:__PHIX_BAM_IN__'"'"'];
-     $scramble_reference_unset = q[-keys scramble_reference_flag -vals '"'"'-x'"'"'];
-     $stats_reference_unset = q[-nullkeys stats_reference_flag]; # both samtools and bam_stats
-     $af_target_in_flag = q[-nullkeys af_target_in_flag]; # switch off AlignmentFilter target input
-     $af_unaln_out_flag_name = q[-keys af_target_out_flag_name -vals '"'"'UNALIGNED'"'"']; # rename "target output" flag
-   }
-
    my $hs_bwa = ($self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se');
    # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp) unless GCLP
    my $bwa = ($self->gclp or $self->is_hiseqx_run or $self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
@@ -222,6 +207,23 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
    }
 
    my $nchs_outfile_label = $nchs? q{human}: q{};
+
+   my $no_tgtaln_splice_flag = q[];
+   my $scramble_reference_unset = q[];
+   my $stats_reference_unset = q[];
+   my $af_target_in_flag = q[];
+   my $af_unaln_out_flag_name = q[];
+   if(not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam) {
+     if(not $nchs) { # currently human split (with and without target alignment) are handled with separate templates, so no splice/prune/etc
+       # when no target alignment - splice out unneeded p4 nodes, add -x flag to scramble,
+       #  unset the reference for bam_stats and amend the AlignmentFilter command
+       $no_tgtaln_splice_flag = q[-splice_nodes '"'"'src_bam:-alignment_filter:__PHIX_BAM_IN__'"'"'];
+       $scramble_reference_unset = q[-keys scramble_reference_flag -vals '"'"'-x'"'"'];
+       $stats_reference_unset = q[-nullkeys stats_reference_flag]; # both samtools and bam_stats
+       $af_target_in_flag = q[-nullkeys af_target_in_flag]; # switch off AlignmentFilter target input
+       $af_unaln_out_flag_name = q[-keys af_target_out_flag_name -vals '"'"'UNALIGNED'"'"']; # rename "target output" flag
+     }
+   }
 
    #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
    #TODO: support these various options below in P4 analyses
