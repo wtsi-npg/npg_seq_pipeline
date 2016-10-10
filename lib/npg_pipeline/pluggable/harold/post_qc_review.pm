@@ -82,6 +82,10 @@ sub _archive_to_irods {
     return ();
   }
 
+  @extra_to_irods_attributes % 2 and confess
+    q{Odd number of extra key/value arguments supplied: } .
+      join q{, }, @extra_to_irods_attributes;
+
   my $handler = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::to_irods},
     {@extra_to_irods_attributes});
   my @job_ids = $handler->submit_to_lsf({
