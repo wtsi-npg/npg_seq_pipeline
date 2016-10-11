@@ -254,7 +254,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                           q(-keys alignment_filter_jar -vals), $self->_AlignmentFilter_jar,
                           ($self->_do_bait_stats_analysis($l) ? (
                               q(-keys bait_regions_file -vals), $self->_bait($l)->bait_intervals_path(),
-                              q(-prune_nodes '"'"'fopphx_samtools_stats_F0.*00_bait.*'"'"'),
+                              q(-prune_nodes '"'"'fop(phx|hs)_samtools_stats_F0.*00_bait.*'"'"'),
                           ) : ( ## wildcard prune 
                               q(-prune_nodes '"'"'fop.*samtools_stats_F0.*00_bait.*'"'"'),
                           )),
