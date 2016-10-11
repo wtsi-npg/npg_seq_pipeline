@@ -13,6 +13,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
 local $ENV{PATH} = join q[:], q[t/bin], $ENV{PATH};
 
 my $temp = $util->temp_directory();
+
 $ENV{TEST_DIR} = $temp;
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 
@@ -22,7 +23,7 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
   my $post_qc_review;
   my @functions_in_order = qw(
     run_archival_in_progress
-    archive_to_irods
+    archive_to_irods_ml_warehouse
     upload_illumina_analysis_to_qc_database
     upload_auto_qc_to_qc_database
     run_run_archived
@@ -63,7 +64,7 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
   my $command = qq['${unset_string}warehouse_loader --verbose --id_run 1234'];
   is($post_qc_review->_update_warehouse_command('warehouse_loader', (50)),
     qq[$prefix  $command], 'update warehouse command');
-  
+
   $job_name .= '_postqccomplete';
   $prefix = qq[bsub -q lowload 50 -J $job_name ] .
     qq[-o $log_dir_in_outgoing/${job_name}_${timestamp}.out];
@@ -97,8 +98,9 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
       runfolder_path => $runfolder_path,
       no_irods_archival => 1,
       no_warehouse_update => 1,
-    );
-  ok(!$p->archive_to_irods(), 'archival to irods switched off');
+                                                              );
+  ok(!($p->archive_to_irods() || $p->archive_to_irods_samplesheet() ||
+       $p->archive_to_irods_ml_warehouse()), 'archival to irods switched off');
   ok(!$p->update_warehouse(), 'update to warehouse switched off');
 }
 
@@ -106,8 +108,9 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
   my $p = npg_pipeline::pluggable::harold::post_qc_review->new(
       runfolder_path => $runfolder_path,
       local => 1,
-    );
-  ok(!$p->archive_to_irods(), 'archival to irods switched off');
+                                                              );
+  ok(! ($p->archive_to_irods() || $p->archive_to_irods_samplesheet() ||
+        $p->archive_to_irods_ml_warehouse()), 'archival to irods switched off');
   ok(!$p->update_warehouse(), 'update to warehouse switched off');
   is($p->no_summary_link,1, 'summary_link switched off');
 }
@@ -118,7 +121,8 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
       local => 1,
       no_warehouse_update => 0,
     );
-  ok(!$p->archive_to_irods(), 'archival to irods switched off');
+  ok(!($p->archive_to_irods() || $p->archive_to_irods_samplesheet() ||
+        $p->archive_to_irods_ml_warehouse()), 'archival to irods switched off');
   ok($p->update_warehouse(), 'update to warehouse switched on');
   is($p->no_summary_link,1, 'summary_link switched off');
 }

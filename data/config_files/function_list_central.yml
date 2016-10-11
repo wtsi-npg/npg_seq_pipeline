@@ -28,5 +28,5 @@
 - qc_rna_seqc
 - run_analysis_complete
 - update_ml_warehouse
-- archive_to_irods
+- archive_to_irods_samplesheet
 - run_qc_review_pending
