@@ -26,7 +26,7 @@
 - run_analysis_complete
 - run_archival_in_progress
 - copy_interop_files_to_irods
-- archive_to_irods
+- archive_to_irods_ml_warehouse
 - upload_fastqcheck_to_qc_database
 - upload_illumina_analysis_to_qc_database
 - upload_auto_qc_to_qc_database

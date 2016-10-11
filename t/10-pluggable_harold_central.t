@@ -71,9 +71,9 @@ my $runfolder_path = $util->analysis_runfolder_path();
     qc_rna_seqc
     run_analysis_complete
     update_ml_warehouse
-    archive_to_irods
-    run_qc_review_pending          
-    lsf_end     
+    archive_to_irods_samplesheet
+    run_qc_review_pending
+    lsf_end
   }];
   is_deeply( $pipeline->function_order() , $expected_function_order, q{Function order correct} );
 }
