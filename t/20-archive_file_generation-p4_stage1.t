@@ -46,7 +46,6 @@ my $bam_generator = npg_pipeline::archive::file::generation::p4_stage1_analysis-
     _extra_tradis_transposon_read => 1,
     bam_basecall_path => $util->analysis_runfolder_path() . q{/Data/Intensities/BaseCalls},
    _job_args => { _param_vals => { 1=> {}, }},
-#   _job_args => { '1' },
   );
 
 subtest 'basics' => sub {
@@ -85,9 +84,7 @@ subtest 'check_save_arguments' => sub {
   isa_ok($bam_generator, q{npg_pipeline::archive::file::generation::p4_stage1_analysis}, q{$bam_generator});
  
   my $jnr = $bam_generator->job_name_root;
-  warn q[jnr: ], $jnr;
   my $bbp = $bam_generator->bam_basecall_path;
-  warn q[bbp: ], $bbp;
  
   lives_ok{$bam_generator->generate} 'bam_generator generate';
   my $fname;
@@ -116,6 +113,7 @@ subtest 'check_save_arguments' => sub {
   ok (-e $pfname, 'params file exists');
   $contents = slurp($pfname);
   $h = from_json($contents);
+
   $expected = {
      'assign' => [
         {
@@ -139,7 +137,7 @@ subtest 'check_save_arguments' => sub {
 	  'i2b_run_path' => $dir . q[/nfs/sf45/IL2/analysis/123456_IL2_1234],
 	  'teepot_tempdir' => '.',
 	  'split_prefix' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/lane1',
-	  'illumina2bam_jar' => '/nfs/team105/kl2/repos/git/npg_seq_pipeline/npg_pipeline.fix_implementation_flags/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/Illumina2bam.jar',
+	  'illumina2bam_jar' => $current . '/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/Illumina2bam.jar',
 	  'i2b_intensity_dir' => $intensities_dir,
 	  'i2b_sample_aliases' => 'SRS000147',
 	  'phix_alignment_method' => 'bwa_aln_se',
@@ -157,8 +155,6 @@ subtest 'check_save_arguments' => sub {
   };
 
   cmp_deeply($h, $expected, 'correct json file content (for p4 stage1 params file)');
-#print q[h: ], Dumper($h), "\n\n";
-#print q[expected: ], Dumper($expected), "\n";
 
  };
 
