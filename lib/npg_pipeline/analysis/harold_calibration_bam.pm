@@ -150,7 +150,7 @@ sub generate_alignment_files {
 
   foreach my $position ( $self->positions ) {
     if ( ! $self->is_spiked_lane( $position ) ){
-       $self->log("Lane $position is not spiked with phiX, no PB_cal alignment job needed");
+       $self->warn("Lane $position is not spiked with phiX, no PB_cal alignment job needed");
        next;
     }
     $self->_generate_alignment_file_per_lane({
@@ -177,7 +177,7 @@ sub generate_calibration_table {
   my ($self, $arg_refs) = @_;
 
   if ( !$self->recalibration() ) {
-    $self->log( q{This has been set to run with no recalibration step} );
+    $self->warn(q{This has been set to run with no recalibration step});
     return ();
   }
 
@@ -193,7 +193,7 @@ sub generate_calibration_table {
 
   foreach my $position ( $self->positions ) {
     if ( ! $self->is_spiked_lane( $position ) ){
-       $self->log("Lane $position is not spiked with phiX, no PB_cal calibration table job needed");
+       $self->warn("Lane $position is not spiked with phiX, no PB_cal calibration table job needed");
        next;
     }
     $self->_generate_calibration_table_per_lane( {
@@ -225,7 +225,7 @@ sub generate_recalibrated_bam {
   my $pb_cal_dir = $self->pb_cal_path();
 
   if ( ! $self->directory_exists($pb_cal_dir) ) {
-    $self->log( qq{$pb_cal_dir does not exist, not executing jobs} );
+    $self->warn(qq{$pb_cal_dir does not exist, not executing jobs});
     return ();
   }
 
@@ -265,9 +265,7 @@ sub _generate_recalibrated_bam_per_lane {
   };
 
   my $bsub_command = $self->_recalibration_bsub_command( $args_bam );
-  if ( $self->verbose() ) {
-      $self->log( $bsub_command );
-  }
+  $self->debug($bsub_command);
 
   push @{ $arg_refs->{'job_ids'} }, $self->submit_bsub_command( $bsub_command );
 
@@ -286,9 +284,7 @@ sub _generate_calibration_table_per_lane {
 
   my $bsub_command = $self->_calibration_table_bsub_command( $args );
 
-  if ( $self->verbose() ) {
-    $self->log( $bsub_command );
-  }
+  $self->debug($bsub_command);
 
   push @{ $arg_refs->{'job_ids'} }, $self->submit_bsub_command($bsub_command);
 
@@ -307,9 +303,7 @@ sub _generate_alignment_file_per_lane {
     is_spiked_phix   => 1,
   } );
 
-  if ( $self->verbose() ) {
-    $self->log( $bsub_command );
-  }
+  $self->debug($bsub_command);
 
   push @{ $arg_refs->{'job_ids'} }, $self->submit_bsub_command($bsub_command);
 
@@ -404,7 +398,9 @@ sub _recalibration_bsub_command {
   push @command_pb_cal, $self->pb_calibration_bin() . q{/} . $self->recalibration_script();
   push @command_pb_cal, q{--u};
   push @command_pb_cal, q{--bam } . $input_bam;
-  push @command_pb_cal, q{--intensity_dir } . $self->dif_files_path(); # for dif file location, it should be bustard_dir if OLB
+  if ($self->dif_files_path()) {
+    push @command_pb_cal, q{--intensity_dir } . $self->dif_files_path(); # for dif file location, it should be bustard_dir if OLB
+  }
 
   my $cycle_start1 = 1;
   my $alims = $self->lims->associated_child_lims_ia;
@@ -536,7 +532,7 @@ sub _calibration_table_bsub_command {
 
   if ( $arg_refs->{is_spiked_phix} ) {
     if (!$arg_refs->{snp_file}) {
-      croak 'SNP file not available';
+      $self->logcroak('SNP file not available');
     }
     push @command, q{--snp } . $arg_refs->{snp_file};
   }

@@ -50,13 +50,6 @@ has 'dry_run' => (
   documentation => 'dry run mode flag, false by default',
 );
 
-has 'logger' => (
-  isa        => q{Log::Log4perl::Logger},
-  is         => q{ro},
-  metaclass  => 'NoGetopt',
-  default    => sub { Log::Log4perl->get_logger() },
-);
-
 has 'daemon_conf' => (
   isa        => q{HashRef},
   is         => q{ro},
@@ -93,10 +86,10 @@ sub _build_green_host {
   my $self = shift;
   my $datacentre = `machine-location|grep datacentre`;
   if ($datacentre) {
-    $self->logger->info(qq{Running in $datacentre});
+    $self->info(qq{Running in $datacentre});
     return ($datacentre && $datacentre =~ /$GREEN_DATACENTRE/xms) ? 1 : 0;
   }
-  $self->logger->warn(q{Do not know what datacentre I am running in});
+  $self->warn(q{Do not know what datacentre I am running in});
   return;
 }
 
@@ -222,7 +215,7 @@ sub check_lims_link {
 sub run_command {
   my ( $self, $id_run, $cmd ) = @_;
 
-  $self->logger->info(qq{COMMAND: $cmd});
+  $self->info(qq{COMMAND: $cmd});
   my ($output, $error);
 
   if (!$self->dry_run) {
@@ -230,14 +223,14 @@ sub run_command {
     $error  = $CHILD_ERROR;
   }
   if ($error) {
-    $self->logger->warn(
+    $self->warn(
       qq{Error $error occured. Will try $id_run again on next loop.});
   }else{
     $self->seen->{$id_run}++;
   }
 
   if ($output) {
-    $self->logger->info(qq{COMMAND OUTPUT: $output});
+    $self->info(qq{COMMAND OUTPUT: $output});
   }
 
   return;
@@ -278,15 +271,15 @@ sub loop {
   my $class = ref $self;
   while (1) {
     try {
-      $self->logger->info(qq{$class running});
+      $self->info(qq{$class running});
       if ($self->dry_run) {
-        $self->logger->info(q{DRY RUN});
+        $self->info(q{DRY RUN});
       }
       $self->run();
     } catch {
-      $self->logger->warn(qq{Error in $class : $_} );
+      $self->warn(qq{Error in $class : $_} );
     };
-    $self->logger->info(qq{Going to sleep for $SLEEPY_TIME secs});
+    $self->info(qq{Going to sleep for $SLEEPY_TIME secs});
     sleep $SLEEPY_TIME;
   }
 

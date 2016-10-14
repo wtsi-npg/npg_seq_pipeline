@@ -33,7 +33,7 @@ upload all archival files to irods
 sub archive_to_irods {
   my ($self, @args) = @_;
   if ($self->no_irods_archival) {
-    $self->log(q{Archival to iRODS is switched off.});
+    $self->warn(q{Archival to iRODS is switched off.});
     return ();
   }
   my $required_job_completion = shift @args;
@@ -53,7 +53,7 @@ upload all log files to irods
 sub archive_logs {
   my ($self, @args) = @_;
   if ($self->no_irods_archival) {
-    $self->log(q{Archival to iRODS is switched off.});
+    $self->warn(q{Archival to iRODS is switched off.});
     return ();
   }
   my $required_job_completion = shift @args;
@@ -120,7 +120,7 @@ Updates run data in the npg tables of the warehouse.
 sub update_warehouse {
   my ($self, @args) = @_;
   if ($self->no_warehouse_update) {
-    $self->log(q{Update to warehouse is switched off.});
+    $self->warn(q{Update to warehouse is switched off.});
     return ();
   }
   return $self->submit_bsub_command(
@@ -147,7 +147,7 @@ Updates run data in the npg tables of the ml_warehouse.
 sub update_ml_warehouse {
   my ($self, @args) = @_;
   if ($self->no_warehouse_update) {
-    $self->log(q{Update to warehouse is switched off.});
+    $self->warn(q{Update to warehouse is switched off.});
     return ();
   }
   return $self->submit_bsub_command(

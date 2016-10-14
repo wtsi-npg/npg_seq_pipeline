@@ -44,19 +44,19 @@ sub run {
   my ( $self ) = @_;
 
   if ( ! $self->runfolder_name_ok() || ! $self->last_cycle_numbers_ok() ) {
-    $self->log(
+    $self->info(
       q{Runfolder name OK: } . ( $self->runfolder_name_ok()     ? q{Y} : q{N} )
     );
-    $self->log(
+    $self->info(
       q{Last Cycles OK: }    . ( $self->last_cycle_numbers_ok() ? q{Y} : q{N} )
     );
-    croak q{problem with runfolder_name or last_cycle_numbers};
+    $self->logcroak(q{problem with runfolder_name or last_cycle_numbers});
   };
 
   eval {
     $self->_correct_config_xmls();
   } or do {
-    croak qq{Problem trying to ensure correctness of config files: $EVAL_ERROR};
+    $self->logcroak(qq{Problem trying to ensure correctness of config files: $EVAL_ERROR});
   };
 
   return 1;
@@ -137,7 +137,7 @@ sub _build_last_cycle_numbers_ok {
 
   my $last_cycle_numbers_ok = 1;
   foreach my $read ( sort keys %{ $reads_last_cycle_numbers } ) {
-    $self->log( qq{Last cycle numbers for read $read} );
+    $self->info( qq{Last cycle numbers for read $read} );
     my $cycle_number;
     foreach my $read_type ( sort keys %{ $reads_last_cycle_numbers->{ $read } } ) {
       if ( ! $cycle_number ) {
@@ -147,7 +147,7 @@ sub _build_last_cycle_numbers_ok {
           $last_cycle_numbers_ok = 0;
         }
       }
-      $self->log( qq[\t$read_type : $reads_last_cycle_numbers->{ $read }->{ $read_type } ] );
+      $self->info(qq[\t$read_type : $reads_last_cycle_numbers->{ $read }->{ $read_type } ]);
     }
   }
 
@@ -161,7 +161,7 @@ sub _build_last_cycle_numbers_ok {
     if ( scalar @{ $number_of_reads->{ $read_type } } != $read_count ) {
       $last_cycle_numbers_ok = 0;
     }
-    $self->log( join q{ }, $read_type, q{reads:}, @{ $number_of_reads->{ $read_type } } );
+    $self->info(join q{ }, $read_type, q{reads:}, @{ $number_of_reads->{ $read_type } });
   }
 
   return $last_cycle_numbers_ok;
@@ -225,7 +225,7 @@ sub _correct_config_xmls {
     write_file ( $self->intensity_path() . q{/BaseCalls/config.xml}, $self->basecalls_xml()->toString() );
     $return_value = 1;
   } or do {
-    croak $EVAL_ERROR;
+    $self->logcroak($EVAL_ERROR);
   };
 
   return $return_value;
@@ -240,13 +240,13 @@ sub _copy_original_config_files {
   if ( ! -e qq{$intensity_config_filename.ORIG} ) {
     $output = qx{cp $intensity_config_filename $intensity_config_filename.ORIG};
     if ( $CHILD_ERROR ) {
-      croak qq{problem making copy of $intensity_config_filename: $output};
+      $self->logcroak(qq{problem making copy of $intensity_config_filename: $output});
     }
   }
   if ( ! -e qq{$basecalls_config_filename.ORIG} ) {
     $output = qx{cp $basecalls_config_filename $basecalls_config_filename.ORIG};
     if ( $CHILD_ERROR ) {
-      croak qq{problem making copy of $basecalls_config_filename: $output};
+      $self->logcroak(qq{problem making copy of $basecalls_config_filename: $output});
     }
   }
 

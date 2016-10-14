@@ -77,7 +77,7 @@ sub launch {
 
   my @positions = $self->positions();
   if ( ! scalar @positions ) {
-    $self->log( q{no positions found, not submitting any jobs} );
+    $self->info(q{no positions found, not submitting any jobs});
     return @job_ids;
   }
 
@@ -97,11 +97,11 @@ method which goes checking the cluster counts
 sub run_cluster_count_check {
    my $self = shift;
 
-   $self->log('Checking cluster counts are consistent');
+   $self->info('Checking cluster counts are consistent');
    my $max_cluster_count = $self->_bustard_raw_cluster_count();
-   $self->log(qq{Raw cluster count: $max_cluster_count});
+   $self->info(qq{Raw cluster count: $max_cluster_count});
    my $pass_cluster_count = $self->_bustard_pf_cluster_count();
-   $self->log(qq{PF cluster count: $pass_cluster_count});
+   $self->info(qq{PF cluster count: $pass_cluster_count});
 
    my $spatial_filter_processed = $self->_spatial_filter_processed_count();
    my $spatial_filter_failed    = $self->_spatial_filter_failed_count();
@@ -110,20 +110,19 @@ sub run_cluster_count_check {
        $spatial_filter_processed /= 2;
        $spatial_filter_failed /= 2;
      }
-     $self->log(qq{Spatial filter applied to $spatial_filter_processed clusters failing $spatial_filter_failed});
+     $self->info(qq{Spatial filter applied to $spatial_filter_processed clusters failing $spatial_filter_failed});
      if ($pass_cluster_count != $spatial_filter_processed and
          $max_cluster_count != $spatial_filter_processed) {
        my $msg = qq{Spatial filter processed count ($spatial_filter_processed) matches neither raw ($max_cluster_count) or PF ($pass_cluster_count) clusters};
-       $self->log($msg);
-       croak $msg;
+       $self->logcroak($msg);
      }
      $max_cluster_count = $spatial_filter_processed; # reset to max processed at spatial filter
      $pass_cluster_count -= $spatial_filter_failed;
      if($spatial_filter_failed){
-       $self->log(qq{Passed cluster count drops to $pass_cluster_count});
+       $self->warn(qq{Passed cluster count drops to $pass_cluster_count});
      }
    }else{
-       $self->log(q{Spatial filter not applied (well, not recorded anyway)});
+       $self->info(q{Spatial filter not applied (well, not recorded anyway)});
    }
 
    my $total_bam_cluster_count;
@@ -136,14 +135,14 @@ sub run_cluster_count_check {
        $total_bam_cluster_count /= 2;
     }
 
-    $self->log(qq{Actual cluster count in bam files: $total_bam_cluster_count});
+   $self->info(q{Actual cluster count in bam files: },
+               $total_bam_cluster_count);
 
     if($pass_cluster_count != $total_bam_cluster_count and $max_cluster_count != $total_bam_cluster_count){
         my $msg = qq{Cluster count in bam files not as expected\n\tExpected: $pass_cluster_count or $max_cluster_count\n\tActual:$total_bam_cluster_count };
-        $self->log($msg);
-        croak $msg;
+        $self->logcroak($msg);
     }
-    $self->log('Bam files have correct cluster count');
+    $self->info('Bam files have correct cluster count');
 
     return 1;
 }
@@ -204,7 +203,7 @@ sub _populate_cluster_counts {
   }
 
   if ( !defined $return ) {
-    croak q{Unable to determine a raw and/or pf cluster count};
+    $self->logcroak(q{Unable to determine a raw and/or pf cluster count});
   }
 
   return $return;
@@ -228,13 +227,16 @@ sub parsing_interop {
 
   my $template = 'v3f'; # three two-byte integers and one 4-byte float
 
-  open my $fh, q{<}, $interop or croak qq{Couldn't open interop file $interop, error $ERRNO};
+  open my $fh, q{<}, $interop or
+    $self->logcroak(qq{Couldn't open interop file $interop, error $ERRNO});
   binmode $fh, ':raw';
 
-  $fh->read($data, 1) or croak qq{Couldn't read file version in interop file $interop, error $ERRNO};
+  $fh->read($data, 1) or
+    $self->logcroak(qq{Couldn't read file version in interop file $interop, error $ERRNO});
   $version = unpack 'C', $data;
 
-  $fh->read($data, 1) or croak qq{Couldn't read record length in interop file $interop, error $ERRNO};
+  $fh->read($data, 1) or
+    $self->logcroak(qq{Couldn't read record length in interop file $interop, error $ERRNO});
   $length = unpack 'C', $data;
 
   my $tile_metrics = {};
@@ -248,11 +250,12 @@ sub parsing_interop {
     }
   }
 
-  $fh->close() or croak qq{Couldn't close interop file $interop, error $ERRNO};
+  $fh->close() or
+    $self->logcroak(qq{Couldn't close interop file $interop, error $ERRNO});
 
   my $lanes = scalar keys %{$tile_metrics};
   if( $lanes == 0){
-    $self->mlog( 'No cluster count data' );
+    $self->warn('No cluster count data');
     return $cluster_count_by_lane;
   }
 
@@ -279,7 +282,9 @@ has q{_spatial_filter_failed_count} =>(
 sub _build__spatial_filter_failed_count {
   my ( $self ) = @_;
   $self->_populate_spatial_filter_counts();
-  if(not $self->_has__spatial_filter_failed_count) { croak '_spatial_filter_failed_count should have been set'}
+  if(not $self->_has__spatial_filter_failed_count) {
+      $self->logcroak('_spatial_filter_failed_count should have been set');
+  }
   return $self->_spatial_filter_failed_count();
 }
 
@@ -294,7 +299,9 @@ has q{_spatial_filter_processed_count} =>(
 sub _build__spatial_filter_processed_count {
   my ( $self ) = @_;
   $self->_populate_spatial_filter_counts();
-  if(not $self->_has__spatial_filter_processed_count) { croak '_spatial_filter_processed_count should have been set'}
+  if(not $self->_has__spatial_filter_processed_count) {
+      $self->logcroak('_spatial_filter_processed_count should have been set');
+  }
   return $self->_spatial_filter_processed_count();
 }
 
@@ -305,18 +312,21 @@ sub _populate_spatial_filter_counts{
    my $qc_store = npg_qc::autoqc::qc_store->new( use_db => 0 );
    my $collection = $qc_store->load_from_path( $self->qc_path() );
    if( $collection->is_empty() ){
-     $self->log("There are no qc results available for this lane $position in here: ".$self->qc_path);
+     $self->warn("There are no qc results available for this lane $position in here: ",
+                 $self->qc_path);
    }
    my $collection_lane = $collection->slice(q[position], $position);
    my $spatial_filter_collection = $collection_lane->slice('class_name', 'spatial_filter');
 
    if( $spatial_filter_collection->is_empty() ){
-     $self->log("There is no spatial_filter result available for this lane $position in here: ".$self->qc_path);
+     $self->warn("There is no spatial_filter result available for this lane $position in here: ",
+                 $self->qc_path);
    }
 
    my $results = $spatial_filter_collection->results();
    if(@{$results} > 1){
-     croak "More than one spatial_filter result available for this lane $position in here: ".$self->qc_path;
+     $self->logcroak("More than one spatial_filter result available for this lane $position in here: ",
+                     $self->qc_path);
    }elsif(@{$results}){
      my $qc_result = $results->[0];
      $self->_set__spatial_filter_processed_count($qc_result->num_total_reads());
@@ -361,9 +371,7 @@ sub _generate_bsub_command {
 
   $job_sub .= q{'};
 
-  if ( $self->verbose() ) {
-    $self->log($job_sub);
-  }
+  $self->debug($job_sub);
 
   return $job_sub;
 }
@@ -387,7 +395,7 @@ sub _bam_cluster_count_total {
    my $collection = $qc_store->load_from_path( $qc_path );
 
    if( !$collection || $collection->is_empty() ){
-     $self->log("There is no auto qc results available here: $qc_path");
+     $self->info("There is no auto qc results available here: $qc_path");
      return $bam_cluster_count;
    }
 
@@ -395,7 +403,7 @@ sub _bam_cluster_count_total {
    my $bam_flagstats_collection = $collection_lane->slice('class_name', 'bam_flagstats');
 
    if( !$bam_flagstats_collection || $bam_flagstats_collection->is_empty() ){
-     $self->log("There is no bam flagstats available for this lane $position in here: $qc_path");
+     $self->info("There is no bam flagstats available for this lane $position in here: $qc_path");
      return $bam_cluster_count;
    }
 

@@ -67,7 +67,7 @@ sub run_qc {
 
   my $qc_to_run = $self->qc_to_run();
   my $id_run = $self->id_run();
-  $self->log(qq{Running qc test $qc_to_run on Run $id_run});
+  $self->info(qq{Running qc test $qc_to_run on Run $id_run});
 
   foreach my $position ($self->positions()) {
     if ( $self->is_multiplexed_lane($position) && (-e $self->lane_archive_path( $position ) ) ) {
@@ -160,7 +160,8 @@ sub _generate_bsub_command {
 
   $job_sub .= qq{ '$command'};
 
-  if ($self->verbose()) { $self->log($job_sub); }
+  $self->debug($job_sub);
+
   return $job_sub;
 }
 

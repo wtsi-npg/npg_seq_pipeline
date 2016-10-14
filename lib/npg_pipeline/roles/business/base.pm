@@ -149,7 +149,7 @@ Boolean flag, true if the run is indexed and the lane is a pool.
 sub is_multiplexed_lane {
   my ($self, $position) = @_;
   if (!$position) {
-    croak 'Position not given';
+    $self->logcroak('Position not given');
   }
   return any {$_ == $position} @{$self->multiplexed_lanes};
 }
@@ -157,11 +157,11 @@ sub is_multiplexed_lane {
 sub _lims4lane {
   my ($self, $position) = @_;
   if (!$position) {
-    croak 'Position not given';
+    $self->logcroak('Position not given');
   }
   my $lane = $self->lims->children_ia->{$position};
   if (!$lane) {
-    croak "Failed to get lims data for lane $position";
+    $self->logcroak("Failed to get lims data for lane $position");
   }
   return $lane;
 }
@@ -341,11 +341,11 @@ sub control_snp_file {
 
   my $path = $self->get_control_ref(q[snps]);
   if (!$path) {
-    croak 'Failed to retrieve control snp file';
+    $self->logcroak('Failed to retrieve control SNP file');
   }
   $path .= q[.rod];
   if (!-e $path) {
-    croak "Snip file $path does not exists";
+    $self->logcroak("SNP file $path does not exist");
   }
   return $path;
 }
@@ -417,7 +417,6 @@ inferred from the environment variables set up during caching.
 =cut
 
 sub metadata_cache_dir {
-
   my $dirs = {};
   foreach my $var (npg_pipeline::cache->env_vars()) {
     my $path = $ENV{$var};
@@ -441,7 +440,7 @@ sub metadata_cache_dir {
     croak q{Cannot infer location of cache directory};
   }
   if (scalar @ds > 1) {
-    croak q{Multiple possible locations for metadata cache directory: }  . join q[ ], @ds;
+    croak q{Multiple possible locations for metadata cache directory: } . join q[ ], @ds;
   }
 
   return $ds[0];

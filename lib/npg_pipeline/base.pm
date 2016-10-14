@@ -4,9 +4,11 @@ use Moose;
 use Moose::Meta::Class;
 use Carp;
 use English qw{-no_match_vars};
+use Log::Log4perl qw(:levels);
+use Log::Log4perl::Appender;
 use POSIX qw(strftime);
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
-use File::Spec::Functions qw(splitdir);
+use File::Spec::Functions qw(catfile splitdir);
 use Cwd qw(abs_path);
 use File::Slurp;
 use Readonly;
@@ -19,7 +21,7 @@ our $VERSION = '0';
 with qw{
         MooseX::Getopt
         MooseX::AttributeCloner
-        npg_common::roles::log
+        WTSI::DNAP::Utilities::Loggable
         npg_tracking::illumina::run::short_info
         npg_tracking::illumina::run::folder
         npg_pipeline::roles::accessor
@@ -33,6 +35,80 @@ Readonly::Scalar my $CONF_DIR                   => q{data/config_files};
 Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ olb qc_run gclp /;
 
 $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
+
+has q{log_file_path} =>
+  (isa           => q{Str},
+   is            => q{ro},
+   writer        => q{set_log_file_path},
+   lazy_build    => 1,
+   documentation => q{Provide a directory path for the log_file to written to - default is current working directory [.]},);
+
+after 'set_log_file_path' => sub {
+  my ($self) = @_;
+
+  $self->_update_file_appender;
+};
+
+has q{log_file_name} =>
+  (isa           => q{Str},
+   is            => q{ro},
+   writer        => q{set_log_file_name},
+   predicate     => q{has_log_file_name},
+   documentation => q{Give a name for the log_file to use, if not provided, no log_file will be created, and log will be to STDERR},);
+
+after 'set_log_file_name' => sub {
+  my ($self) = @_;
+
+  $self->_update_file_appender;
+};
+
+sub _build_log_file_path {
+  my ($self) = @_;
+
+  return getcwd();
+}
+
+# This method attempts to emulate the log file feature of
+# npg_common::roles::log using Log4perl
+sub _update_file_appender {
+  my ($self) = @_;
+
+  if ($self->has_log_file_path and $self->has_log_file_name) {
+    my $logfile = catfile($self->log_file_path, $self->log_file_name);
+
+    # Log::Log4perl::Appender::File has an option to create the file
+    # at runtime. However, we want to do it or fail as early as
+    # possible.
+    if (! -d $self->log_file_path) {
+      $self->make_log_dir($self->log_file_path);
+    }
+
+    if (! -e $logfile) {
+      open my $log, '>', $logfile
+        or confess "Failed to open log file '$logfile' for writing: $ERRNO";
+      close $log or carp "Failed to close '$logfile': $ERRNO";
+    }
+
+    my $logging_class = $self->meta->name;
+
+    my $appender = $Log::Log4perl::Logger::APPENDER_BY_NAME{$logging_class};
+    if (defined $appender) {
+      $self->debug("Switching logging to '$logfile'");
+      $appender->file_switch($logfile);
+    }
+    else {
+      $self->debug("Creating new appender logging to '$logfile'");
+      $appender = Log::Log4perl::Appender->new('Log::Log4perl::Appender::File',
+                                               name      => $logging_class,
+                                               filename  => $logfile,
+                                               level     => $INFO);
+
+      $self->logger->add_appender($appender);
+    }
+  }
+
+  return;
+}
 
 =head1 NAME
 
@@ -115,7 +191,7 @@ sub submit_bsub_command {
 
   # if the no_bsub flag is set
   if ( $self->no_bsub() ) {
-    $self->log( qq{***** I would be submitting the following to LSF\n$cmd \n*****} );
+    $self->info( qq{***** I would be submitting the following to LSF\n$cmd \n*****} );
     return $DEFAULT_JOB_ID_FOR_NO_BSUB;
   }
 
@@ -128,7 +204,7 @@ sub submit_bsub_command {
   while ($count < $max_tries_plus_one) {
     $job_id = qx/$cmd/;
     if ($CHILD_ERROR) {
-      $self->log(qq{Error attempting ($count) to submit job $cmd \n\n.\tError code $CHILD_ERROR});
+      $self->error(qq{Error attempting ($count) to submit job $cmd \n\n.\tError code $CHILD_ERROR});
       sleep $min_sleep ** $count;
       $count++;
     } else {
@@ -139,7 +215,7 @@ sub submit_bsub_command {
   if ( $cmd =~ /bsub/xms ) {
     ($job_id) = $job_id =~ /(\d+)/xms;
     if(!$job_id) {
-      croak qq{Failed to submit an lsf job for $cmd};
+      $self->logcroak(qq{Failed to submit an lsf job for $cmd});
     }
   }
   return $job_id;
@@ -403,7 +479,7 @@ around 'function_list' => sub {
   my $file = abs_path($v);
   if (!$file || !-f $file) {
     if ($v !~ /\A\w+\Z/smx) {
-      croak "Bad function list name: $v";
+      $self->logcroak("Bad function list name: $v");
     }
     try {
       $file = $self->conf_file_path((join q[_],'function_list',$v) . '.yml');
@@ -412,13 +488,13 @@ around 'function_list' => sub {
       if ($v !~ /^$pipeline_name/smx) {
         $file = $self->conf_file_path((join q[_],'function_list',$self->pipeline_name,$v) . '.yml');
       } else {
-        croak $_;
+        $self->logcroak($_);
       }
     };
   }
-  if ($self->verbose) {
-    $self->log("Will use function list $file");
-  }
+
+  $self->info("Will use function list $file");
+
   return $file;
 };
 sub _build_gclp {
@@ -508,39 +584,31 @@ sub make_log_dir {
   $owning_group ||= $self->general_values_conf()->{group};
 
   if ( -d $log_dir ) {
-    if ( $self->verbose && $self->can( q{log} ) ) {
-      $self->log( qq{$log_dir already exists} );
-    }
+    $self->info(qq{$log_dir already exists});
     return $log_dir;
   }
 
   my $cmd = qq{mkdir -p $log_dir};
   my $output = qx{$cmd};
 
-  if ( $self->verbose && $self->can( q{log} ) ) {
-    $self->log( qq{Command: $cmd} );
-    $self->log( qq{Output:  $output} );
-  }
+  $self->debug(qq{Command: $cmd});
+  $self->debug(qq{Output:  $output});
 
   if ( $CHILD_ERROR ) {
-    croak qq{unable to create $log_dir:$output};
+    $self->logcroak(qq{unable to create $log_dir:$output});
   }
 
   if ($owning_group) {
-    if ( $self->can( q{log} ) ) {
-      $self->log( qq{chgrp $owning_group $log_dir} );
-    }
+    $self->info(qq{chgrp $owning_group $log_dir});
 
     my $rc = qx{chgrp $owning_group $log_dir};
     if ( $CHILD_ERROR ) {
-      if ( $self->can( q{log} ) ) {
-        $self->log("could not chgrp $log_dir\n\t$rc"); # not fatal
-      }
+      $self->warn("could not chgrp $log_dir\n\t$rc");
     }
   }
   my $rc = qx{chmod u=rwx,g=srxw,o=rx $log_dir};
   if ( $CHILD_ERROR ) {
-    $self->log("could not chmod $log_dir\n\t$rc");   # not fatal
+    $self->warn("could not chmod $log_dir\n\t$rc");
   }
 
   return $log_dir;
@@ -628,7 +696,7 @@ sub status_files_path {
   my $self = shift;
   my $apath = $self->analysis_path;
   if (!$apath) {
-    croak 'Failed to retrieve analysis_path';
+    $self->logcroak('Failed to retrieve analysis_path');
   }
   return join q[/], $apath, 'status';
 }

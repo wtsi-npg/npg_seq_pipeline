@@ -28,7 +28,7 @@ sub create_dir {
   if ( ! -d $archive_dir) {
     $self->make_log_dir( $self->archive_path() );
   } else {
-    $self->log("$archive_log_dir already exists");
+    $self->info("$archive_log_dir already exists");
   }
 
   #############
@@ -38,7 +38,7 @@ sub create_dir {
   if ( ! -d $qc_dir) {
     $self->make_log_dir( $qc_dir );
   } else {
-    $self->log("$qc_log_dir already exists");
+    $self->info("$qc_log_dir already exists");
   }
 
   #############
@@ -47,10 +47,12 @@ sub create_dir {
 
   if ( ! -d $tileviz_dir) {
     my $mk_tileviz_dir_cmd = qq{mkdir -p $tileviz_dir};
-    $self->log( $mk_tileviz_dir_cmd );
+    $self->debug($mk_tileviz_dir_cmd);
     my $return = qx{$mk_tileviz_dir_cmd};
     if ( $CHILD_ERROR ) {
-      croak $tileviz_dir . qq{ does not exist and unable to create: $CHILD_ERROR\n$return};
+      $self->logcroak($tileviz_dir,
+                      qq{ does not exist and unable to create: $CHILD_ERROR },
+                      $return);
     }
   }
 
@@ -60,10 +62,12 @@ sub create_dir {
 
   if ( ! -d $rna_seqc_dir) {
     my $mk_rna_seqc_dir_cmd = qq{mkdir -p $rna_seqc_dir};
-    $self->log( $mk_rna_seqc_dir_cmd );
+    $self->debug($mk_rna_seqc_dir_cmd);
     my $return = qx{$mk_rna_seqc_dir_cmd};
     if ( $CHILD_ERROR ) {
-      croak $tileviz_dir . qq{ does not exist and unable to create: $CHILD_ERROR\n$return};
+      $self->logcroak($tileviz_dir,
+                      qq{ does not exist and unable to create: $CHILD_ERROR },
+                      $return);
     }
   }
 
@@ -90,7 +94,7 @@ sub create_dir {
 
           if( ! -d $lane_qc_dir ){
               my $mk_lane_qc_dir_cmd = qq{mkdir -p $lane_qc_dir};
-              $self->log( $mk_lane_qc_dir_cmd );
+              $self->info($mk_lane_qc_dir_cmd);
               my $return = qx{$mk_lane_qc_dir_cmd};
               if ( $CHILD_ERROR ) {
                     croak $lane_qc_dir . qq{ does not exist and unable to create: $CHILD_ERROR\n$return};
@@ -103,82 +107,82 @@ sub create_dir {
     ############
     # ensure that the owning group is what we expect
 
-    $self->log("chgrp $owning_group $archive_dir");
+    $self->info("chgrp $owning_group $archive_dir");
     my $rc = `chgrp $owning_group $archive_dir`;
     if ( $CHILD_ERROR ) {
-      $self->log("could not chgrp $archive_dir\n\t$rc");                # not fatal
+      $self->warn("could not chgrp $archive_dir\n\t$rc");                # not fatal
     }
 
-    $self->log("chgrp $owning_group $qc_dir");
+    $self->info("chgrp $owning_group $qc_dir");
     $rc = `chgrp $owning_group $qc_dir`;
     if ( $CHILD_ERROR ) {
-      $self->log("could not chgrp $qc_dir\n\t$rc");                # not fatal
+      $self->warn("could not chgrp $qc_dir\n\t$rc");                # not fatal
     }
 
-    $self->log("chgrp $owning_group $tileviz_dir");
+    $self->info("chgrp $owning_group $tileviz_dir");
     $rc = `chgrp $owning_group $tileviz_dir`;
     if ( $CHILD_ERROR ) {
-      $self->log("could not chgrp $tileviz_dir\n\t$rc");                # not fatal
+      $self->warn("could not chgrp $tileviz_dir\n\t$rc");                # not fatal
     }
 
-    $self->log("chgrp $owning_group $rna_seqc_dir");
+    $self->info("chgrp $owning_group $rna_seqc_dir");
     $rc = `chgrp $owning_group $rna_seqc_dir`;
     if ( $CHILD_ERROR ) {
-      $self->log("could not chgrp $rna_seqc_dir\n\t$rc");                # not fatal
+      $self->warn("could not chgrp $rna_seqc_dir\n\t$rc");                # not fatal
     }
     ############
     # ensure that the owning group is what we expect
 
-    $self->log("chgrp $owning_group $archive_log_dir");
+    $self->info("chgrp $owning_group $archive_log_dir");
     $rc = `chgrp $owning_group $archive_log_dir`;
     if ( $CHILD_ERROR ) {
-      $self->log("could not chgrp $archive_log_dir\n\t$rc");                # not fatal
+      $self->warn("could not chgrp $archive_log_dir\n\t$rc");                # not fatal
     }
 
-    $self->log("chgrp $owning_group $qc_log_dir");
+    $self->info("chgrp $owning_group $qc_log_dir");
     $rc = `chgrp $owning_group $qc_log_dir`;
     if ( $CHILD_ERROR ) {
-      $self->log("could not chgrp $qc_log_dir\n\t$rc");                # not fatal
+      $self->warn("could not chgrp $qc_log_dir\n\t$rc");                # not fatal
     }
   }
 
   ###########
   # set correct permissions on the archive directory
 
-  $self->log("chmod u=rwx,g=srxw,o=rx $archive_dir");
+  $self->info("chmod u=rwx,g=srxw,o=rx $archive_dir");
   my $rc = `chmod u=rwx,g=srxw,o=rx $archive_dir`;
   if ( $CHILD_ERROR ) {
-    $self->log("could not chmod $archive_dir\n\t$rc");                # not fatal
+    $self->warn("could not chmod $archive_dir\n\t$rc");                # not fatal
   }
 
-  $self->log("chmod u=rwx,g=srxw,o=rx $qc_dir");
+  $self->info("chmod u=rwx,g=srxw,o=rx $qc_dir");
   $rc = `chmod u=rwx,g=srxw,o=rx $qc_dir`;
   if ( $CHILD_ERROR ) {
-    $self->log("could not chmod $qc_dir\n\t$rc");                # not fatal
+    $self->warn("could not chmod $qc_dir\n\t$rc");                # not fatal
   }
 
-  $self->log("chmod u=rwx,g=srxw,o=rx $tileviz_dir");
+  $self->info("chmod u=rwx,g=srxw,o=rx $tileviz_dir");
   $rc = `chmod u=rwx,g=srxw,o=rx $tileviz_dir`;
   if ( $CHILD_ERROR ) {
-    $self->log("could not chmod $tileviz_dir\n\t$rc");                # not fatal
+    $self->warn("could not chmod $tileviz_dir\n\t$rc");                # not fatal
   }
 
-  $self->log("chmod u=rwx,g=srxw,o=rx $rna_seqc_dir");
+  $self->info("chmod u=rwx,g=srxw,o=rx $rna_seqc_dir");
   $rc = `chmod u=rwx,g=srxw,o=rx $rna_seqc_dir`;
   if ( $CHILD_ERROR ) {
-    $self->log("could not chmod $rna_seqc_dir\n\t$rc");                # not fatal
+    $self->warn("could not chmod $rna_seqc_dir\n\t$rc");                # not fatal
   }
 
-  $self->log("chmod u=rwx,g=srxw,o=rx $archive_log_dir");
+  $self->info("chmod u=rwx,g=srxw,o=rx $archive_log_dir");
   $rc = `chmod u=rwx,g=srxw,o=rx $archive_log_dir`;
   if ( $CHILD_ERROR ) {
-    $self->log("could not chmod $archive_log_dir\n\t$rc");                # not fatal
+    $self->warn("could not chmod $archive_log_dir\n\t$rc");                # not fatal
   }
 
-  $self->log("chmod u=rwx,g=srxw,o=rx $qc_log_dir");
+  $self->info("chmod u=rwx,g=srxw,o=rx $qc_log_dir");
   $rc = `chmod u=rwx,g=srxw,o=rx $qc_log_dir`;
   if ( $CHILD_ERROR ) {
-    $self->log("could not chmod $qc_log_dir\n\t$rc");                # not fatal
+    $self->warn("could not chmod $qc_log_dir\n\t$rc");                # not fatal
   }
 
 

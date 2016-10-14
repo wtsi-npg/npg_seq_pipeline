@@ -9,6 +9,8 @@ use open q(:encoding(UTF8));
 
 use npg_pipeline::roles::business::base;
 
+with 'WTSI::DNAP::Utilities::Loggable';
+
 our $VERSION = '0';
 
 Readonly::Scalar my $TAG_LIST_FILE_HEADER      => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
@@ -100,13 +102,13 @@ sub generate {
   my ($self) = @_;
 
   if (!$self->lane_lims->is_pool) {
-    $self->_log('Lane is not a pool');
+    $self->warn('Lane is not a pool');
     return;
   }
 
   my $position = $self->lane_lims->position;
   if (!$self->lane_lims->tags) {
-    croak qq{No tag information available for lane $position};
+    $self->logcroak(qq{No tag information available for lane $position});
   }
 
   my $tags = $self->lane_lims->tags;
@@ -130,11 +132,11 @@ sub generate {
 
   if  ($tag_index_list && $tag_seq_list) {
     if( scalar @{$tag_index_list} != scalar @{$tag_seq_list} ){
-      croak "The number of tag indexes is not the same as tag list:@{$tag_index_list}\n@{$tag_seq_list}";
+      $self->logcroak("The number of tag indexes is not the same as tag list:@{$tag_index_list}\n@{$tag_seq_list}");
     }
     $self->_construct_specific_file_expected_sequence_with_library($self->lane_lims, $tag_index_list, $tag_seq_list);
   } else {
-    croak qq{Lane $position: no expected tag sequence or index.};
+    $self->logcroak(qq{Lane $position: no expected tag sequence or index.});
   }
 
   return $self->_tag_list_path;
@@ -145,9 +147,11 @@ sub _construct_specific_file_expected_sequence_with_library {
 
   my $position = $lane_lims->position;
   my $lane_specific_tag_file = $self->_tag_list_path;
-  open my $fh, q{>}, $lane_specific_tag_file or croak qq{unable to open $lane_specific_tag_file for writing};
+  open my $fh, q{>}, $lane_specific_tag_file or
+    $self->logcroak(qq{unable to open $lane_specific_tag_file for writing});
 
-  print {$fh} qq{$TAG_LIST_FILE_HEADER}  or croak q{unable to print};
+  print {$fh} qq{$TAG_LIST_FILE_HEADER} or
+    $self->logcroak(q{unable to print});
 
   my $alims = $lane_lims->children_ia;
   my $num_tags = scalar @{$tag_index_list};
@@ -181,12 +185,12 @@ sub _construct_specific_file_expected_sequence_with_library {
                 .qq{\t}.$library_names
                 .qq{\t}.$sample_names
                 .qq{\t}.$study_names
-    or croak q{unable to print};
+    or $self->logcroak(q{unable to print});
 
     $array_index++;
   }
 
-  close $fh or croak qq{unable to close $lane_specific_tag_file from writing};
+  close $fh or $self->logcroak(qq{unable to close $lane_specific_tag_file from writing});
   return 1;
 }
 
@@ -195,7 +199,7 @@ sub _check_tag_uniqueness {
   my ($self, $tag_seq_list) = @_;
   my %tag_seq_hash = map { $_ => 1 } @{$tag_seq_list};
   if( scalar keys %tag_seq_hash != scalar @{$tag_seq_list} ){
-    croak 'The given tags after trimming are not unique';
+    $self->logcroak('The given tags after trimming are not unique');
   }
   return 1;
 }
@@ -221,52 +225,52 @@ sub _check_tag_length {
   my $tags_ok;
   # we are making the assumption that just 1 tag being too long or too short will be because of a spike
   if ( $number_of_tag_lengths == 2 ) {
-    $self->_log( q{There are 2 different tag lengths});
+    $self->info(q{There are 2 different tag lengths});
     my @temp = reverse sort { $a <=> $b } keys %tag_length;
 
-    $self->_log( q{Is there only 1 longest and is it the phix tag?});
+    $self->debug(q{Is there only 1 longest and is it the phix tag?});
     if ( scalar @{$tag_length{$temp[0]}} == 1 ) {
       my $tag_index = $tag_length{$temp[0]}->[0];
       if ( $spiked_phix_tag_index && $tag_index == $spiked_phix_tag_index ) {
-        $self->_log( q{Yes - reset all to length of shortest tag} );
+        $self->debug(q{Yes - reset all to length of shortest tag});
         @indexed_length_tags = map { substr $_, 0, $temp[1] } @indexed_length_tags;
         $tags_ok = 1;
       } else {
-        $self->_log( q{No} . " tag_index=$tag_index spiked_phix_tag_index=" . ($spiked_phix_tag_index ? $spiked_phix_tag_index : q{}) );
+        $self->debug(q{No} . " tag_index=$tag_index spiked_phix_tag_index=" . ($spiked_phix_tag_index ? $spiked_phix_tag_index : q{}));
       }
     } else {
-      $self->_log( q{No} );
+      $self->debug(q{No});
     }
 
-    $self->_log( q{Is there only 1 shortest and is it the phix tag?});
+    $self->debug(q{Is there only 1 shortest and is it the phix tag?});
     if ( scalar @{$tag_length{$temp[1]}} == 1 ) {
       my $tag_index = $tag_length{$temp[1]}->[0];
       if ( $spiked_phix_tag_index && $tag_index == $spiked_phix_tag_index ) {
         my $max_length = $temp[0];
-        $self->_log( qq{Longest tag length: $max_length} );
+        $self->debug(qq{Longest tag length: $max_length});
         my $spiked_phix_padded = $self->hiseqx ? $SPIKED_PHIX_HISEQX_PADDED : $SPIKED_PHIX_PADDED;
         if ( $max_length > (length $spiked_phix_padded) ) {
-          croak qq{Padded sequence for spiked Phix $spiked_phix_padded is shorter than longest tag length of $max_length};
+          $self->logcroak(qq{Padded sequence for spiked Phix $spiked_phix_padded is shorter than longest tag length of $max_length});
 	}
-        $self->_log( q{Yes - pad shortest tag to length of longest tag} );
+        $self->debug(q{Yes - pad shortest tag to length of longest tag});
         @indexed_length_tags = map { length($_) < $max_length ? substr $spiked_phix_padded, 0, $max_length : $_ } @indexed_length_tags;
         $tags_ok = 1;
       } else {
-        $self->_log( q{No} . " tag_index=$tag_index spiked_phix_tag_index=" . ($spiked_phix_tag_index ? $spiked_phix_tag_index : q{}) );
+        $self->debug(q{No} . " tag_index=$tag_index spiked_phix_tag_index=" . ($spiked_phix_tag_index ? $spiked_phix_tag_index : q{}));
       }
     } else {
-      $self->_log( q{No} );
+      $self->debug(q{No});
     }
   }
 
   if ( ! $tags_ok ) {
-    $self->_log( q{Number of different tag lengths = } . $number_of_tag_lengths );
-    $self->_log( q{Number at each length:} );
+    $self->error(q{Number of different tag lengths = } . $number_of_tag_lengths);
+    $self->error( q{Number at each length:} );
     foreach my $key ( sort { $a <=> $b } keys %tag_length ) {
       my $n = scalar @{$tag_length{$key}};
-      $self->_log( qq{Length $key: $n.} );
+      $self->error( qq{Length $key: $n.} );
     }
-    croak join q{:}, @indexed_length_tags;
+    $self->logcroak(join q{:}, @indexed_length_tags);
   }
 
   return \@indexed_length_tags;
@@ -280,12 +284,12 @@ sub _process_tag_list {
   my @tag_seq_list = ();
   foreach my $tag_index (@tag_index_list){
     if(!$tag_index){
-      $self->_log('The tag index are not available');
+      $self->warn('The tag index is not available');
       return (undef, undef);
     }
     my $tag_seq = $tags->{$tag_index};
     if(!$tag_seq){
-      $self->_log('The tag sequence are not available');
+      $self->warn('The tag sequence are not available');
       return (\@tag_index_list, undef);
     }
     push @tag_seq_list, $tag_seq;
@@ -308,14 +312,14 @@ sub _trim_tag_common_suffix {
   my $ntags = scalar @{$tag_seq_list};
 
   if($ntags == 1){
-    $self->_log( 'Only one tag found for this lane' );
+    $self->info('Only one tag found for this lane');
     return $tag_seq_list;
   }
 
   my %tag_length = map {length $_ => 1 } @{$tag_seq_list};
 
   if (scalar keys %tag_length != 1){
-    croak "The given tags are different in length: @{$tag_seq_list}";
+    $self->logcroak("The given tags are different in length: @{$tag_seq_list}");
   }
 
   my @common_tag_seq_list;
@@ -327,19 +331,19 @@ sub _trim_tag_common_suffix {
   $ntags = scalar @common_tag_seq_list;
 
   if($ntags == 1){
-    $self->_log( 'Only one non-phix tag found for this lane' );
+    $self->info('Only one non-phix tag found for this lane');
     return $tag_seq_list;
   }
 
   my $tag_common_suffix_length = $self->_tag_common_suffix_length(\@common_tag_seq_list);
 
   if($tag_common_suffix_length == 0){
-    $self->_log( 'No need to trim given tags' );
+    $self->info('No need to trim given tags');
     return $tag_seq_list;
   }
 
   if($tag_length{$tag_common_suffix_length}){
-    croak "All tags are the same @{$tag_seq_list}";
+    $self->logcroak("All tags are the same @{$tag_seq_list}");
   }
 
   my @trimmed_tag_seq_list;
@@ -372,14 +376,6 @@ sub _tag_common_suffix_length {
   }
 
   return $common_suffix_length;
-}
-
-sub _log {
-  my ($self, $m) = @_;
-  if ($self->verbose) {
-    warn "$m\n";
-  }
-  return;
 }
 
 no Moose;

@@ -9,7 +9,8 @@ use Readonly;
 use npg_pipeline::cache;
 
 extends q{npg_pipeline::pluggable};
-with qw{npg_tracking::illumina::run::long_info};
+with qw{WTSI::DNAP::Utilities::Loggable
+        npg_tracking::illumina::run::long_info};
 
 our $VERSION = '0';
 
@@ -222,9 +223,9 @@ sub run_spider {
       'flowcell_barcode' => $self->flowcell_id
      );
     $cache->setup();
-    $self->log(join qq[\n], @{$cache->messages});
+    $self->info(join qq[\n], @{$cache->messages});
   } catch {
-    croak qq[Error while spidering: $_];
+    $self->logcroak(qq[Error while spidering: $_]);
   };
   return;
 }
@@ -270,7 +271,7 @@ sub create_summary_link_analysis {
 
   # check that this hasn't been expressly turned off
   if ($self->no_summary_link()) {
-    $self->log(q{Summary link creation turned off});
+    $self->info(q{Summary link creation turned off});
     return ();
   }
 

@@ -68,9 +68,8 @@ sub _generate_bsub_command {
   $bsub_command   .=  q{-o } . $self->status_files_path . q{/log/} . qq{$job_name.out };
   $bsub_command   .=  q{'}   . $self->_command . q{'};
 
-  if ($self->verbose()) {
-    $self->log($bsub_command);
-  }
+  $self->debug($bsub_command);
+
   return $bsub_command;
 }
 

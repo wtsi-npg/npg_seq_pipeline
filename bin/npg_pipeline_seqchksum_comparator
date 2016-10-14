@@ -4,10 +4,19 @@ use strict;
 use warnings;
 use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use Log::Log4perl qw(:levels);
 
 our $VERSION = '0';
 
 use npg_pipeline::archive::file::generation::seqchksum_comparator;
+
+my $layout = '%d %-5p %c - %m%n';
+Log::Log4perl->easy_init({layout => $layout,
+                          level  => $INFO,
+                          utf8   => 1},
+                         {layout => $layout,
+                          level  => $INFO,
+                          file   => 'STDOUT'});
 
 npg_pipeline::archive::file::generation::seqchksum_comparator->new_with_options()->do_comparison();
 
