@@ -51,9 +51,9 @@ subtest 'test 1' => sub {
   `touch $dir/references/Strongyloides_ratti/20100601/all/picard/rat.fa`;
   `mkdir -p $dir/references/Strongyloides_ratti/20100601/all/bwa0_6`;
   `touch $dir/references/Strongyloides_ratti/20100601/all/bwa0_6/rat.fa`;
-  `mkdir $ref_dir/bowtie2`;
-  `mkdir $ref_dir/picard`;
-  `mkdir $ref_dir/bwa0_6`;
+  `mkdir -p $ref_dir/bowtie2`;
+  `mkdir -p $ref_dir/picard`;
+  `mkdir -p $ref_dir/bwa0_6`;
   `touch $ref_dir/fasta/mm_ref_NCBI37_1.fasta`;
   `touch $ref_dir/bowtie2/mm_ref_NCBI37_1.fasta`;
   `touch $ref_dir/picard/mm_ref_NCBI37_1.fasta`;
@@ -80,7 +80,7 @@ subtest 'test 1' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2014},
-      verbose           => 1,
+      verbose           => 0,
       repository        => $dir,
       no_bsub           => 1,
       force_phix_split  => 0,
@@ -146,7 +146,7 @@ subtest 'test 1' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2014},
-      verbose           => 1,
+      verbose           => 0,
       repository        => $dir,
       no_bsub           => 1,
       force_phix_split  => 1,
@@ -185,7 +185,7 @@ subtest 'test 1' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2014},
-      verbose           => 1,
+      verbose           => 0,
       repository        => $dir,
       no_bsub           => 1,
       force_phix_split  => 1,
@@ -200,7 +200,7 @@ subtest 'test 1' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2014},
-      verbose           => 1,
+      verbose           => 0,
       repository        => $dir,
       no_bsub           => 1,
       force_phix_split  => 1,
@@ -216,9 +216,9 @@ subtest 'test 2' => sub {
 
   my $ref_dir = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5','all';
   `mkdir -p $ref_dir/fasta`;
-  `mkdir $ref_dir/bowtie2`;
-  `mkdir $ref_dir/picard`;
-  `mkdir $ref_dir/bwa0_6`;
+  `mkdir -p $ref_dir/bowtie2`;
+  `mkdir -p $ref_dir/picard`;
+  `mkdir -p $ref_dir/bwa0_6`;
   `touch $ref_dir/fasta/hs37d5.fa`;
   `touch $ref_dir/bowtie2/hs37d5.fa`;
   `touch $ref_dir/picard/hs37d5.fa`;
@@ -230,7 +230,7 @@ subtest 'test 2' => sub {
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20140606-133530/no_cal';
   `mkdir -p $bc_path`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20140606-133530/metadata_cache_13066';
-  `mkdir $cache_dir`;
+  `mkdir -p $cache_dir`;
   copy("t/data/rna_seq/13066_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
   my $transcriptome_dir = join q[/],$dir,'transcriptomes','Homo_sapiens','ensembl_75_transcriptome','1000Genomes_hs37d5';
   `mkdir -p $transcriptome_dir/gtf`;
@@ -319,15 +319,15 @@ subtest 'test 4' => sub {
 
   my $ref_dir = join q[/],$dir,'references','Homo_sapiens','GRCh38_full_analysis_set_plus_decoy_hla','all';
   `mkdir -p $ref_dir/fasta`;
-  `mkdir $ref_dir/bwa0_6`;
-  `mkdir $ref_dir/picard`;
+  `mkdir -p $ref_dir/bwa0_6`;
+  `mkdir -p $ref_dir/picard`;
 
   my $runfolder = q{150709_HX4_16839_A_H7MHWCCXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/no_cal';
   `mkdir -p $bc_path`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/metadata_cache_16839';
-  `mkdir $cache_dir`;
+  `mkdir -p $cache_dir`;
   copy("t/data/hiseqx/16839_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
   `touch $ref_dir/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa`;
   `touch $ref_dir/picard/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.dict`;
@@ -386,15 +386,15 @@ subtest 'test 5' => sub {
 
   my $ref_dir = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5','all';
   `mkdir -p $ref_dir/fasta`;
-  `mkdir $ref_dir/bwa0_6`;
-  `mkdir $ref_dir/picard`;
+  `mkdir -p $ref_dir/bwa0_6`;
+  `mkdir -p $ref_dir/picard`;
 
   my $runfolder = q{150707_HS38_16807_A_C7U2YANXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-232614/no_cal';
   `mkdir -p $bc_path`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-232614/metadata_cache_16807';
-  `mkdir $cache_dir`;
+  `mkdir -p $cache_dir`;
   copy("t/data/hiseq/16807_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
 
   local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseq];
@@ -445,9 +445,9 @@ subtest 'test 6' => sub {
 
   my $ref_dir = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5','all';
   `mkdir -p $ref_dir/fasta`;
-  `mkdir $ref_dir/bwa`;
-  `mkdir $ref_dir/bwa0_6`;
-  `mkdir $ref_dir/picard`;
+  `mkdir -p $ref_dir/bwa`;
+  `mkdir -p $ref_dir/bwa0_6`;
+  `mkdir -p $ref_dir/picard`;
 
   my $bait_dir = join q[/],$dir,'baits','Human_all_exon_V5','1000Genomes_hs37d5';
   `mkdir -p $bait_dir`;
@@ -459,7 +459,7 @@ subtest 'test 6' => sub {
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20160712-154117/no_cal';
   `mkdir -p $bc_path`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20160712-154117/metadata_cache_20268';
-  `mkdir $cache_dir`;
+  `mkdir -p $cache_dir`;
 
   copy("t/data/hiseq/20268_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!";
 
@@ -524,15 +524,15 @@ subtest 'test 7' => sub {
 
   my $ref_dir = join q[/],$dir,'references','Plasmodium_falciparum','3D7_Oct11v3','all';
   `mkdir -p $ref_dir/fasta`;
-  `mkdir $ref_dir/bwa0_6`;
-  `mkdir $ref_dir/picard`;
+  `mkdir -p $ref_dir/bwa0_6`;
+  `mkdir -p $ref_dir/picard`;
 
   my $runfolder = q{150710_MS2_16850_A_MS3014507-500V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-022206/no_cal';
   `mkdir -p $bc_path`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-022206/metadata_cache_16850';
-  `mkdir $cache_dir`;
+  `mkdir -p $cache_dir`;
   copy("t/data/miseq/16850_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
   `touch $ref_dir/fasta/Pf3D7_v3.fasta`;
   `touch $ref_dir/picard/Pf3D7_v3.fasta.dict`;
@@ -589,15 +589,15 @@ subtest 'test 8' => sub {
 
   my $ref_dir = join q[/],$dir,'references','Plasmodium_falciparum','3D7_Oct11v3','all';
   `mkdir -p $ref_dir/fasta`;
-  `mkdir $ref_dir/bwa0_6`;
-  `mkdir $ref_dir/picard`;
+  `mkdir -p $ref_dir/bwa0_6`;
+  `mkdir -p $ref_dir/picard`;
 
   my $runfolder = q{150701_HS36_16756_B_C711RANXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-132329/no_cal';
   `mkdir -p $bc_path`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-132329/metadata_cache_16756';
-  `mkdir $cache_dir`;
+  `mkdir -p $cache_dir`;
   copy("t/data/hiseq/16756_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
   # default human reference needed for alignment for unconsented human split
   my $default_source = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5';
@@ -656,7 +656,7 @@ subtest 'test 9' => sub {
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150714-133929/no_cal';
   `mkdir -p $bc_path`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150714-133929/metadata_cache_16866';
-  `mkdir $cache_dir`;
+  `mkdir -p $cache_dir`;
 
   copy("t/data/miseq/16866_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
   local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/miseq];
