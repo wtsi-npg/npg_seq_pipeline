@@ -28,6 +28,15 @@ copy 't/data/p4_stage1_analysis/1234_samplesheet.csv', $new;
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $new;
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
 
+#################################
+# mock references
+#################################
+my $repos_root = $dir . q{/srpipe_references};
+`mkdir -p $repos_root/references/PhiX/default/all/bwa0_6`;
+`mkdir -p $repos_root/references/PhiX/default/all/fasta`;
+`touch $repos_root/references/PhiX/default/all/bwa0_6/phix_unsnipped_short_no_N.fa`;
+`touch $repos_root/references/PhiX/default/all/fasta/phix_unsnipped_short_no_N.fa`;
+
 $util->create_analysis();
 my $runfolder = $util->analysis_runfolder_path() . '/';
 `cp t/data/runfolder/Data/RunInfo.xml $runfolder`;
@@ -35,17 +44,18 @@ my $runfolder = $util->analysis_runfolder_path() . '/';
 my $bc_path = q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls};
 
 my $bam_generator = npg_pipeline::archive::file::generation::p4_stage1_analysis->new(
-    function_list => q{t/data/config_files/function_list_p4_stage1.yml},
-    conf_path => q{t/data/config_files},
-    run_folder => q{123456_IL2_1234},
-    runfolder_path => $util->analysis_runfolder_path(),
-    timestamp => q{20090709-123456},
-    verbose => 1,
-    no_bsub => 1,
-    id_run => 1234,
+    function_list                 => q{t/data/config_files/function_list_p4_stage1.yml},
+    conf_path                     => q{t/data/config_files},
+    run_folder                    => q{123456_IL2_1234},
+    repository                    => $repos_root,
+    runfolder_path                => $util->analysis_runfolder_path(),
+    timestamp                     => q{20090709-123456},
+    verbose                       => 0,
+    no_bsub                       => 1,
+    id_run                        => 1234,
     _extra_tradis_transposon_read => 1,
-    bam_basecall_path => $util->analysis_runfolder_path() . q{/Data/Intensities/BaseCalls},
-   _job_args => { _param_vals => { 1=> {}, }},
+    bam_basecall_path             => $util->analysis_runfolder_path() . q{/Data/Intensities/BaseCalls},
+   _job_args                      => { _param_vals => { 1=> {}, }},
   );
 
 subtest 'basics' => sub {
@@ -72,7 +82,7 @@ subtest 'basics' => sub {
 
   $bsub_command = $util->drop_temp_part_from_paths($bsub_command);
 
-  my $expected_cmd = q{bsub -q srpipeline -E 'npg_pipeline_preexec_references' -R 'select[mem>12000] rusage[mem=12000,nfs_12=5]' -M12000 -R 'span[hosts=1]' -n8,16 -w'done(123) && done(321)' -J 'p4_stage1_analysis_1234_20090709-123456[1]' -o } . $bc_path . q{/log/p4_stage1_analysis_1234_20090709-123456.%I.%J.out 'perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"' } . $bc_path . q{/p4_stage1_analysis_1234_20090709-123456_$LSB_JOBID $LSB_JOBINDEX'};
+  my $expected_cmd = q{bsub -q srpipeline -E 'npg_pipeline_preexec_references --repository /srpipe_references' -R 'select[mem>12000] rusage[mem=12000,nfs_12=5]' -M12000 -R 'span[hosts=1]' -n8,16 -w'done(123) && done(321)' -J 'p4_stage1_analysis_1234_20090709-123456[1]' -o } . $bc_path . q{/log/p4_stage1_analysis_1234_20090709-123456.%I.%J.out 'perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"' } . $bc_path . q{/p4_stage1_analysis_1234_20090709-123456_$LSB_JOBID $LSB_JOBINDEX'};
 
   eq_or_diff([split" ",$bsub_command], [split" ",$expected_cmd], 'correct bsub command for lane 8');
 };
@@ -112,6 +122,7 @@ subtest 'check_save_arguments' => sub {
   my $pfname = $dir . $bc_path. q[/p4_stage1_analysis/lane1/param_files/1234_1_p4s1_pv_in.json];
   ok (-e $pfname, 'params file exists');
   $contents = slurp($pfname);
+
   $h = from_json($contents);
 
   $expected = {
@@ -119,13 +130,13 @@ subtest 'check_save_arguments' => sub {
         {
 	  'bid_implementation' => 'bambi',
 	  'seqchksum_file' => $intensities_dir . '/BaseCalls/1234_1.post_i2b.seqchksum',
-	  'scramble_reference_fasta' => '/lustre/scratch110/srpipe/references/PhiX/Sanger-SNPs/all/fasta/phix_unsnipped_short_no_N.fa',
+	  'scramble_reference_fasta' => $dir . '/srpipe_references/references/PhiX/default/all/fasta/phix_unsnipped_short_no_N.fa',
 	  'i2b_rg' => '1234_1',
 	  'spatial_filter_stats' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/1234_1.bam.filter.stats',
 	  'i2b_pu' => '123456_IL2_1234_1',
 	  'tileviz_dir' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/qc/tileviz/1234_1',
 	  'i2b_implementation' => 'java',
-	  'reference_phix' => '/lustre/scratch110/srpipe/references/PhiX/Sanger-SNPs/all/bwa0_6/phix_unsnipped_short_no_N.fa',
+	  'reference_phix' => $dir . '/srpipe_references/references/PhiX/default/all/bwa0_6/phix_unsnipped_short_no_N.fa',
 	  'unfiltered_cram_file' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/1234_1.unfiltered.cram',
 	  'qc_check_qc_out_dir' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/qc',
 	  'i2b_lane' => '1',
