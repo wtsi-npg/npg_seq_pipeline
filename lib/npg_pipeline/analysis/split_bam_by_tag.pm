@@ -30,7 +30,7 @@ sub generate {
   my %positions = map{$_=>1} $self->positions();
   my @indexed_lanes = grep {$positions{$_}} @{$self->multiplexed_lanes()};
   if ( ! @indexed_lanes ) {
-    $self->wanr(q{None of the lanes for analysis is multiplexed});
+    $self->warn(q{None of the lanes for analysis are multiplexed});
     return;
   }
 
