@@ -278,8 +278,11 @@ subtest 'test 3' => sub {
   $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20151215-215034';
   my $cache_dir = join q[/], $bc_path, 'metadata_cache_18472';
-  `mkdir -p $dir/references/Homo_sapiens/GRCh38_15/all/{bwa0_6,fasta,picard}/`;
-  `touch $dir/references/Homo_sapiens/GRCh38_15/all/{bwa0_6,fasta}/Homo_sapiens.GRCh38_15.fa`;
+  `mkdir -p $dir/references/Homo_sapiens/GRCh38_15/all/bwa0_6/`;
+  `mkdir -p $dir/references/Homo_sapiens/GRCh38_15/all/fasta/`;
+  `mkdir -p $dir/references/Homo_sapiens/GRCh38_15/all/picard/`;
+  `touch $dir/references/Homo_sapiens/GRCh38_15/all/bwa0_6/Homo_sapiens.GRCh38_15.fa`;
+  `touch $dir/references/Homo_sapiens/GRCh38_15/all/fasta/Homo_sapiens.GRCh38_15.fa`;
   `touch $dir/references/Homo_sapiens/GRCh38_15/all/picard/Homo_sapiens.GRCh38_15.fa.dict`;
 
   local $ENV{'NPG_WEBSERVICE_CACHE_DIR'}  = join q[/], $cache_dir;
