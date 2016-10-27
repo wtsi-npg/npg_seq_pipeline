@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="20990" batch_id="49682" id_instrument="103" expected_cycle_count="308" actual_cycle_count="308" priority="1" id_run_pair="0" is_paired="0" team="RAD" id_instrument_format="11" flowcell_id="MS4548606-300V2" folder_name="161010_MS5_20990_A_MS4548606-300V2" folder_path_glob="/{export,nfs}/sf49/ILorHSorMS_sf49/*/" name="MS5_20990" loader="eh9" loading_date="2016-10-10" run_folder="161010_MS5_20990_A_MS4548606-300V2">
+ <instrument id_instrument="103" name="MS5" id_instrument_format="11" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="124191" id_run="20990" tile_count="12" tracks="1" position="1" />
+</run_lanes>
+ <current_run_status id_run_status="282894" id_run="20990" date="2016-10-11 10:23:09" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="1" description="analysis pending" />
+ <run_statuses>
+ <run_status id_run_status="282893" id_run="20990" date="2016-10-11 10:23:09" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="282894" id_run="20990" date="2016-10-11 10:23:09" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="1" description="analysis pending" />
+ <run_status id_run_status="282890" id_run="20990" date="2016-10-11 10:05:59" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete" />
+ <run_status id_run_status="282807" id_run="20990" date="2016-10-10 12:06:10" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="282749" id_run="20990" date="2016-10-10 09:34:38" id_run_status_dict="1" id_user="121" username="pipeline" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ </annotations>
+ <tags>
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>

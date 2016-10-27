@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<RunInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="2">
+  <Run Id="161010_MS5_20990_A_MS4548606-300V2" Number="555">
+    <Flowcell>000000000-AW5GM</Flowcell>
+    <Instrument>M00642</Instrument>
+    <Date>161010</Date>
+    <Reads>
+      <Read NumCycles="150" Number="1" IsIndexedRead="N" />
+      <Read NumCycles="8" Number="2" IsIndexedRead="Y" />
+      <Read NumCycles="150" Number="3" IsIndexedRead="N" />
+    </Reads>
+    <FlowcellLayout LaneCount="1" SurfaceCount="2" SwathCount="1" TileCount="14" />
+  </Run>
+</RunInfo>
