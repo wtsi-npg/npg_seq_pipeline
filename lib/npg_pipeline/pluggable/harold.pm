@@ -5,12 +5,12 @@ use Carp;
 use English qw{-no_match_vars};
 use Try::Tiny;
 use Readonly;
+use File::Spec::Functions qw{catfile};
 
 use npg_pipeline::cache;
 
 extends q{npg_pipeline::pluggable};
-with qw{WTSI::DNAP::Utilities::Loggable
-        npg_tracking::illumina::run::long_info};
+with    q{npg_tracking::illumina::run::long_info};
 
 our $VERSION = '0';
 
@@ -63,6 +63,73 @@ Readonly::Scalar my $MIN_ARCHIVE_PATH_DEPTH => 3;
 
 =head1 SUBROUTINES/METHODS
 
+=cut
+
+=head2 log_file_path
+
+Directory path for the log file, defaults to run folder path
+
+=cut
+
+has q{log_file_path} => (
+   isa           => q{Str},
+   is            => q{ro},
+   metaclass     => q{NoGetopt},
+   lazy_build    => 1,
+);
+sub _build_log_file_path {
+  my $self = shift;
+  return $self->runfolder_path();
+}
+
+=head2 log_file_name
+
+Log file name, optional, will be generated if not given.
+
+=cut
+
+has q{log_file_name} => (
+   isa           => q{Str},
+   is            => q{ro},
+   metaclass     => q{NoGetopt},
+   lazy_build    => 1,
+);
+sub _build_log_file_name {
+  my $self = shift;
+  my $log_name = $self->script_name . q{_} . $self->id_run();
+  $log_name .= q{_} . $self->timestamp() . q{.log};
+  # If $self->script_name includes a directory path, change / to _
+  $log_name =~ s{/}{_}gmxs;
+  return $log_name;
+}
+
+=head2
+
+Log file full path, optional, will be generated if not given.
+
+=cut
+
+has q{log_file} => (
+   isa           => q{Str},
+   is            => q{ro},
+   metaclass     => q{NoGetopt},
+   lazy_build    => 1,
+);
+sub _build_log_file {
+  my $self = shift;
+  my $logfile = catfile($self->log_file_path, $self->log_file_name);
+  if (! -d $self->log_file_path) {
+    $self->make_log_dir($self->log_file_path);
+  }
+  if (! -e $logfile) {
+    open my $log, '>', $logfile
+      or confess "Failed to open log file '$logfile' for writing: $ERRNO";
+    close $log or carp "Failed to close '$logfile': $ERRNO";
+  }
+
+  return $logfile;
+}
+
 =head2 BUILD
 
 Called on new construction to ensure that certain parameters are filled/set up
@@ -70,28 +137,10 @@ Called on new construction to ensure that certain parameters are filled/set up
 =cut
 
 sub BUILD {
-  my ($self) = @_;
-
-  if (!$self->has_log_file_path()) {
-    $self->set_log_file_path( $self->runfolder_path() );
-  }
-
-  if (!$self->has_log_file_name()) {
-    my $log_name = $self->script_name . q{_} . $self->id_run();
-    if ( ! $self->no_lanes() ) {
-      foreach my $lane ( $self->positions() ) {
-        $log_name .= qq{_$lane};
-      }
-    }
-    $log_name .= q{_} . $self->timestamp() . q{.log};
-    $log_name =~ s{/}{_}gmxs; # if $self->script_name includes a directory path, then in log_name, change / to _
-    $log_name =~ s{\A_}{}xms;
-    $self->set_log_file_name($log_name);
-  };
-
+  my $self = shift;
   $self->_inject_save2file_status_functions();
   $self->_inject_autoqc_functions();
-  return 1;
+  return;
 }
 
 =head2 prepare
@@ -326,6 +375,8 @@ __END__
 =item Readonly
 
 =item Try::Tiny
+
+=item File::Spec::Functions
 
 =item npg_tracking::illumina::run::long_info
 

@@ -4,11 +4,9 @@ use Moose;
 use Moose::Meta::Class;
 use Carp;
 use English qw{-no_match_vars};
-use Log::Log4perl qw(:levels);
-use Log::Log4perl::Appender;
 use POSIX qw(strftime);
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
-use File::Spec::Functions qw(catfile splitdir);
+use File::Spec::Functions qw(splitdir);
 use Cwd qw(abs_path);
 use File::Slurp;
 use Readonly;
@@ -35,82 +33,6 @@ Readonly::Scalar my $CONF_DIR                   => q{data/config_files};
 Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ olb qc_run gclp /;
 
 $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
-
-has q{log_file_path} =>
-  (isa           => q{Str},
-   is            => q{ro},
-   writer        => q{set_log_file_path},
-   lazy_build    => 1,
-   documentation => q{Provide a directory path for the log_file to written to - default is current working directory [.]},);
-
-after 'set_log_file_path' => sub {
-  my ($self) = @_;
-
-  $self->_update_file_appender;
-};
-
-has q{log_file_name} =>
-  (isa           => q{Str},
-   is            => q{ro},
-   writer        => q{set_log_file_name},
-   predicate     => q{has_log_file_name},
-   documentation => q{Give a name for the log_file to use, if not provided, no log_file will be created, and log will be to STDERR},);
-
-after 'set_log_file_name' => sub {
-  my ($self) = @_;
-
-  $self->_update_file_appender;
-};
-
-sub _build_log_file_path {
-  my ($self) = @_;
-
-  return getcwd();
-}
-
-# This method attempts to emulate the log file feature of
-# npg_common::roles::log using Log4perl
-sub _update_file_appender {
-  my ($self) = @_;
-
-  if ($self->has_log_file_path and $self->has_log_file_name) {
-    my $logfile = catfile($self->log_file_path, $self->log_file_name);
-
-    # Log::Log4perl::Appender::File has an option to create the file
-    # at runtime. However, we want to do it or fail as early as
-    # possible.
-    if (! -d $self->log_file_path) {
-      $self->make_log_dir($self->log_file_path);
-    }
-
-    if (! -e $logfile) {
-      open my $log, '>', $logfile
-        or confess "Failed to open log file '$logfile' for writing: $ERRNO";
-      close $log or carp "Failed to close '$logfile': $ERRNO";
-    }
-
-    print STDERR "Pipeline log file: ${logfile}\n";
-
-    my $logging_class = $self->meta->name;
-
-    my $appender = $Log::Log4perl::Logger::APPENDER_BY_NAME{$logging_class};
-    if (defined $appender) {
-      $self->debug("Switching logging to '$logfile'");
-      $appender->file_switch($logfile);
-    }
-    else {
-      $self->debug("Creating new appender logging to '$logfile'");
-      $appender = Log::Log4perl::Appender->new('Log::Log4perl::Appender::File',
-                                               name      => $logging_class,
-                                               filename  => $logfile,
-                                               level     => $INFO);
-
-      $self->logger->add_appender($appender);
-    }
-  }
-
-  return;
-}
 
 =head1 NAME
 
@@ -740,7 +662,7 @@ __END__
 
 =item MooseX::AttributeCloner
 
-=item Log::Log4perl
+=item WTSI::DNAP::Utilities::Loggable
 
 =item npg_tracking::illumina::run::short_info
 

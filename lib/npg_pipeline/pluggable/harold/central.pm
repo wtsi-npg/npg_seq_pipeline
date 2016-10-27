@@ -45,26 +45,23 @@ sub _build_pbcal_obj {
   return $self->new_with_cloned_attributes(q{npg_pipeline::analysis::harold_calibration_bam});
 }
 
-=head2 BUILD
+=head2 prepare
 
-ensures that the folders are built that everything expects. If they are provided, it will use them, else it will create them
+  Ensures that the folders are built that everything expects.
+  If they are provided, it will use them, else it will create them
 
-Notes:
+  Notes:
+    - if recalibrated_path, pb_cal_path, bustard_path and basecall_path are specified,
+      it will use these (and map pb_cal_path <-> recalibrated_path and bustard_path 
+      <-> basecall_path ), else it will create based on whether recalibration is set, 
+      and utilise the timestamp
 
-1) intensity_path - there is a bug in the imported path_info role which needs fixing. As such, at this time, if intensity_path isn't
-directly specified, then it will take runfolder_path and add /Data/Intensities
-
-2) if recalibrated_path, pb_cal_path, bustard_path and basecall_path are specified, it will use these (and map pb_cal_path <->
-recalibrated_path and bustard_path <-> basecall_path ), else it will create based on whether recalibration is set, and utilise
-the timestamp
-
-3) This is designed to be launched after the harold.pm BUILD method is called as per Moose v1.15. If this should be altered in
-a future version of Moose, then this may break
+    - if running OLB preprocessing, creates bustard directory and dependent directories.
 
 =cut
 
-sub BUILD {
-  my ( $self ) = @_;
+override 'prepare' => sub {
+  my $self = shift;
 
   if ( ! $self->has_intensity_path() ) {
     my $ipath = $self->runfolder_path() . q{/Data/Intensities};
@@ -105,20 +102,6 @@ sub BUILD {
   $self->info('BAM_basecall path: ' . $self->bam_basecall_path());
   $self->_set_bam_basecall_dependent_paths();
 
-  return 1;
-}
-
-=head2 prepare
-
- Actions to be performed before the functions can be run. Namely, if running OLB preprocessing,
- creates bustard directory and dependent directories.
-
-=cut
-
-override 'prepare' => sub {
-  my $self = shift;
-
-  super();
 
   if ($self->olb) {
     my $bustard_dir = $self->new_with_cloned_attributes(q{npg_pipeline::analysis::bustard4pbcb},
@@ -128,6 +111,9 @@ override 'prepare' => sub {
     $self->info("basecall and dif_files paths set to $bustard_dir");
     $self->make_log_dir( $bustard_dir  );
   }
+
+  super(); # Correct place!
+
   $self->_inject_bustard_functions();
   return;
 };

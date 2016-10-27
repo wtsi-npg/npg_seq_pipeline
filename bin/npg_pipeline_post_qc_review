@@ -10,12 +10,18 @@ use npg_pipeline::pluggable::harold::post_qc_review;
 
 our $VERSION = '0';
 
+my $p       = npg_pipeline::pluggable::harold::post_qc_review->new_with_options();
+
+my $level   = $p->verbose() ? $DEBUG : $INFO;
+my $logfile = $p->log_file();
+print STDERR "Pipelile log file: ${logfile}\n";
 my $layout = '%d %-5p %c - %m%n';
 Log::Log4perl->easy_init({layout => $layout,
-                          level  => $INFO,
+                          level  => $level,
+                          file   => $logfile,
                           utf8   => 1});
 
-npg_pipeline::pluggable::harold::post_qc_review->new_with_options()->main;
+$p->main();
 
 0;
 
