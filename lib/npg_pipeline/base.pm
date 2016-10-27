@@ -89,6 +89,8 @@ sub _update_file_appender {
       close $log or carp "Failed to close '$logfile': $ERRNO";
     }
 
+    print STDERR "Pipeline log file: ${logfile}\n";
+
     my $logging_class = $self->meta->name;
 
     my $appender = $Log::Log4perl::Logger::APPENDER_BY_NAME{$logging_class};

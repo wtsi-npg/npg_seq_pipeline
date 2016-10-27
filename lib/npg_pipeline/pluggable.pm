@@ -358,14 +358,12 @@ sub schedule_functions {
 =cut
 sub prepare {
   my $self = shift;
-  if ($self->verbose) {
-    my $s = '***************************************************';
-    $self->info("\n" . $s);
-    foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
-      $self->info(sprintf '*** %s: %s', $name, $ENV{$name});
-    }
-    $self->info($s . "\n");
+  my $s = '***************************************************';
+  $self->debug("\n" . $s);
+  foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
+    $self->debug(sprintf '*** %s: %s', $name, $ENV{$name});
   }
+  $self->debug($s . "\n");
   return;
 }
 
@@ -391,7 +389,7 @@ sub main {
   };
   $self->_clear_env_vars();
   if ($error) {
-    $self->logcroak($error);
+    croak($error);
   }
   return;
 }
