@@ -5,8 +5,6 @@ use English qw{-no_match_vars};
 use Carp;
 use Readonly;
 
-with 'WTSI::DNAP::Utilities::Loggable';
-
 requires qw{directory_exists};
 
 our $VERSION = '0';
@@ -37,7 +35,6 @@ for internal running of the harold calibration steps.
 
 Note, your class must provide the following methods
 
- 'log'
  'directory_exists'
 
 =head1 SUBROUTINES/METHODS
