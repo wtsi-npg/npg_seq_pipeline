@@ -11,6 +11,7 @@ use Log::Log4perl;
 use Readonly;
 use Try::Tiny;
 
+
 use npg_tracking::illumina::run::folder::location;
 use npg_tracking::illumina::run::short_info;
 use npg_tracking::util::abs_path qw/abs_path/;
@@ -22,6 +23,7 @@ use npg_pipeline::roles::business::base;
 
 with qw{ 
          MooseX::Getopt
+         WTSI::DNAP::Utilities::Loggable
          npg_pipeline::roles::accessor
        };
 
@@ -396,7 +398,7 @@ captured and printed to the log.
 
 =item List::MoreUtils
 
-=item Log::Log4perl
+=item WTSI::DNAP::Utilities::Loggable
 
 =item Readonly
 
