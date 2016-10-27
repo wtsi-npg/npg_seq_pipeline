@@ -61,7 +61,6 @@ my $builder = $class->new(
           'YAML::XS'                     => 0,
           'XML::LibXML'                  => 0,
 
-          'npg_common::roles::log'                             => 0,
           'npg_common::roles::software_location'               => 0,
           'npg_qc::autoqc::qc_store'                           => 0,
           'npg_tracking::data::reference::find'                => 0,

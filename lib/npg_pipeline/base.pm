@@ -738,7 +738,7 @@ __END__
 
 =item MooseX::AttributeCloner
 
-=item npg_common::roles::log
+=item Log::Log4perl
 
 =item npg_tracking::illumina::run::short_info
 
