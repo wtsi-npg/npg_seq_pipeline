@@ -65,69 +65,18 @@ Readonly::Scalar my $MIN_ARCHIVE_PATH_DEPTH => 3;
 
 =cut
 
-=head2 log_file_path
-
-Directory path for the log file, defaults to run folder path
-
-=cut
-
-has q{log_file_path} => (
+has q{_log_file_name} => (
    isa           => q{Str},
    is            => q{ro},
-   metaclass     => q{NoGetopt},
    lazy_build    => 1,
 );
-sub _build_log_file_path {
-  my $self = shift;
-  return $self->runfolder_path();
-}
-
-=head2 log_file_name
-
-Log file name, optional, will be generated if not given.
-
-=cut
-
-has q{log_file_name} => (
-   isa           => q{Str},
-   is            => q{ro},
-   metaclass     => q{NoGetopt},
-   lazy_build    => 1,
-);
-sub _build_log_file_name {
+sub _build__log_file_name {
   my $self = shift;
   my $log_name = $self->script_name . q{_} . $self->id_run();
   $log_name .= q{_} . $self->timestamp() . q{.log};
   # If $self->script_name includes a directory path, change / to _
   $log_name =~ s{/}{_}gmxs;
   return $log_name;
-}
-
-=head2
-
-Log file full path, optional, will be generated if not given.
-
-=cut
-
-has q{log_file} => (
-   isa           => q{Str},
-   is            => q{ro},
-   metaclass     => q{NoGetopt},
-   lazy_build    => 1,
-);
-sub _build_log_file {
-  my $self = shift;
-  my $logfile = catfile($self->log_file_path, $self->log_file_name);
-  if (! -d $self->log_file_path) {
-    $self->make_log_dir($self->log_file_path);
-  }
-  if (! -e $logfile) {
-    open my $log, '>', $logfile
-      or confess "Failed to open log file '$logfile' for writing: $ERRNO";
-    close $log or carp "Failed to close '$logfile': $ERRNO";
-  }
-
-  return $logfile;
 }
 
 =head2 BUILD
@@ -141,6 +90,17 @@ sub BUILD {
   $self->_inject_save2file_status_functions();
   $self->_inject_autoqc_functions();
   return;
+}
+
+=head2 log_file_path
+
+Suggested log file full path.
+
+=cut
+
+sub log_file_path {
+  my $self = shift;
+  return catfile($self->runfolder_path(), $self->_log_file_name);
 }
 
 =head2 prepare

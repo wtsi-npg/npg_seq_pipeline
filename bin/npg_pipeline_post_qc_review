@@ -13,7 +13,7 @@ our $VERSION = '0';
 my $p       = npg_pipeline::pluggable::harold::post_qc_review->new_with_options();
 
 my $level   = $p->verbose() ? $DEBUG : $INFO;
-my $logfile = $p->log_file();
+my $logfile = $p->log_file_path();
 ##no critic (InputOutput::RequireCheckedSyscalls)
 print {*STDERR} "Pipeline log file: ${logfile}\n";
 ##use critic
