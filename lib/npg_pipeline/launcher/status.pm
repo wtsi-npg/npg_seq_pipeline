@@ -53,8 +53,9 @@ sub submit {
 # responsible for generating the bsub command to be executed
 sub _generate_bsub_command {
   my ($self, $required_job_completion) = @_;
-  my $timestamp = $self->timestamp();
 
+  $required_job_completion ||= q[];
+  my $timestamp = $self->timestamp();
   my $run_folder = $self->run_folder();
   my $status     = $self->status();
   my $id_run     = $self->id_run();

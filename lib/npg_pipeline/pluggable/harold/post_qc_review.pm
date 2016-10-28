@@ -200,16 +200,14 @@ sub _update_warehouse_command {
 Copy the copy_interop_files files to iRODS
 
 =cut
-sub copy_interop_files_to_irods
-{
+sub copy_interop_files_to_irods {
   my ($self, @args) = @_;
   my $required_job_completion = shift @args;
   my $command = $self->_interop_command($required_job_completion);
   return $self->submit_bsub_command($command);
 }
 
-sub _interop_command
-{
+sub _interop_command {
   my ($self, $required_job_completion) = @_;
   my $id_run = $self->id_run;
   my $command = "irods_interop_loader.pl --id_run $id_run --runfolder_path ".$self->runfolder_path();

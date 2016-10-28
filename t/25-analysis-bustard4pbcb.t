@@ -2,23 +2,24 @@ use strict;
 use warnings;
 use Test::More tests => 18;
 use Test::Exception;
+use Log::Log4perl qw(:levels);
 use t::util;
 
-use npg_pipeline::pluggable;
-
 my $util = t::util->new();
-
 my $tmp_dir = $util->temp_directory();
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $tmp_dir, 'logfile'),
+                          utf8   => 1});
+
 $ENV{TEST_DIR} = $tmp_dir;
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
-
 my $mem_units = 'MB';
 
-BEGIN {
-  use_ok(q{npg_pipeline::analysis::bustard4pbcb});
-}
+use_ok(q{npg_pipeline::analysis::bustard4pbcb});
 
 my $runfolder_path = $util->analysis_runfolder_path();
 my $bustard_home   = qq{$runfolder_path/Data/Intensities};

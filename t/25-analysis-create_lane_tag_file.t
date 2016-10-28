@@ -4,12 +4,18 @@ use Test::More tests => 56;
 use Test::Exception;
 use File::Slurp;
 use File::Temp qw(tempdir);
+use Log::Log4perl qw(:levels);
 
 use st::api::lims; 
 
+my $dir = tempdir( CLEANUP => 1 );
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $dir, 'logfile'),
+                          utf8   => 1});
 
 use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
-my $dir = tempdir( CLEANUP => 1 );
 
 {
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';

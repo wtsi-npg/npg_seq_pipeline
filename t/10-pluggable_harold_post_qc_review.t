@@ -4,6 +4,7 @@ use Test::More tests => 19;
 use Test::Deep;
 use Test::Exception;
 use Cwd;
+use Log::Log4perl qw(:levels);
 
 use t::util;
 use t::dbic_util;
@@ -15,6 +16,11 @@ local $ENV{PATH} = join q[:], q[t/bin], $ENV{PATH};
 my $temp = $util->temp_directory();
 $ENV{TEST_DIR} = $temp;
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $temp, 'logfile'),
+                          utf8   => 1});
 
 use_ok('npg_pipeline::pluggable::harold::post_qc_review');
 
@@ -89,7 +95,8 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
     'update ml_warehouse command with preexec and change to outgoing');
 
   $log_dir = $post_qc_review->make_log_dir( $runfolder_path );
-  is($post_qc_review->_interop_command, qq[bsub -q lowload  -J interop_1234_post_qc_review -R 'rusage[nfs_12=1,seq_irods=15]' -o $log_dir/interop_1234_post_qc_review_] . $timestamp . qq[.out 'irods_interop_loader.pl --id_run 1234 --runfolder_path $runfolder_path'], 'irods_interop_loader.pl command');
+  is($post_qc_review->_interop_command(q{-w'done(123) && done(321)'}),
+    qq[bsub -q lowload -w'done(123) && done(321)' -J interop_1234_post_qc_review -R 'rusage[nfs_12=1,seq_irods=15]' -o $log_dir/interop_1234_post_qc_review_] . $timestamp . qq[.out 'irods_interop_loader.pl --id_run 1234 --runfolder_path $runfolder_path'], 'irods_interop_loader.pl command');
 }
 
 {
@@ -119,7 +126,7 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
       no_warehouse_update => 0,
     );
   ok(!$p->archive_to_irods(), 'archival to irods switched off');
-  ok($p->update_warehouse(), 'update to warehouse switched on');
+  ok($p->update_warehouse("-w'done(123) && done(321)'"), 'update to warehouse switched on');
   is($p->no_summary_link,1, 'summary_link switched off');
 }
 
