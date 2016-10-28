@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+ - Replaced the original log role with the one from DNAP utilities, which provides
+   a Log4perl logger and some convenience methods. All the original log statements
+   were at the same "level", no ethey are split into INFO, WARN and ERROR. Replaced
+   croak with logcroak. '--verbose' mode activates DEBUG level.
+
  - support generation of targeted stats files in seq_alignment.pm with p4
  - qc jobs creation, can_run, check object instantiation:
      do not supply path/qc_in, which is now optional

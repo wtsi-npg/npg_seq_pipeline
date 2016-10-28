@@ -47,20 +47,28 @@ sub _build_pbcal_obj {
 
 =head2 prepare
 
-  Ensures that the folders are built that everything expects.
-  If they are provided, it will use them, else it will create them
+ Sets all paths needed during the lifetime of the analysis runfolder.
+ Creates any of the paths that do not exist.
 
-  Notes:
-    - if recalibrated_path, pb_cal_path, bustard_path and basecall_path are specified,
-      it will use these (and map pb_cal_path <-> recalibrated_path and bustard_path 
-      <-> basecall_path ), else it will create based on whether recalibration is set, 
-      and utilise the timestamp
-
-    - if running OLB preprocessing, creates bustard directory and dependent directories.
+ Dynamically adds bustard functions to the object;
 
 =cut
 
 override 'prepare' => sub {
+  my $self = shift;
+  $self->_set_paths();
+  super(); # Correct order!
+  $self->_inject_bustard_functions();
+  return;
+};
+
+####
+#
+# Sets all paths needed during the lifetime of the analysis runfolder.
+# Creates any of the paths that do not exist.
+#
+
+sub _set_paths {
   my $self = shift;
 
   if ( ! $self->has_intensity_path() ) {
@@ -112,18 +120,14 @@ override 'prepare' => sub {
     $self->make_log_dir( $bustard_dir  );
   }
 
-  super(); # Correct place!
-
-  $self->_inject_bustard_functions();
   return;
-};
+}
 
+###
+#
+# If unset, sets recalibrated_path and pb_cal_path.
+#
 
-=head2 _set_bam_basecall_dependant_paths
-
- If unset, sets recalibrated_path and pb_cal_path.
-
-=cut
 sub _set_bam_basecall_dependent_paths {
   my $self = shift;
   my $pathways = {
@@ -168,18 +172,17 @@ sub _set_bam_basecall_dependent_paths {
   return;
 }
 
-=head2 _inject_bustard_functions
 
- Dynamically creates functions to run OLB preprocessing.
-
-=cut
-
+####
+# Dynamically creates functions to run OLB preprocessing.
+#
 sub _inject_bustard_functions {
   my $self = shift;
 
   foreach my $function (@OLB_FUNCTIONS) {
-    ##no critic (TestingAndDebugging::ProhibitNoStrict)
+    ##no critic (TestingAndDebugging::ProhibitNoStrict TestingAndDebugging::ProhibitNoWarnings)
     no strict 'refs';
+    no warnings 'redefine';
     my $fpointer = 'bustard_' . $function;
     if ($self->olb) {
       *{$fpointer}= sub {  my ($self, @args) = @_;

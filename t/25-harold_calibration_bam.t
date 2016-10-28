@@ -53,8 +53,6 @@ sub set_staging_analysis_area {
       run_folder => q{123456_IL2_1234},
       runfolder_path => $runfolder_path,
       timestamp => q{20091028-101635},
-      log_file_path => $runfolder_path,
-      log_file_name => q{npg_pipeline_pb_cal_20091028-101635.log},
       verbose => 0,
       repository => $repos,
       no_bsub => 1,

@@ -361,7 +361,8 @@ sub prepare {
   my $s = '***************************************************';
   $self->debug("\n" . $s);
   foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
-    $self->debug(sprintf '*** %s: %s', $name, $ENV{$name});
+    my $value = $ENV{$name} || 'Not defined';
+    $self->debug(sprintf '*** %s: %s', $name, $value);
   }
   $self->debug($s . "\n");
   return;

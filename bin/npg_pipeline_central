@@ -14,7 +14,9 @@ my $p       = npg_pipeline::pluggable::harold::central->new_with_options();
 
 my $level   = $p->verbose() ? $DEBUG : $INFO;
 my $logfile = $p->log_file();
-print STDERR "Pipelile log file: ${logfile}\n";
+##no critic (InputOutput::RequireCheckedSyscalls)
+print {*STDERR} "Pipeline log file: ${logfile}\n";
+##use critic
 my $layout = '%d %-5p %c - %m%n';
 Log::Log4perl->easy_init({layout => $layout,
                           level  => $level,
