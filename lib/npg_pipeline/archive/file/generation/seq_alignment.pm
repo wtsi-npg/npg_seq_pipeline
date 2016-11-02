@@ -330,7 +330,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
 
   if($human_split) {
     $p4_param_vals->{final_output_prep_target_name} = q[split_by_chromosome];
-    $p4_param_vals->{split_indicator} = _$human_split;
+    $p4_param_vals->{split_indicator} = q{_} . $human_split;
   }
 
   if($l->separate_y_chromosome_data) {
