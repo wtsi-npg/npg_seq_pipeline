@@ -102,18 +102,41 @@ has '_using_alt_reference' => ( isa => 'Bool',
                                 default => 0,
                               );
 
+sub _create_lane_dirs {
+  my ($self, @positions) = @_;
+
+  if(!$self->is_indexed()) {
+    $self->log( qq{Run $self->id_run is not multiplex run and no need to split} );
+    return;
+  }
+
+  my %positions = map { $_=>1 } @positions;
+  my @indexed_lanes = grep { $positions{$_} } @{$self->multiplexed_lanes()};
+  if(!@indexed_lanes) {
+    $self->log( q{None of the lanes specified is multiplexed} );
+    return;
+  }
+
+  my $output_dir = $self->recalibrated_path() . q{/lane};
+  for my $position (@indexed_lanes) {
+    my $lane_output_dir = $output_dir . $position;
+    if( ! -d $lane_output_dir ) {
+       $self->log( qq{creating $lane_output_dir} );
+       my $rc = `mkdir -p $lane_output_dir`;
+       if ( $CHILD_ERROR ) {
+         croak qq{could not create $lane_output_dir\n\t$rc};
+       }
+    }
+   else {
+       $self->log( qq{ already exists: $lane_output_dir} );
+   }
+  }
+
+  return;
+}
+
 sub generate {
   my ( $self, $arg_refs ) = @_;
-
-#################
-# TODO: stop assuming directory structure has been created by stage1
-#################
-# $self->log( q{Creating P4 stage2 analysis directories for run } . $self->id_run );
-# $self->_create_p4_stage2_dirs();
-# $self->log( q{Creating lane directories for P4 stage2 analysis for run } . $self->id_run );
-# $self->_create_lane_dirs();
-#################
-#################
 
   my (@lanes) = $self->positions($arg_refs);
   if ( ref $lanes[0] && ref $lanes[0] eq q{ARRAY} ) {   @lanes = @{ $lanes[0] }; }
@@ -401,6 +424,9 @@ sub _generate_command_arguments {
 
   my $lane_lims_all = $self->lims->children_ia();
   foreach my $position ( @positions ) {
+
+    $self->_create_lane_dirs($position);
+
     my $lane_lims = $lane_lims_all->{$position};
     if (!$lane_lims) {
       if ($self->verbose) {
