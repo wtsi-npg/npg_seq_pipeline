@@ -285,7 +285,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($l,q(fasta));
   }
   if($nchs) {
-    $p4_param_vals->{reference_dict_hs} = default_human_split_ref(q{picard}, $self->repository);   # always human default
+    $p4_param_vals->{reference_dict_hs} = _default_human_split_ref(q{picard}, $self->repository);   # always human default
     $p4_param_vals->{hs_reference_genome_fasta} = _default_human_split_ref(q{fasta}, $self->repository);   # always human default
   }
 
@@ -368,15 +368,17 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                            $spike_splicing, # empty unless this is the spike tag
                          ),
                          (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
-                         (@no_tgt_aln_flags),
+                         (@no_tgt_aln_flags), # empty unless there is no target alignment
                          q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
                          qq(> run_$name_root.json),
                        q{&&},
                        qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
                        q{&&},
                        _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex),
+                       ((not $spike_tag)? (join q( ),
                        q{&&},
                        _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, 'phix'),
+                       ) : ()),
                        q{&&},
                        $human_split ? join q( ),
                        _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, $human_split),
