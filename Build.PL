@@ -88,6 +88,7 @@ my $builder = $class->new(
 
          'build_requires'      => {
           'Digest::MD5'                 => 0,
+          'File::Copy::Recursive'       => 0,
           'File::Temp'                  => 0,
           'Sys::Hostname'               => 0,
           'Test::Deep'                  => 0,

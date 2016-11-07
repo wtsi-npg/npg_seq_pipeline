@@ -5,7 +5,9 @@ use Carp;
 use English qw{-no_match_vars};
 use File::Spec;
 
+use npg_pipeline::archive::file::to_irods;
 use npg_pipeline::cache;
+
 extends qw{npg_pipeline::pluggable::harold};
 
 our $VERSION = '0';
@@ -26,12 +28,13 @@ Pluggable pipeline module for the post_qc_review pipeline
 
 =head2 archive_to_irods
 
-upload all archival files to irods
+ upload all archival files to irods (used by GCLP only)
 
 =cut
 
 sub archive_to_irods {
   my ($self, @args) = @_;
+
   if ($self->no_irods_archival) {
     $self->log(q{Archival to iRODS is switched off.});
     return ();
@@ -41,8 +44,56 @@ sub archive_to_irods {
   my @job_ids = $ats->submit_to_lsf({
     required_job_completion => $required_job_completion,
   });
+
   return @job_ids;
 }
+
+=head2 archive_to_irods_samplesheet
+
+upload all archival files using the samplesheet LIMS driver
+
+=cut
+
+sub archive_to_irods_samplesheet {
+  my ($self, $required_job_completion) = @_;
+
+  return $self->_archive_to_irods($required_job_completion,
+                                  lims_driver_type => 'samplesheet');
+}
+
+=head2 archive_to_irods_ml_warehouse
+
+upload all archival files using the ml_warehouse LIMS driver
+
+=cut
+
+sub archive_to_irods_ml_warehouse {
+  my ($self, $required_job_completion) = @_;
+
+  return $self->_archive_to_irods($required_job_completion,
+                                  lims_driver_type => 'ml_warehouse_fc_cache');
+}
+
+sub _archive_to_irods {
+  my ($self, $required_job_completion, @extra_to_irods_attributes) = @_;
+
+  if ($self->no_irods_archival) {
+    $self->log(q{Archival to iRODS is switched off.});
+    return ();
+  }
+
+  @extra_to_irods_attributes % 2 and confess
+    q{Odd number of extra key/value arguments supplied: } .
+      join q{, }, @extra_to_irods_attributes;
+
+  my $handler = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::to_irods},
+    {@extra_to_irods_attributes});
+  my @job_ids = $handler->submit_to_lsf({
+    required_job_completion => $required_job_completion
+  });
+  return @job_ids;
+}
+
 
 =head2 archive_logs
 
@@ -82,7 +133,7 @@ sub upload_illumina_analysis_to_qc_database {
 
 =head2 upload_fastqcheck_to_qc_database
 
-upload fastqcheck files to teh qc database
+upload fastqcheck files to the qc database
 
 =cut
 

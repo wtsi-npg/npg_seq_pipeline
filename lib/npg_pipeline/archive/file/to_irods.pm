@@ -65,6 +65,10 @@ sub _generate_bsub_command {
      $bsub_command .=  $position_list
   }
 
+  if($self->has_lims_driver_type) {
+    $bsub_command .= q{ --driver-type } . $self->lims_driver_type;
+  }
+
   $bsub_command .=  q{'};
 
   if ($self->verbose()) {

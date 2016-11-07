@@ -14,6 +14,7 @@ use open q(:encoding(UTF8));
 
 use npg_tracking::data::reference::find;
 use npg_tracking::data::transcriptome;
+use npg_tracking::data::bait;
 use npg_pipeline::lsf_job;
 use npg_common::roles::software_location;
 use st::api::lims;
@@ -25,6 +26,7 @@ Readonly::Scalar our $DNA_ALIGNMENT_SCRIPT         => q{bam_alignment.pl};
 Readonly::Scalar our $NUM_SLOTS                    => q(12,16);
 Readonly::Scalar our $MEMORY                       => q{32000}; # memory in megabytes
 Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
+Readonly::Scalar my  $QC_SCRIPT_NAME               => q{qc};
 
 =head2 phix_reference
 
@@ -100,6 +102,39 @@ has '_using_alt_reference' => ( isa => 'Bool',
                                 default => 0,
                               );
 
+sub _create_lane_dirs {
+  my ($self, @positions) = @_;
+
+  if(!$self->is_indexed()) {
+    $self->log( qq{Run $self->id_run is not multiplex run and no need to split} );
+    return;
+  }
+
+  my %positions = map { $_=>1 } @positions;
+  my @indexed_lanes = grep { $positions{$_} } @{$self->multiplexed_lanes()};
+  if(!@indexed_lanes) {
+    $self->log( q{None of the lanes specified is multiplexed} );
+    return;
+  }
+
+  my $output_dir = $self->recalibrated_path() . q{/lane};
+  for my $position (@indexed_lanes) {
+    my $lane_output_dir = $output_dir . $position;
+    if( ! -d $lane_output_dir ) {
+       $self->log( qq{creating $lane_output_dir} );
+       my $rc = `mkdir -p $lane_output_dir`;
+       if ( $CHILD_ERROR ) {
+         croak qq{could not create $lane_output_dir\n\t$rc};
+       }
+    }
+   else {
+       $self->log( qq{ already exists: $lane_output_dir} );
+   }
+  }
+
+  return;
+}
+
 sub generate {
   my ( $self, $arg_refs ) = @_;
 
@@ -174,152 +209,209 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $archive_path = $self->lane_archive_path($position);
     $qcpath       = $self->lane_qc_path($position);
   }
+
   croak qq{Only one of nonconsented X and autosome human split, separate Y chromosome data, and nonconsented human split may be specified ($name_root)} if (1 < sum $l->contains_nonconsented_xahuman, $l->separate_y_chromosome_data, $l->contains_nonconsented_human);
   croak qq{Nonconsented X and autosome human split, and separate Y chromosome data, must have Homo sapiens reference ($name_root)} if (($l->contains_nonconsented_xahuman or $l->separate_y_chromosome_data) and not $l->reference_genome=~/Homo_sapiens/smx );
   croak qq{Nonconsented human split must not have Homo sapiens reference ($name_root)} if ($l->contains_nonconsented_human and $l->reference_genome and $l->reference_genome=~/Homo_sapiens/smx );
+
+  ####################################
+  # base set of parameters for p4 vtfp
+  ####################################
+  my $p4_param_vals = {
+    samtools_executable => q{samtools1},
+    indatadir => $input_path,
+    outdatadir => $archive_path,
+    af_metrics => $name_root.q{.bam_alignment_filter_metrics.json},
+    rpt => $name_root,
+    phix_reference_genome_fasta => $self->phix_reference,
+    alignment_filter_jar => $self->_AlignmentFilter_jar,
+  };
+
   my $do_rna = $self->_do_rna_analysis($l);
 
-  if( $self->force_p4 or (
-       (
-      #allow old school if no reference or no alignments in bam
-        ($self->_ref($l,q(fasta)) and $l->alignments_in_bam) or
-        $l->contains_nonconsented_human # but not if contains_nonconsented_human
-      )
-      and
-      not $spike_tag #or allow old school if this is the phix spike
-    )){
+  my $hs_bwa = ($self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se');
+  # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp) unless GCLP
+  my $bwa = ($self->gclp or $self->is_hiseqx_run or $self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
+            ? 'bwa_mem'
+            : $hs_bwa;
 
-    my $hs_bwa = ($self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se');
-    # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp) unless GCLP
-    my $bwa = ($self->gclp or $self->is_hiseqx_run or $self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
-              ? 'bwa_mem'
-              : $hs_bwa;
+  # There will be a new exception to the use of "aln": if you specify a reference
+  # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla, then we will use
+  # bwa's "mem"
+  $bwa = $self->_is_alt_reference($l) ? 'bwa_mem' : $bwa;
 
-    # There will be a new exception to the use of "aln": if you specify a reference
-    # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla, then we will use
-    # bwa's "mem"
-    $bwa = $self->_is_alt_reference($l) ? 'bwa_mem' : $bwa;
+  my $human_split = $l->contains_nonconsented_xahuman ? q(xahuman) :
+                    $l->separate_y_chromosome_data    ? q(yhuman) :
+                    q();
 
-    my $human_split = $l->contains_nonconsented_xahuman ? q(xahuman) :
-                      $l->separate_y_chromosome_data    ? q(yhuman) :
-                      q();
-
-    my $do_target_alignment = ($self->_ref($l,q(fasta)) and $l->alignments_in_bam);
-    my $nchs = $l->contains_nonconsented_human;
-    my $nchs_template_label = q{};
-    if($nchs) {
-      $nchs_template_label = q{humansplit_};
-      if(not $do_target_alignment) {
-        $nchs_template_label .= q{notargetalign_};
-      }
+  my $do_target_alignment = ($self->_ref($l,q(fasta)) and $l->alignments_in_bam);
+  my $nchs = $l->contains_nonconsented_human;
+  my $nchs_template_label = q{};
+  if($nchs) {
+    $nchs_template_label = q{humansplit_};
+    if(not $do_target_alignment) {
+      $nchs_template_label .= q{notargetalign_};
     }
+  }
+  my $nchs_outfile_label = $nchs? q{human}: q{};
 
-    my $nchs_outfile_label = $nchs? q{human}: q{};
+  #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
+  #TODO: support these various options below in P4 analyses
+  croak qq{only paired reads supported for RNA or non-consented human ($name_root)} if (not $self->is_paired_read) and ($do_rna or $nchs);
 
-    #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
-    #TODO: support this, and above "old school", various options in P4 analyses
-    croak qq{only paired reads supported for RNA or non-consented human ($name_root)} if (not $self->is_paired_read) and ($do_rna or $nchs);
-    croak qq{No alignments in bam only supported with human split ($name_root)} if (not $l->alignments_in_bam) and (not $nchs);
-    croak qq{Reference required ($name_root)} if (not $self->_ref($l,q(fasta))) and (not $nchs);
+  ########
+  # no target alignment:
+  #  splice out unneeded p4 nodes, add -x flag to scramble,
+  #   unset the reference for bam_stats and amend the AlignmentFilter command.
+  #  Note: currently human split (with and without target alignment) are handled with
+  #   separate templates, so these steps do not apply.
+  ########
+  my @no_tgt_aln_flags = ();
+  if((not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam) and not $nchs and not $spike_tag) {
 
-    $self->log(q[Using p4]);
-    if($l->contains_nonconsented_human) { $self->log(q[  nonconsented_humansplit]) }
-    if(not $self->is_paired_read) { $self->log(q[  single-end]) }
-    $self->log(q[  do_target_alignment is ] . ($do_target_alignment? q[true]: q[false]));
-    $self->log(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
-
-    return join q( ), q(bash -c '),
-                           q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
-                           q(cd), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{&&},
-                           q(vtfp.pl -s),
-                             q{-keys samtools_executable -vals samtools1},
-                             q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
-                             q(-keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads`),
-                             q(-keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2`),
-                             q(-keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2`),
-                             q(-keys indatadir -vals), $input_path,
-                             q(-keys outdatadir -vals), $archive_path,
-                             q(-keys af_metrics -vals), $name_root.q{.bam_alignment_filter_metrics.json},
-                             q(-keys rpt -vals), $name_root,
-                             ($do_target_alignment? (q(-keys reference_dict -vals), $self->_ref($l,q(picard)).q(.dict)): ()),
-                             ($nchs? (q(-keys reference_dict_hs -vals), _default_human_split_ref(q{picard}, $self->repository),): ()),   # always human default
-                             ($do_target_alignment? (q(-keys reference_genome_fasta -vals), $self->_ref($l,q(fasta)),): ()),
-                             ($nchs? (q(-keys hs_reference_genome_fasta -vals), _default_human_split_ref(q{fasta}, $self->repository)): ()),   # always human default
-                             q(-keys phix_reference_genome_fasta -vals), $self->phix_reference,
-                             q(-keys alignment_filter_jar -vals), $self->_AlignmentFilter_jar,
-                             ( $do_rna ? (
-                                  ($do_target_alignment? (q(-keys alignment_reference_genome -vals), $self->_ref($l,q(bowtie2)),): ()),
-                                  ($nchs? (q(-keys hs_alignment_reference_genome -vals), _default_human_split_ref(q{bowtie2}, $self->repository)): ()),   # always human default
-                                  q(-keys library_type -vals), ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) ),
-                                  q(-keys transcriptome_val -vals), $self->_transcriptome($l)->transcriptome_index_name(),
-                                  q(-keys alignment_method -vals tophat2),
-                                  ($nchs ? q(-keys alignment_hs_method -vals tophat2) : ()),
-                               ) : (
-                                  ($do_target_alignment? (q(-keys alignment_reference_genome -vals), $self->_ref($l,q(bwa0_6)),): ()),
-                                  ($nchs? (q(-keys hs_alignment_reference_genome -vals), _default_human_split_ref(q{bwa0_6}, $self->repository)): ()),   # always human default
-                                  q(-keys bwa_executable -vals bwa0_6),
-                                  q(-keys alignment_method -vals), $bwa,
-                                  ($nchs ? qq(-keys alignment_hs_method -vals $hs_bwa) : ()),
-                             ) ),
-                             (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
-                             $human_split ? qq(-keys final_output_prep_target_name -vals split_by_chromosome -keys split_indicator -vals _$human_split) : (),
-                             $l->separate_y_chromosome_data ? (q(-keys split_bam_by_chromosome_flags -vals S=Y -keys split_bam_by_chromosome_flags -vals V=true -keys split_bam_by_chromosomes_jar -vals ), $self->_SplitBamByChromosomes_jar) : (),
-                             q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
-                             qq(> run_$name_root.json),
-                           q{&&},
-                           qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
-                           q{&&},
-			   _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex),
-                           q{&&},
-                           _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex, 'phix'),
-                           q{&&},
-                           $human_split ? join q( ),
-                           _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex, $human_split),
-                           q{&&} : q(),
-                           $nchs        ? join q( ),
-                           _bfs_command($archive_path, $qcpath, $name_root, $l, $is_plex, $nchs_outfile_label),
-                           q{&&} : q(),
-                           q{qc --check alignment_filter_metrics --qc_in $}.q{PWD --id_run}, $self->id_run, qq{--position $position --qc_out $qcpath}, ($is_plex ? (qq{--tag_index $tag_index}) : ()),
-                         q(');
-  } else {
-    return join q( ),    $DNA_ALIGNMENT_SCRIPT,
-                         ( ($self->force_phix_split and not $spike_tag) ? ( q(--spiked_phix_split) ) : () ), #might be better to turn off split if ref is phix
-                         q(--id_run),        $self->id_run,
-                         q(--position),      $position,
-                         ($is_plex ? ( q(--tag_index),     $tag_index ) : ()),
-                         q(--input),         ( join q{/}, $input_path, $name_root.q{.bam}),
-                         q(--output_prefix), ( join q{/}, $archive_path, $name_root),
-                         ($self->is_paired_read ? q(--is_paired_read) : q(--no-is_paired_read) );
+    push @no_tgt_aln_flags,
+      q[-splice_nodes '"'"'src_bam:-alignment_filter:__PHIX_BAM_IN__'"'"'],
+      q[-keys scramble_reference_flag -vals '"'"'-x'"'"'],
+      q[-nullkeys stats_reference_flag], # both samtools and bam_stats
+      q[-nullkeys af_target_in_flag], # switch off AlignmentFilter target input
+      q[-keys af_target_out_flag_name -vals '"'"'UNALIGNED'"'"']; # rename "target output" flag
   }
 
+  #################################################################
+  # use collected information to update final p4_param_vals entries
+  #################################################################
+  if($do_target_alignment) {
+    $p4_param_vals->{reference_dict} = $self->_ref($l,q(picard)) . q(.dict);
+    $p4_param_vals->{reference_genome_fasta} = $self->_ref($l,q(fasta));
+  }
+  if($nchs) {
+    $p4_param_vals->{reference_dict_hs} = _default_human_split_ref(q{picard}, $self->repository);   # always human default
+    $p4_param_vals->{hs_reference_genome_fasta} = _default_human_split_ref(q{fasta}, $self->repository);   # always human default
+  }
+
+  # handle targeted stats_(bait_stats_analysis) here, handling the interaction with spike tag case
+  my $bait_stats_flag = q[];
+  my $spike_splicing = q[];
+  if(not $spike_tag) {
+    if($self->_do_bait_stats_analysis($l)) {
+      $p4_param_vals->{bait_regions_file} = $self->_bait($l)->bait_intervals_path();
+      $bait_stats_flag = q(-prune_nodes '"'"'fop(phx|hs)_samtools_stats_F0.*00_bait.*'"'"');
+    }
+    else {
+      $bait_stats_flag = q(-prune_nodes '"'"'fop.*samtools_stats_F0.*00_bait.*'"'"');
+    }
+  }
+  else {
+      $bait_stats_flag = q(-prune_nodes '"'"'foptgt.*samtools_stats_F0.*00_bait.*'"'"');
+      $spike_splicing = q[-splice_nodes '"'"'src_bam:-foptgt_bamsort_coord:;foptgt_seqchksum_tee:__FINAL_OUT__-scs_cmp_seqchksum:__OUTPUTCHK_IN__'"'"'];
+  }
+
+  if($do_rna) {
+    $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
+    $p4_param_vals->{transcriptome_val} = $self->_transcriptome($l)->transcriptome_index_name();
+
+    $p4_param_vals->{alignment_method} = q[tophat2];
+    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bowtie2)); }
+    if($nchs) {
+      $p4_param_vals->{hs_alignment_reference_genome} = _default_human_split_ref(q{bowtie2}, $self->repository);
+      $p4_param_vals->{alignment_hs_method} = q[tophat2];
+    }
+  }
+  else {
+    $p4_param_vals->{bwa_executable} = q[bwa0_6];
+
+    $p4_param_vals->{alignment_method} = $bwa;
+    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bwa0_6)); }
+    if($nchs) {
+      $p4_param_vals->{hs_alignment_reference_genome} = _default_human_split_ref(q{bwa0_6}, $self->repository);
+      $p4_param_vals->{alignment_hs_method} = $hs_bwa;
+    }
+  }
+
+  if($human_split) {
+    $p4_param_vals->{final_output_prep_target_name} = q[split_by_chromosome];
+    $p4_param_vals->{split_indicator} = q{_} . $human_split;
+  }
+
+  if($l->separate_y_chromosome_data) {
+    $p4_param_vals->{split_bam_by_chromosome_flags} = q[S=Y];
+    $p4_param_vals->{split_bam_by_chromosome_flags} = q[V=true];
+    $p4_param_vals->{split_bam_by_chromosomes_jar} = $self->_SplitBamByChromosomes_jar;
+  }
+
+# write p4 parameters to file
+  my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path($position), $name_root.q{_p4s2_pv_in.json};
+  write_file($param_vals_fname, encode_json({ assign => [ $p4_param_vals ], }));
+
+  ####################
+  # log run parameters
+  ####################
+  $self->log(q[Using p4]);
+  if($l->contains_nonconsented_human) { $self->log(q[  nonconsented_humansplit]) }
+  if(not $self->is_paired_read) { $self->log(q[  single-end]) }
+  $self->log(q[  do_target_alignment is ] . ($do_target_alignment? q[true]: q[false]));
+  $self->log(q[  p4 parameters written to ] . $param_vals_fname);
+  $self->log(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
+
+  return join q( ), q(bash -c '),
+                       q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
+                       q(cd), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{&&},
+                       q(vtfp.pl),
+                         q(-param_vals), $param_vals_fname,
+                         q(-export_param_vals), $name_root.q{_p4s2_pv_out_$}.q/{LSB_JOBID}.json/,
+                         q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
+                         q(-keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads`),
+                         q(-keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2`),
+                         q(-keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2`),
+                         (grep {$_}
+                           $bait_stats_flag,
+                           $spike_splicing, # empty unless this is the spike tag
+                         ),
+                         (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
+                         (@no_tgt_aln_flags), # empty unless there is no target alignment
+                         q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
+                         qq(> run_$name_root.json),
+                       q{&&},
+                       qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
+                       q{&&},
+                       _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex),
+                       ((not $spike_tag)? (join q( ),
+                       q{&&},
+                       _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, 'phix'),
+                       ) : ()),
+                       q{&&},
+                       $human_split ? join q( ),
+                       _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, $human_split),
+                       q{&&} : q(),
+                       $nchs ? join q( ),
+                         _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, $nchs_outfile_label),
+                         q{&&} : q(),
+                       _qc_command('alignment_filter_metrics', undef, $qcpath, $l, $is_plex),
+                     q(');
 }
 
-sub _bfs_command {##no critic (Subroutines::ProhibitManyArgs)
-  my ($archive_path, $qc_path, $name_root, $l, $is_plex, $subset) = @_;
+sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
+  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset) = @_;
 
-  if ($subset) {
-    $name_root .= q(_) . $subset;
-  }
-  my $bfs_args = {id_run => $l->id_run, position => $l->position};
+  my $args = {'id_run' => $l->id_run, 'position' => $l->position};
   if ($is_plex && defined $l->tag_index) {
-    $bfs_args->{'tag_index'} = $l->tag_index;
+    $args->{'tag_index'} = $l->tag_index;
   }
-  if ($subset) {
-    $bfs_args->{'subset'} = 'q(' . $subset . ')';
+  if ($check_name eq 'bam_flagstats') {
+    if ($subset) {
+      $args->{'subset'} = $subset;
+    }
+    $args->{'qc_in'}  = $qc_in;
+  } else {
+    $args->{'qc_in'}  = q[$] . 'PWD';
   }
-  $bfs_args->{'sequence_file'} = q[$] . 'ARGV[0]';
-  my $args4new = JSON::XS->new()->canonical(1)->encode($bfs_args);
-  $args4new =~ s/:/=>/gxms;
-  ##no critic (RegularExpressions::ProhibitEscapedMetacharacters)
-  $args4new =~ s/["\{\}]//gxms;
-  ##use critic
-  ##no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-
-  #TODO: shift this horrendous inlining of perl scripts to a qc check the same as alignment_filer_metrics
-  return join q[ ],
-    q{perl -e '"'"'use strict; use autodie; use npg_qc::autoqc::results::bam_flagstats; my$o=npg_qc::autoqc::results::bam_flagstats->new(} . $args4new .q{); $o->execute(); $o->store($ARGV[-1]) '"'"'},
-    join(q[/], $archive_path,  $name_root . '.cram'),
-    $qc_path;
+  $args->{'qc_out'} = $qc_out;
+  $args->{'check'}  = $check_name;
+  my $command = q[];
+  foreach my $arg (sort keys %{$args}) {
+    $command .= join q[ ], q[ --].$arg, $args->{$arg};
+  }
+  return $QC_SCRIPT_NAME . $command;
 }
 
 sub _generate_command_arguments {
@@ -334,6 +426,9 @@ sub _generate_command_arguments {
 
   my $lane_lims_all = $self->lims->children_ia();
   foreach my $position ( @positions ) {
+
+    $self->_create_lane_dirs($position);
+
     my $lane_lims = $lane_lims_all->{$position};
     if (!$lane_lims) {
       if ($self->verbose) {
@@ -373,15 +468,15 @@ sub _has_newer_flowcell { # is HiSeq High Throughput >= V4, Rapid Run >= V2
 sub _do_rna_analysis {
   my ($self, $l) = @_;
   my $lstring = $l->to_string;
-  if (!$l->library_type || $l->library_type !~ /(?:cD|R)NA/sxm) {
+  if (!$l->library_type || $l->library_type !~ /(?:(?:cD|R)NA|DAFT)/sxm) {
     if ($self->verbose) {
       $self->log(qq{$lstring - not RNA library type});
     }
     return 0;
   }
-  if((not $l->reference_genome) or (not $l->reference_genome =~ /Homo_sapiens|Mus_musculus/smx)){
+  if((not $l->reference_genome) or (not $l->reference_genome =~ /Homo_sapiens|Mus_musculus|Plasmodium_(?:falciparum|berghei)/smx)){
     if ($self->verbose) {
-      $self->log(qq{$lstring - Not human or mouse (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on all eukaryotes?
+      $self->log(qq{$lstring - Not human or mouse or plasmodium falciparum or berghei (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on all eukaryotes?
     }
     return 0;
   }
@@ -412,6 +507,43 @@ sub _transcriptome {
                  ( $self->repository ? ('repository' => $self->repository):())
                 });
     return($t);
+}
+
+sub _do_bait_stats_analysis {
+  my ($self, $l) = @_;
+  my $lstring = $l->to_string;
+  if(not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam) {
+      if ($self->verbose) {
+          $self->log(qq{$lstring - no reference or no alignments set});
+      }
+      return 0;
+  }
+  if(not $self->_bait($l)->bait_name){
+      if ($self->verbose) {
+          $self->log(qq{$lstring - No bait set});
+      }
+      return 0;
+  }
+  if(not $self->_bait($l)->bait_path){
+      if ($self->verbose) {
+          $self->log(qq{$lstring - No bait path found});
+      }
+      return 0;
+  }
+  if ($self->verbose) {
+      $self->log(qq{$lstring - Doing optional bait stats analysis....});
+  }
+  return 1;
+}
+
+sub _bait{
+  my($self,$l) = @_;
+  return npg_tracking::data::bait->new (
+                {'id_run'     => $l->id_run,
+                 'position'   => $l->position,
+                 'tag_index'  => $l->tag_index,
+                 ( $self->repository ? ('repository' => $self->repository):())
+                });
 }
 
 sub _ref {
@@ -499,6 +631,17 @@ sub _is_alt_reference {
     return -e $self->_ref($l,'bwa0_6') . '.alt';
 }
 
+sub _p4_stage2_params_path {
+  my ($self, $position) = @_;
+  my $path = $self->recalibrated_path;
+
+  if($self->is_multiplexed_lane($position)) {
+    $path .= q[/lane] . $position;
+  }
+
+  return $path;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
@@ -546,6 +689,8 @@ LSF job creation for seq alignment
 
 =item npg_tracking::data::reference::find
 
+=item npg_tracking::data::bait
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -558,7 +703,7 @@ David K. Jackson (david.jackson@sanger.ac.uk)
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2016 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

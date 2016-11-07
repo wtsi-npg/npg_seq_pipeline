@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="20268" batch_id="47350" id_instrument="101" expected_cycle_count="316" actual_cycle_count="316" priority="1" id_run_pair="0" is_paired="0" team="C" id_instrument_format="11" flowcell_id="MS4000667-300V2" folder_name="160704_MS3_20268_A_MS4000667-300V2" folder_path_glob="/{export,nfs}/sf49/ILorHSorMS_sf49/*/" name="MS3_20268" loader="sh2" loading_date="2016-07-04" run_folder="160704_MS3_20268_A_MS4000667-300V2">
+ <instrument id_instrument="101" name="MS3" id_instrument_format="11" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="120499" id_run="20268" tile_count="12" tracks="1" position="1" />
+</run_lanes>
+ <current_run_status id_run_status="272750" id_run="20268" date="2016-07-06 10:32:16" id_run_status_dict="26" id_user="93" username="ae4" iscurrent="1" description="qc in progress" />
+ <run_statuses>
+ <run_status id_run_status="272750" id_run="20268" date="2016-07-06 10:32:16" id_run_status_dict="26" id_user="93" username="ae4" iscurrent="1" description="qc in progress" />
+ <run_status id_run_status="272686" id_run="20268" date="2016-07-05 15:46:20" id_run_status_dict="19" id_user="7" username="ae4" iscurrent="0" description="qc review pending" />
+ <run_status id_run_status="272685" id_run="20268" date="2016-07-05 15:46:08" id_run_status_dict="9" id_user="7" username="ae4" iscurrent="0" description="analysis complete" />
+ <run_status id_run_status="272660" id_run="20268" date="2016-07-05 13:36:36" id_run_status_dict="24" id_user="7" username="ae4" iscurrent="0" description="secondary analysis in progress" />
+ <run_status id_run_status="272650" id_run="20268" date="2016-07-05 12:36:05" id_run_status_dict="7" id_user="7" username="ae4" iscurrent="0" description="analysis in progress" />
+ <run_status id_run_status="272644" id_run="20268" date="2016-07-05 12:22:53" id_run_status_dict="11" id_user="7" username="ae4" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="272645" id_run="20268" date="2016-07-05 12:22:53" id_run_status_dict="6" id_user="7" username="ae4" iscurrent="0" description="analysis pending" />
+ <run_status id_run_status="272628" id_run="20268" date="2016-07-05 11:51:10" id_run_status_dict="4" id_user="7" username="ae4" iscurrent="0" description="run complete" />
+ <run_status id_run_status="272465" id_run="20268" date="2016-07-04 12:51:16" id_run_status_dict="2" id_user="7" username="ae4" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="272418" id_run="20268" date="2016-07-04 10:19:12" id_run_status_dict="1" id_user="56" username="ae4" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ </annotations>
+ <tags>
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>

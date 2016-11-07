@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrument id_instrument="103" name="MS5" id_instrument_format="11" model="MiSeq" external_name="" serial="" iscurrent="1">
+<current_runs>
+<current_run id_run="20868" id_instrument="103" priority="1" actual_cycle_count="0" expected_cycle_count="31" is_paired="0" id_run_pair="" name="MS5_20868" id_run_status="280836" date="2016-09-23 10:39:38" id_run_status_dict="1" id_user="24" username="mq1" description="run pending"  /></current_runs>
+<runs>
+<run id_run="20990" batch_id="49682" id_instrument="103" priority="1" actual_cycle_count="308" expected_cycle_count="308" is_paired="0" id_run_pair="" team="RAD" name="MS5_20990" id_run_status="282894" date="2016-10-11 10:23:09" id_run_status_dict="6" id_user="7" username="pipeline" description="analysis pending" loader="eh9" loading_date="2016-10-10"/>
+
+
+<run id_run="20981" batch_id="49678" id_instrument="103" priority="1" actual_cycle_count="316" expected_cycle_count="316" is_paired="0" id_run_pair="" team="RAD" name="MS5_20981" id_run_status="282830" date="2016-10-10 15:26:01" id_run_status_dict="19" id_user="7" username="pipeline" description="qc review pending" loader="mq1" loading_date="2016-10-06"/>
+
+
+<run id_run="20889" batch_id="49358" id_instrument="103" priority="1" actual_cycle_count="508" expected_cycle_count="508" is_paired="0" id_run_pair="" team="RAD" name="MS5_20889" id_run_status="282693" date="2016-10-09 14:47:55" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="eh9" loading_date="2016-09-26"/>
+
+
+<run id_run="20868" batch_id="49381" id_instrument="103" priority="1" actual_cycle_count="0" expected_cycle_count="31" is_paired="0" id_run_pair="" team="RAD" name="MS5_20868" id_run_status="280836" date="2016-09-23 10:39:38" id_run_status_dict="1" id_user="24" username="mq1" description="run pending" loader="mq1" loading_date="2016-09-23"/>
+
+
+<run id_run="20863" batch_id="49360" id_instrument="103" priority="4" actual_cycle_count="166" expected_cycle_count="166" is_paired="0" id_run_pair="" team="RAD" name="MS5_20863" id_run_status="282711" date="2016-10-09 17:11:22" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mt13" loading_date="2016-09-22"/>
+
+
+<run id_run="20756" batch_id="49128" id_instrument="103" priority="1" actual_cycle_count="308" expected_cycle_count="308" is_paired="0" id_run_pair="" team="RAD" name="MS5_20756" id_run_status="281956" date="2016-10-02 14:32:27" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mq1" loading_date="2016-09-12"/>
+
+
+<run id_run="20741" batch_id="49091" id_instrument="103" priority="1" actual_cycle_count="316" expected_cycle_count="316" is_paired="0" id_run_pair="" team="RAD" name="MS5_20741" id_run_status="281952" date="2016-10-02 14:15:37" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mq1" loading_date="2016-09-09"/>
+
+
+<run id_run="20651" batch_id="48815" id_instrument="103" priority="1" actual_cycle_count="137" expected_cycle_count="316" is_paired="0" id_run_pair="" team="RAD" name="MS5_20651" id_run_status="278324" date="2016-08-31 17:21:49" id_run_status_dict="25" id_user="71" username="srl" description="qc on hold" loader="mm7" loading_date="2016-08-24"/>
+
+
+<run id_run="20579" batch_id="48606" id_instrument="103" priority="1" actual_cycle_count="308" expected_cycle_count="308" is_paired="0" id_run_pair="" team="RAD" name="MS5_20579" id_run_status="278539" date="2016-09-04 14:03:26" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="eh9" loading_date="2016-08-15"/>
+
+
+<run id_run="20502" batch_id="48376" id_instrument="103" priority="1" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_20502" id_run_status="277447" date="2016-08-19 10:55:05" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="st2" loading_date="2016-08-03"/>
+
+
+<run id_run="20347" batch_id="47839" id_instrument="103" priority="1" actual_cycle_count="306" expected_cycle_count="306" is_paired="0" id_run_pair="" team="RAD" name="MS5_20347" id_run_status="275714" date="2016-08-01 09:30:46" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="la8" loading_date="2016-07-12"/>
+
+
+<run id_run="20128" batch_id="47180" id_instrument="103" priority="1" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_20128" id_run_status="270879" date="2016-06-22 02:27:53" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ls7" loading_date="2016-06-21"/>
+
+
+<run id_run="20091" batch_id="47099" id_instrument="103" priority="1" actual_cycle_count="130" expected_cycle_count="130" is_paired="0" id_run_pair="" team="RAD" name="MS5_20091" id_run_status="273368" date="2016-07-10 14:20:12" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mq1" loading_date="2016-06-16"/>
+
+
+<run id_run="19972" batch_id="46861" id_instrument="103" priority="1" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_19972" id_run_status="268652" date="2016-06-07 07:41:04" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ls7" loading_date="2016-06-06"/>
+
+
+<run id_run="19949" batch_id="46816" id_instrument="103" priority="1" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_19949" id_run_status="268489" date="2016-06-06 11:40:58" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ls7" loading_date="2016-06-03"/>
+
+
+<run id_run="19935" batch_id="46800" id_instrument="103" priority="1" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_19935" id_run_status="268031" date="2016-06-03 09:21:55" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ls7" loading_date="2016-06-02"/>
+
+
+<run id_run="19928" batch_id="46765" id_instrument="103" priority="1" actual_cycle_count="0" expected_cycle_count="617" is_paired="0" id_run_pair="" team="RAD" name="MS5_19928" id_run_status="267703" date="2016-06-01 14:44:52" id_run_status_dict="5" id_user="71" username="srl" description="run cancelled" loader="mt13" loading_date="2016-06-01"/>
+
+
+<run id_run="19927" batch_id="46765" id_instrument="103" priority="1" actual_cycle_count="166" expected_cycle_count="166" is_paired="0" id_run_pair="" team="RAD" name="MS5_19927" id_run_status="270464" date="2016-06-19 14:19:18" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mt13" loading_date="2016-06-01"/>
+
+
+<run id_run="19843" batch_id="46612" id_instrument="103" priority="1" actual_cycle_count="276" expected_cycle_count="276" is_paired="0" id_run_pair="" team="RAD" name="MS5_19843" id_run_status="269490" date="2016-06-12 14:05:44" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mq1" loading_date="2016-05-25"/>
+
+
+<run id_run="19839" batch_id="46604" id_instrument="103" priority="1" actual_cycle_count="0" expected_cycle_count="167" is_paired="0" id_run_pair="" team="RAD" name="MS5_19839" id_run_status="266821" date="2016-05-25 15:37:46" id_run_status_dict="5" id_user="62" username="dj3" description="run cancelled" loader="mt13" loading_date="2016-05-25"/>
+
+
+<run id_run="19773" batch_id="46493" id_instrument="103" priority="4" actual_cycle_count="300" expected_cycle_count="300" is_paired="0" id_run_pair="" team="RAD" name="MS5_19773" id_run_status="268373" date="2016-06-05 14:06:48" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mt13" loading_date="2016-05-19"/>
+
+
+<run id_run="19751" batch_id="46407" id_instrument="103" priority="1" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_19751" id_run_status="265581" date="2016-05-18 08:54:34" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ls7" loading_date="2016-05-17"/>
+
+
+<run id_run="19705" batch_id="46334" id_instrument="103" priority="4" actual_cycle_count="276" expected_cycle_count="276" is_paired="0" id_run_pair="" team="RAD" name="MS5_19705" id_run_status="268393" date="2016-06-05 21:22:28" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mq1" loading_date="2016-05-13"/>
+
+
+<run id_run="19704" batch_id="46322" id_instrument="103" priority="1" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_19704" id_run_status="265256" date="2016-05-16 12:25:56" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ls7" loading_date="2016-05-12"/>
+
+
+<run id_run="19690" batch_id="46218" id_instrument="103" priority="1" actual_cycle_count="256" expected_cycle_count="256" is_paired="0" id_run_pair="" team="RAD" name="MS5_19690" id_run_status="268395" date="2016-06-05 21:52:52" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mq1" loading_date="2016-05-11"/>
+
+
+<run id_run="19683" batch_id="46218" id_instrument="103" priority="1" actual_cycle_count="120" expected_cycle_count="256" is_paired="0" id_run_pair="" team="RAD" name="MS5_19683" id_run_status="264625" date="2016-05-11 08:48:58" id_run_status_dict="5" id_user="24" username="mq1" description="run cancelled" loader="mq1" loading_date="2016-05-10"/>
+
+
+<run id_run="19653" batch_id="46218" id_instrument="103" priority="1" actual_cycle_count="0" expected_cycle_count="276" is_paired="0" id_run_pair="" team="RAD" name="MS5_19653" id_run_status="264560" date="2016-05-10 15:06:12" id_run_status_dict="5" id_user="24" username="mq1" description="run cancelled" loader="mq1" loading_date="2016-05-06"/>
+
+
+<run id_run="19631" batch_id="46165" id_instrument="103" priority="1" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_19631" id_run_status="264950" date="2016-05-13 17:35:35" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ls7" loading_date="2016-05-04"/>
+
+
+<run id_run="19588" batch_id="46076" id_instrument="103" priority="1" actual_cycle_count="596" expected_cycle_count="596" is_paired="0" id_run_pair="" team="RAD" name="MS5_19588" id_run_status="266099" date="2016-05-22 14:24:29" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mq1" loading_date="2016-04-29"/>
+
+
+<run id_run="19575" batch_id="45938" id_instrument="103" priority="4" actual_cycle_count="38" expected_cycle_count="38" is_paired="0" id_run_pair="" team="RAD" name="MS5_19575" id_run_status="264936" date="2016-05-13 14:52:58" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mq1" loading_date="2016-04-27"/>
+
+
+<run id_run="19563" batch_id="45896" id_instrument="103" priority="4" actual_cycle_count="276" expected_cycle_count="276" is_paired="0" id_run_pair="" team="RAD" name="MS5_19563" id_run_status="265101" date="2016-05-15 15:07:06" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mq1" loading_date="2016-04-26"/>
+
+
+<run id_run="19477" batch_id="45648" id_instrument="103" priority="1" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_19477" id_run_status="263360" date="2016-05-02 15:45:05" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ls7" loading_date="2016-04-14"/>
+
+
+<run id_run="19456" batch_id="45604" id_instrument="103" priority="1" actual_cycle_count="150" expected_cycle_count="150" is_paired="0" id_run_pair="" team="RAD" name="MS5_19456" id_run_status="263302" date="2016-05-01 14:05:53" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="la8" loading_date="2016-04-13"/>
+
+
+<run id_run="19398" batch_id="45477" id_instrument="103" priority="1" actual_cycle_count="0" expected_cycle_count="150" is_paired="0" id_run_pair="" team="RAD" name="MS5_19398" id_run_status="261383" date="2016-04-14 09:14:54" id_run_status_dict="5" id_user="71" username="srl" description="run cancelled" loader="la8" loading_date="2016-04-08"/>
+
+
+<run id_run="19035" batch_id="44635" id_instrument="103" priority="1" actual_cycle_count="516" expected_cycle_count="516" is_paired="0" id_run_pair="" team="RAD" name="MS5_19035" id_run_status="258266" date="2016-03-20 14:28:03" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="nh4" loading_date="2016-03-02"/>
+
+
+<run id_run="18918" batch_id="44288" id_instrument="103" priority="1" actual_cycle_count="316" expected_cycle_count="316" is_paired="0" id_run_pair="" team="RAD" name="MS5_18918" id_run_status="257139" date="2016-03-13 14:13:25" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="mb12" loading_date="2016-02-19"/>
+
+
+<run id_run="18805" batch_id="43984" id_instrument="103" priority="1" actual_cycle_count="310" expected_cycle_count="310" is_paired="0" id_run_pair="" team="RAD" name="MS5_18805" id_run_status="255226" date="2016-02-28 14:22:40" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="la8" loading_date="2016-02-09"/>
+
+
+<run id_run="18794" batch_id="43943" id_instrument="103" priority="1" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_18794" id_run_status="255229" date="2016-02-28 14:28:59" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ls7" loading_date="2016-02-08"/>
+
+
+<run id_run="18770" batch_id="43888" id_instrument="103" priority="1" actual_cycle_count="58" expected_cycle_count="58" is_paired="0" id_run_pair="" team="RAD" name="MS5_18770" id_run_status="254320" date="2016-02-21 14:12:43" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="ls7" loading_date="2016-02-04"/>
+
+
+<run id_run="18714" batch_id="43648" id_instrument="103" priority="1" actual_cycle_count="308" expected_cycle_count="308" is_paired="0" id_run_pair="" team="RAD" name="MS5_18714" id_run_status="251724" date="2016-01-28 09:09:04" id_run_status_dict="20" id_user="7" username="pipeline" description="qc complete" loader="nh4" loading_date="2016-01-26"/>
+
+</runs>
+
+<current_instrument_status id_instrument_status="47791" id_instrument="103" date="2016-09-05 10:35:59" id_instrument_status_dict="3" id_user="7" username="pipeline" iscurrent="1" description="wash required" comment="automatic status update : unwashed for over 28 days" />
+<instrument_statuses>
+ <instrument_status id_instrument_status="47791" id_instrument="103" date="2016-09-05 10:35:59" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="1" description="wash required" comment="automatic status update : unwashed for over 28 days" />
+ <instrument_status id_instrument_status="47787" id_instrument="103" date="2016-09-05 10:25:40" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="47739" id_instrument="103" date="2016-09-01 15:53:42" id_instrument_status_dict="5" id_user="37" user="mg19" iscurrent="0" description="request approval" comment="Reagent chiller assembly replaced" />
+ <instrument_status id_instrument_status="47738" id_instrument="103" date="2016-09-01 15:53:25" id_instrument_status_dict="8" id_user="37" user="mg19" iscurrent="0" description="down for repair" comment="Excess condensation in reagent chiller" />
+ <instrument_status id_instrument_status="46907" id_instrument="103" date="2016-07-13 16:21:13" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="46451" id_instrument="103" date="2016-06-22 12:49:10" id_instrument_status_dict="1" id_user="77" user="ls7" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="46450" id_instrument="103" date="2016-06-22 12:49:10" id_instrument_status_dict="4" id_user="77" user="ls7" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="46339" id_instrument="103" date="2016-06-17 02:36:13" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="46100" id_instrument="103" date="2016-06-07 07:36:18" id_instrument_status_dict="1" id_user="77" user="ls7" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="46099" id_instrument="103" date="2016-06-07 07:36:18" id_instrument_status_dict="4" id_user="77" user="ls7" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="46092" id_instrument="103" date="2016-06-06 16:51:21" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="46061" id_instrument="103" date="2016-06-06 08:21:58" id_instrument_status_dict="1" id_user="77" user="ls7" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="46060" id_instrument="103" date="2016-06-06 08:21:58" id_instrument_status_dict="4" id_user="77" user="ls7" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="45668" id_instrument="103" date="2016-05-20 14:21:14" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="45619" id_instrument="103" date="2016-05-18 08:30:47" id_instrument_status_dict="1" id_user="77" user="ls7" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="45618" id_instrument="103" date="2016-05-18 08:30:47" id_instrument_status_dict="4" id_user="77" user="ls7" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="45193" id_instrument="103" date="2016-04-27 12:05:59" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="45028" id_instrument="103" date="2016-04-18 08:18:54" id_instrument_status_dict="1" id_user="77" user="ls7" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="45027" id_instrument="103" date="2016-04-18 08:18:54" id_instrument_status_dict="4" id_user="77" user="ls7" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="43299" id_instrument="103" date="2016-01-27 10:07:29" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="43284" id_instrument="103" date="2016-01-26 09:19:05" id_instrument_status_dict="1" id_user="77" user="ls7" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="43283" id_instrument="103" date="2016-01-26 09:19:05" id_instrument_status_dict="4" id_user="77" user="ls7" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="43250" id_instrument="103" date="2016-01-22 21:36:33" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="43244" id_instrument="103" date="2016-01-22 10:51:56" id_instrument_status_dict="1" id_user="77" user="ls7" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="43243" id_instrument="103" date="2016-01-22 10:51:56" id_instrument_status_dict="4" id_user="77" user="ls7" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="40896" id_instrument="103" date="2015-09-24 21:55:26" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="40893" id_instrument="103" date="2015-09-24 15:08:16" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="40892" id_instrument="103" date="2015-09-24 15:08:16" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="34379" id_instrument="103" date="2014-12-10 14:34:14" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="34368" id_instrument="103" date="2014-12-10 09:12:16" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="34367" id_instrument="103" date="2014-12-10 09:12:16" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="33792" id_instrument="103" date="2014-11-14 10:06:21" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="33758" id_instrument="103" date="2014-11-12 15:15:23" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="33757" id_instrument="103" date="2014-11-12 15:15:23" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="33670" id_instrument="103" date="2014-11-09 10:36:24" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="33662" id_instrument="103" date="2014-11-08 10:27:34" id_instrument_status_dict="1" id_user="56" user="sh2" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="33661" id_instrument="103" date="2014-11-08 10:27:34" id_instrument_status_dict="4" id_user="56" user="sh2" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="33660" id_instrument="103" date="2014-11-08 09:10:44" id_instrument_status_dict="11" id_user="11" user="tkb" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="29246" id_instrument="103" date="2014-05-08 12:53:10" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update : unwashed for over 28 days" />
+ <instrument_status id_instrument_status="29245" id_instrument="103" date="2014-05-08 12:47:23" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="29230" id_instrument="103" date="2014-05-07 17:28:09" id_instrument_status_dict="5" id_user="37" user="mg19" iscurrent="0" description="request approval" comment="New Z-stage and board installed. Optics and fluidics checked" />
+ <instrument_status id_instrument_status="28949" id_instrument="103" date="2014-04-23 11:04:00" id_instrument_status_dict="8" id_user="37" user="mg19" iscurrent="0" description="down for repair" comment="Z-stage error" />
+ <instrument_status id_instrument_status="28669" id_instrument="103" date="2014-04-10 08:07:48" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="28662" id_instrument="103" date="2014-04-09 14:05:15" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="28608" id_instrument="103" date="2014-04-07 14:29:33" id_instrument_status_dict="5" id_user="37" user="mg19" iscurrent="0" description="request approval" comment="Stage rebuilt, test run completed without focus problems" />
+ <instrument_status id_instrument_status="28305" id_instrument="103" date="2014-03-26 11:01:54" id_instrument_status_dict="8" id_user="37" user="mg19" iscurrent="0" description="down for repair" comment="Intermittent out of focus tiles" />
+ <instrument_status id_instrument_status="28223" id_instrument="103" date="2014-03-21 12:37:45" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="28222" id_instrument="103" date="2014-03-21 12:21:58" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="" />
+ <instrument_status id_instrument_status="28146" id_instrument="103" date="2014-03-18 14:19:05" id_instrument_status_dict="5" id_user="37" user="mg19" iscurrent="0" description="request approval" comment="M3 mirror sensor replaced" />
+ <instrument_status id_instrument_status="28145" id_instrument="103" date="2014-03-18 14:18:46" id_instrument_status_dict="8" id_user="37" user="mg19" iscurrent="0" description="down for repair" comment="M3 mirror sensor error" />
+ <instrument_status id_instrument_status="28115" id_instrument="103" date="2014-03-17 05:40:27" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="28100" id_instrument="103" date="2014-03-16 09:26:02" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="28099" id_instrument="103" date="2014-03-16 09:26:02" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="Tween,Bleach and water washed." />
+ <instrument_status id_instrument_status="28088" id_instrument="103" date="2014-03-15 18:25:41" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="28083" id_instrument="103" date="2014-03-15 13:33:30" id_instrument_status_dict="1" id_user="33" user="ajw" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="28082" id_instrument="103" date="2014-03-15 13:33:30" id_instrument_status_dict="4" id_user="33" user="ajw" iscurrent="0" description="wash performed" comment="wsh performed" />
+ <instrument_status id_instrument_status="23346" id_instrument="103" date="2013-08-30 08:02:34" id_instrument_status_dict="11" id_user="56" user="sh2" iscurrent="0" description="wash in progress" comment="" />
+ <instrument_status id_instrument_status="21179" id_instrument="103" date="2013-05-21 01:42:56" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+ <instrument_status id_instrument_status="21173" id_instrument="103" date="2013-05-20 16:02:12" id_instrument_status_dict="1" id_user="11" user="tkb" iscurrent="0" description="up" comment="automatic status update" />
+ <instrument_status id_instrument_status="21172" id_instrument="103" date="2013-05-20 16:02:12" id_instrument_status_dict="4" id_user="11" user="tkb" iscurrent="0" description="wash performed" comment="" />
+ <instrument_status id_instrument_status="14917" id_instrument="103" date="2012-04-23 15:38:15" id_instrument_status_dict="3" id_user="7" user="pipeline" iscurrent="0" description="wash required" comment="automatic status update" />
+</instrument_statuses>
+<instrument_mods>
+ <instrument_mod id_instrument_mod="1096" id_instrument="103" type="MCS" revision="v2.1" date_added="2013-02-26 14:39:50" date_removed="" operator="mg19" iscurrent="1" />
+ <instrument_mod id_instrument_mod="1097" id_instrument="103" type="RTA" revision="1.17.25 low diversity" date_added="2013-02-26 14:42:30" date_removed="" operator="mg19" iscurrent="1" />
+ <instrument_mod id_instrument_mod="1101" id_instrument="103" type="RTA" revision="1.17.28 low diversity" date_added="2013-03-15 17:18:40" date_removed="" operator="mg19" iscurrent="1" />
+ <instrument_mod id_instrument_mod="1149" id_instrument="103" type="MCS" revision="2.3" date_added="2013-09-24 14:47:14" date_removed="" operator="mg19" iscurrent="1" />
+ <instrument_mod id_instrument_mod="1231" id_instrument="103" type="MCS" revision="v2.5" date_added="2014-11-21 09:46:45" date_removed="" operator="mg19" iscurrent="1" />
+</instrument_mods>
+<designations>
+ <designation id_designation="2" description="R&amp;D" />
+ <designation id_designation="4" description="Accepted" />
+</designations>
+</instrument>

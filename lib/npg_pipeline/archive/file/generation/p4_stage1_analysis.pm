@@ -81,7 +81,14 @@ sub _save_arguments {
   my ($self, $job_id) = @_;
   my $file_name = join q[_], $self->job_name_root, $job_id;
   $file_name = join q[/], $self->bam_basecall_path, $file_name;
-  write_file($file_name, encode_json $self->_job_args->{_commands});
+  if($self->verbose) { $self->log(qq[Arguments will be written to $file_name]); }
+  my ($ja,$commands);
+  if($ja=$self->_job_args and defined $ja->{_commands} and $commands = encode_json $self->_job_args->{_commands}) {
+    write_file($file_name, $commands);
+  }
+  else {
+    croak q[Failed to generate commands for saving to arguments file ], $file_name;
+  }
   if($self->verbose) {
     $self->log(qq[Arguments written to $file_name]);
   }
@@ -388,6 +395,8 @@ sub _generate_command_params {
   }
 
 
+  my $splice_flag = q[];
+  my $prune_flag = q[];
   if($self->is_multiplexed_lane($position)) {
     if (!$tag_list_file) {
       croak 'Tag list file path should be defined for multiplexed lane ', $position;
@@ -405,9 +414,10 @@ sub _generate_command_params {
   }
   else {
     $self->log(q{P4 stage1 analysis on non-plexed lane});
-    # This should avoid using BamIndexDecoder or attempting to split a non-muliplexed lane.
-    $p4_params{bid_opt} = q[passthrough]; # don't do bamindexdecoding
-    $p4_params{fs1p} = q[final_stage1_process_nosplit.json]; # no plex splitting
+
+    # This will avoid using BamIndexDecoder or attempting to split a non-muliplexed lane.
+    $splice_flag = q[-splice_nodes '"'"'bamadapterfind:-bamcollate:'"'"'];
+    $prune_flag = q[-prune_nodes '"'"'fs1p_tee_split:__SPLIT_BAM_OUT__-'"'"'];
   }
 
   if(!$self->is_paired_read) {
@@ -422,9 +432,22 @@ sub _generate_command_params {
   my $samtobam_slots = $self->general_values_conf()->{'p4_stage1_samtobam_slots'} || q[`npg_pipeline_job_env_to_threads --exclude -1 --divide 3`];
   my $bamsormadup_slots = $self->general_values_conf()->{'p4_stage1_bamsort_slots'} || q[`npg_pipeline_job_env_to_threads --divide 3`];
   my $bamrecompress_slots = $self->general_values_conf()->{'p4_stage1_bamrecompress_slots'} || q[`npg_pipeline_job_env_to_threads`];
+
+  my $i2b_implementation_flag = q[];
+  if(my $val = $self->general_values_conf()->{'p4_stage1_i2b_implementation'}) {
+    $p4_params{i2b_implementation} = $val;
+  }
+
+  my $bid_implementation_flag = q[];
+  if(my $val = $self->general_values_conf()->{'p4_stage1_bid_implementation'}) {
+    $p4_params{bid_implementation} = $val;
+  }
+
+
   $self->_job_args->{_commands}->{$position} = join q( ), q(bash -c '),
                            q(cd), $self->p4_stage1_errlog_paths->{$position}, q{&&},
                            q(vtfp.pl),
+                           $splice_flag, $prune_flag,
                            qq(-o run_$name_root.json),
                            q(-param_vals), (join q{/}, $self->p4_stage1_params_paths->{$position}, $name_root.q{_p4s1_pv_in.json}),
                            q(-export_param_vals), $name_root.q{_p4s1_pv_out_$}.q/{LSB_JOBID}.json/,
@@ -433,6 +456,8 @@ sub _generate_command_params {
                            qq(-keys s2b_mt_val -vals $samtobam_slots),
                            qq(-keys bamsormadup_numthreads -vals $bamsormadup_slots),
                            qq(-keys br_numthreads_val -vals $bamrecompress_slots),
+                           $i2b_implementation_flag,
+                           $bid_implementation_flag,
                            q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/bcl2bam_phix_deplex_wtsi_stage1_template.json},
                            q{&&},
                            qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json),
