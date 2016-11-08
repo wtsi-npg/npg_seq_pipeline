@@ -350,6 +350,9 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   if($l->contains_nonconsented_human) { $self->log(q[  nonconsented_humansplit]) }
   if(not $self->is_paired_read) { $self->log(q[  single-end]) }
   $self->log(q[  do_target_alignment is ] . ($do_target_alignment? q[true]: q[false]));
+  $self->log(q[  spike_tag is ] . ($spike_tag? q[true]: q[false]));
+  $self->log(q[  human_split is ] . $human_split);
+  $self->log(q[  nchs is ] . ($nchs? q[true]: q[false]));
   $self->log(q[  p4 parameters written to ] . $param_vals_fname);
   $self->log(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
@@ -375,18 +378,22 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                        qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
                        q{&&},
                        _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex),
+                       (grep {$_}
                        ((not $spike_tag)? (join q( ),
-                       q{&&},
-                       _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, 'phix'),
-                       ) : ()),
-                       q{&&},
+                         q{&&},
+                         _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, 'phix'),
+                         q{&&},
+                         _qc_command('alignment_filter_metrics', undef, $qcpath, $l, $is_plex),
+                       ) : q()),
                        $human_split ? join q( ),
-                       _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, $human_split),
-                       q{&&} : q(),
+                         q{&&},
+                         _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, $human_split),
+                         : q(),
                        $nchs ? join q( ),
+                         q{&&},
                          _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, $nchs_outfile_label),
-                         q{&&} : q(),
-                       _qc_command('alignment_filter_metrics', undef, $qcpath, $l, $is_plex),
+                         : q(),
+                       ),
                      q(');
 }
 
