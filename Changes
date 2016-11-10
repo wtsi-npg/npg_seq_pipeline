@@ -1,11 +1,7 @@
 LIST OF CHANGES
 ---------------
 
- - Replaced the original log role with the one from DNAP utilities, which provides
-   a Log4perl logger and some convenience methods. All the original log statements
-   were at the same "level", no ethey are split into INFO, WARN and ERROR. Replaced
-   croak with logcroak. '--verbose' mode activates DEBUG level.
-
+ - update p4 stage 2 (seq_alignment) to handle all cases (e.g. no target alignment, spike tag)
  - support generation of targeted stats files in seq_alignment.pm with p4
  - qc jobs creation, can_run, check object instantiation:
      do not supply path/qc_in, which is now optional
@@ -14,6 +10,7 @@ LIST OF CHANGES
     in p4 stage 1 via general_values.ini
  - add Broad Institute's RNA-SeQC to list of autoqc checks
  - run bam_flagstats autoqc check via the qc script
+ - tweak for targeted stats files and also human split
 
 release 51.2
  - patch to script_must_be_unique_runner - only ignore exact matches to the job id
