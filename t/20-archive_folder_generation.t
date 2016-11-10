@@ -2,12 +2,19 @@ use strict;
 use warnings;
 use Test::More tests => 4;
 use Test::Exception;
+use Log::Log4perl qw(:levels);
 use t::util;
 
 use_ok('npg_pipeline::archive::folder::generation');
 
 my $util = t::util->new();
-$ENV{TEST_DIR} = $util->temp_directory();
+my $tdir = $util->temp_directory();
+$ENV{TEST_DIR} = $tdir;
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $tdir, 'logfile'),
+                          utf8   => 1});
 
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};

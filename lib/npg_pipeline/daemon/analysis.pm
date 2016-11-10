@@ -10,8 +10,6 @@ use npg_tracking::util::abs_path qw/abs_path/;
 
 extends qw{npg_pipeline::daemon};
 
-with qw{WTSI::DNAP::Utilities::Loggable};
-
 our $VERSION = '0';
 
 Readonly::Scalar my $PIPELINE_SCRIPT        => q{npg_pipeline_central};

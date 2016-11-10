@@ -3,6 +3,7 @@ use warnings;
 use Test::More tests => 58;
 use Test::Deep;
 use Test::Exception;
+use Log::Log4perl qw(:levels);
 use t::util;
 use t::dbic_util;
 
@@ -11,8 +12,13 @@ local $ENV{http_proxy} = 'http://wibble';
 local $ENV{no_proxy}   = q[];
 
 my $util = t::util->new();
+my $tdir = $util->temp_directory();
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $tdir, 'logfile'),
+                          utf8   => 1});
 
-$ENV{TEST_DIR} = $util->temp_directory();
+$ENV{TEST_DIR} = $tdir;
 
 use_ok('npg_pipeline::pluggable::harold');
 

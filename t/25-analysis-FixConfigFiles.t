@@ -4,8 +4,15 @@ use Test::More tests => 11;
 use Test::Exception;
 use File::Slurp;
 use File::Temp qw{ tempdir };
+use Log::Log4perl qw(:levels);
 
 use t::dbic_util;
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], tempdir(CLEANUP => 1), 'logfile'),
+                          utf8   => 1});
+
 my $schema = t::dbic_util->new()->test_schema;
 
 use_ok( q{npg_pipeline::analysis::FixConfigFiles} );

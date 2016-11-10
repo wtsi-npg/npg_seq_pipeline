@@ -6,8 +6,6 @@ use Try::Tiny;
 
 extends qw{npg_pipeline::daemon};
 
-with qw{WTSI::DNAP::Utilities::Loggable};
-
 our $VERSION = '0';
 
 Readonly::Scalar our $POST_QC_REVIEW_SCRIPT => q{npg_pipeline_post_qc_review};

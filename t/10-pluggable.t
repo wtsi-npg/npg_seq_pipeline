@@ -3,6 +3,7 @@ use warnings;
 use Test::More tests => 21;
 use Test::Exception;
 use Cwd;
+use Log::Log4perl qw(:levels);
 use t::util;
 
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
@@ -14,6 +15,11 @@ my $test_dir = $util->temp_directory();
 $ENV{TEST_DIR} = $test_dir;
 $ENV{OWNING_GROUP} = q{staff};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $test_dir, 'logfile'),
+                          utf8   => 1});
 
 {
   my $pluggable = npg_pipeline::pluggable->new(

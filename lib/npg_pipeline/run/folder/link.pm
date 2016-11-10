@@ -88,11 +88,10 @@ npg_pipeline::run::folder::link
 
 =head1 SYNOPSIS
 
-  my $rfl = npg_pipeline::run::folder::link->new({
+  my $rfl = npg_pipeline::run::folder::link->new(
     run_folder    => <run_folder>,
-    folder        => <analysis/outgoing>, # defaults to analysis
     analysis_path => q{Data/Intensities/Bustard_dir/GERALD_dir}, # required if you want to override any existing link
-  });
+  );
 
 =head1 DESCRIPTION
 
@@ -149,7 +148,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2016 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

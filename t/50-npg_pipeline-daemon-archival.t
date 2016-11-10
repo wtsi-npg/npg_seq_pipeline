@@ -4,19 +4,22 @@ use Test::More tests => 19;
 use Test::Exception;
 use Cwd;
 use List::MoreUtils qw{any};
-use Log::Log4perl qw(:easy);
+use Log::Log4perl qw(:levels);
 
 use t::dbic_util;
 use t::util;
 
-Log::Log4perl->easy_init($ERROR);
+my $util = t::util->new();
+my $temp_directory = $util->temp_directory();
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $temp_directory, 'logfile'),
+                          utf8   => 1});
 
 my $script_name = q[npg_pipeline_post_qc_review];
 
 use_ok('npg_pipeline::daemon::archival');
-
-my $util = t::util->new();
-my $temp_directory = $util->temp_directory();
 
 my $script = join q[/],  $temp_directory, $script_name;
 `touch $script`;

@@ -5,23 +5,26 @@ use Test::Exception;
 use Cwd;
 use File::Path qw{ make_path };
 use List::MoreUtils qw{ any };
-use Log::Log4perl qw{ :easy };
+use Log::Log4perl qw{ :levels };
 use English qw{ -no_match_vars };
 
 use t::util;
 use t::dbic_util;
 
-$ENV{'http_proxy'} = 'http://wibble.com'.
+$ENV{'http_proxy'} = 'http://wibble.com';
+my $util = t::util->new();
+my $temp_directory = $util->temp_directory();
 
-Log::Log4perl->easy_init($INFO);
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $temp_directory, 'logfile'),
+                          utf8   => 1});
 
 my $package = 'npg_pipeline::daemon::analysis';
 my $script_name = q[npg_pipeline_central];
 
 use_ok($package);
 
-my $util = t::util->new();
-my $temp_directory = $util->temp_directory();
 my $script = join q[/],  $temp_directory, $script_name;
 `touch $script`;
 `chmod +x $script`;
