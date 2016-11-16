@@ -18,10 +18,8 @@ use npg::api::request;
 use npg::api::run;
 use npg::api::run_status_dict;
 use st::api::lims;
-use st::api::lims::warehouse;
-use st::api::lims::ml_warehouse;
-use npg_warehouse::Schema;
-use WTSI::DNAP::Warehouse::Schema;
+#use st::api::lims::ml_warehouse;
+#use WTSI::DNAP::Warehouse::Schema;
 use npg::samplesheet;
 
 with qw/

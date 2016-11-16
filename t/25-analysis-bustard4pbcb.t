@@ -115,7 +115,7 @@ sub set_staging_analysis_area {
       timestamp    => '20091028-101635',
       script_path  => 'none',
   );
-  throws_ok { $bustard->bustard_dir } qr/sh: none: command not found/, 'error when bustard command not found';
+  throws_ok { $bustard->bustard_dir } qr/ not found/, 'error when bustard command not found';
 
   $bustard = npg_pipeline::analysis::bustard4pbcb->new(
       id_run => 1234,

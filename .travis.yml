@@ -1,0 +1,25 @@
+sudo: required
+
+language: perl
+
+perl:
+  - "5.16"
+
+addons:
+  apt:
+    packages:
+    - libgd2-xpm-dev
+
+env:
+  global:
+    - WTSI_NPG_GITHUB_URL=https://github.com/wtsi-npg
+    - WTSI_NPG_BUILD_BRANCH=devel
+
+before_install:
+  - ./scripts/travis_before_install.sh
+
+install:
+  - ./scripts/travis_install.sh
+
+script:
+  - ./scripts/travis_script.sh
