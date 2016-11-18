@@ -18,10 +18,6 @@ use npg::api::request;
 use npg::api::run;
 use npg::api::run_status_dict;
 use st::api::lims;
-use st::api::lims::warehouse;
-use st::api::lims::ml_warehouse;
-use npg_warehouse::Schema;
-use WTSI::DNAP::Warehouse::Schema;
 use npg::samplesheet;
 
 with qw/
@@ -98,7 +94,8 @@ has 'wh_schema'  => (isa        => 'npg_warehouse::Schema',
                      required   => 0,
                      lazy_build => 1,);
 sub _build_wh_schema {
-  my $self = shift;
+  require npg_warehouse::Schema;
+  require st::api::lims::warehouse;
   return npg_warehouse::Schema->connect();
 }
 
@@ -114,6 +111,7 @@ has q{mlwh_schema} => (
                 required   => 0,
                 lazy_build => 1,);
 sub _build_mlwh_schema {
+  require WTSI::DNAP::Warehouse::Schema;
   return WTSI::DNAP::Warehouse::Schema->connect();
 }
 

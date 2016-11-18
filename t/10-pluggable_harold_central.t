@@ -23,7 +23,7 @@ foreach my $tool (($sp, $java)) {
   `touch $tool`;
   `chmod +x $tool`;
 }
-local $ENV{PATH} = join q[:], $tdir, qq[$cwd/t/bin], $ENV{PATH};
+local $ENV{PATH} = join q[:], $tdir, qq[$cwd/t/bin],  qq[$cwd/t/bin/software/solexa/bin], $ENV{PATH};
 
 my $central = q{npg_pipeline::pluggable::harold::central};
 use_ok($central);
