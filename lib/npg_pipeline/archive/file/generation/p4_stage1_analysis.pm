@@ -409,7 +409,7 @@ sub _generate_command_params {
     my $num_of_plexes_per_lane = $self->_get_number_of_plexes_excluding_control($lane_lims);
     if($num_of_plexes_per_lane == 1) {
       $p4_params{$bid_flag_map{q/MAX_NO_CALLS/}} = $self->general_values_conf()->{single_plex_decode_max_no_calls};
-      $p4_params{$bid_flag_map{q/CONVERT_LOW_QUALITY_TO_NO_CALL/}} = q[true];
+      $p4_params{bid_convert_low_quality_to_no_call_flag} = q[--convert-low-quality];
     }
   }
   else {
@@ -438,11 +438,9 @@ sub _generate_command_params {
     $p4_params{i2b_implementation} = $val;
   }
 
-  my $bid_implementation_flag = q[];
-  if(my $val = $self->general_values_conf()->{'p4_stage1_bid_implementation'}) {
-    $p4_params{bid_implementation} = $val;
-  }
-
+# the way the CONVERT_LOW_QUALITY_TO_NO_CALL/--convert-low-quality flag is currently handled will only work for bambi decode.
+#  So I'll fix bid_implementation to that
+  $p4_params{bid_implementation} = q[bambi];
 
   $self->_job_args->{_commands}->{$position} = join q( ), q(bash -c '),
                            q(cd), $self->p4_stage1_errlog_paths->{$position}, q{&&},
@@ -457,7 +455,6 @@ sub _generate_command_params {
                            qq(-keys bamsormadup_numthreads -vals $bamsormadup_slots),
                            qq(-keys br_numthreads_val -vals $bamrecompress_slots),
                            $i2b_implementation_flag,
-                           $bid_implementation_flag,
                            q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/bcl2bam_phix_deplex_wtsi_stage1_template.json},
                            q{&&},
                            qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json),
