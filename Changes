@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - test and dcode fixes to ensure problem-free tests under Perl 5.22.2
+
 release 51.5
  - update p4 stage 2 (seq_alignment) to handle all cases (e.g. no target alignment, spike tag)
  - support generation of targeted stats files in seq_alignment.pm with p4
