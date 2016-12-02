@@ -7,6 +7,7 @@ use File::Temp qw/tempdir/;
 use Cwd qw/cwd abs_path/;
 use Perl6::Slurp;
 use File::Copy;
+use JSON;
 
 use_ok('npg_pipeline::archive::file::generation::seq_alignment');
 local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/rna_seq];
@@ -130,7 +131,8 @@ subtest 'test 1' => sub {
   lives_ok{$fname = $rna_gen->_save_arguments(55)} 'writing args to a file without error';
   is ($fname, $bc_path. q{/seq_alignment_12597_2014_55}, 'file name correct');
   ok (-e $fname, 'file exists');
-  my @lines = slurp($fname);
+  my $actual_json = slurp($fname);
+  my $actual_hash = decode_json $actual_json;
 
   my $json = qq({"40003":"bash -c ' mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 && vtfp.pl -param_vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#3_p4s2_pv_in.json -export_param_vals 12597_4#3_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` -prune_nodes '\\"'\\"'fop.*samtools_stats_F0.*00_bait.*'\\"'\\"' \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#3.json && viv.pl -s -x -v 3 -o viv_12597_4#3.log run_12597_4#3.json ) .
     qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --tag_index 3} .
@@ -142,7 +144,8 @@ subtest 'test 1' => sub {
      q{ && qc --check alignment_filter_metrics --id_run 12597 --position 4 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
   q( '"});
 
-  cmp_deeply(\@lines, [$json ], 'correct json file content (for dUTP library)');
+  my $expected_hash = decode_json $json;
+  cmp_deeply($actual_hash, $expected_hash, 'correct json file content (for dUTP library)');
 
   #### force on phix_split
   lives_ok {
