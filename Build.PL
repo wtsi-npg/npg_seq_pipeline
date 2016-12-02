@@ -91,7 +91,6 @@ my $builder = $class->new(
           'Sys::Hostname'               => 0,
           'Test::Deep'                  => 0,
           'Test::Exception'             => 0,
-          'Test::Exception::LessClever' => 0,
           'Test::Differences'           => 0,
           'Test::More'                  => '0.8',
           'Test::Perl::Critic'          => 0,
