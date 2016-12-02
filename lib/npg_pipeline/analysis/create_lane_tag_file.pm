@@ -249,7 +249,7 @@ sub _check_tag_length {
           croak qq{Padded sequence for spiked Phix $spiked_phix_padded is shorter than longest tag length of $max_length};
 	}
         $self->_log( q{Yes - pad shortest tag to length of longest tag} );
-        @indexed_length_tags = map { length($_) < $max_length ? substr $spiked_phix_padded, 0, $max_length : $_ } @indexed_length_tags;
+        @indexed_length_tags = map { length $_ < $max_length ? substr $spiked_phix_padded, 0, $max_length : $_ } @indexed_length_tags;
         $tags_ok = 1;
       } else {
         $self->_log( q{No} . " tag_index=$tag_index spiked_phix_tag_index=" . ($spiked_phix_tag_index ? $spiked_phix_tag_index : q{}) );

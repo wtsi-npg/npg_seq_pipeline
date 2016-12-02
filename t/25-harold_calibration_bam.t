@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More tests => 39;
-use Test::Exception::LessClever;
+use Test::Exception;
 use t::util;
 use Cwd;
 
@@ -38,7 +38,7 @@ my $config_path    = qq{$runfolder_path/Config};
 sub set_staging_analysis_area {
   `rm -rf /tmp/nfs/sf45`;
   `mkdir -p $bustard_rta`;
-  `mkdir $config_path`;
+  `mkdir -p $config_path`;
   `cp t/data/Recipes/Recipe_GA2_37Cycle_PE_v6.1.xml $runfolder_path/`;
   `cp t/data/Recipes/TileLayout.xml $config_path/`;
   return 1;
