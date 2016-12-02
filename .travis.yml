@@ -4,6 +4,7 @@ language: perl
 
 perl:
   - "5.16"
+  - "5.22-shrplib"
 
 addons:
   apt:
@@ -13,7 +14,6 @@ addons:
 env:
   global:
     - WTSI_NPG_GITHUB_URL=https://github.com/wtsi-npg
-    - WTSI_NPG_BUILD_BRANCH=devel
 
 before_install:
   - ./scripts/travis_before_install.sh
