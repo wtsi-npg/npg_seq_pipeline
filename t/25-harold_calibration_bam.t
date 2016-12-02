@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More tests => 39;
-use Test::Exception::LessClever;
+use Test::Exception;
 use t::util;
 use Cwd;
 
