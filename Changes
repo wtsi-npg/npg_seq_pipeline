@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
 
  - test and code fixes to ensure problem-free tests under Perl 5.22.2
+ - tweak to qc_report_dir in bsub command for one library per lane case
 
 release 51.5
  - update p4 stage 2 (seq_alignment) to handle all cases (e.g. no target alignment, spike tag)
