@@ -193,7 +193,7 @@ sub get_tag_index_list {
   if (!$self->is_multiplexed_lane($position)) {
     return [];
   }
-  my @tags = sort keys $self->_lims4lane($position)->tags();
+  my @tags = sort keys %{$self->_lims4lane($position)->tags()};
   unshift @tags, 0;
   return \@tags;
 }

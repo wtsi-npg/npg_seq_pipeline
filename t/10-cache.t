@@ -87,8 +87,11 @@ for my $type (qw/warehouse mlwarehouse/) {
   is( scalar @{$clims}, 2, 'two lims objects returned');
   is( $clims->[0]->driver_type, 'ml_warehouse', 'correct driver type');
 
-  my $oldwh_schema = t::dbic_util->new()->test_schema_wh('t/data/fixtures/wh');
+  eval { require st::api::lims::warehouse; };
+  SKIP: {
+    skip 'Old warehouse is now obsolete', 7 if $@;
 
+  my $oldwh_schema = t::dbic_util->new()->test_schema_wh('t/data/fixtures/wh');
   $cache = npg_pipeline::cache->new(id_flowcell_lims => '3980331130775',
                                     wh_schema        => $oldwh_schema,
                                     id_run           => 12376,
@@ -117,6 +120,7 @@ for my $type (qw/warehouse mlwarehouse/) {
   throws_ok { $clims = $cache->lims() }
     qr/Single tube not found from barcode 271901/,
     'cannot retrieve lims objects';
+  } # end skip
 }
 
 {

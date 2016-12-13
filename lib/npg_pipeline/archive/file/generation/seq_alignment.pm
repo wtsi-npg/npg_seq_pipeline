@@ -208,9 +208,15 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $qcpath       = $self->lane_qc_path($position);
   }
 
-  $self->logcroak qq{Only one of nonconsented X and autosome human split, separate Y chromosome data, and nonconsented human split may be specified ($name_root)} if (1 < sum $l->contains_nonconsented_xahuman, $l->separate_y_chromosome_data, $l->contains_nonconsented_human);
-  $self->logcroak qq{Nonconsented X and autosome human split, and separate Y chromosome data, must have Homo sapiens reference ($name_root)} if (($l->contains_nonconsented_xahuman or $l->separate_y_chromosome_data) and not $l->reference_genome=~/Homo_sapiens/smx );
-  $self->logcroak qq{Nonconsented human split must not have Homo sapiens reference ($name_root)} if ($l->contains_nonconsented_human and $l->reference_genome and $l->reference_genome=~/Homo_sapiens/smx );
+  if (1 < sum $l->contains_nonconsented_xahuman, $l->separate_y_chromosome_data, $l->contains_nonconsented_human) {
+    $self->logcroak(qq{Only one of nonconsented X and autosome human split, separate Y chromosome data, and nonconsented human split may be specified ($name_root)});
+  }
+  if (($l->contains_nonconsented_xahuman or $l->separate_y_chromosome_data) and not $l->reference_genome=~/Homo_sapiens/smx ) {
+    $self->logcroak(qq{Nonconsented X and autosome human split, and separate Y chromosome data, must have Homo sapiens reference ($name_root)});
+  }
+  if ($l->contains_nonconsented_human and $l->reference_genome and $l->reference_genome=~/Homo_sapiens/smx ) {
+    $self->logcroak(qq{Nonconsented human split must not have Homo sapiens reference ($name_root)});
+  }
 
   ####################################
   # base set of parameters for p4 vtfp
@@ -283,8 +289,8 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($l,q(fasta));
   }
   if($nchs) {
-    $p4_param_vals->{reference_dict_hs} = _default_human_split_ref(q{picard}, $self->repository);   # always human default
-    $p4_param_vals->{hs_reference_genome_fasta} = _default_human_split_ref(q{fasta}, $self->repository);   # always human default
+    $p4_param_vals->{reference_dict_hs} = $self->_default_human_split_ref(q{picard}, $self->repository);   # always human default
+    $p4_param_vals->{hs_reference_genome_fasta} = $self->_default_human_split_ref(q{fasta}, $self->repository);   # always human default
   }
 
   # handle targeted stats_(bait_stats_analysis) here, handling the interaction with spike tag case
@@ -311,7 +317,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $p4_param_vals->{alignment_method} = q[tophat2];
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bowtie2)); }
     if($nchs) {
-      $p4_param_vals->{hs_alignment_reference_genome} = _default_human_split_ref(q{bowtie2}, $self->repository);
+      $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bowtie2}, $self->repository);
       $p4_param_vals->{alignment_hs_method} = q[tophat2];
     }
   }
@@ -321,7 +327,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $p4_param_vals->{alignment_method} = $bwa;
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bwa0_6)); }
     if($nchs) {
-      $p4_param_vals->{hs_alignment_reference_genome} = _default_human_split_ref(q{bwa0_6}, $self->repository);
+      $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
       $p4_param_vals->{alignment_hs_method} = $hs_bwa;
     }
   }
@@ -436,7 +442,7 @@ sub _generate_command_arguments {
 
     my $lane_lims = $lane_lims_all->{$position};
     if (!$lane_lims) {
-      $self->debyg(qq{No lims object for position $position});
+      $self->debug(qq{No lims object for position $position});
       next;
     }
     if ( $self->is_indexed and $lane_lims->is_pool ) { # does the run have an indexing read _and_ does the LIMS have pool information : if so do plex level analyses
@@ -591,14 +597,13 @@ sub _default_human_split_ref {
                        } );
 
    my $human_ref;
-   eval {
+   try {
       $human_ref = $ruser->refs->[0];
       if($aligner eq q{picard}) {
         $human_ref .= q{.dict};
       }
-      1;
-   } or do{
-      carp $EVAL_ERROR;
+   } catch {
+      $self->error('Error getting default human split reference ' . $_);
    };
 
    return $human_ref;

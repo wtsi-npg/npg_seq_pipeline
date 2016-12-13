@@ -78,7 +78,7 @@ sub _archive_to_irods {
   my ($self, $required_job_completion, @extra_to_irods_attributes) = @_;
 
   if ($self->no_irods_archival) {
-    $self->log(q{Archival to iRODS is switched off.});
+    $self->info(q{Archival to iRODS is switched off.});
     return ();
   }
 
@@ -243,6 +243,7 @@ sub _update_warehouse_command {
   }
   my $out = join q{_}, $job_name, $self->timestamp . q{.out};
   $out =  File::Spec->catfile($path, $out);
+  $required_job_completion ||= q[];
   return q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name -o $out $prereq '$command'};
 }
 
