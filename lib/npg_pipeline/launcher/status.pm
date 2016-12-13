@@ -53,8 +53,9 @@ sub submit {
 # responsible for generating the bsub command to be executed
 sub _generate_bsub_command {
   my ($self, $required_job_completion) = @_;
-  my $timestamp = $self->timestamp();
 
+  $required_job_completion ||= q[];
+  my $timestamp = $self->timestamp();
   my $run_folder = $self->run_folder();
   my $status     = $self->status();
   my $id_run     = $self->id_run();
@@ -68,9 +69,8 @@ sub _generate_bsub_command {
   $bsub_command   .=  q{-o } . $self->status_files_path . q{/log/} . qq{$job_name.out };
   $bsub_command   .=  q{'}   . $self->_command . q{'};
 
-  if ($self->verbose()) {
-    $self->log($bsub_command);
-  }
+  $self->debug($bsub_command);
+
   return $bsub_command;
 }
 

@@ -21,9 +21,9 @@ sub run {
   foreach my $run ($self->runs_with_status($ARCHIVAL_PENDING)) {
     my $id_run = $run->id_run();
     try {
-      $self->logger->info(qq{Considering run $id_run});
+      $self->info(qq{Considering run $id_run});
       if ($self->seen->{$id_run}) {
-        $self->logger->info(qq{Already seen run $id_run, skipping...});
+        $self->info(qq{Already seen run $id_run, skipping...});
       } else {
         if ( $self->staging_host_match($run->folder_path_glob)) {
           my $lims = $self->check_lims_link($run);
@@ -31,7 +31,7 @@ sub run {
         }
       }
     } catch {
-      $self->logger->error("Error processing run ${id_run}: $_");
+      $self->error("Error processing run ${id_run}: $_");
     };
   }
 
@@ -41,7 +41,7 @@ sub run {
 sub _generate_command {
   my ($self, $id_run, $gclp) = @_;
 
-  $self->logger->info($gclp ? 'GCLP run' : 'Non-GCLP run');
+  $self->info($gclp ? 'GCLP run' : 'Non-GCLP run');
 
   my $cmd = $self->pipeline_script_name();
   $cmd = $cmd . ($gclp ? q{ --function_list gclp} : q());

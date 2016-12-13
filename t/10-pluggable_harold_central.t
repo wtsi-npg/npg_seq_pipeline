@@ -4,6 +4,7 @@ use Test::More tests => 32;
 use Test::Exception;
 use Cwd qw/getcwd/;
 use List::MoreUtils qw/ any none /;
+use Log::Log4perl qw(:levels);
 
 use t::util;
 
@@ -13,6 +14,12 @@ local $ENV{no_proxy} = q[];
 my $util = t::util->new();
 my $cwd = getcwd();
 my $tdir = $util->temp_directory();
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $tdir, 'logfile'),
+                          utf8   => 1});
+
 local $ENV{TEST_DIR} = $tdir;
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{TEST_FS_RESOURCE} = q{nfs_12};
@@ -175,8 +182,8 @@ mkdir $rf;
       timestamp => '22-May',
   };
   my $pb;
-  lives_ok { $pb = $central->new($init); }
-    q{no croak on creation of a flattened runfolder};
+  lives_ok { $pb = $central->new($init); $pb->_set_paths() }
+    q{no error on object creation and analysis paths set for a flattened runfolder};
   is ($pb->intensity_path, $rf, 'intensities path is set to runfolder');
   is ($pb->basecall_path, $rf, 'basecall path is set to runfolder');
   is ($pb->bam_basecall_path, join(q[/],$rf,q{BAM_basecalls_22-May}), 'bam basecall path is created');
@@ -202,9 +209,9 @@ mkdir $rf;
                      no_bsub => 1,
                      run_folder => 'myfolder',
                      runfolder_path => $rf,
-                   )
-           }
-     q{no croak on creation of an object};
+                   );
+             $pb->_set_paths();
+           } q{no error on object creation and analysis paths set};
   ok (!$pb->illumina_basecall_stats, 'illumina_basecall_stats step is skipped for HiSeqX run');
 }
 

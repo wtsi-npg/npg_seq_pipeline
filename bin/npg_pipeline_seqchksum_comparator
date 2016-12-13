@@ -4,10 +4,16 @@ use strict;
 use warnings;
 use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use Log::Log4perl qw(:levels);
 
 our $VERSION = '0';
 
 use npg_pipeline::archive::file::generation::seqchksum_comparator;
+
+my $layout = '%d %-5p %c - %m%n';
+Log::Log4perl->easy_init({layout => $layout,
+                          level  => $INFO,
+                          utf8   => 1});
 
 npg_pipeline::archive::file::generation::seqchksum_comparator->new_with_options()->do_comparison();
 
@@ -50,7 +56,10 @@ bam_basecall_path
 
 =head1 DESCRIPTION
 
-Bamcat any plex/split bamfiles back together, perform a bamseqchksum and compare it with the one produced by the illumina2bam step, or croak if that has not been done.
+This script is run at the end of analysis pipeline, most likely as an LSF job.
+
+Bamcat any plex/split bamfiles back together, perform a bamseqchksum and compare it
+with the one produced by the illumina2bam step, or croak if that has not been done.
 
 =head1 SUBROUTINES/METHODS
 
@@ -68,6 +77,8 @@ Bamcat any plex/split bamfiles back together, perform a bamseqchksum and compare
 
 =item lib
 
+=item Log::Log4perl
+
 =item FindBin
 
 =item npg_pipeline::archive::file::seqchsksum_comparator
@@ -84,7 +95,7 @@ Kate Taylor
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Limited
+Copyright (C) 2016 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

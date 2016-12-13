@@ -4,6 +4,7 @@ use Test::More tests => 39;
 use Test::Exception;
 use t::util;
 use Cwd;
+use Log::Log4perl qw(:levels);
 
 my $util = t::util->new();
 
@@ -14,6 +15,11 @@ my $tdir = $util->temp_directory();
 $ENV{TEST_DIR} = $tdir;
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 $ENV{NPG_WEBSERVICE_CACHE_DIR} = $curdir . q{/t/data};
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $tdir, 'logfile'),
+                          utf8   => 1});
 
 my $sp = join q[/], $tdir, 'spatial_filter';
 my $java = join q[/], $tdir, 'java';
@@ -53,8 +59,6 @@ sub set_staging_analysis_area {
       run_folder => q{123456_IL2_1234},
       runfolder_path => $runfolder_path,
       timestamp => q{20091028-101635},
-      log_file_path => $runfolder_path,
-      log_file_name => q{npg_pipeline_pb_cal_20091028-101635.log},
       verbose => 0,
       repository => $repos,
       no_bsub => 1,

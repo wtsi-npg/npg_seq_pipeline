@@ -1,8 +1,9 @@
 use strict;
 use warnings;
 use English qw{-no_match_vars};
-use Test::More tests => 23;
+use Test::More tests => 20;
 use Test::Exception;
+use Log::Log4perl qw(:levels);
 use t::util;
 
 use_ok( q{npg_pipeline::archive::file::BamClusterCounts} );
@@ -12,6 +13,11 @@ my $dir = $util->temp_directory();
 $ENV{TEST_DIR} = $dir;
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $dir, 'logfile'),
+                          utf8   => 1});
 
 $util->create_multiplex_analysis();
 my $analysis_runfolder_path = $util->analysis_runfolder_path();
@@ -69,7 +75,6 @@ my $archive_path = $recalibrated_path . q{/archive};
   lives_ok {
     $object->run_cluster_count_check();
   } qr{check returns ok};
-
 }
 
 {
@@ -124,7 +129,6 @@ my $archive_path = $recalibrated_path . q{/archive};
   throws_ok {$object->run_cluster_count_check()}  qr{Cluster count in bam files not as expected}, 'Cluster count in bam files not as expected';
   rename "$archive_path/lane1/qc/8747_1#0_bam_flagstats.json.RENAMED", "$archive_path/lane1/qc/8747_1#0_bam_flagstats.json";
   ok($object->run_cluster_count_check(), 'Cluster count in bam files as expected');
-
 }
 
 {
@@ -133,12 +137,12 @@ my $archive_path = $recalibrated_path . q{/archive};
   my $qc_path = "$bam_basecall_path/PB_cal_bam/archive/qc";
 
   my $common_command = "$EXECUTABLE_NAME bin/npg_pipeline_check_bam_file_cluster_count --id_run 8747 --bam_basecall_path $bam_basecall_path --qc_path $qc_path --position ";
-  lives_ok { system "$common_command 1" } qq{script runs ok when no spatial filter json};
-  ok( ! $CHILD_ERROR, q{script completed ok - no croak} );
-  lives_ok { system "$common_command 4" } qq{script runs ok when spatial filter has failed reads};
-  ok( ! $CHILD_ERROR, q{script completed ok - no croak} );
-  lives_ok { system "$common_command 6" } qq{script runs ok when no spatial filter has no PF reads};
-  ok( ! $CHILD_ERROR, q{script completed ok - no croak} );
+  note `$common_command 1 2>&1`;
+  ok( ! $CHILD_ERROR, q{script runs ok when no spatial filter json} );
+  note `$common_command 4 2>&1`;
+  ok( ! $CHILD_ERROR, q{script runs ok when spatial filter has failed reads} );
+  note `$common_command 6 2>&1`;
+  ok( ! $CHILD_ERROR, q{script runs ok when no spatial filter has no PF reads} );
 }
 
 1;

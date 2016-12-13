@@ -7,10 +7,15 @@ use File::Copy qw(cp);
 use Cwd;
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
 use Sys::Hostname;
+use Log::Log4perl qw(:levels);
 
 use t::util;
 use t::dbic_util;
 
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], t::util->new()->temp_directory(), 'logfile'),
+                          utf8   => 1});
 use_ok(q{npg_pipeline::base});
 
 {

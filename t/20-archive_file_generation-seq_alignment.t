@@ -7,6 +7,7 @@ use File::Temp qw/tempdir/;
 use Cwd qw/cwd abs_path/;
 use Perl6::Slurp;
 use File::Copy;
+use Log::Log4perl qw(:levels);
 use JSON;
 
 use_ok('npg_pipeline::archive::file::generation::seq_alignment');
@@ -18,6 +19,10 @@ local $ENV{CLASSPATH} = q[t/bin/software/solexa/bin/aligners/illumina2bam/curren
 my $odir = abs_path cwd;
 my $dir = tempdir( CLEANUP => 1);
 
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $dir, 'logfile'),
+                          utf8   => 1});
 warn q[dir: ], $dir;
 
 ###12597_1    study: genomic sequencing, library type: No PCR

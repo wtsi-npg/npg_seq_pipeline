@@ -146,14 +146,15 @@ sub _finish {
   my $self = shift;
 
   my @job_ids = $self->dispatch_tree->ordered_job_ids;
-  $self->log(q{Total LSF jobs submitted: } . scalar @job_ids);
-  $self->log(qq{JSON Dispatch Tree:\n}.$self->dispatch_tree()->tree_as_json().qq{\n});
+  $self->info(q{Total LSF jobs submitted: } . scalar @job_ids);
+  $self->info(qq{JSON Dispatch Tree:\n},
+              $self->dispatch_tree()->tree_as_json());
 
   if ($self->dispatch_tree->first_function_name eq $SUSPENDED_START_FUNCTION ) {
     my $start_job_id = $job_ids[0];
-    $self->log(qq{Suspended start job id $start_job_id});
+    $self->info(qq{Suspended start job id $start_job_id});
     if (!$self->interactive) {
-      $self->log(q{Resuming start job});
+      $self->info(q{Resuming start job});
       $self->submit_bsub_command("bresume $start_job_id");
     }
   }
@@ -178,7 +179,8 @@ sub _kill_jobs {
     if (@job_ids) {
       @job_ids = reverse @job_ids;
       my $all_jobs = join q{ }, @job_ids;
-      $self->log(qq{Will try to kill submitted jobs with following ids: $all_jobs});
+      $self->info(q{Will try to kill submitted jobs with following ids: },
+                  $all_jobs);
       $self->submit_bsub_command("bkill -b $all_jobs");
     }
   }
@@ -194,7 +196,7 @@ sub _clear_env_vars {
   my $self = shift;
   foreach my $var_name (npg_pipeline::cache->env_vars()) {
     if ($ENV{$var_name}) {
-      $self->log( qq[Unsetting $var_name] );
+      $self->warn(qq[Unsetting $var_name]);
       $ENV{$var_name} = q{}; ## no critic (Variables::RequireLocalizedPunctuationVars)
     }
   }
@@ -267,9 +269,9 @@ sub schedule_functions {
   my $add_to_hold;
   foreach my $function (@functions_to_run_in_order) {
 
-    $self->log(q{***** Processing }.$function.q{ *****});
+    $self->info(q{***** Processing }.$function.q{ *****});
     my $job_reqs = $self->lsf_job_complete_requirements(@job_ids);
-    $self->log(qq{$job_reqs for $function});
+    $self->info(qq{$job_reqs for $function});
     unshift @args, $job_reqs;
     ##############
     # if the previous function was parallelisable
@@ -286,7 +288,7 @@ sub schedule_functions {
       if($parallelise_functions{$add_to_hold}->{$function}) {
         ###############
         # if so, then run, and capture the job ids
-        $self->log(qq{Able to parallelise $parallelise_string});
+        $self->info(qq{Able to parallelise $parallelise_string});
         my $job_deps = $args[0];
         my @jids = $self->$function(@args);
         push @hold_parallel_ids, @jids;
@@ -296,13 +298,13 @@ sub schedule_functions {
           });
         $parallel_done++;
       } else {
-        $self->log(qq{$function not parallelisable with $parallelise_string\n\tremoving parallelisable status and setting job id requirements for next level});
+        $self->info(qq{$function not parallelisable with $parallelise_string\n\tremoving parallelisable status and setting job id requirements for next level});
         $add_to_hold = q{};
         if (scalar @hold_parallel_ids) {
           @job_ids = @hold_parallel_ids;
         }
         $job_reqs = $self->lsf_job_complete_requirements(@job_ids);
-        $self->log(qq{$job_reqs for $function});
+        $self->info(qq{$job_reqs for $function});
         shift @args;
         unshift @args, $job_reqs;
         @hold_parallel_ids = ();
@@ -317,7 +319,7 @@ sub schedule_functions {
           foreach my $function (sort keys %{$parallelise_functions{$add_to_hold}}) {
             $parallelise_string .= qq{$function }
           }
-          $self->log(qq{Able to parallelise $parallelise_string});
+          $self->info(qq{Able to parallelise $parallelise_string});
           my $job_deps = $args[0];
           my @jids = $self->$function(@args);        # call the function <--------- !!!
           push @hold_parallel_ids, @jids;
@@ -330,7 +332,7 @@ sub schedule_functions {
         }
       }
       if (!$done) {
-        $self->log(qq{$function is not parallelisable});
+        $self->info(qq{$function is not parallelisable});
         my $job_deps = $args[0];
         my @returned_job_ids = $self->$function(@args);        # call the function <--------- !!!
         if (scalar @returned_job_ids) {
@@ -356,14 +358,13 @@ sub schedule_functions {
 =cut
 sub prepare {
   my $self = shift;
-  if ($self->verbose) {
-    my $s = '***************************************************';
-    $self->log("\n" . $s);
-    foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
-      $self->log(sprintf '*** %s: %s', $name, $ENV{$name});
-    }
-    $self->log($s . "\n");
+  my $s = '***************************************************';
+  $self->debug("\n" . $s);
+  foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
+    my $value = $ENV{$name} || 'Not defined';
+    $self->debug(sprintf '*** %s: %s', $name, $value);
   }
+  $self->debug($s . "\n");
   return;
 }
 
@@ -384,14 +385,12 @@ sub main {
     $self->_finish();
   } catch {
     $error = qq{Error $when: $_};
-    $self->log($error);
+    $self->error($error);
     $self->_kill_jobs();
   };
   $self->_clear_env_vars();
   if ($error) {
-    ##no critic (InputOutput::RequireCheckedSyscalls)
-    print {*STDOUT} $error;
-    croak $error;
+    croak($error);
   }
   return;
 }

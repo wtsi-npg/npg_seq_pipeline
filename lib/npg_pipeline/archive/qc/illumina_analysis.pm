@@ -42,10 +42,11 @@ sub _generate_bsub_command {
 
   if ($self->verbose()) {
     $bsub_command .= q{  --verbose'};
-    $self->log($bsub_command);
   } else {
     $bsub_command .= q{'};
   }
+  $self->debug($bsub_command);
+
   return $bsub_command;
 }
 
