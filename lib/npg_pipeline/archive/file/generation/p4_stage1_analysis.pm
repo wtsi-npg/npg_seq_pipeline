@@ -94,7 +94,7 @@ sub _save_arguments {
   }
 
   # write p4 stage1 parameter files, one per lane
-  for my $position (keys $self->_job_args->{_param_vals}) {
+  for my $position (keys %{$self->_job_args->{_param_vals}}) {
     my $pfile_name = join q{/}, $self->p4_stage1_params_paths->{$position}, $self->id_run.q{_}.$position.q{_p4s1_pv_in.json};
     write_file($pfile_name, encode_json $self->_job_args->{_param_vals}->{$position});
   }

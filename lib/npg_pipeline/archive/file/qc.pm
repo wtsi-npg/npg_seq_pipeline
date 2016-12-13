@@ -199,8 +199,8 @@ sub _qc_command {
 
   if ($REQUIRES_QC_REPORT_DIR->{$self->qc_to_run()}) {
     my @archive_qc_path = ($archive_path, q[qc], $REQUIRES_QC_REPORT_DIR->{$self->qc_to_run()});
-    my $rptstr          = join q[_], $self->id_run(), $lanestr;
-    my $qc_report_dir   = File::Spec->catdir(@archive_qc_path, $rptstr);
+    my $rptstr = join q[_], $self->id_run(), (defined $indexed ? $lanestr : $self->lsb_jobindex());
+    my $qc_report_dir = File::Spec->catdir(@archive_qc_path, $rptstr);
     if (defined $indexed) {
       $rptstr        = join q[#], $rptstr, $tagstr;
       $qc_report_dir = File::Spec->catdir($qc_report_dir, $rptstr);

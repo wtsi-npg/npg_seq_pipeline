@@ -33,7 +33,7 @@ Readonly::Scalar our $CPUS_NUM             => q{8,16};
 
 subtype 'NpgPipelinePluggableObject'
     => as 'Object'
-    => where { ref($_) =~ /^npg_pipeline::pluggable/smxi; };
+    => where { ref =~ /^npg_pipeline::pluggable/smxi; };
 
 has q{+id_run}        => ( required => 1, );
 
@@ -98,7 +98,7 @@ sub _get_bustard_dir {
   my $line = q[];
   ##no critic (RegularExpressions::ProhibitEscapedMetacharacters)
   foreach (@lines) {
-    if ($_ =~ /^Sequence\ folder/ixms) {
+    if (/^Sequence\ folder/ixms) {
       $line = $_;
       last;
     }
