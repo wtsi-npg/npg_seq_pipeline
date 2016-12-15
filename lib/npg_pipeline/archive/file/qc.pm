@@ -3,7 +3,6 @@ package npg_pipeline::archive::file::qc;
 use Moose;
 use Readonly;
 use File::Spec;
-use File::Path qw{make_path};
 use Class::Load qw{load_class};
 
 use npg_pipeline::lsf_job;
@@ -16,10 +15,6 @@ Readonly::Scalar my $QC_SCRIPT_NAME          => q{qc};
 Readonly::Scalar my $LSF_MEMORY_REQ          => 6000;
 Readonly::Scalar my $LSF_MEMORY_REQ_ADAPTER  => 1500;
 Readonly::Scalar my $LSF_INDEX_MULTIPLIER    => 10_000;
-Readonly::Scalar my $REQUIRES_QC_REPORT_DIR => {
-  rna_seqc => 'rna_seqc',
-};
-
 
 has q{qc_to_run}       => (isa      => q{Str},
                            is       => q{ro},
@@ -52,16 +47,6 @@ sub BUILD {
   return;
 }
 
-has q{_qc_report_dirs} => (isa => q{HashRef[Str]},
-                           is => q{ro},
-                           traits => [q{Hash}],
-                           default => sub { { } },
-                           handles => {
-                             _set_rpt_qc_report_dir => q{set},
-                             _get_rpt_qc_report_dir => q{get},
-                           },
-                          );
-
 sub run_qc {
   my ($self, $arg_refs) = @_;
 
@@ -74,28 +59,6 @@ sub run_qc {
       my $lane_qc_dir = $self->lane_qc_path( $position );
       if (!-e $lane_qc_dir) {
         mkdir $lane_qc_dir;
-      }
-    }
-  }
-
-  if ($REQUIRES_QC_REPORT_DIR->{$qc_to_run}) {
-    my @archive_qc_path = ($self->archive_path, q[qc], $REQUIRES_QC_REPORT_DIR->{$qc_to_run});
-    foreach my $position ($self->positions()) {
-      my $rp = join q[_], $self->id_run(), $position;
-      my $qc_report_dir = File::Spec->catdir(@archive_qc_path, $rp);
-      if (! -d $qc_report_dir) {
-        make_path($qc_report_dir);
-        $self->_set_rpt_qc_report_dir($rp, $qc_report_dir);
-      }
-      if ($self->is_multiplexed_lane($position)) {
-        foreach my $tag (@{$self->get_tag_index_list($position)}) {
-          my $rpt = join q[#], $rp, $tag;
-          $qc_report_dir = File::Spec->catdir(@archive_qc_path, $rp, $rpt);
-          if (! -d $qc_report_dir) {
-            make_path($qc_report_dir);
-            $self->_set_rpt_qc_report_dir($rpt, $qc_report_dir);
-          }
-        }
       }
     }
   }
@@ -198,17 +161,6 @@ sub _qc_command {
   }
   $c .= qq{ --qc_in=$qc_in --qc_out=$qc_out};
 
-  if ($REQUIRES_QC_REPORT_DIR->{$self->qc_to_run()}) {
-    my @archive_qc_path = ($archive_path, q[qc], $REQUIRES_QC_REPORT_DIR->{$self->qc_to_run()});
-    my $rptstr = join q[_], $self->id_run(), (defined $indexed ? $lanestr : $self->lsb_jobindex());
-    my $qc_report_dir = File::Spec->catdir(@archive_qc_path, $rptstr);
-    if (defined $indexed) {
-      $rptstr        = join q[#], $rptstr, $tagstr;
-      $qc_report_dir = File::Spec->catdir($qc_report_dir, $rptstr);
-    }
-    $c .= qq{ --qc_report_dir=$qc_report_dir};
-  }
-
   return $c;
 }
 
@@ -218,9 +170,9 @@ sub _should_run {
   my $qc = $self->qc_to_run();
 
   if (($qc =~ /^tag_metrics|upstream_tags|gc_bias|verify_bam_id$/smx) ||
-      ($qc =~ /^genotype|pulldown_metrics|rna_seqc$/smx)) {
+      ($qc =~ /^genotype|pulldown_metrics$/smx)) {
     my $is_multiplexed_lane = $self->is_multiplexed_lane($position);
-    if ($qc =~ /^gc_bias|verify_bam_id|genotype|pulldown_metrics|rna_seqc$/smx) {
+    if ($qc =~ /^gc_bias|verify_bam_id|genotype|pulldown_metrics$/smx) {
       my $can_run = ((!defined $tag_index) && !$is_multiplexed_lane) ||
 	  ((defined $tag_index) && $is_multiplexed_lane);
       if (!$can_run) {
@@ -240,13 +192,6 @@ sub _should_run {
   }
   if ($self->has_repository && $self->_check_uses_refrepos()) {
     $init_hash->{'repository'} = $self->repository;
-  }
-  if ($REQUIRES_QC_REPORT_DIR->{$qc}) {
-    my $qc_report_dir_key = join q[_], $self->id_run(), $position;
-    if (defined $tag_index) {
-      $qc_report_dir_key = join q[#], $qc_report_dir_key, $tag_index;
-    }
-    $init_hash->{'qc_report_dir'} = $self->_get_rpt_qc_report_dir($qc_report_dir_key);
   }
 
   return $self->_qc_module_name()->new($init_hash)->can_run();
@@ -284,7 +229,7 @@ sub _lsf_options {
   my ($self, $qc_to_run) = @_;
 
   my $resources;
-  if ($qc_to_run =~ /insert_size|sequence_error|ref_match|pulldown_metrics|rna_seqc/smx ) {
+  if ($qc_to_run =~ /insert_size|sequence_error|ref_match|pulldown_metrics/smx ) {
     $resources = npg_pipeline::lsf_job->new(memory => $LSF_MEMORY_REQ)->memory_spec();
   } elsif ($qc_to_run eq q[adapter]) {
     $resources = npg_pipeline::lsf_job->new(memory => $LSF_MEMORY_REQ_ADAPTER)->memory_spec() .
@@ -351,8 +296,6 @@ Launches the qc jobs.
 =item File::Spec
 
 =item Class::Load
-
-=item File::Path
 
 =back
 

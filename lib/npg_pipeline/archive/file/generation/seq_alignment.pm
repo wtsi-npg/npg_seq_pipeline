@@ -5,6 +5,8 @@ use English qw{-no_match_vars};
 use Readonly;
 use Moose::Meta::Class;
 use File::Slurp;
+use File::Spec;
+use File::Path qw{make_path};
 use JSON::XS;
 use List::Util qw(sum);
 use List::MoreUtils qw(any);
@@ -193,6 +195,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   my $spike_tag;
   my $input_path= $self->input_path;
   my $archive_path= $self->archive_path;
+  my $archive_qc_path = File::Spec->catdir($self->archive_path, q{qc});
   my $qcpath= $self->qc_path;
   if($is_plex) {
     $tag_index = $l->tag_index;
@@ -393,17 +396,26 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                          q{&&},
                          _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, $nchs_outfile_label),
                          : q(),
+                       $do_rna ? join q( ),
+                         q{&&},
+                         _qc_command('rna_seqc', $archive_path, $qcpath, $l, $is_plex, undef, $archive_qc_path),
+                         : q()
                        ),
                      q(');
 }
 
 sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
-  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset) = @_;
+  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset, $archive_qc_path) = @_;
 
-  my $args = {'id_run' => $l->id_run, 'position' => $l->position};
+  my $args = {'id_run' => $l->id_run,
+              'position'=> $l->position,
+              'qc_out' => $qc_out,
+              'check' => $check_name,};
+
   if ($is_plex && defined $l->tag_index) {
     $args->{'tag_index'} = $l->tag_index;
   }
+
   if ($check_name eq 'bam_flagstats') {
     if ($subset) {
       $args->{'subset'} = $subset;
@@ -412,12 +424,26 @@ sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
   } else {
     $args->{'qc_in'}  = q[$] . 'PWD';
   }
-  $args->{'qc_out'} = $qc_out;
-  $args->{'check'}  = $check_name;
+
+  if ($check_name eq 'rna_seqc') {
+    my $rpt_dir;
+    my $rp_dir = join q[_], $l->id_run, $l->position;
+    my $qc_report_dir = File::Spec->catdir($archive_qc_path, 'rna_seqc', $rp_dir);
+    if ($is_plex && defined $l->tag_index) {
+      $rpt_dir = join q[#], $rp_dir, $l->tag_index;
+      $qc_report_dir = File::Spec->catdir($archive_qc_path, 'rna_seqc', $rp_dir, $rpt_dir);
+    }
+    $args->{'qc_report_dir'} = $qc_report_dir;
+    if (! -d $qc_report_dir) {
+      make_path($qc_report_dir);
+    }
+  }
+
   my $command = q[];
   foreach my $arg (sort keys %{$args}) {
     $command .= join q[ ], q[ --].$arg, $args->{$arg};
   }
+
   return $QC_SCRIPT_NAME . $command;
 }
 
@@ -680,6 +706,10 @@ LSF job creation for alignment
 =item open
 
 =item st::api::lims
+
+=item File::Spec
+
+=item File::Path
 
 =item npg_tracking::data::reference::find
 
