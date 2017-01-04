@@ -358,13 +358,13 @@ sub schedule_functions {
 =cut
 sub prepare {
   my $self = shift;
-  my $s = '***************************************************';
-  $self->debug("\n" . $s);
+  my $s = '*********************************';
+  $self->info($s);
   foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
     my $value = $ENV{$name} || 'Not defined';
-    $self->debug(sprintf '*** %s: %s', $name, $value);
+    $self->info(sprintf '*** %s: %s', $name, $value);
   }
-  $self->debug($s . "\n");
+  $self->info($s . "\n");
   return;
 }
 
