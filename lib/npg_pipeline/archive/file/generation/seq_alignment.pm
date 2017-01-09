@@ -398,14 +398,14 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                          : q(),
                        $do_rna ? join q( ),
                          q{&&},
-                         _qc_command('rna_seqc', $archive_path, $qcpath, $l, $is_plex, undef, $archive_qc_path),
+                         _qc_command('rna_seqc', $archive_path, $qcpath, $l, $is_plex),
                          : q()
                        ),
                      q(');
 }
 
 sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
-  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset, $archive_qc_path) = @_;
+  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset) = @_;
 
   my $args = {'id_run' => $l->id_run,
               'position'=> $l->position,
@@ -423,20 +423,6 @@ sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
     $args->{'qc_in'}  = $qc_in;
   } else {
     $args->{'qc_in'}  = q[$] . 'PWD';
-  }
-
-  if ($check_name eq 'rna_seqc') {
-    my $rpt_dir;
-    my $rp_dir = join q[_], $l->id_run, $l->position;
-    my $qc_report_dir = File::Spec->catdir($archive_qc_path, 'rna_seqc', $rp_dir);
-    if ($is_plex && defined $l->tag_index) {
-      $rpt_dir = join q[#], $rp_dir, $l->tag_index;
-      $qc_report_dir = File::Spec->catdir($archive_qc_path, 'rna_seqc', $rp_dir, $rpt_dir);
-    }
-    $args->{'qc_report_dir'} = $qc_report_dir;
-    if (! -d $qc_report_dir) {
-      make_path($qc_report_dir);
-    }
   }
 
   my $command = q[];
