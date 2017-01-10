@@ -416,7 +416,7 @@ sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
     $args->{'tag_index'} = $l->tag_index;
   }
 
-  if ($check_name eq 'bam_flagstats') {
+  if ($check_name =~ /^bam_flagstats|rna_seqc$/smx) {
     if ($subset) {
       $args->{'subset'} = $subset;
     }
