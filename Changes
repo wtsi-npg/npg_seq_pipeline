@@ -3,6 +3,9 @@ LIST OF CHANGES
 
  - replaces the original log role with the one from DNAP utilities,
    which provides a Log4perl logger and some convenience methods.
+ - new signature for the sequencescape warehouse loader so that it uses
+   samplsheet LIMs driver at the analysis stage and ml_warehouse_fc_cache
+   LIMs driver at the archival stage
 
 release 51.6
  - test and code fixes to ensure problem-free tests under Perl 5.22.2
