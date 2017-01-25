@@ -364,7 +364,7 @@ sub prepare {
     my $value = $ENV{$name} || 'Not defined';
     $self->info(sprintf '*** %s: %s', $name, $value);
   }
-  $self->info($s . "\n");
+  $self->info($s);
   return;
 }
 
