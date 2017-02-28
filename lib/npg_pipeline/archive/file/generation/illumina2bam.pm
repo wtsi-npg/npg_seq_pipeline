@@ -22,14 +22,14 @@ Readonly::Scalar our $JAVA_CMD          => q{java};
 sub generate {
   my ( $self, $arg_refs ) = @_;
 
-  $self->log( q{Creating Jobs to run illumina2bam for run } . $self->id_run );
+  $self->info(q{Creating Jobs to run illumina2bam for run} . $self->id_run );
 
   my $alims = $self->lims->children_ia;
   my @job_ids;
   for my $p ($self->positions()){
     my $tag_list_file;
     if ($self->is_multiplexed_lane($p)) {
-      $self->log(qq{Lane $p is indexed, generating tag list});
+      $self->info(qq{Lane $p is indexed, generating tag list});
       my $index_length = $self->_get_index_length( $alims->{$p} );
       $tag_list_file = npg_pipeline::analysis::create_lane_tag_file->new(
         location     => $self->metadata_cache_dir,
@@ -162,7 +162,7 @@ sub _generate_bsub_commands {
           $job_command .= qq{ FIRST=$first FINAL=$final};
         }
       } elsif ($index_read == 2) {
-        $self->is_paired_read() or croak "Inline index read (2) does not exist\n";
+        $self->is_paired_read() or $self->logcroak(q{Inline index read (2) does not exist});
         $job_command .= qq{ FIRST=$first FINAL=$final};
         ($first, $final) = $self->read2_cycle_range();
         $index_start += ($first-1);
@@ -171,7 +171,7 @@ sub _generate_bsub_commands {
         $job_command .= q{ SEC_BC_SEQ=br SEC_BC_QUAL=qr BC_READ=2 SEC_BC_READ=2};
         $job_command .= q{ FIRST=}.($index_end+1).qq{ FINAL=$final};
       } else {
-        croak "Invalid inline index read ($index_read)\n";
+        $self->logcroak("Invalid inline index read ($index_read)");
       }
     }
   }
@@ -193,7 +193,7 @@ sub _generate_bsub_commands {
 
   if( $self->is_multiplexed_lane($position) ){
     if (!$tag_list_file) {
-      croak 'Tag list file path should be defined';
+      $self->logcroak('Tag list file path should be defined');
     }
     $job_command .= ($last_tool_picard_based
                  ?  q{ OUTPUT=} . q{/dev/stdout} . q{ COMPRESSION_LEVEL=0}
@@ -235,7 +235,7 @@ sub _generate_bsub_commands {
   $job_command =~ s/'/'"'"'/smxg;#for the bash -c
   my $job_sub = q{bsub -q } . $self->lsf_queue() . qq{ $resources $required_job_completion -J $job_name -o $outfile /bin/bash -c 'set -o pipefail;$job_command'};
 
-  if ( $self->verbose() ) { $self->log($job_sub); }
+  $self->debug($job_sub);
 
   return $job_sub;
 }

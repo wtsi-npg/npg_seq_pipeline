@@ -36,7 +36,7 @@ sub archive_to_irods {
   my ($self, @args) = @_;
 
   if ($self->no_irods_archival) {
-    $self->log(q{Archival to iRODS is switched off.});
+    $self->warn(q{Archival to iRODS is switched off.});
     return ();
   }
   my $required_job_completion = shift @args;
@@ -78,7 +78,7 @@ sub _archive_to_irods {
   my ($self, $required_job_completion, @extra_to_irods_attributes) = @_;
 
   if ($self->no_irods_archival) {
-    $self->log(q{Archival to iRODS is switched off.});
+    $self->info(q{Archival to iRODS is switched off.});
     return ();
   }
 
@@ -104,7 +104,7 @@ upload all log files to irods
 sub archive_logs {
   my ($self, @args) = @_;
   if ($self->no_irods_archival) {
-    $self->log(q{Archival to iRODS is switched off.});
+    $self->warn(q{Archival to iRODS is switched off.});
     return ();
   }
   my $required_job_completion = shift @args;
@@ -171,7 +171,7 @@ Updates run data in the npg tables of the warehouse.
 sub update_warehouse {
   my ($self, @args) = @_;
   if ($self->no_warehouse_update) {
-    $self->log(q{Update to warehouse is switched off.});
+    $self->warn(q{Update to warehouse is switched off.});
     return ();
   }
   return $self->submit_bsub_command(
@@ -198,7 +198,7 @@ Updates run data in the npg tables of the ml_warehouse.
 sub update_ml_warehouse {
   my ($self, @args) = @_;
   if ($self->no_warehouse_update) {
-    $self->log(q{Update to warehouse is switched off.});
+    $self->warn(q{Update to warehouse is switched off.});
     return ();
   }
   return $self->submit_bsub_command(
@@ -243,6 +243,7 @@ sub _update_warehouse_command {
   }
   my $out = join q{_}, $job_name, $self->timestamp . q{.out};
   $out =  File::Spec->catfile($path, $out);
+  $required_job_completion ||= q[];
   return q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name -o $out $prereq '$command'};
 }
 
@@ -251,16 +252,14 @@ sub _update_warehouse_command {
 Copy the copy_interop_files files to iRODS
 
 =cut
-sub copy_interop_files_to_irods
-{
+sub copy_interop_files_to_irods {
   my ($self, @args) = @_;
   my $required_job_completion = shift @args;
   my $command = $self->_interop_command($required_job_completion);
   return $self->submit_bsub_command($command);
 }
 
-sub _interop_command
-{
+sub _interop_command {
   my ($self, $required_job_completion) = @_;
   my $id_run = $self->id_run;
   my $command = "irods_interop_loader.pl --id_run $id_run --runfolder_path ".$self->runfolder_path();

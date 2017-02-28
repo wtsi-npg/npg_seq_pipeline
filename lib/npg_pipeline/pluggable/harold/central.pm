@@ -45,36 +45,41 @@ sub _build_pbcal_obj {
   return $self->new_with_cloned_attributes(q{npg_pipeline::analysis::harold_calibration_bam});
 }
 
-=head2 BUILD
+=head2 prepare
 
-ensures that the folders are built that everything expects. If they are provided, it will use them, else it will create them
+ Sets all paths needed during the lifetime of the analysis runfolder.
+ Creates any of the paths that do not exist.
 
-Notes:
-
-1) intensity_path - there is a bug in the imported path_info role which needs fixing. As such, at this time, if intensity_path isn't
-directly specified, then it will take runfolder_path and add /Data/Intensities
-
-2) if recalibrated_path, pb_cal_path, bustard_path and basecall_path are specified, it will use these (and map pb_cal_path <->
-recalibrated_path and bustard_path <-> basecall_path ), else it will create based on whether recalibration is set, and utilise
-the timestamp
-
-3) This is designed to be launched after the harold.pm BUILD method is called as per Moose v1.15. If this should be altered in
-a future version of Moose, then this may break
+ Dynamically adds bustard functions to the object;
 
 =cut
 
-sub BUILD {
-  my ( $self ) = @_;
+override 'prepare' => sub {
+  my $self = shift;
+  $self->_set_paths();
+  super(); # Correct order!
+  $self->_inject_bustard_functions();
+  return;
+};
+
+####
+#
+# Sets all paths needed during the lifetime of the analysis runfolder.
+# Creates any of the paths that do not exist.
+#
+
+sub _set_paths {
+  my $self = shift;
 
   if ( ! $self->has_intensity_path() ) {
     my $ipath = $self->runfolder_path() . q{/Data/Intensities};
     if (!-e $ipath) {
-      $self->log(qq{Intensities path $ipath not found});
+      $self->info(qq{Intensities path $ipath not found});
       $ipath = $self->runfolder_path();
     }
     $self->_set_intensity_path( $ipath );
   }
-  $self->log('Intensities path: ' . $self->intensity_path() );
+  $self->info('Intensities path: ', $self->intensity_path() );
 
   # If preprocessing with OLB, to set the paths mentioned below,
   # one needs to know the name of the bustard directory.
@@ -84,17 +89,17 @@ sub BUILD {
     if ( ! $self->has_dif_files_path() ) {
       $self->set_dif_files_path( $self->intensity_path() );
     }
-    $self->log('Dif files path: ' . $self->dif_files_path() );
+    $self->info('Dif files path: ', $self->dif_files_path() );
 
     if ( ! $self->has_basecall_path() ) {
       my $bpath = $self->intensity_path() . q{/BaseCalls};
       if (!-e $bpath) {
-        $self->log(qq{BaseCalls path $bpath not found});
+        $self->warn(qq{BaseCalls path $bpath not found});
         $bpath = $self->runfolder_path();
       }
       $self->_set_basecall_path( $bpath);
     }
-    $self->log('BaseCalls path: ' . $self->basecall_path() );
+    $self->info('BaseCalls path: ' . $self->basecall_path() );
   }
 
   if( !  $self->has_bam_basecall_path() ) {
@@ -102,42 +107,27 @@ sub BUILD {
     $self->make_log_dir( $bam_basecalls_dir  );
     $self->set_bam_basecall_path( $bam_basecalls_dir );
   }
-  $self->log('BAM_basecall path: ' . $self->bam_basecall_path());
+  $self->info('BAM_basecall path: ' . $self->bam_basecall_path());
   $self->_set_bam_basecall_dependent_paths();
 
-  return 1;
-}
-
-=head2 prepare
-
- Actions to be performed before the functions can be run. Namely, if running OLB preprocessing,
- creates bustard directory and dependent directories.
-
-=cut
-
-override 'prepare' => sub {
-  my $self = shift;
-
-  super();
 
   if ($self->olb) {
     my $bustard_dir = $self->new_with_cloned_attributes(q{npg_pipeline::analysis::bustard4pbcb},
                       {bustard_home => $self->intensity_path,})->bustard_dir();
     $self->set_dif_files_path( $bustard_dir );
     $self->_set_basecall_path( $bustard_dir );
-    $self->log("basecall and dif_files paths set to $bustard_dir");
+    $self->info("basecall and dif_files paths set to $bustard_dir");
     $self->make_log_dir( $bustard_dir  );
   }
-  $self->_inject_bustard_functions();
+
   return;
-};
+}
 
+###
+#
+# If unset, sets recalibrated_path and pb_cal_path.
+#
 
-=head2 _set_bam_basecall_dependant_paths
-
- If unset, sets recalibrated_path and pb_cal_path.
-
-=cut
 sub _set_bam_basecall_dependent_paths {
   my $self = shift;
   my $pathways = {
@@ -176,24 +166,23 @@ sub _set_bam_basecall_dependent_paths {
     $self->$set_method( $pathways->{$path} );
   }
 
-  $self->log('PB_cal path: ' . $self->pb_cal_path());
-  $self->log('Recalibrated_path: ' . $self->recalibrated_path() );
+  $self->info('PB_cal path: ' . $self->pb_cal_path());
+  $self->info('Recalibrated_path: ' . $self->recalibrated_path() );
   $self->make_log_dir( $self->status_files_path );
   return;
 }
 
-=head2 _inject_bustard_functions
 
- Dynamically creates functions to run OLB preprocessing.
-
-=cut
-
+####
+# Dynamically creates functions to run OLB preprocessing.
+#
 sub _inject_bustard_functions {
   my $self = shift;
 
   foreach my $function (@OLB_FUNCTIONS) {
-    ##no critic (TestingAndDebugging::ProhibitNoStrict)
+    ##no critic (TestingAndDebugging::ProhibitNoStrict TestingAndDebugging::ProhibitNoWarnings)
     no strict 'refs';
+    no warnings 'redefine';
     my $fpointer = 'bustard_' . $function;
     if ($self->olb) {
       *{$fpointer}= sub {  my ($self, @args) = @_;
@@ -205,7 +194,7 @@ sub _inject_bustard_functions {
                              id_run=>$self->id_run,
                              lanes=>$self->lanes)->make($function,$job_dep); };
     } else {
-      *{$fpointer}= sub {  $self->log('OLB preprocessing switched off, not running ' . $function ); return (); }
+      *{$fpointer}= sub { $self->info('OLB preprocessing switched off, not running ' . $function ); return (); }
     }
   }
   return;
@@ -221,7 +210,7 @@ sub illumina_basecall_stats {
   my ($self, @args) = @_;
 
   if ( $self->is_hiseqx_run ) {
-    $self->log( q{HiSeqX sequencing instrument, illumina_basecall_stats will not be run} );
+    $self->info(q{HiSeqX sequencing instrument, illumina_basecall_stats will not be run});
     return ();
   }
   return $self->_run_harold_steps( q{generate_illumina_basecall_stats}, @args);
@@ -247,7 +236,7 @@ Generate the calibration tables used for harold recalibration
 sub harold_calibration_tables {
   my ($self, @args) = @_;
   if ( !$self->recalibration() ) {
-    $self->log( q{recalibration is false, no recalibration will be performed} );
+    $self->info(q{recalibration is false, no recalibration will be performed});
     return ();
   }
   return $self->_run_harold_steps( q{generate_calibration_table}, @args);
@@ -370,7 +359,8 @@ sub _bam2fastqcheck_and_cached_fastq_command {
               q{generate_cached_fastq --path } . $self->archive_path() .
               q{ --file } . $self->pb_cal_path() . q{/} . $id_run . q{_} . $self->lsb_jobindex() . q{.bam} .
               q{'};
-  if ($self->verbose()) { $self->log($job_sub); }
+  $self->debug($job_sub);
+
   return $job_sub;
 }
 

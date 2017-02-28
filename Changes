@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 51.7
+ - replaces the original log role with the one from DNAP utilities,
+   which provides a Log4perl logger and some convenience methods.
+
 release 51.6
  - test and code fixes to ensure problem-free tests under Perl 5.22.2
  - tweak to qc_report_dir in bsub command for one library per lane case

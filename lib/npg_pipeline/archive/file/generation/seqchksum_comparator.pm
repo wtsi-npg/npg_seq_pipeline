@@ -67,9 +67,7 @@ sub _generate_bsub_command {
 
   $job_sub .= q{'};
 
-  if ($self->verbose() ) {
-    $self->log($job_sub);
-  }
+  $self->debug($job_sub);
 
   return $job_sub;
 }
@@ -88,16 +86,16 @@ sub do_comparison {
   my $lanes = $self->lanes();
 
   if ( ! scalar @{$lanes}) {
-    croak( 'No lanes found, so not performing any bamseqchksum comparison');
+    $self->logcroak( 'No lanes found, so not performing any bamseqchksum comparison');
   }
 
    my $ret = 1;
 
   foreach my $position (@{$lanes}) {
-    $self->log("About to build .all.seqchksum for lane $position");
+    $self->info("About to build .all.seqchksum for lane $position");
     my $this = $self->_compare_lane($position);
     if ($this > 0 ) {
-      $self->log ("Bamseqchksum comparisons for lane $position have FAILED");
+      $self->warn("Bamseqchksum comparisons for lane $position have FAILED");
       $ret = 1;
     }
   }
@@ -114,40 +112,42 @@ sub _compare_lane {
 
   my $input_lane_seqchksum_file_name = File::Spec->catfile($input_seqchksum_dir, $input_seqchksum_file_name);
   if ( ! -e $input_lane_seqchksum_file_name ) {
-    croak "Cannot find $input_lane_seqchksum_file_name to compare: please check illumina2bam pipeline step";
+    $self->logcroak("Cannot find $input_lane_seqchksum_file_name to compare: please check illumina2bam pipeline step");
   }
 
   my$wd = getcwd();
-  $self->log('Changing to archive directory '.$self->archive_path());
-  chdir $self->archive_path() or croak 'Failed to change directory';
+  $self->info('Changing to archive directory ', $self->archive_path());
+  chdir $self->archive_path() or $self->logcroak('Failed to change directory');
 
   my $cram_file_name_glob = qq({lane$position/,}). $self->id_run . '_' . $position . q{*.cram};
-  my @crams = glob $cram_file_name_glob or croak "Cannot find any cram files using $cram_file_name_glob";
-  $self->log("Building .all.seqchksum for lane $position from cram in $cram_file_name_glob ...");
+  my @crams = glob $cram_file_name_glob or
+    $self->logcroak("Cannot find any cram files using $cram_file_name_glob");
+  $self->info("Building .all.seqchksum for lane $position from cram in $cram_file_name_glob ...");
 
   my $cram_plex_str = join q{ }, @crams;
   my $cmd = 'samtools1 merge -c -u - ' . $cram_plex_str;
   $cmd .= '| bamseqchksum inputformat=bam > ' . $lane_seqchksum_file_name;
 
   if ($cmd ne q{}) {
-    $self->log("Running $cmd to generate $lane_seqchksum_file_name");
+    $self->info("Running $cmd to generate $lane_seqchksum_file_name");
     my $ret = system qq[/bin/bash -c "set -o pipefail && $cmd"];
     if ( $ret  > 0 ) {
-      croak "Failed to run command $cmd: $ret";
+      $self->logcroak("Failed to run command $cmd: $ret");
     }
   }
 
   my $compare_cmd = q{diff -u <(grep '.all' } . $input_lane_seqchksum_file_name . q{ | sort) <(grep '.all' } . $lane_seqchksum_file_name . q{ | sort)};
-  $self->log($compare_cmd);
+  $self->info($compare_cmd);
 
   my $compare_ret = system qq[/bin/bash -c "$compare_cmd"];
-  chdir $wd or croak "Failed to change back to $wd";
+  chdir $wd or $self->logcroak("Failed to change back to $wd");
   if ($compare_ret !=0) {
-    croak "Found a difference in seqchksum for post_i2b and product running $compare_cmd: $compare_ret";
+    $self->logcroak("Found a difference in seqchksum for post_i2b and product running $compare_cmd: $compare_ret");
   } else {
     return $compare_ret;
   }
 
+  return;
 }
 
 1;

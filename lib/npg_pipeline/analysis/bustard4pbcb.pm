@@ -63,9 +63,9 @@ has q{bustard_dir}   =>  ( isa      => q{Str},
 sub _build_bustard_dir {
   my $self = shift;
 
-  $self->log(q[Running Bustard makefile creation]);
+  $self->info(q[Running Bustard makefile creation]);
   my $bustard_command = $self->_bustard_command();
-  $self->log("Bustard command: $bustard_command");
+  $self->info("Bustard command: $bustard_command");
   my $rc = system $bustard_command;
   my @lines = ();
   try {
@@ -76,10 +76,10 @@ sub _build_bustard_dir {
     if (@lines) {
       $error .= q[ ] . join q[ ], @lines;
     }
-    croak $error;
+    $self->logcroak($error);
   }
   if (!@lines) {
-    croak q[No bustard output in ] . $self->_bustard_output_file();
+    $self->logcroak(q[No bustard output in ] . $self->_bustard_output_file());
   }
   return $self->_get_bustard_dir(@lines);
 }
@@ -105,7 +105,7 @@ sub _get_bustard_dir {
   }
   ## use critic
   if (!$line) {
-    croak q[No record about bustard directory (Sequence folder) in ] . $self->_bustard_output_file();
+    $self->logcroak(q[No record about bustard directory (Sequence folder) in ] . $self->_bustard_output_file());
   }
   (my $dir) = $line =~ /:\s+(\S+)$/smx;
   return $dir;
@@ -185,12 +185,12 @@ sub _make_command {
 sub make {
   my ($self, $step_name, $required_job_completion) = @_;
   if (!$self->pipeline) {
-    croak 'To submit a job, pipeline accessor should be set';
+    $self->logcroak('To submit a job, pipeline accessor should be set');
   }
   my $working = getcwd();
   chdir $self->bustard_dir;
   my $command = $self->_make_command($step_name, $required_job_completion);
-  $self->log("Bustard make command: $command");
+  $self->debug("Bustard make command: $command");
   my @ids = $self->pipeline->submit_bsub_command($command);
   chdir $working;
   return @ids;

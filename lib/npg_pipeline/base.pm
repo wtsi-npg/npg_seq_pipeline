@@ -19,7 +19,7 @@ our $VERSION = '0';
 with qw{
         MooseX::Getopt
         MooseX::AttributeCloner
-        npg_common::roles::log
+        WTSI::DNAP::Utilities::Loggable
         npg_tracking::illumina::run::short_info
         npg_tracking::illumina::run::folder
         npg_pipeline::roles::accessor
@@ -115,7 +115,7 @@ sub submit_bsub_command {
 
   # if the no_bsub flag is set
   if ( $self->no_bsub() ) {
-    $self->log( qq{***** I would be submitting the following to LSF\n$cmd \n*****} );
+    $self->info( qq{***** I would be submitting the following to LSF\n$cmd \n*****} );
     return $DEFAULT_JOB_ID_FOR_NO_BSUB;
   }
 
@@ -128,7 +128,7 @@ sub submit_bsub_command {
   while ($count < $max_tries_plus_one) {
     $job_id = qx/$cmd/;
     if ($CHILD_ERROR) {
-      $self->log(qq{Error attempting ($count) to submit job $cmd \n\n.\tError code $CHILD_ERROR});
+      $self->error(qq{Error attempting ($count) to submit job $cmd \n\n.\tError code $CHILD_ERROR});
       sleep $min_sleep ** $count;
       $count++;
     } else {
@@ -139,7 +139,7 @@ sub submit_bsub_command {
   if ( $cmd =~ /bsub/xms ) {
     ($job_id) = $job_id =~ /(\d+)/xms;
     if(!$job_id) {
-      croak qq{Failed to submit an lsf job for $cmd};
+      $self->logcroak(qq{Failed to submit an lsf job for $cmd});
     }
   }
   return $job_id;
@@ -403,7 +403,7 @@ around 'function_list' => sub {
   my $file = abs_path($v);
   if (!$file || !-f $file) {
     if ($v !~ /\A\w+\Z/smx) {
-      croak "Bad function list name: $v";
+      $self->logcroak("Bad function list name: $v");
     }
     try {
       $file = $self->conf_file_path((join q[_],'function_list',$v) . '.yml');
@@ -412,13 +412,13 @@ around 'function_list' => sub {
       if ($v !~ /^$pipeline_name/smx) {
         $file = $self->conf_file_path((join q[_],'function_list',$self->pipeline_name,$v) . '.yml');
       } else {
-        croak $_;
+        $self->logcroak($_);
       }
     };
   }
-  if ($self->verbose) {
-    $self->log("Will use function list $file");
-  }
+
+  $self->info("Will use function list $file");
+
   return $file;
 };
 sub _build_gclp {
@@ -508,39 +508,31 @@ sub make_log_dir {
   $owning_group ||= $self->general_values_conf()->{group};
 
   if ( -d $log_dir ) {
-    if ( $self->verbose && $self->can( q{log} ) ) {
-      $self->log( qq{$log_dir already exists} );
-    }
+    $self->info(qq{$log_dir already exists});
     return $log_dir;
   }
 
   my $cmd = qq{mkdir -p $log_dir};
   my $output = qx{$cmd};
 
-  if ( $self->verbose && $self->can( q{log} ) ) {
-    $self->log( qq{Command: $cmd} );
-    $self->log( qq{Output:  $output} );
-  }
+  $self->debug(qq{Command: $cmd});
+  $self->debug(qq{Output:  $output});
 
   if ( $CHILD_ERROR ) {
-    croak qq{unable to create $log_dir:$output};
+    $self->logcroak(qq{unable to create $log_dir:$output});
   }
 
   if ($owning_group) {
-    if ( $self->can( q{log} ) ) {
-      $self->log( qq{chgrp $owning_group $log_dir} );
-    }
+    $self->info(qq{chgrp $owning_group $log_dir});
 
     my $rc = qx{chgrp $owning_group $log_dir};
     if ( $CHILD_ERROR ) {
-      if ( $self->can( q{log} ) ) {
-        $self->log("could not chgrp $log_dir\n\t$rc"); # not fatal
-      }
+      $self->warn("could not chgrp $log_dir\n\t$rc");
     }
   }
   my $rc = qx{chmod u=rwx,g=srxw,o=rx $log_dir};
   if ( $CHILD_ERROR ) {
-    $self->log("could not chmod $log_dir\n\t$rc");   # not fatal
+    $self->warn("could not chmod $log_dir\n\t$rc");
   }
 
   return $log_dir;
@@ -628,7 +620,7 @@ sub status_files_path {
   my $self = shift;
   my $apath = $self->analysis_path;
   if (!$apath) {
-    croak 'Failed to retrieve analysis_path';
+    $self->logcroak('Failed to retrieve analysis_path');
   }
   return join q[/], $apath, 'status';
 }
@@ -670,7 +662,7 @@ __END__
 
 =item MooseX::AttributeCloner
 
-=item npg_common::roles::log
+=item WTSI::DNAP::Utilities::Loggable
 
 =item npg_tracking::illumina::run::short_info
 

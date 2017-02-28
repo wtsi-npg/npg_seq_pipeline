@@ -6,6 +6,7 @@ use Test::Differences;
 use File::Copy;
 use File::Path qw(make_path);
 use Cwd;
+use Log::Log4perl qw(:levels);
 use t::util;
 
 my $util = t::util->new();
@@ -15,6 +16,11 @@ $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/illumina2bam';
 local $ENV{CLASSPATH} = q{t/bin/software/solexa/bin/aligners/illumina2bam/current};
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $dir, 'logfile'),
+                          utf8   => 1});
 
 use_ok('npg_pipeline::archive::file::generation::illumina2bam');
 my $current = getcwd();

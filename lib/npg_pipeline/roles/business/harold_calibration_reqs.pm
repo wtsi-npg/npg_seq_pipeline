@@ -5,7 +5,7 @@ use English qw{-no_match_vars};
 use Carp;
 use Readonly;
 
-requires qw{directory_exists log};
+requires qw{directory_exists};
 
 our $VERSION = '0';
 
@@ -35,7 +35,6 @@ for internal running of the harold calibration steps.
 
 Note, your class must provide the following methods
 
- 'log'
  'directory_exists'
 
 =head1 SUBROUTINES/METHODS
@@ -136,16 +135,19 @@ if no control lane can be worked out, will return an empty string
 sub calibration_table_name {
   my ($self, $arg_refs ) = @_;
   my $id_run = $arg_refs->{id_run};
-  if( $arg_refs->{read} ) { croak q(read is a deprecated argument); }
+  if( $arg_refs->{read} ) {
+    $self->logcroak(q{read is a deprecated argument});
+  }
   my $position = $arg_refs->{position};
   # set the mode
-  if( $arg_refs->{mode} ) { croak q(mode is a deprecated argument); }
-
-  if ( ! $position ) {
-    $self->log( q{no position obtained} );
-    return q{};
+  if( $arg_refs->{mode} ) {
+    $self->logcroak(q{mode is a deprecated argument});
   }
 
+  if ( ! $position ) {
+    $self->warn(q{no position obtained});
+    return q{};
+  }
 
   return $id_run . q{_} . $position . $self->pb_cal_pipeline_conf()->{cal_table_suffix};
 }
@@ -165,14 +167,14 @@ sub create_pb_calibration_directory {
   my $pb_cal_dir = $self->pb_cal_path();
 
   if ( ! $self->directory_exists( $pb_cal_dir ) ) {
-    $self->log( qq{Creating $pb_cal_dir} );
+    $self->info(qq{Creating $pb_cal_dir});
 
     my $output = qx[mkdir $pb_cal_dir];
     if ($CHILD_ERROR) {
-      croak qq{Unable to create $pb_cal_dir};
+      $self->logcroak(qq{Unable to create $pb_cal_dir});
     }
 
-    $self->log( qq{Created : $output});
+    $self->info(qq{Created : $output});
   }
 
   $self->make_log_dir( $pb_cal_dir );
@@ -182,7 +184,7 @@ sub create_pb_calibration_directory {
 
 1;
 __END__
-          
+
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT

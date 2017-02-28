@@ -25,18 +25,21 @@ Readonly::Scalar my $FS_RESOURCE                  => 4; # LSF resource counter t
 sub generate {
   my ( $self, $arg_refs ) = @_;
 
-  $self->log( q{Creating Jobs to run P4 stage1 analysis for run } . $self->id_run );
+  $self->info(q{Creating Jobs to run P4 stage1 analysis for run },
+              $self->id_run);
 
-  $self->log( q{Creating P4 stage1 analysis directories for run } . $self->id_run );
+  $self->info(q{Creating P4 stage1 analysis directories for run },
+              $self->id_run );
   $self->_create_p4_stage1_dirs();
-  $self->log( q{Creating lane directories for P4 stage1 analysis for run } . $self->id_run );
+  $self->info(q{Creating lane directories for P4 stage1 analysis for run },
+              $self->id_run);
   $self->_create_lane_dirs();
 
   my $alims = $self->lims->children_ia;
   for my $p ($self->positions()) {
     my $tag_list_file;
     if ($self->is_multiplexed_lane($p)) {
-      $self->log(qq{Lane $p is indexed, generating tag list});
+      $self->info(qq{Lane $p is indexed, generating tag list});
       my $index_length = $self->_get_index_length( $alims->{$p} );
       $tag_list_file = npg_pipeline::analysis::create_lane_tag_file->new(
         location     => $self->metadata_cache_dir,
@@ -81,17 +84,16 @@ sub _save_arguments {
   my ($self, $job_id) = @_;
   my $file_name = join q[_], $self->job_name_root, $job_id;
   $file_name = join q[/], $self->bam_basecall_path, $file_name;
-  if($self->verbose) { $self->log(qq[Arguments will be written to $file_name]); }
+
+  $self->debug(qq[Arguments will be written to $file_name]);
   my ($ja,$commands);
   if($ja=$self->_job_args and defined $ja->{_commands} and $commands = encode_json $self->_job_args->{_commands}) {
     write_file($file_name, $commands);
   }
   else {
-    croak q[Failed to generate commands for saving to arguments file ], $file_name;
+    $self->logcroak(q[Failed to generate commands for saving to arguments file ], $file_name);
   }
-  if($self->verbose) {
-    $self->log(qq[Arguments written to $file_name]);
-  }
+  $self->debug(qq[Arguments written to $file_name]);
 
   # write p4 stage1 parameter files, one per lane
   for my $position (keys %{$self->_job_args->{_param_vals}}) {
@@ -172,10 +174,10 @@ sub _create_p4_stage1_dirs {
   my ($self) = @_;
 
   for my $d (values %{$self->p4_stage1_params_paths}, values %{$self->p4_stage1_errlog_paths}) {
-     $self->log( qq{creating $d} );
+     $self->info(qq{creating $d});
      my $rc = `mkdir -p $d`;
      if ( $CHILD_ERROR ) {
-       croak qq{could not create $d\n\t$rc};
+       $self->logcroak(qq{could not create $d\n\t$rc});
      }
   }
 
@@ -186,14 +188,14 @@ sub _create_lane_dirs {
   my ($self) = @_;
 
   if(!$self->is_indexed()) {
-    $self->log( qq{Run $self->id_run is not multiplex run and no need to split} );
+    $self->warn(qq{Run $self->id_run is not multiplex run and no need to split});
     return;
   }
 
   my %positions = map { $_=>1 } $self->positions();
   my @indexed_lanes = grep { $positions{$_} } @{$self->multiplexed_lanes()};
   if(!@indexed_lanes) {
-    $self->log( q{None of the lanes for analysis is multiplexed} );
+    $self->info( q{None of the lanes for analysis is multiplexed} );
     return;
   }
 
@@ -201,10 +203,10 @@ sub _create_lane_dirs {
   for my $position (@indexed_lanes) {
     my $lane_output_dir = $output_dir . $position;
     if( ! -d $lane_output_dir ) {
-       $self->log( qq{creating $lane_output_dir} );
+       $self->info(qq{creating $lane_output_dir});
        my $rc = `mkdir -p $lane_output_dir`;
        if ( $CHILD_ERROR ) {
-         croak qq{could not create $lane_output_dir\n\t$rc};
+         $self->logcroak(qq{could not create $lane_output_dir\n\t$rc});
        }
     }
   }
@@ -342,7 +344,7 @@ sub _generate_command_params {
     my $index_read = $lane_lims->inline_index_read;
 
     if ($index_start && $index_end && $index_read) {
-      $self->log(q{P4 stage1 analysis of a lane with inline indexes});
+      $self->info(q{P4 stage1 analysis of a lane with inline indexes});
 
       my($first, $final) = $self->read1_cycle_range();
       if ($index_read == 1) {
@@ -362,7 +364,7 @@ sub _generate_command_params {
         }
       } elsif ($index_read == 2) {
         $p4_params{$i2b_flag_map{q/BC_READ/}} = $p4_params{$i2b_flag_map{q/SEC_BC_READ/}} = 2;
-        $self->is_paired_read() or croak "Inline index read (2) does not exist\n";
+        $self->is_paired_read() or $self->logcroak(q{Inline index read (2) does not exist});
         $p4_params{$i2b_flag_map{q/FIRST_0/}} = $first;
         $p4_params{$i2b_flag_map{q/FINAL_0/}} = $final;
         ($first, $final) = $self->read2_cycle_range();
@@ -375,7 +377,7 @@ sub _generate_command_params {
         $p4_params{$i2b_flag_map{q/FIRST_1/}} = $index_end+1;
         $p4_params{$i2b_flag_map{q/FINAL_1/}} = $final;
       } else {
-        croak "Invalid inline index read ($index_read)\n";
+        $self->logcroak("Invalid inline index read ($index_read)");
       }
       $p4_params{$i2b_flag_map{q/SEC_BC_SEQ/}} = q{br};
       $p4_params{$i2b_flag_map{q/SEC_BC_QUAL/}} = q{qr};
@@ -390,7 +392,7 @@ sub _generate_command_params {
     my @range2 = $self->read2_cycle_range();
     my $read2_length = $range2[1] - $range2[0] + 1;
     if($read1_length != $read2_length) {
-      croak 'P4 stage1 analysis will not yet handle different length forward/reverse reads (no optional adapter detection)';
+      $self->logcroak('P4 stage1 analysis will not yet handle different length forward/reverse reads (no optional adapter detection)');
     }
   }
 
@@ -399,7 +401,7 @@ sub _generate_command_params {
   my $prune_flag = q[];
   if($self->is_multiplexed_lane($position)) {
     if (!$tag_list_file) {
-      croak 'Tag list file path should be defined for multiplexed lane ', $position;
+      $self->logcroak('Tag list file path should be defined for multiplexed lane ', $position);
     }
 
     $p4_params{bamindexdecoder_jar} = $self->_BamIndexDecoder_jar;
@@ -413,7 +415,7 @@ sub _generate_command_params {
     }
   }
   else {
-    $self->log(q{P4 stage1 analysis on non-plexed lane});
+    $self->info(q{P4 stage1 analysis on non-plexed lane});
 
     # This will avoid using BamIndexDecoder or attempting to split a non-muliplexed lane.
     $splice_flag = q[-splice_nodes '"'"'bamadapterfind:-bamcollate:'"'"'];

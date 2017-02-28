@@ -106,14 +106,14 @@ sub _create_lane_dirs {
   my ($self, @positions) = @_;
 
   if(!$self->is_indexed()) {
-    $self->log( qq{Run $self->id_run is not multiplex run and no need to split} );
+    $self->info( qq{Run $self->id_run is not multiplex run and no need to split} );
     return;
   }
 
   my %positions = map { $_=>1 } @positions;
   my @indexed_lanes = grep { $positions{$_} } @{$self->multiplexed_lanes()};
   if(!@indexed_lanes) {
-    $self->log( q{None of the lanes specified is multiplexed} );
+    $self->info( q{None of the lanes specified is multiplexed} );
     return;
   }
 
@@ -121,14 +121,14 @@ sub _create_lane_dirs {
   for my $position (@indexed_lanes) {
     my $lane_output_dir = $output_dir . $position;
     if( ! -d $lane_output_dir ) {
-       $self->log( qq{creating $lane_output_dir} );
+       $self->info( qq{creating $lane_output_dir} );
        my $rc = `mkdir -p $lane_output_dir`;
        if ( $CHILD_ERROR ) {
          croak qq{could not create $lane_output_dir\n\t$rc};
        }
     }
    else {
-       $self->log( qq{ already exists: $lane_output_dir} );
+       $self->info( qq{ already exists: $lane_output_dir} );
    }
   }
 
@@ -145,9 +145,7 @@ sub generate {
 
   my @job_indices = keys %{$self->_job_args};
   if (!@job_indices) {
-    if ($self->verbose) {
-      $self->log('Nothing to do');
-    }
+    $self->debug('Nothing to do');
     return ();
   }
 
@@ -183,9 +181,9 @@ sub _save_arguments {
   my $file_name = join q[_], $self->job_name_root, $job_id;
   $file_name = join q[/], $self->input_path, $file_name;
   write_file($file_name, encode_json $self->_job_args);
-  if($self->verbose) {
-    $self->log(qq[Arguments written to $file_name]);
-  }
+
+  $self->debug(qq[Arguments written to $file_name]);
+
   return $file_name;
 }
 
@@ -210,9 +208,15 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $qcpath       = $self->lane_qc_path($position);
   }
 
-  croak qq{Only one of nonconsented X and autosome human split, separate Y chromosome data, and nonconsented human split may be specified ($name_root)} if (1 < sum $l->contains_nonconsented_xahuman, $l->separate_y_chromosome_data, $l->contains_nonconsented_human);
-  croak qq{Nonconsented X and autosome human split, and separate Y chromosome data, must have Homo sapiens reference ($name_root)} if (($l->contains_nonconsented_xahuman or $l->separate_y_chromosome_data) and not $l->reference_genome=~/Homo_sapiens/smx );
-  croak qq{Nonconsented human split must not have Homo sapiens reference ($name_root)} if ($l->contains_nonconsented_human and $l->reference_genome and $l->reference_genome=~/Homo_sapiens/smx );
+  if (1 < sum $l->contains_nonconsented_xahuman, $l->separate_y_chromosome_data, $l->contains_nonconsented_human) {
+    $self->logcroak(qq{Only one of nonconsented X and autosome human split, separate Y chromosome data, and nonconsented human split may be specified ($name_root)});
+  }
+  if (($l->contains_nonconsented_xahuman or $l->separate_y_chromosome_data) and not $l->reference_genome=~/Homo_sapiens/smx ) {
+    $self->logcroak(qq{Nonconsented X and autosome human split, and separate Y chromosome data, must have Homo sapiens reference ($name_root)});
+  }
+  if ($l->contains_nonconsented_human and $l->reference_genome and $l->reference_genome=~/Homo_sapiens/smx ) {
+    $self->logcroak(qq{Nonconsented human split must not have Homo sapiens reference ($name_root)});
+  }
 
   ####################################
   # base set of parameters for p4 vtfp
@@ -285,8 +289,8 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($l,q(fasta));
   }
   if($nchs) {
-    $p4_param_vals->{reference_dict_hs} = _default_human_split_ref(q{picard}, $self->repository);   # always human default
-    $p4_param_vals->{hs_reference_genome_fasta} = _default_human_split_ref(q{fasta}, $self->repository);   # always human default
+    $p4_param_vals->{reference_dict_hs} = $self->_default_human_split_ref(q{picard}, $self->repository);   # always human default
+    $p4_param_vals->{hs_reference_genome_fasta} = $self->_default_human_split_ref(q{fasta}, $self->repository);   # always human default
   }
 
   # handle targeted stats_(bait_stats_analysis) here, handling the interaction with spike tag case
@@ -313,7 +317,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $p4_param_vals->{alignment_method} = q[tophat2];
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bowtie2)); }
     if($nchs) {
-      $p4_param_vals->{hs_alignment_reference_genome} = _default_human_split_ref(q{bowtie2}, $self->repository);
+      $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bowtie2}, $self->repository);
       $p4_param_vals->{alignment_hs_method} = q[tophat2];
     }
   }
@@ -323,7 +327,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $p4_param_vals->{alignment_method} = $bwa;
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bwa0_6)); }
     if($nchs) {
-      $p4_param_vals->{hs_alignment_reference_genome} = _default_human_split_ref(q{bwa0_6}, $self->repository);
+      $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
       $p4_param_vals->{alignment_hs_method} = $hs_bwa;
     }
   }
@@ -346,15 +350,15 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   ####################
   # log run parameters
   ####################
-  $self->log(q[Using p4]);
-  if($l->contains_nonconsented_human) { $self->log(q[  nonconsented_humansplit]) }
-  if(not $self->is_paired_read) { $self->log(q[  single-end]) }
-  $self->log(q[  do_target_alignment is ] . ($do_target_alignment? q[true]: q[false]));
-  $self->log(q[  spike_tag is ] . ($spike_tag? q[true]: q[false]));
-  $self->log(q[  human_split is ] . $human_split);
-  $self->log(q[  nchs is ] . ($nchs? q[true]: q[false]));
-  $self->log(q[  p4 parameters written to ] . $param_vals_fname);
-  $self->log(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
+  $self->info(q[Using p4]);
+  if($l->contains_nonconsented_human) { $self->info(q[  nonconsented_humansplit]) }
+  if(not $self->is_paired_read) { $self->info(q[  single-end]) }
+  $self->info(q[  do_target_alignment is ] . ($do_target_alignment? q[true]: q[false]));
+  $self->info(q[  spike_tag is ] . ($spike_tag? q[true]: q[false]));
+  $self->info(q[  human_split is ] . $human_split);
+  $self->info(q[  nchs is ] . ($nchs? q[true]: q[false]));
+  $self->info(q[  p4 parameters written to ] . $param_vals_fname);
+  $self->info(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
   return join q( ), q(bash -c '),
                        q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
@@ -438,9 +442,7 @@ sub _generate_command_arguments {
 
     my $lane_lims = $lane_lims_all->{$position};
     if (!$lane_lims) {
-      if ($self->verbose) {
-        $self->log(qq{No lims object for position $position});
-      }
+      $self->debug(qq{No lims object for position $position});
       next;
     }
     if ( $self->is_indexed and $lane_lims->is_pool ) { # does the run have an indexing read _and_ does the LIMS have pool information : if so do plex level analyses
@@ -449,18 +451,16 @@ sub _generate_command_arguments {
       foreach my $tag_index ( @{ $self->get_tag_index_list($position) } ) {
         my $l = $plex_lims->{$tag_index};
         if (!$l) {
-          if ($self->verbose) {
-            $self->log(qq{No lims object for position $position tag index $tag_index});
-          }
+          $self->debug(qq{No lims object for position $position tag index $tag_index});
           next;
         }
-        my $ji = _job_index($position, $tag_index);
+        my $ji = $self->_job_index($position, $tag_index);
         $self->_job_args->{$ji} = $self->_lsf_alignment_command($l,1);
         $self->_using_alt_reference($self->_is_alt_reference($l));
       }
     } else { # do lane level analyses
       my $l = $lane_lims;
-      my $ji = _job_index($position);
+      my $ji = $self->_job_index($position);
       $self->_job_args->{$ji} = $self->_lsf_alignment_command($l);
     }
   }
@@ -476,32 +476,23 @@ sub _do_rna_analysis {
   my ($self, $l) = @_;
   my $lstring = $l->to_string;
   if (!$l->library_type || $l->library_type !~ /(?:(?:cD|R)NA|DAFT)/sxm) {
-    if ($self->verbose) {
-      $self->log(qq{$lstring - not RNA library type});
-    }
+    $self->debug(qq{$lstring - not RNA library type});
     return 0;
   }
   if((not $l->reference_genome) or (not $l->reference_genome =~ /Homo_sapiens|Mus_musculus|Plasmodium_(?:falciparum|berghei)/smx)){
-    if ($self->verbose) {
-      $self->log(qq{$lstring - Not human or mouse or plasmodium falciparum or berghei (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on all eukaryotes?
-    }
+    $self->debug(qq{$lstring - Not human or mouse or plasmodium falciparum or berghei (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on all eukaryotes?
     return 0;
   }
   if(not $self->_transcriptome($l)->transcriptome_index_name()){
-    if ($self->verbose) {
-      $self->log(qq{$lstring - no transcriptome set}); #TODO: RNAseq should work without transcriptome?
-    }
+    $self->debug(qq{$lstring - no transcriptome set}); #TODO: RNAseq should work without transcriptome?
     return 0;
   }
   if(not $self->is_paired_read){
-    if ($self->verbose) {
-      $self->log(qq{$lstring - Single end run (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on single end data
-    }
+    $self->debug(qq{$lstring - Single end run (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on single end data
     return 0;
   }
-  if ($self->verbose) {
-    $self->log(qq{$lstring - Do RNAseq analysis....});
-  }
+  $self->debug(qq{$lstring - Do RNAseq analysis....});
+
   return 1;
 }
 
@@ -520,26 +511,19 @@ sub _do_bait_stats_analysis {
   my ($self, $l) = @_;
   my $lstring = $l->to_string;
   if(not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam) {
-      if ($self->verbose) {
-          $self->log(qq{$lstring - no reference or no alignments set});
-      }
+      $self->debug(qq{$lstring - no reference or no alignments set});
       return 0;
   }
   if(not $self->_bait($l)->bait_name){
-      if ($self->verbose) {
-          $self->log(qq{$lstring - No bait set});
-      }
+      $self->debug(qq{$lstring - No bait set});
       return 0;
   }
   if(not $self->_bait($l)->bait_path){
-      if ($self->verbose) {
-          $self->log(qq{$lstring - No bait path found});
-      }
+      $self->debug(qq{$lstring - No bait path found});
       return 0;
   }
-  if ($self->verbose) {
-      $self->log(qq{$lstring - Doing optional bait stats analysis....});
-  }
+  $self->debug(qq{$lstring - Doing optional bait stats analysis....});
+
   return 1;
 }
 
@@ -567,33 +551,26 @@ sub _ref {
   try {
     @refs =  @{$ruser->refs};
   } catch {
-    if ($self->verbose) {
-      $self->log("Error getting reference: $_");
-    }
+    $self->error("Error getting reference: $_");
   };
 
   if (!@refs) {
-    if ($self->verbose) {
-      $self->log(qq{No reference genome set for $lstring});
-    }
+    $self->warn(qq{No reference genome set for $lstring});
     return 0;
   }
   if (scalar @refs > 1) {
-    if ($self->verbose) {
-      $self->log(qq{Multiple references for $lstring});
-    }
+    $self->error(qq{Multiple references for $lstring});
     return 0;
   }
-  if ($self->verbose) {
-    $self->log(qq{Reference set for $lstring: $refs[0]});
-  }
+  $self->info(qq{Reference set for $lstring: $refs[0]});
+
   return $refs[0];
 }
 
 sub _job_index {
-  my ($position, $tag_index) = @_;
+  my ($self, $position, $tag_index) = @_;
   if (!$position) {
-    croak 'Position undefined or zero';
+    $self->logcroak('Position undefined or zero');
   }
   if (defined $tag_index) {
     return sprintf q{%i%04i}, $position, $tag_index;
@@ -609,7 +586,7 @@ sub _default_resources {
 }
 
 sub _default_human_split_ref {
-   my ($aligner, $repos) = @_;
+   my ($self, $aligner, $repos) = @_;
 
    my $ruser = Moose::Meta::Class->create_anon_class(
           roles => [qw/npg_tracking::data::reference::find/])
@@ -620,14 +597,13 @@ sub _default_human_split_ref {
                        } );
 
    my $human_ref;
-   eval {
+   try {
       $human_ref = $ruser->refs->[0];
       if($aligner eq q{picard}) {
         $human_ref .= q{.dict};
       }
-      1;
-   } or do{
-      carp $EVAL_ERROR;
+   } catch {
+      $self->error('Error getting default human split reference ' . $_);
    };
 
    return $human_ref;

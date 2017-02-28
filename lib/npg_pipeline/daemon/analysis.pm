@@ -37,7 +37,7 @@ sub _build_study_analysis_conf {
   try {
     $config = $self->read_config($self->conf_file_path(q{study_analysis.yml}));
   } catch {
-    $self->logger->warn(qq{Failed to retrieve study analysis configuration: $_});
+    $self->warn(qq{Failed to retrieve study analysis configuration: $_});
   };
 
   return $config;
@@ -54,7 +54,7 @@ sub run {
         $self->_process_one_run($run);
       }
     } catch {
-      $self->logger->warn(
+      $self->warn(
         sprintf 'Error processing run %i: %s', $run->id_run(), $_ );
     };
   }
@@ -66,9 +66,9 @@ sub _process_one_run {
   my ($self, $run) = @_;
 
   my $id_run = $run->id_run();
-  $self->logger->info(qq{Considering run $id_run});
+  $self->info(qq{Considering run $id_run});
   if ($self->seen->{$id_run}) {
-    $self->logger->info(qq{Already seen run $id_run, skipping...});
+    $self->info(qq{Already seen run $id_run, skipping...});
     return;
   }
 
@@ -93,10 +93,10 @@ sub _software_bundle {
   my ($self, $is_gclp_run, $studies) = @_;
 
   if (!defined $is_gclp_run) {
-    croak 'GCLP flag is not defined';
+    $self->logcroak('GCLP flag is not defined');
   }
   if (!$studies) {
-    croak 'Study ids are missing';
+    $self->logcroak('Study ids are missing');
   }
 
   my @s = $is_gclp_run ? ($GCLP_STUDY_KEY) : @{$studies};
@@ -105,16 +105,16 @@ sub _software_bundle {
 
   my @software = uniq map { $conf->{$_} || q[] } @s;
   if (@software > 1) {
-    croak q{Multiple software bundles for a run};
+    $self->logcroak(q{Multiple software bundles for a run});
   }
 
   my $software_dir = @software ? $software[0] : q[];
   if ($is_gclp_run && !$software_dir) {
-    croak q{GCLP run needs explicit software bundle};
+    $self->logcroak(q{GCLP run needs explicit software bundle});
   }
 
   if ($software_dir && !-d $software_dir) {
-    croak qq{Directory '$software_dir' does not exist};
+    $self->logcroak(qq{Directory '$software_dir' does not exist});
   }
 
   return $software_dir ? abs_path($software_dir) : q[];
@@ -139,17 +139,17 @@ sub _generate_command {
              $arg_refs->{'rf_path'};
 
   if ( $arg_refs->{'gclp'} ) {
-    $self->logger->info('GCLP run');
+    $self->info('GCLP run');
     $cmd .= q{ --function_list gclp};
   } else {
-    $self->logger->info('Non-GCLP run');
+    $self->info('Non-GCLP run');
     if (!$arg_refs->{'id'}) {
       # Batch id is needed for MiSeq runs, including qc runs
-      croak q{Lims flowcell id is missing};
+      $self->logcroak(q{Lims flowcell id is missing});
     }
     if ($arg_refs->{'qc_run'}) {
       $cmd .= q{ --qc_run};
-      $self->logger->info('QC run');
+      $self->info('QC run');
     }
     $cmd .= q{ --id_flowcell_lims } . $arg_refs->{'id'};
   }

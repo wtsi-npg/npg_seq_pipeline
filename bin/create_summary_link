@@ -4,9 +4,16 @@ use strict;
 use warnings;
 use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use Log::Log4perl qw(:levels);
+
 use npg_pipeline::run::folder::link;
 
 our $VERSION = '0';
+
+my $layout = '%d %-5p %c - %m%n';
+Log::Log4perl->easy_init({layout => $layout,
+                          level  => $INFO,
+                          utf8   => 1});
 
 npg_pipeline::run::folder::link->new_with_options()->make_link({ required_job_completion => q{} });
 
@@ -16,11 +23,11 @@ __END__
 
 =head1 NAME
 
-create_summary_link
+ create_summary_link
 
 =head1 USAGE
 
-create_summary_link --run_folder=<run_folder> ( --folder=<analysis/outgoing>)
+ create_summary_link --run_folder=<run_folder>
 
 =head1 REQUIRED ARGUMENTS
 
@@ -28,17 +35,18 @@ create_summary_link --run_folder=<run_folder> ( --folder=<analysis/outgoing>)
 
 =head1 OPTIONS
 
- folder - this shoudl be analysis or outgoing depending on the folder which is going to be used
-
 =head1 EXIT STATUS
 
-0
+ 0
 
 =head1 CONFIGURATION
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
+
+ One of the scripts invoked by the analysis pipeline. Creates a soft link in the run folder,
+ which points to one of the subdirectories in the current analysis folder. 
 
 =head1 SUBROUTINES/METHODS
 
@@ -58,6 +66,8 @@ create_summary_link --run_folder=<run_folder> ( --folder=<analysis/outgoing>)
 
 =item lib
 
+=item Log::Log4perl
+
 =item npg_pipeline::run::folder::link
 
 =back
@@ -72,7 +82,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Limited
+Copyright (C) 2016 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

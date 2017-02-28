@@ -71,9 +71,7 @@ sub _generate_bsub_command {
 
   $bsub_command .=  q{'};
 
-  if ($self->verbose()) {
-    $self->log($bsub_command);
-  }
+  $self->debug($bsub_command);
 
   return $bsub_command;
 }

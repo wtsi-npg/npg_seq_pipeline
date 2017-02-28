@@ -20,17 +20,17 @@ sub generate {
 
   my $id_run = $self->id_run();
 
-  $self->log(qq{Creating Jobs to split bam files by tag for $id_run});
+  $self->info(qq{Creating Jobs to split bam files by tag for $id_run});
 
   if ( ! $self->is_indexed() ) {
-    $self->log( qq{Run $id_run is not multiplex run and no need to split} );
+    $self->warn(qq{Run $id_run is not multiplex run and no need to split});
     return;
   }
 
   my %positions = map{$_=>1} $self->positions();
   my @indexed_lanes = grep {$positions{$_}} @{$self->multiplexed_lanes()};
   if ( ! @indexed_lanes ) {
-    $self->log( q{None of the lanes for analysis is multiplexed} );
+    $self->warn(q{None of the lanes for analysis are multiplexed});
     return;
   }
 
@@ -39,10 +39,10 @@ sub generate {
   foreach my $position ( @indexed_lanes  ) {
     my $lane_output_dir = $output_dir . $position;
     if ( ! -d $lane_output_dir ) {
-       $self->log( qq{creating $lane_output_dir} );
+       $self->info(qq{creating $lane_output_dir});
        my $rc = `mkdir -p $lane_output_dir`;
        if ( $CHILD_ERROR ) {
-         croak qq{could not create $lane_output_dir\n\t$rc};
+         $self->logcroak(qq{could not create $lane_output_dir: $rc});
        }
     }
   }
@@ -110,7 +110,7 @@ sub _generate_bsub_command {
   $job_sub .= q{ };
   $job_sub .= qq{$required_job_completion -J $job_name -o $outfile '$job_command'};
 
-  if ($self->verbose()) { $self->log($job_sub); }
+  $self->debug($job_sub);
 
   return $job_sub;
 }

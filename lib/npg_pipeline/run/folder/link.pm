@@ -34,7 +34,7 @@ sub make_link {
   }
 
   if ($cur_link and $link =~ /\Q$cur_link\E/xms) {
-    $self->log(qq{$summary_link link ($cur_link) already points to $link -- not changed.});
+    $self->info(qq{$summary_link link ($cur_link) already points to $link -- not changed.});
   } else {
     if($link =~ m{\A/}smx){
       $link = abs2rel( $link, $rf_path);
@@ -42,10 +42,10 @@ sub make_link {
     # Because Latest_Summary points to a directory, ln -fs gets
     # confused, so we rm it first.
     my $command = qq{cd $rf_path; rm -f $summary_link; ln -fs $link $summary_link};
-    $self->log(qq{Running $command});
+    $self->info(qq{Running $command});
     my $rc = `$command`;
     if ($CHILD_ERROR != 0) {
-      croak qq{Creating summary link "$command" failed - $EVAL_ERROR - Error code : $CHILD_ERROR};
+      $self->logcroak(qq{Creating summary link "$command" failed - $EVAL_ERROR - Error code : $CHILD_ERROR});
     }
   }
   return;
@@ -72,7 +72,8 @@ sub _generate_bsub_command {
 sub submit_create_link {
   my ($self, $arg_refs) = @_;
   my $cmd = $self->_generate_bsub_command($arg_refs);
-  if ($self->verbose()) { $self->log($cmd); }
+  $self->debug($cmd);
+
   return $self->submit_bsub_command($cmd);
 }
 
@@ -87,11 +88,10 @@ npg_pipeline::run::folder::link
 
 =head1 SYNOPSIS
 
-  my $rfl = npg_pipeline::run::folder::link->new({
+  my $rfl = npg_pipeline::run::folder::link->new(
     run_folder    => <run_folder>,
-    folder        => <analysis/outgoing>, # defaults to analysis
     analysis_path => q{Data/Intensities/Bustard_dir/GERALD_dir}, # required if you want to override any existing link
-  });
+  );
 
 =head1 DESCRIPTION
 
@@ -148,7 +148,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2016 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

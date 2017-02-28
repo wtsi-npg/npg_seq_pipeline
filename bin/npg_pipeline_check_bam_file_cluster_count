@@ -4,9 +4,16 @@ use strict;
 use warnings;
 use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use Log::Log4perl qw(:levels);
+
 use npg_pipeline::archive::file::BamClusterCounts;
 
 our $VERSION = '0';
+
+my $layout = '%d %-5p %c - %m%n';
+Log::Log4perl->easy_init({layout => $layout,
+                          level  => $INFO,
+                          utf8   => 1});
 
 npg_pipeline::archive::file::BamClusterCounts->new_with_options()->run_cluster_count_check();
 
@@ -22,11 +29,15 @@ npg_pipeline_check_file_cluster_count
 
 =head1 DESCRIPTION
 
-This script goes and checks pf cluster counts in BustardSummary.xml match the read counts in the bam files
+This is one of the scripts invoked by teh analysis pipeline, most likely
+as an LSF job.
+It checks pf cluster counts in BustardSummary.xml match the read counts
+in the bam files.
 
 =head1 USAGE
 
-  npg_pipeline_check_bam_file_cluster_count --id_run 1234 --position 4 --bam_basecall_path /path/to/bam_basecall --archive_path /path/to/archive/directory
+  npg_pipeline_check_bam_file_cluster_count --id_run 1234 --position 4 \
+    --bam_basecall_path /path/to/bam_basecall --archive_path /path/to/archive/directory
 
 =head1 REQUIRED ARGUMENTS
 
@@ -40,7 +51,7 @@ pathways which will eventually allow determination of bam_basecall and archive l
 
 =head1 EXIT STATUS
 
-0
+ 0
 
 =head1 SUBROUTINES/METHODS
 
@@ -60,6 +71,8 @@ pathways which will eventually allow determination of bam_basecall and archive l
 
 =item lib
 
+=item Log::Log4perl
+
 =item npg_pipeline::archive::file::BamClusterCounts
 
 =back
@@ -74,7 +87,7 @@ Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Limited
+Copyright (C) 2016 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
