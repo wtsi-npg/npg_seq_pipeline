@@ -4,7 +4,7 @@ LIST OF CHANGES
  - when comparing checksums, generate seqchksums for each cram file and merge
    the results rather than merging the cram files and generating seqchksum
 
- release 51.7
+release 51.7
  - replaces the original log role with the one from DNAP utilities,
    which provides a Log4perl logger and some convenience methods.
 
