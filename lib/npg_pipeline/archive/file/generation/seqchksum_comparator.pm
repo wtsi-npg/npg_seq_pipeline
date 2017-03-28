@@ -124,9 +124,7 @@ sub _compare_lane {
     $self->logcroak("Cannot find any cram files using $cram_file_name_glob");
   $self->info("Building .all.seqchksum for lane $position from cram in $cram_file_name_glob ...");
 
-  my $cram_plex_str = join q{ }, @crams;
-  my $cmd = 'samtools1 merge -c -u - ' . $cram_plex_str;
-  $cmd .= '| bamseqchksum inputformat=bam > ' . $lane_seqchksum_file_name;
+  my $cmd = 'seqchksum_merge.pl ' . join(q{ }, @crams) . qq{> $lane_seqchksum_file_name};
 
   if ($cmd ne q{}) {
     $self->info("Running $cmd to generate $lane_seqchksum_file_name");
