@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - p4stage2 speed-up by caching references
+ - p4stage2 errors in getting a reference made fatal
+
 release 51.8
  - when comparing checksums, generate seqchksums for each cram file and merge
    the results rather than merging the cram files and generating seqchksum
