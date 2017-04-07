@@ -1,11 +1,9 @@
 package npg_pipeline::archive::file::generation::seq_alignment;
 
 use Moose;
-use Carp;
 use English qw{-no_match_vars};
 use Readonly;
 use Moose::Meta::Class;
-use Try::Tiny;
 use File::Slurp;
 use JSON::XS;
 use List::Util qw(sum);
@@ -18,11 +16,11 @@ use npg_tracking::data::bait;
 use npg_pipeline::lsf_job;
 use npg_common::roles::software_location;
 use st::api::lims;
+
 extends q{npg_pipeline::base};
 
 our $VERSION  = '0';
 
-Readonly::Scalar our $DNA_ALIGNMENT_SCRIPT         => q{bam_alignment.pl};
 Readonly::Scalar our $NUM_SLOTS                    => q(12,16);
 Readonly::Scalar our $MEMORY                       => q{32000}; # memory in megabytes
 Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
@@ -33,31 +31,23 @@ Readonly::Scalar my  $QC_SCRIPT_NAME               => q{qc};
 A path to phix reference for bwa alignment to split phiX spike-in reads
 
 =cut
-has 'phix_reference' => (isa => 'Str',
-                         is => 'rw',
-                         required => 0,
+has 'phix_reference' => (isa        => 'Str',
+                         is         => 'rw',
+                         required   => 0,
                          lazy_build => 1,
-);
+                        );
 sub _build_phix_reference {
-   my $self = shift;
+  my $self = shift;
 
-   my $ruser = Moose::Meta::Class->create_anon_class(
-     roles => [qw/npg_tracking::data::reference::find/]
-   )->new_object({
-     species => q{PhiX},
-     aligner => q{fasta},
-     ($self->repository ? (q(repository)=>$self->repository) : ())
-   });
+  my $ruser = Moose::Meta::Class->create_anon_class(
+    roles => [qw/npg_tracking::data::reference::find/]
+  )->new_object({
+    species => q{PhiX},
+    aligner => q{fasta},
+    ($self->repository ? (q(repository)=>$self->repository) : ())
+		});
 
-   my $phix_ref;
-   eval {
-      $phix_ref = $ruser->refs->[0];
-      1;
-   } or do{
-      carp $EVAL_ERROR;
-   };
-
-   return $phix_ref;
+  return $ruser->refs->[0];
 }
 
 has q{_AlignmentFilter_jar} => (
@@ -84,9 +74,9 @@ sub _build_input_path {
 }
 
 has 'job_name_root'  => ( isa        => 'Str',
-                           is         => 'ro',
-                           lazy_build => 1,
-                         );
+                          is         => 'ro',
+                          lazy_build => 1,
+                        );
 sub _build_job_name_root {
   my $self = shift;
   return join q{_}, q{seq_alignment},$self->id_run(),$self->timestamp();
@@ -97,10 +87,16 @@ has '_job_args'   => ( isa     => 'HashRef',
                        default => sub { return {};},
                      );
 
-has '_using_alt_reference' => ( isa => 'Bool',
-                                is  => 'rw',
+has '_using_alt_reference' => ( isa     => 'Bool',
+                                is      => 'rw',
                                 default => 0,
                               );
+
+has '_ref_cache' => (isa      => 'HashRef',
+                     is       => 'ro',
+                     required => 0,
+                     default  => sub {return {};},
+                    );
 
 sub _create_lane_dirs {
   my ($self, @positions) = @_;
@@ -121,15 +117,14 @@ sub _create_lane_dirs {
   for my $position (@indexed_lanes) {
     my $lane_output_dir = $output_dir . $position;
     if( ! -d $lane_output_dir ) {
-       $self->info( qq{creating $lane_output_dir} );
-       my $rc = `mkdir -p $lane_output_dir`;
-       if ( $CHILD_ERROR ) {
-         croak qq{could not create $lane_output_dir\n\t$rc};
-       }
+      $self->info( qq{creating $lane_output_dir} );
+      my $rc = `mkdir -p $lane_output_dir`;
+      if ( $CHILD_ERROR ) {
+        $self->logcroak(qq{could not create $lane_output_dir\n\t$rc});
+      }
+    } else {
+      $self->info( qq{ already exists: $lane_output_dir} );
     }
-   else {
-       $self->info( qq{ already exists: $lane_output_dir} );
-   }
   }
 
   return;
@@ -223,10 +218,10 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   ####################################
   my $p4_param_vals = {
     samtools_executable => q{samtools1},
-    indatadir => $input_path,
-    outdatadir => $archive_path,
-    af_metrics => $name_root.q{.bam_alignment_filter_metrics.json},
-    rpt => $name_root,
+    indatadir           => $input_path,
+    outdatadir          => $archive_path,
+    af_metrics          => $name_root.q{.bam_alignment_filter_metrics.json},
+    rpt                 => $name_root,
     phix_reference_genome_fasta => $self->phix_reference,
     alignment_filter_jar => $self->_AlignmentFilter_jar,
   };
@@ -261,7 +256,9 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
 
   #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
   #TODO: support these various options below in P4 analyses
-  croak qq{only paired reads supported for RNA or non-consented human ($name_root)} if (not $self->is_paired_read) and ($do_rna or $nchs);
+  if ((not $self->is_paired_read) and ($do_rna or $nchs)) {
+    $self->logcroak(qq{only paired reads supported for RNA or non-consented human ($name_root)});
+  }
 
   ########
   # no target alignment:
@@ -304,10 +301,9 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     else {
       $bait_stats_flag = q(-prune_nodes '"'"'fop.*samtools_stats_F0.*00_bait.*'"'"');
     }
-  }
-  else {
-      $bait_stats_flag = q(-prune_nodes '"'"'foptgt.*samtools_stats_F0.*00_bait.*'"'"');
-      $spike_splicing = q[-splice_nodes '"'"'src_bam:-foptgt_bamsort_coord:;foptgt_seqchksum_tee:__FINAL_OUT__-scs_cmp_seqchksum:__OUTPUTCHK_IN__'"'"'];
+  } else {
+    $bait_stats_flag = q(-prune_nodes '"'"'foptgt.*samtools_stats_F0.*00_bait.*'"'"');
+    $spike_splicing = q[-splice_nodes '"'"'src_bam:-foptgt_bamsort_coord:;foptgt_seqchksum_tee:__FINAL_OUT__-scs_cmp_seqchksum:__OUTPUTCHK_IN__'"'"'];
   }
 
   if($do_rna) {
@@ -479,16 +475,16 @@ sub _do_rna_analysis {
     $self->debug(qq{$lstring - not RNA library type});
     return 0;
   }
-  if((not $l->reference_genome) or (not $l->reference_genome =~ /Homo_sapiens|Mus_musculus|Plasmodium_(?:falciparum|berghei)/smx)){
+  if (not $self->is_paired_read) {
+    $self->debug(qq{$lstring - Single end run (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on single end data
+    return 0;
+  }
+  if ((not $l->reference_genome) or (not $l->reference_genome =~ /Homo_sapiens|Mus_musculus|Plasmodium_(?:falciparum|berghei)/smx)) {
     $self->debug(qq{$lstring - Not human or mouse or plasmodium falciparum or berghei (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on all eukaryotes?
     return 0;
   }
-  if(not $self->_transcriptome($l)->transcriptome_index_name()){
+  if (not $self->_transcriptome($l)->transcriptome_index_name()) {
     $self->debug(qq{$lstring - no transcriptome set}); #TODO: RNAseq should work without transcriptome?
-    return 0;
-  }
-  if(not $self->is_paired_read){
-    $self->debug(qq{$lstring - Single end run (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on single end data
     return 0;
   }
   $self->debug(qq{$lstring - Do RNAseq analysis....});
@@ -497,30 +493,29 @@ sub _do_rna_analysis {
 }
 
 sub _transcriptome {
-    my ($self, $l) = @_;
-    my $t = npg_tracking::data::transcriptome->new (
+  my ($self, $l) = @_;
+  return npg_tracking::data::transcriptome->new(
                 {'id_run'     => $l->id_run, #TODO: use lims object?
                  'position'   => $l->position,
                  'tag_index'  => $l->tag_index,
                  ( $self->repository ? ('repository' => $self->repository):())
                 });
-    return($t);
 }
 
 sub _do_bait_stats_analysis {
   my ($self, $l) = @_;
   my $lstring = $l->to_string;
   if(not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam) {
-      $self->debug(qq{$lstring - no reference or no alignments set});
-      return 0;
+    $self->debug(qq{$lstring - no reference or no alignments set});
+    return 0;
   }
   if(not $self->_bait($l)->bait_name){
-      $self->debug(qq{$lstring - No bait set});
-      return 0;
+    $self->debug(qq{$lstring - No bait set});
+    return 0;
   }
   if(not $self->_bait($l)->bait_path){
-      $self->debug(qq{$lstring - No bait path found});
-      return 0;
+    $self->debug(qq{$lstring - No bait path found});
+    return 0;
   }
   $self->debug(qq{$lstring - Doing optional bait stats analysis....});
 
@@ -539,32 +534,41 @@ sub _bait{
 
 sub _ref {
   my ($self, $l, $aligner) = @_;
+
+  if (!$aligner) {
+    $self->logcroak('Aligner missing');
+  }
+  my $ref_name = $l->reference_genome();
+  my $ref = $ref_name ? $self->_ref_cache->{$ref_name}->{$aligner} : undef;
   my $lstring = $l->to_string;
 
-  my $href = { 'aligner' => ($aligner||'bowtie2'), 'lims' => $l, };
-  if ($self->repository) {
-    $href->{'repository'} = $self->repository;
-  }
-  my $ruser = Moose::Meta::Class->create_anon_class(
+  if (!$ref) {
+    my $href = { 'aligner' => $aligner, 'lims' => $l, };
+    if ($self->repository) {
+      $href->{'repository'} = $self->repository;
+    }
+    my $ruser = Moose::Meta::Class->create_anon_class(
        roles => [qw/npg_tracking::data::reference::find/])->new_object($href);
-  my @refs;
-  try {
-    @refs =  @{$ruser->refs};
-  } catch {
-    $self->error("Error getting reference: $_");
-  };
-
-  if (!@refs) {
-    $self->warn(qq{No reference genome set for $lstring});
-    return 0;
+    my @refs =  @{$ruser->refs};
+    if (!@refs) {
+      $self->warn(qq{No reference genome set for $lstring});
+    } else {
+      if (scalar @refs > 1) {
+        $self->logcroak(qq{Multiple references for $lstring});
+      } else {
+        $ref = $refs[0];
+        if ($ref_name) {
+          $self->_ref_cache->{$ref_name}->{$aligner} = $ref;
+        }
+      }
+    }
   }
-  if (scalar @refs > 1) {
-    $self->error(qq{Multiple references for $lstring});
-    return 0;
-  }
-  $self->info(qq{Reference set for $lstring: $refs[0]});
 
-  return $refs[0];
+  if ($ref) {
+    $self->info(qq{Reference set for $lstring: $ref});
+  }
+
+  return $ref;
 }
 
 sub _job_index {
@@ -586,32 +590,32 @@ sub _default_resources {
 }
 
 sub _default_human_split_ref {
-   my ($self, $aligner, $repos) = @_;
+  my ($self, $aligner, $repos) = @_;
 
-   my $ruser = Moose::Meta::Class->create_anon_class(
+  my $ruser = Moose::Meta::Class->create_anon_class(
           roles => [qw/npg_tracking::data::reference::find/])
           ->new_object({
                          species => q{Homo_sapiens},
                          aligner => $aligner,
                         ($repos ? (q(repository)=>$repos) : ())
-                       } );
+                       });
 
-   my $human_ref;
-   try {
-      $human_ref = $ruser->refs->[0];
-      if($aligner eq q{picard}) {
-        $human_ref .= q{.dict};
-      }
-   } catch {
-      $self->error('Error getting default human split reference ' . $_);
-   };
+  my $human_ref = $ruser->refs->[0];
+  if($aligner eq q{picard}) {
+    $human_ref .= q{.dict};
+  }
 
-   return $human_ref;
+  return $human_ref;
 }
 
 sub _is_alt_reference {
     my ($self, $l) = @_;
-    return -e $self->_ref($l,'bwa0_6') . '.alt';
+    my $ref = $self->_ref($l, q{bwa0_6});
+    if ($ref) {
+      $ref .= q{.alt};
+      return -e $ref;
+    }
+    return;
 }
 
 sub _p4_stage2_params_path {
@@ -627,6 +631,7 @@ sub _p4_stage2_params_path {
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
 __END__
 
@@ -642,7 +647,7 @@ npg_pipeline::archive::file::generation::seq_alignment
 
 =head1 DESCRIPTION
 
-LSF job creation for seq alignment
+LSF job creation for alignment
 
 =head1 SUBROUTINES/METHODS
 
@@ -656,9 +661,7 @@ LSF job creation for seq alignment
 
 =over
 
-=item Carp
-
-=item English -no_match_vars
+=item English
 
 =item Readonly
 
@@ -666,13 +669,25 @@ LSF job creation for seq alignment
 
 =item Moose::Meta::Class
 
-=item Try::Tiny
-
 =item File::Slurp
+
+=item JSON::XS
+
+=item List::Util
+
+=item List::MoreUtils
+
+=item open
+
+=item st::api::lims
 
 =item npg_tracking::data::reference::find
 
 =item npg_tracking::data::bait
+
+=item npg_tracking::data::transcriptome
+
+=item npg_common::roles::software_location
 
 =back
 
@@ -686,7 +701,7 @@ David K. Jackson (david.jackson@sanger.ac.uk)
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Ltd
+Copyright (C) 2017 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
