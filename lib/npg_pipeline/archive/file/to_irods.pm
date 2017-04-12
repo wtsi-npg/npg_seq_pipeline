@@ -121,7 +121,7 @@ returns an array of lsf job ids
 
 =item Moose
 
-=use Readonly
+=item Readonly
 
 =back
 
