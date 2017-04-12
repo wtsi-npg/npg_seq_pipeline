@@ -1,8 +1,6 @@
 package npg_pipeline::archive::file::to_irods;
 
 use Moose;
-use Carp;
-use English qw{-no_match_vars};
 use Readonly;
 
 extends qw{npg_pipeline::base};
@@ -123,9 +121,7 @@ returns an array of lsf job ids
 
 =item Moose
 
-=item Carp
-
-=item English -no_match_vars
+=use Readonly
 
 =back
 
