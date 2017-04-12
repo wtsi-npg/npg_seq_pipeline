@@ -3,6 +3,8 @@ LIST OF CHANGES
 
  - p4stage2 speed-up by caching references
  - p4stage2 errors in getting a reference made fatal
+ - add --restart_file option to the iRODS publish script and pin the script's
+     process file name to a particular LSF job
 
 release 51.8
  - when comparing checksums, generate seqchksums for each cram file and merge

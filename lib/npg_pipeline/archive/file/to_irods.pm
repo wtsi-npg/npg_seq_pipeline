@@ -3,10 +3,13 @@ package npg_pipeline::archive::file::to_irods;
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
+use Readonly;
 
 extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
+
+Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
 
 sub submit_to_lsf {
   my ($self, $arg_refs) = @_;
@@ -31,8 +34,7 @@ sub _generate_bsub_command {
 
   my $required_job_completion = $arg_refs->{'required_job_completion'};
   my $timestamp = $self->timestamp();
-  my $archive_script = q{npg_publish_illumina_run.pl};
-  my $job_name_prefix = $archive_script . q{_} . $self->id_run();
+  my $job_name_prefix = $PUBLISH_SCRIPT_NAME . q{_} . $self->id_run();
   my $job_name = $job_name_prefix . q{_} . $timestamp;
 
   my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
@@ -40,7 +42,7 @@ sub _generate_bsub_command {
 
   $bsub_command .=  ( $self->fs_resource_string( {
     counter_slots_per_job => 1,
-    seq_irods             => $self->general_values_conf()->{default_lsf_irods_resource},
+    seq_irods             => $self->general_values_conf()->{'default_lsf_irods_resource'},
   } ) ) . q{ };
 
   $bsub_command .=  qq{-E 'script_must_be_unique_runner -job_name="$job_name_prefix"' };
@@ -51,7 +53,13 @@ sub _generate_bsub_command {
     $bsub_command .= q{irodsEnvFile=$}.q{HOME/.irods/.irodsEnv-} . $irodsinstance . q{-iseq };
   }
 
-  $bsub_command .=  $archive_script . q{ --archive_path } . $self->archive_path() . q{ --runfolder_path } . $self->runfolder_path();
+  ##no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+  my $publish_process_log_name =  q(process_publish_${LSB_JOBID}.json);
+  ##use critic
+  $bsub_command .= $PUBLISH_SCRIPT_NAME
+    . q{ --archive_path }   . $self->archive_path()
+    . q{ --runfolder_path } . $self->runfolder_path()
+    . q{ --restart_file }   . join q[/], $self->archive_path(), $publish_process_log_name;
 
   if ($self->qc_run) {
     $bsub_command .= q{ --alt_process qc_run};
@@ -131,7 +139,7 @@ Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd.
+Copyright (C) 2017 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

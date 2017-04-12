@@ -43,13 +43,12 @@ sub create_analysis {
 
 {
   my $bam_irods;
-
   lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new(
-    function_list => q{post_qc_review},
-    run_folder => q{123456_IL2_1234},
-    runfolder_path => $analysis_runfolder_path,
-    timestamp => q{20090709-123456},
-    verbose => 0,
+    function_list     => q{post_qc_review},
+    run_folder        => q{123456_IL2_1234},
+    runfolder_path    => $analysis_runfolder_path,
+    timestamp         => q{20090709-123456},
+    verbose           => 0,
     recalibrated_path => $pb_cal_path,
   ); } q{created with run_folder ok};
   isa_ok($bam_irods , q{npg_pipeline::archive::file::to_irods}, q{object test});
@@ -63,23 +62,22 @@ sub create_analysis {
   lives_ok { @jids = $bam_irods->submit_to_lsf($arg_refs); } q{no croak submitting job to lsf};
 
   is(scalar@jids, 1, q{only one job submitted});
-
-  my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-  my $expected_command = q{bsub -q lowload -w'done(123) && done(321)' -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234'};
+  my $archive_path = "$pb_cal_path/archive";
+  my $bsub_command = $bam_irods ->_generate_bsub_command($arg_refs);
+  my $expected_command = qq[bsub -q lowload -w'done(123) && done(321)' -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json'];
   is( $bsub_command, $expected_command, q{generated bsub command is correct});
 }
 
 {
   my $bam_irods;
-
   lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new(
-    function_list => q{post_qc_review},
-    run_folder => q{123456_IL2_1234},
-    runfolder_path => $analysis_runfolder_path,
+    function_list     => q{post_qc_review},
+    run_folder        => q{123456_IL2_1234},
+    runfolder_path    => $analysis_runfolder_path,
     recalibrated_path => $pb_cal_path,
-    timestamp => q{20090709-123456},
-    verbose => 0,
-    lanes      => [8],
+    timestamp         => q{20090709-123456},
+    verbose           => 0,
+    lanes             => [8],
   ); } q{created with run_folder ok};
   isa_ok($bam_irods , q{npg_pipeline::archive::file::to_irods}, q{object test});
   create_analysis();
@@ -92,53 +90,51 @@ sub create_analysis {
   lives_ok { @jids = $bam_irods->submit_to_lsf($arg_refs); } q{no croak submitting job to lsf};
 
   is(scalar@jids, 1, q{only one job submitted});
-
-  my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-  my $expected_command = q{bsub -q lowload -w'done(123) && done(321)' -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --positions 8'};
+  my $archive_path = "$pb_cal_path/archive";
+  my $bsub_command = $bam_irods ->_generate_bsub_command($arg_refs);
+  my $expected_command = qq[bsub -q lowload -w'done(123) && done(321)' -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json --positions 8'];
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 
 {
   my $bam_irods;
-
   lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new(
-    function_list => q{post_qc_review},
-    run_folder => q{123456_IL2_1234},
-    runfolder_path => $analysis_runfolder_path,
-    id_flowcell_lims => q{1023456789111},
+    function_list     => q{post_qc_review},
+    run_folder        => q{123456_IL2_1234},
+    runfolder_path    => $analysis_runfolder_path,
+    id_flowcell_lims  => q{1023456789111},
     recalibrated_path => $pb_cal_path,
-    timestamp => q{20090709-123456},
-    verbose => 0,
+    timestamp         => q{20090709-123456},
+    verbose           => 0,
   ); } q{created with run_folder ok};
 
   my $arg_refs = {
     required_job_completion => q{-w'done(123) && done(321)'},
   };
-
-  my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-  my $expected_command = q{bsub -q lowload -w'done(123) && done(321)' -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --alt_process qc_run'};
+  my $archive_path = "$pb_cal_path/archive";
+  my $bsub_command = $bam_irods ->_generate_bsub_command($arg_refs);
+  my $expected_command = qq[bsub -q lowload -w'done(123) && done(321)' -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json --alt_process qc_run'];
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 
 {
   my $bam_irods;
-
   lives_ok { $bam_irods = npg_pipeline::archive::file::to_irods->new(
-    function_list => q{post_qc_review_gclp},
-    run_folder => q{123456_IL2_1234},
-    runfolder_path => $analysis_runfolder_path,
-    id_flowcell_lims => q{1023456789111},
+    function_list     => q{post_qc_review_gclp},
+    run_folder        => q{123456_IL2_1234},
+    runfolder_path    => $analysis_runfolder_path,
+    id_flowcell_lims  => q{1023456789111},
     recalibrated_path => $pb_cal_path,
-    timestamp => q{20090709-123456},
-    verbose => 0,
+    timestamp         => q{20090709-123456},
+    verbose           => 0,
   ); } q{created with run_folder ok};
 
   my $arg_refs = {
     required_job_completion => q{-w'done(123) && done(321)'},
   };
-
-  my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-  my $expected_command = q{bsub -q lowload -w'done(123) && done(321)' -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'irodsEnvFile=$HOME/.irods/.irodsEnv-gclp-iseq npg_publish_illumina_run.pl --archive_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal/archive --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234 --alt_process qc_run --collection /14mg/seq/illumina/run/1234'};
+  my $archive_path = "$pb_cal_path/archive";
+  my $bsub_command = $bam_irods ->_generate_bsub_command($arg_refs);
+  my $expected_command = qq[bsub -q lowload -w'done(123) && done(321)' -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'irodsEnvFile=\$HOME/.irods/.irodsEnv-gclp-iseq npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json --alt_process qc_run --collection /14mg/seq/illumina/run/1234'];
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 
