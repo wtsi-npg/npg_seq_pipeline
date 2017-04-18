@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 42;
+use Test::More tests => 41;
 use Test::Exception;
 use Test::Differences;
 use Test::Warn;
@@ -271,13 +271,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   make_path($qc_dir);
   make_path($lane6_qc_dir);
 
-  my $destination = "$tmp/references";
-  dircopy('t/data/qc/references', $destination);
-  make_path("$tmp/genotypes");
-  my $new_dir = $destination . '/Homo_sapiens/CGP_GRCh37.NCBI.allchr_MT/all/fasta';
-  make_path($new_dir);
-  write_file("$new_dir/Homo_sapiens.GRCh37.NCBI.allchr_MT.fa", qw/some ref/);
-
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14043.csv';
 
@@ -293,12 +286,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   };
 
   my $qc = npg_pipeline::archive::file::qc->new($init);
-  throws_ok { $qc->_should_run(1) }
-    qr/Attribute \(ref_repository\) does not pass the type constraint/,
-    'ref repository does not exists - error';
-
-  $init->{'repository'} = $tmp;
-  $qc = npg_pipeline::archive::file::qc->new($init);
   ok ($qc->_should_run(1), 'genotype check can run for a non-indexed lane');
   ok (!$qc->_should_run(6), 'genotype check cannot run for an indexed lane');
   ok ($qc->_should_run(6,0),
