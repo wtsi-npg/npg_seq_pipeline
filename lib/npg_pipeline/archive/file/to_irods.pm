@@ -8,6 +8,7 @@ extends qw{npg_pipeline::base};
 our $VERSION = '0';
 
 Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
+Readonly::Scalar my $NUM_MAX_ERRORS      => 20;
 
 sub submit_to_lsf {
   my ($self, $arg_refs) = @_;
@@ -54,10 +55,12 @@ sub _generate_bsub_command {
   ##no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
   my $publish_process_log_name =  q(process_publish_${LSB_JOBID}.json);
   ##use critic
+  my $max_errors = $self->general_values_conf()->{'publish2irods_max_errors'} || $NUM_MAX_ERRORS;
   $bsub_command .= $PUBLISH_SCRIPT_NAME
     . q{ --archive_path }   . $self->archive_path()
     . q{ --runfolder_path } . $self->runfolder_path()
-    . q{ --restart_file }   . join q[/], $self->archive_path(), $publish_process_log_name;
+    . q{ --restart_file }   . (join q[/], $self->archive_path(), $publish_process_log_name)
+    . q{ --max_errors }     . $max_errors;
 
   if ($self->qc_run) {
     $bsub_command .= q{ --alt_process qc_run};
