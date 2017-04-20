@@ -6,6 +6,7 @@ use Cwd qw/getcwd/;
 use List::MoreUtils qw/ any none /;
 use Log::Log4perl qw(:levels);
 
+use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
 
 local $ENV{http_proxy} = 'http://wibble';
@@ -86,7 +87,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
 }
 
 {
-  local $ENV{CLASSPATH} = q{t/bin/software/solexa/bin/aligners/illumina2bam/current};
+  local $ENV{CLASSPATH} = q{t/bin/software/solexa/jars};
   my $pipeline;
   lives_ok {
     $pipeline = $central->new(
@@ -110,7 +111,8 @@ my $runfolder_path = $util->analysis_runfolder_path();
     no_bsub => 1,
     olb     => 1,
   );
-  is ($pipeline->function_list, getcwd() . '/data/config_files/function_list_central_olb.yml',
+  is ($pipeline->function_list,
+    abs_path(getcwd() . '/data/config_files/function_list_central_olb.yml'),
     'olb function list');
   $bool = any {$_ =~ /bustard/} @{$pipeline->function_order()};
   ok( $bool, 'bustard functions are in');
@@ -157,7 +159,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
     qr/Error submitting jobs: no such file on CLASSPATH: BamAdapterFinder\.jar/, 
     q{error running qc->main() when CLASSPATH is not set correctly for illumina2bam job};
 
-  local $ENV{CLASSPATH} = q[t/bin/software/solexa/bin/aligners/illumina2bam/current];
+  local $ENV{CLASSPATH} = q[t/bin/software/solexa/jars];
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   lives_ok { $pb->main() } q{no croak running qc->main() when CLASSPATH is set correctly for illumina2bam job};
   my $timestamp = $pb->timestamp;

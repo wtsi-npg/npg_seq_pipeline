@@ -4,6 +4,8 @@ use Test::More tests => 21;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
+
+use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
 
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
@@ -57,7 +59,7 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 
   is($pluggable->id_run(), 1234, q{$pluggable->id_run() populated on new});
   is($pluggable->script_name(), q{t/10-pluggable.t}, q{$pluggable->script_name() obtained});
-  is($pluggable->conf_path, join(q[/], getcwd, 't/../data/config_files'), 'local conf path is built');
+  is($pluggable->conf_path, abs_path(join(q[/], getcwd, '/data/config_files')), 'local conf path is built');
   is(join(q[ ], @{$pluggable->function_order}), 'lsf_start my_function lsf_end', '2 functions added implicitly');
   throws_ok {$pluggable->main()} qr{Error submitting jobs: Can't locate object method "my_function" via package "npg_pipeline::pluggable"} , 'error when unknown function is used';
   my $finish;

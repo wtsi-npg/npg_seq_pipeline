@@ -17,11 +17,11 @@ GetOptions(
 ) or die "Problem with command line arguments\n";
 
 my $n = 0;
-if( my$bindvar = $ENV{'LSB_BIND_CPU_LIST'} ) {
+if( my $bindvar = $ENV{'LSB_BIND_CPU_LIST'} ) {
   $n = scalar(() = $bindvar=~/\d+/smxg);
 }
-if ( !$n ) {
-  ($n) = $ENV{'LSB_MCPU_HOSTS'}=~/(\d+)\s*\Z/smx;
+if ( (!$n) && (my $mcpu_hosts = $ENV{'LSB_MCPU_HOSTS'})) {
+  ($n) = $mcpu_hosts =~ /(\d+)\s*\Z/smx;
 }
 if ($maximum and $n > $maximum) {
   $n = $maximum;

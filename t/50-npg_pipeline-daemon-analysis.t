@@ -10,6 +10,7 @@ use English qw{ -no_match_vars };
 
 use t::util;
 use t::dbic_util;
+use npg_tracking::util::abs_path qw(abs_path);
 
 $ENV{'http_proxy'} = 'http://wibble.com';
 my $util = t::util->new();
@@ -28,7 +29,7 @@ use_ok($package);
 my $script = join q[/],  $temp_directory, $script_name;
 `touch $script`;
 `chmod +x $script`;
-my $current_dir = getcwd();
+my $current_dir = abs_path(getcwd());
 local $ENV{PATH} = join q[:], $temp_directory, $current_dir.'/t/bin', $ENV{PATH};
 
 my $dbic_util = t::dbic_util->new();
@@ -274,7 +275,7 @@ subtest 'generate command' => sub {
   $lims_data->{'rf_path'} = 't';
   $lims_data->{'software'} = q[];
   my $original_path = $ENV{'PATH'};
-  my $perl_bin = $EXECUTABLE_NAME;
+  my $perl_bin = abs_path($EXECUTABLE_NAME);
   $perl_bin =~ s/\/perl\Z//smx;
   my $path = join q[:], "${current_dir}/t", $perl_bin, $original_path;
   my $command = q[/bin/true --verbose --job_priority 4 --runfolder_path t --qc_run --id_flowcell_lims 55];

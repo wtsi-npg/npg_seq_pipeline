@@ -9,7 +9,8 @@ use File::Path qw(make_path);
 use Cwd;
 use Perl6::Slurp;
 use JSON;
-use Data::Dumper;
+
+use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
 
 my $util = t::util->new();
@@ -17,11 +18,11 @@ my $dir = $util->temp_directory();
 $ENV{TEST_DIR} = $dir;
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data/p4_stage1_analysis';
-local $ENV{CLASSPATH} = q{t/bin/software/solexa/bin/aligners/illumina2bam/current};
+local $ENV{CLASSPATH} = q{t/bin/software/solexa/jars};
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 
 use_ok('npg_pipeline::archive::file::generation::p4_stage1_analysis');
-my $current = getcwd();
+my $current = abs_path(getcwd());
 
 my $new = "$dir/1234_samplesheet.csv";
 `cp -r t/data/p4_stage1_analysis/* $dir`;
@@ -148,7 +149,7 @@ subtest 'check_save_arguments' => sub {
 	  'i2b_run_path' => $dir . q[/nfs/sf45/IL2/analysis/123456_IL2_1234],
 	  'teepot_tempdir' => '.',
 	  'split_prefix' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/lane1',
-	  'illumina2bam_jar' => $current . '/t/bin/software/solexa/bin/aligners/illumina2bam/Illumina2bam-tools-1.00/Illumina2bam.jar',
+	  'illumina2bam_jar' => $current . '/t/bin/software/solexa/jars/Illumina2bam.jar',
 	  'i2b_intensity_dir' => $intensities_dir,
 	  'i2b_sample_aliases' => 'SRS000147',
 	  'phix_alignment_method' => 'bwa_aln_se',
