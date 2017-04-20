@@ -130,7 +130,7 @@ sub submit_bsub_command {
       $self->error(qq{Error attempting ($count) to submit job $cmd \n\n.\tError code $CHILD_ERROR});
       sleep $min_sleep ** $count;
       $count++;
-     } else {
+    } else {
       $count = $max_tries_plus_one;
     }
   }
