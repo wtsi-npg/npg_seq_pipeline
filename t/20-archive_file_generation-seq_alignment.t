@@ -14,7 +14,7 @@ use_ok('npg_pipeline::archive::file::generation::seq_alignment');
 local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/rna_seq];
 local $ENV{'TEST_FS_RESOURCE'} = 'nfs-sf3';
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
-local $ENV{CLASSPATH} = q[t/bin/software/solexa/bin/aligners/illumina2bam/current];
+local $ENV{CLASSPATH} = q[t/bin/software/solexa/jars];
 
 my $odir = abs_path cwd;
 my $dir = tempdir( CLEANUP => 1);
