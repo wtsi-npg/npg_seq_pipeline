@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::More tests => 8;
 use Cwd;
+use npg_tracking::util::abs_path qw(abs_path);
 
 use_ok('npg_tracking::daemon::archival');
 {
@@ -11,7 +12,7 @@ use_ok('npg_tracking::daemon::archival');
 
 {
     my $command = 'npg_pipeline_archival_runner';
-    my $log_dir = join(q[/],getcwd(), 'logs');
+    my $log_dir = abs_path(join(q[/],getcwd(), 'logs'));
     my $host = q[sf2-farm-srv1];
     my $r = npg_tracking::daemon::archival->new(timestamp => 2013);
     is($r->hosts->[0], $host, 'default host name');
