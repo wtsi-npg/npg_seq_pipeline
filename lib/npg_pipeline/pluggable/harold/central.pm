@@ -3,7 +3,6 @@ package npg_pipeline::pluggable::harold::central;
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
-use Readonly;
 use File::Spec;
 use List::MoreUtils qw/any/;
 
@@ -26,24 +25,7 @@ Pluggable module runner for the main pipeline
 
 =cut
 
-Readonly::Array our @OLB_FUNCTIONS => qw/ matrix_lanes    matrix_all
-                                          phasing_lanes   phasing_all
-                                          basecalls_lanes basecalls_all
-                                        /;
 =head1 SUBROUTINES/METHODS
-
-=cut
-
-has '_pbcal_obj' => (
-                isa => 'npg_pipeline::analysis::harold_calibration_bam',
-                is  => 'ro',
-                lazy => 1,
-                builder => '_build_pbcal_obj',
-                    );
-sub _build_pbcal_obj {
-  my $self = shift;
-  return $self->new_with_cloned_attributes(q{npg_pipeline::analysis::harold_calibration_bam});
-}
 
 =head2 prepare
 
@@ -58,7 +40,6 @@ override 'prepare' => sub {
   my $self = shift;
   $self->_set_paths();
   super(); # Correct order!
-  $self->_inject_bustard_functions();
   return;
 };
 
@@ -172,34 +153,6 @@ sub _set_bam_basecall_dependent_paths {
   return;
 }
 
-
-####
-# Dynamically creates functions to run OLB preprocessing.
-#
-sub _inject_bustard_functions {
-  my $self = shift;
-
-  foreach my $function (@OLB_FUNCTIONS) {
-    ##no critic (TestingAndDebugging::ProhibitNoStrict TestingAndDebugging::ProhibitNoWarnings)
-    no strict 'refs';
-    no warnings 'redefine';
-    my $fpointer = 'bustard_' . $function;
-    if ($self->olb) {
-      *{$fpointer}= sub {  my ($self, @args) = @_;
-                           my $job_dep = shift @args;
-                           return npg_pipeline::analysis::bustard4pbcb->new(
-                             pipeline=>$self,
-                             bustard_home=>$self->intensity_path,
-                             bustard_dir=>$self->basecall_path,
-                             id_run=>$self->id_run,
-                             lanes=>$self->lanes)->make($function,$job_dep); };
-    } else {
-      *{$fpointer}= sub { $self->info('OLB preprocessing switched off, not running ' . $function ); return (); }
-    }
-  }
-  return;
-}
-
 =head2 illumina_basecall_stats
 
 Use Illumina tools to generate the (per run) BustardSummary and IVC reports (from on instrument RTA basecalling).
@@ -213,50 +166,8 @@ sub illumina_basecall_stats {
     $self->info(q{HiSeqX sequencing instrument, illumina_basecall_stats will not be run});
     return ();
   }
-  return $self->_run_harold_steps( q{generate_illumina_basecall_stats}, @args);
-}
-
-=head2 harold_alignment_files
-
-Generate the alignment files to now be used for generating calibration tables
-
-=cut
-
-sub harold_alignment_files {
-  my ($self, @args) = @_;
-  return $self->_run_harold_steps( q{generate_alignment_files}, @args);
-}
-
-=head2 harold_calibration_tables
-
-Generate the calibration tables used for harold recalibration
-
-=cut
-
-sub harold_calibration_tables {
-  my ($self, @args) = @_;
-  if ( !$self->recalibration() ) {
-    $self->info(q{recalibration is false, no recalibration will be performed});
-    return ();
-  }
-  return $self->_run_harold_steps( q{generate_calibration_table}, @args);
-}
-
-=head2 harold_recalibration
-
-submit the recalibration jobs
-
-=cut
-
-sub harold_recalibration {
-  my ($self, @args) = @_;
-  return $self->_run_harold_steps( q{generate_recalibrated_bam}, @args);
-}
-
-sub _run_harold_steps {
-  my ($self, $method, @args) = @_;
-  my $required_job_completion = shift @args;
-  return $self->_pbcal_obj->$method({required_job_completion => $required_job_completion,});
+  return $self->new_with_cloned_attributes(q{npg_pipeline::analysis::harold_calibration_bam})
+    ->generate_illumina_basecall_stats(@args);
 }
 
 =head2 split_bam_by_tag
@@ -395,8 +306,6 @@ __END__
 
 =item English -no_match_vars
 
-=item Readonly
-
 =item File::Spec
 
 =item List::MoreUtils
@@ -413,7 +322,7 @@ Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Limited
+Copyright (C) 2017 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
