@@ -1,8 +1,7 @@
-package npg_pipeline::analysis::harold_calibration_bam;
+package npg_pipeline::analysis::illumina_basecall_stats;
 
 use Moose;
 use Readonly;
-use npg_tracking::util::types;
 use npg_pipeline::lsf_job;
 
 extends 'npg_pipeline::base';
@@ -15,11 +14,9 @@ Readonly::Scalar our $MAKE_STATS_MEM => 350;
 
 =head1 NAME
 
-npg_pipeline::analysis::harold_calibration_bam
+  npg_pipeline::analysis::illumina_basecall_stats
 
 =head1 SYNOPSIS
-
-  my $oHaroldCalibration = npg_pipeline:analysis::harold_calibration_bam->new();
 
 =head1 DESCRIPTION
 
@@ -31,10 +28,13 @@ Absolute path to executable that generates Illumina basecall stats
 
 =cut 
 
-has 'bcl2qseq' => ( isa     => 'NpgTrackingExcecutable',
-                    is      => 'ro',
-                    default => 'setupBclToQseq.py',
-);
+has 'bcl2qseq' => ( isa        => 'NpgCommonResolvedPathExecutable',
+                    is         => 'ro',
+                    coerce     => 1,
+                    lazy_build => 1,);
+sub _build_bcl2qseq {
+  return 'setupBclToQseq.py'
+}
 
 sub _generate_command {
   my ( $self, $arg_refs ) = @_;
@@ -81,14 +81,14 @@ sub _generate_command {
   return join q[ ], @command;
 }
 
-=head2 generate_illumina_basecall_stats
+=head2 generate
 
 Use Illumina tools to generate the (per run) BustardSummary
 and IVC reports (from on instrument RTA basecalling).
 
 =cut
 
-sub generate_illumina_basecall_stats{
+sub generate {
   my ( $self, $arg_refs ) = @_;
   return $self->submit_bsub_command($self->_generate_command($arg_refs));
 }
@@ -112,8 +112,6 @@ __END__
 =item Moose
 
 =item Readonly
-
-=item npg_tracking::util::types
 
 =item npg_common::roles::software_location
 

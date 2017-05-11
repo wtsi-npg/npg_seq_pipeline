@@ -21,7 +21,6 @@ my $pb_cal_path = $analysis_runfolder_path . $pb_cal;
 my $rfpath = '/nfs/sf45/IL2/outgoing/123456_IL2_1234';
 
 sub create_analysis {
-  `rm -rf $tmp_dir/nfs/sf45`;
   `mkdir -p $analysis_runfolder_path/$pb_cal/archive`;
   `mkdir $analysis_runfolder_path/Config`;
   `cp t/data/Recipes/Recipe_GA2_37Cycle_PE_v6.1.xml $analysis_runfolder_path/`;

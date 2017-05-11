@@ -40,18 +40,6 @@ has q{no_summary_link} => (
   documentation => q{Turn off creating a Latest_Summary link},
 );
 
-=head2 recalibration
-
-Switches recalibration on, false by default
-
-=cut
-
-has q{recalibration} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{Switches recalibration on, false by default},
-);
-
 =head2 no_fix_config_files
 
 flag option to request that config files are not checked and fixed
@@ -172,19 +160,6 @@ sub _build_local {
   return $self->no_bsub ? 1 : 0;
 }
 
-=head2 olb
-
-Switches on OLB Bustard preprocessing to generate dif and bcl
-files and Bustard XML Summary from cif files; false by default.
-
-=cut
-
-has q{olb} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{Switches on OLB Bustard preprocessing},
-);
-
 =head2 spatial_filter
 
 Do we want to use the spatial_filter program?
@@ -236,7 +211,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2015 Genome Research Ltd
+Copyright (C) 2017 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

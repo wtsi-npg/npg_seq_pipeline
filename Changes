@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - OLB analysis removed
+ - recalibration removed
+ - pb_cal_path and dif_files_path accessors disabled
+
 release 51.9
  - p4stage2 speed-up by caching references
  - p4stage2 errors in getting a reference made fatal
