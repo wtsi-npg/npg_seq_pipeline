@@ -8,64 +8,31 @@ use Readonly;
 use Cwd qw(getcwd);
 use npg::api::request;
 
-Readonly::Scalar our $TEMP_DIR => q{/tmp};
 Readonly::Scalar our $NFS_STAGING_DISK => q{/nfs/sf45};
 
-has q{cwd} => (
-  isa => q{Str},
-  is => q{ro},
-  lazy_build => 1,
-);
-
-sub _build_cwd {
-  my ( $self ) = @_;
-  return getcwd();
-}
-
-# for getting a temporary directory which will clean up itself, and should not clash with other people attempting to run the tests
 has q{temp_directory} => (
   isa => q{Str},
   is => q{ro},
   lazy_build => 1,
 );
 sub _build_temp_directory {
-  my ( $self ) = @_;
-
-  my $tempdir = tempdir(
-    DIR => $TEMP_DIR,
-    CLEANUP => 1,
-  );
-  return $tempdir;
+  return tempdir(CLEANUP => 1);
 }
 
 ###############
 # path setups
 
 Readonly::Scalar our $DEFAULT_RUNFOLDER => q{123456_IL2_1234};
-
 Readonly::Scalar our $ANALYSIS_RUNFOLDER_PATH => $NFS_STAGING_DISK . q{/IL2/analysis/} . $DEFAULT_RUNFOLDER;
-Readonly::Scalar our $OUTGOING_RUNFOLDER_PATH => $NFS_STAGING_DISK . q{/IL2/outgoing/} . $DEFAULT_RUNFOLDER;
 Readonly::Scalar our $BUSTARD_PATH            => qq{$ANALYSIS_RUNFOLDER_PATH/Data/Intensities/Bustard1.3.4_09-07-2009_auto};
 Readonly::Scalar our $RECALIBRATED_PATH       => qq{$BUSTARD_PATH/PB_cal};
-
-sub default_runfolder {
-  my ( $self ) = @_;
-  return $DEFAULT_RUNFOLDER;
-}
-
-sub test_run_folder {
-  my ($self) = @_;
-  my $test_run_folder_path = $self->temp_directory() . $ANALYSIS_RUNFOLDER_PATH;
-  my ($run_folder) = $test_run_folder_path =~ /(\d+_IL\d+_\d+)/xms;
-  return $run_folder;
-}
 
 sub analysis_runfolder_path {
   my ( $self ) = @_;
   return $self->temp_directory() . $ANALYSIS_RUNFOLDER_PATH;
 }
 
-sub standard_analysis_bustard_path {
+sub standard_bam_basecall_path {
   my ( $self ) = @_;
   return $self->temp_directory() . $BUSTARD_PATH;
 }
@@ -169,7 +136,7 @@ sub set_rta_staging_analysis_area {
   }
   `cp t/data/Recipes/TileLayout.xml $analysis_runfolder_path/Config/`;
   `touch $recalibrated_path/touch_file`;
-  return {bustard_path => $bustard_path, recalibrated_path => $recalibrated_path, runfolder_path => $analysis_runfolder_path};
+  return {recalibrated_path => $recalibrated_path, runfolder_path => $analysis_runfolder_path};
 }
 
 sub remove_staging {
@@ -185,17 +152,16 @@ sub remove_staging {
 sub drop_temp_part_from_paths {
   my ( $self, $path ) = @_;
   my $temp_dir = $self->temp_directory();
-  my $cwd = $self->cwd();
+  my $cwd = getcwd();
   $path =~ s{\Q$temp_dir\E}{}gxms;
   $path =~ s{\Q$cwd/\E}{}gxms;
   $path =~ s{\Q$cwd\E}{}gxms;
   return $path;
 }
 
-# ensure that the environment variables do not get passed around and that extraneous files do not get left behind
+# ensure that the environment variables do not get passed around
 sub DEMOLISH {
   $ENV{ npg::api::request->cache_dir_var_name() } = q{};
-  unlink 'Latest_Summary';
 }
 
 1;

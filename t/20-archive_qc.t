@@ -10,18 +10,14 @@ use File::Slurp;
 use Cwd;
 use t::util;
 
-local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
-
 use_ok('npg_pipeline::archive::file::qc');
 
 my $util = t::util->new();
 my $tmp = $util->temp_directory();
-$ENV{TEST_DIR} = $tmp;
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 
-my $run_folder = $util->default_runfolder();
 my $pbcal = q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal};
 my $recalibrated = $util->analysis_runfolder_path() . q{/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal};
 
@@ -32,7 +28,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
 {
    throws_ok {
     npg_pipeline::archive::file::qc->new(
-      run_folder => $run_folder,
       runfolder_path => $util->analysis_runfolder_path(),
       recalibrated_path => $recalibrated,
     )
@@ -43,7 +38,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   my $aqc;
   lives_ok {
     $aqc = npg_pipeline::archive::file::qc->new(
-      run_folder => $run_folder,
       runfolder_path => $util->analysis_runfolder_path(),
       recalibrated_path => $recalibrated,
       qc_to_run => q{adapter},
@@ -68,7 +62,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   my $aqc;
   lives_ok {
     $aqc = npg_pipeline::archive::file::qc->new(
-      run_folder => $run_folder,
       runfolder_path => $util->analysis_runfolder_path(),
       recalibrated_path => $recalibrated,
       qc_to_run => q{qX_yield},
@@ -90,7 +83,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
 
 {
   my $aqc = npg_pipeline::archive::file::qc->new(
-      run_folder => $run_folder,
       runfolder_path => $util->analysis_runfolder_path(),
       recalibrated_path => $recalibrated,
       qc_to_run => q{qX_yield},
@@ -117,7 +109,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   my $runfolder_path = $util->analysis_runfolder_path();
 
   my $aqc = npg_pipeline::archive::file::qc->new(
-      run_folder => $run_folder,
       runfolder_path => $runfolder_path,
       recalibrated_path => $recalibrated,
       lanes     => [7],
@@ -132,7 +123,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/1234_samplesheet_amended.csv';
   $aqc = npg_pipeline::archive::file::qc->new(
-      run_folder => $run_folder,
       runfolder_path => $runfolder_path,
       recalibrated_path => $recalibrated,
       lanes     => [8],
@@ -145,7 +135,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   is(scalar@jids, 2, q{2 job ids returned}); # the lane is a pool
 
   $aqc = npg_pipeline::archive::file::qc->new(
-      run_folder => $run_folder,
       runfolder_path => $runfolder_path,
       recalibrated_path => $recalibrated,
       lanes     => [8],
@@ -166,7 +155,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   my $runfolder_path = $util->analysis_runfolder_path();
 
   my $aqc = npg_pipeline::archive::file::qc->new(
-      run_folder => $run_folder,
       runfolder_path => $runfolder_path,
       recalibrated_path => $recalibrated,
       lanes     => [7],
@@ -184,7 +172,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
 
   $aqc = npg_pipeline::archive::file::qc->new(
       id_run => 14353,
-      run_folder => $run_folder,
       runfolder_path => $util->analysis_runfolder_path(),
       recalibrated_path => $recalibrated,
       lanes     => [1],
@@ -276,7 +263,6 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
 
   my $init = {
       id_run => 14043,
-      run_folder => $rf_name,
       runfolder_path => $rf_path,
       bam_basecall_path => $analysis_dir,
       archive_path => $archive_dir,
