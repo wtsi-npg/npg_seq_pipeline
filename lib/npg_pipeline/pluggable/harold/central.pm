@@ -103,8 +103,9 @@ sub illumina_basecall_stats {
     $self->info(q{HiSeqX sequencing instrument, illumina_basecall_stats will not be run});
     return ();
   }
+  my $required_job_completion = shift @args;
   return $self->new_with_cloned_attributes(q{npg_pipeline::analysis::illumina_basecall_stats})
-    ->generate(@args);
+    ->generate({required_job_completion => $required_job_completion,});
 }
 
 =head2 split_bam_by_tag
