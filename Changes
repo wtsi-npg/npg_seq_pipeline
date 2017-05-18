@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - illumina2bam function removed
+
 release 51.9
  - p4stage2 speed-up by caching references
  - p4stage2 errors in getting a reference made fatal
