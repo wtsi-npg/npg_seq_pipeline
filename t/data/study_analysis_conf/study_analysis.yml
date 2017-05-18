@@ -1,7 +1,6 @@
 # Study analysis environment
 # for gseq farm
 ---
-gclp_all_studies: t/data
 12345: t
 12346: t/data/cache
 12347: t/data/cache

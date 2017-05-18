@@ -26,28 +26,6 @@ Pluggable pipeline module for the post_qc_review pipeline
 
 =head1 SUBROUTINES/METHODS
 
-=head2 archive_to_irods
-
- upload all archival files to irods (used by GCLP only)
-
-=cut
-
-sub archive_to_irods {
-  my ($self, @args) = @_;
-
-  if ($self->no_irods_archival) {
-    $self->warn(q{Archival to iRODS is switched off.});
-    return ();
-  }
-  my $required_job_completion = shift @args;
-  my $ats = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::to_irods});
-  my @job_ids = $ats->submit_to_lsf({
-    required_job_completion => $required_job_completion,
-  });
-
-  return @job_ids;
-}
-
 =head2 archive_to_irods_samplesheet
 
 upload all archival files using the samplesheet LIMS driver

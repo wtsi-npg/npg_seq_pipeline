@@ -28,7 +28,7 @@ with q{npg_tracking::illumina::run::long_info};
 with q{npg_pipeline::roles::business::flag_options};
 
 Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
-Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ olb qc_run gclp /;
+Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ olb qc_run /;
 
 $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
 
@@ -254,12 +254,9 @@ has q{force_p4}  => (
   isa           => q{Bool},
   is            => q{ro},
   lazy_build    => 1,
-  documentation => q{Boolean decision to force on P4 pipeline usage, default true iff GCLP},
+  documentation => q{Boolean decision to force on P4 pipeline usage, default is false},
 );
-sub _build_force_p4 {
-  my ($self) = @_;
-  return $self->gclp;
-}
+
 
 =head2 verbose
 
@@ -420,10 +417,6 @@ around 'function_list' => sub {
 
   return $file;
 };
-sub _build_gclp {
-  my ($self) = @_;
-  return $self->has_function_list && $self->function_list =~ /gclp/ismx;
-}
 
 =head2 function_list_conf
 

@@ -11,11 +11,9 @@ bin/script_must_be_unique_runner
 Build.PL
 Changes
 data/config_files/function_list_central.yml
-data/config_files/function_list_central_gclp.yml
 data/config_files/function_list_central_olb.yml
 data/config_files/function_list_central_qc_run.yml
 data/config_files/function_list_post_qc_review.yml
-data/config_files/function_list_post_qc_review_gclp.yml
 data/config_files/general_values.ini
 data/config_files/illumina_pipeline.ini
 data/config_files/parallelisation.yml

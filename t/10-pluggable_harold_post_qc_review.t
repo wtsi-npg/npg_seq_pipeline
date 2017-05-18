@@ -106,8 +106,8 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
       no_irods_archival => 1,
       no_warehouse_update => 1,
                                                               );
-  ok(!($p->archive_to_irods() || $p->archive_to_irods_samplesheet() ||
-       $p->archive_to_irods_ml_warehouse()), 'archival to irods switched off');
+  ok(!($p->archive_to_irods_samplesheet() || $p->archive_to_irods_ml_warehouse()),
+    'archival to irods switched off');
   ok(!$p->update_warehouse(), 'update to warehouse switched off');
 }
 
@@ -116,7 +116,7 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
       runfolder_path => $runfolder_path,
       local => 1,
                                                               );
-  ok(! ($p->archive_to_irods() || $p->archive_to_irods_samplesheet() ||
+  ok(! ($p->archive_to_irods_samplesheet() ||
         $p->archive_to_irods_ml_warehouse()), 'archival to irods switched off');
   ok(!$p->update_warehouse(), 'update to warehouse switched off');
   is($p->no_summary_link,1, 'summary_link switched off');
@@ -128,7 +128,7 @@ use_ok('npg_pipeline::pluggable::harold::post_qc_review');
       local => 1,
       no_warehouse_update => 0,
     );
-  ok(!($p->archive_to_irods() || $p->archive_to_irods_samplesheet() ||
+  ok(!($p->archive_to_irods_samplesheet() ||
         $p->archive_to_irods_ml_warehouse()), 'archival to irods switched off');
   ok($p->update_warehouse(), 'update to warehouse switched on');
   is($p->no_summary_link,1, 'summary_link switched off');

@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - remove GCLP-specific code and configuration files
+
 release 51.9
  - p4stage2 speed-up by caching references
  - p4stage2 errors in getting a reference made fatal
