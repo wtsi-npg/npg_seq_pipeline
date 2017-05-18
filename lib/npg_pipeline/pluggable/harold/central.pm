@@ -63,7 +63,7 @@ sub _set_paths {
   $self->info('Intensities path: ', $self->intensity_path() );
 
   if ( ! $self->has_basecall_path() ) {
-    my $bpath = join $sep, $self->intensity_path() . q{BaseCalls};
+    my $bpath = join $sep, $self->intensity_path() , q{BaseCalls};
     if (!-e $bpath) {
       $self->warn(qq{BaseCalls path $bpath not found});
       $bpath = $self->runfolder_path();
