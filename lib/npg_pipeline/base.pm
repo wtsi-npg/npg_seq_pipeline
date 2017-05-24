@@ -7,12 +7,11 @@ use English qw{-no_match_vars};
 use POSIX qw(strftime);
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
 use File::Spec::Functions qw(splitdir);
-use Cwd qw(abs_path);
 use File::Slurp;
 use Readonly;
 use Try::Tiny;
 
-use npg_tracking::util::abs_path qw(network_abs_path);
+use npg_tracking::util::abs_path qw(abs_path network_abs_path);
 
 our $VERSION = '0';
 
@@ -25,11 +24,10 @@ with qw{
         npg_pipeline::roles::accessor
         npg_pipeline::roles::business::base
        };
-with qw{npg_tracking::illumina::run::long_info};
+with q{npg_tracking::illumina::run::long_info};
 with q{npg_pipeline::roles::business::flag_options};
 
 Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
-Readonly::Scalar my $CONF_DIR                   => q{data/config_files};
 Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ olb qc_run gclp /;
 
 $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
@@ -70,15 +68,16 @@ Method inherited from npg_pipeline::roles::accessor.
 
 =cut
 
- has [qw/ +npg_tracking_schema
+has [qw/ +npg_tracking_schema
          +slot
          +flowcell_id
          +instrument_string
          +reports_path
-         +subpath +name
+         +subpath
+         +name
          +tracking_run /] => (metaclass => 'NoGetopt',);
 
-has q{+id_run}         => (required => 0,);
+has q{+id_run} => (required => 0,);
 
 =head2 submit_bsub_command - deals with submitting a command to LSF, retrying upto 5 times if the return code is not 0. It will then croak if it still can't submit
 
@@ -642,6 +641,10 @@ __END__
 
 =item Moose::Meta::Class
 
+=item MooseX::Getopt
+
+=item MooseX::AttributeCloner
+
 =item Carp
 
 =item English qw{-no_match_vars}
@@ -658,21 +661,17 @@ __END__
 
 =item Readonly
 
-=item MooseX::Getopt
-
-=item MooseX::AttributeCloner
+=item Try::Tiny
 
 =item WTSI::DNAP::Utilities::Loggable
 
 =item npg_tracking::illumina::run::short_info
 
+=item npg_tracking::illumina::run::long_info
+
 =item npg_tracking::illumina::run::folder
 
-=item npg_pipeline::roles::business::base
-
-=item npg_pipeline::roles::business::flag_options
-
-=item npg_pipeline::roles::accessor
+=item npg_tracking::util::abs_path
 
 =back
 
@@ -687,7 +686,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Ltd
+Copyright (C) 2017 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

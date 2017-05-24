@@ -52,6 +52,7 @@ package main;
   is($runner->pipeline_script_name(), $script_name, 'pipeline script name correct'); 
   lives_ok { $runner->run(); } q{no croak on $runner->run()};
   my $prefix = $runner->daemon_conf()->{command_prefix};
+  $prefix ||= q[];
   like($runner->_generate_command(1234), qr/;\s*\Q$prefix\Enpg_pipeline_/,
     q{generated command is correct});
   like($runner->_generate_command(1234),

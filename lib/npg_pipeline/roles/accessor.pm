@@ -48,7 +48,7 @@ sub _build_local_bin {
 
 =head2 conf_path
 
-Path of the directory with the pipeline's configuration files.
+Absolute path of the directory with the pipeline's configuration files.
 Defaults to data/config_files relative to the bin directory.
 
 =cut
@@ -61,7 +61,7 @@ has q{conf_path} => (
 );
 sub _build_conf_path {
   my $self = shift;
-  return $self->local_bin . "/../$CONF_DIR";
+  return abs_path($self->local_bin . "/../$CONF_DIR");
 }
 
 =head2 conf_file_path
@@ -73,7 +73,7 @@ to this file. Raises an error if the file does not exist.
 
 sub conf_file_path {
   my ( $self, $conf_name ) = @_;
-  my $path = abs_path( catfile($self->conf_path(), $conf_name) );
+  my $path = catfile($self->conf_path(), $conf_name);
   $path ||= q{};
   if (!$path || !-f $path) {
     croak "File $path does not exist or is not readable";
@@ -138,7 +138,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Ltd
+Copyright (C) 2017 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

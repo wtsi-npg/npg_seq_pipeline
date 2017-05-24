@@ -11,6 +11,8 @@ local $ENV{TEST_DIR} = $tmp_dir;
 
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
+# if REF_PATH is not set, force using ref defined in the header
+local $ENV{REF_PATH} = $ENV{REF_PATH} ? $ENV{REF_PATH} : 'DUMMY';
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,

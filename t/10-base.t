@@ -11,11 +11,15 @@ use Log::Log4perl qw(:levels);
 
 use t::util;
 use t::dbic_util;
+use npg_tracking::util::abs_path qw(abs_path);
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
                           file   => join(q[/], t::util->new()->temp_directory(), 'logfile'),
                           utf8   => 1});
+
+my $config_dir = abs_path(getcwd() . '/data/config_files');
+
 use_ok(q{npg_pipeline::base});
 
 {
@@ -61,7 +65,7 @@ use_ok(q{npg_pipeline::base});
   my $base = npg_pipeline::base->new();
   ok( !$base->gclp, 'function list not set and correctly defaults as not GCLP');
 
-  my $path = getcwd() . '/data/config_files/function_list_base.yml';
+  my $path = "${config_dir}/function_list_base.yml";
 
   throws_ok { $base->function_list }
     qr/File $path does not exist or is not readable/,
@@ -75,10 +79,10 @@ use_ok(q{npg_pipeline::base});
   $path =~ s/function_list_base/function_list_central/;
   $base = npg_pipeline::base->new(function_list => $path);
   is( $base->function_list, $path, 'function list path as given');
-  ok( !$base->gclp, 'function list set and correctly identified as not GCLP');
+  ok(!$base->gclp, 'function list set and correctly identified as not GCLP');
   isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
   
-  my$gpath=$path;
+  my $gpath=$path;
   $gpath =~ s/function_list_central/function_list_central_gclp/;
   $base = npg_pipeline::base->new(function_list => $gpath);
   is( $base->function_list, $gpath, 'GCLP function list path as given');
@@ -105,21 +109,21 @@ use_ok(q{npg_pipeline::base});
     qr/Bad function list name: $test_path/,
     'error when function list does not exist, neither it can be interpreted as a function list name';
   
-  my $conf_dir = tempdir( CLEANUP => 1 );
-  cp $path, $conf_dir;
-  $path = $conf_dir . '/function_list_post_qc_review.yml';
+  my $test_config_dir = tempdir( CLEANUP => 1 );
+  cp $path, $test_config_dir;
+  $path = $test_config_dir . '/function_list_post_qc_review.yml';
 
   $base = npg_pipeline::base->new(function_list => $path);
   is( $base->function_list, $path, 'function list absolute');
   isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
 
   $base = npg_pipeline::base->new(
-    conf_path => $conf_dir,
+    conf_path     => $test_config_dir,
     function_list => 'post_qc_review');
   is( $base->function_list, $path, 'function list absolute path from list name');
 
   $path =~ s/function_list_post_qc_review/function_list_base/;
-  $base = npg_pipeline::base->new(conf_path => $conf_dir);
+  $base = npg_pipeline::base->new(conf_path => $test_config_dir);
   throws_ok { $base->function_list }
     qr/File $path does not exist or is not readable/,
     'error when default function list does not exist';
@@ -244,18 +248,18 @@ package main;
 
   $base = mytest::central->new(id_flowcell_lims => 3456, qc_run => 1);
   ok( !$base->is_qc_run(), 'looking on flowcell lims id: not qc run');
-  my $fl = getcwd() . '/data/config_files/function_list_central_qc_run.yml';
+  my $fl = "${config_dir}/function_list_central_qc_run.yml";
   is( $base->function_list, $fl, 'qc function list');
   
   $base = mytest::central->new(id_flowcell_lims => 3456, gclp => 1);
-  my $gfl = getcwd() . '/data/config_files/function_list_central_gclp.yml';
+  my $gfl = "${config_dir}/function_list_central_gclp.yml";
   is( $base->function_list, $gfl, 'gclp function list');
 
   $base = mytest::central->new(id_flowcell_lims => 3456, function_list => 'gclp');
   is( $base->function_list, $gfl, 'gclp function list');
   
   $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775');
-  my $path = getcwd() . '/data/config_files/function_list_base_qc_run.yml';
+  my $path = "${config_dir}/function_list_base_qc_run.yml";
   throws_ok { $base->function_list }
     qr/File $path does not exist or is not readable/,
     'error when default function list does not exist';

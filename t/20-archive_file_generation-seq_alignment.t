@@ -14,7 +14,7 @@ use_ok('npg_pipeline::archive::file::generation::seq_alignment');
 local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/rna_seq];
 local $ENV{'TEST_FS_RESOURCE'} = 'nfs-sf3';
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
-local $ENV{CLASSPATH} = q[t/bin/software/solexa/bin/aligners/illumina2bam/current];
+local $ENV{CLASSPATH} = q[t/bin/software/solexa/jars];
 
 my $odir = abs_path cwd;
 my $dir = tempdir( CLEANUP => 1);
@@ -23,7 +23,6 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
                           file   => join(q[/], $dir, 'logfile'),
                           utf8   => 1});
-warn q[dir: ], $dir;
 
 ###12597_1    study: genomic sequencing, library type: No PCR
 ###12597_8#7  npg/run/12597.xml st/studies/2775.xml  batches/26550.xml samples/1886325.xml  <- Epigenetics, library type: qPCR only

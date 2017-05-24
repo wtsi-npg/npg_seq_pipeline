@@ -1,6 +1,26 @@
 LIST OF CHANGES
 ---------------
 
+ - pipeline scripts - redirect stderr output to the log to capture output from all
+   NPG and CPAN modules in one place
+
+release 51.9
+ - p4stage2 speed-up by caching references
+ - p4stage2 errors in getting a reference made fatal
+ - iRODS publish script new options: (1) --restart_file to pin the script's
+     process file name to a particular LSF job, (2) --max_errors to force the script to
+     fail after certain number of errors (10 specified in the configuration file)
+ - seqchksum_comparator test fixed for gseq by generating a cram file with a header
+   that lists a reference available on gseq and supressing an outside search by
+   setting REF_PATH to an invalid value; the test will continue to work on hosts
+   where REF_PATH i sset and available
+ - consistent computation of absolute path, which takes account of substitution
+
+release 51.8
+ - when comparing checksums, generate seqchksums for each cram file and merge
+   the results rather than merging the cram files and generating seqchksum
+
+release 51.7
  - replaces the original log role with the one from DNAP utilities,
    which provides a Log4perl logger and some convenience methods.
  - new signature for the sequencescape warehouse loader so that it uses

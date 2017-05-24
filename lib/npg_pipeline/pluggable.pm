@@ -358,13 +358,13 @@ sub schedule_functions {
 =cut
 sub prepare {
   my $self = shift;
-  my $s = '***************************************************';
-  $self->debug("\n" . $s);
+  my $s = '*********************************';
+  $self->info($s);
   foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
     my $value = $ENV{$name} || 'Not defined';
-    $self->debug(sprintf '*** %s: %s', $name, $value);
+    $self->info(sprintf '*** %s: %s', $name, $value);
   }
-  $self->debug($s . "\n");
+  $self->info($s);
   return;
 }
 
@@ -390,6 +390,15 @@ sub main {
   };
   $self->_clear_env_vars();
   if ($error) {
+    # This is the end of the pipeline script.
+    # We want to see this error in the pipeline daemon log,
+    # so it should be printed to standard error, not to
+    # this script's log, which might be a file.
+    # We currently tie STDERR so output to standard error
+    # goes to this script's log file. Hence the need to
+    # untie. Dies not cause an error if STDERR has not been
+    # tied. 
+    untie *STDERR;
     croak($error);
   }
   return;
