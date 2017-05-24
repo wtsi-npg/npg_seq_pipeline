@@ -23,6 +23,7 @@ Log::Log4perl->easy_init({layout => $layout,
                           file   => $logfile,
                           utf8   => 1});
 
+$p->redirect_stderr();
 $p->main();
 
 0;
