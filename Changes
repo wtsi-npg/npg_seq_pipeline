@@ -4,6 +4,8 @@ LIST OF CHANGES
  - OLB analysis removed
  - recalibration removed
  - pb_cal_path and dif_files_path accessors disabled
+ - pipeline scripts - redirect stderr output to the log to capture output from all
+   NPG and CPAN modules in one place
 
 release 51.9
  - p4stage2 speed-up by caching references
