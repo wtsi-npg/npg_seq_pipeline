@@ -554,7 +554,11 @@ sub _ref {
       $self->warn(qq{No reference genome set for $lstring});
     } else {
       if (scalar @refs > 1) {
-        $self->logcroak(qq{Multiple references for $lstring});
+        if (defined $l->tag_index && $l->tag_index == 0) {
+          $self->logwarn(qq{Multiple references for $lstring});
+        } else {
+          $self->logcroak(qq{Multiple references for $lstring});
+        }
       } else {
         $ref = $refs[0];
         if ($ref_name) {

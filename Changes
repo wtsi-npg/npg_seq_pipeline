@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
 
  - remove GCLP-specific code and configuration files
+ - update p4 stage 2 (seq_alignment) warn rather than croak if multiple references for tag 0
  - pipeline scripts - redirect stderr output to the log to capture output from all
    NPG and CPAN modules in one place
 
@@ -24,6 +25,9 @@ release 51.8
 release 51.7
  - replaces the original log role with the one from DNAP utilities,
    which provides a Log4perl logger and some convenience methods.
+ - new signature for the sequencescape warehouse loader so that it uses
+   samplsheet LIMs driver at the analysis stage and ml_warehouse_fc_cache
+   LIMs driver at the archival stage
 
 release 51.6
  - test and code fixes to ensure problem-free tests under Perl 5.22.2
