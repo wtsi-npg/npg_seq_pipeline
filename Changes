@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - allow p4 stage 1 to analyse runs with different length reads
  - pipeline scripts - redirect stderr output to the log to capture output from all
    NPG and CPAN modules in one place
 
