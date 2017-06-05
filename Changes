@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - update p4 stage 2 (seq_alignment) warn rather than croak if multiple references for tag 0
  - pipeline scripts - redirect stderr output to the log to capture output from all
    NPG and CPAN modules in one place
 
