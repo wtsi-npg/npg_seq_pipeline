@@ -5,8 +5,6 @@ use English qw{-no_match_vars};
 use Readonly;
 use Moose::Meta::Class;
 use File::Slurp;
-use File::Spec;
-use File::Path qw{make_path};
 use JSON::XS;
 use List::Util qw(sum);
 use List::MoreUtils qw(any);
@@ -692,10 +690,6 @@ LSF job creation for alignment
 =item open
 
 =item st::api::lims
-
-=item File::Spec
-
-=item File::Path
 
 =item npg_tracking::data::reference::find
 
