@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 32;
+use Test::More tests => 23;
 use Test::Exception;
 use Cwd qw/getcwd/;
 use List::MoreUtils qw/ any none /;
@@ -21,7 +21,6 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $tdir, 'logfile'),
                           utf8   => 1});
 
-local $ENV{TEST_DIR} = $tdir;
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 
@@ -84,38 +83,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
     lsf_end
   }];
   is_deeply( $pipeline->function_order() , $expected_function_order, q{Function order correct} );
-}
-
-{
-  local $ENV{CLASSPATH} = q{t/bin/software/solexa/jars};
-  my $pipeline;
-  lives_ok {
-    $pipeline = $central->new(
-      id_run => 1234,
-      runfolder_path => $runfolder_path,
-      recalibration => 0,
-      no_bsub => 1,
-      spider  => 0,
-    );
-  } q{no croak creating new object};
-
-  ok( !scalar $pipeline->harold_calibration_tables(),  q{no calibration tables launched} );
-  ok(!$pipeline->olb, 'not olb pipeline');
-  lives_ok { $pipeline->prepare() } 'prepare lives';
-  ok( $pipeline->illumina_basecall_stats(),  q{olb false - illumina_basecall_stats job launched} );
-  my $bool = none {$_ =~ /bustard/} @{$pipeline->function_order()};
-  ok( $bool, 'bustard functions are out');
-
-  $pipeline = $central->new(
-    runfolder_path => $runfolder_path,
-    no_bsub => 1,
-    olb     => 1,
-  );
-  is ($pipeline->function_list,
-    abs_path(getcwd() . '/data/config_files/function_list_central_olb.yml'),
-    'olb function list');
-  $bool = any {$_ =~ /bustard/} @{$pipeline->function_order()};
-  ok( $bool, 'bustard functions are in');
 }
 
 {
@@ -188,8 +155,7 @@ mkdir $rf;
   is ($pb->intensity_path, $rf, 'intensities path is set to runfolder');
   is ($pb->basecall_path, $rf, 'basecall path is set to runfolder');
   is ($pb->bam_basecall_path, join(q[/],$rf,q{BAM_basecalls_22-May}), 'bam basecall path is created');
-  is ($pb->pb_cal_path, join(q[/],$pb->bam_basecall_path, 'no_cal'), 'pb_cal path set');
-  is ($pb->recalibrated_path, $pb->pb_cal_path, 'recalibrated directory set');
+  is ($pb->recalibrated_path, join(q[/],$pb->bam_basecall_path, 'no_cal'), 'recalibrated path set');
   my $status_path = $pb->status_files_path();
   is ($status_path, join(q[/],$rf,q{BAM_basecalls_22-May}, q{status}), 'status directory path');
   ok(-d $status_path, 'status directory created');

@@ -3,7 +3,6 @@ package npg_pipeline::pluggable::harold::central;
 use Moose;
 use Carp;
 use English qw{-no_match_vars};
-use Readonly;
 use File::Spec;
 use List::MoreUtils qw/any/;
 
@@ -26,31 +25,12 @@ Pluggable module runner for the main pipeline
 
 =cut
 
-Readonly::Array our @OLB_FUNCTIONS => qw/ matrix_lanes    matrix_all
-                                          phasing_lanes   phasing_all
-                                          basecalls_lanes basecalls_all
-                                        /;
 =head1 SUBROUTINES/METHODS
-
-=cut
-
-has '_pbcal_obj' => (
-                isa => 'npg_pipeline::analysis::harold_calibration_bam',
-                is  => 'ro',
-                lazy => 1,
-                builder => '_build_pbcal_obj',
-                    );
-sub _build_pbcal_obj {
-  my $self = shift;
-  return $self->new_with_cloned_attributes(q{npg_pipeline::analysis::harold_calibration_bam});
-}
 
 =head2 prepare
 
  Sets all paths needed during the lifetime of the analysis runfolder.
  Creates any of the paths that do not exist.
-
- Dynamically adds bustard functions to the object;
 
 =cut
 
@@ -58,7 +38,6 @@ override 'prepare' => sub {
   my $self = shift;
   $self->_set_paths();
   super(); # Correct order!
-  $self->_inject_bustard_functions();
   return;
 };
 
@@ -71,8 +50,10 @@ override 'prepare' => sub {
 sub _set_paths {
   my $self = shift;
 
+  my $sep = q[/];
+
   if ( ! $self->has_intensity_path() ) {
-    my $ipath = $self->runfolder_path() . q{/Data/Intensities};
+    my $ipath = join $sep, $self->runfolder_path(), q{Data}, q{Intensities};
     if (!-e $ipath) {
       $self->info(qq{Intensities path $ipath not found});
       $ipath = $self->runfolder_path();
@@ -81,122 +62,31 @@ sub _set_paths {
   }
   $self->info('Intensities path: ', $self->intensity_path() );
 
-  # If preprocessing with OLB, to set the paths mentioned below,
-  # one needs to know the name of the bustard directory.
-  # This name is not known till the bustard scripts is run.
-  # Therefore, if using OLB, delay creating these directories.
-  if (!$self->olb) {
-    if ( ! $self->has_dif_files_path() ) {
-      $self->set_dif_files_path( $self->intensity_path() );
+  if ( ! $self->has_basecall_path() ) {
+    my $bpath = join $sep, $self->intensity_path() , q{BaseCalls};
+    if (!-e $bpath) {
+      $self->warn(qq{BaseCalls path $bpath not found});
+      $bpath = $self->runfolder_path();
     }
-    $self->info('Dif files path: ', $self->dif_files_path() );
-
-    if ( ! $self->has_basecall_path() ) {
-      my $bpath = $self->intensity_path() . q{/BaseCalls};
-      if (!-e $bpath) {
-        $self->warn(qq{BaseCalls path $bpath not found});
-        $bpath = $self->runfolder_path();
-      }
-      $self->_set_basecall_path( $bpath);
-    }
-    $self->info('BaseCalls path: ' . $self->basecall_path() );
+    $self->_set_basecall_path( $bpath);
   }
+  $self->info('BaseCalls path: ' . $self->basecall_path() );
 
-  if( !  $self->has_bam_basecall_path() ) {
-    my $bam_basecalls_dir = $self->intensity_path() . q{/} .q{BAM_basecalls_} . $self->timestamp();
+  if( ! $self->has_bam_basecall_path() ) {
+    my $bam_basecalls_dir = join $sep, $self->intensity_path(), q{BAM_basecalls_} . $self->timestamp();
     $self->make_log_dir( $bam_basecalls_dir  );
     $self->set_bam_basecall_path( $bam_basecalls_dir );
   }
   $self->info('BAM_basecall path: ' . $self->bam_basecall_path());
-  $self->_set_bam_basecall_dependent_paths();
 
-
-  if ($self->olb) {
-    my $bustard_dir = $self->new_with_cloned_attributes(q{npg_pipeline::analysis::bustard4pbcb},
-                      {bustard_home => $self->intensity_path,})->bustard_dir();
-    $self->set_dif_files_path( $bustard_dir );
-    $self->_set_basecall_path( $bustard_dir );
-    $self->info("basecall and dif_files paths set to $bustard_dir");
-    $self->make_log_dir( $bustard_dir  );
+  if (! $self->has_recalibrated_path()) {
+    $self->_set_recalibrated_path(join $sep, $self->bam_basecall_path(), 'no_cal')
   }
+  $self->make_log_dir($self->recalibrated_path());
+  $self->info('PB_cal path: ' . $self->recalibrated_path());
 
-  return;
-}
-
-###
-#
-# If unset, sets recalibrated_path and pb_cal_path.
-#
-
-sub _set_bam_basecall_dependent_paths {
-  my $self = shift;
-  my $pathways = {
-    recalibrated_path => undef,
-    pb_cal_path => undef,
-  };
-
-  # for each of the paths, see if they have been prepopulated
-  foreach my $path ( keys %{ $pathways } ) {
-    my $has_method = q{has_} . $path;
-    if ( $self->$has_method() ) {
-      $pathways->{$path} = $self->$path();
-    }
-  }
-
-  # if recalibrated_path or pb_cal_path are not set, but the other is, match them up
-  if ( $pathways->{recalibrated_path} && ! $pathways->{pb_cal_path} ) {
-    $pathways->{pb_cal_path} = $pathways->{recalibrated_path};
-  }
-  if ( ! $pathways->{recalibrated_path} && $pathways->{pb_cal_path} ) {
-    $pathways->{recalibrated_path} = $pathways->{pb_cal_path};
-  }
-
-  # if there is no recalibrated_path and pb_cal_path, then create them and store
-  if ( ! $pathways->{recalibrated_path} ) {
-    my $recalibrated_level_dir = !$self->recalibration() ? q{no_cal}
-                               :                           q{PB_cal_bam}
-                               ;
-    $self->make_log_dir( $self->bam_basecall_path() . q{/} . $recalibrated_level_dir );
-    $pathways->{recalibrated_path} = $self->bam_basecall_path() . q{/} . $recalibrated_level_dir;
-    $pathways->{pb_cal_path}       = $self->bam_basecall_path() . q{/} . $recalibrated_level_dir;
-  }
-  # for each of these, go and set them (we know we must have created them by now)
-  foreach my $path ( keys %{ $pathways } ) {
-    my $set_method = q{_set_} . $path;
-    $self->$set_method( $pathways->{$path} );
-  }
-
-  $self->info('PB_cal path: ' . $self->pb_cal_path());
-  $self->info('Recalibrated_path: ' . $self->recalibrated_path() );
   $self->make_log_dir( $self->status_files_path );
-  return;
-}
 
-
-####
-# Dynamically creates functions to run OLB preprocessing.
-#
-sub _inject_bustard_functions {
-  my $self = shift;
-
-  foreach my $function (@OLB_FUNCTIONS) {
-    ##no critic (TestingAndDebugging::ProhibitNoStrict TestingAndDebugging::ProhibitNoWarnings)
-    no strict 'refs';
-    no warnings 'redefine';
-    my $fpointer = 'bustard_' . $function;
-    if ($self->olb) {
-      *{$fpointer}= sub {  my ($self, @args) = @_;
-                           my $job_dep = shift @args;
-                           return npg_pipeline::analysis::bustard4pbcb->new(
-                             pipeline=>$self,
-                             bustard_home=>$self->intensity_path,
-                             bustard_dir=>$self->basecall_path,
-                             id_run=>$self->id_run,
-                             lanes=>$self->lanes)->make($function,$job_dep); };
-    } else {
-      *{$fpointer}= sub { $self->info('OLB preprocessing switched off, not running ' . $function ); return (); }
-    }
-  }
   return;
 }
 
@@ -213,50 +103,9 @@ sub illumina_basecall_stats {
     $self->info(q{HiSeqX sequencing instrument, illumina_basecall_stats will not be run});
     return ();
   }
-  return $self->_run_harold_steps( q{generate_illumina_basecall_stats}, @args);
-}
-
-=head2 harold_alignment_files
-
-Generate the alignment files to now be used for generating calibration tables
-
-=cut
-
-sub harold_alignment_files {
-  my ($self, @args) = @_;
-  return $self->_run_harold_steps( q{generate_alignment_files}, @args);
-}
-
-=head2 harold_calibration_tables
-
-Generate the calibration tables used for harold recalibration
-
-=cut
-
-sub harold_calibration_tables {
-  my ($self, @args) = @_;
-  if ( !$self->recalibration() ) {
-    $self->info(q{recalibration is false, no recalibration will be performed});
-    return ();
-  }
-  return $self->_run_harold_steps( q{generate_calibration_table}, @args);
-}
-
-=head2 harold_recalibration
-
-submit the recalibration jobs
-
-=cut
-
-sub harold_recalibration {
-  my ($self, @args) = @_;
-  return $self->_run_harold_steps( q{generate_recalibrated_bam}, @args);
-}
-
-sub _run_harold_steps {
-  my ($self, $method, @args) = @_;
   my $required_job_completion = shift @args;
-  return $self->_pbcal_obj->$method({required_job_completion => $required_job_completion,});
+  return $self->new_with_cloned_attributes(q{npg_pipeline::analysis::illumina_basecall_stats})
+    ->generate({required_job_completion => $required_job_completion,});
 }
 
 =head2 split_bam_by_tag
@@ -349,7 +198,8 @@ sub _bam2fastqcheck_and_cached_fastq_command {
 
   my $job_name = join q{_}, q{bam2fastqcheck_and_cached_fastq}, $id_run, $timestamp;
   my $out = $job_name . q{.%I.%J.out};
-  $out =  File::Spec->catfile($self->make_log_dir($self->pb_cal_path), $out );
+  $out =  File::Spec->catfile($self->make_log_dir($self->recalibrated_path), $out );
+
   $job_name = q{'} . $job_name . npg_pipeline::lsf_job->create_array_string( $self->positions()) . q{'};
 
   my $job_sub = q{bsub -q } . $self->lsf_queue() . q{ } .
@@ -357,7 +207,7 @@ sub _bam2fastqcheck_and_cached_fastq_command {
                 qq{ $required_job_completion -J $job_name -o $out };
   $job_sub .= q{'} .
               q{generate_cached_fastq --path } . $self->archive_path() .
-              q{ --file } . $self->pb_cal_path() . q{/} . $id_run . q{_} . $self->lsb_jobindex() . q{.bam} .
+              q{ --file } . $self->recalibrated_path() . q{/} . $id_run . q{_} . $self->lsb_jobindex() . q{.bam} .
               q{'};
   $self->debug($job_sub);
 
@@ -395,8 +245,6 @@ __END__
 
 =item English -no_match_vars
 
-=item Readonly
-
 =item File::Spec
 
 =item List::MoreUtils
@@ -413,7 +261,7 @@ Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Limited
+Copyright (C) 2017 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
