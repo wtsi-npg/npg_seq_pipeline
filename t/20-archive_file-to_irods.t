@@ -8,7 +8,6 @@ use_ok('npg_pipeline::archive::file::to_irods');
 
 my $util = t::util->new();
 
-$ENV{TEST_DIR} = $util->temp_directory();
 $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
@@ -20,9 +19,8 @@ my $pb_cal = q[/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal];
 my $pb_cal_path = $analysis_runfolder_path . $pb_cal;
 
 sub create_analysis {
-  `rm -rf $tmp_dir/nfs/sf45`;
   `mkdir -p $analysis_runfolder_path/$pb_cal/archive`;
-  `mkdir $analysis_runfolder_path/Config`;
+  `mkdir -p $analysis_runfolder_path/Config`;
   `cp t/data/Recipes/Recipe_GA2_37Cycle_PE_v6.1.xml $analysis_runfolder_path/`;
   `cp t/data/Recipes/TileLayout.xml $analysis_runfolder_path/Config/`;
   `ln -s $pb_cal $analysis_runfolder_path/Latest_Summary`;

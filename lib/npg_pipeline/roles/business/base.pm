@@ -240,34 +240,6 @@ sub all_positions {
   return @position;
 }
 
-=head2 tile_list
-
-A string of wildcards for tiles for OLB, defaults to an empty string
-
-=cut
-
-has q{tile_list} => (isa => q{Str},
-                     is => q{ro},
-                     default => q{},
-                     documentation => q{string of wildcards for tiles for OLB, defaults to an empty string},);
-
-=head2 override_all_bustard_options
-
-Overrides all bustard options (including any given via other options) as a string - it is up to the user to ensure all are correct and given
-
-=head2 has_override_all_bustard_options
-
-predicate to ensure that options are available
-
-=cut
-
-has q{override_all_bustard_options} => (
-  isa => q{Str},
-  is => q{ro},
-  predicate => q{has_override_all_bustard_options},
-  documentation => q{Overrides all bustard options (including any given via other options) as a string - it is up to the user to ensure all are correct and given - i.e. only use if you know what you are doing.},
-);
-
 =head2 repository
 
 A custom reference repository root directory.

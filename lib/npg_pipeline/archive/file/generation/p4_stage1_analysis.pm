@@ -392,7 +392,7 @@ sub _generate_command_params {
     my @range2 = $self->read2_cycle_range();
     my $read2_length = $range2[1] - $range2[0] + 1;
     if($read1_length != $read2_length) {
-      $self->logcroak('P4 stage1 analysis will not yet handle different length forward/reverse reads (no optional adapter detection)');
+      $self->logwarn('P4 stage1 analysis will not yet handle different length forward/reverse reads (no optional adapter detection)');
     }
   }
 
