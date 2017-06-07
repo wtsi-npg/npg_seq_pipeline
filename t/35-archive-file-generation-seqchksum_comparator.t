@@ -56,7 +56,8 @@ my $archive_path = $recalibrated_path . q{/archive};
   my @jids = $object->launch( $arg_refs );
   is( scalar @jids, 1, q{1 job id returned} );
 
-  throws_ok{$object->do_comparison()} qr/please check illumina2bam pipeline step/, q{Doing a comparison with no files throws an exception}; 
+  throws_ok{$object->do_comparison()} qr/Cannot find/,
+    q{Doing a comparison with no files throws an exception}; 
 
   is($object->archive_path, $archive_path, "Object has correct archive path");
   is($object->bam_basecall_path, $bam_basecall_path, "Object has correct bam_basecall path");
