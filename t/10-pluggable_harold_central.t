@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 23;
+use Test::More tests => 21;
 use Test::Exception;
 use Cwd qw/getcwd/;
 use List::MoreUtils qw/ any none /;
@@ -89,12 +89,13 @@ my $runfolder_path = $util->analysis_runfolder_path();
   my $pb;
   lives_ok {
     $pb = $central->new(
-      function_order => [qw(qc_qX_yield illumina2bam qc_insert_size)],
+      function_order => [qw(qc_qX_yield qc_insert_size)],
       runfolder_path => $runfolder_path,
     );
   } q{no croak on creation};
   $util->set_staging_analysis_area({with_latest_summary => 1});
-  is(join(q[ ], @{$pb->function_order()}), 'lsf_start qc_qX_yield illumina2bam qc_insert_size lsf_end', 'function_order set on creation');
+  is(join(q[ ], @{$pb->function_order()}), 'lsf_start qc_qX_yield qc_insert_size lsf_end',
+    'function_order set on creation');
 }
 
 {
@@ -104,7 +105,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
   my $pb;
   $util->set_staging_analysis_area();
   my $init = {
-      function_order => [qw{illumina2bam qc_qX_yield qc_adapter update_warehouse qc_insert_size archive_to_irods}],
+      function_order => [qw{qc_qX_yield qc_adapter update_warehouse qc_insert_size archive_to_irods}],
       lanes => [4],
       runfolder_path => $runfolder_path,
       no_bsub => 1,
@@ -115,20 +116,8 @@ my $runfolder_path = $util->analysis_runfolder_path();
   lives_ok { $pb = $central->new($init); } q{no croak on new creation};
   mkdir $pb->archive_path;
   mkdir $pb->qc_path;
-  
-  throws_ok { $pb->main() }
-    qr/Error submitting jobs: Can\'t find \'BamAdapterFinder\.jar\' because CLASSPATH is not set/, 
-    q{error running qc->main() when CLASSPATH is not set for illumina2bam job};
-
-  local $ENV{CLASSPATH} = q[t/bin/software];
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-  throws_ok { $pb->main() }
-    qr/Error submitting jobs: no such file on CLASSPATH: BamAdapterFinder\.jar/, 
-    q{error running qc->main() when CLASSPATH is not set correctly for illumina2bam job};
-
-  local $ENV{CLASSPATH} = q[t/bin/software/solexa/jars];
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-  lives_ok { $pb->main() } q{no croak running qc->main() when CLASSPATH is set correctly for illumina2bam job};
+  lives_ok { $pb->main() } q{no croak running qc->main()};
   my $timestamp = $pb->timestamp;
   my $recalibrated_path = $pb->recalibrated_path();
   my $log_dir = $pb->make_log_dir( $recalibrated_path );
