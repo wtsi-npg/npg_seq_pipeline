@@ -21,7 +21,6 @@ lib/npg_pipeline/analysis/illumina_basecall_stats.pm
 lib/npg_pipeline/analysis/split_bam_by_tag.pm
 lib/npg_pipeline/archive/file/BamClusterCounts.pm
 lib/npg_pipeline/archive/file/generation.pm
-lib/npg_pipeline/archive/file/generation/illumina2bam.pm
 lib/npg_pipeline/archive/file/generation/seq_alignment.pm
 lib/npg_pipeline/archive/file/qc.pm
 lib/npg_pipeline/archive/file/generation/seqchksum_comparator.pm
@@ -68,7 +67,6 @@ t/15-pipeline_launcher_scripts.t
 t/20-archive-fastqcheck.t
 t/20-archive_auto_qc_to_db.t
 t/20-archive_file-to_irods.t
-t/20-archive_file_generation-illumina2bam.t
 t/20-archive_file_generation-seq_alignment.t
 t/20-archive_folder_generation.t
 t/20-archive_illumina_analysis.t
@@ -105,7 +103,6 @@ t/bin/software/solexa/jars/Illumina2bam.jar
 t/bin/software/solexa/jars/SplitBamByReadGroup.jar
 t/bin/software/solexa/bin/qc
 t/data/samplesheet_1234.csv
-t/data/illumina2bam/1234_samplesheet.csv
 t/data/qc/1234_samplesheet_amended.csv
 t/data/qc/samplesheet_14353.csv
 t/data/qc/samplesheet_14043.csv

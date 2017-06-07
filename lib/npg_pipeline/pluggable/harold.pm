@@ -256,19 +256,6 @@ sub fix_config_files {
   return ();
 }
 
-=head2 illumina2bam
-
-=cut
-
-sub illumina2bam {
-   my ( $self, @args ) = @_;
-
-   my $illumina2bam = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::generation::illumina2bam});
-   my $required_job_completion = shift @args;
-   my @job_ids = $illumina2bam->generate({required_job_completion => $required_job_completion,});
-   return @job_ids;
-}
-
 =head2 create_summary_link_analysis
 
 function which creates/changes the summary link in the runfolder
