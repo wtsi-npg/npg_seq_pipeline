@@ -248,20 +248,6 @@ has q{force_phix_split}  => (
   default       => 1,
 );
 
-=head2 force_p4
-
-Boolean decision to force on P4 pipeline usage
-
-=cut
-
-has q{force_p4}  => (
-  isa           => q{Bool},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{Boolean decision to force on P4 pipeline usage, default is false},
-);
-
-
 =head2 verbose
 
 Boolean option to switch on verbose mode
