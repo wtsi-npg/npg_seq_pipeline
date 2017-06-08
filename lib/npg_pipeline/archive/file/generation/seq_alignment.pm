@@ -193,7 +193,6 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   my $spike_tag;
   my $input_path= $self->input_path;
   my $archive_path= $self->archive_path;
-  my $archive_qc_path = File::Spec->catdir($self->archive_path, q{qc});
   my $qcpath= $self->qc_path;
   if($is_plex) {
     $tag_index = $l->tag_index;
