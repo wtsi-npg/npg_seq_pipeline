@@ -334,7 +334,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   }
 
   if($l->separate_y_chromosome_data) {
-    $p4_param_vals->{chrsplit_subset_flag} = ['--subset', 'Y,chrY'];
+    $p4_param_vals->{chrsplit_subset_flag} = ['--subset', 'Y,chrY,ChrY,chrY_KI270740v1_random'];
     $p4_param_vals->{chrsplit_invert_flag} = q[--invert];
   }
 
