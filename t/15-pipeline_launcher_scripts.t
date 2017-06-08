@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use English qw{-no_match_vars};
-use Test::More tests => 12;
+use Test::More tests => 8;
 use Test::Exception;
 use t::util;
 use Cwd;
@@ -55,16 +55,6 @@ my $bin = $curdir . q[/bin];
   lives_ok { qx{
     $bin/npg_pipeline_post_qc_review --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234};}
     q{ran bin/npg_pipeline_post_qc_review};
-  ok(!$CHILD_ERROR, qq{Return code of $CHILD_ERROR});
-
-  lives_ok { qx{
-    $bin/npg_pipeline_post_qc_review --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234  --gclp}; }
-    q{ran bin/npg_pipeline_post_qc_review with gclp flag};
-  ok(!$CHILD_ERROR, qq{Return code of $CHILD_ERROR});
-
-  lives_ok { qx{
-    $bin/npg_pipeline_post_qc_review --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234  --function_list gclp}; }
-    q{ran bin/npg_pipeline_post_qc_review with gclp function list};
   ok(!$CHILD_ERROR, qq{Return code of $CHILD_ERROR});
 
   lives_ok { qx{

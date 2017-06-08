@@ -6,15 +6,10 @@ extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
 
-has 'irods_root' => ( isa => 'Str',
-                      is  => 'rw',
-                      lazy_build => 1,
+has 'irods_root' => ( isa     => 'Str',
+                      is      => 'rw',
+                      default => '/seq/',
                     );
-
-sub _build_irods_root {
-  my $self = shift;
-  return $self->gclp ? q(/gseq/) : q(/seq/);
-}
 
 sub submit_to_lsf {
   my ($self, $arg_refs) = @_;
@@ -26,7 +21,6 @@ sub submit_to_lsf {
 sub _generate_bsub_command {
   my ($self, $arg_refs) = @_;
 
-  my $irodsinstance = $self->gclp ? q(gclp) : q();
   my $id_run = $self->id_run();
 
   my $required_job_completion = $arg_refs->{'required_job_completion'};
@@ -47,18 +41,11 @@ sub _generate_bsub_command {
   $bsub_command .=  q{-o } . $location_of_logs . qq{/$job_name.out };
 
   my $future_path = $self->path_in_outgoing($self->runfolder_path());
+
   $bsub_command .= qq{-E "[ -d '$future_path' ]" };
-
   $bsub_command .=  q{'};
-
-  if ($irodsinstance) {
-    $bsub_command .= q{irodsEnvFile=$}.q{HOME/.irods/.irodsEnv-} . $irodsinstance . q{-iseq-logs };
-  }
-
   $bsub_command .=  $archive_script . q{ --runfolder_path } . $future_path . q{ --id_run } . $self->id_run();
-
   $bsub_command .= q{ --irods_root } . $self->irods_root();
-
   $bsub_command .=  q{'};
 
   $self->debug($bsub_command);

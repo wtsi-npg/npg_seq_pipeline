@@ -19,16 +19,20 @@ with qw{
         MooseX::Getopt
         MooseX::AttributeCloner
         WTSI::DNAP::Utilities::Loggable
-        npg_tracking::illumina::run::short_info
-        npg_tracking::illumina::run::folder
         npg_pipeline::roles::accessor
+        npg_tracking::illumina::run::short_info
         npg_pipeline::roles::business::base
        };
+
+with 'npg_tracking::illumina::run::folder' => {
+       -excludes => [qw(pb_cal_path dif_files_path)]
+     };
+
 with q{npg_tracking::illumina::run::long_info};
 with q{npg_pipeline::roles::business::flag_options};
 
 Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
-Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ olb qc_run gclp /;
+Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ qc_run /;
 
 $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
 
@@ -244,23 +248,6 @@ has q{force_phix_split}  => (
   default       => 1,
 );
 
-=head2 force_p4
-
-Boolean decision to force on P4 pipeline usage
-
-=cut
-
-has q{force_p4}  => (
-  isa           => q{Bool},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{Boolean decision to force on P4 pipeline usage, default true iff GCLP},
-);
-sub _build_force_p4 {
-  my ($self) = @_;
-  return $self->gclp;
-}
-
 =head2 verbose
 
 Boolean option to switch on verbose mode
@@ -420,10 +407,6 @@ around 'function_list' => sub {
 
   return $file;
 };
-sub _build_gclp {
-  my ($self) = @_;
-  return $self->has_function_list && $self->function_list =~ /gclp/ismx;
-}
 
 =head2 function_list_conf
 
@@ -442,8 +425,6 @@ sub _build_function_list_conf {
 }
 
 =head2 general_values_conf
-=head2 illumina_pipeline_conf
-=head2 pb_cal_pipeline_conf
 =head2 parallelisation_conf
 
 Returns a hashref of configuration details from the relevant configuration file
@@ -451,8 +432,6 @@ Returns a hashref of configuration details from the relevant configuration file
 =cut
 
 has [ qw{ general_values_conf
-          illumina_pipeline_conf
-          pb_cal_pipeline_conf
           parallelisation_conf } ] => (
 
   isa        => q{HashRef},
@@ -464,14 +443,6 @@ has [ qw{ general_values_conf
 sub _build_general_values_conf {
   my ( $self ) = @_;
   return $self->read_config( $self->conf_file_path(q{general_values.ini}) );
-}
-sub _build_illumina_pipeline_conf {
-  my ( $self ) = @_;
-  return $self->read_config( $self->conf_file_path(q{illumina_pipeline.ini}) );
-}
-sub _build_pb_cal_pipeline_conf {
-  my ( $self ) = @_;
-  return $self->read_config( $self->conf_file_path(q{pb_cal_pipeline.ini}) );
 }
 sub _build_parallelisation_conf {
   my ( $self ) = @_;

@@ -75,8 +75,8 @@ sub _generate_bsub_command {
 =head2 do_comparison
 
 Bamcat any plex/split bamfiles back together to perform a bamseqchksum.
-Compare it with the one produced by the illumina2bam step, or croak if that has not been done.
-Use diff -u rather than cmp and store the file on disk to help work out what has gone wrong
+Compare it with the one for the whole lane or croak if that has not been done.
+Use diff -u rather than cmp and store the file on disk to help work out what has gone wrong.
 
 =cut
 
@@ -112,7 +112,7 @@ sub _compare_lane {
 
   my $input_lane_seqchksum_file_name = File::Spec->catfile($input_seqchksum_dir, $input_seqchksum_file_name);
   if ( ! -e $input_lane_seqchksum_file_name ) {
-    $self->logcroak("Cannot find $input_lane_seqchksum_file_name to compare: please check illumina2bam pipeline step");
+    $self->logcroak("Cannot find $input_lane_seqchksum_file_name to compare to");
   }
 
   my$wd = getcwd();

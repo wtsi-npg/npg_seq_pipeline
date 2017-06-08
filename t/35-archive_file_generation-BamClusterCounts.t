@@ -10,7 +10,6 @@ use_ok( q{npg_pipeline::archive::file::BamClusterCounts} );
 
 my $util = t::util->new({});
 my $dir = $util->temp_directory();
-$ENV{TEST_DIR} = $dir;
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 
@@ -21,7 +20,7 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 
 $util->create_multiplex_analysis();
 my $analysis_runfolder_path = $util->analysis_runfolder_path();
-my $bam_basecall_path = $util->standard_analysis_bustard_path();
+my $bam_basecall_path = $util->standard_bam_basecall_path();
 qx{cp t/data/summary_files/BustardSummary_mp.xml $bam_basecall_path/BustardSummary.xml};
 my $recalibrated_path = $util->standard_analysis_recalibrated_path();
 my $archive_path = $recalibrated_path . q{/archive};

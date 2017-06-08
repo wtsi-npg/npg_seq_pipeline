@@ -5,6 +5,14 @@ LIST OF CHANGES
      entries for qc check rna_seqc removed from central function and parallelisation.
      code that created rna_seqc-specific directories has been removed as this is
      now handled by the check itself using qc_out arg.
+ - remove GCLP-specific code and configuration files
+ - remove unused force_p4 attribute
+ - OLB analysis removed
+ - recalibration removed
+ - pb_cal_path and dif_files_path accessors disabled
+ - allow p4 stage 1 to analyse runs with different length reads
+ - illumina2bam function removed
+ - update p4 stage 2 (seq_alignment) warn rather than croak if multiple references for tag 0
  - pipeline scripts - redirect stderr output to the log to capture output from all
    NPG and CPAN modules in one place
 
