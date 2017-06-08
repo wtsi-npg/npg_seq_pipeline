@@ -194,7 +194,6 @@ sub check_lims_link {
   my $lims = {};
   $lims->{'id'} = $batch_id;
   if ($fcell_row) {
-    $lims->{'gclp'} = $fcell_row->from_gclp;
     $lims->{'qc_run'} = (defined $fcell_row->purpose && $fcell_row->purpose eq 'qc') ? 1 : undef;
   } else {
     $lims->{'qc_run'} =

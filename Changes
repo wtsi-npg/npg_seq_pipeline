@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - remove GCLP-specific code and configuration files
+ - remove unused force_p4 attribute
  - OLB analysis removed
  - recalibration removed
  - pb_cal_path and dif_files_path accessors disabled

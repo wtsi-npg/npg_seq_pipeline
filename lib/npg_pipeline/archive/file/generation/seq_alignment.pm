@@ -229,8 +229,8 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   my $do_rna = $self->_do_rna_analysis($l);
 
   my $hs_bwa = ($self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se');
-  # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp) unless GCLP
-  my $bwa = ($self->gclp or $self->is_hiseqx_run or $self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
+  # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp)
+  my $bwa = ($self->is_hiseqx_run or $self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
             ? 'bwa_mem'
             : $hs_bwa;
 

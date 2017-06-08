@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 19;
+use Test::More tests => 18;
 use Test::Exception;
 use Cwd;
 use List::MoreUtils qw{any};
@@ -58,9 +58,6 @@ package main;
   like($runner->_generate_command(1234),
     qr/npg_pipeline_post_qc_review --verbose --runfolder_path \/some\/path/,
     q{generated command is correct});
-  like($runner->_generate_command(1234,1),
-    qr/npg_pipeline_post_qc_review --function_list gclp --verbose --runfolder_path \/some\/path/,
-    q{generated gclp command is correct});
   ok(!$runner->green_host, 'host is not in green datacentre');
 
   $schema->resultset(q[Run])->find(2)->update_run_status('archival pending', 'pipeline');

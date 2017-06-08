@@ -105,7 +105,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
   my $pb;
   $util->set_staging_analysis_area();
   my $init = {
-      function_order => [qw{qc_qX_yield qc_adapter update_warehouse qc_insert_size archive_to_irods}],
+      function_order => [qw{qc_qX_yield qc_adapter update_warehouse qc_insert_size}],
       lanes => [4],
       runfolder_path => $runfolder_path,
       no_bsub => 1,

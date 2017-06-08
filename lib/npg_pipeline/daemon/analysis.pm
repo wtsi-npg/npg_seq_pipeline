@@ -16,7 +16,6 @@ Readonly::Scalar my $PIPELINE_SCRIPT        => q{npg_pipeline_central};
 Readonly::Scalar my $DEFAULT_JOB_PRIORITY   => 50;
 Readonly::Scalar my $RAPID_RUN_JOB_PRIORITY => 60;
 Readonly::Scalar my $ANALYSIS_PENDING       => q{analysis pending};
-Readonly::Scalar my $GCLP_STUDY_KEY         => q{gclp_all_studies};
 Readonly::Scalar my $PATH_DELIM             => q{:};
 
 sub build_pipeline_script_name {
@@ -82,7 +81,7 @@ sub _process_one_run {
     $arg_refs->{'job_priority'} += $inherited_priority;
   }
   $arg_refs->{'rf_path'}  = $self->runfolder_path4run($id_run);
-  $arg_refs->{'software'} = $self->_software_bundle($arg_refs->{'gclp'} ? 1 : 0, $arg_refs->{'studies'});
+  $arg_refs->{'software'} = $self->_software_bundle($arg_refs->{'studies'});
 
   $self->run_command( $id_run, $self->_generate_command( $arg_refs ));
 
@@ -90,16 +89,13 @@ sub _process_one_run {
 }
 
 sub _software_bundle {
-  my ($self, $is_gclp_run, $studies) = @_;
+  my ($self, $studies) = @_;
 
-  if (!defined $is_gclp_run) {
-    $self->logcroak('GCLP flag is not defined');
-  }
   if (!$studies) {
     $self->logcroak('Study ids are missing');
   }
 
-  my @s = $is_gclp_run ? ($GCLP_STUDY_KEY) : @{$studies};
+  my @s = @{$studies};
 
   my $conf = $self->study_analysis_conf();
 
@@ -109,10 +105,6 @@ sub _software_bundle {
   }
 
   my $software_dir = @software ? $software[0] : q[];
-  if ($is_gclp_run && !$software_dir) {
-    $self->logcroak(q{GCLP run needs explicit software bundle});
-  }
-
   if ($software_dir && !-d $software_dir) {
     $self->logcroak(qq{Directory '$software_dir' does not exist});
   }
@@ -138,21 +130,15 @@ sub _generate_command {
              $arg_refs->{'job_priority'},
              $arg_refs->{'rf_path'};
 
-  if ( $arg_refs->{'gclp'} ) {
-    $self->info('GCLP run');
-    $cmd .= q{ --function_list gclp};
-  } else {
-    $self->info('Non-GCLP run');
-    if (!$arg_refs->{'id'}) {
-      # Batch id is needed for MiSeq runs, including qc runs
-      $self->logcroak(q{Lims flowcell id is missing});
-    }
-    if ($arg_refs->{'qc_run'}) {
-      $cmd .= q{ --qc_run};
-      $self->info('QC run');
-    }
-    $cmd .= q{ --id_flowcell_lims } . $arg_refs->{'id'};
+  if (!$arg_refs->{'id'}) {
+    # Batch id is needed for MiSeq runs, including qc runs
+    $self->logcroak(q{Lims flowcell id is missing});
   }
+  if ($arg_refs->{'qc_run'}) {
+    $cmd .= q{ --qc_run};
+    $self->info('QC run');
+  }
+  $cmd .= q{ --id_flowcell_lims } . $arg_refs->{'id'};
 
   my $path = join $PATH_DELIM, $self->local_path(), $ENV{'PATH'};
   my $analysis_path_root = $arg_refs->{'software'};

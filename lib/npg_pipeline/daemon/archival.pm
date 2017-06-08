@@ -27,7 +27,7 @@ sub run {
       } else {
         if ( $self->staging_host_match($run->folder_path_glob)) {
           my $lims = $self->check_lims_link($run);
-          $self->run_command($id_run, $self->_generate_command($id_run, $lims->{'gclp'}));
+          $self->run_command($id_run, $self->_generate_command($id_run));
         }
       }
     } catch {
@@ -39,12 +39,9 @@ sub run {
 }
 
 sub _generate_command {
-  my ($self, $id_run, $gclp) = @_;
-
-  $self->info($gclp ? 'GCLP run' : 'Non-GCLP run');
+  my ($self, $id_run) = @_;
 
   my $cmd = $self->pipeline_script_name();
-  $cmd = $cmd . ($gclp ? q{ --function_list gclp} : q());
   $cmd = $cmd . q{ --verbose --runfolder_path } . $self->runfolder_path4run($id_run);
   my $path = join q[:], $self->local_path(), $ENV{PATH};
   my $prefix = $self->daemon_conf()->{'command_prefix'};
