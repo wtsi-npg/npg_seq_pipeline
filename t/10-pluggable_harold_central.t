@@ -75,7 +75,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
     qc_genotype
     qc_verify_bam_id
     qc_upstream_tags
-    qc_rna_seqc
     run_analysis_complete
     update_ml_warehouse
     archive_to_irods_samplesheet

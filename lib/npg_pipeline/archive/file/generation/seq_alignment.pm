@@ -392,6 +392,10 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                          q{&&},
                          _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, $nchs_outfile_label),
                          : q(),
+                       $do_rna ? join q( ),
+                         q{&&},
+                         _qc_command('rna_seqc', $archive_path, $qcpath, $l, $is_plex),
+                         : q()
                        ),
                      q(');
 }
@@ -399,11 +403,16 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
 sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
   my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset) = @_;
 
-  my $args = {'id_run' => $l->id_run, 'position' => $l->position};
+  my $args = {'id_run' => $l->id_run,
+              'position'=> $l->position,
+              'qc_out' => $qc_out,
+              'check' => $check_name,};
+
   if ($is_plex && defined $l->tag_index) {
     $args->{'tag_index'} = $l->tag_index;
   }
-  if ($check_name eq 'bam_flagstats') {
+
+  if ($check_name =~ /^bam_flagstats|rna_seqc$/smx) {
     if ($subset) {
       $args->{'subset'} = $subset;
     }
@@ -411,12 +420,12 @@ sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
   } else {
     $args->{'qc_in'}  = q[$] . 'PWD';
   }
-  $args->{'qc_out'} = $qc_out;
-  $args->{'check'}  = $check_name;
+
   my $command = q[];
   foreach my $arg (sort keys %{$args}) {
     $command .= join q[ ], q[ --].$arg, $args->{$arg};
   }
+
   return $QC_SCRIPT_NAME . $command;
 }
 
