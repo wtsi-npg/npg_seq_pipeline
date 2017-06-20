@@ -1,6 +1,22 @@
 LIST OF CHANGES
 ---------------
 
+ - Chained execution of RNA-SeQC to the vtfp/viv alignment cmd for RNA-Seq libraries only:
+     entries for qc check rna_seqc removed from central function and parallelisation.
+     code that created rna_seqc-specific directories has been removed as this is
+     now handled by the check itself using qc_out arg.
+ - remove GCLP-specific code and configuration files
+ - remove unused force_p4 attribute
+ - OLB analysis removed
+ - recalibration removed
+ - pb_cal_path and dif_files_path accessors disabled
+ - allow p4 stage 1 to analyse runs with different length reads
+ - illumina2bam function removed
+ - update p4 stage 2 (seq_alignment) warn rather than croak if multiple references for tag 0
+ - update p4 stage 2 (seq_alignment) to use bambi chrsplit instead of SplitBamByChromosomes.jar for Y-split runs
+ - pipeline scripts - redirect stderr output to the log to capture output from all
+   NPG and CPAN modules in one place
+
 release 51.9
  - p4stage2 speed-up by caching references
  - p4stage2 errors in getting a reference made fatal
@@ -20,6 +36,9 @@ release 51.8
 release 51.7
  - replaces the original log role with the one from DNAP utilities,
    which provides a Log4perl logger and some convenience methods.
+ - new signature for the sequencescape warehouse loader so that it uses
+   samplsheet LIMs driver at the analysis stage and ml_warehouse_fc_cache
+   LIMs driver at the archival stage
 
 release 51.6
  - test and code fixes to ensure problem-free tests under Perl 5.22.2

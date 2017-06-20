@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 32;
+use Test::More tests => 21;
 use Test::Exception;
 use Cwd qw/getcwd/;
 use List::MoreUtils qw/ any none /;
@@ -21,7 +21,6 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $tdir, 'logfile'),
                           utf8   => 1});
 
-local $ENV{TEST_DIR} = $tdir;
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 
@@ -76,7 +75,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
     qc_genotype
     qc_verify_bam_id
     qc_upstream_tags
-    qc_rna_seqc
     run_analysis_complete
     update_ml_warehouse
     archive_to_irods_samplesheet
@@ -87,47 +85,16 @@ my $runfolder_path = $util->analysis_runfolder_path();
 }
 
 {
-  local $ENV{CLASSPATH} = q{t/bin/software/solexa/jars};
-  my $pipeline;
-  lives_ok {
-    $pipeline = $central->new(
-      id_run => 1234,
-      runfolder_path => $runfolder_path,
-      recalibration => 0,
-      no_bsub => 1,
-      spider  => 0,
-    );
-  } q{no croak creating new object};
-
-  ok( !scalar $pipeline->harold_calibration_tables(),  q{no calibration tables launched} );
-  ok(!$pipeline->olb, 'not olb pipeline');
-  lives_ok { $pipeline->prepare() } 'prepare lives';
-  ok( $pipeline->illumina_basecall_stats(),  q{olb false - illumina_basecall_stats job launched} );
-  my $bool = none {$_ =~ /bustard/} @{$pipeline->function_order()};
-  ok( $bool, 'bustard functions are out');
-
-  $pipeline = $central->new(
-    runfolder_path => $runfolder_path,
-    no_bsub => 1,
-    olb     => 1,
-  );
-  is ($pipeline->function_list,
-    abs_path(getcwd() . '/data/config_files/function_list_central_olb.yml'),
-    'olb function list');
-  $bool = any {$_ =~ /bustard/} @{$pipeline->function_order()};
-  ok( $bool, 'bustard functions are in');
-}
-
-{
   my $pb;
   lives_ok {
     $pb = $central->new(
-      function_order => [qw(qc_qX_yield illumina2bam qc_insert_size)],
+      function_order => [qw(qc_qX_yield qc_insert_size)],
       runfolder_path => $runfolder_path,
     );
   } q{no croak on creation};
   $util->set_staging_analysis_area({with_latest_summary => 1});
-  is(join(q[ ], @{$pb->function_order()}), 'lsf_start qc_qX_yield illumina2bam qc_insert_size lsf_end', 'function_order set on creation');
+  is(join(q[ ], @{$pb->function_order()}), 'lsf_start qc_qX_yield qc_insert_size lsf_end',
+    'function_order set on creation');
 }
 
 {
@@ -137,7 +104,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
   my $pb;
   $util->set_staging_analysis_area();
   my $init = {
-      function_order => [qw{illumina2bam qc_qX_yield qc_adapter update_warehouse qc_insert_size archive_to_irods}],
+      function_order => [qw{qc_qX_yield qc_adapter update_warehouse qc_insert_size}],
       lanes => [4],
       runfolder_path => $runfolder_path,
       no_bsub => 1,
@@ -148,27 +115,14 @@ my $runfolder_path = $util->analysis_runfolder_path();
   lives_ok { $pb = $central->new($init); } q{no croak on new creation};
   mkdir $pb->archive_path;
   mkdir $pb->qc_path;
-  
-  throws_ok { $pb->main() }
-    qr/Error submitting jobs: Can\'t find \'BamAdapterFinder\.jar\' because CLASSPATH is not set/, 
-    q{error running qc->main() when CLASSPATH is not set for illumina2bam job};
-
-  local $ENV{CLASSPATH} = q[t/bin/software];
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-  throws_ok { $pb->main() }
-    qr/Error submitting jobs: no such file on CLASSPATH: BamAdapterFinder\.jar/, 
-    q{error running qc->main() when CLASSPATH is not set correctly for illumina2bam job};
-
-  local $ENV{CLASSPATH} = q[t/bin/software/solexa/jars];
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-  lives_ok { $pb->main() } q{no croak running qc->main() when CLASSPATH is set correctly for illumina2bam job};
+  lives_ok { $pb->main() } q{no croak running qc->main()};
   my $timestamp = $pb->timestamp;
   my $recalibrated_path = $pb->recalibrated_path();
   my $log_dir = $pb->make_log_dir( $recalibrated_path );
-  my $unset_string = 'unset NPG_WEBSERVICE_CACHE_DIR;unset NPG_CACHED_SAMPLESHEET_FILE;';
   my $expected_command = q[bsub -q lowload 50 -J warehouse_loader_1234_central ] .
-                        qq[-o $log_dir/warehouse_loader_1234_central_] . $timestamp .
-                        qq[.out  '${unset_string}warehouse_loader --verbose --id_run 1234'];
+    qq[-o $log_dir/warehouse_loader_1234_central_] . $timestamp . q[.out  ] .
+    qq['warehouse_loader --verbose --id_run 1234 --lims_driver_type samplesheet'];
   is($pb->_update_warehouse_command('warehouse_loader', (50)),
     $expected_command, 'update warehouse command');
 }
@@ -189,8 +143,7 @@ mkdir $rf;
   is ($pb->intensity_path, $rf, 'intensities path is set to runfolder');
   is ($pb->basecall_path, $rf, 'basecall path is set to runfolder');
   is ($pb->bam_basecall_path, join(q[/],$rf,q{BAM_basecalls_22-May}), 'bam basecall path is created');
-  is ($pb->pb_cal_path, join(q[/],$pb->bam_basecall_path, 'no_cal'), 'pb_cal path set');
-  is ($pb->recalibrated_path, $pb->pb_cal_path, 'recalibrated directory set');
+  is ($pb->recalibrated_path, join(q[/],$pb->bam_basecall_path, 'no_cal'), 'recalibrated path set');
   my $status_path = $pb->status_files_path();
   is ($status_path, join(q[/],$rf,q{BAM_basecalls_22-May}, q{status}), 'status directory path');
   ok(-d $status_path, 'status directory created');

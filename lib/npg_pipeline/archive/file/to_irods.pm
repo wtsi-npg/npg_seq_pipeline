@@ -20,7 +20,6 @@ sub submit_to_lsf {
 sub _generate_bsub_command {
   my ($self, $arg_refs) = @_;
 
-  my $irodsinstance = $self->gclp() ? q(gclp) : q();
   my $id_run = $self->id_run();
   my @positions = $self->positions();
 
@@ -48,10 +47,6 @@ sub _generate_bsub_command {
   $bsub_command .=  q{-o } . $location_of_logs . qq{/$job_name.out };
   $bsub_command .=  q{'};
 
-  if($irodsinstance){
-    $bsub_command .= q{irodsEnvFile=$}.q{HOME/.irods/.irodsEnv-} . $irodsinstance . q{-iseq };
-  }
-
   ##no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
   my $publish_process_log_name =  q(process_publish_${LSB_JOBID}.json);
   ##use critic
@@ -64,10 +59,6 @@ sub _generate_bsub_command {
 
   if ($self->qc_run) {
     $bsub_command .= q{ --alt_process qc_run};
-  }
-
-  if($irodsinstance){
-    $bsub_command .= q{ --collection /14mg/seq/illumina/run/} . $self->id_run();
   }
 
   if($position_list){

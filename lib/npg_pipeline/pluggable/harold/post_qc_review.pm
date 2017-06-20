@@ -26,28 +26,6 @@ Pluggable pipeline module for the post_qc_review pipeline
 
 =head1 SUBROUTINES/METHODS
 
-=head2 archive_to_irods
-
- upload all archival files to irods (used by GCLP only)
-
-=cut
-
-sub archive_to_irods {
-  my ($self, @args) = @_;
-
-  if ($self->no_irods_archival) {
-    $self->warn(q{Archival to iRODS is switched off.});
-    return ();
-  }
-  my $required_job_completion = shift @args;
-  my $ats = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::to_irods});
-  my @job_ids = $ats->submit_to_lsf({
-    required_job_completion => $required_job_completion,
-  });
-
-  return @job_ids;
-}
-
 =head2 archive_to_irods_samplesheet
 
 upload all archival files using the samplesheet LIMS driver
@@ -225,14 +203,11 @@ sub _update_warehouse_command {
   my $post_qc_complete = $option and (ref $option eq 'HASH') and $option->{'post_qc_complete'} ? 1 : 0;
   my $id_run = $self->id_run;
 
-  my $command = q[];
+  my $command = qq{$loader_name --verbose --id_run $id_run};
   if ($loader_name eq 'warehouse_loader') {
-    # Currently, we need pool library name and link to plexes in SeqQC.
-    # Therefore, we need to run live.
-    $command = join q[], map {q[unset ] . $_ . q[;]} npg_pipeline::cache->env_vars;
+    $command .= q{ --lims_driver_type };
+    $command .= $post_qc_complete ? 'ml_warehouse_fc_cache' : 'samplesheet';
   }
-
-  $command .= qq{$loader_name --verbose --id_run $id_run};
   my $job_name = join q{_}, $loader_name, $id_run, $self->pipeline_name;
   my $path = $self->make_log_dir($self->recalibrated_path());
   my $prereq = q[];

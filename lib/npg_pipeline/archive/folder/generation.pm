@@ -19,7 +19,6 @@ sub create_dir {
   my $qc_dir = $self->qc_path();
   my $qc_log_dir = $qc_dir . q{/log};
   my $tileviz_dir = $qc_dir . q{/tileviz};
-  my $rna_seqc_dir = $qc_dir . q{/rna_seqc};
 
   #############
   # check existence of archive directory
@@ -49,21 +48,6 @@ sub create_dir {
     my $mk_tileviz_dir_cmd = qq{mkdir -p $tileviz_dir};
     $self->debug($mk_tileviz_dir_cmd);
     my $return = qx{$mk_tileviz_dir_cmd};
-    if ( $CHILD_ERROR ) {
-      $self->logcroak($tileviz_dir,
-                      qq{ does not exist and unable to create: $CHILD_ERROR },
-                      $return);
-    }
-  }
-
-  #############
-  # check existence of rna_seqc directory
-  # create if it doesn't
-
-  if ( ! -d $rna_seqc_dir) {
-    my $mk_rna_seqc_dir_cmd = qq{mkdir -p $rna_seqc_dir};
-    $self->debug($mk_rna_seqc_dir_cmd);
-    my $return = qx{$mk_rna_seqc_dir_cmd};
     if ( $CHILD_ERROR ) {
       $self->logcroak($tileviz_dir,
                       qq{ does not exist and unable to create: $CHILD_ERROR },
@@ -125,11 +109,6 @@ sub create_dir {
       $self->warn("could not chgrp $tileviz_dir\n\t$rc");                # not fatal
     }
 
-    $self->info("chgrp $owning_group $rna_seqc_dir");
-    $rc = `chgrp $owning_group $rna_seqc_dir`;
-    if ( $CHILD_ERROR ) {
-      $self->warn("could not chgrp $rna_seqc_dir\n\t$rc");                # not fatal
-    }
     ############
     # ensure that the owning group is what we expect
 
@@ -165,12 +144,6 @@ sub create_dir {
   $rc = `chmod u=rwx,g=srxw,o=rx $tileviz_dir`;
   if ( $CHILD_ERROR ) {
     $self->warn("could not chmod $tileviz_dir\n\t$rc");                # not fatal
-  }
-
-  $self->info("chmod u=rwx,g=srxw,o=rx $rna_seqc_dir");
-  $rc = `chmod u=rwx,g=srxw,o=rx $rna_seqc_dir`;
-  if ( $CHILD_ERROR ) {
-    $self->warn("could not chmod $rna_seqc_dir\n\t$rc");                # not fatal
   }
 
   $self->info("chmod u=rwx,g=srxw,o=rx $archive_log_dir");

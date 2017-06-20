@@ -57,7 +57,7 @@ sub runfolder_path4run { return '/some/path' };
 package main;
 
 subtest 'staging host matching' => sub {
-  plan tests => 26;
+  plan tests => 24;
 
   my $path49 = '/{export,nfs}/sf49/ILorHSany_sf49/*/';
   my $path32 = '/{export,nfs}/sf32/ILorHSany_sf32/*/';
@@ -75,30 +75,13 @@ subtest 'staging host matching' => sub {
   throws_ok { $runner->_generate_command( {
                      rf_path      => $rf_path,
                      job_priority => 50,
-  }) } qr/Lims flowcell id is missing/,
-    'non-gclp run and lims flowcell id is missing - error';
+  }) } qr/Lims flowcell id is missing/, 'lims flowcell id is missing - error';
 
   like($runner->_generate_command( {
     rf_path      => $rf_path,
     job_priority => 50,
     id           => 1480,
-  } ), qr/$command_start $rf_path/,
-    q{generated command is correct});
-
-  like($runner->_generate_command( {
-    rf_path      => $rf_path,
-    job_priority => 50,
-    gclp         => 1,
-  } ), qr/$command_start $rf_path --function_list gclp/,
-    q{generated command is correct});
-
-  like($runner->_generate_command( {
-    rf_path      => $rf_path,
-    job_priority => 50,
-    gclp         => 1,
-    id           => 22,
-  }), qr/$command_start $rf_path --function_list gclp/,
-    q{generated command is correct});
+  } ), qr/$command_start $rf_path/, q{generated command is correct});
 
   ok($runner->green_host,'running on a host in a green datacentre');
   ok($runner->staging_host_match($path49), 'staging matches host');
@@ -181,7 +164,7 @@ subtest 'failure to retrive lims data' => sub {
 };
 
 subtest 'retrieve lims data' => sub {
-  plan tests => 28;
+  plan tests => 19;
 
   my $runner;
   lives_ok { $runner = $package->new(
@@ -206,7 +189,6 @@ subtest 'retrieve lims data' => sub {
   my $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, '1234567891234', 'lims id');
   is ($lims_data->{'qc_run'}, 1, 'is qc run');
-  ok(!$lims_data->{'gclp'}, 'gclp flag is false');
   is_deeply($lims_data->{'studies'}, [], 'studies not retrieved');
 
   $test_run->update({'batch_id' => 55});
@@ -227,14 +209,6 @@ subtest 'retrieve lims data' => sub {
   $fc_row->update({'id_lims' => 'SSCAPE'});
   $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, undef, 'lims id is undefined');
-  ok(!$lims_data->{'gclp'}, 'gclp flag is false');
-  is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
-  is(join(q[:], @{$lims_data->{'studies'}}), '2967', 'studies retrieved');
-
-  $fc_row->update({'id_lims' => 'C_GCLP'});
-  $lims_data = $runner->check_lims_link($test_run);
-  is ($lims_data->{'id'}, undef, 'lims id is undefined');
-  is ($lims_data->{'gclp'}, 1, 'gclp flag is set to true');
   is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
   is(join(q[:], @{$lims_data->{'studies'}}), '2967', 'studies retrieved');
 
@@ -242,24 +216,19 @@ subtest 'retrieve lims data' => sub {
   $fc_row->update({'id_flowcell_lims' => 55});
   $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, 55, 'lims id is set');
-  is ($lims_data->{'gclp'}, 1, 'gclp flag is set to true');
   is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
   is(join(q[:], @{$lims_data->{'studies'}}), '2967', 'studies retrieved');
 
   $fc_row->update({'id_lims' => 'SSCAPE'});
   $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, 55, 'lims id is set');
-  ok (!$lims_data->{'gclp'}, 'gclp flag is false');
   is ($lims_data->{'qc_run'}, undef, 'qc run flag is not set');
 
   $fc_row->update({'id_lims' => 'SSCAPE'});
   $fc_row->update({'purpose' => 'qc'});
   $lims_data = $runner->check_lims_link($test_run);
   is ($lims_data->{'id'}, 55, 'lims id is set');
-  ok (!$lims_data->{'gclp'}, 'gclp flag is false');
   is ($lims_data->{'qc_run'}, 1, 'qc run flag is set');
-
-
 };
 
 subtest 'generate command' => sub {
@@ -291,7 +260,7 @@ subtest 'generate command' => sub {
 };
 
 subtest 'retrieve study analysis configuration' => sub {
-  plan tests => 6;
+  plan tests => 5;
 
   my $d = npg_pipeline::daemon::analysis->new();
   isa_ok( $d->daemon_conf(), q{HASH}, q{$} . qq{base->daemon_conf} );
@@ -303,13 +272,12 @@ subtest 'retrieve study analysis configuration' => sub {
   $d = npg_pipeline::daemon::analysis->new(conf_path => 't/data/study_analysis_conf');
   my $conf = $d->study_analysis_conf();
   isa_ok($conf, 'HASH', 'HASH of study configurations');
-  is($conf->{'gclp_all_studies'}, 't/data', 'dated directory name for gclp runs');
   is($conf->{'12345'}, 't', 'dated directory name for study 12345');
   is($conf->{'XY345'}, '/some/dir', 'dated directory name for study 12345');
 };
 
 subtest 'get software bundle' => sub {
-  plan tests => 11;
+  plan tests => 7;
 
   my $conf_file = join q[/], $temp_directory, 'study_conf.yml';
   open my $fh, '>', $conf_file;
@@ -325,19 +293,10 @@ subtest 'get software bundle' => sub {
   );
 
   throws_ok { $runner->_software_bundle() }
-    qr/GCLP flag is not defined/,
-    'error if gclp flag is not defined';
-  throws_ok { $runner->_software_bundle(1) }
     qr/Study ids are missing/,
     'error if no study array is given';
-  lives_ok { $runner->_software_bundle(0, []) }
+  lives_ok { $runner->_software_bundle([]) }
     'no error if study array is empty';
-  throws_ok { $runner->_software_bundle(1, []) }
-    qr/GCLP run needs explicit software bundle/,
-    'GCLP run: no study info - error';
-  throws_ok { $runner->_software_bundle(1, [qw/3/]) }
-    qr/GCLP run needs explicit software bundle/,
-    'no GCLP conf - error';
 
   $runner  = $package->new(
     pipeline_script_name => '/bin/true',
@@ -346,21 +305,19 @@ subtest 'get software bundle' => sub {
     conf_path            => 't/data/study_analysis_conf',
   );
 
-  throws_ok { $runner->_software_bundle(0, [qw/3 12345/]) }
+  throws_ok { $runner->_software_bundle([qw/3 12345/]) }
     qr/Multiple software bundles for a run/,
     'Software and no software - error';
-  throws_ok { $runner->_software_bundle(0, [qw/12345 12346/]) }
+  throws_ok { $runner->_software_bundle([qw/12345 12346/]) }
     qr/Multiple software bundles for a run/,
     'Multiple software bundles - error';
-  throws_ok { $runner->_software_bundle(0, [qw/XY345/]) }
+  throws_ok { $runner->_software_bundle([qw/XY345/]) }
     qr/Directory \'\/some\/dir\' does not exist/,
     'directory does not exist - error';
 
-  is($runner->_software_bundle(0, []), q[], 'no study info - no path');
-  is($runner->_software_bundle(0, [qw/12346 12347/]),
+  is($runner->_software_bundle([]), q[], 'no study info - no path');
+  is($runner->_software_bundle([qw/12346 12347/]),
     "${current_dir}/t/data/cache", 'study analysis directory retrieved');
-  is($runner->_software_bundle(1, [qw/12346 12347/]),
-    "${current_dir}/t/data", 'GCLP study analysis directory retrieved');  
 };
 
 subtest 'mock continious running' => sub {

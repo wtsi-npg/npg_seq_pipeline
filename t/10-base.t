@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 91;
+use Test::More tests => 82;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use File::Copy qw(cp);
@@ -51,19 +51,11 @@ use_ok(q{npg_pipeline::base});
 
 { 
   my $base = npg_pipeline::base->new();
-
-  foreach my $config_group ( qw{
-    general_values_conf
-    illumina_pipeline_conf
-    pb_cal_pipeline_conf
-  } ) {
-    isa_ok( $base->$config_group(), q{HASH}, q{$} . qq{base->$config_group} );
-  }
+  isa_ok( $base->general_values_conf(), q{HASH});
 }
 
 {
   my $base = npg_pipeline::base->new();
-  ok( !$base->gclp, 'function list not set and correctly defaults as not GCLP');
 
   my $path = "${config_dir}/function_list_base.yml";
 
@@ -79,14 +71,6 @@ use_ok(q{npg_pipeline::base});
   $path =~ s/function_list_base/function_list_central/;
   $base = npg_pipeline::base->new(function_list => $path);
   is( $base->function_list, $path, 'function list path as given');
-  ok(!$base->gclp, 'function list set and correctly identified as not GCLP');
-  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
-  
-  my $gpath=$path;
-  $gpath =~ s/function_list_central/function_list_central_gclp/;
-  $base = npg_pipeline::base->new(function_list => $gpath);
-  is( $base->function_list, $gpath, 'GCLP function list path as given');
-  ok( $base->gclp, 'function list set and correctly identified as GCLP');
   isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
   
   $base = npg_pipeline::base->new(function_list => 'data/config_files/function_list_central.yml');
@@ -250,13 +234,6 @@ package main;
   ok( !$base->is_qc_run(), 'looking on flowcell lims id: not qc run');
   my $fl = "${config_dir}/function_list_central_qc_run.yml";
   is( $base->function_list, $fl, 'qc function list');
-  
-  $base = mytest::central->new(id_flowcell_lims => 3456, gclp => 1);
-  my $gfl = "${config_dir}/function_list_central_gclp.yml";
-  is( $base->function_list, $gfl, 'gclp function list');
-
-  $base = mytest::central->new(id_flowcell_lims => 3456, function_list => 'gclp');
-  is( $base->function_list, $gfl, 'gclp function list');
   
   $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775');
   my $path = "${config_dir}/function_list_base_qc_run.yml";
