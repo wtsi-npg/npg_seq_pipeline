@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 51.10
  - Chained execution of RNA-SeQC to the vtfp/viv alignment cmd for RNA-Seq libraries only:
      entries for qc check rna_seqc removed from central function and parallelisation.
      code that created rna_seqc-specific directories has been removed as this is
