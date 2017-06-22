@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
-
+ - Modified qc run function list, removed copy_interop and switched archive_to_irods to samplesheet
+ 
 release 51.10
  - Chained execution of RNA-SeQC to the vtfp/viv alignment cmd for RNA-Seq libraries only:
      entries for qc check rna_seqc removed from central function and parallelisation.
