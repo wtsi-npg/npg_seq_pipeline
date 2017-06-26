@@ -313,8 +313,9 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $p4_param_vals->{alignment_method} = q[tophat2];
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bowtie2)); }
     if($nchs) {
-      $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bowtie2}, $self->repository);
-      $p4_param_vals->{alignment_hs_method} = q[tophat2];
+      # this human split alignment method is currently the same as the default, but this may change
+      $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
+      $p4_param_vals->{alignment_hs_method} = $hs_bwa;
     }
   }
   else {
