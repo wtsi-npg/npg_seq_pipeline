@@ -488,8 +488,8 @@ sub _do_rna_analysis {
     $self->debug(qq{$lstring - Single end run (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on single end data
     return 0;
   }
-  if ((not $l->reference_genome) or (not $l->reference_genome =~ /Homo_sapiens|Mus_musculus|Plasmodium_(?:falciparum|berghei)/smx)) {
-    $self->debug(qq{$lstring - Not human or mouse or plasmodium falciparum or berghei (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on all eukaryotes?
+  if ((not $l->reference_genome) or (not $l->reference_genome =~ /Homo_sapiens|Mus_musculus|Plasmodium_(?:falciparum|berghei)|Anopheles_gambiae/smx)) {
+    $self->debug(qq{$lstring - Not Homo s., Mus m., Plasmodium f./b. or Anopheles g. (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on all eukaryotes?
     return 0;
   }
   if (not $self->_transcriptome($l)->transcriptome_index_name()) {

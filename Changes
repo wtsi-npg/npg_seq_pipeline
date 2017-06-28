@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - seq_alignment to do_rna_analysis for Anopheles gambiae RNA-Seq libraries
+
 release 51.10.2
  - use bwa aln for human split with tophat target alignment
 
