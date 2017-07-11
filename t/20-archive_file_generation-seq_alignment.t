@@ -227,9 +227,9 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 5;
-  ##RNASeq library  13066_8  library_type = Illumina cDNA protocol 
+  plan tests => 13;
 
+  ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
   my $ref_dir = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5','all';
   `mkdir -p $ref_dir/fasta`;
   `mkdir -p $ref_dir/bowtie2`;
@@ -284,6 +284,57 @@ subtest 'test 2' => sub {
   cmp_deeply ($rna_gen->_job_args, $args,
     'correct command arguments for library RNASeq lane (unstranded Illumina cDNA library)');
   is ($rna_gen->_using_alt_reference, 0, 'Not using alternate reference');
+
+  my $l = st::api::lims->new(id_run => 13066, position => 8);
+  is ($rna_gen->_do_rna_analysis($l), 1, 'do RNA analysis on pair end RNA library with transcriptome index');
+
+  ##HiSeq, run 17550, multiple organisms RNA libraries suitable for RNA analysis
+  $runfolder = q{150910_HS40_17550_A_C75BCANXX};
+  $runfolder_path = join q[/], $dir, $runfolder;
+  $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20170629-170201/no_cal';
+  $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20170629-170201/metadata_cache_17550';
+  `mkdir -p $bc_path`;
+  `mkdir -p $cache_dir`;
+  copy("t/data/rna_seq/17550_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+
+  local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = q[t/data/rna_seq/samplesheet_17550.csv];
+
+  lives_ok {
+      $rna_gen = npg_pipeline::archive::file::generation::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2017},
+      repository        => $dir,
+      no_bsub           => 1,)
+  } 'no error creating an object';
+
+  $l = st::api::lims->new(id_run => 17550, position => 6, tag_index => 1); # study reference: Homo_sapiens (GRCh38_15)
+  my $t = $rna_gen->_transcriptome($l);
+  my $tixn = $t->transcriptome_index_name();
+  my $tmsg = $t->messages()->mlist;
+  is ($rna_gen->_do_rna_analysis($l), 0, 'no genome+transcriptome given for RNA library, so no RNA analysis');
+  my $tmsg_re1 = qr/^Directory.*not.*found$/msxi;
+  my $tmsg_re2 = qr/^Not.*transcriptome.*version.*given.*$/msxi;
+  my $msg;
+  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$tmsg_re2/); }
+  like($msg, $tmsg_re2, 'message confirms no transcriptome was specified');
+
+  $l = st::api::lims->new(id_run => 17550, position => 3, tag_index => 3); #Mus_musculus (GRCm38 + ensembl_75_transcriptome)
+  $t = $rna_gen->_transcriptome($l);                                       #$dir/transcriptomes/Mus_musculus exists but
+  $tixn = $t->transcriptome_index_name();                                  #not GTF (index) for ensembl_75_transcriptome
+  $tmsg = $t->messages()->mlist;
+  is ($rna_gen->_do_rna_analysis($l), 0, 'genome+transcriptome given but transcriptome index is missing, so no RNA analysis');
+  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$tmsg_re1/); }
+  like($msg, $tmsg_re1, 'message confirms no transcriptome index exists');
+
+  $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 1); #Library type: ChIP-Seq Auto
+  $t = $rna_gen->_transcriptome($l);
+  $tixn = $t->transcriptome_index_name();
+  $tmsg = $t->messages()->mlist;
+  is ($rna_gen->_do_rna_analysis($l), 0, 'no genome+transcriptome given for RNA library, so no RNA analysis');
+  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$tmsg_re2/); }
+  like($msg, $tmsg_re2, 'message confirms no transcriptome was specified');
 };
 
 subtest 'test 3' => sub {
