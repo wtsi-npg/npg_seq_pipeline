@@ -4,6 +4,7 @@ use Test::More tests => 12;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
+use Test::Log::Log4perl;
 use File::Temp qw/tempdir/;
 use Cwd qw/cwd abs_path/;
 use Perl6::Slurp;
@@ -227,7 +228,7 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 13;
+  plan tests => 16;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
   my $ref_dir = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5','all';
@@ -309,32 +310,44 @@ subtest 'test 2' => sub {
       no_bsub           => 1,)
   } 'no error creating an object';
 
-  $l = st::api::lims->new(id_run => 17550, position => 6, tag_index => 1); # study reference: Homo_sapiens (GRCh38_15)
+  # study reference: Homo_sapiens (GRCh38_15)
+  # test: genome without transcriptome set
+  my $tlogger = Test::Log::Log4perl->get_logger('npg_pipeline.archive.file.generation.seq_alignment');
+  my $re_no_idx = qr/^Directory.*exists.*but.*GTF.*not.*found$/msxi;
+  my $re_no_tra = qr/^Not.*transcriptome.*version.*given.*$/msxi;
+  my $msg;
+  $l = st::api::lims->new(id_run => 17550, position => 6, tag_index => 1);
+  Test::Log::Log4perl->start();
+  is ($rna_gen->_do_rna_analysis($l), 0, 'genome only set for alignment, so no RNA analysis');
   my $t = $rna_gen->_transcriptome($l);
   my $tixn = $t->transcriptome_index_name();
   my $tmsg = $t->messages()->mlist;
-  is ($rna_gen->_do_rna_analysis($l), 0, 'no genome+transcriptome given for RNA library, so no RNA analysis');
-  my $tmsg_re1 = qr/^Directory.*not.*found$/msxi;
-  my $tmsg_re2 = qr/^Not.*transcriptome.*version.*given.*$/msxi;
-  my $msg;
-  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$tmsg_re2/); }
-  like($msg, $tmsg_re2, 'message confirms no transcriptome was specified');
+  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$re_no_tra/); }
+  like($msg, $re_no_tra, 'no transcriptome was specified for this library');
+  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$re_no_idx/); }
+  like($msg, $re_no_idx, 'no transcriptome index was found for this library');
+  $tlogger->debug(qr/no transcriptome set/);
+  Test::Log::Log4perl->end('logged: no transcriptome set');  
 
-  $l = st::api::lims->new(id_run => 17550, position => 3, tag_index => 3); #Mus_musculus (GRCm38 + ensembl_75_transcriptome)
-  $t = $rna_gen->_transcriptome($l);                                       #$dir/transcriptomes/Mus_musculus exists but
-  $tixn = $t->transcriptome_index_name();                                  #not GTF (index) for ensembl_75_transcriptome
-  $tmsg = $t->messages()->mlist;
-  is ($rna_gen->_do_rna_analysis($l), 0, 'genome+transcriptome given but transcriptome index is missing, so no RNA analysis');
-  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$tmsg_re1/); }
-  like($msg, $tmsg_re1, 'message confirms no transcriptome index exists');
-
-  $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 1); #Library type: ChIP-Seq Auto
+  #Mus_musculus (GRCm38 + ensembl_75_transcriptome):
+  #test: $dir/transcriptomes/Mus_musculus exists but no GTF (index) for ensembl_75_transcriptome
+  $l = st::api::lims->new(id_run => 17550, position => 3, tag_index => 3); 
+  Test::Log::Log4perl->start();
+  is ($rna_gen->_do_rna_analysis($l), 0, 'genome+transcriptome set for alignment but transcriptome index is missing, so no RNA analysis'); #TODO: this should throw an exception
   $t = $rna_gen->_transcriptome($l);
   $tixn = $t->transcriptome_index_name();
   $tmsg = $t->messages()->mlist;
-  is ($rna_gen->_do_rna_analysis($l), 0, 'no genome+transcriptome given for RNA library, so no RNA analysis');
-  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$tmsg_re2/); }
-  like($msg, $tmsg_re2, 'message confirms no transcriptome was specified');
+  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$re_no_idx/); }
+  like($msg, $re_no_idx, 'no transcriptome index exists for this library');
+  $tlogger->debug(qr/no transcriptome set/);
+  Test::Log::Log4perl->end('logged: no transcriptome set');
+
+  #test: library type is not RNA: ChIP-Seq Auto
+  $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 1); #Library type: ChIP-Seq Auto
+  Test::Log::Log4perl->start();
+  is ($rna_gen->_do_rna_analysis($l), 0, 'not an RNA library, so no RNA analysis');
+  $tlogger->debug(qr/not RNA library type/);
+  Test::Log::Log4perl->end('logged: not rna library type');
 };
 
 subtest 'test 3' => sub {
