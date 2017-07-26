@@ -5,6 +5,7 @@ use English qw{-no_match_vars};
 use Readonly;
 use Moose::Meta::Class;
 use File::Slurp;
+use File::Basename;
 use JSON::XS;
 use List::Util qw(sum);
 use List::MoreUtils qw(any);
@@ -25,6 +26,9 @@ Readonly::Scalar our $NUM_SLOTS                    => q(12,16);
 Readonly::Scalar our $MEMORY                       => q{32000}; # memory in megabytes
 Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
 Readonly::Scalar my  $QC_SCRIPT_NAME               => q{qc};
+Readonly::Scalar my  $DELIM_PARSED_STRING_INDEX    => 3;
+Readonly::Scalar my  $DEFAULT_STAR_SJDB_OVERHANG   => q{74};
+Readonly::Hash   my  %DELIM2ALIGNER                => {'*' => q{star}, '+' => q{tophat2}};
 
 =head2 phix_reference
 
@@ -301,17 +305,35 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     else {
       $bait_stats_flag = q(-prune_nodes '"'"'fop.*samtools_stats_F0.*00_bait.*'"'"');
     }
-  } else {
+  } 
+  else {
     $bait_stats_flag = q(-prune_nodes '"'"'foptgt.*samtools_stats_F0.*00_bait.*'"'"');
     $spike_splicing = q[-splice_nodes '"'"'src_bam:-foptgt_bamsort_coord:;foptgt_seqchksum_tee:__FINAL_OUT__-scs_cmp_seqchksum:__OUTPUTCHK_IN__'"'"'];
   }
 
   if($do_rna) {
-    $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
-    $p4_param_vals->{transcriptome_val} = $self->_transcriptome($l)->transcriptome_index_name();
-
-    $p4_param_vals->{alignment_method} = q[tophat2];
-    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bowtie2)); }
+    my $rna_aligner = $self->_rna_aligner($l, $self->repository);
+    $p4_param_vals->{alignment_method} = $rna_aligner;
+    my $p4_reference_genome_index;
+    if($rna_aligner eq q[tophat2]) {
+      $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
+      $p4_param_vals->{transcriptome_val} = $self->_transcriptome($l)->transcriptome_index_name();
+      $p4_reference_genome_index = $self->_ref($l,q(bowtie2));
+    }
+    elsif($rna_aligner eq q[star]) {
+      $p4_param_vals->{sjdb_annotation_val} = $self->_transcriptome($l)->gtf_file();
+      # most common read length used for RNA-Seq is 75 bp, then STAR indexes
+      # were generated using --sjdbOverhang 74 -this may change
+      $p4_param_vals->{sjdb_overhang_val} = $DEFAULT_STAR_SJDB_OVERHANG;
+      $p4_param_vals->{star_executable} = q[star];
+      $p4_reference_genome_index = dirname($self->_ref($l,q(star)));
+    }
+    else {
+      $self->logcroak(q(No aligner set for RNA alignment));
+    }
+    if($do_target_alignment) {
+      $p4_param_vals->{alignment_reference_genome} = $p4_reference_genome_index;
+    }
     if($nchs) {
       # this human split alignment method is currently the same as the default, but this may change
       $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
@@ -505,6 +527,17 @@ sub _transcriptome {
                  'tag_index'  => $l->tag_index,
                  ( $self->repository ? ('repository' => $self->repository):())
                 });
+}
+
+sub _rna_aligner {
+    my ($self, $l, $repos) = @_;
+    my $lstring = $l->to_string;
+    my $ruser = Moose::Meta::Class->create_anon_class(roles => [qw/npg_tracking::data::reference::find/])
+                ->new_object({($repos ? (q(repository)=>$repos) : ())});
+    my ($organism, $strain, $transcriptome, $delim) = $ruser->parse_reference_genome($l->reference_genome());
+    my $rna_aligner = $DELIM2ALIGNER{$delim};
+    $self->debug(qq{$lstring - aligner set for RNA alignment: $rna_aligner});
+    return $rna_aligner;
 }
 
 sub _do_bait_stats_analysis {
