@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 51.10.3
+ - no alignments for chromium libraries
+
 release 51.10.2
  - use bwa aln for human split with tophat target alignment
 
