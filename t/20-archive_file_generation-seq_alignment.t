@@ -6,11 +6,13 @@ use Test::Deep;
 use Test::Warn;
 use Test::Log::Log4perl;
 use File::Temp qw/tempdir/;
+use File::Path qw/make_path/;
 use Cwd qw/cwd abs_path/;
 use Perl6::Slurp;
 use File::Copy;
 use Log::Log4perl qw(:levels);
 use JSON;
+use Cwd;
 
 use st::api::lims;
 
@@ -28,63 +30,110 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $dir, 'logfile'),
                           utf8   => 1});
 
+# 90 lines of code instead of 113 to generate a reference and transcriptome reference. but you can add more!
+my %builds = ();
+$builds{'Homo_sapiens'} = ['1000Genomes_hs37d5','GRCh38_15','GRCh38_full_analysis_set_plus_decoy_hla','GRCh38X'];
+$builds{'Mus_musculus'} = ['GRCm38','NCBIm37'];
+$builds{'PhiX'} = ['Illumina'];
+$builds{'Strongyloides_ratti'} = ['20100601'];
+$builds{'Plasmodium_falciparum'} = ['3D7_Oct11v3'];
+my %tbuilds = ();
+$tbuilds{'1000Genomes_hs37d5'} = ['ensembl_75_transcriptome'];
+$tbuilds{'GRCh38_15'} = ['ensembl_76_transcriptome'];
+$tbuilds{'NCBIm37'} = ['ensembl_67_transcriptome'];
+$tbuilds{'GRCm38'} = ['ensembl_75_transcriptome','ensembl_84_transcriptome'];
+$tbuilds{'3D7_Oct11v3'} = ['genedb_161015_transcriptome'];
+
+my $ref_dir = join q[/],$dir,'references';
+my $tra_dir = join q[/],$dir,'transcriptomes';
+foreach my $org (keys %builds){
+    foreach my $rel (@{ $builds{$org} }){
+        my $rel_dir     = join q[/],$ref_dir,$org,$rel,'all';
+        my $bowtie2_dir = join q[/],$rel_dir,'bowtie2'; 
+        my $bwa_dir     = join q[/],$rel_dir,'bwa';
+        my $bwa0_6_dir  = join q[/],$rel_dir,'bwa0_6';
+        my $fasta_dir   = join q[/],$rel_dir,'fasta';
+        my $picard_dir  = join q[/],$rel_dir,'picard';
+        my $star_dir    = join q[/],$rel_dir,'star';
+        make_path($bowtie2_dir, $bwa_dir, $bwa0_6_dir, $picard_dir, $star_dir, $fasta_dir, {verbose => 0});
+        if ($tbuilds{$rel}) {
+            foreach my $tra_ver (@{ $tbuilds{$rel} }){
+                my $tra_ver_dir = join q[/],$tra_dir,$org,$tra_ver,$rel;
+                my $gtf_dir    = join q[/],$tra_ver_dir,'gtf';
+                my $rnaseq_dir = join q[/],$tra_ver_dir,'RNA-SeQC';
+                my $tophat_dir = join q[/],$tra_ver_dir,'tophat2';
+                my $salmon_dir = join q[/],$tra_ver_dir,'salmon';
+                my $fasta_dir  = join q[/],$tra_ver_dir,'fasta';
+                make_path($gtf_dir, $rnaseq_dir, $tophat_dir, $salmon_dir, $fasta_dir, {verbose => 0});
+            }
+        }
+    }
+    symlink_default($ref_dir,$org,$builds{$org}->[0]);
+}
+
+# make default symlink 
+sub symlink_default {
+    my($ref_dir,$org,$rel) = @_;
+    my $orig_dir = getcwd();
+    my $rel_dir = join q[/],$ref_dir,$org;
+    chdir qq[$rel_dir];
+    eval { symlink($rel,"default") };
+    print "symlink error $@" if $@;
+    chdir $orig_dir;
+return;
+}
+
+`touch $ref_dir/PhiX/default/all/bwa0_6/phix.fa`;
+`touch $ref_dir/PhiX/Illumina/all/fasta/phix-illumina.fa`;
+`touch $ref_dir/PhiX/default/all/picard/phix.fa.dict`;
+`touch $ref_dir/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa`;
+`touch $ref_dir/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa`;
+`touch $ref_dir/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa`;
+`touch $ref_dir/Homo_sapiens/1000Genomes_hs37d5/all/bowtie2/hs37d5.fa`;
+`touch $ref_dir/Homo_sapiens/1000Genomes_hs37d5/all/bowtie2/Homo_sapiens.GRCh37.NCBI.allchr_MT.fa`;
+`touch $ref_dir/Homo_sapiens/GRCh38_15/all/bwa0_6/Homo_sapiens.GRCh38_15.fa`;
+`touch $ref_dir/Homo_sapiens/GRCh38_15/all/fasta/Homo_sapiens.GRCh38_15.fa`;
+`touch $ref_dir/Homo_sapiens/GRCh38_15/all/picard/Homo_sapiens.GRCh38_15.fa.dict`;
+`touch $ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa`;
+`touch $ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/picard/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.dict`;
+`touch $ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.alt`;
+`touch $ref_dir/Homo_sapiens/GRCh38X/all/fasta/Homo_sapiens.GRCh38X.fa`;
+`touch $ref_dir/Strongyloides_ratti/20100601/all/fasta/rat.fa`;
+`touch $ref_dir/Strongyloides_ratti/20100601/all/picard/rat.fa`;
+`touch $ref_dir/Strongyloides_ratti/20100601/all/bwa0_6/rat.fa`;
+`touch $ref_dir/Mus_musculus/GRCm38/all/fasta/Mus_musculus.GRCm38.68.dna.toplevel.fa`;
+`touch $ref_dir/Mus_musculus/GRCm38/all/star`;
+`touch $ref_dir/Mus_musculus/NCBIm37/all/fasta/mm_ref_NCBI37_1.fasta`;
+`touch $ref_dir/Mus_musculus/NCBIm37/all/bowtie2/mm_ref_NCBI37_1.fasta`;
+`touch $ref_dir/Mus_musculus/NCBIm37/all/picard/mm_ref_NCBI37_1.fasta`;
+`touch $ref_dir/Mus_musculus/NCBIm37/all/bwa0_6/mm_ref_NCBI37_1.fasta`;
+`touch $ref_dir/Plasmodium_falciparum/3D7_Oct11v3/all/fasta/Pf3D7_v3.fasta`;
+`touch $ref_dir/Plasmodium_falciparum/3D7_Oct11v3/all/picard/Pf3D7_v3.fasta.dict`;
+`touch $tra_dir/Homo_sapiens/ensembl_75_transcriptome/1000Genomes_hs37d5/gtf/ensembl_75_transcriptome-1000Genomes_hs37d5.gtf`;
+`touch $tra_dir/Homo_sapiens/ensembl_75_transcriptome/1000Genomes_hs37d5/tophat2/1000Genomes_hs37d5.known.2.bt2`;
+`touch $tra_dir/Homo_sapiens/ensembl_75_transcriptome/1000Genomes_hs37d5/fasta/1000Genomes_hs37d5.fa`;
+`touch $tra_dir/Mus_musculus/ensembl_67_transcriptome/NCBIm37/gtf/ensembl_67_transcriptome-NCBIm37.gtf`;
+`touch $tra_dir/Mus_musculus/ensembl_67_transcriptome/NCBIm37/tophat2/NCBIm37.known.1.bt2`;
+`touch $tra_dir/Mus_musculus/ensembl_84_transcriptome/GRCm38/gtf/ensembl_84_transcriptome-GRCm38.gtf`;
+`touch $tra_dir/Mus_musculus/ensembl_84_transcriptome/GRCm38/fasta/GRCm38.fa`;
+
+
+
 ###12597_1    study: genomic sequencing, library type: No PCR
 ###12597_8#7  npg/run/12597.xml st/studies/2775.xml  batches/26550.xml samples/1886325.xml  <- Epigenetics, library type: qPCR only
 ###12597_4#3  npg/run/12597.xml st/studies/2893.xml  batches/26550.xml samples/1886357.xml  <- transcriptomics, library type: RNA-seq dUTP
 ###   1886357.xml edited to change reference to Mus_musculus (NCBIm37 + ensembl_67_transcriptome)
 ### batches/26550.xml edited to have the following plex composition: # plex TTAGGC 3 lane 4 and plex CAGATC 7 lane 8 
 
-my $phix_ref_dir = "$dir/references/PhiX/Illumina/all/fasta";
-`mkdir -p $phix_ref_dir`;
-`ln -s Illumina $dir/references/PhiX/default`;
-my $phix_ref = "$phix_ref_dir/phix-illumina.fa";
-`touch $phix_ref`;
-
 subtest 'test 1' => sub {
   plan tests => 21;
 
-  `mkdir -p $dir/references/PhiX/default/all/bwa0_6`;
-  `touch $dir/references/PhiX/default/all/bwa0_6/phix.fa`;
-  `mkdir -p $dir/references/PhiX/default/all/picard`;
-  `touch $dir/references/PhiX/default/all/picard/phix.fa.dict`;
-
-  `mkdir -p $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta`;
-  `touch $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa`;
-  `mkdir -p $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard`;
-  `touch $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa`;
-  `mkdir -p $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6`;
-  `touch $dir/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa`;
-  `ln -s 1000Genomes_hs37d5 $dir/references/Homo_sapiens/default`;
-
-  my $ref_dir = join q[/],$dir,'references','Mus_musculus','NCBIm37','all';
-  `mkdir -p $ref_dir/fasta`;
-  `mkdir -p $dir/references/Strongyloides_ratti/20100601/all/fasta`;
-  `touch $dir/references/Strongyloides_ratti/20100601/all/fasta/rat.fa`;
-  `mkdir -p $dir/references/Strongyloides_ratti/20100601/all/picard`;
-  `touch $dir/references/Strongyloides_ratti/20100601/all/picard/rat.fa`;
-  `mkdir -p $dir/references/Strongyloides_ratti/20100601/all/bwa0_6`;
-  `touch $dir/references/Strongyloides_ratti/20100601/all/bwa0_6/rat.fa`;
-  `mkdir -p $ref_dir/bowtie2`;
-  `mkdir -p $ref_dir/picard`;
-  `mkdir -p $ref_dir/bwa0_6`;
-  `touch $ref_dir/fasta/mm_ref_NCBI37_1.fasta`;
-  `touch $ref_dir/bowtie2/mm_ref_NCBI37_1.fasta`;
-  `touch $ref_dir/picard/mm_ref_NCBI37_1.fasta`;
-  `touch $ref_dir/bwa0_6/mm_ref_NCBI37_1.fasta`;
-
-  my $ref = qq[$ref_dir/bowtie2/mm_ref_NCBI37_1.fasta] ; 
   my $runfolder = q{140409_HS34_12597_A_C333TACXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20140515-073611/no_cal';
   `mkdir -p $bc_path`;
  
   copy("t/data/rna_seq/12597_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
-
-  my $transcriptome_dir = join q[/],$dir,'transcriptomes','Mus_musculus','ensembl_67_transcriptome','NCBIm37';
-  `mkdir -p $transcriptome_dir/gtf`;
-  `mkdir -p $transcriptome_dir/tophat2`;
-  `touch $transcriptome_dir/gtf/ensembl_67_transcriptome-NCBIm37.gtf`;
-  `touch $transcriptome_dir/tophat2/NCBIm37.known.1.bt2`;
 
   my $rna_gen;
   lives_ok {
@@ -106,7 +155,6 @@ subtest 'test 1' => sub {
 
   my $qc_in  = $dir . q[/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4];
   my $qc_out = join q[/], $qc_in, q[qc];
-  my $qc_report_dir = $dir . q[/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/qc/rna_seqc/12597_4/12597_4#3];
 
   my $args = {};
   $args->{'40003'} = qq{bash -c '\ mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 && vtfp.pl -param_vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#3_p4s2_pv_in.json -export_param_vals 12597_4#3_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` -prune_nodes '"'"'fop.*samtools_stats_F0.*00_bait.*'"'"' \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#3.json && viv.pl -s -x -v 3 -o viv_12597_4#3.log run_12597_4#3.json } .
@@ -228,20 +276,10 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 16;
+  plan tests => 14;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
-  my $ref_dir = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5','all';
-  `mkdir -p $ref_dir/fasta`;
-  `mkdir -p $ref_dir/bowtie2`;
-  `mkdir -p $ref_dir/picard`;
-  `mkdir -p $ref_dir/bwa0_6`;
-  `touch $ref_dir/fasta/hs37d5.fa`;
-  `touch $ref_dir/bowtie2/hs37d5.fa`;
-  `touch $ref_dir/picard/hs37d5.fa`;
-  `touch $ref_dir/bwa0_6/hs37d5.fa`;
 
-  my $ref = qq[$ref_dir/bowtie2/Homo_sapiens.GRCh37.NCBI.allchr_MT.fa];
   my $runfolder = q{140529_HS18_13066_A_C3C3KACXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20140606-133530/no_cal';
@@ -249,11 +287,6 @@ subtest 'test 2' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20140606-133530/metadata_cache_13066';
   `mkdir -p $cache_dir`;
   copy("t/data/rna_seq/13066_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
-  my $transcriptome_dir = join q[/],$dir,'transcriptomes','Homo_sapiens','ensembl_75_transcriptome','1000Genomes_hs37d5';
-  `mkdir -p $transcriptome_dir/gtf`;
-  `mkdir -p $transcriptome_dir/tophat2`;
-  `touch $transcriptome_dir/gtf/ensembl_75_transcriptome-1000Genomes_hs37d5.gtf`;
-  `touch $transcriptome_dir/tophat2/1000Genomes_hs37d5.known.2.bt2`;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/rna_seq/samplesheet_13066.csv]; #edited to add 1000Genomes_hs37d5 + ensembl_75_transcriptome to lane 8
 
@@ -272,7 +305,6 @@ subtest 'test 2' => sub {
 
   my $qc_in  = qq{$dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive};
   my $qc_out = join q[/], $qc_in, q[qc];
-  my $qc_report_dir = qq[$dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive/qc/rna_seqc/13066_8];
   my $args = {};
   $args->{8} = qq{bash -c ' mkdir -p $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive/tmp_\$LSB_JOBID/13066_8 ; cd $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive/tmp_\$LSB_JOBID/13066_8 && vtfp.pl -param_vals $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/13066_8_p4s2_pv_in.json -export_param_vals 13066_8_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` -prune_nodes '"'"'fop.*samtools_stats_F0.*00_bait.*'"'"' \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_13066_8.json && viv.pl -s -x -v 3 -o viv_13066_8.log run_13066_8.json } .
     qq{ && qc --check bam_flagstats --id_run 13066 --position 8 --qc_in $qc_in --qc_out $qc_out} .
@@ -310,44 +342,38 @@ subtest 'test 2' => sub {
       no_bsub           => 1,)
   } 'no error creating an object';
 
-  # study reference: Homo_sapiens (GRCh38_15)
-  # test: genome without transcriptome set
+  is ($rna_gen->id_run, 17550, 'id_run inferred correctly');
+  
   my $tlogger = Test::Log::Log4perl->get_logger('npg_pipeline.archive.file.generation.seq_alignment');
-  my $re_no_idx = qr/^Directory.*exists.*but.*GTF.*not.*found$/msxi;
-  my $re_no_tra = qr/^Not.*transcriptome.*version.*given.*$/msxi;
-  my $msg;
-  $l = st::api::lims->new(id_run => 17550, position => 6, tag_index => 1);
-  Test::Log::Log4perl->start();
-  is ($rna_gen->_do_rna_analysis($l), 0, 'genome only set for alignment, so no RNA analysis');
-  my $t = $rna_gen->_transcriptome($l);
-  my $tixn = $t->transcriptome_index_name();
-  my $tmsg = $t->messages()->mlist;
-  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$re_no_tra/); }
-  like($msg, $re_no_tra, 'no transcriptome was specified for this library');
-  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$re_no_idx/); }
-  like($msg, $re_no_idx, 'no transcriptome index was found for this library');
-  $tlogger->debug(qr/no transcriptome set/);
-  Test::Log::Log4perl->end('logged: no transcriptome set');  
-
-  #Mus_musculus (GRCm38 + ensembl_75_transcriptome):
-  #test: $dir/transcriptomes/Mus_musculus exists but no GTF (index) for ensembl_75_transcriptome
-  $l = st::api::lims->new(id_run => 17550, position => 3, tag_index => 3); 
-  Test::Log::Log4perl->start();
-  is ($rna_gen->_do_rna_analysis($l), 0, 'genome+transcriptome set for alignment but transcriptome index is missing, so no RNA analysis'); #TODO: this should throw an exception
-  $t = $rna_gen->_transcriptome($l);
-  $tixn = $t->transcriptome_index_name();
-  $tmsg = $t->messages()->mlist;
-  foreach my $m (@{$tmsg}){ $msg = $m; last if ($msg =~ /$re_no_idx/); }
-  like($msg, $re_no_idx, 'no transcriptome index exists for this library');
-  $tlogger->debug(qr/no transcriptome set/);
-  Test::Log::Log4perl->end('logged: no transcriptome set');
 
   #test: library type is not RNA: ChIP-Seq Auto
-  $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 1); #Library type: ChIP-Seq Auto
+  $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 1);
   Test::Log::Log4perl->start();
   is ($rna_gen->_do_rna_analysis($l), 0, 'not an RNA library, so no RNA analysis');
   $tlogger->debug(qr/not RNA library type/);
   Test::Log::Log4perl->end('logged: not rna library type');
+  
+  $l = st::api::lims->new(id_run => 17550, position => 4, tag_index => 1);
+  lives_ok { $rna_gen->_generate_command_arguments([4]) } 'executes _generate_command_arguments method successfully for id_run 17550 lane 4 tag_index 1';
+  lives_ok { $rna_gen->_job_args } 'executes _job_args method successfully';
+  Test::Log::Log4perl->start();
+  lives_ok { $rna_gen->_lsf_alignment_command($l, 1) } 'executes _lsf_alignment_command method successfully';
+  my $re = '^Reference\ set\ for.*$';
+  $tlogger->debug(qr/Do\ RNAseq\ analysis/);
+  for my $i (1..6) { $tlogger->info(qr/$re/); }
+  $tlogger->debug(qr/No\ bait\ set$/);
+  $tlogger->info(qr/Analysis\:/);
+  $tlogger->debug(qr/Unsupported\ RNA\ analysis/);
+  $tlogger->info(qr/$re/);
+  $tlogger->info(qr/Using\ p4/);
+  $tlogger->info(qr/do\_target\_alignment\ is\ true/);
+  $tlogger->info(qr/spike\_tag\ is\ false/);
+  $tlogger->info(qr/human\_split\ is/);
+  $tlogger->info(qr/nchs\ is\ false/);
+  $tlogger->info(qr/p4\ parameters\ written\ to/);
+  $tlogger->info(qr/Using\ p4\ template\ alignment\_wtsi\_stage2\_template\.json/);  
+  Test::Log::Log4perl->end('generated and logged: lsf command for unsupported rna analysis and used default aligner');
+
 };
 
 subtest 'test 3' => sub {
@@ -360,12 +386,6 @@ subtest 'test 3' => sub {
   $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20151215-215034';
   my $cache_dir = join q[/], $bc_path, 'metadata_cache_18472';
-  `mkdir -p $dir/references/Homo_sapiens/GRCh38_15/all/bwa0_6/`;
-  `mkdir -p $dir/references/Homo_sapiens/GRCh38_15/all/fasta/`;
-  `mkdir -p $dir/references/Homo_sapiens/GRCh38_15/all/picard/`;
-  `touch $dir/references/Homo_sapiens/GRCh38_15/all/bwa0_6/Homo_sapiens.GRCh38_15.fa`;
-  `touch $dir/references/Homo_sapiens/GRCh38_15/all/fasta/Homo_sapiens.GRCh38_15.fa`;
-  `touch $dir/references/Homo_sapiens/GRCh38_15/all/picard/Homo_sapiens.GRCh38_15.fa.dict`;
 
   local $ENV{'NPG_WEBSERVICE_CACHE_DIR'}  = join q[/], $cache_dir;
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = join q[/], $cache_dir, q[samplesheet_18472.csv];
@@ -402,11 +422,6 @@ subtest 'test 4' => sub {
   plan tests => 8;
   ##HiSeqX, run 16839_7
 
-  my $ref_dir = join q[/],$dir,'references','Homo_sapiens','GRCh38_full_analysis_set_plus_decoy_hla','all';
-  `mkdir -p $ref_dir/fasta`;
-  `mkdir -p $ref_dir/bwa0_6`;
-  `mkdir -p $ref_dir/picard`;
-
   my $runfolder = q{150709_HX4_16839_A_H7MHWCCXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/no_cal';
@@ -414,15 +429,7 @@ subtest 'test 4' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/metadata_cache_16839';
   `mkdir -p $cache_dir`;
   copy("t/data/hiseqx/16839_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
-  my $fasta_ref = "$ref_dir/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa";
-  `touch $fasta_ref`;
-  `touch $ref_dir/picard/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.dict`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.alt`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.amb`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.ann`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.pac`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.sa`;
+  my $fasta_ref = "$ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa";
 
   local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseqx];
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = q[t/data/hiseqx/samplesheet_16839.csv];
@@ -449,11 +456,9 @@ subtest 'test 4' => sub {
   open my $fhss, '>', $new_ss or die "Cannot open $new_ss for writing";
   print $fhss $ss or die "Cannot write to $new_ss";
   close $fhss or warn "Failed to close $new_ss";
+
   # new samplesheet has miltiple references in lane 1
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = $new_ss;
-  my $other_ref_dir = join q[/],$dir,'references','Homo_sapiens','GRCh38X','all';
-  `mkdir -p $other_ref_dir/fasta`;
-  `touch $other_ref_dir/fasta/Homo_sapiens.GRCh38X.fa`; 
   $l = st::api::lims->new(id_run => 16839, position => 1, tag_index => 0);
   my $other_ref;
   warnings_exist { $other_ref = $hsx_gen->_ref($l, 'fasta') }
@@ -492,11 +497,6 @@ subtest 'test 4' => sub {
 subtest 'test 5' => sub {
   plan tests => 4;
   ##HiSeq, run 16807_6 (newer flowcell)
-
-  my $ref_dir = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5','all';
-  `mkdir -p $ref_dir/fasta`;
-  `mkdir -p $ref_dir/bwa0_6`;
-  `mkdir -p $ref_dir/picard`;
 
   my $runfolder = q{150707_HS38_16807_A_C7U2YANXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
@@ -551,12 +551,6 @@ subtest 'test 5' => sub {
 subtest 'test 6' => sub {
   plan tests => 4;
   ##MiSeq, run 20268_1 (newer flowcell) - WITH bait added to samplesheet for lane 1 
-
-  my $ref_dir = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5','all';
-  `mkdir -p $ref_dir/fasta`;
-  `mkdir -p $ref_dir/bwa`;
-  `mkdir -p $ref_dir/bwa0_6`;
-  `mkdir -p $ref_dir/picard`;
 
   my $bait_dir = join q[/],$dir,'baits','Human_all_exon_V5','1000Genomes_hs37d5';
   `mkdir -p $bait_dir`;
@@ -631,11 +625,6 @@ subtest 'test 7' => sub {
   plan tests => 4;
   ##MiSeq, run 16850_1 (cycle count over threshold (currently >= 101))
 
-  my $ref_dir = join q[/],$dir,'references','Plasmodium_falciparum','3D7_Oct11v3','all';
-  `mkdir -p $ref_dir/fasta`;
-  `mkdir -p $ref_dir/bwa0_6`;
-  `mkdir -p $ref_dir/picard`;
-
   my $runfolder = q{150710_MS2_16850_A_MS3014507-500V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-022206/no_cal';
@@ -643,13 +632,6 @@ subtest 'test 7' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-022206/metadata_cache_16850';
   `mkdir -p $cache_dir`;
   copy("t/data/miseq/16850_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
-  `touch $ref_dir/fasta/Pf3D7_v3.fasta`;
-  `touch $ref_dir/picard/Pf3D7_v3.fasta.dict`;
-  `touch $ref_dir/bwa0_6/Pf3D7_v3.fasta.amb`;
-  `touch $ref_dir/bwa0_6/Pf3D7_v3.fasta.ann`;
-  `touch $ref_dir/bwa0_6/Pf3D7_v3.fasta.bwt`;
-  `touch $ref_dir/bwa0_6/Pf3D7_v3.fasta.pac`;
-  `touch $ref_dir/bwa0_6/Pf3D7_v3.fasta.sa`;
 
   local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/miseq];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_16850.csv];
@@ -696,11 +678,6 @@ subtest 'test 8' => sub {
   plan tests => 4;
   ##MiSeq, run 16756_1 (nonconsented human split, no target alignment)
 
-  my $ref_dir = join q[/],$dir,'references','Plasmodium_falciparum','3D7_Oct11v3','all';
-  `mkdir -p $ref_dir/fasta`;
-  `mkdir -p $ref_dir/bwa0_6`;
-  `mkdir -p $ref_dir/picard`;
-
   my $runfolder = q{150701_HS36_16756_B_C711RANXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-132329/no_cal';
@@ -708,10 +685,8 @@ subtest 'test 8' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-132329/metadata_cache_16756';
   `mkdir -p $cache_dir`;
   copy("t/data/hiseq/16756_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+
   # default human reference needed for alignment for unconsented human split
-  my $default_source = join q[/],$dir,'references','Homo_sapiens','1000Genomes_hs37d5';
-  my $default_target = join q[/],$dir,'references','Homo_sapiens','default';
-  `ln -s $default_source $default_target`;
   local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseq];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/hiseq/samplesheet_16756.csv];
 
@@ -872,15 +847,6 @@ subtest 'test 11' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/metadata_cache_16839';
   `mkdir -p $cache_dir`;
   copy("t/data/hiseqx/16839_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
-  my $fasta_ref = "$ref_dir/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa";
-  `touch $fasta_ref`;
-  `touch $ref_dir/picard/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.dict`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.alt`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.amb`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.ann`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.pac`;
-  `touch $ref_dir/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.sa`;
 
   local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseqx];
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = q[t/data/hiseqx/samplesheet_16839.csv];
