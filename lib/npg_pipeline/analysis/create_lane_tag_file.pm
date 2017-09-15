@@ -13,9 +13,9 @@ with 'WTSI::DNAP::Utilities::Loggable';
 
 our $VERSION = '0';
 
-Readonly::Scalar my $TAG_LIST_FILE_HEADER      => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
-Readonly::Scalar my $SPIKED_PHIX_PADDED        => q{ACAACGCATCTTTCCC};
-Readonly::Scalar my $SPIKED_PHIX_HISEQX_PADDED => q{ACAACGCAAGATCTCG};
+Readonly::Scalar my $TAG_LIST_FILE_HEADER           => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
+Readonly::Scalar my $SPIKED_PHIX_PADDED             => q{ACAACGCATCTTTCCC};
+Readonly::Scalar my $SPIKED_PHIX_HISEQX_PADDED      => q{ACAACGCAAGATCTCG};
 
 =head1 NAME
 
@@ -77,7 +77,7 @@ has q{location}          => (isa        => q{NpgTrackingDirectory},
 =cut
 
 has q{index_length}      => (isa        => q{Int},
-                             is         => q{ro},
+                             is         => q{rw},
                              required   => 1,
                             );
 
@@ -112,23 +112,24 @@ sub generate {
   }
 
   my $tags = $self->lane_lims->tags;
+  my $spiked_phix_tag_index = $self->lane_lims->spiked_phix_tag_index();
+  my $dual_index = 0;
 
   # on a HiSeqX the second index is sequenced in reverse complement order
-  if( $self->hiseqx ) {
-    foreach my $plex ($self->lane_lims->children) {
-      if (my $ti = $plex->tag_index){
-        my $tag_sequences = $plex->tag_sequences;
-        if ( @{$tag_sequences} == 2 ) {
-          $tag_sequences->[1] =~ tr/[ACGT]/[TGCA]/;
-          $tag_sequences->[1] = reverse $tag_sequences->[1];
-        }
-        $tags->{$ti} = join q[], @{$tag_sequences};
+  foreach my $plex ($self->lane_lims->children) {
+    if (my $ti = $plex->tag_index){
+      my $tag_sequences = $plex->tag_sequences;
+      if ( $self->hiseqx and (@{$tag_sequences} == 2) ) {
+        $tag_sequences->[1] =~ tr/[ACGT]/[TGCA]/;
+        $tag_sequences->[1] = reverse $tag_sequences->[1];
       }
+      $tags->{$ti} = join q[-], @{$tag_sequences};
+      $dual_index = 1;
+      $self->index_length($self->index_length - 1 + @{$tag_sequences});
     }
   }
 
-  my $spiked_phix_tag_index = $self->lane_lims->spiked_phix_tag_index();
-  my ($tag_index_list, $tag_seq_list) = $self->_process_tag_list($tags, $spiked_phix_tag_index);
+  my ($tag_index_list, $tag_seq_list) = $self->_process_tag_list($tags, $spiked_phix_tag_index, $dual_index);
 
   if  ($tag_index_list && $tag_seq_list) {
     if( scalar @{$tag_index_list} != scalar @{$tag_seq_list} ){
@@ -205,7 +206,7 @@ sub _check_tag_uniqueness {
 }
 
 sub _check_tag_length {
-  my ($self, $tag_seq_list, $tag_index_list, $spiked_phix_tag_index) = @_;
+  my ($self, $tag_seq_list, $tag_index_list, $spiked_phix_tag_index, $dual_index) = @_;
 
   # ensure no tags are longer than the index length
   my @indexed_length_tags = map {substr $_, 0,$self->index_length} @{$tag_seq_list};
@@ -249,6 +250,15 @@ sub _check_tag_length {
         my $max_length = $temp[0];
         $self->debug(qq{Longest tag length: $max_length});
         my $spiked_phix_padded = $self->hiseqx ? $SPIKED_PHIX_HISEQX_PADDED : $SPIKED_PHIX_PADDED;
+        if ($dual_index) {
+          foreach my $t (@indexed_length_tags) {
+            my $i = index $t, q[-];
+            if ($i >= 0) {
+              substr $spiked_phix_padded, $i, 0, q[-];
+              last;
+            }
+          }
+        }
         if ( $max_length > (length $spiked_phix_padded) ) {
           $self->logcroak(qq{Padded sequence for spiked Phix $spiked_phix_padded is shorter than longest tag length of $max_length});
 	}
@@ -277,7 +287,7 @@ sub _check_tag_length {
 }
 
 sub _process_tag_list {
-  my ($self, $tags, $spiked_phix_tag_index) = @_;
+  my ($self, $tags, $spiked_phix_tag_index, $dual_index) = @_;
 
   my @tag_index_list = sort keys %{$tags};
 
@@ -295,7 +305,7 @@ sub _process_tag_list {
     push @tag_seq_list, $tag_seq;
   }
 
-  my $tag_seq_list_checked = $self->_check_tag_length(\@tag_seq_list, \@tag_index_list, $spiked_phix_tag_index);
+  my $tag_seq_list_checked = $self->_check_tag_length(\@tag_seq_list, \@tag_index_list, $spiked_phix_tag_index, $dual_index);
 
   my $trimmed_tag_seq_list = $self->_trim_tag_common_suffix($tag_seq_list_checked, \@tag_index_list, $spiked_phix_tag_index);
 
