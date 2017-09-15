@@ -40,11 +40,11 @@ sub generate {
     my $tag_list_file;
     if ($self->is_multiplexed_lane($p)) {
       $self->info(qq{Lane $p is indexed, generating tag list});
-      my $index_length = $self->_get_index_length( $alims->{$p} );
+
       $tag_list_file = npg_pipeline::analysis::create_lane_tag_file->new(
         location     => $self->metadata_cache_dir,
         lane_lims    => $alims->{$p},
-        index_length => $index_length,
+        index_lengths=> $self->_get_index_lengths($alims->{$p}),
         hiseqx       => $self->is_hiseqx_run,
         verbose      => $self->verbose
       )->generate();
@@ -214,20 +214,27 @@ sub _create_lane_dirs {
   return;
 }
 
-sub _get_index_length {
+sub _get_index_lengths {
   my ( $self, $lane_lims ) = @_;
 
-  my $index_length = $self->index_length;
+  my @index_length_array;
 
   if ($lane_lims->inline_index_exists) {
+    # Tradis run - treat as a special case
     my $index_start = $lane_lims->inline_index_start;
     my $index_end = $lane_lims->inline_index_end;
     if ($index_start && $index_end) {
-      $index_length = $index_end - $index_start + 1;
+      push @index_length_array, $index_end - $index_start + 1;
+    }
+  } else {
+    my $n = 0;
+    my @cycle_counts = $self->read_cycle_counts();
+    my @reads_indexed = $self->reads_indexed();
+    foreach my $n (0..$#cycle_counts) {
+      if ($reads_indexed[$n]) { push @index_length_array, $cycle_counts[$n]; }
     }
   }
-
-  return $index_length;
+  return \@index_length_array;
 }
 
 #########################################################################################################
