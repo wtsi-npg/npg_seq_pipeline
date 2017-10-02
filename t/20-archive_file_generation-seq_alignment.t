@@ -363,7 +363,7 @@ subtest 'test 2' => sub {
   for my $i (1..6) { $tlogger->info(qr/$re/); }
   $tlogger->debug(qr/No\ bait\ set$/);
   $tlogger->info(qr/Analysis\:/);
-  $tlogger->debug(qr/Unsupported\ RNA\ analysis/);
+  $tlogger->info(qr/Unsupported\ RNA\ analysis/);
   $tlogger->info(qr/$re/);
   $tlogger->info(qr/Using\ p4/);
   $tlogger->info(qr/do\_target\_alignment\ is\ true/);

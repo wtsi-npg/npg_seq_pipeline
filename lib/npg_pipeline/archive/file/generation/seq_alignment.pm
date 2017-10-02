@@ -312,7 +312,6 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   }
 
   if($do_rna) {
-    my $reference = $self->_reference($l);
     my $rna_analysis = $self->_analysis($l) // $DEFAULT_RNA_ANALYSIS;
     my $p4_reference_genome_index;
     if($rna_analysis eq q[star]) {
@@ -325,7 +324,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     }
     else {
       if ($rna_analysis ne $DEFAULT_RNA_ANALYSIS){
-        $self->debug($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
+        $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
         $rna_analysis = $DEFAULT_RNA_ANALYSIS;
       }
       $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
