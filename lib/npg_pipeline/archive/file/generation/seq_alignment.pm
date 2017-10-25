@@ -318,8 +318,6 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       # most common read length used for RNA-Seq is 75 bp so indices were generated using sjdbOverhang=74
       $p4_param_vals->{sjdb_overhang_val} = $DEFAULT_SJDB_OVERHANG;
       $p4_param_vals->{star_executable} = q[star];
-      $p4_param_vals->{reference_genome_fasta} = $self->_ref($l, q(fasta));
-      $p4_param_vals->{reference_transcriptome_fasta} = $self->_transcriptome($l)->fasta_file();
       $p4_reference_genome_index = dirname($self->_ref($l, q(star)));
     }
     else {
