@@ -10,6 +10,7 @@ addons:
   apt:
     packages:
     - libgd2-xpm-dev
+    - uuid-dev
 
 env:
   global:
