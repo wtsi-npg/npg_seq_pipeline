@@ -307,19 +307,19 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
       lane_lims     => $lims->{1},
       index_length => 16,
       location     => $dir,
-      hiseqx       => 1,
+      i5opposite       => 1,
   );
 
   my $tag_list;
   lives_ok {
     $tag_list = $create_lane->generate();
-  } q{hiseqx dual index no croak running generate() for batch 42225};
+  } q{i5opposite dual index no croak running generate() for batch 42225};
 
-  is($tag_list, "$dir/lane_1.taglist", 'hiseqx dual index tag list file path');
+  is($tag_list, "$dir/lane_1.taglist", 'i5opposite dual index tag list file path');
   my $file_contents;
-  lives_ok {$file_contents = read_file($tag_list);} 'hiseqx dual index reading tag list file';
+  lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
   my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACTCGAGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACGCAAGATCTCG\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
-  is($file_contents, $expected, 'hiseqx dual index tag list file contents as expected');
+  is($file_contents, $expected, 'i5opposite dual index tag list file contents as expected');
 }
 1;
 
