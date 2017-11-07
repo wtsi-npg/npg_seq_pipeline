@@ -28,6 +28,7 @@ Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
 Readonly::Scalar my  $QC_SCRIPT_NAME               => q{qc};
 Readonly::Scalar my  $DEFAULT_SJDB_OVERHANG        => q{74};
 Readonly::Scalar my  $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
+Readonly::Scalar my  $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my  $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 
 =head2 phix_reference
@@ -503,11 +504,18 @@ sub _do_rna_analysis {
   my ($self, $l) = @_;
   my $lstring = $l->to_string;
   if (!$l->library_type || $l->library_type !~ /(?:(?:cD|R)NA|DAFT)/sxm) {
-    $self->debug(qq{$lstring - not RNA library type});
+    $self->debug(qq{$lstring - not RNA library type: skipping RNAseq analysis});
     return 0;
   }
   if (not $self->is_paired_read) {
-    $self->debug(qq{$lstring - Single end run (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on single end data
+    $self->debug(qq{$lstring - Single end run: skipping RNAseq analysis for now}); #TODO: RNAseq should work on single end data
+    return 0;
+  }
+  my $reference_genome = $l->reference_genome();
+  my @parsed_ref_genome = $self->_reference($l)->parse_reference_genome($reference_genome);
+  my $transcriptome_version = $parsed_ref_genome[$REFERENCE_ARRAY_TVERSION_IDX] // q[];
+  if (not $transcriptome_version) {
+    $self->debug(qq{$lstring - Reference without transcriptome version: skipping RNAseq analysis});
     return 0;
   }
   $self->debug(qq{$lstring - Do RNAseq analysis....});

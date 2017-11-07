@@ -276,7 +276,7 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 14;
+  plan tests => 16;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
 
@@ -373,6 +373,13 @@ subtest 'test 2' => sub {
   $tlogger->info(qr/p4\ parameters\ written\ to/);
   $tlogger->info(qr/Using\ p4\ template\ alignment\_wtsi\_stage2\_template\.json/);  
   Test::Log::Log4perl->end('generated and logged: lsf command for unsupported rna analysis and used default aligner');
+
+  #test: library type is RNA but no transcriptome version has been defined in reference: Homo_sapiens (GRCh38_15)
+  $l = st::api::lims->new(id_run => 17550, position => 6, tag_index => 2);
+  Test::Log::Log4perl->start();
+  is ($rna_gen->_do_rna_analysis($l), 0, 'no transcriptome version in reference, so no RNA analysis');
+  $tlogger->debug(qr/Reference without transcriptome/);
+  Test::Log::Log4perl->end('logged: no transcriptome version in reference');
 
 };
 
