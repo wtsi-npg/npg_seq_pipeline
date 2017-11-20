@@ -246,7 +246,7 @@ sub _truncate_index {
 }
 
 sub _check_tag_length {
-  my ($self, $tag_seq_list, $tag_index_list, $spiked_phix_tag_index) = @_;
+  my ($self, $tag_seq_list, $tag_index_list, $spiked_phix_tag_index, $dual_index) = @_;
 
   # ensure no tags are longer than the index length
   my @indexed_length_tags = map {$self->_truncate_index($_, $self->index_lengths)} @{$tag_seq_list};
@@ -316,7 +316,7 @@ sub _check_tag_length {
 }
 
 sub _process_tag_list {
-  my ($self, $tags, $spiked_phix_tag_index) = @_;
+  my ($self, $tags, $spiked_phix_tag_index, $dual_index) = @_;
 
   my @tag_index_list = sort keys %{$tags};
 
