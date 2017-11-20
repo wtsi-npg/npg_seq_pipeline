@@ -14,8 +14,10 @@ with 'WTSI::DNAP::Utilities::Loggable';
 our $VERSION = '0';
 
 Readonly::Scalar my $TAG_LIST_FILE_HEADER      => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
-Readonly::Scalar my $SPIKED_PHIX_PADDED        => q{ACAACGCATCTTTCCC-TCTTTCCC};
-Readonly::Scalar my $SPIKED_PHIX_HISEQX_PADDED => q{ACAACGCAAGATCTCG-AGATCTCG};
+Readonly::Scalar my $SPIKED_PHIX_PADDED        => q{ACAACGCATCTTTCCC};
+Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_PADDED => q{ACAACGCAAGATCTCG};
+Readonly::Scalar my $SPIKED_PHIX_PADDED_2        => q{ACAACGCAATC-TCTTTCCC};
+Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_PADDED_2 => q{ACAACGCAATC-AGATCTCG};
 
 =head1 NAME
 
@@ -45,13 +47,16 @@ has q{verbose}           => (isa        => q{Bool},
                              required   => 0,
                             );
 
-=head2 hiseqx
+=head2 i5opposite
+
+Direction of read for the i5 index read is opposite to that of MiSeq e.g. HiSeqX
 
 =cut
 
-has q{hiseqx}            => (isa        => q{Bool},
+has q{i5opposite}        => (isa        => q{Bool},
                              is         => q{ro},
                              required   => 0,
+                             documentation => q{direction of read for the i5 index read is opposite to that of MiSeq e.g. HiSeqX},
                             );
 
 =head2 lane_lims
@@ -72,7 +77,7 @@ has q{location}          => (isa        => q{NpgTrackingDirectory},
                              required   => 1,
                             );
 
-=head2 index_length
+=head2 index_lengths
 
 =cut
 
@@ -119,7 +124,7 @@ sub generate {
     if (my $ti = $plex->tag_index){
       my $tag_sequences = $plex->tag_sequences;
       if ( @{$tag_sequences} == 2 ) {
-        if ( $self->hiseqx ) {
+        if ( $self->i5opposite ) {
           $tag_sequences->[1] =~ tr/[ACGT]/[TGCA]/;
           $tag_sequences->[1] = reverse $tag_sequences->[1];
         }
@@ -236,10 +241,11 @@ sub _get_tag_length {
 sub _truncate_index {
   my ($self, $index, $index_lengths) = @_;
   my @idx = split /-/smx, $index;
-  if (scalar @{$index_lengths} == 1) { push @{$index_lengths}, 0; }
+  my @ilengths = @{$index_lengths};
+  if (scalar @ilengths == 1) { push @ilengths, 0; }
   if (scalar @idx == 1) { push @idx,q{}; }
-  $idx[0] = substr $idx[0], 0, $index_lengths->[0];
-  $idx[1] = substr $idx[1], 0, $index_lengths->[1];
+  $idx[0] = substr $idx[0], 0, $ilengths[0];
+  $idx[1] = substr $idx[1], 0, $ilengths[1];
   my $result = join q{-},@idx;
   if ($result =~ /-$/smx) { chop $result; }
   return $result;
@@ -282,7 +288,8 @@ sub _check_tag_length {
       my $not_phix_entry = ($phix_entry + 1) % 2;
       # If the PhiX tag is too short, pad it out
       if ($self->_abs_len($temp[$phix_entry]) < $self->_abs_len($temp[$not_phix_entry])) {
-        my $phix_tag = $self->hiseqx ? $SPIKED_PHIX_HISEQX_PADDED : $SPIKED_PHIX_PADDED;
+        my $phix_tag = (scalar @{$self->index_lengths()} > 1) ? ($self->i5opposite ? $SPIKED_PHIX_I5OPPOSITE_PADDED_2 : $SPIKED_PHIX_PADDED_2)
+                                                           : ($self->i5opposite ? $SPIKED_PHIX_I5OPPOSITE_PADDED : $SPIKED_PHIX_PADDED);
         if (length $phix_tag < $self->_abs_len($temp[$not_phix_entry])) {
           $self->logcroak(qq{Padded sequence for spiked Phix $phix_tag is shorter than longest tag length of $temp[$not_phix_entry]});
         }

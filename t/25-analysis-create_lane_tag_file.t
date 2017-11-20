@@ -166,7 +166,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
   );
   $tag_list_lane_init = {1=> 'TAGCTTGTTGA', 2 => 'TGCGATGTTAATTTTTTT', 3 => 'GGCCAATGGGGAAAAAAA',};
   throws_ok { $create_lane->_process_tag_list($tag_list_lane_init, 1) }
-    qr/It looks likes the padded sequence for spiked PhiX ACAACGCATCTTTCCC is too short/,
+    qr/Padded sequence for spiked Phix ACAACGCATCTTTCCC is shorter than longest tag length of 18/,
     'error when spiked phix padding is not long enough';  
 }
 
@@ -307,19 +307,19 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
       lane_lims     => $lims->{1},
       index_lengths=> [8,8],
       location     => $dir,
-      hiseqx       => 1,
+      i5opposite       => 1,
   );
 
   my $tag_list;
   lives_ok {
     $tag_list = $create_lane->generate();
-  } q{hiseqx dual index no croak running generate() for batch 42225};
+  } q{i5opposite dual index no croak running generate() for batch 42225};
 
-  is($tag_list, "$dir/lane_1.taglist", 'hiseqx dual index tag list file path');
+  is($tag_list, "$dir/lane_1.taglist", 'i5opposite dual index tag list file path');
   my $file_contents;
-  lives_ok {$file_contents = read_file($tag_list);} 'hiseqx dual index reading tag list file';
+  lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
   my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACTCG-AGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACGCA-AGATCTCG\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
-  is($file_contents, $expected, 'hiseqx dual index tag list file contents as expected');
+  is($file_contents, $expected, 'i5opposite dual index tag list file contents as expected');
 }
 
 {
@@ -329,19 +329,19 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
       lane_lims     => $lims->{2},
       index_lengths=> [6,8],
       location     => $dir,
-      hiseqx       => 1,
+      i5opposite   => 1,
   );
 
   my $tag_list;
   lives_ok {
     $tag_list = $create_lane->generate();
-  } q{hiseqx dual index no croak running generate() for batch 42226};
+  } q{i5opposite dual index no croak running generate() for batch 42226};
 
-  is($tag_list, "$dir/lane_2.taglist", 'hiseqx dual index tag list file path');
+  is($tag_list, "$dir/lane_2.taglist", 'i5opposite dual index tag list file path');
   my $file_contents;
-  lives_ok {$file_contents = read_file($tag_list);} 'hiseqx dual index reading tag list file';
+  lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
   my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACT-AGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACG-AGATCTCG\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
-  is($file_contents, $expected, 'hiseqx dual index tag list file contents as expected');
+  is($file_contents, $expected, 'i5opposite dual index tag list file contents as expected');
 }
 
 {
@@ -351,19 +351,19 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
       lane_lims     => $lims->{2},
       index_lengths=> [6,8],
       location     => $dir,
-      hiseqx       => 1,
+      i5opposite   => 1,
   );
 
   my $tag_list;
   lives_ok {
     $tag_list = $create_lane->generate();
-  } q{hiseqx dual index no croak running generate() for batch 42227};
+  } q{i5opposite dual index no croak running generate() for batch 42227};
 
-  is($tag_list, "$dir/lane_2.taglist", 'hiseqx dual index tag list file path');
+  is($tag_list, "$dir/lane_2.taglist", 'i5opposite dual index tag list file path');
   my $file_contents;
-  lives_ok {$file_contents = read_file($tag_list);} 'hiseqx dual index reading tag list file';
+  lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
   my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACT-AGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACG-CAATCCGT\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
-  is($file_contents, $expected, 'hiseqx dual index tag list file contents as expected');
+  is($file_contents, $expected, 'i5opposite dual index tag list file contents as expected');
 }
 
 1;

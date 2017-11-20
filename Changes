@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - Handle dual indexes
+
 release 51.10.3
  - no alignments for chromium libraries
 

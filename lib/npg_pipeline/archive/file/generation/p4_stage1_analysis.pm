@@ -45,7 +45,7 @@ sub generate {
         location     => $self->metadata_cache_dir,
         lane_lims    => $alims->{$p},
         index_lengths=> $self->_get_index_lengths($alims->{$p}),
-        hiseqx       => $self->is_hiseqx_run,
+        i5opposite   => $self->is_hiseqx_run,
         verbose      => $self->verbose
       )->generate();
     }
