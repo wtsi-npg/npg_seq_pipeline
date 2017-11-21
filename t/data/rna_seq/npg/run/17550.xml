@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="17550" batch_id="41065" id_instrument="112" expected_cycle_count="158" actual_cycle_count="158" priority="4" id_run_pair="0" is_paired="0" team="C" id_instrument_format="10" flowcell_id="C75BCANXX" folder_name="150910_HS40_17550_A_C75BCANXX" folder_path_glob="/{export,nfs}/sf55/ILorHSany_sf55/*/" name="HS40_17550" loader="ajw" loading_date="2015-09-10" run_folder="150910_HS40_17550_A_C75BCANXX">
+ <instrument id_instrument="112" name="HS34" id_instrument_format="10" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="106701" id_run="17550" tile_count="48" tracks="6" position="1" />
+<run_lane id_run_lane="106702" id_run="17550" tile_count="48" tracks="6" position="2" />
+<run_lane id_run_lane="106703" id_run="17550" tile_count="48" tracks="6" position="3" />
+<run_lane id_run_lane="106704" id_run="17550" tile_count="48" tracks="6" position="4" />
+<run_lane id_run_lane="106705" id_run="17550" tile_count="48" tracks="6" position="5" />
+<run_lane id_run_lane="106706" id_run="17550" tile_count="48" tracks="6" position="6" />
+<run_lane id_run_lane="106707" id_run="17550" tile_count="48" tracks="6" position="7" />
+<run_lane id_run_lane="106708" id_run="17550" tile_count="48" tracks="6" position="8" />
+</run_lanes>
+ <current_run_status id_run_status="289509" id_run="17550" date="2016-11-29 18:38:20" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_statuses>
+ <run_status id_run_status="289509" id_run="17550" date="2016-11-29 18:38:20" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_status id_run_status="289508" id_run="17550" date="2016-11-29 18:38:18" id_run_status_dict="12" id_user="7" username="pipeline" iscurrent="0" description="run archived" />
+ <run_status id_run_status="289466" id_run="17550" date="2016-11-29 14:08:53" id_run_status_dict="18" id_user="7" username="pipeline" iscurrent="0" description="archival in progress" />
+ <run_status id_run_status="289463" id_run="17550" date="2016-11-29 14:06:54" id_run_status_dict="17" id_user="112" username="pipeline" iscurrent="0" description="archival pending" />
+ <run_status id_run_status="289462" id_run="17550" date="2016-11-29 14:06:47" id_run_status_dict="26" id_user="112" username="pipeline" iscurrent="0" description="qc in progress" />
+ <run_status id_run_status="289456" id_run="17550" date="2016-07-26 10:14:26" id_run_status_dict="19" id_user="7" username="pipeline" iscurrent="0" description="qc review pending" />
+ <run_status id_run_status="289454" id_run="17550" date="2016-07-26 10:14:22" id_run_status_dict="9" id_user="7" username="pipeline" iscurrent="0" description="analysis complete" />
+ <run_status id_run_status="289457" id_run="17550" date="2016-07-21 21:28:26" id_run_status_dict="24" id_user="7" username="pipeline" iscurrent="0" description="secondary analysis in progress" />
+ <run_status id_run_status="289455" id_run="17550" date="2016-07-21 14:21:07" id_run_status_dict="7" id_user="7" username="pipeline" iscurrent="0" description="analysis in progress" />
+ </run_statuses>
+ <annotations>
+ <annotation id_run_annotation="70008" id_run="17550" id_annotation="69766" date="2015-09-14 09:25:21" id_user="71" username="srl" comment="Run stuck at analysis pending, blah blah" attachment_name="" run_current_ok="" current_cycle="" />
+ <annotation id_run_annotation="70021" id_run="17550" id_annotation="69779" date="2015-09-14 09:54:17" id_user="71" username="srl" comment="The study has been updated so blah blah" attachment_name="" run_current_ok="" current_cycle="" />
+ <annotation id_run_annotation="70088" id_run="17550" id_annotation="69862" date="2015-09-15 15:48:05" id_user="96" username="bf4" comment=" blah blah" attachment_name="" run_current_ok="" current_cycle="" />
+ </annotations>
+ <tags>
+   <tag id_tag="22" description="fc_slotA" />
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>
