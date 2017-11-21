@@ -276,7 +276,7 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 16;
+  plan tests => 18;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
 
@@ -343,16 +343,21 @@ subtest 'test 2' => sub {
   } 'no error creating an object';
 
   is ($rna_gen->id_run, 17550, 'id_run inferred correctly');
-  
+
   my $tlogger = Test::Log::Log4perl->get_logger('npg_pipeline.archive.file.generation.seq_alignment');
 
-  #test: library type is not RNA: ChIP-Seq Auto
-  $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 1);
-  Test::Log::Log4perl->start();
-  is ($rna_gen->_do_rna_analysis($l), 0, 'not an RNA library, so no RNA analysis');
-  $tlogger->debug(qr/not RNA library type/);
-  Test::Log::Log4perl->end('logged: not rna library type');
-  
+  #test: lane 3 tag indexes 1 and 3 are to be aligned with STAR
+  #and thus require more memory to be requested
+  $l = st::api::lims->new(id_run => 17550, position => 3);
+  my $more_memory = '38000';
+  my $mem_args->{'30001'} = $more_memory;
+  $mem_args->{'30003'} = $more_memory;
+  lives_ok {$rna_gen->_generate_command_arguments([3])}
+     'no error generating rna-seq command arguments for id_run 17550 lane 3';
+  cmp_deeply ($rna_gen->_job_mem_reqs, $mem_args,
+     'list of jobs to request more memory is correct');
+
+  #test: reference genome selected has an unsupported 'analysis' defined
   $l = st::api::lims->new(id_run => 17550, position => 4, tag_index => 1);
   lives_ok { $rna_gen->_generate_command_arguments([4]) } 'executes _generate_command_arguments method successfully for id_run 17550 lane 4 tag_index 1';
   lives_ok { $rna_gen->_job_args } 'executes _job_args method successfully';
@@ -380,6 +385,13 @@ subtest 'test 2' => sub {
   is ($rna_gen->_do_rna_analysis($l), 0, 'no transcriptome version in reference, so no RNA analysis');
   $tlogger->debug(qr/Reference without transcriptome/);
   Test::Log::Log4perl->end('logged: no transcriptome version in reference');
+
+  #test: library type is not RNA: ChIP-Seq Auto
+  $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 1);
+  Test::Log::Log4perl->start();
+  is ($rna_gen->_do_rna_analysis($l), 0, 'not an RNA library, so no RNA analysis');
+  $tlogger->debug(qr/not RNA library type/);
+  Test::Log::Log4perl->end('logged: not rna library type');
 
 };
 
