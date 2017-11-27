@@ -31,6 +31,7 @@ Readonly::Scalar my  $DEFAULT_SJDB_OVERHANG        => q{74};
 Readonly::Scalar my  $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my  $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my  $DEFAULT_RNA_ANALYSIS         => q{tophat2};
+Readonly::Scalar my  $DEFAULT_JOB_ID_FOR_NO_BSUB   => q{50};
 
 =head2 phix_reference
 
