@@ -31,7 +31,6 @@ Readonly::Scalar my  $DEFAULT_SJDB_OVERHANG        => q{74};
 Readonly::Scalar my  $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my  $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my  $DEFAULT_RNA_ANALYSIS         => q{tophat2};
-Readonly::Scalar my  $DEFAULT_JOB_ID_FOR_NO_BSUB   => q{50};
 
 =head2 phix_reference
 
@@ -209,16 +208,14 @@ sub _bmodcommand2submit {
   my ($self, $job_id) = @_;
   my @job_indices = sort {$a <=> $b} keys %{$self->_job_mem_reqs};
   my $job_name = npg_pipeline::lsf_job->create_array_string(@job_indices);
-  #original request must be made again when asking for more memory
+  # original request must be made again when asking for more memory
   my $resources = ( $self->fs_resource_string( {
       counter_slots_per_job => 4,
       resource_string => $self->_default_resources($MORE_MEMORY),
     } ) );
-  # if the no_bsub flag is set
-  if ( $self->no_bsub() ) {
-    $job_id = $DEFAULT_JOB_ID_FOR_NO_BSUB;
-  }
-  return qq{bmod $resources $job_id$job_name};
+  # job_id is returned as "-w'done(JOBID)'" by submit_bsub_command
+  (my $job_num) = $job_id =~ /-w'done\((\d+)\)'/smx;
+  return qq{bmod $resources $job_num$job_name};
 }
 
 sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)

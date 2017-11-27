@@ -276,7 +276,7 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 18;
+  plan tests => 19;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
 
@@ -350,12 +350,16 @@ subtest 'test 2' => sub {
   #and thus require more memory to be requested
   $l = st::api::lims->new(id_run => 17550, position => 3);
   my $more_memory = '38000';
+  my $required_job_completion = q{-w'done(50)'};
+  my $job_num = 50;
   my $mem_args->{'30001'} = $more_memory;
   $mem_args->{'30003'} = $more_memory;
   lives_ok {$rna_gen->_generate_command_arguments([3])}
      'no error generating rna-seq command arguments for id_run 17550 lane 3';
   cmp_deeply ($rna_gen->_job_mem_reqs, $mem_args,
      'list of jobs to request more memory is correct');
+  my $expected = qq{bmod -R 'select[mem>$more_memory] rusage[mem=$more_memory,nfs-sf3=4]' -M38000 -R 'span[hosts=1]' -n12,16 $job_num\[30001,30003\]}; 
+  is($rna_gen->_bmodcommand2submit($required_job_completion), $expected, 'bmod command to submit is correct');
 
   #test: reference genome selected has an unsupported 'analysis' defined
   $l = st::api::lims->new(id_run => 17550, position => 4, tag_index => 1);
