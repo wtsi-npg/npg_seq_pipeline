@@ -276,7 +276,7 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 19;
+  plan tests => 22;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
 
@@ -321,6 +321,19 @@ subtest 'test 2' => sub {
   my $l = st::api::lims->new(id_run => 13066, position => 8);
   is ($rna_gen->_do_rna_analysis($l), 1, 'do RNA analysis on pair end RNA library with transcriptome index');
 
+  # lane 7 to be aligned with STAR and thus requires more memory
+  $l = st::api::lims->new(id_run => 17550, position => 7);
+  my $more_memory = '38000';
+  my $required_job_completion = q{-w'done(50)'};
+  my $job_num = 50;
+  my $mem_args->{'7'} = $more_memory;
+  lives_ok {$rna_gen->_generate_command_arguments([7])}
+     'no error generating rna-seq command arguments for id_run 13066 lane 7';
+  cmp_deeply ($rna_gen->_job_mem_reqs, $mem_args,
+     'list of jobs to request more memory is correct');
+  my $expected = qq{bmod -R 'select[mem>$more_memory] rusage[mem=$more_memory,nfs-sf3=4]' -M38000 -R 'span[hosts=1]' -n12,16 $job_num\[7\]}; 
+  is($rna_gen->_bmodcommand2submit($required_job_completion), $expected, 'bmod command to submit is correct');
+
   ##HiSeq, run 17550, multiple organisms RNA libraries suitable for RNA analysis
   $runfolder = q{150910_HS40_17550_A_C75BCANXX};
   $runfolder_path = join q[/], $dir, $runfolder;
@@ -349,16 +362,14 @@ subtest 'test 2' => sub {
   #test: lane 3 tag indexes 1 and 3 are to be aligned with STAR
   #and thus require more memory to be requested
   $l = st::api::lims->new(id_run => 17550, position => 3);
-  my $more_memory = '38000';
-  my $required_job_completion = q{-w'done(50)'};
-  my $job_num = 50;
-  my $mem_args->{'30001'} = $more_memory;
+  $mem_args = ();
+  $mem_args->{'30001'} = $more_memory;
   $mem_args->{'30003'} = $more_memory;
   lives_ok {$rna_gen->_generate_command_arguments([3])}
      'no error generating rna-seq command arguments for id_run 17550 lane 3';
   cmp_deeply ($rna_gen->_job_mem_reqs, $mem_args,
      'list of jobs to request more memory is correct');
-  my $expected = qq{bmod -R 'select[mem>$more_memory] rusage[mem=$more_memory,nfs-sf3=4]' -M38000 -R 'span[hosts=1]' -n12,16 $job_num\[30001,30003\]}; 
+  $expected = qq{bmod -R 'select[mem>$more_memory] rusage[mem=$more_memory,nfs-sf3=4]' -M38000 -R 'span[hosts=1]' -n12,16 $job_num\[30001,30003\]}; 
   is($rna_gen->_bmodcommand2submit($required_job_completion), $expected, 'bmod command to submit is correct');
 
   #test: reference genome selected has an unsupported 'analysis' defined
