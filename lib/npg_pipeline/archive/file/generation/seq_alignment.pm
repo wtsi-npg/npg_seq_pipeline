@@ -24,12 +24,14 @@ our $VERSION  = '0';
 
 Readonly::Scalar our $NUM_SLOTS                    => q(12,16);
 Readonly::Scalar our $MEMORY                       => q{32000}; # memory in megabytes
+Readonly::Scalar our $MORE_MEMORY                  => q{38000}; # idem
 Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
 Readonly::Scalar my  $QC_SCRIPT_NAME               => q{qc};
 Readonly::Scalar my  $DEFAULT_SJDB_OVERHANG        => q{74};
 Readonly::Scalar my  $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my  $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my  $DEFAULT_RNA_ANALYSIS         => q{tophat2};
+Readonly::Scalar my  $DEFAULT_JOB_ID_FOR_NO_BSUB   => q{50};
 
 =head2 phix_reference
 
@@ -41,6 +43,7 @@ has 'phix_reference' => (isa        => 'Str',
                          required   => 0,
                          lazy_build => 1,
                         );
+
 sub _build_phix_reference {
   my $self = shift;
 
@@ -91,6 +94,11 @@ has '_job_args'   => ( isa     => 'HashRef',
                        is      => 'ro',
                        default => sub { return {};},
                      );
+
+has '_job_mem_reqs' => ( isa     => 'HashRef',
+                         is      => 'ro',
+                         default => sub { return {};},
+                       );
 
 has '_using_alt_reference' => ( isa     => 'Bool',
                                 is      => 'rw',
@@ -152,6 +160,16 @@ sub generate {
   my $job_id = $self->submit_bsub_command(
     $self->_command2submit($arg_refs->{required_job_completion})
   );
+
+  # bmod jobs that require more memory
+  @job_indices = keys %{$self->_job_mem_reqs};
+  if (@job_indices) {
+    $self->debug('Requesting more memory for alignment jobs');
+    my $dummy = $self->submit_bsub_command(
+        $self->_bmodcommand2submit($job_id)
+    );
+  }
+
   $self->_save_arguments($job_id);
 
   return ($job_id);
@@ -166,7 +184,7 @@ sub _command2submit {
   my $job_name = q{'} . $self->job_name_root . npg_pipeline::lsf_job->create_array_string(@job_indices) . q{'};
   my $resources = ( $self->fs_resource_string( {
       counter_slots_per_job => 4,
-      resource_string => $self->_default_resources(),
+      resource_string => $self->_default_resources($MEMORY),
     } ) );
   return  q{bsub -q } . $self->lsf_queue()
     .  q{ } . $self->ref_adapter_pre_exec_string()
@@ -185,6 +203,18 @@ sub _save_arguments {
   $self->debug(qq[Arguments written to $file_name]);
 
   return $file_name;
+}
+
+sub _bmodcommand2submit {
+  my ($self, $job_id) = @_;
+  my @job_indices = sort {$a <=> $b} keys %{$self->_job_mem_reqs};
+  my $job_name = npg_pipeline::lsf_job->create_array_string(@job_indices);
+  # original request must be made again when asking for more memory
+  my $resources = ( $self->fs_resource_string( {
+      counter_slots_per_job => 4,
+      resource_string => $self->_default_resources($MORE_MEMORY),
+    } ) );
+  return qq{bmod $resources $job_id$job_name};
 }
 
 sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
@@ -320,6 +350,14 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       $p4_param_vals->{sjdb_overhang_val} = $DEFAULT_SJDB_OVERHANG;
       $p4_param_vals->{star_executable} = q[star];
       $p4_reference_genome_index = dirname($self->_ref($l, q(star)));
+      # star jobs require more memory
+      my $ji;
+      if($is_plex){
+          $ji = $self->_job_index($position, $tag_index);
+      }else{
+          $ji = $self->_job_index($position);
+      }
+      $self->_job_mem_reqs->{$ji} = $MORE_MEMORY;
     }
     else {
       if ($rna_analysis ne $DEFAULT_RNA_ANALYSIS){
@@ -633,10 +671,10 @@ sub _job_index {
 }
 
 sub _default_resources {
-  my ( $self ) = @_;
+  my ( $self, $memory ) = @_;
   my $hosts = 1;
   my $num_slots = $self->general_values_conf()->{'seq_alignment_slots'} || $NUM_SLOTS;
-  return (join q[ ], npg_pipeline::lsf_job->new(memory => $MEMORY)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$num_slots");
+  return (join q[ ], npg_pipeline::lsf_job->new(memory => $memory)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$num_slots");
 }
 
 sub _default_human_split_ref {
@@ -684,6 +722,7 @@ __PACKAGE__->meta->make_immutable;
 
 1;
 __END__
+
 
 =head1 NAME
 
