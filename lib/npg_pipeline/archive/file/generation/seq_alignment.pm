@@ -230,6 +230,14 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     phix_reference_genome_fasta => $self->phix_reference,
     alignment_filter_jar => $self->_AlignmentFilter_jar,
   };
+  my $p4_ops = {
+    prune => [],
+    splice => [],
+  };
+
+  if(not $spike_tag) {
+    push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:__CALIBRATION_PU_OUT__-';
+  }
 
   my $do_rna = $self->_do_rna_analysis($l);
 
@@ -272,15 +280,13 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   #  Note: currently human split (with and without target alignment) are handled with
   #   separate templates, so these steps do not apply.
   ########
-  my @no_tgt_aln_flags = ();
-  if((not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam or ($l->library_type and $l->library_type =~ /Chromium/smx)) and not $nchs and not $spike_tag) {
-
-    push @no_tgt_aln_flags,
-      q[-splice_nodes '"'"'src_bam:-alignment_filter:__PHIX_BAM_IN__'"'"'],
-      q[-keys scramble_reference_flag -vals '"'"'-x'"'"'],
-      q[-nullkeys stats_reference_flag], # both samtools and bam_stats
-      q[-nullkeys af_target_in_flag], # switch off AlignmentFilter target input
-      q[-keys af_target_out_flag_name -vals '"'"'UNALIGNED'"'"']; # rename "target output" flag
+  if(not $do_target_alignment and not $nchs and not $spike_tag) {
+      push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:__PHIX_BAM_IN__';
+      push @{$p4_ops->{splice}}, 'alignment_filter:-foptgt_bmd_multiway:';
+      $p4_param_vals->{scramble_reference_flag} = q[-x];
+      $p4_param_vals->{stats_reference_flag} = undef;   # both samtools and bam_stats
+      $p4_param_vals->{af_target_in_flag} = undef;   # switch off AlignmentFilter target input
+      $p4_param_vals->{af_target_out_flag_name} = q[UNALIGNED]; # rename "target output" flag
   }
 
   #################################################################
@@ -301,15 +307,15 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   if(not $spike_tag) {
     if($self->_do_bait_stats_analysis($l)) {
       $p4_param_vals->{bait_regions_file} = $self->_bait($l)->bait_intervals_path();
-      $bait_stats_flag = q(-prune_nodes '"'"'fop(phx|hs)_samtools_stats_F0.*00_bait.*'"'"');
+      push @{$p4_ops->{prune}}, 'fop(phx|hs)_samtools_stats_F0.*00_bait.*-';
     }
     else {
-      $bait_stats_flag = q(-prune_nodes '"'"'fop.*samtools_stats_F0.*00_bait.*'"'"');
+      push @{$p4_ops->{prune}}, 'fop.*samtools_stats_F0.*00_bait.*-';
     }
   }
   else {
-    $bait_stats_flag = q(-prune_nodes '"'"'foptgt.*samtools_stats_F0.*00_bait.*'"'"');
-    $spike_splicing = q[-splice_nodes '"'"'src_bam:-foptgt_bamsort_coord:;foptgt_seqchksum_tee:__FINAL_OUT__-scs_cmp_seqchksum:__OUTPUTCHK_IN__'"'"'];
+    push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
+    push @{$p4_ops->{splice}}, 'src_bam:-foptgt_bamsort_coord:', 'foptgt_seqchksum_tee:__FINAL_OUT__-scs_cmp_seqchksum:__OUTPUTCHK_IN__';
   }
 
   if($do_rna) {
@@ -350,6 +356,9 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
       $p4_param_vals->{alignment_hs_method} = $hs_bwa;
     }
+    if(not $self->is_paired_read) {
+      $p4_param_vals->{bwa_mem_p_flag} = undef;
+    }
   }
 
   if($human_split) {
@@ -364,7 +373,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
 
 # write p4 parameters to file
   my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path($position), $name_root.q{_p4s2_pv_in.json};
-  write_file($param_vals_fname, encode_json({ assign => [ $p4_param_vals ], }));
+  write_file($param_vals_fname, encode_json({ assign => [ $p4_param_vals ], ops => $p4_ops }));
 
   ####################
   # log run parameters
@@ -383,24 +392,19 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                        q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
                        q(cd), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{&&},
                        q(vtfp.pl),
+#                        q{-template_path $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib},
                          q(-param_vals), $param_vals_fname,
                          q(-export_param_vals), $name_root.q{_p4s2_pv_out_$}.q/{LSB_JOBID}.json/,
                          q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
                          q(-keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads`),
                          q(-keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2`),
                          q(-keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2`),
-                         (grep {$_}
-                           $bait_stats_flag,
-                           $spike_splicing, # empty unless this is the spike tag
-                         ),
-                         (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
-                         (@no_tgt_aln_flags), # empty unless there is no target alignment
                          q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
                          qq(> run_$name_root.json),
                        q{&&},
                        qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
                        q{&&},
-                       _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex),
+                       _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, undef, (not $spike_tag and not $do_target_alignment)),
                        (grep {$_}
                        ((not $spike_tag)? (join q( ),
                          q{&&},
@@ -425,15 +429,20 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
 }
 
 sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
-  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset) = @_;
+  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset, $skip_markdups_metrics) = @_;
 
   my $args = {'id_run' => $l->id_run,
               'position'=> $l->position,
               'qc_out' => $qc_out,
               'check' => $check_name,};
+  my @flags = ();
 
   if ($is_plex && defined $l->tag_index) {
     $args->{'tag_index'} = $l->tag_index;
+  }
+
+  if ($check_name =~ /^bam_flagstats$/smx and $skip_markdups_metrics) {
+      push @flags, q[--skip_markdups_metrics];
   }
 
   if ($check_name =~ /^bam_flagstats|rna_seqc$/smx) {
@@ -448,6 +457,11 @@ sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
   my $command = q[];
   foreach my $arg (sort keys %{$args}) {
     $command .= join q[ ], q[ --].$arg, $args->{$arg};
+  }
+
+  if(@flags) {
+    $command .= q[ ];
+    $command .= join q[ ], @flags;
   }
 
   return $QC_SCRIPT_NAME . $command;
