@@ -166,7 +166,7 @@ sub generate {
   if (@job_indices) {
     $self->debug('Requesting more memory for alignment jobs');
     my $dummy = $self->submit_bsub_command(
-        $self->_bmodcommand2submit($arg_refs->{required_job_completion}, $job_id)
+        $self->_bmodcommand2submit($job_id)
     );
   }
 
@@ -214,9 +214,7 @@ sub _bmodcommand2submit {
       counter_slots_per_job => 4,
       resource_string => $self->_default_resources($MORE_MEMORY),
     } ) );
-  # job_id is returned as "-w'done(JOBID)'" by submit_bsub_command
-  (my $job_num) = $job_id =~ /-w'done\((\d+)\)'/smx;
-  return qq{bmod $resources $job_num$job_name};
+  return qq{bmod $resources $job_id$job_name};
 }
 
 sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
