@@ -1,8 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+ - STAR alignment jobs get more memory using bmod after seq_lignment jobs have been submitted.
+
 release 51.10.3
  - no alignments for chromium libraries
+ - seq_alignment to do_rna analysis regardless of the organism specified (other conditions stay in place)
 
 release 51.10.2
  - use bwa aln for human split with tophat target alignment

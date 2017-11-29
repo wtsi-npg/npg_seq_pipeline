@@ -15,7 +15,7 @@ our $VERSION = '0';
 
 Readonly::Scalar my $TAG_LIST_FILE_HEADER      => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
 Readonly::Scalar my $SPIKED_PHIX_PADDED        => q{ACAACGCATCTTTCCC};
-Readonly::Scalar my $SPIKED_PHIX_HISEQX_PADDED => q{ACAACGCAAGATCTCG};
+Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_PADDED => q{ACAACGCAAGATCTCG};
 
 =head1 NAME
 
@@ -45,13 +45,16 @@ has q{verbose}           => (isa        => q{Bool},
                              required   => 0,
                             );
 
-=head2 hiseqx
+=head2 i5opposite
+
+Direction of read for the i5 index read is opposite to that of MiSeq e.g. HiSeqX
 
 =cut
 
-has q{hiseqx}            => (isa        => q{Bool},
+has q{i5opposite}        => (isa        => q{Bool},
                              is         => q{ro},
                              required   => 0,
+                             documentation => q{direction of read for the i5 index read is opposite to that of MiSeq e.g. HiSeqX},
                             );
 
 =head2 lane_lims
@@ -114,7 +117,7 @@ sub generate {
   my $tags = $self->lane_lims->tags;
 
   # on a HiSeqX the second index is sequenced in reverse complement order
-  if( $self->hiseqx ) {
+  if( $self->i5opposite ) {
     foreach my $plex ($self->lane_lims->children) {
       if (my $ti = $plex->tag_index){
         my $tag_sequences = $plex->tag_sequences;
@@ -248,7 +251,7 @@ sub _check_tag_length {
       if ( $spiked_phix_tag_index && $tag_index == $spiked_phix_tag_index ) {
         my $max_length = $temp[0];
         $self->debug(qq{Longest tag length: $max_length});
-        my $spiked_phix_padded = $self->hiseqx ? $SPIKED_PHIX_HISEQX_PADDED : $SPIKED_PHIX_PADDED;
+        my $spiked_phix_padded = $self->i5opposite ? $SPIKED_PHIX_I5OPPOSITE_PADDED : $SPIKED_PHIX_PADDED;
         if ( $max_length > (length $spiked_phix_padded) ) {
           $self->logcroak(qq{Padded sequence for spiked Phix $spiked_phix_padded is shorter than longest tag length of $max_length});
 	}

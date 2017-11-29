@@ -96,7 +96,7 @@ my $builder = $class->new(
           'Test::Differences'           => 0,
           'Test::More'                  => '0.8',
           'Test::Perl::Critic'          => 0,
-
+          'Test::Log::Log4perl'         => 0,
           'npg_testing::db'             => 0,
           'npg_tracking::util::build'   => 0,
          },
