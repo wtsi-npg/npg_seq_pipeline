@@ -1,7 +1,10 @@
 LIST OF CHANGES
 ---------------
 
- - STAR alignment jobs get more memory using bmod after seq_lignment jobs have been submitted.
+release 51.11.0
+ - added support for RNA analysis/quantification using STAR and salmon
+ - STAR alignment jobs get more memory using bmod after seq_alignment jobs have been submitted.
+ - removed unneeded coordinate sort and duplicate marking when there is no alignment to a target reference
 
 release 51.10.3
  - no alignments for chromium libraries
