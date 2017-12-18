@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - remove remaining broken provisions for xml LIMs driver 
+
 release 51.11.0
  - added support for RNA analysis/quantification using STAR and salmon
  - STAR alignment jobs get more memory using bmod after seq_alignment jobs have been submitted.
