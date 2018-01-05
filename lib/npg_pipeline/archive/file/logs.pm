@@ -9,11 +9,6 @@ our $VERSION = '0';
 
 Readonly::Scalar my $LOG_PUBLISHER_SCRIPT_NAME => 'npg_publish_illumina_logs.pl';
 
-has 'irods_root' => ( isa     => 'Str',
-                      is      => 'ro',
-                      default => '/seq/',
-                    );
-
 sub submit_to_lsf {
   my ($self, $arg_refs) = @_;
   my $job_sub = $self->_generate_bsub_command($arg_refs);
@@ -43,7 +38,6 @@ sub _generate_bsub_command {
   $bsub_command .= qq{-E "[ -d '$future_path' ]" };
   $bsub_command .= q{'};
   $bsub_command .= $LOG_PUBLISHER_SCRIPT_NAME . q{ --runfolder_path } . $future_path . q{ --id_run } . $self->id_run();
-  $bsub_command .= q{ --irods_root } . $self->irods_root();
   $bsub_command .= q{'};
 
   $self->debug($bsub_command);
