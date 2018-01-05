@@ -1,0 +1,289 @@
+#!/usr/bin/env perl
+
+#########
+# Author:        rmp
+# Maintainer:    $Author: js10 $
+# Created:       2007-03-28
+# Last Modified: $Date: 2016-11-07 16:54:47 +0000 (Mon, 07 Nov 2016) $
+# Id:            $Id: run_is_deletable 19374 2016-11-07 16:54:47Z js10 $
+# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/data_handling/trunk/bin/run_is_deletable $
+#
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use Readonly;
+use Carp;
+use DateTime;
+use Getopt::Long;
+use English qw(-no_match_vars);
+use POSIX qw(strftime);
+use List::MoreUtils qw{any none};
+use Log::Log4perl;
+
+use npg_validation::runfolder::deletable::sequence_files;
+use npg_validation::runfolder::deletable::autoqc;
+use npg_qc::illumina::loader;
+use npg_tracking::Schema;
+use npg_pipeline::cache;
+
+our $VERSION = do { my ($r) = q$Revision: 19374 $ =~ /(\d+)/smx; $r; };
+
+Readonly::Scalar our $NPG_DELETABLE_UNCOND => ['run cancelled', 'data discarded'];
+Readonly::Scalar our $NPG_DELETABLE_STATES => [@{$NPG_DELETABLE_UNCOND},'qc complete'];
+Readonly::Scalar our $FS_DELETABLE_DAYS    => 14;
+
+my $log4perl_config =<< 'CONFIG';
+log4perl.logger.dnap.npg.irods = ERROR, A1
+
+log4perl.appender.A1           = Log::Log4perl::Appender::Screen
+log4perl.appender.A1.utf8      = 1
+log4perl.appender.A1.layout    = Log::Log4perl::Layout::PatternLayout
+log4perl.appender.A1.layout.ConversionPattern = %d %-5p %c %M - %m%n
+CONFIG
+
+Log::Log4perl::init_once(\$log4perl_config);
+
+my $logger = Log::Log4perl->get_logger('dnap.npg.irods');
+my $irods = WTSI::NPG::iRODS->new(logger => $logger);
+
+my $opts = {'collection-root'   => '/seq',
+            'skip-autoqc-check' => [],
+            'exclude-bam'       => 1 };
+
+if(!GetOptions($opts, qw(help ignore-npg-status ignore-time-limit ignore-irods-bam ignore-autoqc remove-staging-tag exclude-bam collection-root=s skip-autoqc-check=s@ verbose)) ||
+   $opts->{help} ||
+   !scalar @ARGV ||
+   scalar @ARGV > 1) {
+  print q[Usage:
+  run_is_deletable <run-id> && do_something
+  run_is_deletable /path/to/run_folder && do_something
+
+  Options:
+    -verbose
+    -ignore-npg-status
+    -ignore-time-limit
+    -ignore-irods-bam
+    -ignore-autoqc
+    -remove-staging-tag    
+    -exclude-bam    
+    -collection-root    
+    -skip-autoqc-check
+] or croak qq{Error printing help: $EVAL_ERROR};
+  exit 2;
+}
+
+my $run     = shift @ARGV;
+
+my ($dtrun) = $run =~ m{([[:lower:]\d_/\.\-\,]+)}smix;
+
+if($dtrun ne $run) {
+  croak qq[Could not detaint '$run'. Got '$dtrun'];
+}
+
+my $id_run;
+my $runfolder_path;
+if($dtrun =~ /^\d+$/smx) {
+  #########
+  # just a run id given as argument
+  #
+  ($id_run) = $dtrun =~ /^(\d+)$/smx;
+
+} else {
+  #########
+  # a run folder name given as argument
+  #
+  $dtrun =~ s{/$}{}smx;
+
+  if(!-d $dtrun) {
+    croak qq[Could not find $dtrun on disk];
+  }
+
+  $runfolder_path = $dtrun;
+  my $instrument_type;
+  ($instrument_type, $id_run) = $dtrun =~ /(HS|IL|MS|HX|HF)\d+_(\d+)/smx;
+  $id_run += 0;
+}
+
+if(!$id_run){
+   _log(qq{no id_run found:$dtrun});
+   _log(qq{$dtrun is NOT deletable});
+   exit 1;
+}
+
+my $s = npg_tracking::Schema->connect();
+my $rs = $s->resultset('RunStatus')->search({id_run => $id_run, iscurrent => 1,});
+if (!$rs->count || $rs->count > 1) {
+  croak 'Either none or multiple current run statuses';
+}
+my $run_status = $rs->next;
+
+my $exclude_bam = ($opts->{'exclude-bam'} ? 1 : 0);
+my $collection_root = $opts->{'collection-root'};
+my $collection = $collection_root . q(/) . $id_run;
+
+my $bchk_ops = {irods => $irods, id_run => $id_run,};
+if (!$exclude_bam) {
+  $bchk_ops->{'file_extension'} = 'bam';
+}
+$bchk_ops->{'collection'} = $collection;
+if ($runfolder_path) {
+  $bchk_ops->{'runfolder_path'} = $runfolder_path;
+}
+$bchk_ops->{'verbose'} = $opts->{'verbose'};
+my $bam_checker = npg_validation::runfolder::deletable::sequence_files->new($bchk_ops);
+
+my $deletable = npg_tracking_deletable($id_run, $run_status, 'unconditional');
+my $vars_set = 0;
+
+if (!$deletable) {
+  #########
+  # Find the samplesheet and set env vars
+  #
+  my $cache = npg_pipeline::cache->new(
+    reuse_cache        => 1,
+    reuse_cache_only   => 1,
+    set_env_vars       => 1,
+    id_run             => $id_run,
+    cache_location     => $bam_checker->analysis_path()
+  );
+  if ( none { $ENV{$_} } $cache->env_vars() ) {
+    $vars_set = 1;
+    $cache->setup();
+    for (@{$cache->messages}) { _log($_) };
+  } else {
+    _log('One of ' . join(q[,], $cache->env_vars()) . ' is set, not looking for existing samplesheet');
+  }
+}
+
+#########
+# run the checks
+#
+$deletable = $deletable ||
+    (
+     ($opts->{'ignore-npg-status'} || npg_tracking_deletable($id_run, $run_status)) &&
+     ($opts->{'ignore-time-limit'} || time_limit_deletable($id_run, $run_status))   &&
+     ($opts->{'ignore-irods-bam'}  || irods_bam_deletable($id_run, $bam_checker))   &&
+     ($opts->{'ignore-autoqc'}     || autoqc_deletable($id_run, $exclude_bam, $collection_root))
+    );
+
+#########
+# unset env variables
+#
+if ($vars_set) {
+  for my $var ( npg_pipeline::cache->env_vars() ) {
+    ##no critic (RequireLocalizedPunctuationVars)    
+    $ENV{$var} = q[];
+  }
+}
+
+my $exit_status = 0;
+if ($deletable) {
+  _log("$id_run is deletable");
+  if($opts->{'remove-staging-tag'}) {
+    _log('Removing staging tag');
+    remove_staging_tag($s->resultset('Run')->find($id_run));
+  }
+} else {
+  _log("$id_run is NOT deletable");
+  $exit_status = 1;
+}
+exit $exit_status;
+
+
+sub _log {
+  my (@strs) = @_;
+  print {*STDERR} (strftime '[%Y-%m-%dT%H:%M:%S] ', localtime), @strs, "\n" or carp "Problem trying to print to STDERR @strs";
+  return;
+}
+
+sub time_limit_deletable {
+  my ($run_id, $status) = @_;
+  my $crst     = $status->date();
+  my ($year, $month, $day, $hour, $min, $sec) = split /[\-\s:T]+/smx, $crst;
+  my $run_dt   = DateTime->new(
+    year   => $year,
+    month  => $month,
+    day    => $day,
+    hour   => $hour,
+    minute => $min,
+    second => $sec,
+  );
+  my $now_dt   = DateTime->now();
+  my $delta_days = $now_dt->delta_days($run_dt)->in_units('days');
+
+  if($delta_days >= $FS_DELETABLE_DAYS) {
+    _log(qq[time_limit: $run_id last status change was $delta_days days ago. Deletable]);
+    return 1;
+  }
+
+  _log(qq[time_limit: $run_id ($delta_days days ago) $run_id NOT deletable]);
+  return;
+}
+
+sub npg_tracking_deletable {
+  my ($run_id, $status, $unconditional) = @_;
+
+  my $crsd = $status->run_status_dict->description();
+  if ( $unconditional ) {
+    if (
+         ( any { $_ eq $crsd } @{$NPG_DELETABLE_UNCOND} )
+           &&
+         ( $opts->{'ignore-time-limit'} || time_limit_deletable( $run_id, $status ) )
+       ) {
+      _log(qq[npg_tracking: $run_id '$crsd'. Unconditionally deletable]);
+      return 1;
+    }
+    return;
+  }
+
+  if ( any { $_ eq $crsd } @{$NPG_DELETABLE_STATES} ) {
+    _log(qq[npg_tracking: $run_id '$crsd'. Deletable]);
+    return 1;
+  }
+
+  _log(qq[npg_tracking: $run_id '$crsd' is NOT deletable]);
+  return;
+}
+
+sub irods_bam_deletable {
+  my ($run_id, $bam_dchecker) = @_;
+
+  if( $bam_dchecker->archived_for_deletion() ) {
+    _log(q[iRODS: run ] . $run_id . q[ - sequence files archived. Deletable]);
+    return 1;
+  }
+  return 0;
+}
+
+sub autoqc_deletable {
+  my ($run_id, $bam_exclude, $root) = @_;
+
+  if( npg_validation::runfolder::deletable::autoqc->new(
+        verbose     => $opts->{'verbose'},
+        id_run      => $run_id,
+        exclude_bam => $bam_exclude,
+        root        => $root,
+        skip_checks => $opts->{'skip-autoqc-check'},
+        irods       => $irods)->fully_archived() ) {
+    _log(qq[Autoqc: run $run_id autoqc results fully archived. Deletable]);
+    return 1;
+  }
+  return 0;
+}
+
+sub remove_staging_tag{
+  my ($run_obj) = @_;
+
+  my $user = !$ENV{'USER'} || $ENV{'USER'} eq 'srpipe' ? 'pipeline' : $ENV{'USER'};
+  eval {
+    $run_obj->unset_tag($user, 'staging');
+    _log(q[staging tag is removed for run ] . $run_obj->id_run);
+    1;
+  } or do{
+    croak "Failed to remove staging tag: $EVAL_ERROR";
+  };
+  return 1;
+}
+
