@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
 
  - remove remaining broken provisions for xml LIMs driver 
+ - use the new log publisher
 
 release 51.11.0
  - added support for RNA analysis/quantification using STAR and salmon
