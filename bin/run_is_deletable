@@ -1,12 +1,9 @@
 #!/usr/bin/env perl
 
 #########
-# Author:        rmp
-# Maintainer:    $Author: js10 $
-# Created:       2007-03-28
-# Last Modified: $Date: 2016-11-07 16:54:47 +0000 (Mon, 07 Nov 2016) $
-# Id:            $Id: run_is_deletable 19374 2016-11-07 16:54:47Z js10 $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/data_handling/trunk/bin/run_is_deletable $
+# copied from 
+# svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/data_handling/trunk/bin/run_is_deletable 
+# on the 5th of January 2018
 #
 
 use strict;
@@ -21,18 +18,20 @@ use English qw(-no_match_vars);
 use POSIX qw(strftime);
 use List::MoreUtils qw{any none};
 use Log::Log4perl;
+use Try::Tiny;
 
-use npg_validation::runfolder::deletable::sequence_files;
-use npg_validation::runfolder::deletable::autoqc;
+use npg_pipeline::validation::sequence_files;
+use npg_pipeline::validation::autoqc_files;
 use npg_qc::illumina::loader;
 use npg_tracking::Schema;
 use npg_pipeline::cache;
 
-our $VERSION = do { my ($r) = q$Revision: 19374 $ =~ /(\d+)/smx; $r; };
+our $VERSION = '0';
 
-Readonly::Scalar our $NPG_DELETABLE_UNCOND => ['run cancelled', 'data discarded'];
-Readonly::Scalar our $NPG_DELETABLE_STATES => [@{$NPG_DELETABLE_UNCOND},'qc complete'];
-Readonly::Scalar our $FS_DELETABLE_DAYS    => 14;
+Readonly::Scalar my $NPG_DELETABLE_UNCOND => ['run cancelled', 'data discarded'];
+Readonly::Scalar my $NPG_DELETABLE_STATES => [@{$NPG_DELETABLE_UNCOND},'qc complete'];
+Readonly::Scalar my $FS_DELETABLE_DAYS    => 14;
+Readonly::Scalar my $PROD_USER_NAME       => 'srpipe';
 
 my $log4perl_config =<< 'CONFIG';
 log4perl.logger.dnap.npg.irods = ERROR, A1
@@ -132,7 +131,7 @@ if ($runfolder_path) {
   $bchk_ops->{'runfolder_path'} = $runfolder_path;
 }
 $bchk_ops->{'verbose'} = $opts->{'verbose'};
-my $bam_checker = npg_validation::runfolder::deletable::sequence_files->new($bchk_ops);
+my $bam_checker = npg_pipeline::validation::sequence_files->new($bchk_ops);
 
 my $deletable = npg_tracking_deletable($id_run, $run_status, 'unconditional');
 my $vars_set = 0;
@@ -178,17 +177,22 @@ if ($vars_set) {
   }
 }
 
+#########
+# if deletable, remove staging tag
+#
 my $exit_status = 0;
 if ($deletable) {
-  _log("$id_run is deletable");
+  _log("Run $id_run is deletable");
   if($opts->{'remove-staging-tag'}) {
     _log('Removing staging tag');
     remove_staging_tag($s->resultset('Run')->find($id_run));
+    _log("Staging tag is removed for run $id_run"];
   }
 } else {
   _log("$id_run is NOT deletable");
   $exit_status = 1;
 }
+
 exit $exit_status;
 
 
@@ -260,7 +264,7 @@ sub irods_bam_deletable {
 sub autoqc_deletable {
   my ($run_id, $bam_exclude, $root) = @_;
 
-  if( npg_validation::runfolder::deletable::autoqc->new(
+  if( npg_pipeline::validation::autoqc->new(
         verbose     => $opts->{'verbose'},
         id_run      => $run_id,
         exclude_bam => $bam_exclude,
@@ -276,14 +280,105 @@ sub autoqc_deletable {
 sub remove_staging_tag{
   my ($run_obj) = @_;
 
-  my $user = !$ENV{'USER'} || $ENV{'USER'} eq 'srpipe' ? 'pipeline' : $ENV{'USER'};
-  eval {
+  my $user = !$ENV{'USER'} || ($ENV{'USER'} eq $PROD_USER_NAME) ? 'pipeline' : $ENV{'USER'};
+  try {
     $run_obj->unset_tag($user, 'staging');
-    _log(q[staging tag is removed for run ] . $run_obj->id_run);
-    1;
-  } or do{
-    croak "Failed to remove staging tag: $EVAL_ERROR";
+  } catch {
+    croak "Failed to remove staging tag: $_";
   };
-  return 1;
+  
+  return;
 }
 
+0;
+
+__END__
+
+=head1 NAME
+
+run_is_deletable
+
+=head1 USAGE
+
+=head1 REQUIRED ARGUMENTS
+
+ none
+
+=head1 OPTIONS
+
+=head1 EXIT STATUS
+
+0
+
+=head1 CONFIGURATION
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head1 SUBROUTINES/METHODS
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item lib
+
+=item FindBin
+
+=item Log::Log4perl
+
+=item Readonly
+
+=item Carp
+
+=item DateTime
+
+=item Getopt::Long
+
+=item English
+
+=item POSIX
+
+=item List::MoreUtils
+
+=item Try::Tiny
+
+=item npg_qc::illumina::loader
+
+=item npg_tracking::Schema
+
+=back
+
+=head1 INCOMPATIBILITIES
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 AUTHOR
+
+Steven Lennard
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2018 Genome Research Limited
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.

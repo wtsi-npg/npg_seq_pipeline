@@ -1,12 +1,10 @@
-#########
-# Author:    gq1
-# Maintainer:  $Author: mg8 $
-# Last Modified: $Date: 2017-08-30 13:59:22 +0100 (Wed, 30 Aug 2017) $
-# Id:      $Id: sequence_files.pm 19689 2017-08-30 12:59:22Z mg8 $
-# $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/data_handling/trunk/lib/npg_validation/runfolder/deletable/sequence_files.pm $
-#
+package npg_pipeline::validation::sequence_files;
 
-package npg_validation::runfolder::deletable::sequence_files;
+#########
+# Copied from 
+# svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/data_handling/trunk/lib/npg_validation/runfolder/deletable/sequence_files.pm
+# on the 5th of January 2018
+#
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -27,13 +25,13 @@ with qw{
        };
 with qw{npg_tracking::illumina::run::long_info};
 
-our $VERSION = do { my ($r) = q$Revision: 19689 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 Readonly::Scalar my $FILE_EXTENSION  => q[cram];
 
 =head1 NAME
 
-npg_validation::runfolder::deletable::sequence_files
+npg_pipeline::validation::sequence_files
 
 =head1 SYNOPSIS
 
@@ -478,12 +476,12 @@ __END__
 
 =head1 AUTHOR
 
-Guoying Qi E<lt>gq1@sanger.ac.ukE<gt>
+Guoying Qi
 Marina Gourtovaia E<lt>mg8@sanger.ac.ukE<gt>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 GRL
+Copyright (C) 2018 GRL
 
 This file is part of NPG.
 

@@ -11,7 +11,7 @@ use List::MoreUtils qw/ none /;
 
 use WTSI::NPG::iRODS;
 
-use_ok('npg_validation::runfolder::deletable::sequence_files');
+use_ok('npg_pipeline::validation::sequence_files');
 
 local $ENV{'http_proxy'} = 'http://wibble.com';
 
@@ -51,8 +51,8 @@ END {
 subtest 'file extensions, file names' => sub {
   plan tests => 11;
 
-  my $v = npg_validation::runfolder::deletable::sequence_files->new(
-     archive_path => q[t/data/runfolder_deletable],
+  my $v = npg_pipeline::validation::sequence_files->new(
+     archive_path => q[t/data/validation],
      collection   => q[/my/c],
      id_run       => 5174,
      irods        => $irods);
@@ -64,8 +64,8 @@ subtest 'file extensions, file names' => sub {
   is( $v->_index_file_name('5174_1#0.cram'), '5174_1#0.cram.crai',
     'index file name for a cram file');
 
-  $v = npg_validation::runfolder::deletable::sequence_files->new(
-     archive_path   => q[t/data/runfolder_deletable],
+  $v = npg_pipeline::validation::sequence_files->new(
+     archive_path   => q[t/data/validation],
      collection     => q[/my/c],
      id_run         => 5174,
      file_extension => 'bam',
@@ -98,9 +98,9 @@ subtest 'deletable or not' => sub {
     };
   
     local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} =
-      't/data/runfolder_deletable/20405/samplesheet_20405.csv';
+      't/data/validation/20405/samplesheet_20405.csv';
 
-    my @file_list = read_file('t/data/runfolder_deletable/20405/file_list');
+    my @file_list = read_file('t/data/validation/20405/file_list');
     @file_list = sort @file_list;
     my $archive = join q[/], $dir, '20405';
     my @letters     = (q(a)..q(z));
@@ -147,14 +147,14 @@ subtest 'deletable or not' => sub {
       is_indexed     => 1,
     };
 
-    my $v = npg_validation::runfolder::deletable::sequence_files->new($ref);
+    my $v = npg_pipeline::validation::sequence_files->new($ref);
     ok($v->archived_for_deletion(), 'deletable');
 
     # Remove one of iRODS files
     my $temp = $file_list[$empty];
     my $to_remove = join q[/], $IRODS_TEST_AREA1, $temp; 
     $irods_do->("irm $to_remove");
-    $v = npg_validation::runfolder::deletable::sequence_files->new($ref);
+    $v = npg_pipeline::validation::sequence_files->new($ref);
     my $result;
     warning_like { $result = $v->archived_for_deletion() }
       qr/Number of sequence files is different/,
@@ -166,7 +166,7 @@ subtest 'deletable or not' => sub {
     my $wrong = "$IRODS_TEST_AREA1/wrong.cram";
     my ($f, $path) = each %{$file_map};
     $irods_do->("iput $path $wrong");
-    $v = npg_validation::runfolder::deletable::sequence_files->new($ref);
+    $v = npg_pipeline::validation::sequence_files->new($ref);
     warning_like { $result = $v->archived_for_deletion() }
       qr/According to LIMS, file $temp is missing/,
       'not deletable - mismatch with lims data';
@@ -176,13 +176,13 @@ subtest 'deletable or not' => sub {
     # Restore previously removed file, excluding metadata
     $irods_do->(join q[ ], 'iput',  '-K', $file_map->{$temp}, $to_remove);
     $ref->{'irods'} = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
-    $v = npg_validation::runfolder::deletable::sequence_files->new($ref);
+    $v = npg_pipeline::validation::sequence_files->new($ref);
     throws_ok { $v->archived_for_deletion() }
       qr/'alignment' metadata is missing for $to_remove/,
       'alignment metadata missing - error';
     $irods_do->("imeta add -d $to_remove alignment 1");
     $ref->{'irods'} = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
-    $v = npg_validation::runfolder::deletable::sequence_files->new($ref);
+    $v = npg_pipeline::validation::sequence_files->new($ref);
     throws_ok { $v->archived_for_deletion() }
       qr/'total_reads' metadata is missing for $to_remove/,
       'total_reads metadata missing - error';
@@ -193,7 +193,7 @@ subtest 'deletable or not' => sub {
     # Remove an index file
     $irods_do->("irm $ito_remove");
     $ref->{'irods'} = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
-    $v = npg_validation::runfolder::deletable::sequence_files->new($ref);
+    $v = npg_pipeline::validation::sequence_files->new($ref);
     warning_like { $result = $v->archived_for_deletion() }
       qr/Index file for $to_remove does not exist/,
       'not deletable - index file is missing';
@@ -205,7 +205,7 @@ subtest 'deletable or not' => sub {
     # its md5 changes
     prepend_file($path, 'aaaaaaaa');
     $ref->{'irods'} = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
-    $v = npg_validation::runfolder::deletable::sequence_files->new($ref);
+    $v = npg_pipeline::validation::sequence_files->new($ref);
     warning_like { $result = $v->archived_for_deletion() }
       qr/md5 wrong for $f/,
       'not deletable - md5 mismatch';

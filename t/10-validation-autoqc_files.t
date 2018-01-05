@@ -10,24 +10,24 @@ Log::Log4perl::init_once('./t/log4perl_test.conf');
 my $logger = Log::Log4perl->get_logger('dnap');
 my $irods = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
 
-use_ok('npg_validation::runfolder::deletable::autoqc');
+use_ok('npg_pipeline::validation::autoqc_files');
 
 my $qc  = Moose::Meta::Class->create_anon_class(roles => [qw/npg_testing::db/])
                             ->new_object()->create_test_db(q[npg_qc::Schema]);
 
-my $validator = npg_validation::runfolder::deletable::autoqc->new
+my $validator = npg_pipeline::validation::autoqc_files->new
        (id_run      => 1234,
         irods       => $irods,
         verbose     => 1,
         skip_checks => [qw/adaptor samtools_stats+phix+human/],
         _qc_schema  => $qc);
 
-isa_ok($validator, 'npg_validation::runfolder::deletable::autoqc');
+isa_ok($validator, 'npg_pipeline::validation::autoqc_files');
 
 my $expected = {'adaptor' => [], 'samtools_stats' => [qw/phix human/]};
 is_deeply($validator->_parse_excluded_checks(), $expected, 'excluded checks parsed correctly');
 
-$validator = npg_validation::runfolder::deletable::autoqc->new
+$validator = npg_pipeline::validation::autoqc_files->new
        (id_run     => 1234,
         irods      => $irods,
         verbose    => 1,

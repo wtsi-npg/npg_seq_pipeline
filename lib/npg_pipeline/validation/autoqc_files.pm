@@ -1,4 +1,10 @@
-package npg_validation::runfolder::deletable::autoqc;
+package npg_pipeline::validation::autoqc_files;
+
+#########
+# Copied from 
+# svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/data_handling/trunk/lib/npg_validation/runfolder/deletable/autoqc.pm
+# on the 5th of January 2018
+#
 
 use Moose;
 use Readonly;
@@ -14,7 +20,7 @@ with qw{npg_common::irods::iRODSCapable
         npg_common::irods::Repository
         npg_tracking::glossary::run};
 
-our $VERSION = do { my ($r) = q$Revision: 18294 $ =~ /(\d+)/mxs; $r; };
+our $VERSION = '0';
 
 Readonly::Scalar my $NO_TAG         => -1;
 Readonly::Scalar my $DEFAULT_VALUE  => 'default_value';
@@ -313,15 +319,11 @@ __END__
 
 =head1 NAME
 
-npg_validation::runfolder::deletable::autoqc
-
-=head1 VERSION
-
-$LastChangedRevision: 18226 $
+npg_pipeline::validation::autoqc_files
 
 =head1 SYNOPSIS
 
-  my $rf = npg_validation::runfolder::deletable::autoqc->new(id_run => 1234, verbose => 1);
+  my $rf = npg_pipeline::validation::autoqc_files->new(id_run => 1234, verbose => 1);
   my $is_archived = $rf->fully_archived;
 
 =head1 DESCRIPTION
@@ -408,7 +410,7 @@ Marina Gourtovaia E<lt>mg8@sanger.ac.ukE<gt>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 GRL
+Copyright (C) 2018 GRL
 
 This file is part of NPG.
 
