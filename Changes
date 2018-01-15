@@ -1,7 +1,8 @@
 LIST OF CHANGES
 ---------------
 
- - Travis CI build - add iRODS test server (needed for futude development)
+ - Travis CI build - add iRODS test server
+ - run_is_deletable script moved to this package from data_handling
  - remove remaining broken provisions for xml LIMs driver 
  - use the new log publisher
 

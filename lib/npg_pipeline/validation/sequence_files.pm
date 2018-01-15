@@ -11,23 +11,15 @@ use MooseX::StrictConstructor;
 use namespace::autoclean;
 use Carp;
 use File::Basename;
-use File::Spec;
-use List::Util qw{first};
-use Readonly;
+use Perl6::Slurp;
+use Try::Tiny;
 
 use st::api::lims;
-use npg_common::irods::Loader;
-use WTSI::NPG::iRODS::DataObject;
 
-with qw{
-         npg_tracking::illumina::run::short_info
-         npg_tracking::illumina::run::folder
-       };
-with qw{npg_tracking::illumina::run::long_info};
+extends 'npg_tracking::illumina::runfolder';
+with    'npg_pipeline::validation::common';
 
 our $VERSION = '0';
-
-Readonly::Scalar my $FILE_EXTENSION  => q[cram];
 
 =head1 NAME
 
@@ -38,79 +30,6 @@ npg_pipeline::validation::sequence_files
 =head1 DESCRIPTION
 
 =head1 SUBROUTINES/METHODS
-
-=head2 id_run
-
-=head2 run_folder
-
-=cut
-
-sub _build_run_folder {
-  my ($self) = @_;
-  if (! ($self->_given_path or $self->has_id_run or $self->has_name)){
-    croak 'need a path to work out a run_folder';
-  }
-  return first {$_ ne q()} reverse File::Spec->splitdir($self->runfolder_path);
-}
-
-=head2 file_extension
-
-File extension for the sequence file format.
-
-=cut
-
-has 'file_extension' => (isa     => 'Str',
-                         is      => 'ro',
-                         default => $FILE_EXTENSION,
-                        );
-
-=head2 index_file_extension
-
-File extension for the sequence file format.
-
-=cut
-
-has 'index_file_extension' => (isa        => 'Str',
-                               is         => 'ro',
-                               init_arg   => undef,
-                               lazy_build => 1,
-                              );
-sub _build_index_file_extension {
-  my $self = shift;
-  return $self->file_extension eq $FILE_EXTENSION ? 'crai' : 'bai';
-}
-
-=head2 irods
-
-Handle for interaction with iRODS.
-
-=cut
-
-has 'irods' => (isa       => 'WTSI::NPG::iRODS',
-                is        => 'ro',
-                required  => 1,
-               );
-
-=head2 collection
-
-Directory within irods to store results, required.
-
-=cut
-
-has 'collection' => (isa      => 'Str',
-                     is       => 'ro',
-                     required => 1,
-                    );
-
-=head2 verbose
-
-Boolean verbosity flag, false by default
-
-=cut
-
-has 'verbose' => (isa  => 'Bool',
-                  is   => 'ro',
-                 );
 
 =head2 archived_for_deletion
 
@@ -142,9 +61,9 @@ has '_staging_files' => (isa        => 'ArrayRef',
                          traits     => ['Array'],
                          lazy_build => 1,
                          trigger    => \&_list_not_empty,
-                         handles => {
-                           staging_files      => 'elements',
-                           num_staging_files  => 'count',
+                         handles    => {
+                           staging_files     => 'elements',
+                           num_staging_files => 'count',
                          },
                         );
 sub _build__staging_files {
@@ -155,72 +74,42 @@ sub _build__staging_files {
                 join(q{/}, $self->archive_path(), q{lane*}, $file_name_glob) );
   my @files = glob join(q{ }, @globs);
   ## use critic
-  if ($self->verbose) {
-    _log(qq{\nINFO: staging files list\n} . join qq{\n}, @files);
-  }
+  $self->logger->info(join qq{\n}, q{Staging files list}, @files);
   return [sort @files];
-}
-
-has '_irods_files'  => (isa        => 'ArrayRef',
-                        is         => 'ro',
-                        traits     => ['Array'],
-                        lazy_build => 1,
-                        trigger    => \&_list_not_empty,
-                        handles => {
-                          irods_files      => 'elements',
-                          num_irods_files  => 'count',
-                        },
-                       );
-sub _build__irods_files {
-  my $self = shift;
-
-  my $seq_re = $self->file_extension;
-  $seq_re = qr/\.$seq_re$/xms;
-  my $i_re = $self->index_file_extension;
-  $i_re = qr/\.$i_re$/xms;
-
-  my @file_list = keys %{npg_common::irods::Loader->new(
-    file  => 'none',
-    irods => $self->irods)->get_collection_file_list($self->collection())};
-  my @seq_list = grep { $_ =~ $seq_re } @file_list;
-  my @i_list   = grep { $_ =~ $i_re }   @file_list;
-
-  if ($self->verbose) {
-    _log(qq{\nINFO: irods files list\n}       . join qq{\n}, @seq_list);
-    _log(qq{\nINFO: irods index files list\n} . join qq{\n}, @i_list);
-  }
-
-  $self->_set_irods_index_files([sort @i_list]);
-
-  return [sort @seq_list];
 }
 
 has '_irods_index_files'  => (isa        => 'ArrayRef',
                               is         => 'ro',
                               traits     => ['Array'],
-                              writer     => '_set_irods_index_files',
-                              handles => {
-                                irods_index_files      => 'elements',
-                                num_irods_index_files  => 'count',
+                              lazy_build => 1,
+                              handles    => {
+                                irods_index_files     => 'elements',
+                                num_irods_index_files => 'count',
                               },
                              );
+sub _build__irods_index_files {
+  my $self = shift;
+  my $i_re = $self->index_file_extension;
+  $i_re = qr/[.]$i_re\Z/xms;
+  my @i_list   = grep { $_ =~ $i_re }   keys %{$self->collection_files};
+  $self->logger->info(join qq{\n}, q{iRODS index files list}, @i_list);
+  return [sort @i_list];
+}
 
 has '_lims_inferred_files' => (isa        => 'ArrayRef',
                                is         => 'ro',
                                traits     => ['Array'],
                                lazy_build => 1,
                                trigger    => \&_list_not_empty,
-                               handles => {
-                                 lims_inferred_files      => 'elements',
-                                 num_lims_inferred_files  => 'count',
+                               handles    => {
+                                 lims_inferred_files     => 'elements',
+                                 num_lims_inferred_files => 'count',
                                },
                               );
 sub _build__lims_inferred_files {
   my $self = shift;
   my @list = map { @{$self->_file_list_per_lane($_)} } keys %{$self->_lane_lims()};
-  if ($self->verbose) {
-    _log(qq{\nINFO: LIMS inferred file list\n} . join qq{\n}, @list);
-  }
+  $self->logger->info( join qq{\n}, q{LIMS inferred file list}, @list);
   return [sort @list];
 }
 
@@ -240,16 +129,17 @@ sub _is_multiplexed_lane {
 
 sub _split_type {
   my ($self, $lims) = @_;
-  return $lims->contains_nonconsented_human   ? 'human' :
+  return $lims->contains_nonconsented_human   ? 'human'   :
        ( $lims->contains_nonconsented_xahuman ? 'xahuman' :
-       ( $lims->separate_y_chromosome_data  ? 'yhuman' : undef ) );
+       ( $lims->separate_y_chromosome_data    ? 'yhuman'  : undef ) );
 }
 
 sub _check_num_files {
   my $self = shift;
   if( $self->num_irods_files() != $self->num_staging_files() ) {
-    _log(sprintf 'Number of sequence files is different:%s%siRODs: %i, staging: %i',
-                  qq[\n], qq[\t], $self->num_irods_files(), $self->num_staging_files());
+    $self->logger->logwarn(sprintf
+           'Number of sequence files is different:%s%siRODs: %i, staging: %i',
+           qq[\n], qq[\t], $self->num_irods_files(), $self->num_staging_files());
     return 0;
   }
   return 1
@@ -261,8 +151,8 @@ sub _check_files_against_lims {
   my %seq_list = map {$_ => 1} $self->irods_files();
   foreach my $f ( $self->lims_inferred_files() ) {
     if( !$seq_list{$f} ) {
-      _log("According to LIMS, file $f is missing in iRODS");
-       $fully_archived = 0;
+      $self->logger->logwarn("According to LIMS, file $f is missing in iRODS");
+      $fully_archived = 0;
     }
   }
   return $fully_archived;
@@ -274,19 +164,22 @@ sub _check_md5 {
   my $md5_list_irods   = $self->_irods_md5s();
   my $md5_list_staging = $self->_staging_md5s();
   my $md5_correct = 1;
-  foreach my $f ( keys %{$md5_list_irods} ) {
-    my $md5_irods   = $md5_list_irods->{$f};
-    my $md5_staging = $md5_list_staging->{$f};
-    if ( !$md5_irods || !$md5_list_irods ) {
-      _log("One of md5 values for $f is not defined");
-      $md5_correct = 0;
-    } else {
-      if( $md5_irods ne $md5_staging){
-        _log("md5 wrong for ${f}: '$md5_irods' not match '$md5_staging'");
-        $md5_correct = 0;
+
+  try {
+    foreach my $f ( sort keys %{$md5_list_irods} ) {
+      my $md5_irods   = $md5_list_irods->{$f};
+      my $md5_staging = $md5_list_staging->{$f};
+      if ( !$md5_irods || !$md5_list_irods ) {
+        croak "One of md5 values for $f is not defined";
+      }
+      if( $md5_irods ne $md5_staging ) {
+        croak "md5 wrong for ${f}: '$md5_irods' not match '$md5_staging'";
       }
     }
-  }
+  } catch {
+    $self->logger->logwarn($_);
+    $md5_correct = 0;
+  };
   return $md5_correct;
 }
 
@@ -294,9 +187,7 @@ sub _irods_md5s {
   my $self = shift;
   my $md5_list = {};
   foreach my $f ( $self->irods_files() ) {
-    my $dobj = WTSI::NPG::iRODS::DataObject->new(
-      $self->irods, $self->collection() . q{/} . $f);
-    $md5_list->{ basename($f) } = $dobj->is_present ? $dobj->checksum : q();
+    $md5_list->{$f} = $self->collection_files()->{$f}->checksum() || q();
   }
   return $md5_list;
 }
@@ -305,12 +196,11 @@ sub _staging_md5s {
   my $self = shift;
   my $md5_list = {};
   foreach my $f ( $self->staging_files() ) {
-    $md5_list->{basename($f)} =
-      npg_common::irods::Loader->get_file_md5($f) || q();
+    my $md5f = $f . q{.md5};
+    $md5_list->{basename($f)} = slurp $md5f, { chomp => 1 } || q();
   }
   return $md5_list;
 }
-
 
 sub _check_index_files {
   my $self = shift;
@@ -320,8 +210,8 @@ sub _check_index_files {
   foreach my $f ( $self->irods_files() ) {
     if ($self->_index_should_exist($f)) {
       my $i = $self->_index_file_name($f);
-      if(!$i_list{$i}){
-        _log("Index file for $f does not exist");
+      if(!$i_list{$i}) {
+        $self->logger->logwarn("Index file for $f does not exist");
         $all_found = 0;
       }
     }
@@ -331,25 +221,11 @@ sub _check_index_files {
 }
 
 sub _index_should_exist {
-  my ($self, $bam) = @_;
-
-  $bam = File::Spec->catfile ($self->collection(), $bam);
-  my $loader = npg_common::irods::Loader->new(file  => 'none',
-                                              irods => $self->irods);
-  my $meta_list = $loader->_check_meta_data($bam);
-  for my $meta (qw/alignment total_reads/) {
-    my $value = $meta_list->{$meta};
-    $value                     or croak "'$meta' metadata is missing for $bam";
-    (ref $value eq 'HASH')     or croak "Unexpected metadata $meta structure for $bam";
-    scalar keys %{$value} == 1 or croak 'One key is expected';
-    my ($k, $v) = each %{$value};
-    if (!defined $k || $k eq q[]) { # Yes, the value is in the key...
-      croak "Value should be defined for $meta";
-    }
-    if ($k == 0) { return 0; }
-  }
-
-  return 1;
+  my ($self, $file_name) = @_;
+  my $meta = $self->get_metadata(
+             $self->collection_files()->{$file_name}, qw/alignment total_reads/);
+  #use Test::More; use Data::Dumper; diag $file_name . q[  ] . Dumper( $meta);
+  return $meta->{'alignment'} && $meta->{'total_reads'};
 }
 
 sub _file_list_per_lane {
@@ -421,14 +297,6 @@ sub _index_file_name {
   return join q[.], $f, $self->index_file_extension;
 }
 
-sub _log {
-  my $m = shift;
-  if ($m) {
-    warn "$m\n";
-  }
-  return;
-}
-
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -454,19 +322,13 @@ __END__
 
 =item File::Spec
 
-=item List::Util
-
 =item st::api::lims
 
-=item npg_common::irods::Loader
+=item Perl6::Slurp
 
-=item WTSI::NPG::iRODS::DataObject
+=item Try::Tiny
 
-=item npg_tracking::illumina::run::short_info
-
-=item npg_tracking::illumina::run::folder
-
-=item npg_tracking::illumina::run::long_info
+=npg_tracking::illumina::runfolder
 
 =back
 
@@ -477,7 +339,8 @@ __END__
 =head1 AUTHOR
 
 Guoying Qi
-Marina Gourtovaia E<lt>mg8@sanger.ac.ukE<gt>
+Steven Leonard
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 

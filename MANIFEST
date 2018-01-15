@@ -46,9 +46,10 @@ lib/npg_pipeline/pluggable/harold/post_qc_review.pm
 lib/npg_pipeline/roles/accessor.pm
 lib/npg_pipeline/roles/business/base.pm
 lib/npg_pipeline/roles/business/flag_options.pm
+lib/npg_pipeline/validation/autoqc_files.pm
+lib/npg_pipeline/validation/common.pm
 lib/npg_pipeline/validation/sequence_files.pm
 lib/npg_pipeline/run/folder/link.pm
-lib/npg_pipeline/validation/autoqc_files.pm
 lib/npg_tracking/daemon/analysis.pm
 lib/npg_tracking/daemon/archival.pm
 MANIFEST			This list of files
