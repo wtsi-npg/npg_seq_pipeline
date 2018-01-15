@@ -8,6 +8,7 @@ use Log::Log4perl;
 use File::Slurp qw/ read_file write_file prepend_file /;
 use File::Path qw/ make_path /;
 use List::MoreUtils qw/ none /;
+use Digest::MD5 qw/ md5_hex /;
 
 use WTSI::NPG::iRODS;
 
@@ -37,7 +38,7 @@ sub exist_irods_executables {
 }
 
 sub create_irods_test_area {
-  diag "creating $IRODS_TEST_AREA1";
+  diag "creating $IRODS_TEST_AREA1 iRODS test area";
   return !system("imkdir $IRODS_TEST_AREA1");
 }
 
@@ -49,14 +50,15 @@ END {
 }
 
 subtest 'file extensions, file names' => sub {
-  plan tests => 11;
+  plan tests => 9;
 
   my $v = npg_pipeline::validation::sequence_files->new(
-     archive_path => q[t/data/validation],
-     collection   => q[/my/c],
-     id_run       => 5174,
-     irods        => $irods);
-  is( $v->file_extension, 'cram', 'default file extension is cram');
+     archive_path   => q[t/data/validation],
+     collection     => q[/my/c],
+     id_run         => 5174,
+     file_extension => 'cram',
+     logger         => $logger,
+     irods          => $irods);
   is( $v->index_file_extension, 'crai', 'index file extension is crai');
   is( $v->_file_name({position=>1}), '5174_1.cram', 'lane 1 file name');
   is( $v->_file_name({position=>1, tag_index=>0}), '5174_1#0.cram',
@@ -69,8 +71,8 @@ subtest 'file extensions, file names' => sub {
      collection     => q[/my/c],
      id_run         => 5174,
      file_extension => 'bam',
+     logger         => $logger,
      irods          => $irods);
-  is( $v->file_extension, 'bam', 'default file extension is bam');
   is( $v->index_file_extension, 'bai', 'index file extension is bai');
   is( $v->_file_name({position=>1}), '5174_1.bam', 'lane 1 file name');
   is( $v->_file_name({position=>1, tag_index=>0}), '5174_1#0.bam',
@@ -82,16 +84,16 @@ subtest 'file extensions, file names' => sub {
 };
 
 subtest 'deletable or not' => sub {
-  my $num_tests = 12;
+  my $num_tests = 15;
   plan tests => $num_tests;
 
   SKIP: {
 
-    skip 'Test iRODS not available (WTSI_NPG_iRODS_Test_irodsEnvFile not set?)', $num_tests unless $test_area_created;
+    skip 'Test iRODS not available (WTSI_NPG_iRODS_Test_IRODS_ENVIRONMENT_FILE not set?)',
+         $num_tests unless $test_area_created;
 
     my $irods_do = sub {
       my $command = shift;
-      #diag $command;
       if (system($command)) {
         die "Failed to execute command";
       }
@@ -123,10 +125,14 @@ subtest 'deletable or not' => sub {
 
       my $path  = join q[/], $lane_archive, $file;
       $file_map->{$file} = $path;
-      write_file($path, join(q[,], map {$letters[rand(26)]} (1 .. 30)) ) ;
+      my $content = join(q[,], map {$letters[rand(26)]} (1 .. 30));
+      write_file($path, $content);
+      my $md5_path = $path . q[.md5];
+      write_file($md5_path, md5_hex($content)) ;
       
       my $ipath = join q[/], $IRODS_TEST_AREA1, $file;
       $irods_do->("iput -K $path $ipath");
+      $irods_do->("iput -K $md5_path $ipath" . q[.md5]);
       my $num_reads = ($i == $empty || $i == $empty_and_not_aligned) ? 0 : int(rand(100));
       my $align_flag = ($i == $not_aligned || $i == $empty_and_not_aligned) ? 0 : 1;
 
@@ -137,13 +143,15 @@ subtest 'deletable or not' => sub {
       $irods_do->("imeta add -d $ipath total_reads $num_reads");
 
       $i++;
-    }
+    }  
 
     my $ref = {
       archive_path   => $archive,
-      collection     => $IRODS_TEST_AREA1,
+      collection     => "${IRODS_TEST_AREA1}",
+      logger         => $logger,
       id_run         => 20405,
       irods          => $irods,
+      file_extension => 'cram',
       is_indexed     => 1,
     };
 
@@ -178,13 +186,13 @@ subtest 'deletable or not' => sub {
     $ref->{'irods'} = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
     $v = npg_pipeline::validation::sequence_files->new($ref);
     throws_ok { $v->archived_for_deletion() }
-      qr/'alignment' metadata is missing for $to_remove/,
+      qr/No or too many 'alignment' meta data for .+\/$to_remove/,
       'alignment metadata missing - error';
     $irods_do->("imeta add -d $to_remove alignment 1");
     $ref->{'irods'} = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
     $v = npg_pipeline::validation::sequence_files->new($ref);
     throws_ok { $v->archived_for_deletion() }
-      qr/'total_reads' metadata is missing for $to_remove/,
+      qr/No or too many 'total_reads' meta data for .+\/$to_remove/,
       'total_reads metadata missing - error';
     $irods_do->("imeta add -d $to_remove total_reads 0");
 
@@ -199,15 +207,29 @@ subtest 'deletable or not' => sub {
       'not deletable - index file is missing';
     ok(!$result, 'not deletable');
     # Put it back
-    system("iput -K $path $ito_remove");
+    $irods_do->("iput -K $path $ito_remove");
 
-    # Preped test to one of the staging files so that
-    # its md5 changes
-    prepend_file($path, 'aaaaaaaa');
     $ref->{'irods'} = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
+    my $sfile = '20405_1#12.cram';
+    my $file  = "${dir}/20405/lane1/${sfile}.md5";
+    unlink $file or warn "Could not unlink $file: $!";
+    $v = npg_pipeline::validation::sequence_files->new($ref);
+    throws_ok { $v->archived_for_deletion() }
+      qr/Can't open '$file'/,
+      'md5 file missing on staging - error';
+
+    write_file($file, q[aaaa]);
     $v = npg_pipeline::validation::sequence_files->new($ref);
     warning_like { $result = $v->archived_for_deletion() }
-      qr/md5 wrong for $f/,
+      qr/md5 wrong for $sfile/,
+      'not deletable - md5 mismatch';
+    ok(!$result, 'not deletable');
+
+    unlink $file or warn "Could not unlink $file: $!";
+    write_file($file, q[]) ;
+    $v = npg_pipeline::validation::sequence_files->new($ref);
+    warning_like { $result = $v->archived_for_deletion() }
+      qr/md5 wrong for $sfile/,
       'not deletable - md5 mismatch';
     ok(!$result, 'not deletable');
   };

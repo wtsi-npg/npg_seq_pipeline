@@ -7,108 +7,59 @@ package npg_pipeline::validation::autoqc_files;
 #
 
 use Moose;
+use MooseX::StrictConstructor;
+use namespace::autoclean;
 use Readonly;
-use Carp;
 use Try::Tiny;
 use List::MoreUtils qw/none/;
+use File::Basename;
 
 use npg_qc::Schema;
 use npg_qc::autoqc::role::result;
-use npg_common::irods::Loader;
 
-with qw{npg_common::irods::iRODSCapable
-        npg_common::irods::Repository
-        npg_tracking::glossary::run};
+with qw / npg_tracking::glossary::run
+          npg_pipeline::validation::common /;
 
 our $VERSION = '0';
 
 Readonly::Scalar my $NO_TAG         => -1;
 Readonly::Scalar my $DEFAULT_VALUE  => 'default_value';
 
-Readonly::Array  my @COMMON_CHECKS        => qw/ qX_yield
-                                                 adapter
-                                                 gc_fraction
-                                                 insert_size
-                                                 ref_match
-                                                 sequence_error
-                                                 fastqcheck
-                                               /;
+Readonly::Array  my @COMMON_CHECKS         => qw/ qX_yield
+                                                  adapter
+                                                  gc_fraction
+                                                  insert_size
+                                                  ref_match
+                                                  sequence_error
+                                                  fastqcheck
+                                                /;
 
 Readonly::Array  my @LANE_LEVELCHECKS4POOL => qw/ tag_metrics
                                                   upstream_tags
                                                 /;
 
-Readonly::Array  my @WITH_SUBSET_CHECKS =>    qw/ bam_flagstats
+Readonly::Array  my @WITH_SUBSET_CHECKS    => qw/ bam_flagstats
                                                   samtools_stats
                                                   sequence_summary
                                                 /;
 
-has 'exclude_bam'   => (isa           => q{Bool},
-                        is            => q{rw},
-                        documentation => q{flag to exclude bam file loading},
-                       );
-
-has 'skip_checks'   => ( isa           => 'ArrayRef',
-                         is            => 'ro',
-                         required      => 0,
-                         default       => sub { [] },
-                       );
-
-has 'irods_files'   => ( isa           => 'ArrayRef',
-                         is            => 'ro',
-                         required      => 0,
-                         lazy_build    => 1,
-                       );
-sub _build_irods_files {
-  my $self = shift;
-  my $bam_re;
-  if ($self->exclude_bam) {
-    $bam_re = q(cram$);
-  } else {
-    $bam_re = q(bam$);
-  }
-  my @files = ();
-  try {
-    @files = grep { /$bam_re/msx }
-      keys %{npg_common::irods::Loader->new
-        (irods => $self->irods)->get_collection_file_list
-          ($self->run_collection)};
-  } catch {
-    carp qq[Error getting a list of bam files form IRODs: $_];
-  };
-  return \@files;
-}
+has 'skip_checks'    => ( isa           => 'ArrayRef',
+                          is            => 'ro',
+                          required      => 0,
+                          default       => sub { [] },
+                        );
 
 has 'is_paired_read' => ( isa           => 'Bool',
                           is            => 'ro',
                           required      => 0,
                           lazy_build    => 1,
                         );
-
 sub _build_is_paired_read {
   my $self = shift;
-  if( !@{$self->irods_files} ){
-    croak qq[No irods file list for run $self->id_run];
-  }
-  my $paired = 0;
-  foreach my $file (@{$self->irods_files}) {
-    my $irods_file = File::Spec->catfile($self->run_collection, $file);
-    my $remote_meta_data = npg_common::irods::Loader->new
-      (irods => $self->irods)->_check_meta_data($irods_file);
-    if (!exists($remote_meta_data->{is_paired_read})) {
-      croak qq[No is_paired_read meta data for irods file $irods_file];
-    }
-    my $values_in_irods = $remote_meta_data->{is_paired_read};
-    my @current_meta_values = keys %{$values_in_irods};
-    if (!scalar @current_meta_values) {
-      croak qq[No is_paired_read values for irods file $irods_file];
-    } elsif (scalar @current_meta_values > 1) {
-      croak qq[Multiple is_paired_read values for irods file $irods_file];
-    }
-    $paired = $current_meta_values[0];
-    last;
-  }
-  return $paired;
+  my $attr_name = 'is_paired_read';
+  my $meta = $self->get_metadata(
+             $self->collection_files->{$self->irods_files->[0]}, ($attr_name));
+  return $meta->{$attr_name};
 }
 
 sub fully_archived {
@@ -117,13 +68,13 @@ sub fully_archived {
   try {
     $self->_qc_schema;
   } catch {
-    carp qq[Cannot connect to qc database: $_];
+    $self->logger->warn(qq[Cannot connect to qc database: $_]);
     return 0;
   };
 
   my $count = scalar @{$self->_queries};
   if ($count == 0) {
-    carp 'No queries to run for autoqc';
+    $self->logger->warn('No queries to run for autoqc');
     return 0;
   }
 
@@ -142,59 +93,39 @@ sub fully_archived {
   return !$count; #if all results exist, $count should be zero at the end
 }
 
-sub _parse_excluded_checks {
-  my $self = shift;
-
-  my $skip_checks = {};
-
-  foreach my $check ( @{$self->skip_checks} ) {
-    my @parsed = split /\+/smx, $check;
-    my $name = shift @parsed;
-    $skip_checks->{$name} = \@parsed;
-  }
-
-  return $skip_checks;
-}
-
-sub _query_to_be_skipped {
-  my ($self, $query, $skip_checks) = @_;
-
-  my $check_name = $query->{'check'};
-  my $skip = exists $skip_checks->{$check_name} ? 1 : 0;
-  my $skip_subset = $skip_checks->{$check_name};
-  if ( $skip_subset && @{$skip_subset} &&
-    ( !$query->{'subset'} || none { $query->{'subset'} eq $_ } @{$skip_subset}) ) {
-    $skip = 0;
-  }
-
-  return $skip;
-}
-
-has '_qc_schema'   =>  ( isa           => 'npg_qc::Schema',
-                         is            => 'ro',
-                         required      => 0,
-                         lazy_build    => 1,
-                       );
+has '_qc_schema' => ( isa        => 'npg_qc::Schema',
+                      is         => 'ro',
+                      required   => 0,
+                      lazy_build => 1,
+                    );
 sub _build__qc_schema {
-  my $self = shift;
   return npg_qc::Schema->connect();
 }
 
-has '_catalogue'          => ( isa           => 'HashRef',
-                               is            => 'ro',
-                               required      => 0,
-                               lazy_build     => 1,
-                             );
+has '_catalogue' => ( isa        => 'HashRef',
+                      is         => 'ro',
+                      required   => 0,
+                      lazy_build => 1,
+                    );
 sub _build__catalogue {
   my $self = shift;
-  return $self->file_catalogue($self->irods_files, $DEFAULT_VALUE, $DEFAULT_VALUE);
+
+  my $c = {};
+  foreach my $file ( @{$self->irods_files} ) {
+    my $ids = $self->parse_file_name($file);
+    my $lane = $ids->{'position'};
+    my $tag_index = defined $ids->{'tag_index'} ? $ids->{'tag_index'} : $DEFAULT_VALUE;
+    my $split = $ids->{'split'} || $DEFAULT_VALUE;
+    $c->{$lane}->{$tag_index}->{$split} = 1;
+  }
+  return $c;
 }
 
-has '_queries'            => ( isa           => 'ArrayRef',
-                               is            => 'ro',
-                               required      => 0,
-                               lazy_build     => 1,
-                             );
+has '_queries'  => ( isa        => 'ArrayRef',
+                     is         => 'ro',
+                     required   => 0,
+                     lazy_build => 1,
+                   );
 sub _build__queries {
   my $self = shift;
 
@@ -239,6 +170,34 @@ sub _build__queries {
   return \@queries;
 }
 
+sub _parse_excluded_checks {
+  my $self = shift;
+
+  my $skip_checks = {};
+
+  foreach my $check ( @{$self->skip_checks} ) {
+    my @parsed = split /[+]/smx, $check;
+    my $name = shift @parsed;
+    $skip_checks->{$name} = \@parsed;
+  }
+
+  return $skip_checks;
+}
+
+sub _query_to_be_skipped {
+  my ($self, $query, $skip_checks) = @_;
+
+  my $check_name = $query->{'check'};
+  my $skip = exists $skip_checks->{$check_name} ? 1 : 0;
+  my $skip_subset = $skip_checks->{$check_name};
+  if ( $skip_subset && @{$skip_subset} &&
+    ( !$query->{'subset'} || none { $query->{'subset'} eq $_ } @{$skip_subset}) ) {
+    $skip = 0;
+  }
+
+  return $skip;
+}
+
 sub _value4query {
   my $value = shift;
   return $value eq $DEFAULT_VALUE ? undef : $value;
@@ -278,7 +237,7 @@ sub _result_exists {
     $expected++ if $self->is_paired_read;
     ## use critic
     if ($count != $expected) {
-      carp qq[Expected $expected results got $count for "$desc"];
+      $self->logger->warn(qq[Expected $expected results got $count for "$desc"]);
       return 0;
     }
     return 1;
@@ -287,14 +246,14 @@ sub _result_exists {
   if ($check_name eq 'insert_size') {
     my $expected = $self->is_paired_read ? 1 : 0;
     if ($count != $expected) {
-      carp qq[Expected $expected results got $count for "$desc"];
+      $self->logger->warn(qq[Expected $expected results got $count for "$desc"]);
       return 0;
     }
     return 1;
   }
 
   if ($count == 0) {
-    carp qq[Result not found for "$desc"\n];
+    $self->logger->warn(qq[Result not found for "$desc"\n]);
     return 0;
   }
 
@@ -341,6 +300,10 @@ npg_pipeline::validation::autoqc_files
 
 =head1 SUBROUTINES/METHODS
 
+=head2 irods 
+
+  Handle for interaction with iRODS
+
 =head2 irods_files
 
   A reference to an array of *.bam/*.cram files for a run found in IRODs repository
@@ -380,21 +343,21 @@ npg_pipeline::validation::autoqc_files
 
 =item Moose
 
+=item MooseX::StrictConstructor
+
+=item namespace::autoclean
+
 =item Readonly
 
 =item Try::Tiny
 
 =item List::MoreUtils
 
+=item File::Basename
+
 =item npg_qc::Schema
 
 =item npg_qc::autoqc::role::result
-
-=item npg_common::irods::Loader
-
-=item npg_common::irods::iRODSCapable
-
-=item npg_common::irods::Repository
 
 =item npg_tracking::glossary::run
 
