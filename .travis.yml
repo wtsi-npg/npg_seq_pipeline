@@ -15,20 +15,38 @@ matrix:
       - ./scripts/travis_before_install.sh
 
 addons:
+  postgresql: "9.3"
   apt:
     packages:
     - libgd2-xpm-dev
     - uuid-dev
+    - odbc-postgresql
 
 env:
   global:
+    - PLATFORM="ubuntu12"
+    - ARCH="x86_64"
     - WTSI_NPG_GITHUB_URL=https://github.com/wtsi-npg
+    - DISPOSABLE_IRODS_VERSION="1.2"
+    - JANSSON_VERSION="2.9"
+    - BATON_VERSION="1.0.0"
+    - IRODS_VERSION="4.1.10"
+    - PG_PLUGIN_VERSION="1.10"
+    - IRODS_RIP_DIR=${IRODS_RIP_DIR:=/usr/local/irods}
 
 before_install:
+  # workaround for iRODS buffer overflow
+  # see https://github.com/travis-ci/travis-ci/issues/5227
+  - sudo hostname "$(hostname | cut -c1-63)"
+  - sed -e "s/^\\(127\\.0\\.0\\.1.*\\)/\\1 $(hostname | cut -c1-63)/" /etc/hosts > /tmp/hosts
+  - sudo mv /tmp/hosts /etc/hosts
   - ./scripts/travis_before_install.sh
 
 install:
   - ./scripts/travis_install.sh
 
 script:
+  - export PATH=$IRODS_RIP_DIR/iRODS/clients/icommands/bin:$PATH
+  - ienv
+  - ils
   - ./scripts/travis_script.sh
