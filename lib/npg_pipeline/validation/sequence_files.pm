@@ -46,6 +46,18 @@ sub archived_for_deletion {
          $self->_check_md5();
 }
 
+=head2 lims_driver_type
+
+Attribute, can have undefuned value. Driver type for
+st::api::lims object
+
+=cut
+
+has 'lims_driver_type' => (isa      => 'Maybe[Str]',
+                           is       => 'ro',
+                           required => 0,
+                          );
+
 has '_lane_lims' => (isa        => 'HashRef',
                      is         => 'ro',
                      lazy_build => 1,
@@ -53,7 +65,12 @@ has '_lane_lims' => (isa        => 'HashRef',
                     );
 sub _build__lane_lims {
   my $self = shift;
-  return st::api::lims->new(id_run => $self->id_run)->children_ia;
+
+  my $h = {'id_run' => $self->id_run};
+  if ($self->lims_driver_type()) {
+    $h->{'driver_type'} = $self->lims_driver_type();
+  }
+  return st::api::lims->new($h)->children_ia;
 }
 
 has '_staging_files' => (isa        => 'ArrayRef',
@@ -151,7 +168,7 @@ sub _check_files_against_lims {
   my %seq_list = map {$_ => 1} $self->irods_files();
   foreach my $f ( $self->lims_inferred_files() ) {
     if( !$seq_list{$f} ) {
-      $self->logger->logwarn("According to LIMS, file $f is missing in iRODS");
+      $self->logger->logwarn("According to LIMS, file $f is missing in iRODS\n");
       $fully_archived = 0;
     }
   }

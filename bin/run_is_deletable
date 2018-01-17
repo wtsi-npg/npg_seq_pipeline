@@ -49,6 +49,7 @@ if(!GetOptions($opts, qw(help
                          ignore-time-limit
                          ignore-irods-bam
                          ignore-autoqc
+                         lims-driver-type=s
                          remove-staging-tag
                          exclude-bam
                          collection-root=s
@@ -68,6 +69,7 @@ if(!GetOptions($opts, qw(help
     -ignore-time-limit
     -ignore-irods-bam
     -ignore-autoqc
+    -lims-driver-type
     -remove-staging-tag
     -exclude-bam
     -collection-root
@@ -125,7 +127,7 @@ my $collection     = $opts->{'collection'} || join q[/], $opts->{'collection-roo
 my $deletable = npg_tracking_deletable('unconditional');
 my $vars_set  = 0;
 
-if (!$deletable) {
+if (!$deletable && !$opts->{'lims-driver-type'} ) {
   #########
   # Find the samplesheet and set env vars
   #
@@ -230,12 +232,15 @@ sub irods_bam_deletable {
              id_run              => $id_run,
              runfolder_path      => $runfolder_path,
              npg_tracking_schema => $s,
+             lims_driver_type    => $opts->{'lims-driver-type'} || undef,
              collection          => $collection,
              file_extension      => $file_extension)->archived_for_deletion() ) {
 
     $logger->warn(qq[iRODS: run $id_run - sequence files archived. Deletable]);
     return 1;
   }
+
+  $logger->warn(qq[iRODS: run $id_run is NOT deletable]);
   return;
 }
 
@@ -252,6 +257,8 @@ sub autoqc_deletable {
     $logger->warn(qq[Autoqc: run $id_run autoqc results fully archived. Deletable]);
     return 1;
   }
+
+  $logger->warn(qq[Autoqc: run $id_run is NOT deletable]);
   return;
 }
 
@@ -290,7 +297,16 @@ run_is_deletable
 
 =head1 SYNOPSIS
 
+run_is_deletable /some/runfolder/dir
+run_is_deletable 1234
+run_is_deletable /some/runfolder/dir --lims-driver-type ml_warehouse_auto
+
 =head1 DESCRIPTION
+
+This script checks whether run data are correctly archived and it is safe
+to delete the run folder from the staging area. It uses cached LIMs information,
+which is stored in a samplesheet. If -lims-driver-type argiment is set, up-to-date
+LIMs information is retrieved from a system corresponding to this driver type.
 
 =head1 SUBROUTINES/METHODS
 
