@@ -242,9 +242,10 @@ sub _file_list_per_lane {
       push @subsets, $lane_split;
     }
     @bam_list_per_lane = map {
-      $self->_file_name({position  => $position,
-                         split     => $_})
-                             } @subsets;
+      $self->generate_file_name({'id_run'    => $self->id_run,
+                                 'position'  => $position,
+                                 'split'     => $_})
+                                } @subsets;
   } else {
     if (!$lane_lims->is_pool ) {
       croak "Lane $position is not a pool, cannot get information for plexes";
@@ -263,29 +264,15 @@ sub _file_list_per_lane {
         }
       }
       push @bam_list_per_lane, (map {
-        $self->_file_name({position  => $position,
-                           tag_index => $tag_index,
-                           split     => $_})
+        $self->generate_file_name({'id_run'    => $self->id_run,
+                                   'position'  => $position,
+                                   'tag_index' => $tag_index,
+                                   'split'     => $_})
                                     } @subsets );
     }
   }
 
   return \@bam_list_per_lane;
-}
-
-sub _file_name {
-  my ($self, $args_ref) = @_;
-
-  my $split   = $args_ref->{'split'};
-  my $tag_index = $args_ref->{'tag_index'};
-  my $file_name = join q{_}, $self->id_run(), $args_ref->{'position'};
-  if ( defined $tag_index ) {
-    $file_name .= q{#} . $tag_index;
-  }
-  if ( $split ) {
-    $file_name .= q{_} . $split;
-  }
-  return join q[.], $file_name , $self->file_extension;
 }
 
 sub _index_file_name {
