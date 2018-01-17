@@ -236,6 +236,8 @@ sub irods_bam_deletable {
     $logger->warn(qq[iRODS: run $id_run - sequence files archived. Deletable]);
     return 1;
   }
+
+  $logger->warn(qq[iRODS: run $id_run is NOT deletable]);
   return;
 }
 
@@ -252,6 +254,8 @@ sub autoqc_deletable {
     $logger->warn(qq[Autoqc: run $id_run autoqc results fully archived. Deletable]);
     return 1;
   }
+
+  $logger->warn(qq[Autoqc: run $id_run is NOT deletable]);
   return;
 }
 

@@ -234,7 +234,7 @@ sub _result_exists {
     $expected++ if $self->is_paired_read;
     ## use critic
     if ($count != $expected) {
-      $self->logger->warn(qq[Expected $expected results got $count for "$desc"]);
+      $self->logger->info(qq[Expected $expected results got $count for "$desc"]);
       return 0;
     }
     return 1;
@@ -243,14 +243,14 @@ sub _result_exists {
   if ($check_name eq 'insert_size') {
     my $expected = $self->is_paired_read ? 1 : 0;
     if ($count != $expected) {
-      $self->logger->warn(qq[Expected $expected results got $count for "$desc"]);
+      $self->logger->info(qq[Expected $expected results got $count for "$desc"]);
       return 0;
     }
     return 1;
   }
 
   if ($count == 0) {
-    $self->logger->warn(qq[Result not found for "$desc"\n]);
+    $self->logger->info(qq[Result not found for "$desc"\n]);
     return 0;
   }
 
