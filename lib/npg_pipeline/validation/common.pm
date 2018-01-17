@@ -158,6 +158,48 @@ sub get_metadata {
   return $data;
 }
 
+=head2 parse_file_name
+
+Returns a hash containing id_run, lane, tag_index and split values
+derived from the file name. The last two might be undefined.
+
+=cut
+
+sub parse_file_name {
+  my ($self, $file_name) = @_;
+  my ($id_run, $lane) = $file_name =~ m/ (\d+) _ (\d) /mxs;
+  my ($tag_index)     = $file_name =~ m/ [#] (\d+) /mxs;
+  my ($split)         = $file_name =~ m/ _ (yhuman|xahuman|human|phix) /mxs;
+  my $h = {'id_run' => $id_run, 'position' => $lane};
+  $h->{'tag_index'} = $tag_index;
+  $h->{'split'}     = $split;
+  return $h;
+}
+
+=head2 generate_file_name
+
+Given a hash with id_run, position and, optionally, tag_index and
+split key-value pairs, generates and returns a fins name with
+extention given by the file_extension attribute.
+
+=cut
+
+sub generate_file_name {
+  my ($self, $args_ref) = @_;
+
+  (defined $args_ref->{'id_run'} && defined $args_ref->{'position'}) ||
+    $self->logger->logcroak('Cannot generate a file name');
+
+  my $file_name = join q{_}, $args_ref->{'id_run'}, $args_ref->{'position'};
+  if ( defined $args_ref->{'tag_index'} ) {
+    $file_name .= q{#} . $args_ref->{'tag_index'};
+  }
+  if ( $args_ref->{'split'} ) {
+    $file_name .= q{_} . $args_ref->{'split'};
+  }
+  return join q[.], $file_name , $self->file_extension;
+}
+
 no Moose::Role;
 
 1;
@@ -165,7 +207,7 @@ __END__
 
 =head1 NAME
 
-npg_pipeline::validation::sequence_files
+npg_pipeline::validation::common
 
 =head1 SYNOPSIS
 

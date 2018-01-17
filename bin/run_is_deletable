@@ -93,25 +93,28 @@ my $runfolder_path;
 
 try {
   $rf = npg_tracking::illumina::runfolder->new(
-                                     id_run              => $id_run,
+                                     id_run              => $run,
                                      npg_tracking_schema => $s);
   $id_run         = $run;
   $runfolder_path = $rf->runfolder_path();
 } catch {
   try {
     $rf = npg_tracking::illumina::runfolder->new(
-                                     runfolder_path      => $id_run,
+                                     runfolder_path      => $run,
                                      npg_tracking_schema => $s);
     $runfolder_path = $run;
     $id_run         = $rf->id_run;
   }
 };
 
-if (!($id_run || $runfolder_path)) {
-  $logger->error(qq{Either id_run or runfolder path cannot be inferred from $run});
+if (!($id_run && $runfolder_path)) {
+  $logger->error(qq{Either run id or run folder path cannot be inferred from $run});
   $logger->warn(qq{$run is NOT deletable});
   exit 1;
 }
+
+$logger->warn(join q[ ], 'Running', __FILE__ , 'for run', $id_run,
+                         'runfolder', $runfolder_path);
 
 my $run_obj        = $rf->tracking_run();
 my $run_status     = $run_obj->current_run_status();
@@ -136,7 +139,7 @@ if (!$deletable) {
   if ( none { $ENV{$_} } $cache->env_vars() ) {
     $vars_set = 1;
     $cache->setup();
-    for (@{$cache->messages}) { logger->info($_) };
+    for (@{$cache->messages}) { $logger->info($_) };
   } else {
     $logger->info('One of ' . join(q[,], $cache->env_vars()) .
                   ' is set, not looking for existing samplesheet');
@@ -238,7 +241,7 @@ sub irods_bam_deletable {
 
 sub autoqc_deletable {
 
-  if( npg_pipeline::validation::autoqc
+  if( npg_pipeline::validation::autoqc_files
       ->new( irods          => $irods,
              logger         => $logger,
              id_run         => $id_run,

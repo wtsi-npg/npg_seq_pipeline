@@ -58,7 +58,7 @@ sub _build_is_paired_read {
   my $self = shift;
   my $attr_name = 'is_paired_read';
   my $meta = $self->get_metadata(
-             $self->collection_files->{$self->irods_files->[0]}, ($attr_name));
+             $self->collection_files->{($self->irods_files())[0]}, ($attr_name));
   return $meta->{$attr_name};
 }
 
@@ -82,12 +82,9 @@ sub fully_archived {
 
   foreach my $query (@{$self->_queries}) {
     my $skip = $self->_query_to_be_skipped($query, $skip_checks);
-    if ($self->verbose) {
-      warn sprintf '%s "%s"%s',
-        $skip ? 'Skipping' : 'Executing query for ',
-        $self->_query2string($query),
-        qq[\n];
-    }
+    $self->logger->info(sprintf '%s "%s"',
+                        $skip ? 'Skipping' : 'Executing query for ',
+                        $self->_query2string($query));
     $count = $count - ( $skip || $self->_result_exists($query) );
   }
   return !$count; #if all results exist, $count should be zero at the end
@@ -111,7 +108,7 @@ sub _build__catalogue {
   my $self = shift;
 
   my $c = {};
-  foreach my $file ( @{$self->irods_files} ) {
+  foreach my $file ( $self->irods_files ) {
     my $ids = $self->parse_file_name($file);
     my $lane = $ids->{'position'};
     my $tag_index = defined $ids->{'tag_index'} ? $ids->{'tag_index'} : $DEFAULT_VALUE;
@@ -282,7 +279,12 @@ npg_pipeline::validation::autoqc_files
 
 =head1 SYNOPSIS
 
-  my $rf = npg_pipeline::validation::autoqc_files->new(id_run => 1234, verbose => 1);
+  my $rf = npg_pipeline::validation::autoqc_files
+           ->new(irods          => $irods,
+                 logger         => $logger,
+                 id_run         => 1234,
+                 collection     => '/irods/1234',
+                 file_extension => 'cram');
   my $is_archived = $rf->fully_archived;
 
 =head1 DESCRIPTION
@@ -300,25 +302,9 @@ npg_pipeline::validation::autoqc_files
 
 =head1 SUBROUTINES/METHODS
 
-=head2 irods 
-
-  Handle for interaction with iRODS
-
-=head2 irods_files
-
-  A reference to an array of *.bam/*.cram files for a run found in IRODs repository
-
 =head2 is_paired_read
 
-  A flag defining whether there are reverse reads. Currently defaults to true and is not used.
-
-=head2 verbose
- 
-  A boolean flag switching on and off verbosity.
-
-=head2 exclude_bam
-
-  A boolean option excluding iRODS bam files from consideration.
+  A flag defining whether there are reverse reads.
 
 =head2 skip_checks
 
