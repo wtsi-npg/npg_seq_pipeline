@@ -22,8 +22,8 @@ sudo ldconfig
 wget -q https://github.com/wtsi-npg/baton/releases/download/${BATON_VERSION}/baton-${BATON_VERSION}.tar.gz -O /tmp/baton-${BATON_VERSION}.tar.gz
 tar xfz /tmp/baton-${BATON_VERSION}.tar.gz -C /tmp
 cd /tmp/baton-${BATON_VERSION}
-export IRODS_HOME="$IRODS_RIP_DIR/iRODS"
-./configure --with-irods=$IRODS_HOME; make; sudo make install
+#export IRODS_HOME="$IRODS_RIP_DIR/iRODS"
+./configure --with-irods; make; sudo make install
 sudo ldconfig
 
 # The default build branch for all repositories. This defaults to
