@@ -60,8 +60,8 @@ subtest 'file extensions, file names' => sub {
      logger         => $logger,
      irods          => $irods);
   is( $v->index_file_extension, 'crai', 'index file extension is crai');
-  is( $v->_file_name({position=>1}), '5174_1.cram', 'lane 1 file name');
-  is( $v->_file_name({position=>1, tag_index=>0}), '5174_1#0.cram',
+  is( $v->generate_file_name({id_run => 5174, position=>1}), '5174_1.cram', 'lane 1 file name');
+  is( $v->generate_file_name({id_run => 5174, position=>1, tag_index=>0}), '5174_1#0.cram',
     'lane 1 tag_index 0 target file name');
   is( $v->_index_file_name('5174_1#0.cram'), '5174_1#0.cram.crai',
     'index file name for a cram file');
@@ -74,10 +74,10 @@ subtest 'file extensions, file names' => sub {
      logger         => $logger,
      irods          => $irods);
   is( $v->index_file_extension, 'bai', 'index file extension is bai');
-  is( $v->_file_name({position=>1}), '5174_1.bam', 'lane 1 file name');
-  is( $v->_file_name({position=>1, tag_index=>0}), '5174_1#0.bam',
+  is( $v->generate_file_name({id_run => 5174, position=>1}), '5174_1.bam', 'lane 1 file name');
+  is( $v->generate_file_name({id_run => 5174, position=>1, tag_index=>0}), '5174_1#0.bam',
     'lane 1 tag_index 0 target file name');
-  is( $v->_file_name({position=>1, tag_index=>1}), '5174_1#1.bam',
+  is( $v->generate_file_name({id_run => 5174, position=>1, tag_index=>1}), '5174_1#1.bam',
     'lane 1 tag_index 1 target file name');
   is( $v->_index_file_name('5174_1#0.bam'), '5174_1#0.bam.bai',
     'index file name for a bam file');
