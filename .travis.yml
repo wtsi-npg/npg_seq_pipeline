@@ -6,7 +6,7 @@ matrix:
       dist: precise
       language: perl
     - dist: xenial
-      language: bash
+      language: c
       env: USE_SYSTEM_PERL=true
 
 addons:
