@@ -29,7 +29,7 @@ env:
     - WTSI_NPG_GITHUB_URL=https://github.com/wtsi-npg
     - DISPOSABLE_IRODS_VERSION="1.2"
     - JANSSON_VERSION="2.9"
-    - BATON_VERSION="1.0.0"
+    - BATON_VERSION="1.1.0"
     - IRODS_VERSION="4.1.10"
     - PG_PLUGIN_VERSION="1.10"
     - IRODS_RIP_DIR=/usr/local/irods
