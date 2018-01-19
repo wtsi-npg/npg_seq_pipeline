@@ -16,11 +16,11 @@ matrix:
 
 addons:
   postgresql: "9.3"
-  apt:
-    packages:
-    - libgd2-xpm-dev
-    - uuid-dev
-    - odbc-postgresql
+  #apt:
+    #packages:
+    #- libgd2-xpm-dev
+    #- uuid-dev
+    #- odbc-postgresql
 
 env:
   global:
@@ -35,6 +35,8 @@ env:
     - IRODS_RIP_DIR=/usr/local/irods
 
 before_install:
+  - sudo -E apt-get -yq update
+  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install odbc-postgresql libgd2-xpm-dev uuid-dev perl
   - ./scripts/travis_before_install.sh
 
 install:
