@@ -6,7 +6,7 @@ matrix:
       dist: precise
       language: perl
     - dist: xenial
-      language: bash
+      language: perl
       env: USE_SYSTEM_PERL=true
       #before_install:
       #- sudo -E apt-get -yq update
