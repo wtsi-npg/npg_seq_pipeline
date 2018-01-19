@@ -2,7 +2,7 @@
 
 set -e -x
 
-perl -I ~/perl5/lib/perl5 Build.PL
+perl Build.PL
 ./Build clean
 
 touch t/bin/software/solexa/bin/blat; chmod +x t/bin/software/solexa/bin/blat

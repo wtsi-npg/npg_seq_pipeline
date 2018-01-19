@@ -56,6 +56,8 @@ do
     export PERL5LIB=$repo/blib/lib:$PERL5LIB:$repo/lib
 done
 
+export PERL5LIB=$PERL5LIB:~/perl5/lib/perl5
+
 for repo in $repos
 do
     cd $repo
