@@ -36,6 +36,7 @@ env:
     - IRODS_RIP_DIR=/usr/local/irods
 
 before_install:
+  - echo "USE_SYSTEM_PERL $USE_SYSTEM_PERL"
   - sudo -E apt-get -yq update
   - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install odbc-postgresql libgd2-xpm-dev uuid-dev perl
   - if [[ $USE_SYSTEM_PERL ]]; then ((cpanm --local-lib=~/perl5 local::lib) && eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)) fi
