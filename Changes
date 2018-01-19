@@ -1,7 +1,12 @@
 LIST OF CHANGES
 ---------------
 
- - run_is_deletable script moved to this package from data_handling
+ - run_is_deletable script moved to this package from data_handling,
+     custom conversion between run id and run folder path refactored to use
+     npg_tracking::illumina::runfolder,
+     lims-driver-type argument is added to reset the default samplesheet driver type,
+     iRODS build is added to Travis CI configuration to enable all new tests to run,
+     Log::Log4perl is used for logging
  - remove remaining broken provisions for xml LIMs driver 
  - use the new log publisher
 
