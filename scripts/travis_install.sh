@@ -22,7 +22,6 @@ sudo ldconfig
 wget -q https://github.com/wtsi-npg/baton/releases/download/${BATON_VERSION}/baton-${BATON_VERSION}.tar.gz -O /tmp/baton-${BATON_VERSION}.tar.gz
 tar xfz /tmp/baton-${BATON_VERSION}.tar.gz -C /tmp
 cd /tmp/baton-${BATON_VERSION}
-#export IRODS_HOME="$IRODS_RIP_DIR/iRODS"
 ./configure --with-irods; make; sudo make install
 sudo ldconfig
 
@@ -56,6 +55,9 @@ do
     export PERL5LIB=$repo/blib/lib:$PERL5LIB:$repo/lib
 done
 
+# This step is needed for a xenial built, which is performed under
+# system Perl. Installing dependencies with cpanm is not run under
+# sudo, therefore modules are deployed to ~/perl5.
 export PERL5LIB=$PERL5LIB:~/perl5/lib/perl5
 
 for repo in $repos
@@ -76,6 +78,11 @@ do
 done
 
 cd $TRAVIS_BUILD_DIR
-
+# Install dependencies of this package
+export PERL5LIB=~/perl5/lib/perl5
 cpanm --quiet --notest --installdeps .
+# Configure the build
+perl Build.PL
+
+
 

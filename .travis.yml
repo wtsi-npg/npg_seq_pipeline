@@ -6,8 +6,14 @@ matrix:
       dist: precise
       language: perl
     - dist: xenial
+      # Language is not set to Perl so that teh tests run under
+      # system's Perl, which we will tru to update as well.
+      # Setting language to c  gives the minimum possible
+      # environment. Setting langiage to something Travis does
+      # not recognise (bash) results in default (Ruby) environment.
+      # In the default environment the postgresql iRODS database
+      # does not work.
       language: c
-      env: USE_SYSTEM_PERL=true
 
 addons:
   postgresql: "9.3"
