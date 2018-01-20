@@ -2,8 +2,8 @@
 
 set -e -x
 
-perl Build.PL
-./Build clean
+#perl Build.PL
+#./Build clean
 
 touch t/bin/software/solexa/bin/blat; chmod +x t/bin/software/solexa/bin/blat
 touch t/bin/software/solexa/bin/bamtofastq; chmod +x t/bin/software/solexa/bin/bamtofastq
