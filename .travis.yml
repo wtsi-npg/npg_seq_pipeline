@@ -6,29 +6,41 @@ matrix:
       dist: precise
       language: perl
     - dist: xenial
-      language: bash
-      before_install:
-      - sudo -E apt-get -yq update
-      - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install libgd2-xpm-dev uuid-dev perl
-      - cpanm --local-lib=~/perl5 local::lib
-      - eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
-      - ./scripts/travis_before_install.sh
+      # Language is not set to Perl so that teh tests run under
+      # system's Perl, which we will tru to update as well.
+      # Setting language to c  gives the minimum possible
+      # environment. Setting langiage to something Travis does
+      # not recognise (bash) results in default (Ruby) environment.
+      # In the default environment the postgresql iRODS database
+      # does not work.
+      language: c
 
 addons:
-  apt:
-    packages:
-    - libgd2-xpm-dev
-    - uuid-dev
+  postgresql: "9.3"
 
 env:
   global:
+    - PLATFORM="ubuntu12"
+    - ARCH="x86_64"
     - WTSI_NPG_GITHUB_URL=https://github.com/wtsi-npg
+    - DISPOSABLE_IRODS_VERSION="1.2"
+    - JANSSON_VERSION="2.9"
+    - BATON_VERSION="1.1.0"
+    - IRODS_VERSION="4.1.10"
+    - PG_PLUGIN_VERSION="1.10"
+    - IRODS_RIP_DIR=/usr/local/irods
 
 before_install:
+  - sleep 100
+  - sudo -E apt-get -yq update
+  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install odbc-postgresql libgd2-xpm-dev uuid-dev perl
   - ./scripts/travis_before_install.sh
 
 install:
   - ./scripts/travis_install.sh
 
 script:
+  - export PATH=$IRODS_RIP_DIR/iRODS/clients/icommands/bin:$PATH
+  - ienv
+  - ils
   - ./scripts/travis_script.sh

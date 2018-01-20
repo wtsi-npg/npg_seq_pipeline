@@ -1,0 +1,377 @@
+#!/usr/bin/env perl
+
+#########
+# copied from 
+# svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/data_handling/trunk/bin/run_is_deletable 
+# on the 5th of January 2018
+#
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use Readonly;
+use Carp;
+use DateTime;
+use Getopt::Long;
+use English qw(-no_match_vars);
+use List::MoreUtils qw{any none};
+use Log::Log4perl qw{:levels};
+use Try::Tiny;
+
+
+use npg_tracking::Schema;
+use npg_tracking::illumina::runfolder;
+use WTSI::NPG::iRODS;
+use npg_pipeline::cache;
+use npg_pipeline::validation::sequence_files;
+use npg_pipeline::validation::autoqc_files;
+
+our $VERSION = '0';
+
+Readonly::Array  my @NPG_DELETABLE_UNCOND => ('run cancelled', 'data discarded');
+Readonly::Array  my @NPG_DELETABLE_STATES => (@NPG_DELETABLE_UNCOND,'qc complete');
+Readonly::Scalar my $FS_DELETABLE_DAYS    => 14;
+Readonly::Scalar my $PROD_USER_NAME       => 'srpipe';
+Readonly::Scalar my $PROD_USER_DB_NAME    => 'pipeline';
+Readonly::Scalar my $CRAM_FILE_EXTENSION  => q[cram];
+Readonly::Scalar my $BAM_FILE_EXTENSION   => q[bam];
+Readonly::Scalar my $DEFAULT_IRODS_ROOT   => q[/seq];
+
+my $opts = {'collection-root'   => $DEFAULT_IRODS_ROOT,
+            'skip-autoqc-check' => [],
+            'exclude-bam'       => 1 };
+
+## no critic (ValuesAndExpressions::ProhibitImplicitNewlines)
+
+if(!GetOptions($opts, qw(help 
+                         ignore-npg-status
+                         ignore-time-limit
+                         ignore-irods-bam
+                         ignore-autoqc
+                         lims-driver-type=s
+                         remove-staging-tag
+                         exclude-bam
+                         collection-root=s
+                         collection
+                         skip-autoqc-check=s@
+                         verbose)) ||
+     $opts->{help} ||
+     !scalar @ARGV ||
+     scalar @ARGV > 1) {
+  print q[Usage:
+  run_is_deletable <run-id> && do_something
+  run_is_deletable /path/to/run_folder && do_something
+
+  Options:
+    -verbose
+    -ignore-npg-status
+    -ignore-time-limit
+    -ignore-irods-bam
+    -ignore-autoqc
+    -lims-driver-type
+    -remove-staging-tag
+    -exclude-bam
+    -collection-root
+    -collection 
+    -skip-autoqc-check
+] or croak qq{Error printing help: $EVAL_ERROR};
+  exit 2;
+}
+
+##use critic
+
+my $run = shift @ARGV;
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c %M - %m%n',
+                          level  => $opts->{'verbose'} ? $INFO : $WARN,
+                          utf8   => 1});
+my $logger = Log::Log4perl->get_logger('dnap.npg.irods');
+
+my $s   = npg_tracking::Schema->connect();
+my $rf;
+my $id_run;
+my $runfolder_path;
+
+try {
+  $rf = npg_tracking::illumina::runfolder->new(
+                                     id_run              => $run,
+                                     npg_tracking_schema => $s);
+  $id_run         = $run;
+  $runfolder_path = $rf->runfolder_path();
+} catch {
+  try {
+    $rf = npg_tracking::illumina::runfolder->new(
+                                     runfolder_path      => $run,
+                                     npg_tracking_schema => $s);
+    $runfolder_path = $run;
+    $id_run         = $rf->id_run;
+  }
+};
+
+if (!($id_run && $runfolder_path)) {
+  $logger->error(qq{Either run id or run folder path cannot be inferred from $run});
+  $logger->warn(qq{$run is NOT deletable});
+  exit 1;
+}
+
+$logger->warn(join q[ ], 'Running', __FILE__ , 'for run', $id_run,
+                         'runfolder', $runfolder_path);
+
+my $run_obj        = $rf->tracking_run();
+my $run_status     = $run_obj->current_run_status();
+my $file_extension = $opts->{'exclude-bam'} ? $CRAM_FILE_EXTENSION : $BAM_FILE_EXTENSION;
+my $irods          = WTSI::NPG::iRODS->new(logger => $logger);
+my $collection     = $opts->{'collection'} || join q[/], $opts->{'collection-root'}, $id_run;
+
+my $deletable = npg_tracking_deletable('unconditional');
+my $vars_set  = 0;
+
+if (!$deletable && !$opts->{'lims-driver-type'} ) {
+  #########
+  # Find the samplesheet and set env vars
+  #
+  my $cache = npg_pipeline::cache->new(
+    reuse_cache        => 1,
+    reuse_cache_only   => 1,
+    set_env_vars       => 1,
+    id_run             => $id_run,
+    cache_location     => $rf->analysis_path()
+  );
+  if ( none { $ENV{$_} } $cache->env_vars() ) {
+    $vars_set = 1;
+    $cache->setup();
+    for (@{$cache->messages}) { $logger->info($_) };
+  } else {
+    $logger->info('One of ' . join(q[,], $cache->env_vars()) .
+                  ' is set, not looking for existing samplesheet');
+  }
+}
+
+#########
+# run the checks
+#
+$deletable = $deletable ||
+  (
+    ($opts->{'ignore-npg-status'} || npg_tracking_deletable()) &&
+    ($opts->{'ignore-time-limit'} || time_limit_deletable())   &&
+    ($opts->{'ignore-irods-bam'}  || irods_bam_deletable())    &&
+    ($opts->{'ignore-autoqc'}     || autoqc_deletable())
+  );
+
+#########
+# unset env variables
+#
+if ($vars_set) {
+  for my $var ( npg_pipeline::cache->env_vars() ) {
+    ##no critic (RequireLocalizedPunctuationVars)    
+    $ENV{$var} = q[];
+  }
+}
+
+#########
+# if deletable, remove staging tag
+#
+my $exit_status = 0;
+if ($deletable) {
+  $logger->warn("Run $id_run is deletable");
+  if ($opts->{'remove-staging-tag'}) {
+    remove_staging_tag();
+  }
+} else {
+  $logger->warn("Run $id_run is NOT deletable");
+  $exit_status = 1;
+}
+
+exit $exit_status;
+
+#########
+# subroutines
+#
+sub time_limit_deletable {
+
+  my $delta_days = DateTime->now()->delta_days($run_status->date())->in_units('days');
+  if($delta_days >= $FS_DELETABLE_DAYS) {
+    $logger->warn(qq[time_limit: $id_run last status change was $delta_days days ago. Deletable]);
+    return 1;
+  }
+  $logger->warn(qq[time_limit: $id_run ($delta_days days ago) $id_run NOT deletable]);
+  return;
+}
+
+sub npg_tracking_deletable {
+  my $unconditional = shift;
+
+  my $crsd = $run_status->run_status_dict->description();
+  if ( $unconditional ) {
+    if (
+         ( any { $_ eq $crsd } @NPG_DELETABLE_UNCOND )
+           &&
+         ( $opts->{'ignore-time-limit'} || time_limit_deletable() )
+       ) {
+      $logger->warn(qq[npg_tracking: $id_run '$crsd'. Unconditionally deletable]);
+      return 1;
+    }
+    return;
+  }
+
+  if ( any { $_ eq $crsd } @NPG_DELETABLE_STATES ) {
+    $logger->warn(qq[npg_tracking: $id_run '$crsd'. Deletable]);
+    return 1;
+  }
+
+  $logger->warn(qq[npg_tracking: $id_run '$crsd' is NOT deletable]);
+  return;
+}
+
+sub irods_bam_deletable {
+
+  if ( npg_pipeline::validation::sequence_files
+      ->new( irods               => $irods,
+             logger              => $logger,
+             id_run              => $id_run,
+             runfolder_path      => $runfolder_path,
+             npg_tracking_schema => $s,
+             lims_driver_type    => $opts->{'lims-driver-type'} || undef,
+             collection          => $collection,
+             file_extension      => $file_extension)->archived_for_deletion() ) {
+
+    $logger->warn(qq[iRODS: run $id_run - sequence files archived. Deletable]);
+    return 1;
+  }
+
+  $logger->warn(qq[iRODS: run $id_run is NOT deletable]);
+  return;
+}
+
+sub autoqc_deletable {
+
+  if( npg_pipeline::validation::autoqc_files
+      ->new( irods          => $irods,
+             logger         => $logger,
+             id_run         => $id_run,
+             collection     => $collection,
+             file_extension => $file_extension,
+             skip_checks    => $opts->{'skip-autoqc-check'} )->fully_archived() ) {
+
+    $logger->warn(qq[Autoqc: run $id_run autoqc results fully archived. Deletable]);
+    return 1;
+  }
+
+  $logger->warn(qq[Autoqc: run $id_run is NOT deletable]);
+  return;
+}
+
+sub remove_staging_tag {
+
+  my $user = $ENV{'USER'};
+  $user = (!$user || ($user eq $PROD_USER_NAME)) ? $PROD_USER_DB_NAME : $user;
+  try {
+    $run_obj->unset_tag($user, 'staging');
+    $logger->warn("Staging tag is removed for run $id_run");
+  } catch {
+    $logger->error("Failed to remove staging tag: $_");
+  };
+  return;
+}
+
+__END__
+
+=head1 NAME
+
+run_is_deletable
+
+=head1 USAGE
+
+=head1 REQUIRED ARGUMENTS
+
+ either run id or runfolder path should be supplied
+
+=head1 OPTIONS
+
+=head1 EXIT STATUS
+
+0
+
+=head1 CONFIGURATION
+
+=head1 SYNOPSIS
+
+run_is_deletable /some/runfolder/dir
+run_is_deletable 1234
+run_is_deletable /some/runfolder/dir --lims-driver-type ml_warehouse_auto
+
+=head1 DESCRIPTION
+
+This script checks whether run data are correctly archived and it is safe
+to delete the run folder from the staging area. It uses cached LIMs information,
+which is stored in a samplesheet. If -lims-driver-type argiment is set, up-to-date
+LIMs information is retrieved from a system corresponding to this driver type.
+
+=head1 SUBROUTINES/METHODS
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item lib
+
+=item FindBin
+
+=item English
+
+=item Log::Log4perl
+
+=item Readonly
+
+=item Carp
+
+=item DateTime
+
+=item Getopt::Long
+
+=item List::MoreUtils
+
+=item Try::Tiny
+
+=item npg_tracking::Schema
+
+=item npg_tracking::illumina::runfolder
+
+=item WTSI::NPG::iRODS
+
+=back
+
+=head1 INCOMPATIBILITIES
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 AUTHOR
+
+Steven Lennard
+Marina Gourtovaia
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2018 Genome Research Limited
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
