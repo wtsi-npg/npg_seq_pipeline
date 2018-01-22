@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
 
  - Handle dual indexes
+ - Travis CI build - add iRODS test server (needed for futude development)
  - remove remaining broken provisions for xml LIMs driver 
  - use the new log publisher
 
