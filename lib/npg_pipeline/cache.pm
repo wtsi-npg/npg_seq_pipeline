@@ -74,7 +74,7 @@ LIMs specific flowcell id.
 =head2 lims_driver_type
  
 Driver type to be used to build lims accessor,
-defaults to xml.
+defaults to mlwarehouse.
 
 =cut
 
@@ -166,17 +166,6 @@ sub _build_lims {
       if ($self->$name) {
         $ref->{$name} = $self->$name;
       }
-    }
-    $clims = [st::api::lims->new($ref)->children];
-
-  } elsif ($driver_type eq $self->xml_driver_name) {
-
-    my $ref = {
-      driver_type => $driver_type,
-      id_run      => $self->id_run,
-    };
-    if ($self->id_flowcell_lims) {
-      $ref->{'batch_id'} = $self->id_flowcell_lims;
     }
     $clims = [st::api::lims->new($ref)->children];
 

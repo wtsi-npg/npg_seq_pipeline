@@ -5,6 +5,7 @@ use English qw{-no_match_vars};
 use Readonly;
 use Moose::Meta::Class;
 use File::Slurp;
+use File::Basename;
 use JSON::XS;
 use List::Util qw(sum);
 use List::MoreUtils qw(any);
@@ -23,8 +24,14 @@ our $VERSION  = '0';
 
 Readonly::Scalar our $NUM_SLOTS                    => q(12,16);
 Readonly::Scalar our $MEMORY                       => q{32000}; # memory in megabytes
+Readonly::Scalar our $MORE_MEMORY                  => q{38000}; # idem
 Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
 Readonly::Scalar my  $QC_SCRIPT_NAME               => q{qc};
+Readonly::Scalar my  $DEFAULT_SJDB_OVERHANG        => q{74};
+Readonly::Scalar my  $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
+Readonly::Scalar my  $REFERENCE_ARRAY_TVERSION_IDX => q{2};
+Readonly::Scalar my  $DEFAULT_RNA_ANALYSIS         => q{tophat2};
+Readonly::Scalar my  $DEFAULT_JOB_ID_FOR_NO_BSUB   => q{50};
 
 =head2 phix_reference
 
@@ -36,6 +43,7 @@ has 'phix_reference' => (isa        => 'Str',
                          required   => 0,
                          lazy_build => 1,
                         );
+
 sub _build_phix_reference {
   my $self = shift;
 
@@ -86,6 +94,11 @@ has '_job_args'   => ( isa     => 'HashRef',
                        is      => 'ro',
                        default => sub { return {};},
                      );
+
+has '_job_mem_reqs' => ( isa     => 'HashRef',
+                         is      => 'ro',
+                         default => sub { return {};},
+                       );
 
 has '_using_alt_reference' => ( isa     => 'Bool',
                                 is      => 'rw',
@@ -147,6 +160,16 @@ sub generate {
   my $job_id = $self->submit_bsub_command(
     $self->_command2submit($arg_refs->{required_job_completion})
   );
+
+  # bmod jobs that require more memory
+  @job_indices = keys %{$self->_job_mem_reqs};
+  if (@job_indices) {
+    $self->debug('Requesting more memory for alignment jobs');
+    my $dummy = $self->submit_bsub_command(
+        $self->_bmodcommand2submit($job_id)
+    );
+  }
+
   $self->_save_arguments($job_id);
 
   return ($job_id);
@@ -161,7 +184,7 @@ sub _command2submit {
   my $job_name = q{'} . $self->job_name_root . npg_pipeline::lsf_job->create_array_string(@job_indices) . q{'};
   my $resources = ( $self->fs_resource_string( {
       counter_slots_per_job => 4,
-      resource_string => $self->_default_resources(),
+      resource_string => $self->_default_resources($MEMORY),
     } ) );
   return  q{bsub -q } . $self->lsf_queue()
     .  q{ } . $self->ref_adapter_pre_exec_string()
@@ -180,6 +203,18 @@ sub _save_arguments {
   $self->debug(qq[Arguments written to $file_name]);
 
   return $file_name;
+}
+
+sub _bmodcommand2submit {
+  my ($self, $job_id) = @_;
+  my @job_indices = sort {$a <=> $b} keys %{$self->_job_mem_reqs};
+  my $job_name = npg_pipeline::lsf_job->create_array_string(@job_indices);
+  # original request must be made again when asking for more memory
+  my $resources = ( $self->fs_resource_string( {
+      counter_slots_per_job => 4,
+      resource_string => $self->_default_resources($MORE_MEMORY),
+    } ) );
+  return qq{bmod $resources $job_id$job_name};
 }
 
 sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
@@ -225,6 +260,14 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     phix_reference_genome_fasta => $self->phix_reference,
     alignment_filter_jar => $self->_AlignmentFilter_jar,
   };
+  my $p4_ops = {
+    prune => [],
+    splice => [],
+  };
+
+  if(not $spike_tag) {
+    push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:__CALIBRATION_PU_OUT__-';
+  }
 
   my $do_rna = $self->_do_rna_analysis($l);
 
@@ -267,15 +310,13 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   #  Note: currently human split (with and without target alignment) are handled with
   #   separate templates, so these steps do not apply.
   ########
-  my @no_tgt_aln_flags = ();
-  if((not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam or ($l->library_type and $l->library_type =~ /Chromium/smx)) and not $nchs and not $spike_tag) {
-
-    push @no_tgt_aln_flags,
-      q[-splice_nodes '"'"'src_bam:-alignment_filter:__PHIX_BAM_IN__'"'"'],
-      q[-keys scramble_reference_flag -vals '"'"'-x'"'"'],
-      q[-nullkeys stats_reference_flag], # both samtools and bam_stats
-      q[-nullkeys af_target_in_flag], # switch off AlignmentFilter target input
-      q[-keys af_target_out_flag_name -vals '"'"'UNALIGNED'"'"']; # rename "target output" flag
+  if(not $do_target_alignment and not $nchs and not $spike_tag) {
+      push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:__PHIX_BAM_IN__';
+      push @{$p4_ops->{splice}}, 'alignment_filter:-foptgt_bmd_multiway:';
+      $p4_param_vals->{scramble_reference_flag} = q[-x];
+      $p4_param_vals->{stats_reference_flag} = undef;   # both samtools and bam_stats
+      $p4_param_vals->{af_target_in_flag} = undef;   # switch off AlignmentFilter target input
+      $p4_param_vals->{af_target_out_flag_name} = q[UNALIGNED]; # rename "target output" flag
   }
 
   #################################################################
@@ -296,22 +337,48 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   if(not $spike_tag) {
     if($self->_do_bait_stats_analysis($l)) {
       $p4_param_vals->{bait_regions_file} = $self->_bait($l)->bait_intervals_path();
-      $bait_stats_flag = q(-prune_nodes '"'"'fop(phx|hs)_samtools_stats_F0.*00_bait.*'"'"');
+      push @{$p4_ops->{prune}}, 'fop(phx|hs)_samtools_stats_F0.*00_bait.*-';
     }
     else {
-      $bait_stats_flag = q(-prune_nodes '"'"'fop.*samtools_stats_F0.*00_bait.*'"'"');
+      push @{$p4_ops->{prune}}, 'fop.*samtools_stats_F0.*00_bait.*-';
     }
-  } else {
-    $bait_stats_flag = q(-prune_nodes '"'"'foptgt.*samtools_stats_F0.*00_bait.*'"'"');
-    $spike_splicing = q[-splice_nodes '"'"'src_bam:-foptgt_bamsort_coord:;foptgt_seqchksum_tee:__FINAL_OUT__-scs_cmp_seqchksum:__OUTPUTCHK_IN__'"'"'];
+  }
+  else {
+    push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
+    push @{$p4_ops->{splice}}, 'src_bam:-foptgt_bamsort_coord:', 'foptgt_seqchksum_tee:__FINAL_OUT__-scs_cmp_seqchksum:__OUTPUTCHK_IN__';
   }
 
   if($do_rna) {
-    $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
-    $p4_param_vals->{transcriptome_val} = $self->_transcriptome($l)->transcriptome_index_name();
-
-    $p4_param_vals->{alignment_method} = q[tophat2];
-    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bowtie2)); }
+    my $rna_analysis = $self->_analysis($l) // $DEFAULT_RNA_ANALYSIS;
+    my $p4_reference_genome_index;
+    if($rna_analysis eq q[star]) {
+      # most common read length used for RNA-Seq is 75 bp so indices were generated using sjdbOverhang=74
+      $p4_param_vals->{sjdb_overhang_val} = $DEFAULT_SJDB_OVERHANG;
+      $p4_param_vals->{star_executable} = q[star];
+      $p4_reference_genome_index = dirname($self->_ref($l, q(star)));
+      # star jobs require more memory
+      my $ji;
+      if($is_plex){
+          $ji = $self->_job_index($position, $tag_index);
+      }else{
+          $ji = $self->_job_index($position);
+      }
+      $self->_job_mem_reqs->{$ji} = $MORE_MEMORY;
+    }
+    else {
+      if ($rna_analysis ne $DEFAULT_RNA_ANALYSIS){
+        $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
+        $rna_analysis = $DEFAULT_RNA_ANALYSIS;
+      }
+      $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
+      $p4_param_vals->{transcriptome_val} = $self->_transcriptome($l, q(tophat2))->transcriptome_index_name();
+      $p4_reference_genome_index = $self->_ref($l, q(bowtie2));
+    }
+    $p4_param_vals->{alignment_method} = $rna_analysis;
+    $p4_param_vals->{annotation_val} = $self->_transcriptome($l)->gtf_file();
+    $p4_param_vals->{quant_method} = q[salmon];
+    $p4_param_vals->{salmon_transcriptome_val} = $self->_transcriptome($l, q(salmon))->transcriptome_index_path();
+    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $p4_reference_genome_index; }
     if($nchs) {
       # this human split alignment method is currently the same as the default, but this may change
       $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
@@ -327,6 +394,9 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
       $p4_param_vals->{alignment_hs_method} = $hs_bwa;
     }
+    if(not $self->is_paired_read) {
+      $p4_param_vals->{bwa_mem_p_flag} = undef;
+    }
   }
 
   if($human_split) {
@@ -341,7 +411,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
 
 # write p4 parameters to file
   my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path($position), $name_root.q{_p4s2_pv_in.json};
-  write_file($param_vals_fname, encode_json({ assign => [ $p4_param_vals ], }));
+  write_file($param_vals_fname, encode_json({ assign => [ $p4_param_vals ], ops => $p4_ops }));
 
   ####################
   # log run parameters
@@ -360,24 +430,19 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                        q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
                        q(cd), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{&&},
                        q(vtfp.pl),
+#                        q{-template_path $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib},
                          q(-param_vals), $param_vals_fname,
                          q(-export_param_vals), $name_root.q{_p4s2_pv_out_$}.q/{LSB_JOBID}.json/,
                          q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
                          q(-keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads`),
                          q(-keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2`),
                          q(-keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2`),
-                         (grep {$_}
-                           $bait_stats_flag,
-                           $spike_splicing, # empty unless this is the spike tag
-                         ),
-                         (not $self->is_paired_read) ? q(-nullkeys bwa_mem_p_flag) : (),
-                         (@no_tgt_aln_flags), # empty unless there is no target alignment
                          q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
                          qq(> run_$name_root.json),
                        q{&&},
                        qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
                        q{&&},
-                       _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex),
+                       _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, undef, (not $spike_tag and not $do_target_alignment)),
                        (grep {$_}
                        ((not $spike_tag)? (join q( ),
                          q{&&},
@@ -402,15 +467,20 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
 }
 
 sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
-  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset) = @_;
+  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset, $skip_markdups_metrics) = @_;
 
   my $args = {'id_run' => $l->id_run,
               'position'=> $l->position,
               'qc_out' => $qc_out,
               'check' => $check_name,};
+  my @flags = ();
 
   if ($is_plex && defined $l->tag_index) {
     $args->{'tag_index'} = $l->tag_index;
+  }
+
+  if ($check_name =~ /^bam_flagstats$/smx and $skip_markdups_metrics) {
+      push @flags, q[--skip_markdups_metrics];
   }
 
   if ($check_name =~ /^bam_flagstats|rna_seqc$/smx) {
@@ -425,6 +495,11 @@ sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
   my $command = q[];
   foreach my $arg (sort keys %{$args}) {
     $command .= join q[ ], q[ --].$arg, $args->{$arg};
+  }
+
+  if(@flags) {
+    $command .= q[ ];
+    $command .= join q[ ], @flags;
   }
 
   return $QC_SCRIPT_NAME . $command;
@@ -481,34 +556,57 @@ sub _do_rna_analysis {
   my ($self, $l) = @_;
   my $lstring = $l->to_string;
   if (!$l->library_type || $l->library_type !~ /(?:(?:cD|R)NA|DAFT)/sxm) {
-    $self->debug(qq{$lstring - not RNA library type});
+    $self->debug(qq{$lstring - not RNA library type: skipping RNAseq analysis});
     return 0;
   }
   if (not $self->is_paired_read) {
-    $self->debug(qq{$lstring - Single end run (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on single end data
+    $self->debug(qq{$lstring - Single end run: skipping RNAseq analysis for now}); #TODO: RNAseq should work on single end data
     return 0;
   }
-  if ((not $l->reference_genome) or (not $l->reference_genome =~ /Homo_sapiens|Mus_musculus|Plasmodium_(?:falciparum|berghei)/smx)) {
-    $self->debug(qq{$lstring - Not human or mouse or plasmodium falciparum or berghei (so skipping RNAseq analysis for now)}); #TODO: RNAseq should work on all eukaryotes?
-    return 0;
-  }
-  if (not $self->_transcriptome($l)->transcriptome_index_name()) {
-    $self->debug(qq{$lstring - no transcriptome set}); #TODO: RNAseq should work without transcriptome?
+  my $reference_genome = $l->reference_genome();
+  my @parsed_ref_genome = $self->_reference($l)->parse_reference_genome($reference_genome);
+  my $transcriptome_version = $parsed_ref_genome[$REFERENCE_ARRAY_TVERSION_IDX] // q[];
+  if (not $transcriptome_version) {
+    $self->debug(qq{$lstring - Reference without transcriptome version: skipping RNAseq analysis});
     return 0;
   }
   $self->debug(qq{$lstring - Do RNAseq analysis....});
-
   return 1;
 }
 
 sub _transcriptome {
-  my ($self, $l) = @_;
-  return npg_tracking::data::transcriptome->new(
-                {'id_run'     => $l->id_run, #TODO: use lims object?
-                 'position'   => $l->position,
-                 'tag_index'  => $l->tag_index,
-                 ( $self->repository ? ('repository' => $self->repository):())
-                });
+  my ($self, $l, $analysis) = @_;
+  my $href = {'id_run'     => $l->id_run, #TODO: use lims object?
+              'position'   => $l->position,
+              'tag_index'  => $l->tag_index,
+              ($self->repository ? ('repository' => $self->repository):())
+             };
+  if (defined $analysis) {
+      $href->{'analysis'} = $analysis;
+  }
+  return npg_tracking::data::transcriptome->new($href);
+}
+
+sub _reference {
+    my ($self, $l, $aligner) = @_;
+    my $href = { 'lims' => $l };
+    if (defined $self->repository) {
+        $href->{'repository'} = $self->repository;
+    }
+    if (defined $aligner) {
+        $href->{'aligner'} = $aligner;
+    }
+    return npg_tracking::data::reference->new($href);
+}
+
+sub _analysis {
+    my ($self, $l) = @_;
+    my $lstring = $l->to_string;
+    my $reference_genome = $l->reference_genome();
+    my @parsed_ref_genome = $self->_reference($l)->parse_reference_genome($reference_genome);
+    my $analysis = $parsed_ref_genome[$REFERENCE_ARRAY_ANALYSIS_IDX];
+    $self->info(qq[$lstring - Analysis: ] . (defined $analysis ? $analysis : qq[default for $reference_genome]));
+    return $analysis;
 }
 
 sub _do_bait_stats_analysis {
@@ -543,21 +641,14 @@ sub _bait{
 
 sub _ref {
   my ($self, $l, $aligner) = @_;
-
   if (!$aligner) {
     $self->logcroak('Aligner missing');
   }
   my $ref_name = $l->reference_genome();
   my $ref = $ref_name ? $self->_ref_cache->{$ref_name}->{$aligner} : undef;
   my $lstring = $l->to_string;
-
   if (!$ref) {
-    my $href = { 'aligner' => $aligner, 'lims' => $l, };
-    if ($self->repository) {
-      $href->{'repository'} = $self->repository;
-    }
-    my $ruser = Moose::Meta::Class->create_anon_class(
-       roles => [qw/npg_tracking::data::reference::find/])->new_object($href);
+    my $ruser = $self->_reference($l, $aligner);
     my @refs =  @{$ruser->refs};
     if (!@refs) {
       $self->warn(qq{No reference genome set for $lstring});
@@ -576,11 +667,9 @@ sub _ref {
       }
     }
   }
-
   if ($ref) {
     $self->info(qq{Reference set for $lstring: $ref});
   }
-
   return $ref;
 }
 
@@ -596,10 +685,10 @@ sub _job_index {
 }
 
 sub _default_resources {
-  my ( $self ) = @_;
+  my ( $self, $memory ) = @_;
   my $hosts = 1;
   my $num_slots = $self->general_values_conf()->{'seq_alignment_slots'} || $NUM_SLOTS;
-  return (join q[ ], npg_pipeline::lsf_job->new(memory => $MEMORY)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$num_slots");
+  return (join q[ ], npg_pipeline::lsf_job->new(memory => $memory)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$num_slots");
 }
 
 sub _default_human_split_ref {
@@ -647,6 +736,7 @@ __PACKAGE__->meta->make_immutable;
 
 1;
 __END__
+
 
 =head1 NAME
 
