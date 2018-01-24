@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - Handle dual indexes
  - remove remaining broken provisions for xml LIMs driver 
  - use the new log publisher
 

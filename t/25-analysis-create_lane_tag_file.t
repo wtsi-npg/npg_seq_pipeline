@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 56;
+use Test::More tests => 64;
 use Test::Exception;
 use File::Slurp;
 use File::Temp qw(tempdir);
@@ -23,7 +23,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
   my $lims = st::api::lims->new(id_run => 1234)->children_ia();
   my $create_lane = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims     => $lims->{1},
-      index_length  => 6,
+      index_lengths => [6],
       location      => $dir,
   );
   isa_ok ($create_lane, q{npg_pipeline::analysis::create_lane_tag_file} );
@@ -32,7 +32,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
   $lims = st::api::lims->new(id_run => 1234, batch_id=>5378)->children_ia();
   $create_lane = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims     => $lims->{1},
-      index_length  => 6,
+      index_lengths => [6],
       location      => $dir,
   );
   throws_ok { $create_lane->generate(); }
@@ -89,7 +89,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
   my $lims = st::api::lims->new(id_run => 1234, batch_id=>6532)->children_ia;
   my $create_lane = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims    => $lims->{1},
-      index_length => 7,
+      index_lengths=> [7],
       location     => $dir,
   );
 
@@ -120,7 +120,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
 
   $create_lane = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims    => $lims->{1},
-      index_length => 8,
+      index_lengths=> [8],
       location     => $dir,
   );
   $tag_list_lane1 = {1=> 'TAGCTTGTTGA', 2 => 'TGCGATGTTAA', 3 => 'GGCCAATGGGG',};
@@ -139,7 +139,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
 
   my $create_lane = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims    => $lims->{1},
-      index_length => 16,
+      index_lengths=> [16],
       location     => $dir,
   );
   my $tag_list_lane_init = {1=> 'TAGCTTGTTGA', 2 => 'TGCGATGTTAATTTTT', 3 => 'GGCCAATGGGGAAAAA',};
@@ -150,7 +150,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
 
   $create_lane = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims    => $lims->{1},
-      index_length => 14,
+      index_lengths=> [14],
       location     => $dir,
   );
   $tag_list_lane_init = {1=> 'TAGCTTGTTGA', 2 => 'TGCGATGTTAATTT', 3 => 'GGCCAATGGGGAAA',};
@@ -161,7 +161,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
 
   $create_lane = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims    => $lims->{1},
-      index_length => 18,
+      index_lengths=> [18],
       location     => $dir,
   );
   $tag_list_lane_init = {1=> 'TAGCTTGTTGA', 2 => 'TGCGATGTTAATTTTTTT', 3 => 'GGCCAATGGGGAAAAAAA',};
@@ -175,7 +175,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
   my $lims = st::api::lims->new(id_run => 1234, batch_id=>6713)->children_ia;
   my $create_lane  = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims     => $lims->{1},
-      index_length => 6,
+      index_lengths=> [6],
       location     => $dir,
   );
 
@@ -193,7 +193,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
   my $tags_length_checked;
   $create_lane  = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims     => $lims->{1},
-      index_length => 5,
+      index_lengths=> [5],
       location     => $dir,
   );
   my $expected_tag_results = [ qw{ AAAAA AAAAA AAAAA AAAAA } ];
@@ -218,7 +218,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
 
   $create_lane  = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims     => $lims->{1},
-      index_length => 6,
+      index_lengths=> [6],
       location     => $dir,
   );
   throws_ok {
@@ -240,7 +240,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
 
   $create_lane  = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims     => $lims->{1},
-      index_length => 12,
+      index_lengths=> [12],
       location     => $dir,
   );
   throws_ok {
@@ -262,7 +262,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
 
   $create_lane  = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims    => $lims->{1},
-      index_length => 9,
+      index_lengths=> [9],
       location     => $dir,
   );
   throws_ok {
@@ -273,7 +273,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
 
   $create_lane  = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims    => $lims->{1},
-      index_length => 9,
+      index_lengths=> [9],
       location     => $dir,
   );
   throws_ok {
@@ -305,7 +305,7 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
   my $lims = st::api::lims->new(id_run => 18124, batch_id=>42225)->children_ia;
   my $create_lane  = npg_pipeline::analysis::create_lane_tag_file->new(
       lane_lims     => $lims->{1},
-      index_length => 16,
+      index_lengths=> [8,8],
       location     => $dir,
       i5opposite       => 1,
   );
@@ -318,8 +318,53 @@ use_ok(q{npg_pipeline::analysis::create_lane_tag_file});
   is($tag_list, "$dir/lane_1.taglist", 'i5opposite dual index tag list file path');
   my $file_contents;
   lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
-  my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACTCGAGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACGCAAGATCTCG\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
+  my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACTCG-AGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACGCA-AGATCTCG\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
   is($file_contents, $expected, 'i5opposite dual index tag list file contents as expected');
 }
+
+{
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
+  my $lims = st::api::lims->new(id_run => 18124, batch_id=>42226)->children_ia;
+  my $create_lane  = npg_pipeline::analysis::create_lane_tag_file->new(
+      lane_lims     => $lims->{2},
+      index_lengths=> [6,8],
+      location     => $dir,
+      i5opposite   => 1,
+  );
+
+  my $tag_list;
+  lives_ok {
+    $tag_list = $create_lane->generate();
+  } q{i5opposite dual index no croak running generate() for batch 42226};
+
+  is($tag_list, "$dir/lane_2.taglist", 'i5opposite dual index tag list file path');
+  my $file_contents;
+  lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
+  my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACT-AGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACG-AGATCTCG\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
+  is($file_contents, $expected, 'i5opposite dual index tag list file contents as expected');
+}
+
+{
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
+  my $lims = st::api::lims->new(id_run => 18124, batch_id=>42227)->children_ia;
+  my $create_lane  = npg_pipeline::analysis::create_lane_tag_file->new(
+      lane_lims     => $lims->{2},
+      index_lengths=> [6,8],
+      location     => $dir,
+      i5opposite   => 1,
+  );
+
+  my $tag_list;
+  lives_ok {
+    $tag_list = $create_lane->generate();
+  } q{i5opposite dual index no croak running generate() for batch 42227};
+
+  is($tag_list, "$dir/lane_2.taglist", 'i5opposite dual index tag list file path');
+  my $file_contents;
+  lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
+  my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACT-AGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACG-CAATCCGT\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
+  is($file_contents, $expected, 'i5opposite dual index tag list file contents as expected');
+}
+
 1;
 
