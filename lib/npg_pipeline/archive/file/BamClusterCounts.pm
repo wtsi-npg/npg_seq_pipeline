@@ -38,11 +38,7 @@ npg_pipeline::archive::file::BamClusterCounts
       verbose              => 1, # use if you want logging of the commands sent to LSF
     );
 
-    my $arg_refs = {
-      required_job_completion  => q{-w'done(123) && done(321)'},
-    }
-
-    @job_ids = $oClusterCounts->launch($arg_refs);
+    @job_ids = $oClusterCounts->launch();
   } or do {
     # your error handling here
   };
@@ -71,19 +67,15 @@ Method launches lsf job commands and returns an array of job ids retrieved
 =cut
 
 sub launch {
-  my ( $self, $arg_refs ) = @_;
-
-  my @job_ids;
+  my ( $self ) = @_;
 
   my @positions = $self->positions();
   if ( ! scalar @positions ) {
     $self->info(q{no positions found, not submitting any jobs});
-    return @job_ids;
+    return ();
   }
 
-  $arg_refs->{array_string} = npg_pipeline::lsf_job->create_array_string( @positions );
-
-  push @job_ids, $self->submit_bsub_command( $self->_generate_bsub_command( $arg_refs ) );
+  my @job_ids = $self->submit_bsub_command($self->_generate_bsub_command());
 
   return @job_ids;
 }
@@ -342,12 +334,11 @@ sub _populate_spatial_filter_counts{
 
 # generates the bsub command
 sub _generate_bsub_command {
-  my ($self, $arg_refs) = @_;
+  my ($self) = @_;
 
-  my $array_string = $arg_refs->{array_string};
-  my $required_job_completion = $arg_refs->{required_job_completion} || q{};
   my $timestamp = $self->timestamp();
   my $id_run = $self->id_run();
+  my $array_string = npg_pipeline::lsf_job->create_array_string($self->positions());
 
   my $job_name = $CLUSTER_COUNTS_SCRIPT . q{_} . $id_run . q{_} . $timestamp;
 
@@ -357,7 +348,7 @@ sub _generate_bsub_command {
 
   $job_name = q{'} . $job_name . $array_string . q{'};
 
-  my $job_sub = q{bsub -q } . $self->lsf_queue() . qq{ $required_job_completion -J $job_name -o $outfile '};
+  my $job_sub = q{bsub -q } . $self->lsf_queue() . qq{ -J $job_name -o $outfile '};
   $job_sub .= $CLUSTER_COUNTS_SCRIPT;
   $job_sub .= q{ --id_run=} . $id_run;
   $job_sub .= q{ --position=}  . $self->lsb_jobindex();
@@ -450,6 +441,8 @@ __END__
 
 =item XML::LibXML
 
+=item npg_qc::autoqc::qc_store
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -462,7 +455,7 @@ Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

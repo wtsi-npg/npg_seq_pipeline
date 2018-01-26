@@ -27,17 +27,13 @@ my $pbcal_path = q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Busta
   } q{fq_loader created ok};
   isa_ok( $fq_loader, q{npg_pipeline::archive::qc::fastqcheck_loader}, q{$fq_loader} );
 
-  my $arg_refs = {
-    required_job_completion => q{-w'done(123) && done(321)'},
-  };
-
   my @jids;
-  lives_ok { @jids = $fq_loader->submit_to_lsf($arg_refs); } q{no croak submitting job to lsf};
+  lives_ok { @jids = $fq_loader->submit_to_lsf(); } q{no croak submitting job to lsf};
 
   is( scalar @jids, 1, q{1 job id returned} );
 
-  my $command = $util->drop_temp_part_from_paths( $fq_loader->_generate_bsub_command($arg_refs) );
-  my $expected_cmd = qq{bsub -q lowload -w'done(123) && done(321)' -J fastqcheck_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -o $pbcal_path/log/fastqcheck_loader_1234_20090709-123456.out 'npg_qc_save_files.pl --path=$pbcal_path/archive --path=$pbcal_path/archive/lane1 --path=$pbcal_path/archive/lane2 --path=$pbcal_path/archive/lane3 --path=$pbcal_path/archive/lane4 --path=$pbcal_path/archive/lane5 --path=$pbcal_path/archive/lane6 --path=$pbcal_path/archive/lane7'};
+  my $command = $util->drop_temp_part_from_paths( $fq_loader->_generate_bsub_command() );
+  my $expected_cmd = qq{bsub -q lowload -J fastqcheck_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -o $pbcal_path/log/fastqcheck_loader_1234_20090709-123456.out 'npg_qc_save_files.pl --path=$pbcal_path/archive --path=$pbcal_path/archive/lane1 --path=$pbcal_path/archive/lane2 --path=$pbcal_path/archive/lane3 --path=$pbcal_path/archive/lane4 --path=$pbcal_path/archive/lane5 --path=$pbcal_path/archive/lane6 --path=$pbcal_path/archive/lane7'};
   is( $command, $expected_cmd, q{generated bsub command is correct} );
 }
 
@@ -53,16 +49,12 @@ my $pbcal_path = q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Busta
     });
   } q{fq_loader created ok};
 
-  my $arg_refs = {
-    required_job_completion => q{-w'done(123) && done(321)'},
-  };
-
   my @jids;
-  lives_ok { @jids = $fq_loader->submit_to_lsf($arg_refs); } q{no croak submitting job to lsf};
+  lives_ok { @jids = $fq_loader->submit_to_lsf(); } q{no croak submitting job to lsf};
   is( scalar @jids, 1, q{1 job id returned} );
 
-  my $command = $util->drop_temp_part_from_paths( $fq_loader->_generate_bsub_command($arg_refs) );
-  my $expected_cmd = qq{bsub -q lowload -w'done(123) && done(321)' -J fastqcheck_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -o $pbcal_path/log/fastqcheck_loader_1234_20090709-123456.out 'npg_qc_save_files.pl --path=$pbcal_path/archive'};
+  my $command = $util->drop_temp_part_from_paths( $fq_loader->_generate_bsub_command() );
+  my $expected_cmd = qq{bsub -q lowload -J fastqcheck_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -o $pbcal_path/log/fastqcheck_loader_1234_20090709-123456.out 'npg_qc_save_files.pl --path=$pbcal_path/archive'};
   is( $command, $expected_cmd, q{generated bsub command is correct} );
 }
 

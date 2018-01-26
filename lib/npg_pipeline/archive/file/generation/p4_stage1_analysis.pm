@@ -23,7 +23,7 @@ Readonly::Scalar my $MEMORY                       => q{12000}; # memory in megab
 Readonly::Scalar my $FS_RESOURCE                  => 4; # LSF resource counter to control access to staging area file system
 
 sub generate {
-  my ( $self, $arg_refs ) = @_;
+  my ( $self ) = @_;
 
   $self->info(q{Creating Jobs to run P4 stage1 analysis for run },
               $self->id_run);
@@ -49,11 +49,11 @@ sub generate {
         verbose      => $self->verbose
       )->generate();
     }
-    my $bsub_cmd = $self->_generate_command_params($arg_refs, $alims->{$p}, $tag_list_file);
+    my $bsub_cmd = $self->_generate_command_params($alims->{$p}, $tag_list_file);
   }
 
   my $job_id = $self->submit_bsub_command(
-    $self->_command2submit($arg_refs->{required_job_completion})
+    $self->_command2submit()
   );
 
   $self->_save_arguments($job_id);
@@ -62,9 +62,8 @@ sub generate {
 }
 
 sub _command2submit {
-  my ($self, $required_job_completion) = @_;
+  my ($self) = @_;
 
-  $required_job_completion ||= q{};
   my $outfile = join q{/} , $self->make_log_dir($self->bam_basecall_path), $self->job_name_root . q{.%I.%J.out};
   my @job_indices = sort {$a <=> $b} keys %{$self->_job_args->{_param_vals}};
   my $job_name = q{'} . $self->job_name_root . npg_pipeline::lsf_job->create_array_string(@job_indices) . q{'};
@@ -74,7 +73,7 @@ sub _command2submit {
     } ) );
   return  q{bsub -q } . $self->lsf_queue()
     .  q{ } . $self->ref_adapter_pre_exec_string()
-    . qq{ $resources $required_job_completion -J $job_name -o $outfile}
+    . qq{ $resources -J $job_name -o $outfile}
     .  q{ 'perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"'}
     .  q{ }.(join q[/],$self->bam_basecall_path, $self->job_name_root).q{_$}.q{LSB_JOBID}
     .  q{ $}.q{LSB_JOBINDEX'} ;
@@ -243,7 +242,7 @@ sub _get_index_lengths {
 #  analysis param_vals file will be generated. Generate the vtfp/viv commands using this param_vals file.
 #########################################################################################################
 sub _generate_command_params {
-  my ($self, $arg_refs, $lane_lims, $tag_list_file) = @_;
+  my ($self, $lane_lims, $tag_list_file) = @_;
   my %p4_params = (
                     samtools_executable => q{samtools1},
                     bwa_executable => q{bwa0_6}, # be sure that the version of bwa that is picked up is consistent with the phiX reference used for alignment
@@ -282,8 +281,6 @@ sub _generate_command_params {
     MAX_NO_CALLS => q[bid_max_no_calls],
     CONVERT_LOW_QUALITY_TO_NO_CALL => q[bid_convert_low_quality_to_no_call],
   );
-
-  my $required_job_completion = $arg_refs->{required_job_completion};
 
   my $id_run             = $self->id_run();
   my $position = $lane_lims->position;
@@ -595,9 +592,7 @@ Module which knows how to construct and submit the command line to LSF for creat
 
 =head2 generate - generates the bsub jobs and submits them for creating the bam files, returning LSF job ID for an array of jobs.
 
-  my $job_id = $oAfgfq->generate({
-    required_job_completion} => q{-w (123 && 321)};
-  });
+  my @job_ids = $oAfgfq->generate();
 
 =head1 DIAGNOSTICS
 
@@ -641,7 +636,7 @@ Kevin Lewis
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Limited
+Copyright (C) 2018 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

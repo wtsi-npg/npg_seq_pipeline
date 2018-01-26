@@ -33,10 +33,8 @@ upload all archival files using the samplesheet LIMS driver
 =cut
 
 sub archive_to_irods_samplesheet {
-  my ($self, $required_job_completion) = @_;
-
-  return $self->_archive_to_irods($required_job_completion,
-                                  lims_driver_type => 'samplesheet');
+  my $self = shift;
+  return $self->_archive_to_irods(lims_driver_type => 'samplesheet');
 }
 
 =head2 archive_to_irods_ml_warehouse
@@ -46,14 +44,12 @@ upload all archival files using the ml_warehouse LIMS driver
 =cut
 
 sub archive_to_irods_ml_warehouse {
-  my ($self, $required_job_completion) = @_;
-
-  return $self->_archive_to_irods($required_job_completion,
-                                  lims_driver_type => 'ml_warehouse_fc_cache');
+  my $self = shift;
+  return $self->_archive_to_irods(lims_driver_type => 'ml_warehouse_fc_cache');
 }
 
 sub _archive_to_irods {
-  my ($self, $required_job_completion, @extra_to_irods_attributes) = @_;
+  my ($self, @extra_to_irods_attributes) = @_;
 
   if ($self->no_irods_archival) {
     $self->info(q{Archival to iRODS is switched off.});
@@ -66,9 +62,7 @@ sub _archive_to_irods {
 
   my $handler = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::to_irods},
     {@extra_to_irods_attributes});
-  my @job_ids = $handler->submit_to_lsf({
-    required_job_completion => $required_job_completion
-  });
+  my @job_ids = $handler->submit_to_lsf();
   return @job_ids;
 }
 
@@ -80,16 +74,13 @@ upload all log files to irods
 =cut
 
 sub archive_logs {
-  my ($self, @args) = @_;
+  my $self = shift;
   if ($self->no_irods_archival) {
     $self->warn(q{Archival to iRODS is switched off.});
     return ();
   }
-  my $required_job_completion = shift @args;
   my $ats = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::logs});
-  my @job_ids = $ats->submit_to_lsf({
-    required_job_completion => $required_job_completion,
-  });
+  my @job_ids = $ats->submit_to_lsf();
   return @job_ids;
 }
 
@@ -100,12 +91,9 @@ upload illumina analysis qc data
 =cut
 
 sub upload_illumina_analysis_to_qc_database {
-  my ($self, @args) = @_;
-  my $required_job_completion = shift @args;
+  my $self = shift;
   my $aia = $self->new_with_cloned_attributes(q{npg_pipeline::archive::qc::illumina_analysis});
-  my @job_ids = $aia->submit_to_lsf({
-    required_job_completion => $required_job_completion,
-  });
+  my @job_ids = $aia->submit_to_lsf();
   return @job_ids;
 }
 
@@ -116,12 +104,9 @@ upload fastqcheck files to the qc database
 =cut
 
 sub upload_fastqcheck_to_qc_database {
-  my ($self, @args) = @_;
-  my $required_job_completion = shift @args;
+  my $self = shift;
   my $aia = $self->new_with_cloned_attributes(q{npg_pipeline::archive::qc::fastqcheck_loader});
-  my @job_ids = $aia->submit_to_lsf({
-    required_job_completion => $required_job_completion,
-  });
+  my @job_ids = $aia->submit_to_lsf();
   return @job_ids;
 }
 
@@ -132,12 +117,9 @@ upload internal auto_qc data
 =cut
 
 sub upload_auto_qc_to_qc_database {
-  my ($self, @args) = @_;
-  my $required_job_completion = shift @args;
+  my $self = shift;
   my $aaq = $self->new_with_cloned_attributes(q{npg_pipeline::archive::qc::auto_qc});
-  my @job_ids = $aaq->submit_to_lsf({
-    required_job_completion => $required_job_completion,
-  });
+  my @job_ids = $aaq->submit_to_lsf();
   return @job_ids;
 }
 
@@ -147,13 +129,13 @@ Updates run data in the npg tables of the warehouse.
 
 =cut
 sub update_warehouse {
-  my ($self, @args) = @_;
+  my ($self, $flag) = @_;
   if ($self->no_warehouse_update) {
     $self->warn(q{Update to warehouse is switched off.});
     return ();
   }
   return $self->submit_bsub_command(
-    $self->_update_warehouse_command('warehouse_loader', @args));
+    $self->_update_warehouse_command('warehouse_loader', $flag));
 }
 
 =head2 update_warehouse_post_qc_complete
@@ -163,9 +145,8 @@ Runs when the runfolder is moved to the outgoing directory.
 
 =cut
 sub update_warehouse_post_qc_complete {
-  my ($self, @args) = @_;
-  push @args, {'post_qc_complete' => 1};
-  return $self->update_warehouse(@args);
+  my $self = shift;
+  return $self->update_warehouse('post_qc_complete');
 }
 
 =head2 update_ml_warehouse
@@ -174,13 +155,13 @@ Updates run data in the npg tables of the ml_warehouse.
 
 =cut
 sub update_ml_warehouse {
-  my ($self, @args) = @_;
+  my ($self, $flag) = @_;
   if ($self->no_warehouse_update) {
     $self->warn(q{Update to warehouse is switched off.});
     return ();
   }
   return $self->submit_bsub_command(
-    $self->_update_warehouse_command('npg_runs2mlwarehouse', @args));
+    $self->_update_warehouse_command('npg_runs2mlwarehouse', $flag));
 }
 
 =head2 update_ml_warehouse_post_qc_complete
@@ -190,19 +171,14 @@ Runs when the runfolder is moved to the outgoing directory.
 
 =cut
 sub update_ml_warehouse_post_qc_complete {
-  my ($self, @args) = @_;
-  push @args, {'post_qc_complete' => 1};
-  return $self->update_ml_warehouse(@args);
+  my $self = shift;
+  return $self->update_ml_warehouse('post_qc_complete');
 }
 
 sub _update_warehouse_command {
-  my ($self, $loader_name, @args) = @_;
+  my ($self, $loader_name, $post_qc_complete) = @_;
 
-  my $required_job_completion = shift @args;
-  my $option = pop @args;
-  my $post_qc_complete = $option and (ref $option eq 'HASH') and $option->{'post_qc_complete'} ? 1 : 0;
   my $id_run = $self->id_run;
-
   my $command = qq{$loader_name --verbose --id_run $id_run};
   if ($loader_name eq 'warehouse_loader') {
     $command .= q{ --lims_driver_type };
@@ -218,8 +194,8 @@ sub _update_warehouse_command {
   }
   my $out = join q{_}, $job_name, $self->timestamp . q{.out};
   $out =  File::Spec->catfile($path, $out);
-  $required_job_completion ||= q[];
-  return q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name -o $out $prereq '$command'};
+
+  return q{bsub -q } . $self->lowload_lsf_queue() . qq{ -J $job_name -o $out $prereq '$command'};
 }
 
 =head2 copy_interop_files_to_irods
@@ -228,14 +204,12 @@ Copy the copy_interop_files files to iRODS
 
 =cut
 sub copy_interop_files_to_irods {
-  my ($self, @args) = @_;
-  my $required_job_completion = shift @args;
-  my $command = $self->_interop_command($required_job_completion);
-  return $self->submit_bsub_command($command);
+  my $self = shift;
+  return $self->submit_bsub_command($self->_interop_command());
 }
 
 sub _interop_command {
-  my ($self, $required_job_completion) = @_;
+  my $self = shift;
   my $id_run = $self->id_run;
   my $command = "irods_interop_loader.pl --id_run $id_run --runfolder_path ".$self->runfolder_path();
   my $job_name = 'interop_' . $id_run . '_' . $self->pipeline_name;
@@ -243,9 +217,9 @@ sub _interop_command {
   $out =  File::Spec->catfile($self->make_log_dir( $self->runfolder_path()), $out );
   my $resources = $self->fs_resource_string( {
                    counter_slots_per_job => 1,
-                   seq_irods             => $self->general_values_conf()->{default_lsf_irods_resource},
+                   seq_irods             => $self->general_values_conf()->{'default_lsf_irods_resource'},
                                              } );
-  return q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name $resources -o $out '$command'};
+  return q{bsub -q } . $self->lowload_lsf_queue() . qq{ -J $job_name $resources -o $out '$command'};
 }
 
 no Moose;

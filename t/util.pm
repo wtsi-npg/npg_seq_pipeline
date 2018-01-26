@@ -16,8 +16,15 @@ has q{temp_directory} => (
   lazy_build => 1,
 );
 sub _build_temp_directory {
-  return tempdir(CLEANUP => 1);
+  my $self = shift;
+  my $clean = $self->clean_temp_directory ? 1 : 0;
+  return tempdir(CLEANUP => $clean);
 }
+
+has q{clean_temp_directory} => (
+  isa => q{Bool},
+  is => q{ro},
+);
 
 ###############
 # path setups

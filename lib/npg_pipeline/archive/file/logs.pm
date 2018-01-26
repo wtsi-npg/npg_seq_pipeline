@@ -10,21 +10,19 @@ our $VERSION = '0';
 Readonly::Scalar my $LOG_PUBLISHER_SCRIPT_NAME => 'npg_publish_illumina_logs.pl';
 
 sub submit_to_lsf {
-  my ($self, $arg_refs) = @_;
-  my $job_sub = $self->_generate_bsub_command($arg_refs);
-  my $job_id = $self->submit_bsub_command($job_sub);
+  my ($self) = @_;
+  my $job_id = $self->submit_bsub_command($self->_generate_bsub_command());
   return ($job_id);
 }
 
 sub _generate_bsub_command {
-  my ($self, $arg_refs) = @_;
+  my ($self) = @_;
 
-  my $required_job_completion = $arg_refs->{'required_job_completion'};
   my $job_name = join q{_}, $LOG_PUBLISHER_SCRIPT_NAME, $self->id_run(), $self->timestamp();
 
   my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
   $location_of_logs = $self->path_in_outgoing($location_of_logs);
-  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name };
+  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ -J $job_name };
 
   $bsub_command .=  ( $self->fs_resource_string( {
     counter_slots_per_job => 1,

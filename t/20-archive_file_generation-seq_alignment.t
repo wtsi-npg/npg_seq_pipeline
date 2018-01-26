@@ -178,11 +178,10 @@ subtest 'test 1' => sub {
 
   is ($rna_gen->_job_args->{'4000'}, $args->{'4000'}, 'correct tag 0 args generated');
 
-  my $required_job_completion = 55;
   my $mem = 32000;
-  my $expected = qq{bsub -q srpipeline -E 'npg_pipeline_preexec_references --repository $dir' -R 'select[mem>$mem] rusage[mem=$mem,nfs-sf3=4]' -M$mem -R 'span[hosts=1]'}.qq{ -n12,16 $required_job_completion -J 'seq_alignment_12597_2014[40000,40003]' -o $bc_path/archive/log/seq_alignment_12597_2014.%I.%J.out }.q('perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"' ) . $bc_path . q{/seq_alignment_12597_2014_$LSB_JOBID $LSB_JOBINDEX'}; 
+  my $expected = qq{bsub -q srpipeline -E 'npg_pipeline_preexec_references --repository $dir' -R 'select[mem>$mem] rusage[mem=$mem,nfs-sf3=4]' -M$mem -R 'span[hosts=1]'}.qq{ -n12,16 -J 'seq_alignment_12597_2014[40000,40003]' -o $bc_path/archive/log/seq_alignment_12597_2014.%I.%J.out }.q('perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"' ) . $bc_path . q{/seq_alignment_12597_2014_$LSB_JOBID $LSB_JOBINDEX'}; 
 
-  is($rna_gen->_command2submit($required_job_completion), $expected, 'command to submit is correct');
+  is($rna_gen->_command2submit(), $expected, 'command to submit is correct');
 
 
   my $fname;
@@ -324,10 +323,9 @@ subtest 'test 2' => sub {
   # lane 7 to be aligned with STAR and thus requires more memory
   $l = st::api::lims->new(id_run => 17550, position => 7);
   my $more_memory = '38000';
-  my $required_job_completion = 50;
   my $job_id;
   lives_ok {$job_id = $rna_gen->submit_bsub_command(
-     $rna_gen->_command2submit($required_job_completion)
+     $rna_gen->_command2submit()
      )} 'bsub command submitted successfully and';
   is ($job_id, 50, 'job id has expected value');
   my $mem_args->{'7'} = $more_memory;
@@ -336,7 +334,7 @@ subtest 'test 2' => sub {
   cmp_deeply ($rna_gen->_job_mem_reqs, $mem_args,
      'list of jobs to request more memory is correct');
   my $expected = qq{bmod -R 'select[mem>$more_memory] rusage[mem=$more_memory,nfs-sf3=4]' -M38000 -R 'span[hosts=1]' -n12,16 $job_id\[7\]}; 
-  is($rna_gen->_bmodcommand2submit($required_job_completion), $expected, 'bmod command to submit is correct');
+  is($rna_gen->_bmodcommand2submit($job_id), $expected, 'bmod command to submit is correct');
 
   ##HiSeq, run 17550, multiple organisms RNA libraries suitable for RNA analysis
   $runfolder = q{150910_HS40_17550_A_C75BCANXX};
@@ -374,7 +372,7 @@ subtest 'test 2' => sub {
   cmp_deeply ($rna_gen->_job_mem_reqs, $mem_args,
      'list of jobs to request more memory is correct');
   $expected = qq{bmod -R 'select[mem>$more_memory] rusage[mem=$more_memory,nfs-sf3=4]' -M38000 -R 'span[hosts=1]' -n12,16 $job_id\[30001,30003\]}; 
-  is($rna_gen->_bmodcommand2submit($required_job_completion), $expected, 'bmod command to submit is correct');
+  is($rna_gen->_bmodcommand2submit($job_id), $expected, 'bmod command to submit is correct');
 
   #test: reference genome selected has an unsupported 'analysis' defined
   $l = st::api::lims->new(id_run => 17550, position => 4, tag_index => 1);

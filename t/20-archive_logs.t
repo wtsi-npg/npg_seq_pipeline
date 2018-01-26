@@ -29,17 +29,13 @@ mkdir -p $analysis_runfolder_path;
   isa_ok($bam_irods , q{npg_pipeline::archive::file::logs}, q{object test});
   #create_analysis();
 
-  my $arg_refs = {
-    required_job_completion => q{-w'done(123) && done(321)'},
-  };
-
   my @jids;
-  lives_ok { @jids = $bam_irods->submit_to_lsf($arg_refs); } q{no croak submitting job to lsf};
+  lives_ok { @jids = $bam_irods->submit_to_lsf(); } q{no croak submitting job to lsf};
 
   is(scalar@jids, 1, q{only one job submitted});
 
-  my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command($arg_refs) );
-  my $expected_command = qq{bsub -q lowload -w'done(123) && done(321)' -J npg_publish_illumina_logs.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -o ${rfpath}/log/npg_publish_illumina_logs.pl_1234_20090709-123456.out -E "[ -d '$rfpath' ]" 'npg_publish_illumina_logs.pl --runfolder_path $rfpath --id_run 1234'};
+  my $bsub_command = $util->drop_temp_part_from_paths( $bam_irods ->_generate_bsub_command() );
+  my $expected_command = qq{bsub -q lowload -J npg_publish_illumina_logs.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -o ${rfpath}/log/npg_publish_illumina_logs.pl_1234_20090709-123456.out -E "[ -d '$rfpath' ]" 'npg_publish_illumina_logs.pl --runfolder_path $rfpath --id_run 1234'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct});
 }
 

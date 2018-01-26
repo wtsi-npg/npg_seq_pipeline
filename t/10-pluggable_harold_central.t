@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 21;
+use Test::More tests => 20;
 use Test::Exception;
 use Cwd qw/getcwd/;
 use List::MoreUtils qw/ any none /;
@@ -46,42 +46,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
     );
   } q{no croak creating new object};
   isa_ok($pipeline, $central);
-
-  my $expected_function_order = [ qw{
-    lsf_start
-    create_archive_directory
-    create_empty_fastq
-    create_summary_link_analysis
-    run_analysis_in_progress
-    lane_analysis_in_progress
-    illumina_basecall_stats
-    p4_stage1_analysis
-    update_warehouse
-    update_ml_warehouse
-    run_secondary_analysis_in_progress
-    bam2fastqcheck_and_cached_fastq
-    qc_qX_yield
-    qc_adapter
-    qc_insert_size
-    qc_sequence_error
-    qc_gc_fraction
-    qc_ref_match
-    seq_alignment
-    update_ml_warehouse
-    bam_cluster_counter_check
-    seqchksum_comparator
-    qc_gc_bias
-    qc_pulldown_metrics
-    qc_genotype
-    qc_verify_bam_id
-    qc_upstream_tags
-    run_analysis_complete
-    update_ml_warehouse
-    archive_to_irods_samplesheet
-    run_qc_review_pending
-    lsf_end
-  }];
-  is_deeply( $pipeline->function_order() , $expected_function_order, q{Function order correct} );
 }
 
 {
@@ -93,7 +57,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
     );
   } q{no croak on creation};
   $util->set_staging_analysis_area({with_latest_summary => 1});
-  is(join(q[ ], @{$pb->function_order()}), 'lsf_start qc_qX_yield qc_insert_size lsf_end',
+  is(join(q[ ], @{$pb->function_order()}), 'qc_qX_yield qc_insert_size',
     'function_order set on creation');
 }
 
@@ -120,10 +84,10 @@ my $runfolder_path = $util->analysis_runfolder_path();
   my $timestamp = $pb->timestamp;
   my $recalibrated_path = $pb->recalibrated_path();
   my $log_dir = $pb->make_log_dir( $recalibrated_path );
-  my $expected_command = q[bsub -q lowload 50 -J warehouse_loader_1234_central ] .
+  my $expected_command = q[bsub -q lowload -J warehouse_loader_1234_central ] .
     qq[-o $log_dir/warehouse_loader_1234_central_] . $timestamp . q[.out  ] .
     qq['warehouse_loader --verbose --id_run 1234 --lims_driver_type samplesheet'];
-  is($pb->_update_warehouse_command('warehouse_loader', (50)),
+  is($pb->_update_warehouse_command('warehouse_loader'),
     $expected_command, 'update warehouse command');
 }
 
@@ -149,8 +113,8 @@ mkdir $rf;
   ok(-d $status_path, 'status directory created');
   ok(-d "$status_path/log", 'log directory for status jobs created');
 
-  my $expected = qq[bsub -q srpipeline -R 'rusage[nfs_12=1]' -w'done(462362)' -J 'bam2fastqcheck_and_cached_fastq_1234_22-May[1-8]' -o $rf/BAM_basecalls_22-May/no_cal/log/bam2fastqcheck_and_cached_fastq_1234_22-May.%I.%J.out 'generate_cached_fastq --path $rf/BAM_basecalls_22-May/no_cal/archive --file $rf/BAM_basecalls_22-May/no_cal/1234_`echo ] . q[$LSB_JOBINDEX`.bam'];
-  is ($pb->_bam2fastqcheck_and_cached_fastq_command(q[-w'done(462362)']),
+  my $expected = qq[bsub -q srpipeline -R 'rusage[nfs_12=1]' -J 'bam2fastqcheck_and_cached_fastq_1234_22-May[1-8]' -o $rf/BAM_basecalls_22-May/no_cal/log/bam2fastqcheck_and_cached_fastq_1234_22-May.%I.%J.out 'generate_cached_fastq --path $rf/BAM_basecalls_22-May/no_cal/archive --file $rf/BAM_basecalls_22-May/no_cal/1234_`echo ] . q[$LSB_JOBINDEX`.bam'];
+  is ($pb->_bam2fastqcheck_and_cached_fastq_command(),
     $expected, 'command for bam2fastqcheck_and_cached_fastq');
   my @ids = $pb->bam2fastqcheck_and_cached_fastq();
   is (scalar @ids, 1, 'one bam2fastqcheck_and_cached_fastq job submitted');

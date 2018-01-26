@@ -40,18 +40,6 @@ has q{no_summary_link} => (
   documentation => q{Turn off creating a Latest_Summary link},
 );
 
-=head2 no_fix_config_files
-
-flag option to request that config files are not checked and fixed
-
-=cut
-
-has q{no_fix_config_files} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{Request that config files are not checked and fixed (where fixing is appropriate)},
-);
-
 =head2 no_array_cpu_limit
 
 flag option to allow job arrays to flood, if able, the farm

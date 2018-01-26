@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - removed unused module for fixing Illumina config files
+ - removed unused module for LSF job creation for tag deplexing -
+   this is now done within p4 stage 1
+ - capture dependencies between pipeline steps in a directed acyclic graph
  - Handle dual indexes
  - remove remaining broken provisions for xml LIMs driver 
  - use the new log publisher

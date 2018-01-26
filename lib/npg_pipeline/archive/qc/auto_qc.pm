@@ -9,8 +9,8 @@ extends qw{npg_pipeline::base};
 our $VERSION = '0';
 
 sub submit_to_lsf {
-  my ($self, $arg_refs) = @_;
-  my $job_sub = $self->_generate_bsub_command($arg_refs);
+  my $self = shift;
+  my $job_sub = $self->_generate_bsub_command();
   my $job_id = $self->submit_bsub_command($job_sub);
   return ($job_id);
 }
@@ -18,9 +18,8 @@ sub submit_to_lsf {
 # private methods
 
 sub _generate_bsub_command {
-  my ($self, $arg_refs) = @_;
+  my $self = shift;
 
-  my $required_job_completion = $arg_refs->{required_job_completion};
   my $timestamp = $self->timestamp();
 
   my $job_name = q{autoqc_loader_} . $self->id_run() . q{_} . $timestamp;
@@ -37,7 +36,7 @@ sub _generate_bsub_command {
     }
   }
 
-  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name };
+  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ -J $job_name };
   $bsub_command .=  ( $self->fs_resource_string( {
     counter_slots_per_job => 1,
   } ) ) . q{ };
@@ -68,9 +67,9 @@ npg_pipeline::archive::qc::auto_qc
 
 =head1 SYNOPSIS
 
-  my $aaq = npg_pipeline::archive::qc::auto_qc->new({
+  my $aaq = npg_pipeline::archive::qc::auto_qc->new(
     run_folder => <run_folder>,
-  });
+  );
 
 =head1 DESCRIPTION
 
@@ -78,10 +77,7 @@ npg_pipeline::archive::qc::auto_qc
 
 =head2 submit_to_lsf - handles calling out to create the bsub command and submits it, returning the job ids
 
-  my @job_ids = $aaq->submit_to_lsf({
-    required_job_completion => <lsf job requirement string>,
-    timestamp => <timestamp string>,
-  });
+  my @job_ids = $aaq->submit_to_lsf();
 
 =head1 DIAGNOSTICS
 
@@ -109,7 +105,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

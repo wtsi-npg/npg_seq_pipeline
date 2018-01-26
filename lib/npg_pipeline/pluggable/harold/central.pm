@@ -97,28 +97,14 @@ Use Illumina tools to generate the (per run) BustardSummary and IVC reports (fro
 =cut
 
 sub illumina_basecall_stats {
-  my ($self, @args) = @_;
+  my $self = shift;
 
   if ( $self->is_hiseqx_run ) {
     $self->info(q{HiSeqX sequencing instrument, illumina_basecall_stats will not be run});
     return ();
   }
-  my $required_job_completion = shift @args;
   return $self->new_with_cloned_attributes(q{npg_pipeline::analysis::illumina_basecall_stats})
-    ->generate({required_job_completion => $required_job_completion,});
-}
-
-=head2 split_bam_by_tag
-
-split lane bam file by indexing tag, marked by read group id
-
-=cut
-
-sub split_bam_by_tag {
-  my ($self, @args) = @_;
-  my $required_job_completion = shift @args;
-  return $self->new_with_cloned_attributes( q{npg_pipeline::analysis::split_bam_by_tag} )
-           ->generate({required_job_completion => $required_job_completion,});
+              ->generate();
 }
 
 =head2 create_archive_directory
@@ -130,7 +116,7 @@ and lane and lane qc directories if the lane is multiplexed.
 =cut
 
 sub create_archive_directory {
-  my ($self, @args) = @_;
+  my $self = shift;
   $self->new_with_cloned_attributes(q{npg_pipeline::archive::folder::generation})->create_dir();
   return ();
 }
@@ -143,10 +129,9 @@ for stage 1 analysis using p4
 =cut
 
 sub p4_stage1_analysis {
-  my ($self, @args) = @_;
-  my $required_job_completion = shift @args;
+  my $self = shift;
   return $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::generation::p4_stage1_analysis})
-           ->generate({required_job_completion => $required_job_completion,});
+              ->generate();
 }
 
 =head2 seq_alignment
@@ -156,10 +141,9 @@ for each plex or a lane(non-indexed lane), do suitable alignment for data
 =cut
 
 sub seq_alignment {
-  my ($self, @args) = @_;
-  my $required_job_completion = shift @args;
+  my $self = shift;
   return $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::generation::seq_alignment})
-           ->generate({required_job_completion => $required_job_completion,});
+              ->generate();
 }
 
 =head2 bam_cluster_counter_check
@@ -169,9 +153,9 @@ For each lane, job submitted which checks that cluster counts are what they are 
 =cut
 
 sub bam_cluster_counter_check {
-  my ( $self, @args ) = @_;
-  my $arg_refs = {required_job_completion => shift @args,};
-  return $self->new_with_cloned_attributes( q{npg_pipeline::archive::file::BamClusterCounts} )->launch( $arg_refs );
+  my $self = shift;
+  return $self->new_with_cloned_attributes( q{npg_pipeline::archive::file::BamClusterCounts} )
+              ->launch();
 }
 
 =head2 bam2fastqcheck_and_cached_fastq
@@ -182,17 +166,15 @@ Takes the lane bam file as input.
 =cut
 
 sub bam2fastqcheck_and_cached_fastq {
-  my ($self, @args) = @_;
-  my $required_job_completion = shift @args;
+  my $self = shift;
   my $id = $self->submit_bsub_command(
-    $self->_bam2fastqcheck_and_cached_fastq_command($required_job_completion) );
+    $self->_bam2fastqcheck_and_cached_fastq_command() );
   return ($id);
 }
 
 sub _bam2fastqcheck_and_cached_fastq_command {
-  my ($self, $required_job_completion) = @_;
+  my $self = shift;
 
-  $required_job_completion ||= q{};
   my $timestamp = $self->timestamp();
   my $id_run = $self->id_run();
 
@@ -204,7 +186,7 @@ sub _bam2fastqcheck_and_cached_fastq_command {
 
   my $job_sub = q{bsub -q } . $self->lsf_queue() . q{ } .
                 $self->fs_resource_string( {counter_slots_per_job => 1,} ) .
-                qq{ $required_job_completion -J $job_name -o $out };
+                qq{ -J $job_name -o $out };
   $job_sub .= q{'} .
               q{generate_cached_fastq --path } . $self->archive_path() .
               q{ --file } . $self->recalibrated_path() . q{/} . $id_run . q{_} . $self->lsb_jobindex() . q{.bam} .
@@ -221,10 +203,11 @@ Checks that the .seqchksum created in the illumin2bam step matches one created f
 =cut
 
 sub seqchksum_comparator {
-  my ( $self, @args ) = @_;
-  my $arg_refs = {required_job_completion => shift @args,};
-  return $self->new_with_cloned_attributes( q{npg_pipeline::archive::file::generation::seqchksum_comparator} )->launch( $arg_refs );
+  my $self = shift;
+  return $self->new_with_cloned_attributes( q{npg_pipeline::archive::file::generation::seqchksum_comparator} )
+              ->launch();
 }
+
 no Moose;
 
 __PACKAGE__->meta->make_immutable;
@@ -243,7 +226,7 @@ __END__
 
 =item Carp
 
-=item English -no_match_vars
+=item English
 
 =item File::Spec
 
@@ -261,7 +244,7 @@ Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2017 Genome Research Limited
+Copyright (C) 2018 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

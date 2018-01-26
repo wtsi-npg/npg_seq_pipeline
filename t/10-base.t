@@ -57,7 +57,7 @@ use_ok(q{npg_pipeline::base});
 {
   my $base = npg_pipeline::base->new();
 
-  my $path = "${config_dir}/function_list_base.yml";
+  my $path = "${config_dir}/function_list_base.json";
 
   throws_ok { $base->function_list }
     qr/File $path does not exist or is not readable/,
@@ -71,23 +71,23 @@ use_ok(q{npg_pipeline::base});
   $path =~ s/function_list_base/function_list_central/;
   $base = npg_pipeline::base->new(function_list => $path);
   is( $base->function_list, $path, 'function list path as given');
-  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
+  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into a hash');
   
-  $base = npg_pipeline::base->new(function_list => 'data/config_files/function_list_central.yml');
+  $base = npg_pipeline::base->new(function_list => 'data/config_files/function_list_central.json');
   is( $base->function_list, $path, 'function list absolute path from relative path');
-  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
+  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
 
   $base = npg_pipeline::base->new(function_list => 'central');
   is( $base->function_list, $path, 'function list absolute path from list name');
-  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
+  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
 
   $path =~ s/function_list_central/function_list_post_qc_review/;
 
   $base = npg_pipeline::base->new(function_list => 'post_qc_review');
   is( $base->function_list, $path, 'function list absolute path from list name');
-  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
+  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
 
-  my $test_path = '/some/test/path.yml';
+  my $test_path = '/some/test/path.json';
   $base = npg_pipeline::base->new(function_list => $test_path);
   throws_ok { $base->function_list }
     qr/Bad function list name: $test_path/,
@@ -95,11 +95,11 @@ use_ok(q{npg_pipeline::base});
   
   my $test_config_dir = tempdir( CLEANUP => 1 );
   cp $path, $test_config_dir;
-  $path = $test_config_dir . '/function_list_post_qc_review.yml';
+  $path = $test_config_dir . '/function_list_post_qc_review.json';
 
   $base = npg_pipeline::base->new(function_list => $path);
   is( $base->function_list, $path, 'function list absolute');
-  isa_ok( $base->function_list_conf(), q{ARRAY}, 'function list is read into an array');
+  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
 
   $base = npg_pipeline::base->new(
     conf_path     => $test_config_dir,
@@ -232,11 +232,11 @@ package main;
 
   $base = mytest::central->new(id_flowcell_lims => 3456, qc_run => 1);
   ok( !$base->is_qc_run(), 'looking on flowcell lims id: not qc run');
-  my $fl = "${config_dir}/function_list_central_qc_run.yml";
+  my $fl = "${config_dir}/function_list_central_qc_run.json";
   is( $base->function_list, $fl, 'qc function list');
   
   $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775');
-  my $path = "${config_dir}/function_list_base_qc_run.yml";
+  my $path = "${config_dir}/function_list_base_qc_run.json";
   throws_ok { $base->function_list }
     qr/File $path does not exist or is not readable/,
     'error when default function list does not exist';

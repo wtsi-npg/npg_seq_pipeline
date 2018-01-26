@@ -63,17 +63,14 @@ sub run_qc {
     }
   }
 
-  my $required_job_completion = $arg_refs->{'required_job_completion'};
-  $required_job_completion ||= q{};
-
   my @job_ids;
-  my $bsub_command = $self->_generate_bsub_command($required_job_completion);
+  my $bsub_command = $self->_generate_bsub_command();
   if ( $bsub_command ) {
     push @job_ids, $self->submit_bsub_command( $bsub_command );
   }
 
   if ( $self->is_indexed ) {
-    $bsub_command = $self->_generate_bsub_command($required_job_completion, 1 );
+    $bsub_command = $self->_generate_bsub_command( 1 );
     if ( $bsub_command ) {
       push @job_ids, $self->submit_bsub_command( $bsub_command );
     }
@@ -83,7 +80,7 @@ sub run_qc {
 }
 
 sub _generate_bsub_command {
-  my ($self, $required_job_completion, $indexed) = @_;
+  my ($self, $indexed) = @_;
 
   my $array_string = $self->_lsf_job_array($indexed);
   if (!$array_string) {
@@ -92,7 +89,6 @@ sub _generate_bsub_command {
 
   my $command = $self->_qc_command($indexed);
 
-  $required_job_completion ||= q{};
   my $timestamp = $self->timestamp();
   my $id_run = $self->id_run();
 
@@ -116,7 +112,7 @@ sub _generate_bsub_command {
 
   my $job_sub = q{bsub -q } . ( $self->qc_to_run() eq q[upstream_tags] ? $self->lowload_lsf_queue() : $self->lsf_queue() ) . q{ } .
     #lowload queue for upstream tags as it has qc and tracking db access
-    $self->_lsf_options($self->qc_to_run()) . qq{ $required_job_completion -J $job_name -o $outfile};
+    $self->_lsf_options($self->qc_to_run()) . qq{ -J $job_name -o $outfile};
   if ( $self->_check_uses_refrepos() || ($self->qc_to_run eq 'adapter') ) {
     $job_sub .= q{ } . $self->ref_adapter_pre_exec_string();
   }
@@ -257,7 +253,6 @@ npg_pipeline::archive::file::qc
     qc_to_run => q{test},
   );
   my $arg_refs = {
-    required_job_completion  => q{-w'done(123) && done(321)'},
     timestamp                => q{20090709-123456},
     id_run                   => 1234,
   }
@@ -309,7 +304,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Limited
+Copyright (C) 2018 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

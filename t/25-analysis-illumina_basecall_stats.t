@@ -52,18 +52,13 @@ use_ok(q{npg_pipeline::analysis::illumina_basecall_stats});
     })
   } q{create object ok};
 
-  my $arg_refs = {
-    timestamp => q{20091028-101635},
-    position => 1,
-    job_dependencies => q{-w 'done(1234) && done(4321)'},
-  };
   my $mem = 350;
   my $mem_limit = npg_pipeline::lsf_job->new(memory => $mem, memory_units =>'MB')->_scale_mem_limit();
-  my $expected_command = qq(bsub -q srpipeline -o $bam_basecall_path/log/basecall_stats_1234_20091028-101635.%J.out -J basecall_stats_1234_20091028-101635 -R 'select[mem>).$mem.q{] rusage[mem=}.$mem.q{,nfs_12=4]' -M} . $mem_limit . qq( -R 'span[hosts=1]' -n 4  " cd $bam_basecall_path && if [[ -f Makefile ]]; then echo Makefile already present 1>&2; else echo creating bcl2qseq Makefile 1>&2; ) . qq($tdir/setupBclToQseq.py -b $basecall_path -o $bam_basecall_path --overwrite; fi && make -j 4 Matrix Phasing && make -j 4 BustardSummary.x{s,m}l ");
-  is( $obj->_generate_command( $arg_refs ), $expected_command,
+  my $expected_command = qq(bsub -q srpipeline -o $bam_basecall_path/log/basecall_stats_1234_20091028-101635.%J.out -J basecall_stats_1234_20091028-101635 -R 'select[mem>).$mem.q{] rusage[mem=}.$mem.q{,nfs_12=4]' -M} . $mem_limit . qq( -R 'span[hosts=1]' -n 4 " cd $bam_basecall_path && if [[ -f Makefile ]]; then echo Makefile already present 1>&2; else echo creating bcl2qseq Makefile 1>&2; ) . qq($tdir/setupBclToQseq.py -b $basecall_path -o $bam_basecall_path --overwrite; fi && make -j 4 Matrix Phasing && make -j 4 BustardSummary.x{s,m}l ");
+  is( $obj->_generate_command(), $expected_command,
     q{Illumina basecalls stats generation bsub command is correct} );
 
-  my @job_ids = $obj->generate($arg_refs);
+  my @job_ids = $obj->generate();
   is( scalar @job_ids, 1, q{1 job ids, generate Illumina basecall stats} );
 }
 

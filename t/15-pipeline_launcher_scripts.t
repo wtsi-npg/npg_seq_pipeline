@@ -10,16 +10,13 @@ local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH}
 local $ENV{http_proxy} = 'http://wibble';
 local $ENV{no_proxy} = q[];
 
-my $util = t::util->new();
-
 my $curdir = cwd();
 my $bin = $curdir . q[/bin];
 
-# Script failures
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{/does/not/exist.csv};
 
-  my $util = t::util->new();
+  my $util = t::util->new(clean_temp_directory => 0);
   $util->set_rta_staging_analysis_area();
   my $tmp_dir = $util->temp_directory();
   local $ENV{TEST_DIR} = $tmp_dir;
@@ -42,7 +39,6 @@ my $bin = $curdir . q[/bin];
   'error when function does not exist');
 }
 
-# Script passes
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
   local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = q{t}; # no chache here

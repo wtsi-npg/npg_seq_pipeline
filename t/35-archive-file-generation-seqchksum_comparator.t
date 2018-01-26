@@ -46,14 +46,10 @@ my $archive_path = $recalibrated_path . q{/archive};
 
   isa_ok( $object, q{npg_pipeline::archive::file::generation::seqchksum_comparator}, q{$object} );
 
-  my $arg_refs = {
-    required_job_completion => q{-w'done(123) && done(321)'},
-  };
+  my $bsub_command = $util->drop_temp_part_from_paths( qq{bsub -q srpipeline -J 'npg_pipeline_seqchksum_comparator_1234_20100907-142417[1-2]' -o $archive_path/log/npg_pipeline_seqchksum_comparator_1234_20100907-142417.%I.%J.out 'npg_pipeline_seqchksum_comparator --id_run=1234} .q{ --lanes=`echo $LSB_JOBINDEX` --archive_path=} . qq{$archive_path --bam_basecall_path=$bam_basecall_path'} );
+  is( $util->drop_temp_part_from_paths( $object->_generate_bsub_command() ), $bsub_command, q{generated bsub command is correct} );
 
-  my $bsub_command = $util->drop_temp_part_from_paths( qq{bsub -q srpipeline -w'done(123) && done(321)' -J 'npg_pipeline_seqchksum_comparator_1234_20100907-142417[1-2]' -o $archive_path/log/npg_pipeline_seqchksum_comparator_1234_20100907-142417.%I.%J.out 'npg_pipeline_seqchksum_comparator --id_run=1234} .q{ --lanes=`echo $LSB_JOBINDEX` --archive_path=} . qq{$archive_path --bam_basecall_path=$bam_basecall_path'} );
-  is( $util->drop_temp_part_from_paths( $object->_generate_bsub_command( $arg_refs ) ), $bsub_command, q{generated bsub command is correct} );
-
-  my @jids = $object->launch( $arg_refs );
+  my @jids = $object->launch();
   is( scalar @jids, 1, q{1 job id returned} );
 
   throws_ok{$object->do_comparison()} qr/Cannot find/,
@@ -111,11 +107,7 @@ END1
     );
   } q{object ok};
 
-  my $arg_refs = {
-    required_job_completion => q{-w'done(123) && done(321)'},
-  };
-
-  my @jids = $object->launch( $arg_refs );
+  my @jids = $object->launch();
   is( scalar @jids, 1, q{1 job id returned} );
 
   lives_ok {
@@ -129,7 +121,7 @@ END1
     );
   } q{object ok};
 
-  lives_ok{$object->launch( $arg_refs )} q{Launching with no positions does not throw an exception};
+  lives_ok{$object->launch()} q{Launching with no positions does not throw an exception};
 }
 
 1;

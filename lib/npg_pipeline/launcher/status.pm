@@ -44,17 +44,15 @@ sub _command {
 }
 
 sub submit {
-  my ($self, $arg_refs) = @_;
-  my $cmd = $self->_generate_bsub_command($arg_refs->{required_job_completion});
-  return ($self->submit_bsub_command($cmd));
+  my ($self) = @_;
+  return ($self->submit_bsub_command($self->_generate_bsub_command()));
 }
 
 ###############
 # responsible for generating the bsub command to be executed
 sub _generate_bsub_command {
-  my ($self, $required_job_completion) = @_;
+  my ($self) = @_;
 
-  $required_job_completion ||= q[];
   my $timestamp = $self->timestamp();
   my $run_folder = $self->run_folder();
   my $status     = $self->status();
@@ -65,7 +63,7 @@ sub _generate_bsub_command {
   my $job_name = $self->lane_status_flag ? q{save_lane_status_} : q{save_run_status_};
   $job_name .= join q{_}, $id_run, $status_with_underscores, $timestamp;
 
-  my $bsub_command = qq{bsub $required_job_completion -J $job_name -q } . $self->small_lsf_queue() . q{ };
+  my $bsub_command = qq{bsub -J $job_name -q } . $self->small_lsf_queue() . q{ };
   $bsub_command   .=  q{-o } . $self->status_files_path . q{/log/} . qq{$job_name.out };
   $bsub_command   .=  q{'}   . $self->_command . q{'};
 
@@ -125,7 +123,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

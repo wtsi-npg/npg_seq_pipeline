@@ -2,30 +2,28 @@ package npg_pipeline::archive::qc::illumina_analysis;
 
 use Moose;
 use Carp;
-use English qw{-no_match_vars};
 
 extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
 
 sub submit_to_lsf {
-  my ($self, $arg_refs) = @_;
-  my $job_sub = $self->_generate_bsub_command($arg_refs);
+  my $self = shift;
+  my $job_sub = $self->_generate_bsub_command();
   my $job_id = $self->submit_bsub_command($job_sub);
   return ($job_id);
 }
 
 sub _generate_bsub_command {
-  my ($self, $arg_refs) = @_;
+  my $self = shift;
 
-  my $required_job_completion = $arg_refs->{required_job_completion};
   my $timestamp = $self->timestamp();
   my $job_name_prefix = q{illumina_analysis_loader};
 
   my $job_name = join q{_}, $job_name_prefix, $self->id_run() , $timestamp;
 
   my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
-  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue . qq{ $required_job_completion -J $job_name };
+  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue . qq{ -J $job_name };
   $bsub_command .=  ( $self->fs_resource_string( {
     counter_slots_per_job => 1,
   } ) ) . q{ };
@@ -71,10 +69,7 @@ npg_pipeline::archive::qc::illumina_analysis
 =head1 SUBROUTINES/METHODS
 
 =head2 submit_to_lsf - handles calling out to create the bsub command and submits it, returning the job ids
-
-  my @job_ids = $aia->submit_to_lsf({
-    required_job_completion => 'lsf job requirement string',
-  });
+  my @job_ids = $aia->submit_to_lsf();
 
 =head1 DIAGNOSTICS
 
@@ -88,8 +83,6 @@ npg_pipeline::archive::qc::illumina_analysis
 
 =item Carp
 
-=item English -no_match_vars
-
 =back
 
 =head1 INCOMPATIBILITIES
@@ -102,7 +95,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

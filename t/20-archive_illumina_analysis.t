@@ -40,16 +40,12 @@ sub create_analysis {
   isa_ok($aia, q{npg_pipeline::archive::qc::illumina_analysis}, q{$aia});
   $util->create_analysis();
 
-  my $arg_refs = {
-    required_job_completion => q{-w'done(123) && done(321)'},
-  };
-
   my @jids;
-  lives_ok { @jids = $aia->submit_to_lsf($arg_refs); } q{no croak submitting job to lsf};
+  lives_ok { @jids = $aia->submit_to_lsf(); } q{no croak submitting job to lsf};
   is(scalar@jids, 1, q{only one job submitted});
 
-  my $bsub_command = $util->drop_temp_part_from_paths( $aia->_generate_bsub_command( $arg_refs ) );
-  my $expected_command = qq{bsub -q lowload -w'done(123) && done(321)' -J illumina_analysis_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -E 'script_must_be_unique_runner -job_name="illumina_analysis_loader" -own_job_name="illumina_analysis_loader_1234_20090709-123456"' -o $nfs_pbcal/log/illumina_analysis_loader_1234_20090709-123456.out 'npg_qc_illumina_analysis_loader  --id_run 1234  --run_folder 123456_IL2_1234  --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls  --verbose'};
+  my $bsub_command = $util->drop_temp_part_from_paths( $aia->_generate_bsub_command() );
+  my $expected_command = qq{bsub -q lowload -J illumina_analysis_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -E 'script_must_be_unique_runner -job_name="illumina_analysis_loader" -own_job_name="illumina_analysis_loader_1234_20090709-123456"' -o $nfs_pbcal/log/illumina_analysis_loader_1234_20090709-123456.out 'npg_qc_illumina_analysis_loader  --id_run 1234  --run_folder 123456_IL2_1234  --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls  --verbose'};
 
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
@@ -64,12 +60,8 @@ sub create_analysis {
   );
   $util->create_analysis();
 
-  my $arg_refs = {
-    required_job_completion => q{-w'done(123) && done(321)'},
-  };
-
-  my $bsub_command = $util->drop_temp_part_from_paths( $aia->_generate_bsub_command( $arg_refs ) );
-  my $expected_command = qq{bsub -q lowload -w'done(123) && done(321)' -J illumina_analysis_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -E 'script_must_be_unique_runner -job_name="illumina_analysis_loader" -own_job_name="illumina_analysis_loader_1234_20090709-123456"' -o $nfs_pbcal/log/illumina_analysis_loader_1234_20090709-123456.out 'npg_qc_illumina_analysis_loader  --id_run 1234  --run_folder 123456_IL2_1234  --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --bam_basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls'};
+  my $bsub_command = $util->drop_temp_part_from_paths( $aia->_generate_bsub_command() );
+  my $expected_command = qq{bsub -q lowload -J illumina_analysis_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -E 'script_must_be_unique_runner -job_name="illumina_analysis_loader" -own_job_name="illumina_analysis_loader_1234_20090709-123456"' -o $nfs_pbcal/log/illumina_analysis_loader_1234_20090709-123456.out 'npg_qc_illumina_analysis_loader  --id_run 1234  --run_folder 123456_IL2_1234  --runfolder_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --bam_basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234  --basecall_path /nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 1;

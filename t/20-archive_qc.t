@@ -21,10 +21,6 @@ local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH}
 my $pbcal = q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal};
 my $recalibrated = $util->analysis_runfolder_path() . q{/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal};
 
-my $arg_refs = {};
-my $job_dep = q{-w'done(123) && done(321)'};
-$arg_refs->{'required_job_completion'}  = $job_dep;;
-
 {
    throws_ok {
     npg_pipeline::archive::file::qc->new(
@@ -49,11 +45,11 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   $util->create_analysis({qc_dir => 1});
 
   my @jids;
-  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  lives_ok { @jids = $aqc->run_qc(); } q{no croak $aqc->run_qc()};
   is(scalar@jids, 1, q{1 job id returned});
 
-  my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command($job_dep) );
-  my $expected_command = q{bsub -q srpipeline -R 'select[mem>1500] rusage[mem=1500,nfs_12=1]' -M1500 -R 'span[hosts=1]'  -n2 -w'done(123) && done(321)' -J 'qc_adapter_1234_20090709-123456[1-8]%64' -o } . $pbcal . q{/archive/qc/log/qc_adapter_1234_20090709-123456.%I.%J.out -E 'npg_pipeline_preexec_references' 'qc --check=adapter --id_run=1234 --file_type=bam --position=`echo $LSB_JOBINDEX` } . qq{--qc_in=$pbcal --qc_out=$pbcal/archive/qc'};
+  my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command() );
+  my $expected_command = q{bsub -q srpipeline -R 'select[mem>1500] rusage[mem=1500,nfs_12=1]' -M1500 -R 'span[hosts=1]'  -n2 -J 'qc_adapter_1234_20090709-123456[1-8]%64' -o } . $pbcal . q{/archive/qc/log/qc_adapter_1234_20090709-123456.%I.%J.out -E 'npg_pipeline_preexec_references' 'qc --check=adapter --id_run=1234 --file_type=bam --position=`echo $LSB_JOBINDEX` } . qq{--qc_in=$pbcal --qc_out=$pbcal/archive/qc'};
 
   is( $bsub_command, $expected_command, q{generated bsub command is correct});
 }
@@ -73,11 +69,11 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   $util->create_analysis({qc_dir => 1});
 
   my @jids;
-  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  lives_ok { @jids = $aqc->run_qc(); } q{no croak $aqc->run_qc()};
   is(scalar@jids, 1, q{1 job id returned});
 
   my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command() );
-  my $expected_command = q{bsub -q srpipeline -R 'rusage[nfs_12=1]'  -J 'qc_qX_yield_1234_20090709-123456[1-8]%64' -o } . $pbcal . q{/archive/qc/log/qc_qX_yield_1234_20090709-123456.%I.%J.out 'qc --check=qX_yield --id_run=1234 --position=`echo $LSB_JOBINDEX` } . qq{--qc_in=$pbcal/archive --qc_out=$pbcal/archive/qc'};
+  my $expected_command = q{bsub -q srpipeline -R 'rusage[nfs_12=1]' -J 'qc_qX_yield_1234_20090709-123456[1-8]%64' -o } . $pbcal . q{/archive/qc/log/qc_qX_yield_1234_20090709-123456.%I.%J.out 'qc --check=qX_yield --id_run=1234 --position=`echo $LSB_JOBINDEX` } . qq{--qc_in=$pbcal/archive --qc_out=$pbcal/archive/qc'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct});
 }
 
@@ -94,11 +90,11 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   $util->create_analysis({qc_dir => 1});
 
   my @jids;
-  lives_ok { @jids = $aqc->run_qc($arg_refs) } q{no croak $aqc->run_qc()};
+  lives_ok { @jids = $aqc->run_qc() } q{no croak $aqc->run_qc()};
   is(scalar @jids, 1, q{1 job id returned});
 
-  my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command($job_dep) );
-  my $expected_command = q{bsub -q srpipeline -R 'rusage[nfs_12=1]' -w'done(123) && done(321)' -J 'qc_qX_yield_1234_20090709-123456[4]%64' -o } . $pbcal . q{/archive/qc/log/qc_qX_yield_1234_20090709-123456.%I.%J.out 'qc --check=qX_yield --id_run=1234 --position=`echo $LSB_JOBINDEX` } . qq{--qc_in=$pbcal/archive --qc_out=$pbcal/archive/qc'};
+  my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command() );
+  my $expected_command = q{bsub -q srpipeline -R 'rusage[nfs_12=1]' -J 'qc_qX_yield_1234_20090709-123456[4]%64' -o } . $pbcal . q{/archive/qc/log/qc_qX_yield_1234_20090709-123456.%I.%J.out 'qc --check=qX_yield --id_run=1234 --position=`echo $LSB_JOBINDEX` } . qq{--qc_in=$pbcal/archive --qc_out=$pbcal/archive/qc'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct});
 }
 
@@ -117,7 +113,7 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   );
   is ($aqc->is_indexed, 1, 'run is indexed');
   my @jids;
-  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  lives_ok { @jids = $aqc->run_qc(); } q{no croak $aqc->run_qc()};
   is(scalar@jids, 1, q{1 job id returned}); # but the lane is not a pool
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
@@ -131,7 +127,7 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   );
 
   @jids = ();
-  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  lives_ok { @jids = $aqc->run_qc(); } q{no croak $aqc->run_qc()};
   is(scalar@jids, 2, q{2 job ids returned}); # the lane is a pool
 
   $aqc = npg_pipeline::archive::file::qc->new(
@@ -143,8 +139,8 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
       repository => 't/data/sequence',
   );
   my $indexed = 1;
-  my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command($job_dep, $indexed) );
-  my $expected_command = q{bsub -q srpipeline -R 'select[mem>6000] rusage[mem=6000,nfs_12=1]' -M6000 -w'done(123) && done(321)' -J 'qc_ref_match_1234_20090709-123456[80000,80154]%8' -o } . $pbcal . q{/archive/qc/log/qc_ref_match_1234_20090709-123456.%I.%J.out -E 'npg_pipeline_preexec_references --repository t/data/sequence' 'qc --check=ref_match --id_run=1234 --position=`echo $LSB_JOBINDEX/10000 | bc` --tag_index=`echo $LSB_JOBINDEX%10000 | bc` --qc_in=} . $pbcal . q{/archive/lane`echo $LSB_JOBINDEX/10000 | bc` --qc_out=} . $pbcal . q{/archive/lane`echo $LSB_JOBINDEX/10000 | bc`/qc'};
+  my $bsub_command = $util->drop_temp_part_from_paths( $aqc->_generate_bsub_command($indexed) );
+  my $expected_command = q{bsub -q srpipeline -R 'select[mem>6000] rusage[mem=6000,nfs_12=1]' -M6000 -J 'qc_ref_match_1234_20090709-123456[80000,80154]%8' -o } . $pbcal . q{/archive/qc/log/qc_ref_match_1234_20090709-123456.%I.%J.out -E 'npg_pipeline_preexec_references --repository t/data/sequence' 'qc --check=ref_match --id_run=1234 --position=`echo $LSB_JOBINDEX/10000 | bc` --tag_index=`echo $LSB_JOBINDEX%10000 | bc` --qc_in=} . $pbcal . q{/archive/lane`echo $LSB_JOBINDEX/10000 | bc` --qc_out=} . $pbcal . q{/archive/lane`echo $LSB_JOBINDEX/10000 | bc`/qc'};
   is( $bsub_command, $expected_command, q{generated bsub command is correct});
 
   $util->remove_staging;
@@ -164,7 +160,7 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   );
   is ($aqc->is_indexed, 1, 'run is indexed');
   my @jids;
-  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  lives_ok { @jids = $aqc->run_qc(); } q{no croak $aqc->run_qc()};
   is(scalar @jids, 1, q{1 job ids returned}); # but the lane is not a pool
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
@@ -182,7 +178,7 @@ $arg_refs->{'required_job_completion'}  = $job_dep;;
   );
 
   @jids = undef;
-  lives_ok { @jids = $aqc->run_qc($arg_refs); } q{no croak $aqc->run_qc()};
+  lives_ok { @jids = $aqc->run_qc(); } q{no croak $aqc->run_qc()};
   is(scalar @jids, 1, q{1 job id returned});
   
   $util->remove_staging;

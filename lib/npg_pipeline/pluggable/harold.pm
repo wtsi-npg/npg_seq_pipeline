@@ -137,13 +137,13 @@ sub _inject_save2file_status_functions {
     ##no critic (TestingAndDebugging::ProhibitNoStrict TestingAndDebugging::ProhibitNoWarnings)
     no strict 'refs';
     no warnings 'redefine';
-    *{$function}= sub{  my ($self, @args) = @_; return $self->_save_status( $function, @args ); };
+    *{$function}= sub{  my $self = shift; return $self->_save_status($function); };
   }
   return;
 }
 
 sub _save_status {
-  my ($self, $function_name, @args) = @_;
+  my ($self, $function_name) = @_;
 
   my $status = $function_name;
   my $lane_status = 0;
@@ -154,14 +154,12 @@ sub _save_status {
   }
   $status =~ s/_/ /xmsg;
 
-  my $required_job_completion = shift @args;
-
   my $sr = $self->new_with_cloned_attributes(q{npg_pipeline::launcher::status},{
     status           => $status,
     lane_status_flag => $lane_status,
   });
 
-  return $sr->submit({required_job_completion => $required_job_completion});
+  return $sr->submit();
 }
 
 =head2 qc_cache_reads 
@@ -189,7 +187,7 @@ sub _inject_autoqc_functions {
     ##no critic (TestingAndDebugging::ProhibitNoStrict TestingAndDebugging::ProhibitNoWarnings)
     no strict 'refs';
     no warnings 'redefine';
-    *{$function}= sub{  my ($self, @args) = @_;  return $self->_qc_runner($qc, @args); };
+    *{$function}= sub{  my $self = shift;  return $self->_qc_runner($qc); };
   }
   return;
 }
@@ -197,12 +195,11 @@ sub _inject_autoqc_functions {
 ################
 # single method to actually run qc, which should be given the test from the called method requested
 sub _qc_runner {
-  my ($self, $qc_to_run, @args) = @_;
+  my ($self, $qc_to_run) = @_;
 
-  my $required_job_completion = shift @args;
   my @job_ids = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::qc},
                                                   {qc_to_run  => $qc_to_run,})
-     ->run_qc({required_job_completion => $required_job_completion,});
+     ->run_qc();
 
   return @job_ids;
 }
@@ -239,23 +236,6 @@ sub run_spider {
   return;
 }
 
-=head2 fix_config_files
-
-check config files have correct data, and fix runfolder,instrument,id_run
-this will not be a job launched on the farm, and so should be taken into account
-i.e. don't expect it to run after something has been submitted, expecting a dependency
-=cut
-
-sub fix_config_files {
-  my ( $self, @args ) = @_;
-
-  if ( ! $self->no_fix_config_files() ) {
-    $self->new_with_cloned_attributes( q{npg_pipeline::analysis::FixConfigFiles} )->run();
-  }
-
-  return ();
-}
-
 =head2 create_summary_link_analysis
 
 function which creates/changes the summary link in the runfolder
@@ -263,7 +243,7 @@ function which creates/changes the summary link in the runfolder
 =cut
 
 sub create_summary_link_analysis {
-  my ($self, @args) = @_;
+  my $self = shift;
 
   # check that this hasn't been expressly turned off
   if ($self->no_summary_link()) {
@@ -271,22 +251,9 @@ sub create_summary_link_analysis {
     return ();
   }
 
-  my $required_job_completion = shift @args;
-
-  my $rfl = $self->new_with_cloned_attributes(q{npg_pipeline::run::folder::link},{
-    folder        => q{analysis},
-  });
-
-  my $arg_refs = {
-    required_job_completion => $required_job_completion,
-  };
-
-  if (!$required_job_completion) {
-    $rfl->make_link($arg_refs);
-    return ();
-  }
-
-  my $job_id = $rfl->submit_create_link($arg_refs);
+  my $rfl = $self->new_with_cloned_attributes(
+    q{npg_pipeline::run::folder::link},{ folder => q{analysis} });
+  my $job_id = $rfl->submit_create_link();
   return ($job_id);
 }
 
@@ -296,7 +263,7 @@ Creates a full set of empty fastq and fastqcheck files
 
 =cut
 sub create_empty_fastq {
-  my ( $self ) = @_;
+  my $self = shift;
   return $self->new_with_cloned_attributes(
       q{npg_pipeline::archive::file::generation})->create_empty_fastq_files();
 }

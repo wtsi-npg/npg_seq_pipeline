@@ -144,9 +144,9 @@ sub _create_lane_dirs {
 }
 
 sub generate {
-  my ( $self, $arg_refs ) = @_;
+  my ( $self ) = @_;
 
-  my (@lanes) = $self->positions($arg_refs);
+  my (@lanes) = $self->positions();
   if ( ref $lanes[0] && ref $lanes[0] eq q{ARRAY} ) {   @lanes = @{ $lanes[0] }; }
 
   $self->_generate_command_arguments(\@lanes);
@@ -157,9 +157,7 @@ sub generate {
     return ();
   }
 
-  my $job_id = $self->submit_bsub_command(
-    $self->_command2submit($arg_refs->{required_job_completion})
-  );
+  my $job_id = $self->submit_bsub_command($self->_command2submit());
 
   # bmod jobs that require more memory
   @job_indices = keys %{$self->_job_mem_reqs};
@@ -176,9 +174,8 @@ sub generate {
 }
 
 sub _command2submit {
-  my ($self, $required_job_completion) = @_;
+  my ($self) = @_;
 
-  $required_job_completion ||= q{};
   my $outfile = join q{/} , $self->make_log_dir( $self->archive_path() ), $self->job_name_root . q{.%I.%J.out};
   my @job_indices = sort {$a <=> $b} keys %{$self->_job_args};
   my $job_name = q{'} . $self->job_name_root . npg_pipeline::lsf_job->create_array_string(@job_indices) . q{'};
@@ -188,7 +185,7 @@ sub _command2submit {
     } ) );
   return  q{bsub -q } . $self->lsf_queue()
     .  q{ } . $self->ref_adapter_pre_exec_string()
-    . qq{ $resources $required_job_completion -J $job_name -o $outfile}
+    . qq{ $resources -J $job_name -o $outfile}
     .  q{ 'perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"'}
     .  q{ }.(join q[/],$self->input_path,$self->job_name_root).q{_$}.q{LSB_JOBID}
     .  q{ $}.q{LSB_JOBINDEX'} ;

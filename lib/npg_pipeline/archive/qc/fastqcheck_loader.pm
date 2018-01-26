@@ -10,18 +10,17 @@ extends qw{npg_pipeline::base};
 our $VERSION = '0';
 
 sub submit_to_lsf {
-  my ($self, $arg_refs) = @_;
-  my $job_sub = $self->_generate_bsub_command($arg_refs);
-  my $job_id = $self->submit_bsub_command($job_sub);
+  my ($self) = @_;
+  my $job_id = $self->submit_bsub_command(
+                 $self->_generate_bsub_command());
   return ($job_id);
 }
 
 # private methods
 
 sub _generate_bsub_command {
-  my ($self, $arg_refs) = @_;
+  my ($self) = @_;
 
-  my $required_job_completion = $arg_refs->{required_job_completion};
   my $timestamp = $self->timestamp();
 
   my $job_name = q{fastqcheck_loader_} . $self->id_run() . q{_} . $timestamp;
@@ -38,7 +37,7 @@ sub _generate_bsub_command {
     }
   }
 
-  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ $required_job_completion -J $job_name };
+  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ -J $job_name };
   $bsub_command .=  ( $self->fs_resource_string( {
     counter_slots_per_job => 1,
   } ) ) . q{ };
@@ -78,9 +77,7 @@ npg_pipeline::archive::qc::fastqcheck_loader
 
 =head2 submit_to_lsf - handles calling out to create the bsub command and submits it, returning the job ids
 
-  my @job_ids = $aaq->submit_to_lsf({
-    required_job_completion => 'lsf job requirement string',
-  });
+  my @job_ids = $aaq->submit_to_lsf();
 
 =head1 DIAGNOSTICS
 
@@ -96,6 +93,8 @@ npg_pipeline::archive::qc::fastqcheck_loader
 
 =item English -no_match_vars
 
+=item File::Spec
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -108,7 +107,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

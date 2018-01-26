@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 21;
+use Test::More tests => 4;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
@@ -23,53 +23,121 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $test_dir, 'logfile'),
                           utf8   => 1});
 
-{
+my $config_dir = 'data/config_files';
+
+subtest 'object with no function order set - simple methods' => sub {
+  plan tests => 11;
+
   my $pluggable = npg_pipeline::pluggable->new(
-    id_run => 1234,
+    id_run         => 1234,
     runfolder_path => $test_dir,
+    no_bsub        => 1,
   );
-  isa_ok($pluggable, q{npg_pipeline::pluggable}, q{$pluggable});
+  isa_ok($pluggable, q{npg_pipeline::pluggable});
   is($pluggable->pipeline_name, 'pluggable', 'pipeline name');
   is($pluggable->interactive, 0, 'interactive false');
-  is(join(q[ ], @{$pluggable->function_order}), 'lsf_start lsf_end', '2 functions added implicitly');
-}
-
-{
-  my $pluggable = npg_pipeline::pluggable->new(
-    id_run => 1234,
-    runfolder_path => $test_dir,
-    function_order => [],
-  );
-  my $rv;
-  lives_ok { $rv = $pluggable->_finish(); 1; } q{no croak with $pluggable->_finish()};
-  is($rv, undef, q{return value of $pluggable->_finish() is correct});
-  lives_ok { $pluggable->lsf_start() } q{no croak with $pluggable->lsf_start()};
-  lives_ok { $pluggable->lsf_end() } q{no croak with $pluggable->lsf_end()};
-  is(join(q[ ], @{$pluggable->function_order}), 'lsf_start lsf_end', '2 functions added implicitly to an empty list');
-}
-
-{
-  my $pluggable = npg_pipeline::pluggable->new(
-    id_run => 1234,
-    lanes   => [1],
-    runfolder_path => q{Data/found/here},
-    no_bsub => 1,
-    function_order => ['my_function'],
-  );
-
-  is($pluggable->id_run(), 1234, q{$pluggable->id_run() populated on new});
-  is($pluggable->script_name(), q{t/10-pluggable.t}, q{$pluggable->script_name() obtained});
-  is($pluggable->conf_path, abs_path(join(q[/], getcwd, '/data/config_files')), 'local conf path is built');
-  is(join(q[ ], @{$pluggable->function_order}), 'lsf_start my_function lsf_end', '2 functions added implicitly');
-  throws_ok {$pluggable->main()} qr{Error submitting jobs: Can't locate object method "my_function" via package "npg_pipeline::pluggable"} , 'error when unknown function is used';
-  my $finish;
-  lives_ok { $finish = $pluggable->_finish(); 1; } q{no croak with $pluggable->_finish()};
-  is($finish, undef, q{return value of $pluggable->_finish() is correct});
+  ok(!$pluggable->has_function_order, 'function order is not set');
+  is($pluggable->id_run(), 1234, q{id_run attribute populated});
+  is($pluggable->script_name(), q{t/10-pluggable.t}, q{script_name obtained});
+  is($pluggable->conf_path, abs_path(join(q[/], getcwd, $config_dir)),
+    'local conf path is built');
   my @ids;
-  lives_ok { @ids = $pluggable->lsf_start() } q{no croak with $pluggable->lsf_start()};
+  lives_ok { @ids = $pluggable->pipeline_start() } q{no error submitting start job};
   is(join(q[ ], @ids), '50', 'test start job id is correct');
-  lives_ok { @ids = $pluggable->lsf_end() } q{no croak with $pluggable->lsf_end()};
-  is(join(q[ ], @ids), '50', 'test end job id is correct');
-}
+  lives_ok { @ids = $pluggable->pipeline_end() } q{no error submitting end job};
+  is(join(q[ ], @ids), '50', 'test start job id is correct');
+};
+
+subtest 'graph creation from jgf files' => sub {
+  plan tests => 3;
+
+  my $obj = npg_pipeline::pluggable->new(
+    id_run         => 1234,
+    runfolder_path => $test_dir,
+    no_bsub        => 1,
+    function_list  => "$config_dir/function_list_central.json"
+  );
+  lives_ok {$obj->function_graph()}
+   'no error creating a graph for default analysis';
+
+  $obj = npg_pipeline::pluggable->new(
+    id_run         => 1234,
+    runfolder_path => $test_dir,
+    no_bsub        => 1,
+    function_list  => "$config_dir/function_list_central_qc_run.json"
+  );
+  lives_ok {  $obj->function_graph() }
+    'no error creating a graph for analysis of a qc run';
+
+  $obj = npg_pipeline::pluggable->new(
+    id_run         => 1234,
+    runfolder_path => $test_dir,
+    no_bsub        => 1,
+    function_list  => "$config_dir/function_list_post_qc_review.json"
+  );
+  lives_ok {  $obj->function_graph() }
+    'no error creating a graph for default archival';
+};
+
+subtest 'graph creation from explicitly given function list' => sub {
+  plan tests => 18;
+
+  my $obj = npg_pipeline::pluggable->new(
+    id_run         => 1234,
+    runfolder_path => $test_dir,
+    no_bsub        => 1,
+    function_order => ['my_function', 'your_function'],
+  );
+  ok($obj->has_function_order(), 'function order is set');
+  is(join(q[ ], @{$obj->function_order}), 'my_function your_function',
+   'function order as set');
+  lives_ok {  $obj->function_graph() }
+    'no error creating a graph for a preset function order list';
+  throws_ok { $obj->_schedule_functions() }
+    qr/Can't locate object method "my_function"/,
+    'canot schedule non-existing function';
+
+  my $g = $obj->function_graph();
+  is($g->vertices(), 4, 'four graph nodes');
+
+  my @p = $g->predecessors('my_function');
+  is (scalar @p, 1, 'one predecessor');
+  is ($p[0], 'pipeline_start', 'pipeline_start is before my_function');
+  ok ($g->is_source_vertex('pipeline_start'), 'pipeline_start is source vertex');
+  my @s = $g->successors('my_function');
+  is (scalar @s, 1, 'one successor');
+  is ($s[0], 'your_function', 'your_function is after my_function');
+
+  @p = $g->predecessors('your_function');
+  is (scalar @p, 1, 'one predecessor');
+  is ($p[0], 'my_function', 'my_function is before your_function');
+  @s = $g->successors('your_function');
+  is (scalar @s, 1, 'one successor');
+  is ($s[0], 'pipeline_end', 'your_function is before pipeline_end');
+
+  ok ($g->is_sink_vertex('pipeline_end'), 'pipeline_end is sink vertex');
+  @p = $g->predecessors('pipeline_end');
+  is (scalar @p, 1, 'one predecessor');
+
+  $obj = npg_pipeline::pluggable->new(
+    id_run         => 1234,
+    function_order => [qw/pipeline_end/],
+    runfolder_path => $test_dir,
+    no_bsub        => 1
+  );
+  throws_ok { $obj->function_graph() }
+    qr/Graph is not DAG/,
+    'pipeline_end cannot be specified in function order';
+
+  $obj = npg_pipeline::pluggable->new(
+    id_run         => 1234,
+    function_order => [qw/pipeline_start/],
+    runfolder_path => $test_dir,
+    no_bsub        => 1
+  );
+  throws_ok { $obj->function_graph() }
+    qr/Graph is not DAG/,
+    'pipeline_start cannot be specified in function order';
+};
 
 1;

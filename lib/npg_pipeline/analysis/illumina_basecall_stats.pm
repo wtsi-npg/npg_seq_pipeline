@@ -37,9 +37,7 @@ sub _build_bcl2qseq {
 }
 
 sub _generate_command {
-  my ( $self, $arg_refs ) = @_;
-
-  my $job_dependencies = $arg_refs->{'required_job_completion'};
+  my ( $self ) = @_;
 
   my $basecall_dir = $self->basecall_path();
   my $dir = $self->bam_basecall_path();
@@ -62,8 +60,6 @@ sub _generate_command {
     counter_slots_per_job => $MAKE_STATS_J,
   } );
   push @command,  q{-n } . $MAKE_STATS_J;
-  push @command, $job_dependencies || q[];
-
   push @command, q["]; # " enclose command in quotes
 
   my $bcl2qseq_path = $self->bcl2qseq;
@@ -89,8 +85,8 @@ and IVC reports (from on instrument RTA basecalling).
 =cut
 
 sub generate {
-  my ( $self, $arg_refs ) = @_;
-  return $self->submit_bsub_command($self->_generate_command($arg_refs));
+  my ( $self ) = @_;
+  return $self->submit_bsub_command($self->_generate_command());
 }
 
 no Moose;
@@ -127,7 +123,7 @@ Steven Leonard
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2017 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

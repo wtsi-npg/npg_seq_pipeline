@@ -8,6 +8,7 @@ use POSIX qw(strftime);
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
 use File::Spec::Functions qw(splitdir);
 use File::Slurp;
+use JSON qw/from_json/;
 use Readonly;
 use Try::Tiny;
 
@@ -33,6 +34,7 @@ with q{npg_pipeline::roles::business::flag_options};
 
 Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
 Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ qc_run /;
+Readonly::Scalar my $FUNCTION_DAG_FILE_TYPE     => 'json';
 
 $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
 
@@ -95,9 +97,9 @@ sub submit_bsub_command {
   my ($self, $cmd) = @_;
 
   if ( $cmd =~ /bsub/xms) {
-    my $common_options = q{};
+    my $common_options = q{-H }; # submit in suspended state
     if ( $self->has_job_priority() ) {
-      $common_options = q{-sp } . $self->job_priority();
+      $common_options .= q{-sp } . $self->job_priority();
     }
     $cmd =~ s/bsub/bsub $common_options/xms;
 
@@ -118,15 +120,15 @@ sub submit_bsub_command {
 
   # if the no_bsub flag is set
   if ( $self->no_bsub() ) {
-    $self->info( qq{***** I would be submitting the following to LSF\n$cmd \n*****} );
+    $self->info( qq{I would be submitting the following to LSF ---\n${cmd}\n} );
     return $DEFAULT_JOB_ID_FOR_NO_BSUB;
   }
 
   my $count = 1;
   my $job_id;
 
-  my $max_tries_plus_one = $self->general_values_conf()->{max_tries} + 1;
-  my $min_sleep = $self->general_values_conf()->{min_sleep};
+  my $max_tries_plus_one = $self->general_values_conf()->{'max_tries'} + 1;
+  my $min_sleep = $self->general_values_conf()->{'min_sleep'};
 
   while ($count < $max_tries_plus_one) {
     $job_id = qx/$cmd/;
@@ -392,18 +394,16 @@ around 'function_list' => sub {
       $self->logcroak("Bad function list name: $v");
     }
     try {
-      $file = $self->conf_file_path((join q[_],'function_list',$v) . '.yml');
+      $file = $self->conf_file_path((join q[_],'function_list',$v) . q[.] .$FUNCTION_DAG_FILE_TYPE);
     } catch {
       my $pipeline_name = $self->pipeline_name;
       if ($v !~ /^$pipeline_name/smx) {
-        $file = $self->conf_file_path((join q[_],'function_list',$self->pipeline_name,$v) . '.yml');
+        $file = $self->conf_file_path((join q[_],'function_list',$self->pipeline_name,$v) . q[.] .$FUNCTION_DAG_FILE_TYPE);
       } else {
         $self->logcroak($_);
       }
     };
   }
-
-  $self->info("Will use function list $file");
 
   return $file;
 };
@@ -412,28 +412,28 @@ around 'function_list' => sub {
 
 =cut
 
-has [qw { function_list_conf } ] => (
-  isa        => q{ArrayRef},
+has 'function_list_conf' => (
+  isa        => q{HashRef},
   is         => q{ro},
   lazy_build => 1,
   metaclass  => 'NoGetopt',
   init_arg   => undef,
 );
 sub _build_function_list_conf {
-  my ( $self ) = @_;
-  return $self->read_config( $self->function_list );
+  my $self = shift;
+  my $input_file = $self->function_list;
+  $self->info(qq{Reading function graph $input_file});
+  return from_json(read_file($input_file));
 }
 
+
 =head2 general_values_conf
-=head2 parallelisation_conf
 
 Returns a hashref of configuration details from the relevant configuration file
 
 =cut
 
-has [ qw{ general_values_conf
-          parallelisation_conf } ] => (
-
+has 'general_values_conf' => (
   isa        => q{HashRef},
   is         => q{ro},
   lazy_build => 1,
@@ -443,10 +443,6 @@ has [ qw{ general_values_conf
 sub _build_general_values_conf {
   my ( $self ) = @_;
   return $self->read_config( $self->conf_file_path(q{general_values.ini}) );
-}
-sub _build_parallelisation_conf {
-  my ( $self ) = @_;
-  return $self->read_config( $self->conf_file_path(q{parallelisation.yml}) );
 }
 
 =head2 fix_broken_files
@@ -631,6 +627,8 @@ __END__
 =item POSIX qw(strftime)
 
 =item Readonly
+
+=item JSON
 
 =item Try::Tiny
 

@@ -54,12 +54,11 @@ sub make_link {
 ###############
 # responsible for generating the bsub command to be executed
 sub _generate_bsub_command {
-  my ($self, $arg_refs) = @_;
+  my ($self) = @_;
 
-  my $required_job_completion = $arg_refs->{'required_job_completion'};
   my $run_folder = $self->run_folder();
   my $job_name = join q{_}, q{create_latest_summary_link}, $self->id_run, $run_folder;
-  my $bsub_command = qq{bsub $required_job_completion -J $job_name -q } . $self->small_lsf_queue();
+  my $bsub_command = qq{bsub -J $job_name -q } . $self->small_lsf_queue();
   $bsub_command .= q{ -o } . $run_folder . q{/} . $job_name . q{_} . $self->timestamp . q{.out};
   $bsub_command .= q{ '} . $MAKE_LINK_SCRIPT;
   $bsub_command .=  qq{ --run_folder $run_folder --runfolder_path } . $self->runfolder_path;
@@ -88,36 +87,20 @@ npg_pipeline::run::folder::link
 
 =head1 SYNOPSIS
 
-  my $rfl = npg_pipeline::run::folder::link->new(
-    run_folder    => <run_folder>,
-    analysis_path => q{Data/Intensities/Bustard_dir/GERALD_dir}, # required if you want to override any existing link
-  );
-
 =head1 DESCRIPTION
 
-Class to create a LatestSummary link to the GERALD folder with the latest summary
+Class to create a LatestSummary link
 
 =head1 SUBROUTINES/METHODS
 
 =head2 make_link - method to call to make the link to the Latest Summary
 
-  eval { 
-    my $arg_refs = {
-      required_job_completion => $sJobDependencies,
-    };
-    $rfl->make_link($arg_refs);
-  } or do { croak $EVAL_ERROR; };
+    $rfl->make_link();
 
 =head2 submit_create_link - method which generates and submits an LSF job which uses dependencies such that the link will only be generated once the correct folder to point to is there
 
-  my $job_id;
-  eval { 
-    my $arg_refs = {
-      required_job_completion => $sJobDependencies,
-    };
-    $job_id = $rfl->submit_create_link($arg_refs);
-  } or do { croak $EVAL_ERROR; };
-
+  my @job_ids = $rfl->submit_create_link();
+  
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT
@@ -125,6 +108,8 @@ Class to create a LatestSummary link to the GERALD folder with the latest summar
 =head1 DEPENDENCIES
 
 =over
+
+=item Moose
 
 =item Carp
 
@@ -134,7 +119,7 @@ Class to create a LatestSummary link to the GERALD folder with the latest summar
 
 =item Readonly
 
-=item npg_pipeline::run::folder
+=item File::Spec::Functions
 
 =back
 
@@ -148,7 +133,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

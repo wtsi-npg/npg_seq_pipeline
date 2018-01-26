@@ -12,7 +12,7 @@ extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
 
-Readonly::Scalar our $SEQCHKSUM_SCRIPT => q{npg_pipeline_seqchksum_comparator};
+Readonly::Scalar my  $SEQCHKSUM_SCRIPT => q{npg_pipeline_seqchksum_comparator};
 
 =head1 NAME
 
@@ -33,16 +33,15 @@ Generates and submits the LSF job array to run the seqchksum comparator
 =cut
 
 sub launch {
-  my ($self, $arg_refs) = @_;
-  my $job_id = $self->submit_bsub_command( $self->_generate_bsub_command ( $arg_refs) );
+  my ($self) = @_;
+  my $job_id = $self->submit_bsub_command($self->_generate_bsub_command());
   return ($job_id);
 }
 
 sub _generate_bsub_command {
-  my ($self, $arg_refs) = @_;
+  my ($self) = @_;
 
   my $array_string = npg_pipeline::lsf_job->create_array_string($self->positions());
-  my $required_job_completion = $arg_refs->{required_job_completion} || q{};
   my $timestamp = $self->timestamp();
   my $id_run = $self->id_run();
 
@@ -54,7 +53,7 @@ sub _generate_bsub_command {
 
   $job_name = q{'} . $job_name . $array_string . q{'};
 
-  my $job_sub = q{bsub -q } . $self->lsf_queue() . qq{ $required_job_completion -J $job_name -o $outfile '};
+  my $job_sub = q{bsub -q } . $self->lsf_queue() . qq{ -J $job_name -o $outfile '};
   $job_sub .= $SEQCHKSUM_SCRIPT;
   $job_sub .= q{ --id_run=} . $id_run;
   $job_sub .= q{ --lanes=}  . $self->lsb_jobindex();
@@ -169,7 +168,7 @@ __END__
 
 =item File::Spec
 
-=item List::MoreUtils
+=item Cwd
 
 =back
 
@@ -183,7 +182,7 @@ Kate Taylor
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
