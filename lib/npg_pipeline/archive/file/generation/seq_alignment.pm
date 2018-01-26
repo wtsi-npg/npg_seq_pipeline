@@ -311,12 +311,11 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   #   separate templates, so these steps do not apply.
   ########
   if(not $do_target_alignment and not $nchs and not $spike_tag) {
-      push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:__PHIX_BAM_IN__';
+      push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:phix_bam_in';
       push @{$p4_ops->{splice}}, 'alignment_filter:-foptgt_bmd_multiway:';
       $p4_param_vals->{scramble_reference_flag} = q[-x];
       $p4_param_vals->{stats_reference_flag} = undef;   # both samtools and bam_stats
-      $p4_param_vals->{af_target_in_flag} = undef;   # switch off AlignmentFilter target input
-      $p4_param_vals->{af_target_out_flag_name} = q[UNALIGNED]; # rename "target output" flag
+      $p4_param_vals->{no_target_alignment} = 1;   # adjust AlignmentFilter (bambi select) command
   }
 
   #################################################################
@@ -345,7 +344,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   }
   else {
     push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
-    push @{$p4_ops->{splice}}, 'src_bam:-foptgt_bamsort_coord:', 'foptgt_seqchksum_tee:__FINAL_OUT__-scs_cmp_seqchksum:__OUTPUTCHK_IN__';
+    push @{$p4_ops->{splice}}, 'src_bam:-foptgt_bamsort_coord:', 'foptgt_seqchksum_tee:final-scs_cmp_seqchksum:outputchk';
   }
 
   if($do_rna) {
@@ -430,7 +429,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                        q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
                        q(cd), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{&&},
                        q(vtfp.pl),
-#                        q{-template_path $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib},
+                         q{-template_path $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib},
                          q(-param_vals), $param_vals_fname,
                          q(-export_param_vals), $name_root.q{_p4s2_pv_out_$}.q/{LSB_JOBID}.json/,
                          q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
