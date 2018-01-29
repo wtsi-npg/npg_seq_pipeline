@@ -266,7 +266,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   };
 
   if(not $spike_tag) {
-    push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:__CALIBRATION_PU_OUT__-';
+    push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:calibration_pu-';
   }
 
   my $do_rna = $self->_do_rna_analysis($l);
