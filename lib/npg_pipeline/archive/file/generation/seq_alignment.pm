@@ -287,6 +287,13 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                     q();
 
   my $do_target_alignment = ($self->_ref($l,q(fasta)) and $l->alignments_in_bam and not ($l->library_type and $l->library_type =~ /Chromium/smx));
+
+  if($human_split and not $do_target_alignment and not $spike_tag) {
+    $do_target_alignment = 1;
+    
+    $p4_param_vals->{final_output_prep_no_y_target} = q[final_output_prep_chrsplit_noaln.json];
+  }
+
   my $nchs = $l->contains_nonconsented_human;
   my $nchs_template_label = q{};
   if($nchs) {
