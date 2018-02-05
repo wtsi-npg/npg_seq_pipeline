@@ -8,6 +8,7 @@ LIST OF CHANGES
      lims-driver-type argument is added to reset the default samplesheet driver type,
      iRODS build is added to Travis CI configuration to enable all new tests to run,
      Log::Log4perl is used for logging
+ - Handle dual indexes
  - remove remaining broken provisions for xml LIMs driver 
  - use the new log publisher
 
