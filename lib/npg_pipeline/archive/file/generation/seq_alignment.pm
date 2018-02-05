@@ -287,10 +287,12 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                     q();
 
   my $do_target_alignment = ($self->_ref($l,q(fasta)) and $l->alignments_in_bam and not ($l->library_type and $l->library_type =~ /Chromium/smx));
+  my $skip_target_markdup_metrics = (not $spike_tag and not $do_target_alignment);
 
   if($human_split and not $do_target_alignment and not $spike_tag) {
     $do_target_alignment = 1;
-    
+    $skip_target_markdup_metrics = 1;
+
     $p4_param_vals->{final_output_prep_no_y_target} = q[final_output_prep_chrsplit_noaln.json];
   }
 
@@ -448,7 +450,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
                        q{&&},
                        qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
                        q{&&},
-                       _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, undef, (not $spike_tag and not $do_target_alignment)),
+                       _qc_command('bam_flagstats', $archive_path, $qcpath, $l, $is_plex, undef, $skip_target_markdup_metrics),
                        (grep {$_}
                        ((not $spike_tag)? (join q( ),
                          q{&&},
