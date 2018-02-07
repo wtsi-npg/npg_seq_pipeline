@@ -85,6 +85,14 @@ has [qw/ +npg_tracking_schema
 
 has q{+id_run} => (required => 0,);
 
+=head2 upstream_jobs_var_name
+
+=cut
+
+sub upstream_jobs_var_name {
+  return 'NPG_UPSTREAM_LSFJOBS';
+}
+
 =head2 submit_bsub_command - deals with submitting a command to LSF, retrying upto 5 times if the return code is not 0. It will then croak if it still can't submit
 
   my $LSF_output = $oDerived->submit_bsub_command($cmd);
@@ -97,11 +105,13 @@ sub submit_bsub_command {
   my ($self, $cmd) = @_;
 
   if ( $cmd =~ /bsub/xms) {
-    my $common_options = q{-H }; # submit in suspended state
+    my $common_options = $ENV{$self->upstream_jobs_var_name()} || q[];
     if ( $self->has_job_priority() ) {
-      $common_options .= q{-sp } . $self->job_priority();
+      $common_options .= q{ -sp } . $self->job_priority();
     }
-    $cmd =~ s/bsub/bsub $common_options/xms;
+    if ($common_options) {
+      $cmd =~ s/bsub/bsub $common_options/xms;
+    }
 
     # add job_name_prefix into command
     # we assume that the first -J is to do with the bsub command, any extra will be in the main command, and we don't want to lose this

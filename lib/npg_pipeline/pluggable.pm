@@ -158,50 +158,12 @@ sub _lsf_predesessors {
   return @lsf_job_ids;
 }
 
-sub _set_lsf_job_dependencies {
+sub _resume {
   my $self = shift;
 
   my $g = $self->function_graph();
-  my $suspended_start_job_id;
-
-  #####
-  # Examine the graph, set dependencies between LSF jobs,
-  # resume all jobs, apart from the one we reserved.
-  #
-  foreach my $current ($g->topological_sort()) {
-
-    my $this_job_id;
-    if ($g->has_vertex_attribute($current, $VERTEX_LSF_JOB_IDS_ATTR_NAME) ) {
-      $this_job_id = $g->get_vertex_attribute(
-                     $current, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
-    } else {
-      next;
-    }
-
-    if ($g->is_source_vertex($current)) {
-      if ($current ne $SUSPENDED_START_FUNCTION) {
-        $self->warn(qq{Resuming source vertex "$current"!});
-        $self->submit_bsub_command(qq{bresume $this_job_id});
-      } else {
-        $suspended_start_job_id = $this_job_id;
-      }
-    } else {
-      my @depends_on = _lsf_predesessors($g, $current);
-      if (!@depends_on) {
-        $self->logcroak(qq{No dependencies for function "$current"});
-      }
-      my $dependencies = $self->_lsf_job_complete_requirements(@depends_on);
-      # This function could have submitted multiple jobs.
-      foreach my $j (_string_job_ids2list($this_job_id)) {
-        $self->info(sprintf q{Setting dependencies for function "%s" job %s to %s},
-                              $current, $j, $dependencies );
-        $self->submit_bsub_command(qq{bmod $dependencies $j});
-        $self->info(qq{Resuming job $j for function "$current"});
-        $self->submit_bsub_command(qq{bresume $j});
-      }
-    }
-  }
-
+  my $suspended_start_job_id = $g->get_vertex_attribute(
+     $SUSPENDED_START_FUNCTION, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
   #####
   # If the pipeline_start job was used to keep all submitted jobs in pending
   # state and if the value of the interactive attribute is false, resume
@@ -265,7 +227,11 @@ sub _token_job {
   my $job_name = join q{_}, $function_name, $self->id_run(), $self->pipeline_name();
   my $out = join q{_}, $function_name, $self->timestamp, q{%J.out};
   $out = join q{/}, $runfolder_path, $out;
-  my $cmd = q{bsub -q } . $self->small_lsf_queue() . qq{ -J $job_name -o $out '/bin/true'};
+  my $cmd = q{bsub };
+  if ($function_name eq $SUSPENDED_START_FUNCTION) {
+    $cmd .= q{-H };
+  }
+  $cmd .= q{-q } . $self->small_lsf_queue() . qq{ -J $job_name -o $out '/bin/true'};
   my $job_id = $self->submit_bsub_command($cmd);
   ($job_id) = $job_id =~ m/(\d+)/ixms;
   return ($job_id);
@@ -311,7 +277,7 @@ sub _schedule_functions {
   # they create the analysis directory structure the rest of the job
   # submission code relies on. The graph should be defined in a way
   # that guarantees that topological sort returns functions in 
-  # correct order.
+  # correct order. Also, we need upstream LSF job's ids.
   #
   my @functions = $g->topological_sort();
   $self->info(q{Functions will be called in the following order: } .
@@ -335,7 +301,24 @@ sub _schedule_functions {
       $self->logcroak(qq{No label for vertex $function});
     }
     $self->info(q{***** Processing }.$function.q{ *****});
+    #####
+    # Need ids of upstream LSF jobs in order to set correctly dependencies
+    # between LSF jobs
+    #
+    my $dependencies = q[];
+    if (!$g->is_source_vertex($function)) {
+      my @depends_on = _lsf_predesessors($g, $function);
+      if (!@depends_on) {
+        $self->logcroak(qq{"$function" should depend on at least one LSF job});
+      }
+      $dependencies = $self->_lsf_job_complete_requirements(@depends_on);
+      $self->info(sprintf q{Setting dependencies for function "%s" to %s},
+                              $function, $dependencies);
+    }
+
+    local $ENV{$self->upstream_jobs_var_name()} = $dependencies;
     my @ids = $self->$function_name();
+
     my $job_ids = _list_job_ids2string(@ids);
     if ($job_ids) {
       $self->info(qq{Saving job ids: ${job_ids}\n});
@@ -378,7 +361,7 @@ sub main {
     $self->prepare();
     $when = q{submitting jobs};
     $self->_schedule_functions();
-    $self->_set_lsf_job_dependencies();
+    $self->_resume();
   } catch {
     $error = qq{Error $when: $_};
     $self->error($error);

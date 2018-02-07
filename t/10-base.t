@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 82;
+use Test::More tests => 89;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use File::Copy qw(cp);
@@ -18,7 +18,8 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], t::util->new()->temp_directory(), 'logfile'),
                           utf8   => 1});
 
-my $config_dir = abs_path(getcwd() . '/data/config_files');
+my $cwd = abs_path(getcwd());
+my $config_dir = $cwd . '/data/config_files';
 
 use_ok(q{npg_pipeline::base});
 
@@ -52,6 +53,34 @@ use_ok(q{npg_pipeline::base});
 { 
   my $base = npg_pipeline::base->new();
   isa_ok( $base->general_values_conf(), q{HASH});
+}
+
+{
+  my $b = npg_pipeline::base->new(no_bsub => 1);
+  lives_ok { $b->submit_bsub_command('bkill -22') }
+    'no_bsub mode, can submit bkill command';
+  lives_ok { $b->submit_bsub_command('bsub -o out -Jname /bin/true') }
+    'no_bsub mode, can submit bsub command';
+  
+  local $ENV{'NPG_UPSTREAM_LSFJOBS'} = 'some';
+  lives_ok { $b->submit_bsub_command('bsub -o out -Jname[1..5] /bin/true') }
+    'no_bsub mode, can submit bsub command';
+  local $ENV{'NPG_UPSTREAM_LSFJOBS'} = q[];
+
+  local $ENV{'PATH'} = $cwd . '/t/bin:' . $ENV{'PATH'};  
+  $b = npg_pipeline::base->new();
+  lives_ok { $b->submit_bsub_command('bkill -22') }
+    'can submit bkill command';
+  lives_ok { $b->submit_bsub_command('bsub -o out -J name[5,6] /bin/true') }
+    'can submit bsub command';
+
+  local $ENV{'NPG_UPSTREAM_LSFJOBS'} = 'some';
+  lives_ok { $b->submit_bsub_command('bsub -o out -Jname /bin/true') }
+    'can submit bsub command';
+
+  $b = npg_pipeline::base->new(job_priority => 80);
+  lives_ok { $b->submit_bsub_command('bsub -o out -J name /bin/true') }
+    'can submit bsub command';
 }
 
 {
