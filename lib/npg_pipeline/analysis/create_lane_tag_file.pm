@@ -16,6 +16,8 @@ our $VERSION = '0';
 Readonly::Scalar my $TAG_LIST_FILE_HEADER      => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
 Readonly::Scalar my $SPIKED_PHIX_PADDED        => q{ACAACGCATCTTTCCC};
 Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_PADDED => q{ACAACGCAAGATCTCG};
+Readonly::Scalar my $SPIKED_PHIX_PADDED_2        => q{ACAACGCAATC-TCTTTCCC};
+Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_PADDED_2 => q{ACAACGCAATC-AGATCTCG};
 
 =head1 NAME
 
@@ -26,7 +28,7 @@ npg_pipeline::analysis::create_lane_tag_file
   my $obj = npg_pipeline::analysis::create_lane_tag_file->new(
     location     => 'some/dir',
     lane_lims    => $run_lane_lims_obj,
-    index_length => 7
+    index_lengths => [6,8],
   )->generate;
   my $path = $obj->tag_list_path;
 
@@ -75,11 +77,11 @@ has q{location}          => (isa        => q{NpgTrackingDirectory},
                              required   => 1,
                             );
 
-=head2 index_length
+=head2 index_lengths
 
 =cut
 
-has q{index_length}      => (isa        => q{Int},
+has q{index_lengths}      => (isa        => q{ArrayRef},
                              is         => q{ro},
                              required   => 1,
                             );
@@ -115,22 +117,29 @@ sub generate {
   }
 
   my $tags = $self->lane_lims->tags;
+  my $spiked_phix_tag_index = $self->lane_lims->spiked_phix_tag_index();
 
   # on a HiSeqX the second index is sequenced in reverse complement order
-  if( $self->i5opposite ) {
-    foreach my $plex ($self->lane_lims->children) {
-      if (my $ti = $plex->tag_index){
-        my $tag_sequences = $plex->tag_sequences;
-        if ( @{$tag_sequences} == 2 ) {
+  foreach my $plex ($self->lane_lims->children) {
+    if (my $ti = $plex->tag_index){
+      my $tag_sequences = $plex->tag_sequences;
+      if ( @{$tag_sequences} == 2 ) {
+        if ( $self->i5opposite ) {
           $tag_sequences->[1] =~ tr/[ACGT]/[TGCA]/;
           $tag_sequences->[1] = reverse $tag_sequences->[1];
         }
-        $tags->{$ti} = join q[], @{$tag_sequences};
       }
+      $tags->{$ti} = join q[-], @{$tag_sequences};
     }
   }
 
-  my $spiked_phix_tag_index = $self->lane_lims->spiked_phix_tag_index();
+  # if tags are dual index, but PhiX is not, split the PhiX tag
+  if (scalar @{$self->index_lengths} > 1) {
+    if ($spiked_phix_tag_index and 0 > index $tags->{$spiked_phix_tag_index}, q{-}) {
+      substr $tags->{$spiked_phix_tag_index}, $self->index_lengths->[0], 0, q{-};
+    }
+  }
+
   my ($tag_index_list, $tag_seq_list) = $self->_process_tag_list($tags, $spiked_phix_tag_index);
 
   if  ($tag_index_list && $tag_seq_list) {
@@ -207,16 +216,51 @@ sub _check_tag_uniqueness {
   return 1;
 }
 
+# return the absolute length of a "6,8" format length
+# (which is the sum of the two lengths)
+sub _abs_len {
+  my ($self, $tag) = @_;
+  my @idx = split /,/smx, $tag;
+  my $result = 0;
+  foreach my $i (@idx) { $result = $result + $i; }
+  return $result;
+}
+
+# return either length of the tag
+# or len1,len2 in the case of a dual index
+sub _get_tag_length {
+  my ($self, $tag) = @_;
+  my @indexes = split /-/smx, $tag;
+  my @lengths = map { length } @indexes;
+  my $key = join q{,}, @lengths;
+  return $key;
+}
+
+# truncate an index of the form "AAAAAA-GGGGGG"
+# to a length of the form [4,6]
+sub _truncate_index {
+  my ($self, $index, $index_lengths) = @_;
+  my @idx = split /-/smx, $index;
+  my @ilengths = @{$index_lengths};
+  if (scalar @ilengths == 1) { push @ilengths, 0; }
+  if (scalar @idx == 1) { push @idx,q{}; }
+  $idx[0] = substr $idx[0], 0, $ilengths[0];
+  $idx[1] = substr $idx[1], 0, $ilengths[1];
+  my $result = join q{-},@idx;
+  if ($result =~ /-$/smx) { chop $result; }
+  return $result;
+}
+
 sub _check_tag_length {
   my ($self, $tag_seq_list, $tag_index_list, $spiked_phix_tag_index) = @_;
 
   # ensure no tags are longer than the index length
-  my @indexed_length_tags = map {substr $_, 0,$self->index_length} @{$tag_seq_list};
+  my @indexed_length_tags = map {$self->_truncate_index($_, $self->index_lengths)} @{$tag_seq_list};
 
   my %tag_length;
   foreach my $i (0..$#indexed_length_tags) {
     my $tag = $indexed_length_tags[$i];
-    push @{$tag_length{length $tag}}, $tag_index_list->[$i];
+    push @{$tag_length{$self->_get_tag_length($tag)}}, $tag_index_list->[$i];
   }
 
   my $number_of_tag_lengths = scalar keys %tag_length;
@@ -229,41 +273,40 @@ sub _check_tag_length {
   # we are making the assumption that just 1 tag being too long or too short will be because of a spike
   if ( $number_of_tag_lengths == 2 ) {
     $self->info(q{There are 2 different tag lengths});
-    my @temp = reverse sort { $a <=> $b } keys %tag_length;
+    my @temp = keys %tag_length;
 
-    $self->debug(q{Is there only 1 longest and is it the phix tag?});
-    if ( scalar @{$tag_length{$temp[0]}} == 1 ) {
-      my $tag_index = $tag_length{$temp[0]}->[0];
-      if ( $spiked_phix_tag_index && $tag_index == $spiked_phix_tag_index ) {
-        $self->debug(q{Yes - reset all to length of shortest tag});
-        @indexed_length_tags = map { substr $_, 0, $temp[1] } @indexed_length_tags;
-        $tags_ok = 1;
-      } else {
-        $self->debug(q{No} . " tag_index=$tag_index spiked_phix_tag_index=" . ($spiked_phix_tag_index ? $spiked_phix_tag_index : q{}));
+    $self->debug(q{Is there only 1 longest or shortest and is it the phix tag?});
+    my $phix_entry = 2;
+    if ( scalar @{$tag_length{$temp[0]}} == 1 and $spiked_phix_tag_index and $spiked_phix_tag_index == $tag_length{$temp[0]}->[0] ) {
+      $phix_entry = 0;
+    }
+    if ( scalar @{$tag_length{$temp[1]}} == 1 and $spiked_phix_tag_index and $spiked_phix_tag_index == $tag_length{$temp[1]}->[0] ) {
+      $phix_entry = 1;
+    }
+    if ($phix_entry < 2) {
+      $self->debug(q{Yes, we have a PhiX tag});
+      my $not_phix_entry = ($phix_entry + 1) % 2;
+      # If the PhiX tag is too short, pad it out
+      if ($self->_abs_len($temp[$phix_entry]) < $self->_abs_len($temp[$not_phix_entry])) {
+        my $phix_tag = (scalar @{$self->index_lengths()} > 1) ? ($self->i5opposite ? $SPIKED_PHIX_I5OPPOSITE_PADDED_2 : $SPIKED_PHIX_PADDED_2)
+                                                           : ($self->i5opposite ? $SPIKED_PHIX_I5OPPOSITE_PADDED : $SPIKED_PHIX_PADDED);
+        if (length $phix_tag < $self->_abs_len($temp[$not_phix_entry])) {
+          $self->logcroak(qq{Padded sequence for spiked Phix $phix_tag is shorter than longest tag length of $temp[$not_phix_entry]});
+        }
+        @indexed_length_tags = map { ($self->_get_tag_length($_) eq $temp[$phix_entry]) ? $phix_tag : $_ } @indexed_length_tags;
       }
-    } else {
-      $self->debug(q{No});
+
+      # Truncate all tags to the non-phix length
+      my @temp_lengths = split /,/smx, $temp[$not_phix_entry];
+      @indexed_length_tags = map { $self->_truncate_index($_, \@temp_lengths) } @indexed_length_tags;
+      foreach my $t (@indexed_length_tags) {
+        if ($self->_abs_len($self->_get_tag_length($t)) < $self->_abs_len($temp[$not_phix_entry])) {
+          $self->logcroak(qq{It looks likes the padded sequence for spiked PhiX $t is too short});
+        }
+      }
+      $tags_ok = 1;
     }
 
-    $self->debug(q{Is there only 1 shortest and is it the phix tag?});
-    if ( scalar @{$tag_length{$temp[1]}} == 1 ) {
-      my $tag_index = $tag_length{$temp[1]}->[0];
-      if ( $spiked_phix_tag_index && $tag_index == $spiked_phix_tag_index ) {
-        my $max_length = $temp[0];
-        $self->debug(qq{Longest tag length: $max_length});
-        my $spiked_phix_padded = $self->i5opposite ? $SPIKED_PHIX_I5OPPOSITE_PADDED : $SPIKED_PHIX_PADDED;
-        if ( $max_length > (length $spiked_phix_padded) ) {
-          $self->logcroak(qq{Padded sequence for spiked Phix $spiked_phix_padded is shorter than longest tag length of $max_length});
-	}
-        $self->debug(q{Yes - pad shortest tag to length of longest tag});
-        @indexed_length_tags = map { length $_ < $max_length ? substr $spiked_phix_padded, 0, $max_length : $_ } @indexed_length_tags;
-        $tags_ok = 1;
-      } else {
-        $self->debug(q{No} . " tag_index=$tag_index spiked_phix_tag_index=" . ($spiked_phix_tag_index ? $spiked_phix_tag_index : q{}));
-      }
-    } else {
-      $self->debug(q{No});
-    }
   }
 
   if ( ! $tags_ok ) {
@@ -298,7 +341,7 @@ sub _process_tag_list {
     push @tag_seq_list, $tag_seq;
   }
 
-  my $tag_seq_list_checked = $self->_check_tag_length(\@tag_seq_list, \@tag_index_list, $spiked_phix_tag_index);
+  my $tag_seq_list_checked = $self->_check_tag_length(\@tag_seq_list, \@tag_index_list, $spiked_phix_tag_index, $tags);
 
   my $trimmed_tag_seq_list = $self->_trim_tag_common_suffix($tag_seq_list_checked, \@tag_index_list, $spiked_phix_tag_index);
 
