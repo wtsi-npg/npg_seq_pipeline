@@ -103,7 +103,7 @@ sub illumina_basecall_stats {
     $self->info(q{HiSeqX sequencing instrument, illumina_basecall_stats will not be run});
     return ();
   }
-  return $self->new_with_cloned_attributes(q{npg_pipeline::analysis::illumina_basecall_stats})
+  return $self->new_with_cloned_attributes(q{npg_pipeline::function::illumina_basecall_stats})
               ->generate();
 }
 
@@ -117,7 +117,7 @@ and lane and lane qc directories if the lane is multiplexed.
 
 sub create_archive_directory {
   my $self = shift;
-  $self->new_with_cloned_attributes(q{npg_pipeline::archive::folder::generation})->create_dir();
+  $self->new_with_cloned_attributes(q{npg_pipeline::function::runfolder_scaffold})->create_dir();
   return ();
 }
 
@@ -130,7 +130,7 @@ for stage 1 analysis using p4
 
 sub p4_stage1_analysis {
   my $self = shift;
-  return $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::generation::p4_stage1_analysis})
+  return $self->new_with_cloned_attributes(q{npg_pipeline::function::p4_stage1_analysis})
               ->generate();
 }
 
@@ -142,7 +142,7 @@ for each plex or a lane(non-indexed lane), do suitable alignment for data
 
 sub seq_alignment {
   my $self = shift;
-  return $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::generation::seq_alignment})
+  return $self->new_with_cloned_attributes(q{npg_pipeline::function::seq_alignment})
               ->generate();
 }
 
@@ -154,7 +154,7 @@ For each lane, job submitted which checks that cluster counts are what they are 
 
 sub bam_cluster_counter_check {
   my $self = shift;
-  return $self->new_with_cloned_attributes( q{npg_pipeline::archive::file::BamClusterCounts} )
+  return $self->new_with_cloned_attributes( q{npg_pipeline::function::cluster_count} )
               ->launch();
 }
 
@@ -204,7 +204,7 @@ Checks that the .seqchksum created in the illumin2bam step matches one created f
 
 sub seqchksum_comparator {
   my $self = shift;
-  return $self->new_with_cloned_attributes( q{npg_pipeline::archive::file::generation::seqchksum_comparator} )
+  return $self->new_with_cloned_attributes( q{npg_pipeline::function::seqchksum_comparator} )
               ->launch();
 }
 

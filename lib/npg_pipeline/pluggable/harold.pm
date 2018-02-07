@@ -154,7 +154,7 @@ sub _save_status {
   }
   $status =~ s/_/ /xmsg;
 
-  my $sr = $self->new_with_cloned_attributes(q{npg_pipeline::launcher::status},{
+  my $sr = $self->new_with_cloned_attributes(q{npg_pipeline::function::status},{
     status           => $status,
     lane_status_flag => $lane_status,
   });
@@ -197,7 +197,7 @@ sub _inject_autoqc_functions {
 sub _qc_runner {
   my ($self, $qc_to_run) = @_;
 
-  my @job_ids = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::qc},
+  my @job_ids = $self->new_with_cloned_attributes(q{npg_pipeline::function::autoqc},
                                                   {qc_to_run  => $qc_to_run,})
      ->run_qc();
 
@@ -252,7 +252,7 @@ sub create_summary_link_analysis {
   }
 
   my $rfl = $self->new_with_cloned_attributes(
-    q{npg_pipeline::run::folder::link},{ folder => q{analysis} });
+    q{npg_pipeline::function::current_analysis_link},{ folder => q{analysis} });
   my $job_id = $rfl->submit_create_link();
   return ($job_id);
 }
@@ -265,7 +265,7 @@ Creates a full set of empty fastq and fastqcheck files
 sub create_empty_fastq {
   my $self = shift;
   return $self->new_with_cloned_attributes(
-      q{npg_pipeline::archive::file::generation})->create_empty_fastq_files();
+      q{npg_pipeline::function::autoqc_input_scaffold})->create_empty_fastq_files();
 }
 
 no Moose;
@@ -307,7 +307,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

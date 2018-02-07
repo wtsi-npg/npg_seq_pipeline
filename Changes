@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - flattened directory structure for modules implementing functions,
+   they all now belong to npg_pipeline::function namespace
+ - added npg_pipeline_ prefix to this package's script names if
+   was not part of their name
  - removed unused module for fixing Illumina config files
  - removed unused module for LSF job creation for tag deplexing -
    this is now done within p4 stage 1
