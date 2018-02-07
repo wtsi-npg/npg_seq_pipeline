@@ -6,49 +6,38 @@ use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Log::Log4perl qw(:levels);
 
-our $VERSION = '0';
+use npg_pipeline::function::current_analysis_link;
 
-use npg_pipeline::function::seqchksum_comparator;
+our $VERSION = '0';
 
 my $layout = '%d %-5p %c - %m%n';
 Log::Log4perl->easy_init({layout => $layout,
                           level  => $INFO,
                           utf8   => 1});
 
-npg_pipeline::function::seqchksum_comparator->new_with_options()->do_comparison();
+npg_pipeline::function::current_analysis_link->new_with_options()->make_link();
 
 0;
+
 __END__
 
 =head1 NAME
 
-npg_pipeline_seqchsksum_comparator
+ npg_pipeline_create_summary_link
 
 =head1 USAGE
 
-npg_pipeline_seqchksum_comparator --id_run=1234 --position=`echo $LSB_JOBINDEX` \
-  --archive_path=/tmp/ET_oOGYecL/nfs/sf45/IL2/analysis/123456_IL2_1234Data/Intensities/BAM_basecalls_20100907-142417/no_cal/archive \
-  --bam_basecall_path=/tmp/ET_oOGYecL/nfs/sf45/IL2/analysis/123456_IL2_1234Data/Intensities/BAM_basecalls_20100907-142417/' 
+ npg_pipeline_create_summary_link --run_folder=<run_folder>
 
 =head1 REQUIRED ARGUMENTS
 
-=over
-
-id_run
-
-position
-
-archive_path
-
-bam_basecall_path 
-
-=back 
+ run_folder
 
 =head1 OPTIONS
 
 =head1 EXIT STATUS
 
-0
+ 0
 
 =head1 CONFIGURATION
 
@@ -56,10 +45,8 @@ bam_basecall_path
 
 =head1 DESCRIPTION
 
-This script is run at the end of analysis pipeline, most likely as an LSF job.
-
-Bamcat any plex/split bamfiles back together, perform a bamseqchksum and compare it
-with the one produced by the illumina2bam step, or croak if that has not been done.
+ One of the scripts invoked by the analysis pipeline. Creates a soft link in the run folder,
+ which points to one of the subdirectories in the current analysis folder. 
 
 =head1 SUBROUTINES/METHODS
 
@@ -75,11 +62,13 @@ with the one produced by the illumina2bam step, or croak if that has not been do
 
 =item warnings
 
+=item FindBin
+
 =item lib
 
 =item Log::Log4perl
 
-=item FindBin
+=item npg_pipeline::run::folder::link
 
 =back
 
@@ -89,7 +78,7 @@ with the one produced by the illumina2bam step, or croak if that has not been do
 
 =head1 AUTHOR
 
-Kate Taylor
+Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 

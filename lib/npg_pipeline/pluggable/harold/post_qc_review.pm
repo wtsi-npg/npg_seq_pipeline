@@ -5,7 +5,6 @@ use Carp;
 use English qw{-no_match_vars};
 use File::Spec;
 
-use npg_pipeline::archive::file::to_irods;
 use npg_pipeline::cache;
 
 extends qw{npg_pipeline::pluggable::harold};
@@ -60,7 +59,7 @@ sub _archive_to_irods {
     q{Odd number of extra key/value arguments supplied: } .
       join q{, }, @extra_to_irods_attributes;
 
-  my $handler = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::to_irods},
+  my $handler = $self->new_with_cloned_attributes(q{npg_pipeline::function::seq_to_irods_archiver},
     {@extra_to_irods_attributes});
   my @job_ids = $handler->submit_to_lsf();
   return @job_ids;
@@ -79,7 +78,7 @@ sub archive_logs {
     $self->warn(q{Archival to iRODS is switched off.});
     return ();
   }
-  my $ats = $self->new_with_cloned_attributes(q{npg_pipeline::archive::file::logs});
+  my $ats = $self->new_with_cloned_attributes(q{npg_pipeline::function::log_files_archiver});
   my @job_ids = $ats->submit_to_lsf();
   return @job_ids;
 }
@@ -92,7 +91,7 @@ upload illumina analysis qc data
 
 sub upload_illumina_analysis_to_qc_database {
   my $self = shift;
-  my $aia = $self->new_with_cloned_attributes(q{npg_pipeline::archive::qc::illumina_analysis});
+  my $aia = $self->new_with_cloned_attributes(q{npg_pipeline::function::illumina_qc_archiver});
   my @job_ids = $aia->submit_to_lsf();
   return @job_ids;
 }
@@ -105,7 +104,7 @@ upload fastqcheck files to the qc database
 
 sub upload_fastqcheck_to_qc_database {
   my $self = shift;
-  my $aia = $self->new_with_cloned_attributes(q{npg_pipeline::archive::qc::fastqcheck_loader});
+  my $aia = $self->new_with_cloned_attributes(q{npg_pipeline::function::fastqcheck_archiver});
   my @job_ids = $aia->submit_to_lsf();
   return @job_ids;
 }
@@ -118,7 +117,7 @@ upload internal auto_qc data
 
 sub upload_auto_qc_to_qc_database {
   my $self = shift;
-  my $aaq = $self->new_with_cloned_attributes(q{npg_pipeline::archive::qc::auto_qc});
+  my $aaq = $self->new_with_cloned_attributes(q{npg_pipeline::function::autoqc_archiver});
   my @job_ids = $aaq->submit_to_lsf();
   return @job_ids;
 }
@@ -255,7 +254,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

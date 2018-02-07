@@ -6,66 +6,58 @@ use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Log::Log4perl qw(:levels);
 
-our $VERSION = '0';
+use npg_pipeline::function::cluster_count;
 
-use npg_pipeline::function::seqchksum_comparator;
+our $VERSION = '0';
 
 my $layout = '%d %-5p %c - %m%n';
 Log::Log4perl->easy_init({layout => $layout,
                           level  => $INFO,
                           utf8   => 1});
 
-npg_pipeline::function::seqchksum_comparator->new_with_options()->do_comparison();
+npg_pipeline::function::cluster_count->new_with_options()->run_cluster_count_check();
 
 0;
+
 __END__
 
 =head1 NAME
 
-npg_pipeline_seqchsksum_comparator
-
-=head1 USAGE
-
-npg_pipeline_seqchksum_comparator --id_run=1234 --position=`echo $LSB_JOBINDEX` \
-  --archive_path=/tmp/ET_oOGYecL/nfs/sf45/IL2/analysis/123456_IL2_1234Data/Intensities/BAM_basecalls_20100907-142417/no_cal/archive \
-  --bam_basecall_path=/tmp/ET_oOGYecL/nfs/sf45/IL2/analysis/123456_IL2_1234Data/Intensities/BAM_basecalls_20100907-142417/' 
-
-=head1 REQUIRED ARGUMENTS
-
-=over
-
-id_run
-
-position
-
-archive_path
-
-bam_basecall_path 
-
-=back 
-
-=head1 OPTIONS
-
-=head1 EXIT STATUS
-
-0
-
-=head1 CONFIGURATION
+npg_pipeline_check_cluster_count
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
 
-This script is run at the end of analysis pipeline, most likely as an LSF job.
+This is one of the scripts invoked by the analysis pipeline, most likely
+as an LSF job.
+It checks pf cluster counts in BustardSummary.xml match the read counts
+in the bam files.
 
-Bamcat any plex/split bamfiles back together, perform a bamseqchksum and compare it
-with the one produced by the illumina2bam step, or croak if that has not been done.
+=head1 USAGE
+
+  npg_pipeline_check_cluster_count --id_run 1234 --position 4 \
+    --bam_basecall_path /path/to/bam_basecall --archive_path /path/to/archive/directory
+
+=head1 REQUIRED ARGUMENTS
+
+  id_run
+  position
+  bam_basecall_path
+
+=head1 OPTIONS
+
+pathways which will eventually allow determination of bam_basecall and archive level directories
+
+=head1 EXIT STATUS
+
+ 0
 
 =head1 SUBROUTINES/METHODS
 
 =head1 DIAGNOSTICS
 
-=head1 CONFIGURATION AND ENVIRONMENT
+=head1 CONFIGURATION
 
 =head1 DEPENDENCIES
 
@@ -75,11 +67,11 @@ with the one produced by the illumina2bam step, or croak if that has not been do
 
 =item warnings
 
+=item FindBin
+
 =item lib
 
 =item Log::Log4perl
-
-=item FindBin
 
 =back
 
@@ -89,7 +81,7 @@ with the one produced by the illumina2bam step, or croak if that has not been do
 
 =head1 AUTHOR
 
-Kate Taylor
+Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 
