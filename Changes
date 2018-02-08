@@ -1,9 +1,11 @@
 LIST OF CHANGES
 ---------------
 
- - Handle dual indexes
+release 51.11.1
+ - Handle dual indexes (create new format lane tag files)
  - remove remaining broken provisions for xml LIMs driver 
  - use the new log publisher
+ - now allows XA/Y-split with no target alignment
 
 release 51.11.0
  - added support for RNA analysis/quantification using STAR and salmon
