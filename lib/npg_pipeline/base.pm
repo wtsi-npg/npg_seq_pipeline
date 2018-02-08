@@ -85,14 +85,6 @@ has [qw/ +npg_tracking_schema
 
 has q{+id_run} => (required => 0,);
 
-=head2 upstream_jobs_var_name
-
-=cut
-
-sub upstream_jobs_var_name {
-  return 'NPG_UPSTREAM_LSFJOBS';
-}
-
 =head2 submit_bsub_command - deals with submitting a command to LSF, retrying upto 5 times if the return code is not 0. It will then croak if it still can't submit
 
   my $LSF_output = $oDerived->submit_bsub_command($cmd);
@@ -105,7 +97,7 @@ sub submit_bsub_command {
   my ($self, $cmd) = @_;
 
   if ( $cmd =~ /bsub/xms) {
-    my $common_options = $ENV{$self->upstream_jobs_var_name()} || q[];
+    my $common_options = $npg_pipeline::pluggable::LSFJOB_DEPENDENCIES || q[];
     if ( $self->has_job_priority() ) {
       $common_options .= q{ -sp } . $self->job_priority();
     }

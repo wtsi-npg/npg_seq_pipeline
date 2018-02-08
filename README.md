@@ -31,11 +31,11 @@ support the GML format.
 ### Batch Processing and Dependencies Tracking with LSF
 
 In this package the pipeline steps are submitted for execution to the
-LSF batch processing system. Firstly, LSF jobs are defined and submitted
-to the LSF job scheduler in a suspended state. Then the jobs are modified
-to set the dependencies between them and resumed. The LSF job representing
-the start point of a graph is resumed last thus ensuring that all LSF jobs
-are properly configured before the execution starts.
+LSF batch processing system. The LSF job representing the start point of a graph
+is submitted to LSF in a suspended state and is resumed once all other LSF jobs
+have been submitted thus ensuring that the execution starts only if all steps
+are successfully submitted to LSF. If an error occurs at any point, all submitted
+jobs, apart from the start job, are killed.
 
  
  

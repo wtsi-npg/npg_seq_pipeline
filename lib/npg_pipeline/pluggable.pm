@@ -18,6 +18,8 @@ Readonly::Scalar my $END_FUNCTION             => q[pipeline_end];
 Readonly::Scalar my $VERTEX_LSF_JOB_IDS_ATTR_NAME => q[lsf_job_ids];
 Readonly::Scalar my $LSF_JOB_IDS_DELIM            => q[-];
 
+our $LSFJOB_DEPENDENCIES = q[];
+
 =head1 NAME
 
 npg_pipeline::pluggable
@@ -316,9 +318,19 @@ sub _schedule_functions {
                               $function, $dependencies);
     }
 
-    local $ENV{$self->upstream_jobs_var_name()} = $dependencies;
-    my @ids = $self->$function_name();
+    #####
+    # We've removed a long chain of passing the dependencies to the code
+    # that submits the LSF job in a hope that the job can be modified
+    # once submitted. This takes hours for large arrays, so, as a temporary
+    # measure, we have to restore previously available functionality in a
+    # rudimentary way. This will not be necessary once LSF job submission
+    # and function definition are properly separated.
+    #
 
+    ##no critic (Variables::ProhibitLocalVars)
+    local $LSFJOB_DEPENDENCIES = $dependencies;
+    my @ids = $self->$function_name();
+    ##use critic
     my $job_ids = _list_job_ids2string(@ids);
     if ($job_ids) {
       $self->info(qq{Saving job ids: ${job_ids}\n});
