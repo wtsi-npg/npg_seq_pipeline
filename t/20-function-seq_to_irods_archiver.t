@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 13;
+use Test::More tests => 15;
 use Test::Exception;
 use t::util;
 
@@ -39,10 +39,11 @@ sub create_analysis {
   return 1;
 }
 
+create_analysis();
+
 {
   my $bam_irods;
   lives_ok { $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
-    function_list     => q{post_qc_review},
     run_folder        => q{123456_IL2_1234},
     runfolder_path    => $analysis_runfolder_path,
     timestamp         => q{20090709-123456},
@@ -50,7 +51,7 @@ sub create_analysis {
     recalibrated_path => $pb_cal_path,
   ); } q{created with run_folder ok};
   isa_ok($bam_irods , q{npg_pipeline::function::seq_to_irods_archiver}, q{object test});
-  create_analysis();
+  ok (!$bam_irods->no_irods_archival, 'no_irods_archival flag is unset');
 
   my @jids;
   lives_ok { @jids = $bam_irods->submit_to_lsf(); } q{no croak submitting job to lsf};
@@ -60,47 +61,53 @@ sub create_analysis {
   my $bsub_command = $bam_irods ->_generate_bsub_command();
   my $expected_command = qq[bsub -q lowload -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'npg_pipeline_script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json --max_errors 10'];
   is( $bsub_command, $expected_command, q{generated bsub command is correct});
-}
+  
+  $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
+    run_folder        => q{123456_IL2_1234},
+    runfolder_path    => $analysis_runfolder_path,
+    verbose           => 0,
+    no_irods_archival => 1,
+    recalibrated_path => $pb_cal_path,
+  );
+  ok ($bam_irods->no_irods_archival, 'no_irods_archival flag is set');
+  ok (!$bam_irods->submit_to_lsf(), 'no jobs created');
+  
+  $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
+    run_folder        => q{123456_IL2_1234},
+    runfolder_path    => $analysis_runfolder_path,
+    verbose           => 0,
+    local              => 1,
+    recalibrated_path => $pb_cal_path,
+  );
+  ok ($bam_irods->no_irods_archival, 'no_irods_archival flag is set');
+  ok (!$bam_irods->submit_to_lsf(), 'no jobs created');
 
-{
-  my $bam_irods;
-  lives_ok { $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
-    function_list     => q{post_qc_review},
+  $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder        => q{123456_IL2_1234},
     runfolder_path    => $analysis_runfolder_path,
     recalibrated_path => $pb_cal_path,
     timestamp         => q{20090709-123456},
     verbose           => 0,
     lanes             => [8],
-  ); } q{created with run_folder ok};
-  isa_ok($bam_irods , q{npg_pipeline::function::seq_to_irods_archiver}, q{object test});
-  create_analysis();
+  );
 
-  my @jids;
   lives_ok { @jids = $bam_irods->submit_to_lsf(); } q{no croak submitting job to lsf};
-
   is(scalar@jids, 1, q{only one job submitted});
-  my $archive_path = "$pb_cal_path/archive";
-  my $bsub_command = $bam_irods ->_generate_bsub_command();
-  my $expected_command = qq[bsub -q lowload -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'npg_pipeline_script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json --max_errors 10 --positions 8'];
+  $bsub_command = $bam_irods ->_generate_bsub_command();
+  $expected_command = qq[bsub -q lowload -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'npg_pipeline_script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json --max_errors 10 --positions 8'];
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
-}
 
-{
-  my $bam_irods;
-  lives_ok { $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
-    function_list     => q{post_qc_review},
+  $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder        => q{123456_IL2_1234},
     runfolder_path    => $analysis_runfolder_path,
     id_flowcell_lims  => q{1023456789111},
     recalibrated_path => $pb_cal_path,
     timestamp         => q{20090709-123456},
     verbose           => 0,
-  ); } q{created with run_folder ok};
+  );
 
-  my $archive_path = "$pb_cal_path/archive";
-  my $bsub_command = $bam_irods ->_generate_bsub_command();
-  my $expected_command = qq[bsub -q lowload -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'npg_pipeline_script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json --max_errors 10 --alt_process qc_run'];
+  $bsub_command = $bam_irods ->_generate_bsub_command();
+  $expected_command = qq[bsub -q lowload -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'npg_pipeline_script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json --max_errors 10 --alt_process qc_run'];
   is( $bsub_command, $expected_command, q{generated bsub command is correct} );
 }
 

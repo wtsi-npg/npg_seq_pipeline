@@ -22,8 +22,9 @@ sub _build_temp_directory {
 }
 
 has q{clean_temp_directory} => (
-  isa => q{Bool},
-  is => q{ro},
+  isa     => q{Bool},
+  is      => q{ro},
+  default => 1,
 );
 
 ###############

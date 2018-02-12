@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
@@ -41,15 +41,15 @@ use_ok(q{npg_pipeline::function::illumina_basecall_stats});
   my $bam_basecall_path = $runfolder_path . q{/Data/Intensities/BAM_basecalls};
   my $basecall_path = $runfolder_path . q{/Data/Intensities/BaseCalls};
   lives_ok {
-    $obj = npg_pipeline::function::illumina_basecall_stats->new({
+    $obj = npg_pipeline::function::illumina_basecall_stats->new(
       id_run => $id_run,
       run_folder => q{123456_IL2_1234},
       runfolder_path => $runfolder_path,
       timestamp => q{20091028-101635},
       verbose => 0,
       bam_basecall_path => $bam_basecall_path,
-      no_bsub => 1,
-    })
+      no_bsub => 1
+    )
   } q{create object ok};
 
   my $mem = 350;
@@ -60,6 +60,16 @@ use_ok(q{npg_pipeline::function::illumina_basecall_stats});
 
   my @job_ids = $obj->generate();
   is( scalar @job_ids, 1, q{1 job ids, generate Illumina basecall stats} );
+
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data/hiseqx];
+  $obj = npg_pipeline::function::illumina_basecall_stats->new(
+                     id_run => 13219,
+                     no_bsub => 1,
+                     verbose => 0,
+                     run_folder => 'folder',
+                     runfolder_path => $runfolder_path
+  );
+  ok (!$obj->generate(), 'illumina_basecall_stats step is skipped for HiSeqX run');
 }
 
 1;

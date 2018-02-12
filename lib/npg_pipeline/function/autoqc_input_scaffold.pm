@@ -54,6 +54,21 @@ sub create_empty_fastq_files {
   return ();
 }
 
+=head2 fq_filename
+
+Generates fastq file names.
+
+=cut
+
+sub fq_filename {
+  my ($self, $position, $tag_index, $end) = @_;
+  return sprintf '%i_%i%s%s.fastq',
+    $self->id_run,
+    $position,
+    $end               ? "_$end"      : q[],
+    defined $tag_index ? "#$tag_index" : q[];
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;

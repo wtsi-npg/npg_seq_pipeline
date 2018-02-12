@@ -4,12 +4,22 @@ use Moose;
 use Carp;
 use Try::Tiny;
 use Graph::Directed;
+use File::Spec::Functions;
 use List::MoreUtils qw/ any uniq /;
+use Class::Load  qw(load_class);
+use File::Slurp;
+use JSON qw/from_json/;
 use Readonly;
+use English qw{-no_match_vars};
 
+use npg_tracking::util::abs_path qw(abs_path);
 use npg_pipeline::cache;
+use npg_pipeline::pluggable::registry;
 
 extends q{npg_pipeline::base};
+
+with qw{ MooseX::AttributeCloner
+         npg_pipeline::roles::accessor };
 
 our $VERSION = '0';
 
@@ -17,6 +27,8 @@ Readonly::Scalar my $SUSPENDED_START_FUNCTION => q[pipeline_start];
 Readonly::Scalar my $END_FUNCTION             => q[pipeline_end];
 Readonly::Scalar my $VERTEX_LSF_JOB_IDS_ATTR_NAME => q[lsf_job_ids];
 Readonly::Scalar my $LSF_JOB_IDS_DELIM            => q[-];
+Readonly::Array  my @FLAG2FUNCTION_LIST       => qw/ qc_run /;
+Readonly::Scalar my $FUNCTION_DAG_FILE_TYPE   => 'json';
 
 our $LSFJOB_DEPENDENCIES = q[];
 
@@ -36,7 +48,34 @@ has q{interactive}  => (
   is            => q{ro},
   default       => 0,
   documentation =>
-  q{If false, the pipeline_start job is resumed once all jobs have been successfully submitted},
+  q{If false (default), the pipeline_start job is resumed once all jobs have been successfully submitted},
+);
+
+=head2 spider
+
+Toggles spider (creating/reusing cached LIMs data), true by default
+
+=cut
+
+has q{spider} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 1,
+  documentation => q{Toggles spider (creating/reusing cached LIMs data), true by default},
+);
+
+=head2 script_name
+
+Current scripts name (from $PROGRAM_NAME)
+
+=cut
+
+has q{script_name} => (
+  isa       => q{Str},
+  is        => q{ro},
+  default   => $PROGRAM_NAME,
+  init_arg  => undef,
+  metaclass => 'NoGetopt',
 );
 
 =head2 function_order
@@ -50,10 +89,69 @@ has q{function_order} => (
   q{A reference to an array of function names in the order they should run.},
 );
 
+has 'function_list' => (
+  isa        => q{Str},
+  is         => q{ro},
+  lazy_build => 1,
+);
+sub _build_function_list {
+  my $self = shift;
+  my $suffix = q();
+  foreach my $flag (@FLAG2FUNCTION_LIST) {
+    if ($self->can($flag) && $self->$flag) {
+      $suffix .= "_$flag";
+    }
+  }
+  return $self->pipeline_name . $suffix;
+}
+around 'function_list' => sub {
+  my $orig = shift;
+  my $self = shift;
+
+  my $v = $self->$orig();
+
+  my $file = abs_path($v);
+  if (!$file || !-f $file) {
+    if ($v !~ /\A\w+\Z/smx) {
+      $self->logcroak("Bad function list name: $v");
+    }
+    try {
+      $file = $self->conf_file_path((join q[_],'function_list',$v) . q[.] .$FUNCTION_DAG_FILE_TYPE);
+    } catch {
+      my $pipeline_name = $self->pipeline_name;
+      if ($v !~ /^$pipeline_name/smx) {
+        $file = $self->conf_file_path((join q[_],'function_list',$self->pipeline_name,$v) . q[.] .$FUNCTION_DAG_FILE_TYPE);
+      } else {
+        $self->logcroak($_);
+      }
+    };
+  }
+
+  return $file;
+};
+
+=head2 function_list_conf
+
+=cut
+
+has 'function_list_conf' => (
+  isa        => q{HashRef},
+  is         => q{ro},
+  lazy_build => 1,
+  metaclass  => 'NoGetopt',
+  init_arg   => undef,
+);
+sub _build_function_list_conf {
+  my $self = shift;
+  my $input_file = $self->function_list;
+  $self->info(qq{Reading function graph $input_file});
+  return from_json(read_file($input_file));
+}
+
 =head2 function_graph
 
 =cut
-has 'function_graph' => (
+has q{function_graph} => (
   isa        => q{Graph::Directed},
   is         => q{ro},
   lazy_build => 1,
@@ -99,8 +197,8 @@ sub _build_function_graph {
     @nodes = @{$jgraph->{'graph'}->{'nodes'}};
   }
 
-  $g->edges()  or croak q{No edges};
-  $g->is_dag() or croak q{Graph is not DAG};
+  $g->edges()  or $self->logcroak(q{No edges});
+  $g->is_dag() or $self->logcroak(q{Graph is not DAG});
 
   foreach my $n ( @nodes ) {
     ($n->{'id'} and $n->{'label'}) or
@@ -113,6 +211,61 @@ sub _build_function_graph {
   }
 
   return $g;
+}
+
+has q{_log_file_name} => (
+   isa           => q{Str},
+   is            => q{ro},
+   lazy_build    => 1,
+);
+sub _build__log_file_name {
+  my $self = shift;
+  my $log_name = $self->script_name . q{_} . $self->id_run();
+  $log_name .= q{_} . $self->timestamp() . q{.log};
+  # If $self->script_name includes a directory path, change / to _
+  $log_name =~ s{/}{_}gmxs;
+  return $log_name;
+}
+
+=head2 log_file_path
+
+Suggested log file full path.
+
+=cut
+
+sub log_file_path {
+  my $self = shift;
+  return catfile($self->runfolder_path(), $self->_log_file_name);
+}
+
+has q{_cloned_attributes} => (
+  isa        => q{HashRef},
+  is         => q{ro},
+  init_arg   => undef,
+  lazy_build => 1,
+);
+sub _build__cloned_attributes {
+  my $self = shift;
+  # Using MooseX::AttributeCloner functionality
+  return $self->attributes_as_hashref({
+    excluded_attributes => [ qw( interactive
+                                 script_name
+                                 function_list
+                                 function_list_conf
+                                 function_order
+                                 function_graph
+                                 spider ) ],
+  });
+}
+
+has q{_registry} => (
+  isa        => q{npg_pipeline::pluggable::registry},
+  is         => q{ro},
+  init_arg   => undef,
+  lazy_build => 1,
+);
+sub _build__registry {
+  return npg_pipeline::pluggable::registry->new()
 }
 
 sub _lsf_job_complete_requirements {
@@ -129,9 +282,6 @@ sub _lsf_job_complete_requirements {
 
 sub _string_job_ids2list {
   my $string_ids = shift;
-  if (!$string_ids) {
-    croak 'Should have a non-empty string';
-  }
   my @ids = split /$LSF_JOB_IDS_DELIM/smx, $string_ids;
   return @ids;
 }
@@ -223,45 +373,36 @@ sub _clear_env_vars {
   return;
 }
 
-sub _token_job {
+sub _run_function {
   my ($self, $function_name) = @_;
-  my $runfolder_path = $self->runfolder_path();
-  my $job_name = join q{_}, $function_name, $self->id_run(), $self->pipeline_name();
-  my $out = join q{_}, $function_name, $self->timestamp, q{%J.out};
-  $out = join q{/}, $runfolder_path, $out;
-  my $cmd = q{bsub };
-  if ($function_name eq $SUSPENDED_START_FUNCTION) {
-    $cmd .= q{-H };
+
+  my $implementor = $self->_registry()->get_function_implementor($function_name);
+  my $module = join q[::], 'npg_pipeline', 'function', $implementor->{'module'};
+  load_class $module;
+  my $method_name = $implementor->{'method'};
+  my $params = $implementor->{'params'} || {};
+
+  #####
+  # Pass pipeline's built attributes to the function implementor
+  # object. Both classes inherit from npg_pipeline::base, so
+  # they have many attributes in common.
+  #
+  my %attrs = %{$self->_cloned_attributes()};
+
+  #####
+  # Use some function-specific attributes that we received
+  # from the registry.
+  #  
+  while (my ($key, $value) = each %{$params}) {
+    $attrs{$key} = $value;
   }
-  $cmd .= q{-q } . $self->small_lsf_queue() . qq{ -J $job_name -o $out '/bin/true'};
-  my $job_id = $self->submit_bsub_command($cmd);
-  ($job_id) = $job_id =~ m/(\d+)/ixms;
-  return ($job_id);
-}
 
-=head2 pipeline_start
-
-First function that might be called by the pipeline.
-Submits a suspended token job to LSF. The user-defined functions that are run
-as LSF jobs will depend on the successful complition of this job. Therefore,
-the pipeline jobs will stay pending till the start job is resumed and gets
-successfully completed.
-
-=cut
-sub pipeline_start {
-  my $self = shift;
-  return $self->_token_job($SUSPENDED_START_FUNCTION);
-}
-
-=head2 pipeline_end
-
-Last 'catch all' function that might be called by the pipeline.
-Submits a token job to LSF. 
-
-=cut
-sub pipeline_end {
-  my $self = shift;
-  return $self->_token_job($END_FUNCTION);
+  #####
+  # Instantiate the function implementor object, call on it the
+  # method whose name we received from the registry, return
+  # the result.
+  #    
+  return $module->new(\%attrs)->$method_name();
 }
 
 sub _schedule_functions {
@@ -329,7 +470,7 @@ sub _schedule_functions {
 
     ##no critic (Variables::ProhibitLocalVars)
     local $LSFJOB_DEPENDENCIES = $dependencies;
-    my @ids = $self->$function_name();
+    my @ids = $self->_run_function($function);
     ##use critic
     my $job_ids = _list_job_ids2string(@ids);
     if ($job_ids) {
@@ -340,6 +481,38 @@ sub _schedule_functions {
     }
   }
 
+  return;
+}
+
+=head2 run_spider
+
+Generates cached metadata that are needed by the pipeline
+or reuses the existing cache.
+
+Will set the relevant env. variables in the global scope.
+
+The new cache is created in the analysis_path directory.
+
+See npg_pipeline::cache for details.
+
+=cut
+
+sub run_spider {
+  my $self = shift;
+  try {
+    my $cache = npg_pipeline::cache->new(
+      'id_run'           => $self->id_run,
+      'set_env_vars'     => 1,
+      'cache_location'   => $self->analysis_path,
+      'lims_driver_type' => $self->lims_driver_type,
+      'id_flowcell_lims' => $self->id_flowcell_lims,
+      'flowcell_barcode' => $self->flowcell_id
+    );
+    $cache->setup();
+    $self->info(join qq[\n], @{$cache->messages});
+  } catch {
+    $self->logcroak(qq[Error while spidering: $_]);
+  };
   return;
 }
 
@@ -355,6 +528,12 @@ sub prepare {
   foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
     my $value = $ENV{$name} || q{Not defined};
     $self->info(sprintf '*** %s: %s', $name, $value);
+  }
+  if ($self->spider) {
+    $self->info('Running spider');
+    $self->run_spider();
+  } else {
+    $self->info('Not running spider');
   }
   return;
 }
@@ -413,15 +592,27 @@ __END__
 
 =item Moose
 
+=item MooseX::AttributeCloner
+
 =item Carp
 
 =item Graph::Directed
+
+=item File::Spec::Functions
 
 =item List::MoreUtils
 
 =item Readonly
 
 =item Try:Tiny
+
+=item Class::Load
+
+=item File::Slurp
+
+=item English
+
+=item JSON
 
 =back
 
