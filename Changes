@@ -11,7 +11,8 @@ LIST OF CHANGES
  - removed methods representing functions, created mapping of
    functions to modules, methods and options (a registry)
    npg_pipeline::pluggable::registry
- - removed ::harold:: component from pipelines'namespace 
+ - removed ::harold:: component from pipelines'namespace
+ - removed post_qc_review pipeline module 
  - added npg_pipeline_ prefix to this package's script names if
    was not part of their name
  - removed unused module for fixing Illumina config files

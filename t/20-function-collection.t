@@ -111,6 +111,8 @@ subtest 'start and stop jobs' => sub {
 subtest ' bam2fastqcheck_and_cached_fastq' => sub {
   plan tests => 2;
 
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
+
   my $c = npg_pipeline::function::collection->new(
     id_run            => 1234,
     recalibrated_path => $runfolder_path,

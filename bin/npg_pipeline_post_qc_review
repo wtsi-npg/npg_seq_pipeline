@@ -6,11 +6,12 @@ use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Log::Log4perl qw(:levels);
 
-use npg_pipeline::pluggable::post_qc_review;
+use npg_pipeline::pluggable;
 
 our $VERSION = '0';
 
-my $p       = npg_pipeline::pluggable::post_qc_review->new_with_options();
+my $p = npg_pipeline::pluggable
+        ->new_with_options(function_list => 'post_qc_review');
 
 my $level   = $p->verbose() ? $DEBUG : $INFO;
 my $logfile = $p->log_file_path();

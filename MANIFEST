@@ -39,7 +39,6 @@ lib/npg_pipeline/function/status.pm
 lib/npg_pipeline/lsf_job.pm
 lib/npg_pipeline/pluggable.pm
 lib/npg_pipeline/pluggable/central.pm
-lib/npg_pipeline/pluggable/post_qc_review.pm
 lib/npg_pipeline/pluggable/registry.pm
 lib/npg_pipeline/roles/accessor.pm
 lib/npg_pipeline/roles/business/base.pm
@@ -59,7 +58,6 @@ t/10-cache-barcodes.t
 t/10-lsf_job.t
 t/10-pluggable.t
 t/10-pluggable-central.t
-t/10-pluggable-post_qc_review.t
 t/10-pluggable-registry.t
 t/10-script-job_env_to_threads.t
 t/15-pipeline_launcher_scripts.t
