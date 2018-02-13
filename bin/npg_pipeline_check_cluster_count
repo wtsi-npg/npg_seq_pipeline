@@ -6,26 +6,16 @@ use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Log::Log4perl qw(:levels);
 
-use npg_pipeline::pluggable;
+use npg_pipeline::function::cluster_count;
 
 our $VERSION = '0';
 
-my $p = npg_pipeline::pluggable
-        ->new_with_options(function_list => 'post_qc_review');
-
-my $level   = $p->verbose() ? $DEBUG : $INFO;
-my $logfile = $p->log_file_path();
-##no critic (InputOutput::RequireCheckedSyscalls)
-print {*STDERR} "Pipeline log file: ${logfile}\n";
-##use critic
 my $layout = '%d %-5p %c - %m%n';
 Log::Log4perl->easy_init({layout => $layout,
-                          level  => $level,
-                          file   => $logfile,
+                          level  => $INFO,
                           utf8   => 1});
 
-$p->redirect_stderr();
-$p->main();
+npg_pipeline::function::cluster_count->new_with_options()->run_cluster_count_check();
 
 0;
 
@@ -33,42 +23,41 @@ __END__
 
 =head1 NAME
 
-npg_pipeline_post_qc_review
-
-=head1 USAGE
-
-npg_pipeline_post_qc_review --run_folder=<run_folder> (--id_run <id_run> --verbose --lane <lane_position> --analysis_path <Data/path/to/gerald/dir>)
-
-=head1 REQUIRED ARGUMENTS
-
-  run_folder and/or id_run is required
-
-=head1 OPTIONS
-
-  run_folder - provide the run_folder name
-  id_run - provide the run id
-  verbose - adds additional logging
-  analysis_path - provide a Data/path/to/GERALD to be used instead of searching for it (useful if multiple analysis have been done)
-  lane - option to run only on a selected lane
-
-=head1 EXIT STATUS
-
-0
-
-=head1 CONFIGURATION
+npg_pipeline_check_cluster_count
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
 
- Pipeline for archival of Illumina sequencing data for an individual run.
- Creates jobs that are run under LSF.
+This is one of the scripts invoked by the analysis pipeline, most likely
+as an LSF job.
+It checks pf cluster counts in BustardSummary.xml match the read counts
+in the bam files.
+
+=head1 USAGE
+
+  npg_pipeline_check_cluster_count --id_run 1234 --position 4 \
+    --bam_basecall_path /path/to/bam_basecall --archive_path /path/to/archive/directory
+
+=head1 REQUIRED ARGUMENTS
+
+  id_run
+  position
+  bam_basecall_path
+
+=head1 OPTIONS
+
+pathways which will eventually allow determination of bam_basecall and archive level directories
+
+=head1 EXIT STATUS
+
+ 0
 
 =head1 SUBROUTINES/METHODS
 
 =head1 DIAGNOSTICS
 
-=head1 CONFIGURATION AND ENVIRONMENT
+=head1 CONFIGURATION
 
 =head1 DEPENDENCIES
 
@@ -78,11 +67,11 @@ npg_pipeline_post_qc_review --run_folder=<run_folder> (--id_run <id_run> --verbo
 
 =item warnings
 
+=item FindBin
+
 =item lib
 
 =item Log::Log4perl
-
-=item FindBin
 
 =back
 
@@ -92,8 +81,7 @@ npg_pipeline_post_qc_review --run_folder=<run_folder> (--id_run <id_run> --verbo
 
 =head1 AUTHOR
 
-Andy Brown
-Marina Gourtovaia
+Guoying Qi
 
 =head1 LICENSE AND COPYRIGHT
 

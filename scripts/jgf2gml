@@ -1,0 +1,70 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use JSON;
+use File::Slurp;
+
+if (!scalar @ARGV) {
+  die 'No arguments';
+}
+
+my $file_name = $ARGV[0];
+my $graph = from_json(read_file($file_name));
+$graph = $graph->{'graph'};
+my $count = 1;
+my $ids = {};
+
+print "graph [\n" or die 'Cannot print';
+print "\tdirected 1\n" or die 'Cannot print';
+
+foreach my $node (@{$graph->{'nodes'}}) {
+
+  my $id    = $node->{'id'};
+  my $label = $node->{'label'};
+  $ids->{$id} = $count;
+  print "\tnode [\n" or die 'Cannot print';
+  print qq(\t\tid ${count}\n) or die 'Cannot print';
+  print qq(\t\tlabel "${id}"\n) or die 'Cannot print';
+  print "\t]\n" or die 'Cannot print';
+  $count++;
+
+}
+
+$count = 0;
+
+foreach my $edge (@{$graph->{'edges'}}) {
+
+  $count++;
+
+  my $source = $edge->{'source'};
+  if (!$source) {
+    die "Source definition missing for edge $count";
+  }
+
+  my $target = $edge->{'target'};
+  if (!$target) {
+    die "Target definition missing for edge $count";
+  }
+
+  my $source_id = $ids->{$source};
+  if (!$source_id) {
+    die "Source $source not found";
+  }
+  my $target_id = $ids->{$target};
+  if (!$target_id) {
+    die "Target $target not found";
+  }
+
+  print "\tedge [\n" or die 'Cannot print';
+  print qq(\t\tsource ${source_id}\n) or die 'Cannot print';
+  print qq(\t\ttarget ${target_id}\n) or die 'Cannot print';
+  print "\t]\n" or die 'Cannot print';
+
+}
+
+print "]\n" or die 'Cannot print';
+
+exit 0;

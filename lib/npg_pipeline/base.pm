@@ -7,7 +7,6 @@ use English qw{-no_match_vars};
 use POSIX qw(strftime);
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
 use File::Spec::Functions qw(splitdir);
-use File::Slurp;
 use Readonly;
 use Try::Tiny;
 
@@ -17,7 +16,6 @@ our $VERSION = '0';
 
 with qw{
         MooseX::Getopt
-        MooseX::AttributeCloner
         WTSI::DNAP::Utilities::Loggable
         npg_pipeline::roles::accessor
         npg_tracking::illumina::run::short_info
@@ -32,7 +30,6 @@ with q{npg_tracking::illumina::run::long_info};
 with q{npg_pipeline::roles::business::flag_options};
 
 Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
-Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ qc_run /;
 
 $ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
 
@@ -95,11 +92,13 @@ sub submit_bsub_command {
   my ($self, $cmd) = @_;
 
   if ( $cmd =~ /bsub/xms) {
-    my $common_options = q{};
+    my $common_options = $npg_pipeline::pluggable::LSFJOB_DEPENDENCIES || q[];
     if ( $self->has_job_priority() ) {
-      $common_options = q{-sp } . $self->job_priority();
+      $common_options .= q{ -sp } . $self->job_priority();
     }
-    $cmd =~ s/bsub/bsub $common_options/xms;
+    if ($common_options) {
+      $cmd =~ s/bsub/bsub $common_options/xms;
+    }
 
     # add job_name_prefix into command
     # we assume that the first -J is to do with the bsub command, any extra will be in the main command, and we don't want to lose this
@@ -118,15 +117,15 @@ sub submit_bsub_command {
 
   # if the no_bsub flag is set
   if ( $self->no_bsub() ) {
-    $self->info( qq{***** I would be submitting the following to LSF\n$cmd \n*****} );
+    $self->info( qq{I would be submitting the following to LSF ---\n${cmd}\n} );
     return $DEFAULT_JOB_ID_FOR_NO_BSUB;
   }
 
   my $count = 1;
   my $job_id;
 
-  my $max_tries_plus_one = $self->general_values_conf()->{max_tries} + 1;
-  my $min_sleep = $self->general_values_conf()->{min_sleep};
+  my $max_tries_plus_one = $self->general_values_conf()->{'max_tries'} + 1;
+  my $min_sleep = $self->general_values_conf()->{'min_sleep'};
 
   while ($count < $max_tries_plus_one) {
     $job_id = qx/$cmd/;
@@ -147,20 +146,6 @@ sub submit_bsub_command {
   }
   return $job_id;
 }
-
-=head2 script_name
-
-Current scripts name (from $PROGRAM_NAME)
-
-=cut
-
-has q{script_name} => (
-  isa       => q{Str},
-  is        => q{ro},
-  default   => $PROGRAM_NAME,
-  init_arg  => undef,
-  metaclass => 'NoGetopt',
-);
 
 =head2 timestamp
 
@@ -235,31 +220,6 @@ sub _build_lowload_lsf_queue {
   return $self->general_values_conf()->{lowload_lsf_queue};
 }
 
-=head2 force_phix_split
-
-Boolean decision to force on phix split
-
-=cut
-
-has q{force_phix_split}  => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{Boolean decision to force on phiX split},
-  default       => 1,
-);
-
-=head2 verbose
-
-Boolean option to switch on verbose mode
-
-=cut
-
-has q{verbose} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{Boolean decision to switch on verbose mode},
-);
-
 =head2 lanes
 
 Option to push through an arrayref of lanes to work with
@@ -291,19 +251,6 @@ has q{lanes} => (
     count_lanes => q{count},
   },
 );
-
-=head2 directory_exists
-
-Returns a boolean true or false dependent on the existence of directory
-
-  my $bDirectoryExists = $class->directory_exists($sDirectoryPath);
-
-=cut
-
-sub directory_exists {
-  my ($self, $directory_path) = @_;
-  return -d $directory_path ? 1 : 0;
-}
 
 =head2 lsb_jobindex
 
@@ -365,75 +312,13 @@ sub pipeline_name {
   return $name;
 }
 
-has 'function_list' => (
-  isa        => q{Str},
-  is         => q{ro},
-  lazy_build => 1,
-);
-sub _build_function_list {
-  my $self = shift;
-  my $suffix = q();
-  foreach my $flag (@FLAG2FUNCTION_LIST) {
-    if ($self->can($flag) && $self->$flag) {
-      $suffix .= "_$flag";
-    }
-  }
-  return $self->pipeline_name . $suffix;
-}
-around 'function_list' => sub {
-  my $orig = shift;
-  my $self = shift;
-
-  my $v = $self->$orig();
-
-  my $file = abs_path($v);
-  if (!$file || !-f $file) {
-    if ($v !~ /\A\w+\Z/smx) {
-      $self->logcroak("Bad function list name: $v");
-    }
-    try {
-      $file = $self->conf_file_path((join q[_],'function_list',$v) . '.yml');
-    } catch {
-      my $pipeline_name = $self->pipeline_name;
-      if ($v !~ /^$pipeline_name/smx) {
-        $file = $self->conf_file_path((join q[_],'function_list',$self->pipeline_name,$v) . '.yml');
-      } else {
-        $self->logcroak($_);
-      }
-    };
-  }
-
-  $self->info("Will use function list $file");
-
-  return $file;
-};
-
-=head2 function_list_conf
-
-=cut
-
-has [qw { function_list_conf } ] => (
-  isa        => q{ArrayRef},
-  is         => q{ro},
-  lazy_build => 1,
-  metaclass  => 'NoGetopt',
-  init_arg   => undef,
-);
-sub _build_function_list_conf {
-  my ( $self ) = @_;
-  return $self->read_config( $self->function_list );
-}
-
 =head2 general_values_conf
-=head2 parallelisation_conf
 
 Returns a hashref of configuration details from the relevant configuration file
 
 =cut
 
-has [ qw{ general_values_conf
-          parallelisation_conf } ] => (
-
+has 'general_values_conf' => (
   isa        => q{HashRef},
   is         => q{ro},
   lazy_build => 1,
@@ -444,22 +329,6 @@ sub _build_general_values_conf {
   my ( $self ) = @_;
   return $self->read_config( $self->conf_file_path(q{general_values.ini}) );
 }
-sub _build_parallelisation_conf {
-  my ( $self ) = @_;
-  return $self->read_config( $self->conf_file_path(q{parallelisation.yml}) );
-}
-
-=head2 fix_broken_files
-
-Boolean flag to tell the pipeline to fix any missing broken files it can
-
-=cut
-
-has q{fix_broken_files} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{boolean flag to fix files that may be missing or broken if it can},
-);
 
 =head2 make_log_dir
 
@@ -614,13 +483,9 @@ __END__
 
 =item MooseX::Getopt
 
-=item MooseX::AttributeCloner
-
 =item Carp
 
 =item English qw{-no_match_vars}
-
-=item File::Slurp
 
 =item File::Spec::Functions
 
