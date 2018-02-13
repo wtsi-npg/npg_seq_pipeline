@@ -470,7 +470,7 @@ sub _schedule_functions {
 
     ##no critic (Variables::ProhibitLocalVars)
     local $LSFJOB_DEPENDENCIES = $dependencies;
-    my @ids = $self->_run_function($function);
+    my @ids = $self->_run_function($function_name);
     ##use critic
     my $job_ids = _list_job_ids2string(@ids);
     if ($job_ids) {
