@@ -69,9 +69,12 @@ sub _generate_bsub_command {
 }
 
 sub submit_create_link {
-  my ($self, $arg_refs) = @_;
-  my $cmd = $self->_generate_bsub_command($arg_refs);
-  $self->debug($cmd);
+  my ($self) = @_;
+  if ($self->no_summary_link()) {
+    $self->info(q{Summary link creation turned off});
+    return ();
+  }
+  my $cmd = $self->_generate_bsub_command();
 
   return $self->submit_bsub_command($cmd);
 }

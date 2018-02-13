@@ -11,6 +11,10 @@ Readonly::Scalar my $LOG_PUBLISHER_SCRIPT_NAME => 'npg_publish_illumina_logs.pl'
 
 sub submit_to_lsf {
   my ($self) = @_;
+  if ($self->no_irods_archival) {
+    $self->warn(q{Archival to iRODS is switched off.});
+    return ();
+  }
   my $job_id = $self->submit_bsub_command($self->_generate_bsub_command());
   return ($job_id);
 }

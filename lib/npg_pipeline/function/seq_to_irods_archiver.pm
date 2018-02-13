@@ -12,6 +12,10 @@ Readonly::Scalar my $NUM_MAX_ERRORS      => 20;
 
 sub submit_to_lsf {
   my $self = shift;
+  if ($self->no_irods_archival) {
+    $self->info(q{Archival to iRODS is switched off.});
+    return ();
+  }
   my $job_sub = $self->_generate_bsub_command();
   my $job_id = $self->submit_bsub_command($job_sub);;
   return ($job_id);

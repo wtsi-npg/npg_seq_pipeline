@@ -1,9 +1,8 @@
 use strict;
 use warnings;
-use Test::More tests => 20;
+use Test::More tests => 15;
 use Test::Exception;
 use Cwd qw/getcwd/;
-use List::MoreUtils qw/ any none /;
 use Log::Log4perl qw(:levels);
 
 use npg_tracking::util::abs_path qw(abs_path);
@@ -24,15 +23,19 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 local $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 
-my $sp = join q[/], $tdir, 'spatial_filter';
-my $java = join q[/], $tdir, 'java';
-foreach my $tool (($sp, $java)) {
-  `touch $tool`;
-  `chmod +x $tool`;
-}
-local $ENV{PATH} = join q[:], $tdir, qq[$cwd/t/bin],  qq[$cwd/t/bin/software/solexa/bin], $ENV{PATH};
+#my $java = join q[/], $tdir, 'java';
+#foreach my $tool (($sp, $java)) {
+#  `touch $tool`;
+#  `chmod +x $tool`;
+#}
 
-my $central = q{npg_pipeline::pluggable::harold::central};
+local $ENV{PATH} = join q[:],
+                   #$tdir,
+                   qq[$cwd/t/bin],
+                   qq[$cwd/t/bin/software/solexa/bin],
+                   $ENV{PATH};
+
+my $central = q{npg_pipeline::pluggable::central};
 use_ok($central);
 
 my $runfolder_path = $util->analysis_runfolder_path();
@@ -81,14 +84,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
   mkdir $pb->qc_path;
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   lives_ok { $pb->main() } q{no croak running qc->main()};
-  my $timestamp = $pb->timestamp;
-  my $recalibrated_path = $pb->recalibrated_path();
-  my $log_dir = $pb->make_log_dir( $recalibrated_path );
-  my $expected_command = q[bsub -q lowload -J warehouse_loader_1234_central ] .
-    qq[-o $log_dir/warehouse_loader_1234_central_] . $timestamp . q[.out  ] .
-    qq['warehouse_loader --verbose --id_run 1234 --lims_driver_type samplesheet'];
-  is($pb->_update_warehouse_command('warehouse_loader'),
-    $expected_command, 'update warehouse command');
 }
 
 my $rf = join q[/], $tdir, 'myfolder';
@@ -112,26 +107,6 @@ mkdir $rf;
   is ($status_path, join(q[/],$rf,q{BAM_basecalls_22-May}, q{status}), 'status directory path');
   ok(-d $status_path, 'status directory created');
   ok(-d "$status_path/log", 'log directory for status jobs created');
-
-  my $expected = qq[bsub -q srpipeline -R 'rusage[nfs_12=1]' -J 'bam2fastqcheck_and_cached_fastq_1234_22-May[1-8]' -o $rf/BAM_basecalls_22-May/no_cal/log/bam2fastqcheck_and_cached_fastq_1234_22-May.%I.%J.out 'generate_cached_fastq --path $rf/BAM_basecalls_22-May/no_cal/archive --file $rf/BAM_basecalls_22-May/no_cal/1234_`echo ] . q[$LSB_JOBINDEX`.bam'];
-  is ($pb->_bam2fastqcheck_and_cached_fastq_command(),
-    $expected, 'command for bam2fastqcheck_and_cached_fastq');
-  my @ids = $pb->bam2fastqcheck_and_cached_fastq();
-  is (scalar @ids, 1, 'one bam2fastqcheck_and_cached_fastq job submitted');
-}
-
-{
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data/hiseqx];
-  my $pb;
-  lives_ok { $pb = $central->new(
-                     id_run => 13219,
-                     no_bsub => 1,
-                     run_folder => 'myfolder',
-                     runfolder_path => $rf,
-                   );
-             $pb->_set_paths();
-           } q{no error on object creation and analysis paths set};
-  ok (!$pb->illumina_basecall_stats, 'illumina_basecall_stats step is skipped for HiSeqX run');
 }
 
 1;

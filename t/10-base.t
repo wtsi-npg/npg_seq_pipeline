@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 89;
+use Test::More tests => 60;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use File::Copy qw(cp);
@@ -81,70 +81,6 @@ use_ok(q{npg_pipeline::base});
   $b = npg_pipeline::base->new(job_priority => 80);
   lives_ok { $b->submit_bsub_command('bsub -o out -J name /bin/true') }
     'can submit bsub command';
-}
-
-{
-  my $base = npg_pipeline::base->new();
-
-  my $path = "${config_dir}/function_list_base.json";
-
-  throws_ok { $base->function_list }
-    qr/File $path does not exist or is not readable/,
-    'error when default function list does not exist';
-
-  $base = npg_pipeline::base->new(function_list => 'base');
-  throws_ok { $base->function_list }
-    qr/File $path does not exist or is not readable/,
-    'error when function list does not exist';
-
-  $path =~ s/function_list_base/function_list_central/;
-  $base = npg_pipeline::base->new(function_list => $path);
-  is( $base->function_list, $path, 'function list path as given');
-  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into a hash');
-  
-  $base = npg_pipeline::base->new(function_list => 'data/config_files/function_list_central.json');
-  is( $base->function_list, $path, 'function list absolute path from relative path');
-  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
-
-  $base = npg_pipeline::base->new(function_list => 'central');
-  is( $base->function_list, $path, 'function list absolute path from list name');
-  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
-
-  $path =~ s/function_list_central/function_list_post_qc_review/;
-
-  $base = npg_pipeline::base->new(function_list => 'post_qc_review');
-  is( $base->function_list, $path, 'function list absolute path from list name');
-  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
-
-  my $test_path = '/some/test/path.json';
-  $base = npg_pipeline::base->new(function_list => $test_path);
-  throws_ok { $base->function_list }
-    qr/Bad function list name: $test_path/,
-    'error when function list does not exist, neither it can be interpreted as a function list name';
-  
-  my $test_config_dir = tempdir( CLEANUP => 1 );
-  cp $path, $test_config_dir;
-  $path = $test_config_dir . '/function_list_post_qc_review.json';
-
-  $base = npg_pipeline::base->new(function_list => $path);
-  is( $base->function_list, $path, 'function list absolute');
-  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
-
-  $base = npg_pipeline::base->new(
-    conf_path     => $test_config_dir,
-    function_list => 'post_qc_review');
-  is( $base->function_list, $path, 'function list absolute path from list name');
-
-  $path =~ s/function_list_post_qc_review/function_list_base/;
-  $base = npg_pipeline::base->new(conf_path => $test_config_dir);
-  throws_ok { $base->function_list }
-    qr/File $path does not exist or is not readable/,
-    'error when default function list does not exist';
-
-  $base = npg_pipeline::base->new(function_list => 'some+other:');
-  throws_ok { $base->function_list }
-    qr/Bad function list name: some\+other:/,
-    'error when function list name contains illegal characters';
 }
 
 {
@@ -261,33 +197,11 @@ package main;
 
   $base = mytest::central->new(id_flowcell_lims => 3456, qc_run => 1);
   ok( !$base->is_qc_run(), 'looking on flowcell lims id: not qc run');
-  my $fl = "${config_dir}/function_list_central_qc_run.json";
-  is( $base->function_list, $fl, 'qc function list');
   
-  $base = npg_pipeline::base->new(id_flowcell_lims => '3980331130775');
-  my $path = "${config_dir}/function_list_base_qc_run.json";
-  throws_ok { $base->function_list }
-    qr/File $path does not exist or is not readable/,
-    'error when default function list does not exist';
   $base = mytest::central->new(id_flowcell_lims => '3980331130775');
   ok( $base->is_qc_run(), 'looking on flowcell lims id: qc run');
   ok( $base->qc_run, 'qc run');
-  is( $base->function_list, $fl, 'qc function list');
   ok( $base->is_qc_run('3980331130775'), 'looking on argument: qc run');
-}
-
-{
-  my $base = npg_pipeline::base->new(id_run => 4);
-  is ($base->fq_filename(3, undef), '4_3.fastq');
-  is ($base->fq_filename(3, undef, 1), '4_3_1.fastq');
-  is ($base->fq_filename(3, undef, 2), '4_3_2.fastq');
-  is ($base->fq_filename(3, undef, 't'), '4_3_t.fastq');
-  is ($base->fq_filename(3, 5), '4_3#5.fastq');
-  is ($base->fq_filename(3, 5, 1), '4_3_1#5.fastq');
-  is ($base->fq_filename(3, 5, 2), '4_3_2#5.fastq');
-  is ($base->fq_filename(3, 0), '4_3#0.fastq');
-  is ($base->fq_filename(3, 0, 1), '4_3_1#0.fastq');
-  is ($base->fq_filename(3, 0, 2), '4_3_2#0.fastq');
 }
 
 subtest 'lims driver type' => sub {

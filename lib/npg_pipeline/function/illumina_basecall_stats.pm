@@ -86,6 +86,10 @@ and IVC reports (from on instrument RTA basecalling).
 
 sub generate {
   my ( $self ) = @_;
+  if ( $self->is_hiseqx_run ) {
+    $self->info(q{HiSeqX sequencing instrument, illumina_basecall_stats will not be run});
+    return ();
+  }
   return $self->submit_bsub_command($self->_generate_command());
 }
 
