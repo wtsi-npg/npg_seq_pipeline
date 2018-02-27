@@ -158,8 +158,7 @@ sub create_dir {
     $self->warn("could not chmod $qc_log_dir\n\t$rc");                # not fatal
   }
 
-
-  return 1;
+  return ();
 }
 
 no Moose;

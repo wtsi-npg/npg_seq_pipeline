@@ -16,7 +16,7 @@ my $bin = $curdir . q[/bin];
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{/does/not/exist.csv};
 
-  my $util = t::util->new(clean_temp_directory => 0);
+  my $util = t::util->new();
   $util->set_rta_staging_analysis_area();
   my $tmp_dir = $util->temp_directory();
   local $ENV{TEST_DIR} = $tmp_dir;
@@ -35,7 +35,7 @@ my $bin = $curdir . q[/bin];
 
   my $out = `$bin/npg_pipeline_central --no-spider --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo 2>&1`;
   like($out,
-  qr/Can't locate object method "dodo" via package "npg_pipeline::pluggable::harold::central"/,
+  qr/Handler for 'dodo' is not registered/,
   'error when function does not exist');
 }
 
