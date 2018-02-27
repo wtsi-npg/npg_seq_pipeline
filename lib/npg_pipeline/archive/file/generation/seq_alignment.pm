@@ -297,7 +297,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   }
 
   my $nchs = $l->contains_nonconsented_human;
-  my $nchs_template_label = $nchs? q{human_split}: q{};
+  my $nchs_template_label = $nchs? q{humansplit_}: q{};
   my $nchs_outfile_label = $nchs? q{human}: q{};
 
   #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
