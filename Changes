@@ -10,6 +10,10 @@ LIST OF CHANGES
    this is now done within p4 stage 1
  - capture dependencies between pipeline steps in a directed acyclic graph
 
+release 51.11.2
+ - use align_intfile_opt=1 when aligning with star to produce intermediate bam file
+ - by default, force bambi i2b to single-threading (general_values parameter available for override)
+
 release 51.11.1
  - Handle dual indexes (create new format lane tag files)
  - remove remaining broken provisions for xml LIMs driver 

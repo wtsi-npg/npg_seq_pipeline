@@ -379,8 +379,8 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       $p4_param_vals->{transcriptome_val} = $self->_transcriptome($l, q(tophat2))->transcriptome_index_name();
       $p4_reference_genome_index = $self->_ref($l, q(bowtie2));
     }
-    if($rna_analysis eq q[tophat2]) { # create intermediate file to prevent deadlock
-      $p4_param_vals->{align_infile_opt} = 1;
+    if($rna_analysis eq q[tophat2] or $rna_analysis eq q[star]) { # create intermediate file to prevent deadlock
+      $p4_param_vals->{align_intfile_opt} = 1;
     }
     $p4_param_vals->{alignment_method} = $rna_analysis;
     $p4_param_vals->{annotation_val} = $self->_transcriptome($l)->gtf_file();

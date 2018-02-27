@@ -18,9 +18,10 @@ with q{npg_tracking::illumina::run::long_info};
 
 our $VERSION  = '0';
 
-Readonly::Scalar my $NUM_SLOTS    => q(8,16);
-Readonly::Scalar my $MEMORY       => q{12000}; # memory in megabytes
-Readonly::Scalar my $FS_RESOURCE  => 4; # LSF resource counter to control access to staging area file system
+Readonly::Scalar my $NUM_SLOTS                    => q(8,16);
+Readonly::Scalar my $MEMORY                       => q{12000}; # memory in megabytes
+Readonly::Scalar my $FS_RESOURCE                  => 4; # LSF resource counter to control access to staging area file system
+Readonly::Scalar my $DEFAULT_I2B_THREAD_COUNT     => 3; # value passed to bambi i2b --threads flag
 
 sub generate {
   my ( $self ) = @_;
@@ -315,6 +316,7 @@ sub _generate_command_params {
 
   $p4_params{illumina2bam_jar} = $self->_Illumina2bam_jar;
   $p4_params{i2b_run_path} = $runfolder_path;
+  $p4_params{i2b_thread_count} = $self->general_values_conf()->{'p4_stage1_i2b_thread_count'} || $DEFAULT_I2B_THREAD_COUNT;
   $p4_params{i2b_runfolder} = $run_folder;
   $p4_params{$i2b_flag_map{q/I/}} = $intensity_path;
   $p4_params{$i2b_flag_map{q/L/}} = $position;

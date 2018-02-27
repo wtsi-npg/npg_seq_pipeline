@@ -118,6 +118,7 @@ subtest 'check_save_arguments' => sub {
   $expected = {
      'assign' => [
         {
+	  'i2b_thread_count' => 3,
 	  'bid_implementation' => 'bambi',
 	  'seqchksum_file' => $intensities_dir . '/BaseCalls/1234_1.post_i2b.seqchksum',
 	  'scramble_reference_fasta' => $dir . '/srpipe_references/references/PhiX/default/all/fasta/phix_unsnipped_short_no_N.fa',
