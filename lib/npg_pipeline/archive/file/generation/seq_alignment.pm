@@ -312,7 +312,13 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   #   unset the reference for bam_stats and amend the AlignmentFilter command.
   ########
   if(not $do_target_alignment and not $spike_tag) {
-      push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:phix_bam_in';
+      if(not $nchs) {
+        push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:phix_bam_in';
+      }
+      else {
+        push @{$p4_ops->{splice}}, 'aln_tee4_tee4:to_tgtaln-alignment_filter:target_bam_in';
+        push @{$p4_ops->{splice}}, 'aln_amp_bamadapterclip_pre_auxmerge:-aln_bam12auxmerge_nchs:no_aln_bam';
+      }
       push @{$p4_ops->{splice}}, 'alignment_filter:target_bam_out-foptgt_bmd_multiway:';
       $p4_param_vals->{scramble_reference_flag} = q[-x];
       $p4_param_vals->{stats_reference_flag} = undef;   # both samtools and bam_stats
