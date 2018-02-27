@@ -297,13 +297,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   }
 
   my $nchs = $l->contains_nonconsented_human;
-  my $nchs_template_label = q{};
-  if($nchs) {
-    $nchs_template_label = q{humansplit_};
-    if(not $do_target_alignment) {
-      $nchs_template_label .= q{notargetalign_};
-    }
-  }
+  my $nchs_template_label = $nchs? q{human_split}: q{};
   my $nchs_outfile_label = $nchs? q{human}: q{};
 
   #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
@@ -316,12 +310,10 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   # no target alignment:
   #  splice out unneeded p4 nodes, add -x flag to scramble,
   #   unset the reference for bam_stats and amend the AlignmentFilter command.
-  #  Note: currently human split (with and without target alignment) are handled with
-  #   separate templates, so these steps do not apply.
   ########
-  if(not $do_target_alignment and not $nchs and not $spike_tag) {
+  if(not $do_target_alignment and not $spike_tag) {
       push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:phix_bam_in';
-      push @{$p4_ops->{splice}}, 'alignment_filter:-foptgt_bmd_multiway:';
+      push @{$p4_ops->{splice}}, 'alignment_filter:target_bam_out-foptgt_bmd_multiway:';
       $p4_param_vals->{scramble_reference_flag} = q[-x];
       $p4_param_vals->{stats_reference_flag} = undef;   # both samtools and bam_stats
       $p4_param_vals->{no_target_alignment} = 1;   # adjust AlignmentFilter (bambi select) command
