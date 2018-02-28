@@ -316,7 +316,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
         push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:phix_bam_in';
       }
       else {
-        push @{$p4_ops->{splice}}, 'aln_tee4_tee4:to_tgtaln-alignment_filter:target_bam_in';
+        push @{$p4_ops->{prune}}, 'aln_tee4_tee4:to_tgtaln-alignment_filter:target_bam_in';
         push @{$p4_ops->{splice}}, 'aln_amp_bamadapterclip_pre_auxmerge:-aln_bam12auxmerge_nchs:no_aln_bam';
       }
       push @{$p4_ops->{splice}}, 'alignment_filter:target_bam_out-foptgt_bmd_multiway:';
