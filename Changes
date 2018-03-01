@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 51.11.3
+ - seq_alignment: fixes for no target alignment and no target alignment+non-consented human split 
+
 release 51.11.2
  - use align_intfile_opt=1 when aligning with star to produce intermediate bam file
  - by default, force bambi i2b to single-threading (general_values parameter available for override)
