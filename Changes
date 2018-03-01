@@ -1,10 +1,20 @@
 LIST OF CHANGES
 ---------------
 
- - Handle dual indexes
- - Travis CI build - add iRODS test server (needed for futude development)
+ - Travis CI build - add iRODS test server (needed for future development)
+
+release 51.11.3
+ - seq_alignment: fixes for no target alignment and no target alignment+non-consented human split 
+
+release 51.11.2
+ - use align_intfile_opt=1 when aligning with star to produce intermediate bam file
+ - by default, force bambi i2b to single-threading (general_values parameter available for override)
+
+release 51.11.1
+ - Handle dual indexes (create new format lane tag files)
  - remove remaining broken provisions for xml LIMs driver 
  - use the new log publisher
+ - now allows XA/Y-split with no target alignment
 
 release 51.11.0
  - added support for RNA analysis/quantification using STAR and salmon
