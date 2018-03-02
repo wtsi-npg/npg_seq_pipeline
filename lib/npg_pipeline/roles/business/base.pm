@@ -6,6 +6,8 @@ use List::MoreUtils qw{any};
 use File::Basename;
 
 use npg_tracking::util::abs_path qw{abs_path};
+use npg_tracking::glossary::rpt;
+use npg_tracking::glossary::composition::factory::rpt_list;
 use npg::api::run;
 use st::api::lims;
 use npg_tracking::data::reference::find;
@@ -166,6 +168,26 @@ sub _lims4lane {
   return $lane;
 }
 
+=head2 create_composition
+
+Returns a one-component composition representing an input
+object or hash.
+ 
+  my $l = st::api::lims->new(id_run => 1, position => 2);
+  my $composition = $base->create_composition($l);
+
+  my $h = {id_run => 1, position => 2};
+  $composition = $base->create_composition($h);
+
+=cut
+
+sub create_composition {
+  my ($self, $l) = @_;
+  return npg_tracking::glossary::composition::factory::rpt_list
+      ->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($l))
+      ->create_composition();
+}
+
 =head2 get_tag_index_list
 
 Returns an array of sorted tag indices for a lane, including tag zero.
@@ -286,11 +308,10 @@ Pre-exec string to test the availability of the reference repository.
 sub ref_adapter_pre_exec_string {
   my ( $self ) = @_;
 
-  my $string = q{-E '} . q{npg_pipeline_preexec_references};
+  my $string = q{npg_pipeline_preexec_references};
   if ( $self->can( q{has_repository} ) && $self->has_repository() ) {
     $string .= q{ --repository } . $self->repository();
   }
-  $string .= q{'};
   return $string;
 }
 
@@ -345,6 +366,21 @@ sub path_in_outgoing {
   return $path;
 }
 
+=head2 num_cpus2array
+
+=cut
+
+sub num_cpus2array {
+  my ($self, $num_cpus_as_string) = @_;
+  my @numbers = grep  { $_ > 0 }
+                map   { int }    # zero if conversion fails
+                split /,/xms, $num_cpus_as_string;
+  if (!@numbers || @numbers > 2) {
+    $self->logcroak('Non-empty array of up to two numbers is expected');
+  }
+  return [sort {$a <=> $b} @numbers];
+}
+
 1;
 __END__
 
@@ -372,6 +408,10 @@ __END__
 
 =item npg_tracking::data::reference::find
 
+=item npg_tracking::glossary::rpt
+
+=item npg_tracking::glossary::composition::factory::rpt_list
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -381,10 +421,11 @@ __END__
 =head1 AUTHOR
 
 Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Limited
+Copyright (C) 2018 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

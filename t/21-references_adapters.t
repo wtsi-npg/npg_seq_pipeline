@@ -6,7 +6,9 @@ use npg_pipeline::base;
 
 {
   my $ref_adapt = npg_pipeline::base->new(repository => q{t/data/sequence});
-  is( $ref_adapt->ref_adapter_pre_exec_string(), q{-E 'npg_pipeline_preexec_references --repository t/data/sequence'}, q{correct ref_adapter_pre_exec_string} );
+  is( $ref_adapt->ref_adapter_pre_exec_string(),
+    q{npg_pipeline_preexec_references --repository t/data/sequence},
+    q{correct ref_adapter_pre_exec_string} );
 }
 
 {

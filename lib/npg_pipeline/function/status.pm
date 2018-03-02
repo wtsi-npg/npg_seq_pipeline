@@ -1,34 +1,61 @@
 package npg_pipeline::function::status;
 
 use Moose;
-use Carp;
+use namespace::autoclean;
 use Readonly;
+
+use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
 
 our $VERSION = '0';
 
-Readonly::Scalar our $STATUS_SCRIPT  => q{npg_status2file};
+Readonly::Scalar my $STATUS_SCRIPT => q{npg_status2file};
 
 has q{status}           => (isa      => q{Str},
                             is       => q{ro},
-                            required => 1,
-);
+                            required => 1,);
 
 has q{lane_status_flag} => (isa      => q{Bool},
                             is       => q{ro},
                             required => 0,
-                            default  => 0,
-);
+                            default  => 0,);
+
+sub create {
+  my $self = shift;
+
+  my $status_with_underscores = $self->status();
+  $status_with_underscores =~ s/[ ]/_/gxms;
+  my $status_files_path = $self->status_files_path();
+  my $job_name = join q{_},
+    $self->lane_status_flag ? q{save_lane_status} : q{save_run_status},
+    $self->id_run(),
+    $status_with_underscores,
+    $self->timestamp();
+  my $log_dir = join q[/], $status_files_path, 'log';
+
+  my $d = npg_pipeline::function::definition->new(
+    created_by    => __PACKAGE__,
+    created_on    => $self->timestamp(),
+    identifier    => $self->id_run(),
+    job_name      => $job_name,
+    command       => $self->_command($status_files_path),
+    log_file_dir  => $log_dir,
+    queue         =>
+      $npg_pipeline::function::definition::SMALL_QUEUE,
+  );
+
+  return [$d];
+}
 
 sub _command {
-  my $self = shift;
+  my ($self, $status_files_path) = @_;
 
   my $command = sprintf '%s --id_run %i --status "%s" --dir_out %s',
                   $STATUS_SCRIPT,
                   $self->id_run,
                   $self->status,
-                  $self->status_files_path;
+                  $status_files_path;
 
   if ($self->lane_status_flag) {
     my @lanes = @{$self->lanes};
@@ -43,38 +70,10 @@ sub _command {
   return $command;
 }
 
-sub submit {
-  my ($self) = @_;
-  return ($self->submit_bsub_command($self->_generate_bsub_command()));
-}
-
-###############
-# responsible for generating the bsub command to be executed
-sub _generate_bsub_command {
-  my ($self) = @_;
-
-  my $timestamp = $self->timestamp();
-  my $run_folder = $self->run_folder();
-  my $status     = $self->status();
-  my $id_run     = $self->id_run();
-  my $status_with_underscores = $self->status();
-  $status_with_underscores =~ s/[ ]/_/gxms;
-
-  my $job_name = $self->lane_status_flag ? q{save_lane_status_} : q{save_run_status_};
-  $job_name .= join q{_}, $id_run, $status_with_underscores, $timestamp;
-
-  my $bsub_command = qq{bsub -J $job_name -q } . $self->small_lsf_queue() . q{ };
-  $bsub_command   .=  q{-o } . $self->status_files_path . q{/log/} . qq{$job_name.out };
-  $bsub_command   .=  q{'}   . $self->_command . q{'};
-
-  $self->debug($bsub_command);
-
-  return $bsub_command;
-}
-
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 NAME
@@ -89,13 +88,22 @@ Launches a job for saving run and lane statuses to a file.
 
 =head1 SUBROUTINES/METHODS
 
-=head2 status - status description
+=head2 status
+
+Npg tracking status description
 
 =head2 lane_status_flag
 
-  A boolean flag; if true, a lane status will be set; false by default
+A boolean flag, false by default.
+If true, a lane status will be set.
 
-=head2 submit - handles generating and submitting an LSF job
+=head2 create
+
+Creates and returns a single function definition as an array.
+Function definition is created as a npg_pipeline::function::definition
+type object.
+
+  my $definitions = $obj->create(); 
 
 =head1 DIAGNOSTICS
 
@@ -107,9 +115,9 @@ Launches a job for saving run and lane statuses to a file.
 
 =item Moose
 
-=item Readonly
+=item namespace::autoclean
 
-=item Carp
+=item Readonly
 
 =back
 

@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 20;
+use Test::More tests => 26;
 use Test::Exception;
 use File::Path qw(make_path);
 use t::util;
@@ -16,17 +16,22 @@ my $recalibrated_path = join q[/], $runfolder_path, $link_to;
 make_path($recalibrated_path);
 
 {
+  my $test = sub {
+    my ($obj) = @_;
+    my $ds = $obj->create();
+    ok($ds && scalar @{$ds} == 1 && $ds->[0]->excluded,
+      'creating summary link switched off');
+    isa_ok ($ds->[0], 'npg_pipeline::function::definition');
+  };
+ 
   my $rfl;
-  my $link = "$runfolder_path/Latest_Summary";
-  ok(!-e $link, 'link does not exist - test prerequisite');
-
   $rfl = npg_pipeline::function::current_analysis_link->new(
       run_folder        => q{123456_IL2_1234},
       runfolder_path    => $runfolder_path,
       recalibrated_path => $recalibrated_path,
       no_summary_link   => 1
   );
-  ok(!$rfl->submit_create_link(), 'jobs ids are not returned');
+  $test->($rfl);
 
   $rfl = npg_pipeline::function::current_analysis_link->new(
       run_folder        => q{123456_IL2_1234},
@@ -34,26 +39,43 @@ make_path($recalibrated_path);
       recalibrated_path => $recalibrated_path,
       local             => 1
   );
-  ok($rfl->no_summary_link, 'summary link switched off');
-  ok(!$rfl->submit_create_link(), 'jobs ids are not returned');
+  $test->($rfl);
 
   $rfl = npg_pipeline::function::current_analysis_link->new(
       run_folder        => q{123456_IL2_1234},
       runfolder_path    => $runfolder_path,
-      recalibrated_path => $recalibrated_path,
+      recalibrated_path => $recalibrated_path
   );
-  ok (!$rfl->no_summary_link, 'no_summary_link flag false by default');
-  ok (!$rfl->local, 'local flag false by default');
+  my $ds = $rfl->create();
+  ok($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
+    'creating summary link is enabled');
+  my $d = $ds->[0];
+  isa_ok ($d, 'npg_pipeline::function::definition');
+  is ($d->identifier, '1234', 'identifier set to run id');
+  is ($d->created_by, 'npg_pipeline::function::current_analysis_link',
+    'created_by');
+  ok (!$d->immediate_mode, 'mode is not immediate');
+  my $command = 'npg_pipeline_create_summary_link ' .
+                '--run_folder 123456_IL2_1234 ' .
+                "--runfolder_path $runfolder_path " .
+                "--recalibrated_path $recalibrated_path";
+  is ($d->command, $command, 'command');
+  is ($d->log_file_dir, $runfolder_path, 'log dir');
+  is ($d->job_name, 'create_latest_summary_link_1234_123456_IL2_1234',
+    'job name');
+  is ($d->queue, 'small', 'small queue');  
+}
 
-  $rfl = npg_pipeline::function::current_analysis_link->new(
+{
+  my $link = "$runfolder_path/Latest_Summary";
+  ok(!-e $link, 'link does not exist - test prerequisite');
+
+  my $rfl = npg_pipeline::function::current_analysis_link->new(
       run_folder        => q{123456_IL2_1234},
       runfolder_path    => $runfolder_path,
       recalibrated_path => $recalibrated_path,
-      no_bsub           => 1,
   );
-  ok ($rfl->no_summary_link, 'no_summary_link flag is set');
-  ok ($rfl->local, 'local flag is set');
-
+  
   lives_ok { $rfl->make_link(); } q{no croak creating link};
   ok(-l $link, 'link exists');
   is(readlink $link, $link_to, 'correct link target');

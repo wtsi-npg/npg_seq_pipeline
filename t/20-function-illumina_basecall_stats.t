@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 23;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
@@ -14,7 +14,6 @@ my $curdir = abs_path(getcwd());
 my $tdir = $util->temp_directory();
 
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $curdir . q{/t/data};
-local $ENV{TEST_FS_RESOURCE} = q{nfs_12};
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
@@ -23,11 +22,11 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 
 my $e = join q[/], $tdir, 'setupBclToQseq.py';
 open my $fh, '>', $e;
-print "#!/usr/bin/env python\n";
+print $fh "#!/usr/bin/env python\n";
 close $fh;
 chmod 0755, $e;
 
-local $ENV{PATH} = join q[:], qq[$curdir/t/bin], $tdir, $ENV{PATH};
+local $ENV{PATH} = join q[:], $tdir, $ENV{PATH};
 
 use_ok(q{npg_pipeline::function::illumina_basecall_stats});
 
@@ -46,30 +45,45 @@ use_ok(q{npg_pipeline::function::illumina_basecall_stats});
       run_folder => q{123456_IL2_1234},
       runfolder_path => $runfolder_path,
       timestamp => q{20091028-101635},
-      verbose => 0,
       bam_basecall_path => $bam_basecall_path,
-      no_bsub => 1
     )
   } q{create object ok};
+  isa_ok ($obj, q{npg_pipeline::function::illumina_basecall_stats});
+  my $da = $obj->create();
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
+  my $d = $da->[0];
+  isa_ok($d, q{npg_pipeline::function::definition});
+  is ($d->created_by, q{npg_pipeline::function::illumina_basecall_stats},
+    'created_by is correct');
+  is ($d->created_on, $obj->timestamp, 'created_on is correct');
+  is ($d->identifier, 1234, 'identifier is set correctly');
+  is ($d->job_name, q{basecall_stats_1234_20091028-101635},
+    'job_name is correct');
+  is ($d->log_file_dir, qq{$bam_basecall_path/log}, 'log_file_dir is correct');
+  ok (!$d->has_composition, 'composition not set');
+  ok (!$d->excluded, 'step not excluded');
+  ok (!$d->immediate_mode, 'immediate mode is false');
+  is_deeply ($d->num_cpus, [4], 'number of cpus');
+  is ($d->num_hosts, 1, 'number of hosts');
+  is ($d->fs_slots_num, 4, 'fs slots number');
+  is ($d->memory, 350, 'memory');
+  is ($d->queue, 'default', 'default queue');
+  lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
-  my $mem = 350;
-  my $mem_limit = npg_pipeline::lsf_job->new(memory => $mem, memory_units =>'MB')->_scale_mem_limit();
-  my $expected_command = qq(bsub -q srpipeline -o $bam_basecall_path/log/basecall_stats_1234_20091028-101635.%J.out -J basecall_stats_1234_20091028-101635 -R 'select[mem>).$mem.q{] rusage[mem=}.$mem.q{,nfs_12=4]' -M} . $mem_limit . qq( -R 'span[hosts=1]' -n 4 " cd $bam_basecall_path && if [[ -f Makefile ]]; then echo Makefile already present 1>&2; else echo creating bcl2qseq Makefile 1>&2; ) . qq($tdir/setupBclToQseq.py -b $basecall_path -o $bam_basecall_path --overwrite; fi && make -j 4 Matrix Phasing && make -j 4 BustardSummary.x{s,m}l ");
-  is( $obj->_generate_command(), $expected_command,
-    q{Illumina basecalls stats generation bsub command is correct} );
-
-  my @job_ids = $obj->generate();
-  is( scalar @job_ids, 1, q{1 job ids, generate Illumina basecall stats} );
+  my $command = "cd $bam_basecall_path && if [[ -f Makefile ]]; then echo Makefile already present 1>&2; else echo creating bcl2qseq Makefile 1>&2; $tdir/setupBclToQseq.py -b $basecall_path -o $bam_basecall_path --overwrite; fi && make -j 4 Matrix Phasing && make -j 4 BustardSummary.x{s,m}l";
+  is ($d->command, $command, 'command is correct');
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data/hiseqx];
   $obj = npg_pipeline::function::illumina_basecall_stats->new(
-                     id_run => 13219,
-                     no_bsub => 1,
-                     verbose => 0,
-                     run_folder => 'folder',
-                     runfolder_path => $runfolder_path
+    id_run => 13219,
+    run_folder => 'folder',
+    runfolder_path => $runfolder_path
   );
-  ok (!$obj->generate(), 'illumina_basecall_stats step is skipped for HiSeqX run');
+  $da = $obj->create();
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
+  $d = $da->[0];
+  isa_ok($d, q{npg_pipeline::function::definition});
+  ok ($d->excluded, 'illumina_basecall_stats step is skipped for HiSeqX run');
 }
 
 1;

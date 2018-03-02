@@ -1,17 +1,16 @@
 use strict;
 use warnings;
 use English qw{-no_match_vars};
-use Test::More tests => 20;
+use Test::More tests => 45;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
 
 use_ok( q{npg_pipeline::function::cluster_count} );
 
-my $util = t::util->new({});
+my $util = t::util->new();
 my $dir = $util->temp_directory();
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
@@ -21,7 +20,6 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 $util->create_multiplex_analysis();
 my $analysis_runfolder_path = $util->analysis_runfolder_path();
 my $bam_basecall_path = $util->standard_bam_basecall_path();
-qx{cp t/data/summary_files/BustardSummary_mp.xml $bam_basecall_path/BustardSummary.xml};
 my $recalibrated_path = $util->standard_analysis_recalibrated_path();
 my $archive_path = $recalibrated_path . q{/archive};
 
@@ -29,22 +27,66 @@ my $archive_path = $recalibrated_path . q{/archive};
   my $object;
   lives_ok {
     $object = npg_pipeline::function::cluster_count->new(
-      run_folder => q{123456_IL2_1234},
-      runfolder_path => $analysis_runfolder_path,
+      run_folder        => q{123456_IL2_1234},
+      runfolder_path    => $analysis_runfolder_path,
       bam_basecall_path => $bam_basecall_path,
-      id_run => 1234,
-      timestamp => q{20100907-142417},
-      no_bsub => 1,
+      id_run            => 1234,
+      timestamp         => q{20100907-142417},
     );
   } q{obtain object ok};
 
-  isa_ok( $object, q{npg_pipeline::function::cluster_count}, q{$object} );
+  isa_ok( $object, q{npg_pipeline::function::cluster_count});
 
-  my $bsub_command = $util->drop_temp_part_from_paths( qq{bsub -q srpipeline -J 'npg_pipeline_check_cluster_count_1234_20100907-142417[1-8]' -o $archive_path/log/npg_pipeline_check_cluster_count_1234_20100907-142417.} . q{%I.%J.out 'npg_pipeline_check_cluster_count --id_run=1234 --position=`echo $LSB_JOBINDEX` --runfolder_path=} . qq{$analysis_runfolder_path --qc_path=$archive_path/qc --bam_basecall_path=$bam_basecall_path'} );
-  is( $util->drop_temp_part_from_paths( $object->_generate_bsub_command() ), $bsub_command, q{generated bsub command is correct} );
+  my $da = $object->create();
+  ok ($da && @{$da} == 8, 'an array with eight definitions is returned');
 
-  my @jids = $object->launch();
-  is( scalar @jids, 1, q{1 job id returned} );
+  my $d = $da->[0];
+    is ($d->created_by, 'npg_pipeline::function::cluster_count',
+    'created_by is correct');
+  is ($d->created_on, $object->timestamp, 'created_on is correct');
+  is ($d->identifier, 1234, 'identifier is set correctly');
+  ok (!$d->excluded, 'step not excluded');
+  ok (!$d->immediate_mode, 'immediate mode is false');
+  ok (!$d->has_num_cpus, 'number of cpus is not set');
+  ok (!$d->has_memory,'memory is not set');
+  ok ($d->has_composition, 'composition is set');
+  is ($d->composition->num_components, 1, 'one componet in a composition');
+  is ($d->composition->get_component(0)->position, 1, 'correct position');
+  ok (!defined $d->composition->get_component(0)->tag_index,
+    'tag index is not defined');
+  ok (!defined $d->composition->get_component(0)->subset,
+    'subset is not defined');
+  lives_ok {$d->freeze()} 'definition can be serialized to JSON';
+
+  my $values = {};
+  map {$values->{ref $_} += 1} @{$da};
+  is ($values->{'npg_pipeline::function::definition'}, 8,
+    'eight definition objects returned');
+
+  map {$values->{$_->job_name} += 1} @{$da};
+  is ($values->{'npg_pipeline_check_cluster_count_1234_20100907-142417'}, 8,
+    'the same job name for all definitions');
+
+  map {$values->{$_->log_file_dir} += 1} @{$da};
+  is ($values->{"$archive_path/log"}, 8, 'the same log dir for all definitions');
+  
+  map {$values->{$_->queue} += 1} @{$da};
+  is ($values->{'default'}, 8, 'the same default queue for all definitions');
+  
+  is (join(q[ ], map {$_->composition->get_component(0)->position} @{$da}),
+    '1 2 3 4 5 6 7 8', 'positions');
+
+  my $command = sub {
+    my $p = shift;
+    return q{npg_pipeline_check_cluster_count --id_run=1234} .
+      qq{ --position=$p --runfolder_path=$analysis_runfolder_path} .
+      qq{ --qc_path=$archive_path/qc --bam_basecall_path=$bam_basecall_path};
+  };
+  
+  for my $d (@{$da}) {
+    my $position = $d->composition->get_component(0)->position;
+    is ($d->command, $command->($position), 'correct command');
+  }
 }
 
 {
@@ -68,7 +110,7 @@ my $archive_path = $recalibrated_path . q{/archive};
 
   lives_ok {
     $object->run_cluster_count_check();
-  } qr{check returns ok};
+  } q{check returns ok};
 }
 
 {

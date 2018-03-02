@@ -1,12 +1,14 @@
 package npg_pipeline::function::runfolder_scaffold;
 
 use Moose;
-use Carp;
+use namespace::autoclean;
 use English qw{-no_match_vars};
 
-our $VERSION = '0';;
+use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
+
+our $VERSION = '0';
 
 sub create_dir {
   my ($self, $owning_group) = @_;
@@ -14,156 +16,79 @@ sub create_dir {
   $owning_group ||= $ENV{OWNING_GROUP};
   $owning_group ||= $self->general_values_conf()->{group};
 
-  my $archive_dir = $self->archive_path();
-  my $archive_log_dir = $archive_dir . q{/log};
-  my $qc_dir = $self->qc_path();
-  my $qc_log_dir = $qc_dir . q{/log};
-  my $tileviz_dir = $qc_dir . q{/tileviz};
+  my @dirs = ( $self->archive_path(),
+               $self->qc_path(),
+               $self->qc_path() . q{/tileviz}, );
+  my @all_dirs = @dirs;
 
-  #############
-  # check existence of archive directory
-  # create if it doesn't
-
-  if ( ! -d $archive_dir) {
-    $self->make_log_dir( $self->archive_path() );
-  } else {
-    $self->info("$archive_log_dir already exists");
+  for my $dir (@dirs) {
+    $self->info("Creating $dir and it's log directory");
+    push @all_dirs, $self->make_log_dir($dir);
   }
 
-  #############
-  # check existence of qc directory
-  # create if it doesn't
-
-  if ( ! -d $qc_dir) {
-    $self->make_log_dir( $qc_dir );
-  } else {
-    $self->info("$qc_log_dir already exists");
-  }
-
-  #############
-  # check existence of tileviz directory
-  # create if it doesn't
-
-  if ( ! -d $tileviz_dir) {
-    my $mk_tileviz_dir_cmd = qq{mkdir -p $tileviz_dir};
-    $self->debug($mk_tileviz_dir_cmd);
-    my $return = qx{$mk_tileviz_dir_cmd};
-    if ( $CHILD_ERROR ) {
-      $self->logcroak($tileviz_dir,
-                      qq{ does not exist and unable to create: $CHILD_ERROR },
-                      $return);
-    }
-  }
-
-  #############
-  # check existence of multiplex lane and qc directory
-  # create if they doesn't
-  if( $self->is_indexed() ){
-
-      my @positions = $self->positions();
-
-      foreach my $position ( @positions ){
-
-          if ( ! $self->is_multiplexed_lane( $position ) ) {
-             next;
-          }
-
-          my $lane_dir = $archive_dir . q{/lane} . $position;
-
-          if ( ! -d $lane_dir ) {
-             $self->make_log_dir( $lane_dir );
-          }
-
-          my $lane_qc_dir = $lane_dir . q{/qc};
-
-          if( ! -d $lane_qc_dir ){
-              my $mk_lane_qc_dir_cmd = qq{mkdir -p $lane_qc_dir};
-              $self->info($mk_lane_qc_dir_cmd);
-              my $return = qx{$mk_lane_qc_dir_cmd};
-              if ( $CHILD_ERROR ) {
-                    croak $lane_qc_dir . qq{ does not exist and unable to create: $CHILD_ERROR\n$return};
-              }
-          }
+  if ( $self->is_indexed() ){
+    foreach my $position ($self->positions()) {
+      if ( ! $self->is_multiplexed_lane( $position ) ) {
+        next;
       }
-  }
-
-  if ($owning_group) {
-    ############
-    # ensure that the owning group is what we expect
-
-    $self->info("chgrp $owning_group $archive_dir");
-    my $rc = `chgrp $owning_group $archive_dir`;
-    if ( $CHILD_ERROR ) {
-      $self->warn("could not chgrp $archive_dir\n\t$rc");                # not fatal
-    }
-
-    $self->info("chgrp $owning_group $qc_dir");
-    $rc = `chgrp $owning_group $qc_dir`;
-    if ( $CHILD_ERROR ) {
-      $self->warn("could not chgrp $qc_dir\n\t$rc");                # not fatal
-    }
-
-    $self->info("chgrp $owning_group $tileviz_dir");
-    $rc = `chgrp $owning_group $tileviz_dir`;
-    if ( $CHILD_ERROR ) {
-      $self->warn("could not chgrp $tileviz_dir\n\t$rc");                # not fatal
-    }
-
-    ############
-    # ensure that the owning group is what we expect
-
-    $self->info("chgrp $owning_group $archive_log_dir");
-    $rc = `chgrp $owning_group $archive_log_dir`;
-    if ( $CHILD_ERROR ) {
-      $self->warn("could not chgrp $archive_log_dir\n\t$rc");                # not fatal
-    }
-
-    $self->info("chgrp $owning_group $qc_log_dir");
-    $rc = `chgrp $owning_group $qc_log_dir`;
-    if ( $CHILD_ERROR ) {
-      $self->warn("could not chgrp $qc_log_dir\n\t$rc");                # not fatal
+      ###########
+      # Lane directories for primary analysis output
+      #
+      my $lane_dir = $self->recalibrated_path() . q{/lane} . $position;
+      push @all_dirs, $lane_dir;
+      push @all_dirs, $self->make_log_dir( $lane_dir );
+      ###########
+      # Lane directories for secondary analysis output
+      #
+      $lane_dir = $self->archive_path() . q{/lane} . $position;
+      push @dirs, $lane_dir;
+      push @all_dirs, $self->make_log_dir( $lane_dir );
+      ###########
+      # Lane directories for qc output
+      #
+      my $lane_qc_dir = $lane_dir . q{/qc};
+      push @all_dirs, $lane_qc_dir;
+      push @all_dirs, $self->make_log_dir( $lane_qc_dir );
     }
   }
 
-  ###########
-  # set correct permissions on the archive directory
-
-  $self->info("chmod u=rwx,g=srxw,o=rx $archive_dir");
-  my $rc = `chmod u=rwx,g=srxw,o=rx $archive_dir`;
-  if ( $CHILD_ERROR ) {
-    $self->warn("could not chmod $archive_dir\n\t$rc");                # not fatal
+  foreach my $dir (@all_dirs) {
+    if (-d $dir) {
+      ###########
+      # Set owning group
+      #
+      if ($owning_group) {
+        $self->info("chgrp $owning_group $dir");
+        my $rc = `chgrp $owning_group $dir`;
+        if ( $CHILD_ERROR ) {
+          $self->warn("could not chgrp $dir\n\t$rc"); # not fatal
+        }
+      }
+      ###########
+      # Set correct permissions
+      #
+      $self->info("chmod u=rwx,g=srxw,o=rx $dir");
+      my $rc = `chmod u=rwx,g=srxw,o=rx $dir`;
+      if ( $CHILD_ERROR ) {
+        $self->warn("could not chmod $dir\n\t$rc");   # not fatal
+      }
+    }
   }
 
-  $self->info("chmod u=rwx,g=srxw,o=rx $qc_dir");
-  $rc = `chmod u=rwx,g=srxw,o=rx $qc_dir`;
-  if ( $CHILD_ERROR ) {
-    $self->warn("could not chmod $qc_dir\n\t$rc");                # not fatal
-  }
+  my $d = npg_pipeline::function::definition->new(
+    created_by     => __PACKAGE__,
+    created_on     => $self->timestamp(),
+    identifier     => $self->id_run(),
+    immediate_mode => 1
+  );
 
-  $self->info("chmod u=rwx,g=srxw,o=rx $tileviz_dir");
-  $rc = `chmod u=rwx,g=srxw,o=rx $tileviz_dir`;
-  if ( $CHILD_ERROR ) {
-    $self->warn("could not chmod $tileviz_dir\n\t$rc");                # not fatal
-  }
-
-  $self->info("chmod u=rwx,g=srxw,o=rx $archive_log_dir");
-  $rc = `chmod u=rwx,g=srxw,o=rx $archive_log_dir`;
-  if ( $CHILD_ERROR ) {
-    $self->warn("could not chmod $archive_log_dir\n\t$rc");                # not fatal
-  }
-
-  $self->info("chmod u=rwx,g=srxw,o=rx $qc_log_dir");
-  $rc = `chmod u=rwx,g=srxw,o=rx $qc_log_dir`;
-  if ( $CHILD_ERROR ) {
-    $self->warn("could not chmod $qc_log_dir\n\t$rc");                # not fatal
-  }
-
-  return ();
+  return [$d];
 }
 
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 NAME
@@ -182,11 +107,15 @@ Object module which knows how to construct the path and creates the archival dir
 
 =head1 SUBROUTINES/METHODS
 
-=head2 create_dir - creates the archive directory if is doesn't exist and sets the correct group and permissions on it
+=head2 create_dir
 
-  eval {
+Creates the archive directory if is doesn't exist and sets the correct group
+and permissions on it. Returns an array with a single npg_pipeline::function::definition
+object, which has immediate_mode attribute set to true.
+
+  try {
     $afg->create_dir($s<OptionalOwningGroup);
-  } or do {
+  } catch {
     ...error handling...
   };
 
@@ -200,7 +129,7 @@ Object module which knows how to construct the path and creates the archival dir
 
 =item Moose
 
-=item Carp
+=item namespace::autoclean
 
 =item English -no_match_vars
 

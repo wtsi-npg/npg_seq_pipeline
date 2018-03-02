@@ -1,16 +1,14 @@
 use strict;
 use warnings;
-use Test::More tests => 14;
+use Test::More tests => 30;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
 
 my $util = t::util->new({});
 my $tmp_dir = $util->temp_directory();
-local $ENV{TEST_DIR} = $tmp_dir;
 
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 # if REF_PATH is not set, force using ref defined in the header
 local $ENV{REF_PATH} = $ENV{REF_PATH} ? $ENV{REF_PATH} : 'DUMMY';
 
@@ -33,30 +31,55 @@ my $archive_path = $recalibrated_path . q{/archive};
   my $object;
   lives_ok {
     $object = npg_pipeline::function::seqchksum_comparator->new(
-      run_folder => q{123456_IL2_1234},
-      runfolder_path => $analysis_runfolder_path,
-      archive_path => $archive_path,
+      run_folder        => q{123456_IL2_1234},
+      runfolder_path    => $analysis_runfolder_path,
+      archive_path      => $archive_path,
       bam_basecall_path => $bam_basecall_path,
-      id_run => 1234,
-      timestamp => $timestamp,
-      no_bsub => 1,
-      lanes => [1,2],
+      id_run            => 1234,
+      timestamp         => $timestamp,
+      lanes             => [1,2]
     );
   } q{object ok};
 
-  isa_ok( $object, q{npg_pipeline::function::seqchksum_comparator}, q{$object} );
+  isa_ok( $object, q{npg_pipeline::function::seqchksum_comparator});
+  my $da = $object->create();
+  ok ($da && @{$da} == 2, 'an array with two definitions is returned');
+  my $d = $da->[0];
+  isa_ok($d, q{npg_pipeline::function::definition});
+  is ($d->created_by, q{npg_pipeline::function::seqchksum_comparator},
+    'created_by is correct');
+  is ($d->created_on, $object->timestamp, 'created_on is correct');
+  is ($d->identifier, 1234, 'identifier is set correctly');
+  ok ($d->has_composition, 'composition is set');
+  is ($d->composition->num_components, 1, 'one componet in a composition');
+  is ($d->composition->get_component(0)->position, 1, 'correct position');
+  ok (!defined $d->composition->get_component(0)->tag_index,
+    'tag index is not defined');
+  ok (!defined $d->composition->get_component(0)->subset,
+    'subset is not defined');
+  is ($d->job_name, q{seqchksum_comparator_1234_20100907-142417},
+    'job_name is correct');
+  is ($d->log_file_dir, qq{$archive_path/log}, 'log_file_dir is correct');
+  is ($d->command,
+    q{npg_pipeline_seqchksum_comparator --id_run=1234 --archive_path=} .
+    qq{$archive_path --bam_basecall_path=$bam_basecall_path --lanes=1},
+    'command is correct');
+  ok (!$d->excluded, 'step not excluded');
+  ok (!$d->immediate_mode, 'immediate mode is false');
+  ok (!$d->has_num_cpus, 'number of cpus is not set');
+  ok (!$d->has_memory,'memory is not set');
+  is ($d->queue, 'default', 'default queue');
+  lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
-  my $bsub_command = $util->drop_temp_part_from_paths( qq{bsub -q srpipeline -J 'npg_pipeline_seqchksum_comparator_1234_20100907-142417[1-2]' -o $archive_path/log/npg_pipeline_seqchksum_comparator_1234_20100907-142417.%I.%J.out 'npg_pipeline_seqchksum_comparator --id_run=1234} .q{ --lanes=`echo $LSB_JOBINDEX` --archive_path=} . qq{$archive_path --bam_basecall_path=$bam_basecall_path'} );
-  is( $util->drop_temp_part_from_paths( $object->_generate_bsub_command() ), $bsub_command, q{generated bsub command is correct} );
-
-  my @jids = $object->launch();
-  is( scalar @jids, 1, q{1 job id returned} );
+  $d = $da->[1];
+  is ($d->composition->get_component(0)->position, 2, 'position');
+  is ($d->command,
+    q{npg_pipeline_seqchksum_comparator --id_run=1234 --archive_path=} .
+    qq{$archive_path --bam_basecall_path=$bam_basecall_path --lanes=2},
+    'command is correct');
 
   throws_ok{$object->do_comparison()} qr/Cannot find/,
     q{Doing a comparison with no files throws an exception}; 
-
-  is($object->archive_path, $archive_path, "Object has correct archive path");
-  is($object->bam_basecall_path, $bam_basecall_path, "Object has correct bam_basecall path");
 
   my $seqchksum_contents1 = <<'END1';
 ###  set count   b_seq name_b_seq  b_seq_qual  b_seq_tags(BC,FI,QT,RT,TC)
@@ -89,39 +112,37 @@ END1
     system "cp -p t/data/seqchksum/sorted.cram $archive_path/lane1/1234_1#15.cram";
     system "cp -p t/data/seqchksum/sorted.cram $archive_path/lane2/1234_2#15.cram";
 
-    throws_ok{$object->do_comparison()} qr/Found a difference in seqchksum for post_i2b and product /, q{Doing a comparison with different bam files throws an exception}; 
+    throws_ok { $object->do_comparison() }
+      qr/seqchksum for post_i2b and product are different/,
+      q{Doing a comparison with different bam files throws an exception}; 
   }
 }
 
 {
-  my $object;
-  lives_ok {
-    $object = npg_pipeline::function::seqchksum_comparator->new(
-      run_folder => q{123456_IL2_1234},
-      runfolder_path => $analysis_runfolder_path,
-      bam_basecall_path => $bam_basecall_path,
-      archive_path => $archive_path,
-      id_run => 1234,
-      no_bsub => 1,
-      lanes => [1],
-    );
-  } q{object ok};
+  my $object = npg_pipeline::function::seqchksum_comparator->new(
+    run_folder        => q{123456_IL2_1234},
+    runfolder_path    => $analysis_runfolder_path,
+    bam_basecall_path => $bam_basecall_path,
+    archive_path      => $archive_path,
+    id_run            => 1234,
+    lanes             => [1]
+  );
+  my $da = $object->create();
+  ok ($da && @{$da} == 1, 'an array with one definitions is returned');
 
-  my @jids = $object->launch();
-  is( scalar @jids, 1, q{1 job id returned} );
+  $object = npg_pipeline::function::seqchksum_comparator->new(
+    run_folder        => q{123456_IL2_1234},
+    runfolder_path    => $analysis_runfolder_path,
+    bam_basecall_path => $bam_basecall_path,
+    archive_path      => $archive_path,
+    id_run            => 1234
+  );
+  $da = $object->create();
+  ok ($da && @{$da} == 8, 'an array with eight definitions is returned');
 
-  lives_ok {
-    $object = npg_pipeline::function::seqchksum_comparator->new(
-      run_folder => q{123456_IL2_1234},
-      runfolder_path => $analysis_runfolder_path,
-      bam_basecall_path => $bam_basecall_path,
-      archive_path => $archive_path,
-      id_run => 1234,
-      no_bsub => 1,
-    );
-  } q{object ok};
-
-  lives_ok{$object->launch()} q{Launching with no positions does not throw an exception};
+  throws_ok{ $object->do_comparison() }
+    qr/Lanes have to be given explicitly/,
+    q{lanes attribute is needed to run the comparison};
 }
 
 1;

@@ -10,16 +10,15 @@ use File::Path qw/make_path/;
 use Cwd qw/cwd abs_path/;
 use Perl6::Slurp;
 use File::Copy;
-use Log::Log4perl qw(:levels);
+use Log::Log4perl qw/:levels/;
 use JSON;
 use Cwd;
+use List::Util qw/first/;
 
 use st::api::lims;
 
 use_ok('npg_pipeline::function::seq_alignment');
 local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/rna_seq];
-local $ENV{'TEST_FS_RESOURCE'} = 'nfs-sf3';
-local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 local $ENV{CLASSPATH} = q[t/bin/software/solexa/jars];
 
 my $odir = abs_path cwd;
@@ -30,7 +29,7 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $dir, 'logfile'),
                           utf8   => 1});
 
-# 90 lines of code instead of 113 to generate a reference and transcriptome reference. but you can add more!
+# Create test reference repository
 my %builds = ();
 $builds{'Homo_sapiens'} = ['1000Genomes_hs37d5','GRCh38_15','GRCh38_full_analysis_set_plus_decoy_hla','GRCh38X'];
 $builds{'Mus_musculus'} = ['GRCm38','NCBIm37'];
@@ -123,17 +122,38 @@ return;
 ###12597_8#7  npg/run/12597.xml st/studies/2775.xml  batches/26550.xml samples/1886325.xml  <- Epigenetics, library type: qPCR only
 ###12597_4#3  npg/run/12597.xml st/studies/2893.xml  batches/26550.xml samples/1886357.xml  <- transcriptomics, library type: RNA-seq dUTP
 ###   1886357.xml edited to change reference to Mus_musculus (NCBIm37 + ensembl_67_transcriptome)
-### batches/26550.xml edited to have the following plex composition: # plex TTAGGC 3 lane 4 and plex CAGATC 7 lane 8 
+### batches/26550.xml edited to have the following plex composition: # plex TTAGGC 3 lane 4 and plex CAGATC 7 lane 8
+
+#######
+# In an array of definitions find and return a definition
+# that corresponds to a position and, optionally, tag index.
+# Use composition property of the definition object.
+#
+sub _find {
+  my ($a, $p, $t) = @_;
+  my $d= first { my $c = $_->composition->get_component(0);
+                 $c->position == $p &&
+                 (defined $t ? $c->tag_index == $t : !defined $c->tag_index) }
+         @{$a};
+  if (!$d) {
+    die "failed to find definition for position $p, tag " . defined $t ? $t : 'none';
+  }
+  return $d;
+}
 
 subtest 'test 1' => sub {
-  plan tests => 21;
+  plan tests => 40;
 
   my $runfolder = q{140409_HS34_12597_A_C333TACXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
-  my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20140515-073611/no_cal';
-  `mkdir -p $bc_path`;
+  my $bc_path = join q[/], $runfolder_path,
+                'Data/Intensities/BAM_basecalls_20140515-073611/no_cal';
+  for ((4, 5)) {
+    `mkdir -p $bc_path/lane$_`;
+  }
  
-  copy("t/data/rna_seq/12597_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+  copy("t/data/rna_seq/12597_RunInfo.xml","$runfolder_path/RunInfo.xml") or die
+    "Copy failed: $!"; #to get information that it is paired end
 
   my $rna_gen;
   lives_ok {
@@ -144,7 +164,6 @@ subtest 'test 1' => sub {
       timestamp         => q{2014},
       verbose           => 0,
       repository        => $dir,
-      no_bsub           => 1,
       force_phix_split  => 0,
       ###uncomment to check V4 failure, flowcell_id=>'C333TANXX',
     )
@@ -156,54 +175,59 @@ subtest 'test 1' => sub {
   my $qc_in  = $dir . q[/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4];
   my $qc_out = join q[/], $qc_in, q[qc];
 
-  my $args = {};
-  $args->{'40003'} = qq{bash -c '\ mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#3_p4s2_pv_in.json -export_param_vals 12597_4#3_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#3.json && viv.pl -s -x -v 3 -o viv_12597_4#3.log run_12597_4#3.json } .
+  my $da = $rna_gen->generate();
+  ok ($da && @{$da} == 8, 'array of 8 definitions is returned');
+
+  my $unique_string = $rna_gen->_job_id();
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  my $plex_temp_dir = $tmp_dir . q{/12597_4#3};
+  my $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane4/12597_4#3_p4s2_pv_in.json -export_param_vals 12597_4#3_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#3.json && viv.pl -s -x -v 3 -o viv_12597_4#3.log run_12597_4#3.json } .
     qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --tag_index 3} .
     qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 3} .
      q{ && qc --check alignment_filter_metrics --id_run 12597 --position 4 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 3}.
     qq{ && qc --check rna_seqc --id_run 12597 --position 4 --qc_in $qc_in --qc_out } . $qc_out . q{ --tag_index 3}.
      q{ '};
 
-  $args->{'40000'} = qq{bash -c '\ mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#0 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#0 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#0_p4s2_pv_in.json -export_param_vals 12597_4#0_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#0.json && viv.pl -s -x -v 3 -o viv_12597_4#0.log run_12597_4#0.json } .
+  my $mem = 32000;
+  my $d = _find($da, 4, 3);
+  isa_ok ($d, 'npg_pipeline::function::definition');
+  is ($d->created_by, 'npg_pipeline::function::seq_alignment', 'created by correct');
+  is ($d->created_on, '2014', 'timestamp');
+  is ($d->identifier, 12597, 'identifier is set correctly');
+  is ($d->job_name, 'seq_alignment_12597_2014', 'job name');
+  ok (!$d->excluded, 'step not excluded');
+  ok (!$d->immediate_mode, 'immediate mode is false');
+  ok ($d->has_composition, 'composition is set');
+  isa_ok ($d->composition, 'npg_tracking::glossary::composition',
+    'composition object present');
+  is ($d->composition->num_components, 1, 'one component in the composition');
+  is ($d->command, $command, 'correct command for position 4, tag 3');
+  is ($d->memory, $mem, "memory $mem");
+  is ($d->command_preexec, "npg_pipeline_preexec_references --repository $dir", 'preexec');
+  is ($d->log_file_dir, "$bc_path/archive/log", 'log file directory');
+  is ($d->queue, 'default', 'default queue');
+  is_deeply ($d->num_cpus, [12,16], 'range of cpu numbers');
+  is ($d->num_hosts, 1, 'one host');
+  is ($d->fs_slots_num, 4, 'four sf slots');
+  lives_ok {$d->freeze()} 'definition can be serialized to JSON';
+
+  $plex_temp_dir = $tmp_dir . q{/12597_4#0};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane4/12597_4#0_p4s2_pv_in.json -export_param_vals 12597_4#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#0.json && viv.pl -s -x -v 3 -o viv_12597_4#0.log run_12597_4#0.json } .
     qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
     qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 12597 --position 4 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.  
      q{ '};
-  
-  lives_ok {$rna_gen->_generate_command_arguments([4])}
-    'no error generating command arguments';
-  
-  cmp_deeply ($rna_gen->_job_args, $args,
-    'correct command arguments for pooled RNASeq lane');
 
-  is ($rna_gen->_job_args->{'4000'}, $args->{'4000'}, 'correct tag 0 args generated');
-
-  my $mem = 32000;
-  my $expected = qq{bsub -q srpipeline -E 'npg_pipeline_preexec_references --repository $dir' -R 'select[mem>$mem] rusage[mem=$mem,nfs-sf3=4]' -M$mem -R 'span[hosts=1]'}.qq{ -n12,16 -J 'seq_alignment_12597_2014[40000,40003]' -o $bc_path/archive/log/seq_alignment_12597_2014.%I.%J.out }.q('perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"' ) . $bc_path . q{/seq_alignment_12597_2014_$LSB_JOBID $LSB_JOBINDEX'}; 
-
-  is($rna_gen->_command2submit(), $expected, 'command to submit is correct');
-
-
-  my $fname;
-  lives_ok{$fname = $rna_gen->_save_arguments(55)} 'writing args to a file without error';
-  is ($fname, $bc_path. q{/seq_alignment_12597_2014_55}, 'file name correct');
-  ok (-e $fname, 'file exists');
-  my $actual_json = slurp($fname);
-  my $actual_hash = decode_json $actual_json;
-
-  my $json = qq({"40003":"bash -c ' mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#3 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#3_p4s2_pv_in.json -export_param_vals 12597_4#3_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#3.json && viv.pl -s -x -v 3 -o viv_12597_4#3.log run_12597_4#3.json ) .
-    qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --tag_index 3} .
-    qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 3} .
-     q{ && qc --check alignment_filter_metrics --id_run 12597 --position 4 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 3}.
-    qq{ && qc --check rna_seqc --id_run 12597 --position 4 --qc_in $qc_in --qc_out } . $qc_out . q{ --tag_index 3}.
-  qq( '","40000":"bash -c ' mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#0 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_4#0 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane4/12597_4#0_p4s2_pv_in.json -export_param_vals 12597_4#0_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#0.json && viv.pl -s -x -v 3 -o viv_12597_4#0.log run_12597_4#0.json ) .
-    qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
-    qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
-     q{ && qc --check alignment_filter_metrics --id_run 12597 --position 4 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
-  q( '"});
-
-  my $expected_hash = decode_json $json;
-  cmp_deeply($actual_hash, $expected_hash, 'correct json file content (for dUTP library)');
+  $d = _find($da, 4, 0);
+  is ($d->job_name, 'seq_alignment_12597_2014', 'job name');
+  is ($d->command, $command, 'correct command for position 4, tag 0');
+  is ($d->memory, $mem, "memory $mem");
+  is ($d->command_preexec, "npg_pipeline_preexec_references --repository $dir", 'preexec');
+  is ($d->log_file_dir, "$bc_path/archive/log", 'log file directory');
+  is_deeply ($d->num_cpus, [12,16], 'range of cpu numbers');
+  is ($d->queue, 'default', 'default queue');
+  is ($d->num_hosts, 1, 'one host');
+  is ($d->fs_slots_num, 4, 'four sf slots');
 
   #### force on phix_split
   lives_ok {
@@ -214,34 +238,38 @@ subtest 'test 1' => sub {
       timestamp         => q{2014},
       verbose           => 0,
       repository        => $dir,
-      no_bsub           => 1,
       force_phix_split  => 1,
     )
   } 'no error creating an object (forcing on phix split)';
+  ok((not $rna_gen->_has_newer_flowcell), 'HT V3 flowcell recognised as older flowcell');
+
+  $da = $rna_gen->generate();
 
   #####  phiX control libraries
   $qc_in =~ s{lane4}{lane5}smg;
   $qc_out =~ s{lane4}{lane5}smg;
-  $args->{'5168'} = qq{bash -c ' mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_5#168 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_5#168 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/lane5/12597_5#168_p4s2_pv_in.json -export_param_vals 12597_5#168_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_5#168.json && viv.pl -s -x -v 3 -o viv_12597_5#168.log run_12597_5#168.json } .
+  $unique_string = $rna_gen->_job_id();
+  $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  $plex_temp_dir = $tmp_dir . q{/12597_5#168};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane5/12597_5#168_p4s2_pv_in.json -export_param_vals 12597_5#168_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_5#168.json && viv.pl -s -x -v 3 -o viv_12597_5#168.log run_12597_5#168.json } .
     qq{ && qc --check bam_flagstats --id_run 12597 --position 5 --qc_in $qc_in --qc_out $qc_out --tag_index 168} .
-  q( ');
+    q{ '};
 
-  lives_ok {$rna_gen->_generate_command_arguments([5])}
-     'no error generating command arguments for non-RNASeq lane';
-  is ($rna_gen->_job_args->{'50168'}, $args->{'5168'}, 'correct non-RNASeq lane args generated');
+  $d = _find($da, 5, 168);
+  is ($d->command, $command, 'correct command for position 5, tag 168 (spiked in phix)');
 
   #### monoplex (non-RNA Seq)
-  lives_ok {$rna_gen->_generate_command_arguments([1])}
-     'no error generating command arguments for non-multiplex lane';
-  $qc_in  =~ s{/lane.}{};
-  $qc_out =~ s{/lane.}{}; 
-  $args->{'1'} = qq{bash -c ' mkdir -p $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_1 ; cd $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/tmp_\$LSB_JOBID/12597_1 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/12597_1_p4s2_pv_in.json -export_param_vals 12597_1_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_1.json && viv.pl -s -x -v 3 -o viv_12597_1.log run_12597_1.json } .
+  $qc_in  =~ s{/lane.}{}; 
+  $qc_out =~ s{/lane.}{};
+  my $lane_temp_dir = $tmp_dir . q{/12597_1};
+  $command = qq{bash -c ' mkdir -p $lane_temp_dir ; cd $lane_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/12597_1_p4s2_pv_in.json -export_param_vals 12597_1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_1.json && viv.pl -s -x -v 3 -o viv_12597_1.log run_12597_1.json } .
     qq{ && qc --check bam_flagstats --id_run 12597 --position 1 --qc_in $qc_in --qc_out $qc_out} .
     qq{ && qc --check bam_flagstats --id_run 12597 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix} .
      q{ && qc --check alignment_filter_metrics --id_run 12597 --position 1 --qc_in $PWD --qc_out } . $qc_out . q{ '};
 
-  is ($rna_gen->_job_args->{'1'}, $args->{'1'}, 'correct non-multiplex lane args generated');
-  ok((not $rna_gen->_has_newer_flowcell), 'HT V3 flowcell recognised as older flowcell');
+  $d = _find($da, 1);
+  is ($d->command, $command, 'correct non-multiplex lane args generated');
+
   #### check for newer flowcells
   lives_ok {
     $rna_gen = npg_pipeline::function::seq_alignment->new(
@@ -251,7 +279,6 @@ subtest 'test 1' => sub {
       timestamp         => q{2014},
       verbose           => 0,
       repository        => $dir,
-      no_bsub           => 1,
       force_phix_split  => 1,
       flowcell_id       => 'C333TBCXX',
     )
@@ -266,7 +293,6 @@ subtest 'test 1' => sub {
       timestamp         => q{2014},
       verbose           => 0,
       repository        => $dir,
-      no_bsub           => 1,
       force_phix_split  => 1,
       flowcell_id       => 'C333TANXX',
     )
@@ -275,7 +301,7 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 22;
+  plan tests => 17;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
 
@@ -287,7 +313,11 @@ subtest 'test 2' => sub {
   `mkdir -p $cache_dir`;
   copy("t/data/rna_seq/13066_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
 
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/rna_seq/samplesheet_13066.csv]; #edited to add 1000Genomes_hs37d5 + ensembl_75_transcriptome to lane 8
+  # Edited to add 1000Genomes_hs37d5 + ensembl_75_transcriptome to lane 8
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/rna_seq/samplesheet_13066.csv];
+
+  my $qc_in  = qq{$bc_path/archive};
+  my $qc_out = join q[/], $qc_in, q[qc];
 
   my $rna_gen;
   lives_ok {
@@ -296,40 +326,34 @@ subtest 'test 2' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2014},
-      repository        => $dir,
-      no_bsub           => 1,
+      repository        => $dir
     )
   } 'no error creating an object';
   is ($rna_gen->id_run, 13066, 'id_run inferred correctly');
 
-  my $qc_in  = qq{$dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive};
-  my $qc_out = join q[/], $qc_in, q[qc];
-  my $args = {};
-  $args->{8} = qq{bash -c ' mkdir -p $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive/tmp_\$LSB_JOBID/13066_8 ; cd $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive/tmp_\$LSB_JOBID/13066_8 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/13066_8_p4s2_pv_in.json -export_param_vals 13066_8_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_13066_8.json && viv.pl -s -x -v 3 -o viv_13066_8.log run_13066_8.json } .
+  my $da = $rna_gen->generate();
+  ok ($da && @{$da} == 2, 'array of two definitions is returned');
+  my $d = _find($da, 8);
+
+  my $unique_string = $rna_gen->_job_id();
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  my $lane_temp_dir = $tmp_dir . q{/13066_8};
+  my $command = qq{bash -c ' mkdir -p $lane_temp_dir ; cd $lane_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/13066_8_p4s2_pv_in.json -export_param_vals 13066_8_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_13066_8.json && viv.pl -s -x -v 3 -o viv_13066_8.log run_13066_8.json } .
     qq{ && qc --check bam_flagstats --id_run 13066 --position 8 --qc_in $qc_in --qc_out $qc_out} .
     qq{ && qc --check bam_flagstats --id_run 13066 --position 8 --qc_in $qc_in --qc_out $qc_out --subset phix} .
      q{ && qc --check alignment_filter_metrics --id_run 13066 --position 8 --qc_in $PWD --qc_out } . $qc_out .
     qq{ && qc --check rna_seqc --id_run 13066 --position 8 --qc_in $qc_in --qc_out } . $qc_out . q{ '};
 
-  lives_ok {$rna_gen->_generate_command_arguments([8])}
-     'no error generating command arguments';
-  cmp_deeply ($rna_gen->_job_args, $args,
-    'correct command arguments for library RNASeq lane (unstranded Illumina cDNA library)');
-  is ($rna_gen->_using_alt_reference, 0, 'Not using alternate reference');
+  is ($d->command, $command, 'correct command for lane 8');
+  is ($d->memory, 32000, 'memory');
 
   my $l = st::api::lims->new(id_run => 13066, position => 8);
   is ($rna_gen->_do_rna_analysis($l), 1, 'do RNA analysis on pair end RNA library with transcriptome index');
 
   # lane 7 to be aligned with STAR and thus requires more memory
-  $l = st::api::lims->new(id_run => 17550, position => 7);
-  my $more_memory = '38000';
-  my $mem_args->{'7'} = $more_memory;
-  lives_ok {$rna_gen->_generate_command_arguments([7])}
-     'no error generating rna-seq command arguments for id_run 13066 lane 7';
-  cmp_deeply ($rna_gen->_job_mem_reqs, $mem_args,
-     'list of jobs to request more memory is correct');
-  my $expected = qq{bmod -R 'select[mem>$more_memory] rusage[mem=$more_memory,nfs-sf3=4]' -M38000 -R 'span[hosts=1]' -n12,16 50\[7\]}; 
-  is($rna_gen->_bmodcommand2submit(50), $expected, 'bmod command to submit is correct');
+  $d = _find($da, 7);
+  is ($d->memory, 38000, 'more memory');
+
 
   ##HiSeq, run 17550, multiple organisms RNA libraries suitable for RNA analysis
   $runfolder = q{150910_HS40_17550_A_C75BCANXX};
@@ -339,48 +363,39 @@ subtest 'test 2' => sub {
   `mkdir -p $bc_path`;
   `mkdir -p $cache_dir`;
   copy("t/data/rna_seq/17550_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+  for ((3,4,6,8)) {
+    `mkdir -p $bc_path/lane$_`;
+  }
 
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = q[t/data/rna_seq/samplesheet_17550.csv];
 
   lives_ok {
       $rna_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
-      runfolder_path    => $runfolder_path,
-      recalibrated_path => $bc_path,
-      timestamp         => q{2017},
-      repository        => $dir,
-      no_bsub           => 1,)
+        run_folder        => $runfolder,
+        runfolder_path    => $runfolder_path,
+        recalibrated_path => $bc_path,
+        timestamp         => q{2017},
+        repository        => $dir
+      )
   } 'no error creating an object';
-
   is ($rna_gen->id_run, 17550, 'id_run inferred correctly');
 
   my $tlogger = Test::Log::Log4perl->get_logger('npg_pipeline.function.seq_alignment');
 
-  #test: lane 3 tag indexes 1 and 3 are to be aligned with STAR
-  #and thus require more memory to be requested
-  $l = st::api::lims->new(id_run => 17550, position => 3);
-  $mem_args = ();
-  $mem_args->{'30001'} = $more_memory;
-  $mem_args->{'30003'} = $more_memory;
-  lives_ok {$rna_gen->_generate_command_arguments([3])}
-     'no error generating rna-seq command arguments for id_run 17550 lane 3';
-  cmp_deeply ($rna_gen->_job_mem_reqs, $mem_args,
-     'list of jobs to request more memory is correct');
-  $expected = qq{bmod -R 'select[mem>$more_memory] rusage[mem=$more_memory,nfs-sf3=4]' -M38000 -R 'span[hosts=1]' -n12,16 33\[30001,30003\]}; 
-  is($rna_gen->_bmodcommand2submit(33), $expected, 'bmod command to submit is correct');
+  $da = $rna_gen->generate();
+  $d = _find($da, 3, 1);
+  is ($d->memory, 38000, 'more memory');
+  $d = _find($da, 3, 3);
+  is ($d->memory, 38000, 'more memory');
 
   #test: reference genome selected has an unsupported 'analysis' defined
   $l = st::api::lims->new(id_run => 17550, position => 4, tag_index => 1);
-  lives_ok { $rna_gen->_generate_command_arguments([4]) } 'executes _generate_command_arguments method successfully for id_run 17550 lane 4 tag_index 1';
-  lives_ok { $rna_gen->_job_args } 'executes _job_args method successfully';
   Test::Log::Log4perl->start();
-  lives_ok { $rna_gen->_lsf_alignment_command($l, 1) } 'executes _lsf_alignment_command method successfully';
+  lives_ok { $rna_gen->_alignment_command($l, {}, 1) } 'executes _lsf_alignment_command method successfully';
   my $re = '^Reference\ set\ for.*$';
   $tlogger->debug(qr/Do\ RNAseq\ analysis/);
-# for my $i (1..6) { $tlogger->info(qr/$re/); }
   for my $i (1..5) { $tlogger->info(qr/$re/); }
   $tlogger->debug(qr/No\ bait\ set$/);
-# $tlogger->info(qr/No\ bait\ set$/);
   $tlogger->info(qr/Analysis\:/);
   $tlogger->info(qr/Unsupported\ RNA\ analysis/);
   $tlogger->info(qr/$re/);
@@ -406,11 +421,10 @@ subtest 'test 2' => sub {
   is ($rna_gen->_do_rna_analysis($l), 0, 'not an RNA library, so no RNA analysis');
   $tlogger->debug(qr/not RNA library type/);
   Test::Log::Log4perl->end('logged: not rna library type');
-
 };
 
 subtest 'test 3' => sub {
-  plan tests => 5;
+  plan tests => 3;
   ## single ended v. short , old flowcell, CRIPSR
 
   my $runfolder = q{151215_HS38_18472_A_H55HVADXX};
@@ -419,8 +433,9 @@ subtest 'test 3' => sub {
   $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20151215-215034';
   my $cache_dir = join q[/], $bc_path, 'metadata_cache_18472';
+  `mkdir -p $bc_path/no_cal/lane2`;
 
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'}  = join q[/], $cache_dir;
+  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'}  = $cache_dir;
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = join q[/], $cache_dir, q[samplesheet_18472.csv];
 
   my $se_gen;
@@ -430,25 +445,25 @@ subtest 'test 3' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => "$bc_path/no_cal",
       timestamp         => q{2015},
-      repository        => $dir,
-      no_bsub           => 1,
+      repository        => $dir
     )
   } 'no error creating an object';
   is ($se_gen->id_run, 18472, 'id_run inferred correctly');
 
   my $qc_in = qq[$bc_path/no_cal/archive/lane2];
   my $qc_out = join q[/], $qc_in, q[qc];
-  my $args = qq{bash -c ' mkdir -p $bc_path/no_cal/archive/tmp_\$LSB_JOBID/18472_2#1 ; cd $bc_path/no_cal/archive/tmp_\$LSB_JOBID/18472_2#1 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/no_cal/lane2/18472_2#1_p4s2_pv_in.json -export_param_vals 18472_2#1_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_18472_2#1.json && viv.pl -s -x -v 3 -o viv_18472_2#1.log run_18472_2#1.json } .
+  my $unique_string = $se_gen->_job_id();
+  my $tmp_dir = qq{$bc_path/no_cal/archive/tmp_} . $unique_string;
+  my $plex_temp_dir = $tmp_dir . q{/18472_2#1};
+  my $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/no_cal/lane2/18472_2#1_p4s2_pv_in.json -export_param_vals 18472_2#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_18472_2#1.json && viv.pl -s -x -v 3 -o viv_18472_2#1.log run_18472_2#1.json } .
     qq{ && qc --check bam_flagstats --id_run 18472 --position 2 --qc_in $qc_in --qc_out $qc_out --tag_index 1} .
     qq{ && qc --check bam_flagstats --id_run 18472 --position 2 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 1} .
      q{ && qc --check alignment_filter_metrics --id_run 18472 --position 2 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 1}.    
      q{ '};
 
-  lives_ok {$se_gen->_generate_command_arguments([2])}
-     'no error generating command arguments';
-  is($se_gen->_job_args->{'20001'}, $args,
-    'correct command arguments for plex of short single read run');
-  ok(!$se_gen->_using_alt_reference, 'Not using alternate reference');
+  my $da = $se_gen->generate();
+  my $d = _find($da, 2, 1);
+  is ($d->command, $command, 'correct command for lane 2 plex 1');
 };
 
 subtest 'test 4' => sub {
@@ -458,7 +473,10 @@ subtest 'test 4' => sub {
   my $runfolder = q{150709_HX4_16839_A_H7MHWCCXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/no_cal';
-  `mkdir -p $bc_path`;
+  for ((1, 7)) {
+    `mkdir -p $bc_path/lane$_`;
+  }
+
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/metadata_cache_16839';
   `mkdir -p $cache_dir`;
   copy("t/data/hiseqx/16839_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
@@ -474,8 +492,7 @@ subtest 'test 4' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir,
-      no_bsub           => 1,
+      repository        => $dir
     )
   } 'no error creating an object';
   is ($hsx_gen->id_run, 16839, 'id_run inferred correctly');
@@ -503,38 +520,50 @@ subtest 'test 4' => sub {
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = $old_ss;
   my $qc_in  = qq{$dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7};
   my $qc_out = qq{$qc_in/qc};
-  my $args = {};
-  $args->{70007} = qq{bash -c ' mkdir -p $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#7 ; cd $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#7 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/lane7/16839_7#7_p4s2_pv_in.json -export_param_vals 16839_7#7_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_7#7.json && viv.pl -s -x -v 3 -o viv_16839_7#7.log run_16839_7#7.json } .
+
+  my $unique_string = $hsx_gen->_job_id();
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  my $plex_temp_dir = $tmp_dir . q{/16839_7#7};
+  my $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane7/16839_7#7_p4s2_pv_in.json -export_param_vals 16839_7#7_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_7#7.json && viv.pl -s -x -v 3 -o viv_16839_7#7.log run_16839_7#7.json } .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 7 --qc_in $qc_in --qc_out $qc_out --tag_index 7} .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 7 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 7} .
      q{ && qc --check alignment_filter_metrics --id_run 16839 --position 7 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 7}.
      q{ '};
-  $args->{70015} = qq{bash -c ' mkdir -p $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#15 ; cd $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#15 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/lane7/16839_7#15_p4s2_pv_in.json -export_param_vals 16839_7#15_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_7#15.json && viv.pl -s -x -v 3 -o viv_16839_7#15.log run_16839_7#15.json } .
+
+  my $da = $hsx_gen->generate();
+  my $d = _find($da, 7, 7);
+  is ($d->command, $command, 'command for HiSeqX run 16839 lane 7 tag 7');
+
+  $plex_temp_dir = $tmp_dir . q{/16839_7#15};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane7/16839_7#15_p4s2_pv_in.json -export_param_vals 16839_7#15_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_7#15.json && viv.pl -s -x -v 3 -o viv_16839_7#15.log run_16839_7#15.json } .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 7 --qc_in $qc_in --qc_out $qc_out --tag_index 15} .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 7 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 15} .
      q{ && qc --check alignment_filter_metrics --id_run 16839 --position 7 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 15}.
      q{ '};
-  $args->{70000} = qq{bash -c ' mkdir -p $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#0 ; cd $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_7#0 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/lane7/16839_7#0_p4s2_pv_in.json -export_param_vals 16839_7#0_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_7#0.json && viv.pl -s -x -v 3 -o viv_16839_7#0.log run_16839_7#0.json } .
+
+  $d = _find($da, 7, 15);
+  is ($d->command, $command, 'command for HiSeqX run 16839 lane 7 tag 15');
+
+  $plex_temp_dir = $tmp_dir . q{/16839_7#0};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane7/16839_7#0_p4s2_pv_in.json -export_param_vals 16839_7#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_7#0.json && viv.pl -s -x -v 3 -o viv_16839_7#0.log run_16839_7#0.json } .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 7 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 7 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 16839 --position 7 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
      q{ '};
 
-  lives_ok {$hsx_gen->_generate_command_arguments([7])}
-     'no error generating hsx command arguments';
-  cmp_deeply ($hsx_gen->_job_args, $args,
-    'correct command arguments for HiSeqX lane 16839_7');
-  is ($hsx_gen->_using_alt_reference, 1, 'Using alternate reference');
+  $d = _find($da, 7, 0);
+  is ($d->command, $command, 'command for HiSeqX run 16839 lane 7 tag 0');
 };
 
 subtest 'test 5' => sub {
-  plan tests => 4;
+  plan tests => 5;
   ##HiSeq, run 16807_6 (newer flowcell)
 
   my $runfolder = q{150707_HS38_16807_A_C7U2YANXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-232614/no_cal';
-  `mkdir -p $bc_path`;
+  `mkdir -p $bc_path/lane6`;
+
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-232614/metadata_cache_16807';
   `mkdir -p $cache_dir`;
   copy("t/data/hiseq/16807_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
@@ -549,40 +578,50 @@ subtest 'test 5' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir,
-      no_bsub           => 1,
+      repository        => $dir
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16807, 'id_run inferred correctly');
+  my $da = $hs_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane6};
   my $qc_out = qq{$qc_in/qc};
-  my $args = {};
-  $args->{60001} = qq{bash -c ' mkdir -p $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#1 ; cd $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#1 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/lane6/16807_6#1_p4s2_pv_in.json -export_param_vals 16807_6#1_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16807_6#1.json && viv.pl -s -x -v 3 -o viv_16807_6#1.log run_16807_6#1.json } .
+  my $unique_string = $hs_gen->_job_id();  
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  my $plex_temp_dir = $tmp_dir . q{/16807_6#1};
+
+  my $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane6/16807_6#1_p4s2_pv_in.json -export_param_vals 16807_6#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16807_6#1.json && viv.pl -s -x -v 3 -o viv_16807_6#1.log run_16807_6#1.json } .
     qq{ && qc --check bam_flagstats --id_run 16807 --position 6 --qc_in $qc_in --qc_out $qc_out --tag_index 1} .
     qq{ && qc --check bam_flagstats --id_run 16807 --position 6 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 1} .
      q{ && qc --check alignment_filter_metrics --id_run 16807 --position 6 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 1}.
-     q{ '};    
-  $args->{60002} = qq{bash -c ' mkdir -p $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#2 ; cd $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#2 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/lane6/16807_6#2_p4s2_pv_in.json -export_param_vals 16807_6#2_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16807_6#2.json && viv.pl -s -x -v 3 -o viv_16807_6#2.log run_16807_6#2.json } .
+     q{ '};
+
+  my $d = _find($da, 6, 1);
+  is ($d->command, $command, 'command for HiSeq run 16807 lane 6 tag 1');
+
+  $plex_temp_dir = $tmp_dir . q{/16807_6#2};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane6/16807_6#2_p4s2_pv_in.json -export_param_vals 16807_6#2_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16807_6#2.json && viv.pl -s -x -v 3 -o viv_16807_6#2.log run_16807_6#2.json } .
     qq{ && qc --check bam_flagstats --id_run 16807 --position 6 --qc_in $qc_in --qc_out $qc_out --tag_index 2} .
     qq{ && qc --check bam_flagstats --id_run 16807 --position 6 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 2} .
      q{ && qc --check alignment_filter_metrics --id_run 16807 --position 6 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 2}.
-     q{ '};  
-  $args->{60000} = qq{bash -c ' mkdir -p $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#0 ; cd $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/archive/tmp_\$LSB_JOBID/16807_6#0 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150707_HS38_16807_A_C7U2YANXX/Data/Intensities/BAM_basecalls_20150707-232614/no_cal/lane6/16807_6#0_p4s2_pv_in.json -export_param_vals 16807_6#0_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16807_6#0.json && viv.pl -s -x -v 3 -o viv_16807_6#0.log run_16807_6#0.json } .
+     q{ '};
+
+  $d = _find($da, 6, 2);
+  is ($d->command, $command, 'command for HiSeq run 16807 lane 6 tag 2');
+
+  $plex_temp_dir = $tmp_dir . q{/16807_6#0};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane6/16807_6#0_p4s2_pv_in.json -export_param_vals 16807_6#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16807_6#0.json && viv.pl -s -x -v 3 -o viv_16807_6#0.log run_16807_6#0.json } .
     qq{ && qc --check bam_flagstats --id_run 16807 --position 6 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
     qq{ && qc --check bam_flagstats --id_run 16807 --position 6 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 16807 --position 6 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
      q{ '};
 
-  lives_ok {$hs_gen->_generate_command_arguments([6])}
-     'no error generating hs command arguments';
-  cmp_deeply ($hs_gen->_job_args, $args,
-    'correct command arguments for HiSeq lane 16807_6');
+  $d = _find($da, 6, 0);
+  is ($d->command, $command, 'command for HiSeq run 16807 lane 6 tag 0');
 };
 
-
 subtest 'test 6' => sub {
-  plan tests => 4;
+  plan tests => 5;
   ##MiSeq, run 20268_1 (newer flowcell) - WITH bait added to samplesheet for lane 1 
 
   my $bait_dir = join q[/],$dir,'baits','Human_all_exon_V5','1000Genomes_hs37d5';
@@ -593,7 +632,7 @@ subtest 'test 6' => sub {
   my $runfolder = q{160704_MS3_20268_A_MS4000667-300V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20160712-154117/no_cal';
-  `mkdir -p $bc_path`;
+  `mkdir -p $bc_path/lane1`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20160712-154117/metadata_cache_20268';
   `mkdir -p $cache_dir`;
 
@@ -612,56 +651,55 @@ subtest 'test 6' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2016},
-      repository        => $dir,
-      no_bsub           => 1,
+      repository        => $dir
     )
   } 'no error creating an object';
-
   is ($bait_gen->id_run, 20268, 'id_run inferred correctly');
+  my $da = $bait_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1};
   my $qc_out = qq{$qc_in/qc};
-  my $args = {};
-  $args->{10001} = qq{bash -c ' mkdir -p $dir/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/tmp_\$LSB_JOBID/20268_1#1 ; cd $dir/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/tmp_\$LSB_JOBID/20268_1#1 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/lane1/20268_1#1_p4s2_pv_in.json -export_param_vals 20268_1#1_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20268_1#1.json && viv.pl -s -x -v 3 -o viv_20268_1#1.log run_20268_1#1.json } .
+  my $unique_string = $bait_gen->_job_id();  
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  my $plex_temp_dir = $tmp_dir . q{/20268_1#1};
+  my $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/20268_1#1_p4s2_pv_in.json -export_param_vals 20268_1#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20268_1#1.json && viv.pl -s -x -v 3 -o viv_20268_1#1.log run_20268_1#1.json } .
     qq{ && qc --check bam_flagstats --id_run 20268 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 1} .
     qq{ && qc --check bam_flagstats --id_run 20268 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 1} .
      q{ && qc --check alignment_filter_metrics --id_run 20268 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 1}.
      q{ '};
-  $args->{10002} = qq{bash -c ' mkdir -p $dir/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/tmp_\$LSB_JOBID/20268_1#2 ; cd $dir/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/tmp_\$LSB_JOBID/20268_1#2 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/lane1/20268_1#2_p4s2_pv_in.json -export_param_vals 20268_1#2_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20268_1#2.json && viv.pl -s -x -v 3 -o viv_20268_1#2.log run_20268_1#2.json } .
+
+  my $d = _find($da, 1, 1);
+  is ($d->command, $command, 'command for run 20268 lane 1 tag 1');
+
+  $plex_temp_dir = $tmp_dir . q{/20268_1#2};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/20268_1#2_p4s2_pv_in.json -export_param_vals 20268_1#2_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20268_1#2.json && viv.pl -s -x -v 3 -o viv_20268_1#2.log run_20268_1#2.json } .
     qq{ && qc --check bam_flagstats --id_run 20268 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 2} .
     qq{ && qc --check bam_flagstats --id_run 20268 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 2} .
      q{ && qc --check alignment_filter_metrics --id_run 20268 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 2}.
      q{ '};
-  $args->{10000} = qq{bash -c ' mkdir -p $dir/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/tmp_\$LSB_JOBID/20268_1#0 ; cd $dir/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/tmp_\$LSB_JOBID/20268_1#0 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/lane1/20268_1#0_p4s2_pv_in.json -export_param_vals 20268_1#0_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20268_1#0.json && viv.pl -s -x -v 3 -o viv_20268_1#0.log run_20268_1#0.json } .
+
+  $d = _find($da, 1, 2);
+  is ($d->command, $command, 'command for run 20268 lane 1 tag 2');
+
+  $plex_temp_dir = $tmp_dir . q{/20268_1#0};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/20268_1#0_p4s2_pv_in.json -export_param_vals 20268_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20268_1#0.json && viv.pl -s -x -v 3 -o viv_20268_1#0.log run_20268_1#0.json } .
     qq{ && qc --check bam_flagstats --id_run 20268 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
     qq{ && qc --check bam_flagstats --id_run 20268 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 20268 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
      q{ '};
 
-  lives_ok {$bait_gen->_generate_command_arguments([1])}
-     'no error generating bait command arguments';
-
-  my @a1 = (split / /, $args->{10002});
-  my @a2 = (split / /, $bait_gen->_job_args->{10002});
-  for my $i (0..$#a1) {
-	if($a1[$i] ne $a2[$i]) {
-		print "DIFF AT ELEM $i:\n$a1[$i]\n$a2[$i]\n";
-	}
-  }
-
-  cmp_deeply ($bait_gen->_job_args, $args,
-      'correct command arguments for HiSeq lane 20268_1');
+  $d = _find($da, 1, 0);
+  is ($d->command, $command, 'command for run 20268 lane 1 tag 0');
 };
 
-
 subtest 'test 7' => sub {
-  plan tests => 4;
+  plan tests => 5;
   ##MiSeq, run 16850_1 (cycle count over threshold (currently >= 101))
 
   my $runfolder = q{150710_MS2_16850_A_MS3014507-500V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-022206/no_cal';
-  `mkdir -p $bc_path`;
+  `mkdir -p $bc_path/lane1`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-022206/metadata_cache_16850';
   `mkdir -p $cache_dir`;
   copy("t/data/miseq/16850_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
@@ -676,45 +714,55 @@ subtest 'test 7' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir,
-      no_bsub           => 1,
+      repository        => $dir
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16850, 'id_run inferred correctly');
+  my $da = $ms_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1};
   my $qc_out = qq{$qc_in/qc};
-  my $args = {};
-  $args->{10001} = qq{bash -c ' mkdir -p $bc_path/archive/tmp_\$LSB_JOBID/16850_1#1 ; cd $bc_path/archive/tmp_\$LSB_JOBID/16850_1#1 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/lane1/16850_1#1_p4s2_pv_in.json -export_param_vals 16850_1#1_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16850_1#1.json && viv.pl -s -x -v 3 -o viv_16850_1#1.log run_16850_1#1.json } .
+  my $unique_string = $ms_gen->_job_id();  
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  my $plex_temp_dir = $tmp_dir . q{/16850_1#1};
+  my $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16850_1#1_p4s2_pv_in.json -export_param_vals 16850_1#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16850_1#1.json && viv.pl -s -x -v 3 -o viv_16850_1#1.log run_16850_1#1.json } .
     qq{ && qc --check bam_flagstats --id_run 16850 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 1} .
     qq{ && qc --check bam_flagstats --id_run 16850 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 1} .
      q{ && qc --check alignment_filter_metrics --id_run 16850 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 1}.
      q{ '};
-  $args->{10002} = qq{bash -c ' mkdir -p $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/tmp_\$LSB_JOBID/16850_1#2 ; cd $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/tmp_\$LSB_JOBID/16850_1#2 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/lane1/16850_1#2_p4s2_pv_in.json -export_param_vals 16850_1#2_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16850_1#2.json && viv.pl -s -x -v 3 -o viv_16850_1#2.log run_16850_1#2.json } .
+
+  my $d = _find($da, 1, 1);
+  is ($d->command, $command, 'command for HiSeq run 16850 lane 1 tag 1');
+
+  $plex_temp_dir = $tmp_dir . q{/16850_1#2};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16850_1#2_p4s2_pv_in.json -export_param_vals 16850_1#2_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16850_1#2.json && viv.pl -s -x -v 3 -o viv_16850_1#2.log run_16850_1#2.json } .
     qq{ && qc --check bam_flagstats --id_run 16850 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 2} .
     qq{ && qc --check bam_flagstats --id_run 16850 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 2} .
      q{ && qc --check alignment_filter_metrics --id_run 16850 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 2}.
      q{ '};
-  $args->{10000} = qq{bash -c ' mkdir -p $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/tmp_\$LSB_JOBID/16850_1#0 ; cd $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/archive/tmp_\$LSB_JOBID/16850_1#0 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150710_MS2_16850_A_MS3014507-500V2/Data/Intensities/BAM_basecalls_20150712-022206/no_cal/lane1/16850_1#0_p4s2_pv_in.json -export_param_vals 16850_1#0_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16850_1#0.json && viv.pl -s -x -v 3 -o viv_16850_1#0.log run_16850_1#0.json } .
+
+  $d = _find($da, 1, 2);
+  is ($d->command, $command, 'command for MiSeq run 16850 lane 1 tag 2');
+
+  $plex_temp_dir = $tmp_dir . q{/16850_1#0};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16850_1#0_p4s2_pv_in.json -export_param_vals 16850_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16850_1#0.json && viv.pl -s -x -v 3 -o viv_16850_1#0.log run_16850_1#0.json } .
     qq{ && qc --check bam_flagstats --id_run 16850 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
     qq{ && qc --check bam_flagstats --id_run 16850 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 16850 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
      q{ '};
 
-  lives_ok {$ms_gen->_generate_command_arguments([1])}
-     'no error generating ms command arguments';
-  cmp_deeply ($ms_gen->_job_args, $args,
-    'correct command arguments for MiSeq lane 16850_1');
+  $d = _find($da, 1, 0);
+  is ($d->command, $command, 'command for MiSeq run 16850 lane 1 tag 0');
 };
 
 subtest 'test 8' => sub {
-  plan tests => 4;
+  plan tests => 5;
   ##MiSeq, run 16756_1 (nonconsented human split, no target alignment)
 
   my $runfolder = q{150701_HS36_16756_B_C711RANXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-132329/no_cal';
-  `mkdir -p $bc_path`;
+  `mkdir -p $bc_path/lane1`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-132329/metadata_cache_16756';
   `mkdir -p $cache_dir`;
   copy("t/data/hiseq/16756_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
@@ -730,48 +778,58 @@ subtest 'test 8' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir,
-      no_bsub           => 1,
+      repository        => $dir
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16756, 'id_run inferred correctly');
+  my $da = $hs_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1};
   my $qc_out = qq{$qc_in/qc};
-  my $args = {};
-  $args->{10001} = qq{bash -c ' mkdir -p $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#1 ; cd $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#1 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/lane1/16756_1#1_p4s2_pv_in.json -export_param_vals 16756_1#1_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_notargetalign_template.json > run_16756_1#1.json && viv.pl -s -x -v 3 -o viv_16756_1#1.log run_16756_1#1.json } .
+  my $unique_string = $hs_gen->_job_id();  
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  my $plex_temp_dir = $tmp_dir . q{/16756_1#1};
+  my $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16756_1#1_p4s2_pv_in.json -export_param_vals 16756_1#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16756_1#1.json && viv.pl -s -x -v 3 -o viv_16756_1#1.log run_16756_1#1.json } .
     qq{ && qc --check bam_flagstats --id_run 16756 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 1 --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --id_run 16756 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 1} .
      q{ && qc --check alignment_filter_metrics --id_run 16756 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 1}.
     qq{ && qc --check bam_flagstats --id_run 16756 --position 1 --qc_in $qc_in --qc_out $qc_out --subset human --tag_index 1} .
      q{ '};
-  $args->{10002} = qq{bash -c ' mkdir -p $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#2 ; cd $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#2 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/lane1/16756_1#2_p4s2_pv_in.json -export_param_vals 16756_1#2_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_notargetalign_template.json > run_16756_1#2.json && viv.pl -s -x -v 3 -o viv_16756_1#2.log run_16756_1#2.json } .
+
+  my $d = _find($da, 1, 1);
+  is ($d->command, $command, 'command for run 16756 lane 1 tag 1');
+
+  $plex_temp_dir = $tmp_dir . q{/16756_1#2};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16756_1#2_p4s2_pv_in.json -export_param_vals 16756_1#2_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16756_1#2.json && viv.pl -s -x -v 3 -o viv_16756_1#2.log run_16756_1#2.json } .
     qq{ && qc --check bam_flagstats --id_run 16756 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 2 --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --id_run 16756 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 2} .
      q{ && qc --check alignment_filter_metrics --id_run 16756 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 2}.
     qq{ && qc --check bam_flagstats --id_run 16756 --position 1 --qc_in $qc_in --qc_out $qc_out --subset human --tag_index 2} .
      q{ '};
-  $args->{10000} = qq{bash -c ' mkdir -p $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#0 ; cd $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/tmp_\$LSB_JOBID/16756_1#0 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/lane1/16756_1#0_p4s2_pv_in.json -export_param_vals 16756_1#0_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_notargetalign_template.json > run_16756_1#0.json && viv.pl -s -x -v 3 -o viv_16756_1#0.log run_16756_1#0.json } .
+
+  $d = _find($da, 1, 2);
+  is ($d->command, $command, 'command for run 16756 lane 1 tag 2');
+
+  $plex_temp_dir = $tmp_dir . q{/16756_1#0};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16756_1#0_p4s2_pv_in.json -export_param_vals 16756_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16756_1#0.json && viv.pl -s -x -v 3 -o viv_16756_1#0.log run_16756_1#0.json } .
     qq{ && qc --check bam_flagstats --id_run 16756 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0 --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --id_run 16756 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 16756 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
     qq{ && qc --check bam_flagstats --id_run 16756 --position 1 --qc_in $qc_in --qc_out $qc_out --subset human --tag_index 0} .    
      q{ '};
 
-  lives_ok {$hs_gen->_generate_command_arguments([1])}
-     'no error generating hs command arguments';
-  cmp_deeply ($hs_gen->_job_args, $args,
-    'correct command arguments for HiSeq lane 16756_1');
+  $d = _find($da, 1, 0);
+  is ($d->command, $command, 'command for run 16756 lane 1 tag 0');
 };
 
 subtest 'test 9' => sub {
-  plan tests => 4;
+  plan tests => 5;
   ##MiSeq, run 16866_1 (nonconsented human split, target alignment)
 
   my $runfolder = q{150713_MS8_16866_A_MS3734403-300V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150714-133929/no_cal';
-  `mkdir -p $bc_path`;
+  `mkdir -p $bc_path/lane1`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150714-133929/metadata_cache_16866';
   `mkdir -p $cache_dir`;
 
@@ -786,49 +844,58 @@ subtest 'test 9' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir,
-      no_bsub           => 1,
+      repository        => $dir
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16866, 'id_run inferred correctly');
+  my $da = $ms_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1};
   my $qc_out = qq{$qc_in/qc};
-  my $args = {};
-
-  $args->{10001} = qq{bash -c ' mkdir -p $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#1 ; cd $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#1 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/lane1/16866_1#1_p4s2_pv_in.json -export_param_vals 16866_1#1_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16866_1#1.json && viv.pl -s -x -v 3 -o viv_16866_1#1.log run_16866_1#1.json } .
+  my $unique_string = $ms_gen->_job_id();  
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  my $plex_temp_dir = $tmp_dir . q{/16866_1#1};
+  my $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16866_1#1_p4s2_pv_in.json -export_param_vals 16866_1#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16866_1#1.json && viv.pl -s -x -v 3 -o viv_16866_1#1.log run_16866_1#1.json } .
     qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 1} .
     qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 1} .
      q{ && qc --check alignment_filter_metrics --id_run 16866 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 1}.
     qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --subset human --tag_index 1} .
-     q{ '};  
-  $args->{10002} = qq{bash -c ' mkdir -p $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#2 ; cd $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#2 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/lane1/16866_1#2_p4s2_pv_in.json -export_param_vals 16866_1#2_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16866_1#2.json && viv.pl -s -x -v 3 -o viv_16866_1#2.log run_16866_1#2.json } .
+     q{ '};
+
+  my $d = _find($da, 1, 1);
+  is ($d->command, $command, 'command for run 16866 lane 1 tag 1');
+
+  $plex_temp_dir = $tmp_dir . q{/16866_1#2};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16866_1#2_p4s2_pv_in.json -export_param_vals 16866_1#2_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16866_1#2.json && viv.pl -s -x -v 3 -o viv_16866_1#2.log run_16866_1#2.json } .
     qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 2} .
     qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 2} .
      q{ && qc --check alignment_filter_metrics --id_run 16866 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 2}.
     qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --subset human --tag_index 2} .
      q{ '};
-  $args->{10000} = qq{bash -c ' mkdir -p $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#0 ; cd $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/tmp_\$LSB_JOBID/16866_1#0 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/lane1/16866_1#0_p4s2_pv_in.json -export_param_vals 16866_1#0_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16866_1#0.json && viv.pl -s -x -v 3 -o viv_16866_1#0.log run_16866_1#0.json } .
+
+  $d = _find($da, 1, 2);
+  is ($d->command, $command, 'command for run 16866 lane 1 tag 2');
+
+  $plex_temp_dir = $tmp_dir . q{/16866_1#0};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16866_1#0_p4s2_pv_in.json -export_param_vals 16866_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16866_1#0.json && viv.pl -s -x -v 3 -o viv_16866_1#0.log run_16866_1#0.json } .
     qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
     qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 16866 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
     qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --subset human --tag_index 0} .
      q{ '};
 
-  lives_ok {$ms_gen->_generate_command_arguments([1])}
-     'no error generating ms command arguments';
-  cmp_deeply ($ms_gen->_job_args, $args,
-    'correct command arguments for HiSeq lane 16866_1');
+  $d = _find($da, 1, 0);
+  is ($d->command, $command, 'command for run 16866 lane 1 tag 0');
 };
 
 subtest 'test 10' => sub {
-  plan tests => 4;
+  plan tests => 5;
   ##MiSeq, run 20990_1 (no target alignment, no human split)
 
   my $runfolder = q{161010_MS5_20990_A_MS4548606-300V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20161011-102905/no_cal';
-  `mkdir -p $bc_path`;
+  `mkdir -p $bc_path/lane1`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20161011-102905/metadata_cache_20990';
   `mkdir $cache_dir`;
 
@@ -843,29 +910,37 @@ subtest 'test 10' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2016},
-      repository        => $dir,
-      no_bsub           => 1,
+      repository        => $dir
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 20990, 'id_run (20990) inferred correctly');
+  my $da = $ms_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1};
   my $qc_out = qq{$qc_in/qc};
-  my $args = {};
+  my $unique_string = $ms_gen->_job_id();  
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  my $plex_temp_dir = $tmp_dir . q{/20990_1#1};
+  my $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/20990_1#1_p4s2_pv_in.json -export_param_vals 20990_1#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20990_1#1.json && viv.pl -s -x -v 3 -o viv_20990_1#1.log run_20990_1#1.json  && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 1 --skip_markdups_metrics && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --subset phix --tag_index 1 && qc --check alignment_filter_metrics --id_run 20990 --position 1 --qc_in \$PWD --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 1 '};
 
-  $args->{10001} = qq{bash -c ' mkdir -p $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/tmp_\$LSB_JOBID/20990_1#1 ; cd $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/tmp_\$LSB_JOBID/20990_1#1 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/lane1/20990_1#1_p4s2_pv_in.json -export_param_vals 20990_1#1_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20990_1#1.json && viv.pl -s -x -v 3 -o viv_20990_1#1.log run_20990_1#1.json  && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 1 --skip_markdups_metrics && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --subset phix --tag_index 1 && qc --check alignment_filter_metrics --id_run 20990 --position 1 --qc_in \$PWD --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 1 '};
-  $args->{10000} = qq{bash -c ' mkdir -p $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/tmp_\$LSB_JOBID/20990_1#0 ; cd $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/tmp_\$LSB_JOBID/20990_1#0 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/lane1/20990_1#0_p4s2_pv_in.json -export_param_vals 20990_1#0_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20990_1#0.json && viv.pl -s -x -v 3 -o viv_20990_1#0.log run_20990_1#0.json  && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 0 --skip_markdups_metrics && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --subset phix --tag_index 0 && qc --check alignment_filter_metrics --id_run 20990 --position 1 --qc_in \$PWD --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 0 '};
-  $args->{10002} = qq{bash -c ' mkdir -p $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/tmp_\$LSB_JOBID/20990_1#2 ; cd $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/tmp_\$LSB_JOBID/20990_1#2 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/lane1/20990_1#2_p4s2_pv_in.json -export_param_vals 20990_1#2_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20990_1#2.json && viv.pl -s -x -v 3 -o viv_20990_1#2.log run_20990_1#2.json  && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 2 --skip_markdups_metrics && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --subset phix --tag_index 2 && qc --check alignment_filter_metrics --id_run 20990 --position 1 --qc_in \$PWD --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 2 '};
+  my $d = _find($da, 1, 1);
+  is ($d->command, $command, 'command for run 20990 lane 1 tag 1');
 
-  lives_ok {$ms_gen->_generate_command_arguments([1])}
-     'no error generating ms command arguments';
+  $plex_temp_dir = $tmp_dir . q{/20990_1#0};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/lane1/20990_1#0_p4s2_pv_in.json -export_param_vals 20990_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20990_1#0.json && viv.pl -s -x -v 3 -o viv_20990_1#0.log run_20990_1#0.json  && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 0 --skip_markdups_metrics && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --subset phix --tag_index 0 && qc --check alignment_filter_metrics --id_run 20990 --position 1 --qc_in \$PWD --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 0 '};
 
-  cmp_deeply ($ms_gen->_job_args, $args,
-    'correct command arguments for MiSeq lane 20990_1');
+  $d = _find($da, 1, 0);
+  is ($d->command, $command, 'command for run 20990 lane 1 tag 0');
+
+  $plex_temp_dir = $tmp_dir . q{/20990_1#2};
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/20990_1#2_p4s2_pv_in.json -export_param_vals 20990_1#2_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20990_1#2.json && viv.pl -s -x -v 3 -o viv_20990_1#2.log run_20990_1#2.json  && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 2 --skip_markdups_metrics && qc --check bam_flagstats --id_run 20990 --position 1 --qc_in $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1 --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --subset phix --tag_index 2 && qc --check alignment_filter_metrics --id_run 20990 --position 1 --qc_in \$PWD --qc_out $dir/161010_MS5_20990_A_MS4548606-300V2/Data/Intensities/BAM_basecalls_20161011-102905/no_cal/archive/lane1/qc --tag_index 2 '};
+
+  $d = _find($da, 1, 2);
+  is ($d->command, $command, 'command for run 20990 lane 1 tag 2');
 };
 
 subtest 'test 11' => sub {
-  plan tests => 4;
+  plan tests => 5;
   ##HiSeqX, run 16839_1
 
   my $ref_dir = join q[/],$dir,'references','Homo_sapiens','GRCh38_full_analysis_set_plus_decoy_hla','all';
@@ -876,28 +951,15 @@ subtest 'test 11' => sub {
   my $runfolder = q{150709_HX4_16839_A_H7MHWCCXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/no_cal';
-  `mkdir -p $bc_path`;
+  `mkdir -p $bc_path/lane1`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/metadata_cache_16839';
   `mkdir -p $cache_dir`;
   copy("t/data/hiseqx/16839_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
 
   local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseqx];
-  local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = q[t/data/hiseqx/samplesheet_16839.csv];
 
-  my $chromium_gen;
-  lives_ok {
-    $chromium_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
-      runfolder_path    => $runfolder_path,
-      recalibrated_path => $bc_path,
-      timestamp         => q{2015},
-      repository        => $dir,
-      no_bsub           => 1,
-    )
-  } 'no error creating an object';
-  is ($chromium_gen->id_run, 16839, 'id_run inferred correctly');
-
-  my $old_ss = $ENV{'NPG_CACHED_SAMPLESHEET_FILE'};
+  # Chromium libs are not aligned
+  my $old_ss = q[t/data/hiseqx/samplesheet_16839.csv];
   my $ss = slurp $old_ss;
   $ss =~ s/Standard/Chromium single cell/;
   my $new_ss = "$dir/chromium_samplesheet_16839.csv";
@@ -907,29 +969,52 @@ subtest 'test 11' => sub {
   # new samplesheet has one chromium sample in lane 1
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = $new_ss;
 
+  my $chromium_gen;
+  lives_ok {
+    $chromium_gen = npg_pipeline::function::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2015},
+      repository        => $dir
+    )
+  } 'no error creating an object';
+  is ($chromium_gen->id_run, 16839, 'id_run inferred correctly');
+  my $da = $chromium_gen->generate();
+
   my $qc_in  = qq{$dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane1};
   my $qc_out = qq{$qc_in/qc};
-  my $args = {};
-  $args->{10001} = qq{bash -c ' mkdir -p $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_1#1 ; cd $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_1#1 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/lane1/16839_1#1_p4s2_pv_in.json -export_param_vals 16839_1#1_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_1#1.json && viv.pl -s -x -v 3 -o viv_16839_1#1.log run_16839_1#1.json } .
+  my $unique_string = $chromium_gen->_job_id();  
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  my $plex_temp_dir = $tmp_dir . q{/16839_1#1};  
+  my $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16839_1#1_p4s2_pv_in.json -export_param_vals 16839_1#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_1#1.json && viv.pl -s -x -v 3 -o viv_16839_1#1.log run_16839_1#1.json } .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 1 --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 1} .
      q{ && qc --check alignment_filter_metrics --id_run 16839 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 1}.
      q{ '};
-  $args->{10009} = qq{bash -c ' mkdir -p $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_1#9 ; cd $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_1#9 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/lane1/16839_1#9_p4s2_pv_in.json -export_param_vals 16839_1#9_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_1#9.json && viv.pl -s -x -v 3 -o viv_16839_1#9.log run_16839_1#9.json } .
+
+  my $d = _find($da, 1, 1);
+  is ($d->command, $command, 'command for run 16839 lane 1 tag 1');
+
+  $plex_temp_dir = $tmp_dir . q{/16839_1#9}; 
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16839_1#9_p4s2_pv_in.json -export_param_vals 16839_1#9_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_1#9.json && viv.pl -s -x -v 3 -o viv_16839_1#9.log run_16839_1#9.json } .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 9} .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 9} .
      q{ && qc --check alignment_filter_metrics --id_run 16839 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 9}.
      q{ '};
-  $args->{10000} = qq{bash -c ' mkdir -p $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_1#0 ; cd $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/tmp_\$LSB_JOBID/16839_1#0 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/lane1/16839_1#0_p4s2_pv_in.json -export_param_vals 16839_1#0_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_1#0.json && viv.pl -s -x -v 3 -o viv_16839_1#0.log run_16839_1#0.json } .
+
+  $d = _find($da, 1, 9);
+  is ($d->command, $command, 'command for run 16839 lane 1 tag 9');
+
+  $plex_temp_dir = $tmp_dir . q{/16839_1#0}; 
+  $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16839_1#0_p4s2_pv_in.json -export_param_vals 16839_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_1#0.json && viv.pl -s -x -v 3 -o viv_16839_1#0.log run_16839_1#0.json } .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 16839 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
      q{ '};
 
-  lives_ok {$chromium_gen->_generate_command_arguments([1])}
-     'no error generating command arguments for a lane with one chromium sample';
-  cmp_deeply ($chromium_gen->_job_args, $args,
-    'correct command arguments for lane 16839_1 with one chromium sample');
+  $d = _find($da, 1, 0);
+  is ($d->command, $command, 'command for run 16839 lane 1 tag 0');
 };
 
 1;

@@ -1,7 +1,10 @@
 package npg_pipeline::function::autoqc_input_scaffold;
 
 use Moose;
+use namespace::autoclean;
 use File::Spec::Functions qw/catfile/;
+
+use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
 
@@ -17,11 +20,16 @@ npg_pipeline::function::autoqc_input_scaffold
 
 =head1 SUBROUTINES/METHODS
 
-=head2 create_empty_fastq_files
+=head2 create
+
+Creates empty fastq files while this method is running.
+Creates and returns a single function definition as an array.
+Function definition is created as a npg_pipeline::function::definition
+type object with the immediate_mode attribute value set to true.
 
 =cut
 
-sub create_empty_fastq_files {
+sub create {
   my $self = shift;
 
   my $forward_end = ($self->is_paired_read() || $self->is_indexed()) ? 1 : undef;
@@ -51,7 +59,13 @@ sub create_empty_fastq_files {
     system "echo '0 sequences, 0 total length' > $fastqcheck";
   }
 
-  return ();
+  my $d = npg_pipeline::function::definition->new(
+    created_by     => __PACKAGE__,
+    created_on     => $self->timestamp(),
+    immediate_mode => 1
+  );
+
+  return [$d];
 }
 
 =head2 fq_filename
@@ -69,9 +83,10 @@ sub fq_filename {
     defined $tag_index ? "#$tag_index" : q[];
 }
 
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 DIAGNOSTICS
@@ -84,6 +99,8 @@ __END__
 
 =item Moose
 
+=item namespace::autoclean
+
 =item File::Spec
 
 =back
@@ -95,6 +112,7 @@ __END__
 =head1 AUTHOR
 
 Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 

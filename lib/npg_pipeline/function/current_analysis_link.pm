@@ -1,10 +1,13 @@
 package npg_pipeline::function::current_analysis_link;
 
 use Moose;
-use Carp;
-use English qw{-no_match_vars};
+use namespace::autoclean;
+use Try::Tiny;
+use English qw(-no_match_vars);
 use Readonly;
 use File::Spec::Functions qw(abs2rel);
+
+use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
 
@@ -16,17 +19,15 @@ Readonly::Scalar my $SUMMARY_LINK     => q{Latest_Summary};
 sub make_link {
   my $self = shift;
 
-  my $rf_path     = $self->runfolder_path();
+  my $rf_path = $self->runfolder_path();
   my $recalibrated_path;
-  eval {
+  try {
     $recalibrated_path = $self->recalibrated_path();
-    1;
-  } or do {
-    carp $EVAL_ERROR;
+  } catch {
+    $self->logerror($_);
   };
 
   my $link  = $recalibrated_path;
-
   my $cur_link;
   my $summary_link = $SUMMARY_LINK;
   if ( -l $summary_link) {
@@ -34,7 +35,8 @@ sub make_link {
   }
 
   if ($cur_link and $link =~ /\Q$cur_link\E/xms) {
-    $self->info(qq{$summary_link link ($cur_link) already points to $link -- not changed.});
+    $self->info(
+      qq{$summary_link link ($cur_link) already points to $link , not changed.});
   } else {
     if($link =~ m{\A/}smx){
       $link = abs2rel( $link, $rf_path);
@@ -43,45 +45,41 @@ sub make_link {
     # confused, so we rm it first.
     my $command = qq{cd $rf_path; rm -f $summary_link; ln -fs $link $summary_link};
     $self->info(qq{Running $command});
-    my $rc = `$command`;
-    if ($CHILD_ERROR != 0) {
-      $self->logcroak(qq{Creating summary link "$command" failed - $EVAL_ERROR - Error code : $CHILD_ERROR});
-    }
+    system($command) == 0 or $self->logcroak(
+      qq{Creating summary link "$command" failed, error code: $CHILD_ERROR});
   }
   return;
 }
 
-###############
-# responsible for generating the bsub command to be executed
-sub _generate_bsub_command {
-  my ($self) = @_;
+sub create {
+  my $self = shift;
 
-  my $run_folder = $self->run_folder();
-  my $job_name = join q{_}, q{create_latest_summary_link}, $self->id_run, $run_folder;
-  my $bsub_command = qq{bsub -J $job_name -q } . $self->small_lsf_queue();
-  $bsub_command .= q{ -o } . $run_folder . q{/} . $job_name . q{_} . $self->timestamp . q{.out};
-  $bsub_command .= q{ '} . $MAKE_LINK_SCRIPT;
-  $bsub_command .=  qq{ --run_folder $run_folder --runfolder_path } . $self->runfolder_path;
-  $bsub_command .=  q{ --recalibrated_path } . $self->recalibrated_path;
-  $bsub_command .=  q{'};
+  my $ref = { 'created_by' => __PACKAGE__,
+              'created_on' => $self->timestamp(),
+              'identifier' => $self->id_run() };
 
-  return $bsub_command;
-}
-
-sub submit_create_link {
-  my ($self) = @_;
   if ($self->no_summary_link()) {
     $self->info(q{Summary link creation turned off});
-    return ();
+    $ref->{'excluded'} = 1;
+  } else {
+    my $run_folder = $self->run_folder();
+    $ref->{'job_name'} = join q{_}, q{create_latest_summary_link},
+                                    $self->id_run(), $run_folder;
+    $ref->{'command'} = qq{$MAKE_LINK_SCRIPT --run_folder $run_folder}
+                       . q{ --runfolder_path } . $self->runfolder_path()
+                       . q{ --recalibrated_path } . $self->recalibrated_path();
+    $ref->{'log_file_dir'} = $self->runfolder_path();
+    $ref->{'queue'} =
+      $npg_pipeline::function::definition::SMALL_QUEUE;
   }
-  my $cmd = $self->_generate_bsub_command();
 
-  return $self->submit_bsub_command($cmd);
+  return [npg_pipeline::function::definition->new($ref)];
 }
 
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 NAME
@@ -92,17 +90,26 @@ npg_pipeline::function::current_analysis_link
 
 =head1 DESCRIPTION
 
-Class to create a LatestSummary link
+Each instance of analysis can potentially create a new directory.
+Creating a symbolic link in the run folder to a file inside the
+analysis directory helps to identify the current version of the
+analysis results.
 
 =head1 SUBROUTINES/METHODS
 
-=head2 make_link - method to call to make the link to the Latest Summary
+=head2 make_link
 
-    $rfl->make_link();
+Creates a symbolic link to the Latest Summary file
 
-=head2 submit_create_link - method which generates and submits an LSF job which uses dependencies such that the link will only be generated once the correct folder to point to is there
+  $obj->make_link();
 
-  my @job_ids = $rfl->submit_create_link();
+=head2 create
+
+Creates and returns a single function definition wrapped into an array.
+Function definition is created as a npg_pipeline::function::definition
+type object.
+
+  my $def_array = $obj->create();
   
 =head1 DIAGNOSTICS
 
@@ -114,11 +121,11 @@ Class to create a LatestSummary link
 
 =item Moose
 
-=item Carp
+=item namespace::autoclean
 
 =item English -no_match_vars
 
-=item Moose
+=item Try::Tiny
 
 =item Readonly
 

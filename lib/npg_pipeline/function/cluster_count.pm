@@ -1,15 +1,14 @@
 package npg_pipeline::function::cluster_count;
 
 use Moose;
-use Carp;
+use namespace::autoclean;
 use English qw{-no_match_vars};
 use File::Spec;
 use Readonly;
-use XML::LibXML;
-use List::MoreUtils qw(uniq);
 
 use npg_qc::autoqc::qc_store;
-use npg_pipeline::lsf_job;
+use npg_pipeline::function::definition;
+
 extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
@@ -18,71 +17,76 @@ Readonly::Scalar my $CLUSTER_COUNT_SCRIPT => q{npg_pipeline_check_cluster_count}
 
 #keys used in hash and corresponding codes in tile metrics interop file
 Readonly::Scalar my $TILE_METRICS_INTEROP_CODES => {'cluster density'    => 100,
-                                                     'cluster density pf' => 101,
-                                                     'cluster count'      => 102,
-                                                     'cluster count pf'   => 103,
-                                                     };
+                                                    'cluster density pf' => 101,
+                                                    'cluster count'      => 102,
+                                                    'cluster count pf'   => 103,
+                                                   };
 =head1 NAME
 
 npg_pipeline::function::cluster_count
 
 =head1 SYNOPSIS
 
-
-  my @job_ids;
-  eval {
-    my $oClusterCounts = npg_pipeline::function::cluster_count->new(
-      run_folder          => $run_folder,
-      timestamp           => q{20090709-123456},
-      id_run              => 1234,
-      verbose              => 1, # use if you want logging of the commands sent to LSF
-    );
-
-    @job_ids = $oClusterCounts->launch();
-  } or do {
-    # your error handling here
-  };
+  my $oClusterCounts = npg_pipeline::function::cluster_count->new(
+    run_folder          => $run_folder,
+    timestamp           => q{20090709-123456},
+    id_run              => 1234,
+  );
+  my $definitions= $oClusterCounts->create();
 
   my $oClusterCounts = npg_pipeline::function::cluster_count->new(
     run_folder => $run_folder,
-    verbose    => 1, # use if you want logging of the commands sent to LSF
   );
   $oClusterCounts->run_cluster_count_check();
 
 =head1 DESCRIPTION
 
-This module is responsible for launching a job, and then processing that job, which will check the cluster
-counts are what they are expected to be in bam files comparing with summary xml file
-
 =head1 SUBROUTINES/METHODS
 
-=head2 launch
+=head2 create
 
-Method launches lsf job commands and returns an array of job ids retrieved
+Creates and returns function definitions as an array.
+Each function definition is created as a npg_pipeline::function::definition
+type object. A separate object is created for each lane (position).
 
-  my @JobIds = $oClusterCounts->launch({
-    required_job_completion  => q{-w'done(123) && done(321)'},
-  });
+  my $definitions = $obj->create();
 
 =cut
 
-sub launch {
-  my ( $self ) = @_;
+sub create {
+  my $self = shift;
 
-  my @positions = $self->positions();
-  if ( ! scalar @positions ) {
-    $self->info(q{no positions found, not submitting any jobs});
-    return ();
+  my $job_name = join q[_], $CLUSTER_COUNT_SCRIPT,
+                            $self->id_run(), $self->timestamp;
+  my @definitions = ();
+
+  for my $p ($self->positions()) {
+
+    my $command = $CLUSTER_COUNT_SCRIPT;
+    $command .= q{ --id_run=}            . $self->id_run();
+    $command .= q{ --position=}          . $p;
+    $command .= q{ --runfolder_path=}    . $self->runfolder_path();
+    $command .= q{ --qc_path=}           . $self->qc_path();
+    $command .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
+
+    push @definitions,  npg_pipeline::function::definition->new(
+      created_by   => __PACKAGE__,
+      created_on   => $self->timestamp(),
+      identifier   => $self->id_run(),
+      job_name     => $job_name,
+      command      => $command,
+      log_file_dir => $self->archive_path() . q{/log},
+      composition  =>
+        $self->create_composition({id_run => $self->id_run, position => $p})
+    );
   }
 
-  my @job_ids = $self->submit_bsub_command($self->_generate_bsub_command());
-
-  return @job_ids;
+  return \@definitions;
 }
 
 =head2 run_cluster_count_check
 
-method which goes checking the cluster counts
+Checks the cluster count, error if the count is inconsistent.
 
 =cut
 
@@ -143,9 +147,6 @@ has q{position} => (
   isa => q{Int},
   is  => q{ro},
 );
-
-#############
-# private methods
 
 has q{_bustard_pf_cluster_count} => (
   isa => q{Int},
@@ -331,42 +332,6 @@ sub _populate_spatial_filter_counts{
    return;
 }
 
-
-# generates the bsub command
-sub _generate_bsub_command {
-  my ($self) = @_;
-
-  my $timestamp = $self->timestamp();
-  my $id_run = $self->id_run();
-  my $array_string = npg_pipeline::lsf_job->create_array_string($self->positions());
-
-  my $job_name = $CLUSTER_COUNT_SCRIPT . q{_} . $id_run . q{_} . $timestamp;
-
-  my $archive_out = $self->archive_path() . q{/log};
-  my $out_subscript = q{.%I.%J.out};
-  my $outfile = File::Spec->catfile($archive_out, $job_name . $out_subscript);
-
-  $job_name = q{'} . $job_name . $array_string . q{'};
-
-  my $job_sub = q{bsub -q } . $self->lsf_queue() . qq{ -J $job_name -o $outfile '};
-  $job_sub .= $CLUSTER_COUNT_SCRIPT;
-  $job_sub .= q{ --id_run=} . $id_run;
-  $job_sub .= q{ --position=}  . $self->lsb_jobindex();
-  $job_sub .= q{ --runfolder_path=} . $self->runfolder_path();
-  $job_sub .= q{ --qc_path=} . $self->qc_path();
-  $job_sub .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
-
-  if ( $self->verbose() ) {
-    $job_sub .= q{ --verbose};
-  }
-
-  $job_sub .= q{'};
-
-  $self->debug($job_sub);
-
-  return $job_sub;
-}
-
 sub _bam_cluster_count_total {
    my ( $self, $args_ref ) = @_;
 
@@ -412,11 +377,10 @@ sub _bam_cluster_count_total {
    return $bam_cluster_count;
 }
 
-no Moose;
-
 __PACKAGE__->meta->make_immutable;
 
 1;
+
 __END__
 
 =head1 DIAGNOSTICS
@@ -429,17 +393,13 @@ __END__
 
 =item Moose
 
-=item Carp
+=item namespace::autoclean
 
-=item English -no_match_vars
+=item English
 
 =item Readonly
 
 =item File::Spec
-
-=item List::MoreUtils
-
-=item XML::LibXML
 
 =item npg_qc::autoqc::qc_store
 
@@ -452,6 +412,8 @@ __END__
 =head1 AUTHOR
 
 Guoying Qi
+Steven Leonard
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 

@@ -38,24 +38,20 @@ Readonly::Hash my %REGISTRY => (
   'bam2fastqcheck_and_cached_fastq' =>
     {'collection' => 'bam2fastqcheck_and_cached_fastq'},
   'create_summary_link_analysis' =>
-    {'current_analysis_link' => 'submit_create_link'},
-  'create_empty_fastq' =>
-    {'autoqc_input_scaffold' => 'create_empty_fastq_files'},
+    {'current_analysis_link' => 'create'},
+  'create_empty_fastq' => {'autoqc_input_scaffold' => 'create'},
 
-  'illumina_basecall_stats' => {'illumina_basecall_stats' => 'generate'},
+  'illumina_basecall_stats' => {'illumina_basecall_stats' => 'create'},
   'p4_stage1_analysis' => {'p4_stage1_analysis' => 'generate'},
   'seq_alignment' => {'seq_alignment' => 'generate'},
 
-  'archive_logs' => {'log_files_archiver' => 'submit_to_lsf'},
-  'upload_illumina_analysis_to_qc_database' =>
-    {'illumina_qc_archiver' => 'submit_to_lsf'},
-  'upload_fastqcheck_to_qc_database' =>
-    {'fastqcheck_archiver' => 'submit_to_lsf'},
-  'upload_auto_qc_to_qc_database'=>
-     {'autoqc_archiver' => 'submit_to_lsf'},
+  'archive_logs' => {'log_files_archiver' => 'create'},
+  'upload_illumina_analysis_to_qc_database' => {'illumina_qc_archiver' => 'create'},
+  'upload_fastqcheck_to_qc_database' => {'fastqcheck_archiver' => 'create'},
+  'upload_auto_qc_to_qc_database'=> {'autoqc_archiver' => 'create'},
 
-  'bam_cluster_counter_check'=> {'cluster_count' => 'launch'},
-  'seqchksum_comparator' => {'seqchksum_comparator' => 'launch'},
+  'bam_cluster_counter_check'=> {'cluster_count' => 'create'},
+  'seqchksum_comparator' => {'seqchksum_comparator' => 'create'},
                                );
 
 Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>
@@ -110,7 +106,7 @@ sub _build__registry {
     $qc =~ s/qc_//sm;
     my $definition = {};
     $definition->{'module'} = 'autoqc';
-    $definition->{'method'} = 'run_qc';
+    $definition->{'method'} = 'create';
     $definition->{'params'} = {'qc_to_run'  => $qc};
     $r->{$function_name} = $definition;
   }
@@ -126,7 +122,7 @@ sub _build__registry {
     $status =~ s/_/ /xmsg;
     my $definition = {};
     $definition->{'module'} = 'status';
-    $definition->{'method'} = 'submit';
+    $definition->{'method'} = 'create';
     $definition->{'params'} = {'status'           => $status,
                                'lane_status_flag' => $lane_status};
     $r->{$function_name} = $definition;
@@ -136,7 +132,7 @@ sub _build__registry {
                                 archive_to_irods_ml_warehouse)) {
     my $definition = {};
     $definition->{'module'} = 'seq_to_irods_archiver';
-    $definition->{'method'} = 'submit_to_lsf';
+    $definition->{'method'} = 'create';
     my $driver_type = $function_name =~ /samplesheet\Z/xms ?
 	              'samplesheet' : 'ml_warehouse_fc_cache';
     $definition->{'params'} = {'lims_driver_type'  => $driver_type};

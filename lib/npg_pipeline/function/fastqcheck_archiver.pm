@@ -1,33 +1,25 @@
 package npg_pipeline::function::fastqcheck_archiver;
 
 use Moose;
-use Carp;
-use English qw{-no_match_vars};
+use namespace::autoclean;
 use File::Spec;
+use Readonly;
+
+use npg_pipeline::function::definition;
 
 extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
 
-sub submit_to_lsf {
-  my ($self) = @_;
-  my $job_id = $self->submit_bsub_command(
-                 $self->_generate_bsub_command());
-  return ($job_id);
-}
+Readonly::Scalar my $SCRIPT_NAME => q{npg_qc_save_files.pl};
 
-# private methods
-
-sub _generate_bsub_command {
-  my ($self) = @_;
-
-  my $timestamp = $self->timestamp();
-
-  my $job_name = q{fastqcheck_loader_} . $self->id_run() . q{_} . $timestamp;
+sub create {
+  my $self = shift;
 
   my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
-  my @fqcheck_paths = ( $self->archive_path() );
+  my $job_name = join q{_}, q{fastqcheck_loader}, $self->id_run(), $self->timestamp();
 
+  my @fqcheck_paths = ( $self->archive_path() );
   if ( $self->is_indexed() ) {
     foreach my $position ( $self->positions ) {
       my $lane_path = $self->lane_archive_path( $position );
@@ -37,28 +29,30 @@ sub _generate_bsub_command {
     }
   }
 
-  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ -J $job_name };
-  $bsub_command .=  ( $self->fs_resource_string( {
-    counter_slots_per_job => 1,
-  } ) ) . q{ };
-  $bsub_command .=  q{-o } . File::Spec->catfile( $location_of_logs, $job_name . q{.out } );
-  $bsub_command .=  q{'};
-  $bsub_command .=  q{npg_qc_save_files.pl};
-
+  my $command = $SCRIPT_NAME;
   for my $path (@fqcheck_paths) {
-    $bsub_command .=  qq{ --path=$path};
+    $command .=  qq{ --path=$path};
   }
 
-  $bsub_command .=  q{'};
+  my $d = npg_pipeline::function::definition->new(
+    created_by    => __PACKAGE__,
+    created_on    => $self->timestamp(),
+    identifier    => $self->id_run(),
+    job_name      => $job_name,
+    command       => $command,
+    log_file_dir  => $location_of_logs,
+    fs_slots_num  => 1,
+    queue         =>
+      $npg_pipeline::function::definition::SMALL_QUEUE,
+  );
 
-  $self->debug($bsub_command);
-
-  return $bsub_command;
+  return [$d];
 }
 
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 NAME
@@ -75,9 +69,13 @@ npg_pipeline::function::fastqcheck_archiver
 
 =head1 SUBROUTINES/METHODS
 
-=head2 submit_to_lsf - handles calling out to create the bsub command and submits it, returning the job ids
+=head2 create
 
-  my @job_ids = $aaq->submit_to_lsf();
+Creates and returns a single function definition as an array.
+Function definition is created as a npg_pipeline::function::definition
+type object.
+
+  my $definitions = $aaq->create();
 
 =head1 DIAGNOSTICS
 
@@ -89,11 +87,11 @@ npg_pipeline::function::fastqcheck_archiver
 
 =item Moose
 
-=item Carp
-
-=item English -no_match_vars
+=item namespace::autoclean
 
 =item File::Spec
+
+=item Readonly
 
 =back
 
@@ -104,6 +102,7 @@ npg_pipeline::function::fastqcheck_archiver
 =head1 AUTHOR
 
 Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 

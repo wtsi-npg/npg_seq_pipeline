@@ -1,55 +1,49 @@
 package npg_pipeline::function::log_files_archiver;
 
 use Moose;
+use namespace::autoclean;
 use Readonly;
+
+use npg_pipeline::function::definition;
 
 extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $LOG_PUBLISHER_SCRIPT_NAME => 'npg_publish_illumina_logs.pl';
+Readonly::Scalar my $SCRIPT_NAME => 'npg_publish_illumina_logs.pl';
 
-sub submit_to_lsf {
-  my ($self) = @_;
+sub create {
+  my $self = shift;
+
+  my $ref = {
+    'created_by' => __PACKAGE__,
+    'created_on' => $self->timestamp(),
+    'identifier' => $self->id_run(),
+  };
+
   if ($self->no_irods_archival) {
     $self->warn(q{Archival to iRODS is switched off.});
-    return ();
+    $ref->{'excluded'} = 1;
+  } else {
+    my $future_path = $self->path_in_outgoing($self->runfolder_path());
+    $ref->{'job_name'} = join q{_}, q{publish_illumina_logs}, $self->id_run(), $self->timestamp();
+    $ref->{'command'} = join q[ ], $SCRIPT_NAME, q{--runfolder_path}, $future_path,
+                                                 q{--id_run}, $self->id_run();
+    $ref->{'log_file_dir'} = $self->path_in_outgoing(
+                               $self->make_log_dir($self->recalibrated_path()));
+    $ref->{'fs_slots_num'} = 1;
+    $ref->{'reserve_irods_slots'} = 1;
+    $ref->{'queue'} = $npg_pipeline::function::definition::SMALL_QUEUE;
+    $ref->{'command_preexec'} = qq{[ -d '$future_path' ]};
   }
-  my $job_id = $self->submit_bsub_command($self->_generate_bsub_command());
-  return ($job_id);
+
+  return [npg_pipeline::function::definition->new($ref)];
 }
 
-sub _generate_bsub_command {
-  my ($self) = @_;
-
-  my $job_name = join q{_}, $LOG_PUBLISHER_SCRIPT_NAME, $self->id_run(), $self->timestamp();
-
-  my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
-  $location_of_logs = $self->path_in_outgoing($location_of_logs);
-  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ -J $job_name };
-
-  $bsub_command .=  ( $self->fs_resource_string( {
-    counter_slots_per_job => 1,
-    seq_irods             => $self->general_values_conf()->{'default_lsf_irods_resource'},
-  } ) ) . q{ };
-
-  $bsub_command .=  q{-o } . $location_of_logs . qq{/$job_name.out };
-
-  my $future_path = $self->path_in_outgoing($self->runfolder_path());
-
-  $bsub_command .= qq{-E "[ -d '$future_path' ]" };
-  $bsub_command .= q{'};
-  $bsub_command .= $LOG_PUBLISHER_SCRIPT_NAME . q{ --runfolder_path } . $future_path . q{ --id_run } . $self->id_run();
-  $bsub_command .= q{'};
-
-  $self->debug($bsub_command);
-
-  return $bsub_command;
-}
-
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 NAME
@@ -66,14 +60,13 @@ npg_pipeline::function::log_files_archiver
 
 =head1 SUBROUTINES/METHODS
 
-=head2 submit_to_lsf
+=head2 create
 
-handler for submitting to LSF the log publishing job 
-returns an array of lsf job ids
+Creates and returns a single function definition as an array.
+Function definition is created as a npg_pipeline::function::definition
+type object.
 
-  my @job_ids = $fsa->submit_to_lsf({
-    required_job_completion => q[string of lsf job dependencies],
-  });
+  my @job_ids = $fsa->create();
 
 =head1 DIAGNOSTICS
 
@@ -84,6 +77,8 @@ returns an array of lsf job ids
 =over
 
 =item Moose
+
+=item namespace::autoclean
 
 =item Readonly
 
@@ -96,6 +91,7 @@ returns an array of lsf job ids
 =head1 AUTHOR
 
 Jennifer Liddle
+Marinan Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 

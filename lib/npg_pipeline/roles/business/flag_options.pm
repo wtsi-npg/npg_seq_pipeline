@@ -49,35 +49,6 @@ has q{no_summary_link} => (
   documentation => q{Turn off creating a Latest_Summary link},
 );
 
-=head2 no_array_cpu_limit
-
-flag option to allow job arrays to flood, if able, the farm
-
-=cut
-
-has q{no_array_cpu_limit} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{Allow job arrays to keep launching if cpus available},
-);
-
-=head2 array_cpu_limit
-
-set the most number of cpus which each job array can use at a time, applied only if no_array_cpu_limit not set
-
-=cut
-
-has q{array_cpu_limit} => (
-  isa           => q{Int},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{Set the most number of CPUs that a Job array can use at a time},
-);
-sub _build_array_cpu_limit {
-  my ( $self ) = @_;
-  return $self->general_values_conf()->{array_cpu_limit};
-}
-
 =head2 no_irods_archival
 
 Switches off archival to iRODS repository.
@@ -92,7 +63,6 @@ has q{no_irods_archival} => (
   documentation => q{Switches off archival to iRODS repository.},
 );
 
-## no critic (ProhibitUnusedPrivateSubroutines)
 sub _default_to_local {
   my $self = shift;
   return $self->local;
@@ -113,36 +83,11 @@ has q{no_warehouse_update} => (
   documentation => q{Switches off updating the NPG warehouse.},
 );
 
-=head2 no_sf_resource
-
-do not use sf resource tokens; set if working outside the npg sequencing farm
-
-=cut
-
-has q{no_sf_resource} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation =>
-  q{Do not use sf resource tokens; set if working outside the npg sequencing farm},
-);
-
-=head2 no_bsub
-
-disable submitting any jobs to bsub, so the pipeline can be run, and all cmds logged
-
-=cut
-
-has q{no_bsub} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation =>
-  q{Turn off submitting any jobs to lsf, just logging them instead},
-);
-
 =head2 local
 
-sets the default for no_irods_archival, no_warehouse_update and no_summary_link to true;
-defaults to the value of no_bsub flag
+Sets the default for no_irods_archival, no_warehouse_update and
+no_summary_link to true.
+Defaults to the value of no_bsub flag if no_bsub flag is available.
 
 =cut
 
@@ -154,7 +99,7 @@ has q{local} => (
 );
 sub _build_local {
   my $self = shift;
-  return $self->no_bsub ? 1 : 0;
+  return $self->can('no_bsub') && $self->no_bsub ? 1 : 0;
 }
 
 1;

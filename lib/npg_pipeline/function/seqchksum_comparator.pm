@@ -1,18 +1,18 @@
 package npg_pipeline::function::seqchksum_comparator;
 
 use Moose;
-use Carp;
-use English qw{-no_match_vars};
+use namespace::autoclean;
 use File::Spec;
 use Readonly;
 use Cwd;
 
-use npg_pipeline::lsf_job;
+use npg_pipeline::function::definition;
+
 extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
 
-Readonly::Scalar my  $SEQCHKSUM_SCRIPT => q{npg_pipeline_seqchksum_comparator};
+Readonly::Scalar my $SEQCHKSUM_SCRIPT => q{npg_pipeline_seqchksum_comparator};
 
 =head1 NAME
 
@@ -26,49 +26,41 @@ npg_pipeline::function::seqchksum_comparator
 
 =cut
 
-=head2 launch
+=head2 create
 
-Generates and submits the LSF job array to run the seqchksum comparator
+Creates and returns per-lane function definitions as an array.
+Each function definition is created as a npg_pipeline::function::definition
+type object.
 
 =cut
 
-sub launch {
-  my ($self) = @_;
-  my $job_id = $self->submit_bsub_command($self->_generate_bsub_command());
-  return ($job_id);
-}
+sub create {
+  my $self = shift;
 
-sub _generate_bsub_command {
-  my ($self) = @_;
-
-  my $array_string = npg_pipeline::lsf_job->create_array_string($self->positions());
-  my $timestamp = $self->timestamp();
-  my $id_run = $self->id_run();
-
-  my $job_name = $SEQCHKSUM_SCRIPT .q{_} . $id_run . q{_} .$timestamp;
-
-  my $archive_out = $self->archive_path() . q{/log};
-  my $out_subscript = q{.%I.%J.out};
-  my $outfile = File::Spec->catfile($archive_out, $job_name . $out_subscript);
-
-  $job_name = q{'} . $job_name . $array_string . q{'};
-
-  my $job_sub = q{bsub -q } . $self->lsf_queue() . qq{ -J $job_name -o $outfile '};
-  $job_sub .= $SEQCHKSUM_SCRIPT;
-  $job_sub .= q{ --id_run=} . $id_run;
-  $job_sub .= q{ --lanes=}  . $self->lsb_jobindex();
-  $job_sub .= q{ --archive_path=} . $self->archive_path();
-  $job_sub .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
-
+  my $job_name = join q{_}, 'seqchksum_comparator', $self->id_run(), $self->timestamp();
+  my $command = $SEQCHKSUM_SCRIPT;
+  $command .= q{ --id_run=} . $self->id_run();
+  $command .= q{ --archive_path=} . $self->archive_path();
+  $command .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
   if ($self->verbose() ) {
-    $job_sub .= q{ --verbose};
+    $command .= q{ --verbose};
   }
 
-  $job_sub .= q{'};
+  my @definitions = ();
+  foreach my $p ($self->positions()) {
+    push @definitions, npg_pipeline::function::definition->new(
+      created_by   => __PACKAGE__,
+      created_on   => $self->timestamp(),
+      identifier   => $self->id_run(),
+      composition  =>
+        $self->create_composition({id_run => $self->id_run, position => $p}),
+      job_name     => $job_name,
+      command      => $command . q{ --lanes=} . $p,
+      log_file_dir => $self->archive_path() . q{/log}
+    );
+  }
 
-  $self->debug($job_sub);
-
-  return $job_sub;
+  return \@definitions;
 }
 
 =head2 do_comparison
@@ -84,28 +76,22 @@ sub do_comparison {
 
   my $lanes = $self->lanes();
 
-  if ( ! scalar @{$lanes}) {
-    $self->logcroak( 'No lanes found, so not performing any bamseqchksum comparison');
+  if ( !$lanes || !@{$lanes}) {
+    $self->logcroak( 'Lanes have to be given explicitly');
   }
-
-   my $ret = 1;
 
   foreach my $position (@{$lanes}) {
     $self->info("About to build .all.seqchksum for lane $position");
-    my $this = $self->_compare_lane($position);
-    if ($this > 0 ) {
-      $self->warn("Bamseqchksum comparisons for lane $position have FAILED");
-      $ret = 1;
-    }
+    $self->_compare_lane($position);
   }
-  return $ret;
+
+  return;
 }
 
 sub _compare_lane {
   my ($self, $position) = @_;
 
   my $input_seqchksum_dir = $self->bam_basecall_path();
-  #my $product_seqchksum_dir = $self->bam_basecall_path() .q{/no_cal/archive/};
   my $input_seqchksum_file_name = $self->id_run . '_' . $position . '.post_i2b.seqchksum';
   my $lane_seqchksum_file_name = $self->id_run . '_' . $position . '.all.seqchksum';
 
@@ -114,7 +100,7 @@ sub _compare_lane {
     $self->logcroak("Cannot find $input_lane_seqchksum_file_name to compare to");
   }
 
-  my$wd = getcwd();
+  my $wd = getcwd();
   $self->info('Changing to archive directory ', $self->archive_path());
   chdir $self->archive_path() or $self->logcroak('Failed to change directory');
 
@@ -124,30 +110,26 @@ sub _compare_lane {
   $self->info("Building .all.seqchksum for lane $position from cram in $cram_file_name_glob ...");
 
   my $cmd = 'seqchksum_merge.pl ' . join(q{ }, @crams) . qq{> $lane_seqchksum_file_name};
-
-  if ($cmd ne q{}) {
-    $self->info("Running $cmd to generate $lane_seqchksum_file_name");
-    my $ret = system qq[/bin/bash -c "set -o pipefail && $cmd"];
-    if ( $ret  > 0 ) {
-      $self->logcroak("Failed to run command $cmd: $ret");
-    }
-  }
+  $self->info("Running $cmd to generate $lane_seqchksum_file_name");
+  system(qq[/bin/bash -c "set -o pipefail && $cmd"]) == 0 or $self->logcroak(
+    "Failed to run command $cmd");
 
   my $compare_cmd = q{diff -u <(grep '.all' } . $input_lane_seqchksum_file_name . q{ | sort) <(grep '.all' } . $lane_seqchksum_file_name . q{ | sort)};
   $self->info($compare_cmd);
 
-  my $compare_ret = system qq[/bin/bash -c "$compare_cmd"];
+  my $ret = system qq[/bin/bash -c "$compare_cmd"];
+  my $e = qq(seqchksum for post_i2b and product are different, command run "$compare_cmd");
+  $ret == 0 or $self->error($e);
   chdir $wd or $self->logcroak("Failed to change back to $wd");
-  if ($compare_ret !=0) {
-    $self->logcroak("Found a difference in seqchksum for post_i2b and product running $compare_cmd: $compare_ret");
-  } else {
-    return $compare_ret;
-  }
+  $ret == 0 or $self->logcroak($e);
 
   return;
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 DIAGNOSTICS
@@ -160,9 +142,7 @@ __END__
 
 =item Moose
 
-=item Carp
-
-=item English -no_match_vars
+=item namespace::autoclean
 
 =item Readonly
 

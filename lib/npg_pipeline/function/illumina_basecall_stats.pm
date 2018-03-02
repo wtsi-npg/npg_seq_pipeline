@@ -1,20 +1,22 @@
 package npg_pipeline::function::illumina_basecall_stats;
 
 use Moose;
+use namespace::autoclean;
 use Readonly;
-use npg_pipeline::lsf_job;
+
+use npg_pipeline::function::definition;
 
 extends 'npg_pipeline::base';
 with    'npg_common::roles::software_location';
 
 our $VERSION = '0';
 
-Readonly::Scalar our $MAKE_STATS_J => 4;
-Readonly::Scalar our $MAKE_STATS_MEM => 350;
+Readonly::Scalar my $MAKE_STATS_J   => 4;
+Readonly::Scalar my $MAKE_STATS_MEM => 350;
 
 =head1 NAME
 
-  npg_pipeline::function::illumina_basecall_stats
+npg_pipeline::function::illumina_basecall_stats
 
 =head1 SYNOPSIS
 
@@ -36,64 +38,52 @@ sub _build_bcl2qseq {
   return 'setupBclToQseq.py'
 }
 
-sub _generate_command {
-  my ( $self ) = @_;
+=head2 create
 
-  my $basecall_dir = $self->basecall_path();
-  my $dir = $self->bam_basecall_path();
+Creates a definition for a job which uses Illumina tools to generate
+the (per run) BustardSummary and IVC reports (from on instrument RTA basecalling).
+Returns an array with a single npg_pipeline::function::definition object.
 
-  $self->make_log_dir( $dir ); # create a log directory within bam_basecalls
-
-  my $bsub_queue  = $self->lsf_queue;
-  my $job_name  =  q{basecall_stats_} . $self->id_run() . q{_} . $self->timestamp();
-
-  my @command;
-  push @command, 'bsub';
-  push @command, "-q $bsub_queue";
-  push @command, qq{-o $dir/log/}. $job_name . q{.%J.out};
-  push @command, "-J $job_name";
-
-  my $hosts = 1;
-  my $memory_spec = join q[], npg_pipeline::lsf_job->new(memory => $MAKE_STATS_MEM)->memory_spec(), " -R 'span[hosts=$hosts]'";
-  push @command, $self->fs_resource_string( {
-    resource_string       => $memory_spec,
-    counter_slots_per_job => $MAKE_STATS_J,
-  } );
-  push @command,  q{-n } . $MAKE_STATS_J;
-  push @command, q["]; # " enclose command in quotes
-
-  my $bcl2qseq_path = $self->bcl2qseq;
-  my $cmd = join q[ && ],
-    qq{cd $dir},
-    q{if [[ -f Makefile ]]; then echo Makefile already present 1>&2; else echo creating bcl2qseq Makefile 1>&2; }.
-      qq{$bcl2qseq_path -b $basecall_dir -o $dir --overwrite; fi},
-    qq[make -j $MAKE_STATS_J Matrix Phasing],
-    qq[make -j $MAKE_STATS_J BustardSummary.x{s,m}l];
-
-  push @command,$cmd;
-
-  push @command, q["]; # " closing quote
-
-  return join q[ ], @command;
-}
-
-=head2 generate
-
-Use Illumina tools to generate the (per run) BustardSummary
-and IVC reports (from on instrument RTA basecalling).
+The excluded attribute of the object will be set to true for a HiSeq
+instrument run.
 
 =cut
 
-sub generate {
-  my ( $self ) = @_;
+sub create {
+  my $self = shift;
+
+  my $ref = {
+    'created_by' => __PACKAGE__,
+    'created_on' => $self->timestamp(),
+    'identifier' => $self->id_run()
+  };
+
   if ( $self->is_hiseqx_run ) {
     $self->info(q{HiSeqX sequencing instrument, illumina_basecall_stats will not be run});
-    return ();
-  }
-  return $self->submit_bsub_command($self->_generate_command());
-}
+    $ref->{'excluded'} = 1;
+  } else {
+    my $basecall_dir = $self->basecall_path();
+    my $dir = $self->bam_basecall_path();
 
-no Moose;
+    $ref->{'job_name'} = join q{_}, q{basecall_stats}, $self->id_run(), $self->timestamp();
+    $ref->{'log_file_dir'} = $self->make_log_dir( $dir );
+    $ref->{'memory'}       = $MAKE_STATS_MEM;
+    $ref->{'num_cpus'}     = [$MAKE_STATS_J];
+    $ref->{'fs_slots_num'} = $MAKE_STATS_J;
+    $ref->{'num_hosts'}    = 1;
+
+    my $bcl2qseq_path = $self->bcl2qseq;
+    my $cmd = join q[ && ],
+      qq{cd $dir},
+      q{if [[ -f Makefile ]]; then echo Makefile already present 1>&2; else echo creating bcl2qseq Makefile 1>&2; } .
+        qq{$bcl2qseq_path -b $basecall_dir -o $dir --overwrite; fi},
+      qq[make -j $MAKE_STATS_J Matrix Phasing],
+      qq[make -j $MAKE_STATS_J BustardSummary.x{s,m}l];
+    $ref->{'command'} = $cmd;
+  }
+
+  return [npg_pipeline::function::definition->new($ref)];
+}
 
 __PACKAGE__->meta->make_immutable;
 
@@ -110,6 +100,8 @@ __END__
 =over
 
 =item Moose
+
+=item namespace::autoclean
 
 =item Readonly
 

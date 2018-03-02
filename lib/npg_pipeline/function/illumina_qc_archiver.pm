@@ -1,57 +1,58 @@
 package npg_pipeline::function::illumina_qc_archiver;
 
 use Moose;
-use Carp;
+use namespace::autoclean;
+use Readonly;
+
+use npg_pipeline::function::definition;
 
 extends qw{npg_pipeline::base};
 
 our $VERSION = '0';
 
-sub submit_to_lsf {
-  my $self = shift;
-  my $job_sub = $self->_generate_bsub_command();
-  my $job_id = $self->submit_bsub_command($job_sub);
-  return ($job_id);
-}
+Readonly::Scalar my $SCRIPT_NAME => q{npg_qc_illumina_analysis_loader};
 
-sub _generate_bsub_command {
+sub create {
   my $self = shift;
 
-  my $timestamp = $self->timestamp();
   my $job_name_prefix = q{illumina_analysis_loader};
-
-  my $job_name = join q{_}, $job_name_prefix, $self->id_run() , $timestamp;
-
+  my $job_name = join q{_}, $job_name_prefix, $self->id_run(), $self->timestamp();
   my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
-  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue . qq{ -J $job_name };
-  $bsub_command .=  ( $self->fs_resource_string( {
-    counter_slots_per_job => 1,
-  } ) ) . q{ };
-  $bsub_command .=  qq{-E 'npg_pipeline_script_must_be_unique_runner -job_name="$job_name_prefix" -own_job_name="$job_name"' };
-  $bsub_command .=  q{-o } . $location_of_logs . q{/} . $job_name . q{.out };
-  $bsub_command .=  q{'npg_qc_illumina_analysis_loader};
-  $bsub_command .= q{  --id_run } . $self->id_run;
-  $bsub_command .= q{  --run_folder } . $self->run_folder;
-  $bsub_command .= q{  --runfolder_path } . $self->runfolder_path;
+
+  my $preexec =  qq{npg_pipeline_script_must_be_unique_runner -job_name="$job_name_prefix" -own_job_name="$job_name"};
+
+  my $command =  $SCRIPT_NAME;
+  $command .= q{ --id_run } . $self->id_run;
+  $command .= q{ --run_folder } . $self->run_folder;
+  $command .= q{ --runfolder_path } . $self->runfolder_path;
   if ($self->bam_basecall_path) {
-    $bsub_command .= q{  --bam_basecall_path } . $self->bam_basecall_path;
+    $command .= q{ --bam_basecall_path } . $self->bam_basecall_path;
   }
-  $bsub_command .= q{  --basecall_path } . $self->basecall_path;
-
+  $command .= q{ --basecall_path } . $self->basecall_path;
   if ($self->verbose()) {
-    $bsub_command .= q{  --verbose'};
-  } else {
-    $bsub_command .= q{'};
+    $command .= q{ --verbose};
   }
-  $self->debug($bsub_command);
 
-  return $bsub_command;
+  my $d = npg_pipeline::function::definition->new(
+    created_by      => __PACKAGE__,
+    created_on      => $self->timestamp(),
+    identifier      => $self->id_run(),
+    job_name        => $job_name,
+    command         => $command,
+    command_preexec => $preexec,
+    log_file_dir    => $location_of_logs,
+    fs_slots_num    => 1,
+    queue           =>
+      $npg_pipeline::function::definition::SMALL_QUEUE,
+  );
+
+  return [$d];
 }
 
-
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 NAME
@@ -68,7 +69,12 @@ npg_pipeline::function::illumina_qc_archiver
 
 =head1 SUBROUTINES/METHODS
 
-=head2 submit_to_lsf - handles calling out to create the bsub command and submits it, returning the job ids
+=head2 create
+
+Creates and returns a single function definition as an array.
+Function definition is created as a npg_pipeline::function::definition
+type object.
+
   my @job_ids = $aia->submit_to_lsf();
 
 =head1 DIAGNOSTICS
@@ -81,7 +87,9 @@ npg_pipeline::function::illumina_qc_archiver
 
 =item Moose
 
-=item Carp
+=item namespace::autoclean
+
+=item Readonly
 
 =back
 
@@ -92,6 +100,7 @@ npg_pipeline::function::illumina_qc_archiver
 =head1 AUTHOR
 
 Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 

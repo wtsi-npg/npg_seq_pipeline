@@ -1,106 +1,70 @@
 package npg_pipeline::function::p4_stage1_analysis;
 
 use Moose;
-use Carp;
+use Moose::Meta::Class;
+use namespace::autoclean;
+use Try::Tiny;
 use English qw{-no_match_vars};
 use Readonly;
 use File::Slurp;
-use JSON::XS;
+use JSON;
 use open q(:encoding(UTF8));
 
-use st::api::lims;
 use npg_common::roles::software_location;
-use npg_pipeline::lsf_job;
 use npg_pipeline::cache::barcodes;
+use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
-with q{npg_tracking::illumina::run::long_info};
 
 our $VERSION  = '0';
 
-Readonly::Scalar my $NUM_SLOTS    => q(8,16);
-Readonly::Scalar my $MEMORY       => q{12000}; # memory in megabytes
-Readonly::Scalar my $FS_RESOURCE  => 4; # LSF resource counter to control access to staging area file system
+Readonly::Scalar my $NUM_SLOTS                    => q(8,16);
+Readonly::Scalar my $NUM_HOSTS                    => 1;
+Readonly::Scalar my $MEMORY                       => q{12000}; # memory in megabytes
+Readonly::Scalar my $FS_RESOURCE                  => 4; # LSF resource counter to control access to staging area file system
+Readonly::Scalar my $DEFAULT_I2B_THREAD_COUNT     => 3; # value passed to bambi i2b --threads flag
 
 sub generate {
-  my ( $self ) = @_;
+  my $self = shift;
 
-  $self->info(q{Creating Jobs to run P4 stage1 analysis for run },
+  $self->info(q{Creating definitions to run P4 stage1 analysis for run },
               $self->id_run);
 
   $self->info(q{Creating P4 stage1 analysis directories for run },
               $self->id_run );
   $self->_create_p4_stage1_dirs();
-  $self->info(q{Creating lane directories for P4 stage1 analysis for run },
-              $self->id_run);
-  $self->_create_lane_dirs();
 
   my $alims = $self->lims->children_ia;
+  my @definitions = ();
+
   for my $p ($self->positions()) {
-    my $tag_list_file;
+
+    my $l = $alims->{$p};
+    my $tag_list_file = q{};
+
     if ($self->is_multiplexed_lane($p)) {
       $self->info(qq{Lane $p is indexed, generating tag list});
 
       $tag_list_file = npg_pipeline::cache::barcodes->new(
-        location     => $self->metadata_cache_dir,
-        lane_lims    => $alims->{$p},
-        index_lengths=> $self->_get_index_lengths($alims->{$p}),
-        i5opposite   => $self->is_hiseqx_run,
-        verbose      => $self->verbose
+        location      => $self->metadata_cache_dir,
+        lane_lims     => $l,
+        index_lengths => $self->_get_index_lengths($l),
+        i5opposite    => $self->is_hiseqx_run,
+        verbose       => $self->verbose
       )->generate();
     }
-    my $bsub_cmd = $self->_generate_command_params($alims->{$p}, $tag_list_file);
+
+    my @generated = $self->_generate_command_params($l, $tag_list_file);
+    my $command = shift @generated;
+    push @definitions, $self->_create_definition($l, $command);
+
+    my $pfile_name = join q{/}, $self->p4_stage1_params_paths->{$p},
+                                $self->id_run.q{_}.$p.q{_p4s1_pv_in.json};
+    my %p4_params = @generated;
+    write_file($pfile_name, encode_json {'assign' => [ \%p4_params ]});
   }
 
-  my $job_id = $self->submit_bsub_command(
-    $self->_command2submit()
-  );
-
-  $self->_save_arguments($job_id);
-
-  return ($job_id);
-}
-
-sub _command2submit {
-  my ($self) = @_;
-
-  my $outfile = join q{/} , $self->make_log_dir($self->bam_basecall_path), $self->job_name_root . q{.%I.%J.out};
-  my @job_indices = sort {$a <=> $b} keys %{$self->_job_args->{_param_vals}};
-  my $job_name = q{'} . $self->job_name_root . npg_pipeline::lsf_job->create_array_string(@job_indices) . q{'};
-  my $resources = ( $self->fs_resource_string( {
-      counter_slots_per_job => ($self->general_values_conf()->{'p4_stage1_fs_resource'} || $FS_RESOURCE),
-      resource_string => $self->_default_resources(),
-    } ) );
-  return  q{bsub -q } . $self->lsf_queue()
-    .  q{ } . $self->ref_adapter_pre_exec_string()
-    . qq{ $resources -J $job_name -o $outfile}
-    .  q{ 'perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"'}
-    .  q{ }.(join q[/],$self->bam_basecall_path, $self->job_name_root).q{_$}.q{LSB_JOBID}
-    .  q{ $}.q{LSB_JOBINDEX'} ;
-}
-
-sub _save_arguments {
-  my ($self, $job_id) = @_;
-  my $file_name = join q[_], $self->job_name_root, $job_id;
-  $file_name = join q[/], $self->bam_basecall_path, $file_name;
-
-  $self->debug(qq[Arguments will be written to $file_name]);
-  my ($ja,$commands);
-  if($ja=$self->_job_args and defined $ja->{_commands} and $commands = encode_json $self->_job_args->{_commands}) {
-    write_file($file_name, $commands);
-  }
-  else {
-    $self->logcroak(q[Failed to generate commands for saving to arguments file ], $file_name);
-  }
-  $self->debug(qq[Arguments written to $file_name]);
-
-  # write p4 stage1 parameter files, one per lane
-  for my $position (keys %{$self->_job_args->{_param_vals}}) {
-    my $pfile_name = join q{/}, $self->p4_stage1_params_paths->{$position}, $self->id_run.q{_}.$position.q{_p4s1_pv_in.json};
-    write_file($pfile_name, encode_json $self->_job_args->{_param_vals}->{$position});
-  }
-
-  return $file_name;
+  return \@definitions;
 }
 
 foreach my $jar_name (qw/Illumina2bam BamAdapterFinder BamIndexDecoder/) {
@@ -109,16 +73,16 @@ foreach my $jar_name (qw/Illumina2bam BamAdapterFinder BamIndexDecoder/) {
                            is         => q{ro},
                            coerce     => 1,
                            default    => $jar_name.q{.jar},
-                                );
+                         );
 }
 
-has 'p4_stage1_analysis_log_base' => ( isa        => 'Str',
+has 'p4_stage1_analysis_log_base' => (
+                           isa        => 'Str',
                            is         => 'ro',
                            lazy_build => 1,
                          );
 sub _build_p4_stage1_analysis_log_base {
   my $self = shift;
-
   return join q{/}, $self->bam_basecall_path, q{p4_stage1_analysis};
 }
 
@@ -129,10 +93,9 @@ has 'p4_stage1_params_paths' => (
                          );
 sub _build_p4_stage1_params_paths {
   my $self = shift;
-  my $ret = {};
-
-  my %p4_stage1_params_paths = map { $_=> $self->p4_stage1_analysis_log_base . q[/lane] . $_ . q[/param_files]; } $self->positions;
-
+  my %p4_stage1_params_paths =
+    map { $_=> $self->p4_stage1_analysis_log_base . q[/lane] . $_ . q[/param_files]; }
+    $self->positions;
   return \%p4_stage1_params_paths;
 }
 
@@ -143,71 +106,61 @@ has 'p4_stage1_errlog_paths'  => (
                          );
 sub _build_p4_stage1_errlog_paths {
   my $self = shift;
-
-  my %p4_stage1_errlog_paths = map { $_=> $self->p4_stage1_analysis_log_base . q[/lane] . $_ . q[/log]; } $self->positions;
-
+  my %p4_stage1_errlog_paths =
+    map { $_=> $self->p4_stage1_analysis_log_base . q[/lane] . $_ . q[/log]; }
+    $self->positions;
   return \%p4_stage1_errlog_paths;
 }
 
-has 'job_name_root'  => (  isa        => 'Str',
+has '_num_cpus'               => (
+                           isa        => 'ArrayRef',
                            is         => 'ro',
                            lazy_build => 1,
                          );
-sub _build_job_name_root {
+sub _build__num_cpus {
   my $self = shift;
-  return join q{_}, q{p4_stage1_analysis}, $self->id_run(), $self->timestamp();
+  return $self->num_cpus2array(
+    $self->general_values_conf()->{'p4_stage1_slots'} || $NUM_SLOTS);
 }
 
-has '_job_args'   => ( isa     => 'HashRef',
-                       is      => 'ro',
-                       default => sub { return {};},
-                     );
+has '_job_id' => ( isa        => 'Str',
+                   is         => 'ro',
+                   lazy_build => 1,
+                 );
+sub _build__job_id {
+  my $self = shift;
+  return $self->random_string();
+}
 
-has '_param_vals'   => (
-                       isa     => 'HashRef',
-                       is      => 'ro',
-                       default => sub { return {};},
-                     );
+sub _create_definition {
+  my ($self, $l, $command) = @_;
+
+  return npg_pipeline::function::definition->new(
+    created_by      => __PACKAGE__,
+    created_on      => $self->timestamp(),
+    identifier      => $self->id_run(),
+    job_name        => (join q{_}, q{p4_stage1_analysis},$self->id_run(),$self->timestamp()),
+    fs_slots_num    => $self->general_values_conf()->{'p4_stage1_fs_resource'} || $FS_RESOURCE,
+    num_hosts       => $NUM_HOSTS,
+    num_cpus        => $self->_num_cpus(),
+    log_file_dir    => $self->make_log_dir( $self->bam_basecall_path ),
+    memory          => $self->general_values_conf()->{'p4_stage1_memory'} || $MEMORY,
+    command         => $command,
+    command_preexec => $self->ref_adapter_pre_exec_string(),
+    composition     => $self->create_composition($l)
+  );
+}
 
 sub _create_p4_stage1_dirs {
-  my ($self) = @_;
+  my $self = shift;
 
-  for my $d (values %{$self->p4_stage1_params_paths}, values %{$self->p4_stage1_errlog_paths}) {
+  for my $d ( values %{$self->p4_stage1_params_paths},
+              values %{$self->p4_stage1_errlog_paths} ) {
      $self->info(qq{creating $d});
      my $rc = `mkdir -p $d`;
      if ( $CHILD_ERROR ) {
        $self->logcroak(qq{could not create $d\n\t$rc});
      }
-  }
-
-  return;
-}
-
-sub _create_lane_dirs {
-  my ($self) = @_;
-
-  if(!$self->is_indexed()) {
-    $self->warn(qq{Run $self->id_run is not multiplex run and no need to split});
-    return;
-  }
-
-  my %positions = map { $_=>1 } $self->positions();
-  my @indexed_lanes = grep { $positions{$_} } @{$self->multiplexed_lanes()};
-  if(!@indexed_lanes) {
-    $self->info( q{None of the lanes for analysis is multiplexed} );
-    return;
-  }
-
-  my $output_dir = $self->recalibrated_path() . q{/lane};
-  for my $position (@indexed_lanes) {
-    my $lane_output_dir = $output_dir . $position;
-    if( ! -d $lane_output_dir ) {
-       $self->info(qq{creating $lane_output_dir});
-       my $rc = `mkdir -p $lane_output_dir`;
-       if ( $CHILD_ERROR ) {
-         $self->logcroak(qq{could not create $lane_output_dir\n\t$rc});
-       }
-    }
   }
 
   return;
@@ -249,8 +202,8 @@ sub _generate_command_params {
                     teepot_tempdir => q{.},
                     teepot_wval => q{500},
                     teepot_mval => q{2G},
-                    reference_phix => _default_phix_ref(q{bwa0_6}, $self->repository),
-                    scramble_reference_fasta => _default_phix_ref(q{fasta}, $self->repository),
+                    reference_phix => $self->_default_phix_ref(q{bwa0_6}, $self->repository),
+                    scramble_reference_fasta => $self->_default_phix_ref(q{fasta}, $self->repository),
                   );
   my %i2b_flag_map = (
     I => q[i2b_intensity_dir],
@@ -315,6 +268,7 @@ sub _generate_command_params {
 
   $p4_params{illumina2bam_jar} = $self->_Illumina2bam_jar;
   $p4_params{i2b_run_path} = $runfolder_path;
+  $p4_params{i2b_thread_count} = $self->general_values_conf()->{'p4_stage1_i2b_thread_count'} || $DEFAULT_I2B_THREAD_COUNT;
   $p4_params{i2b_runfolder} = $run_folder;
   $p4_params{$i2b_flag_map{q/I/}} = $intensity_path;
   $p4_params{$i2b_flag_map{q/L/}} = $position;
@@ -448,13 +402,13 @@ sub _generate_command_params {
 #  So I'll fix bid_implementation to that
   $p4_params{bid_implementation} = q[bambi];
 
-  $self->_job_args->{_commands}->{$position} = join q( ), q(bash -c '),
+  my $command = join q( ), q(bash -c '),
                            q(cd), $self->p4_stage1_errlog_paths->{$position}, q{&&},
                            q(vtfp.pl),
                            $splice_flag, $prune_flag,
                            qq(-o run_$name_root.json),
                            q(-param_vals), (join q{/}, $self->p4_stage1_params_paths->{$position}, $name_root.q{_p4s1_pv_in.json}),
-                           q(-export_param_vals), $name_root.q{_p4s1_pv_out_$}.q/{LSB_JOBID}.json/,
+                           q(-export_param_vals), $name_root.q{_p4s1_pv_out_}.$self->_job_id().q/.json/,
                            q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
                            qq(-keys aligner_numthreads -vals $aligner_slots),
                            qq(-keys s2b_mt_val -vals $samtobam_slots),
@@ -468,9 +422,7 @@ sub _generate_command_params {
                            qq{qc --check spatial_filter --id_run $id_run --position $position --qc_out $qc_path < $spatial_filter_stats_file},
                            q(');
 
-  $self->_job_args->{_param_vals}->{$position}->{assign} = [ \%p4_params ];
-
-  return;
+  return ($command, %p4_params);
 }
 
 sub _default_resources {
@@ -500,7 +452,7 @@ sub _get_library_sample_study_names {
 }
 
 sub _default_phix_ref {
-   my ($aligner, $repos) = @_;
+   my ($self, $aligner, $repos) = @_;
 
    my $ruser = Moose::Meta::Class->create_anon_class(
           roles => [qw/npg_tracking::data::reference::find/])
@@ -508,17 +460,16 @@ sub _default_phix_ref {
                          species => q{PhiX},
                          aligner => $aligner,
                         ($repos ? (q(repository)=>$repos) : ())
-                       } );
+                       });
 
    my $phix_ref;
-   eval {
+   try {
       $phix_ref = $ruser->refs->[0];
       if($aligner eq q{picard}) {
         $phix_ref .= q{.dict};
       }
-      1;
-   } or do{
-      carp $EVAL_ERROR;
+   } catch {
+      $self->warn($_);
    };
 
    return $phix_ref;
@@ -566,12 +517,10 @@ sub _build__extra_tradis_transposon_read {
   return 0;
 }
 
-
-no Moose;
-
 __PACKAGE__->meta->make_immutable;
 
 1;
+
 __END__
 
 =head1 NAME
@@ -580,19 +529,21 @@ npg_pipeline::function::p4_stage1_analysis
 
 =head1 SYNOPSIS
 
-  my $oAfgfq = npg_pipeline::function::p4_stage1_analysis->new(
+  my $p4s1 = npg_pipeline::function::p4_stage1_analysis->new(
     run_folder => $sRunFolder,
   );
 
 =head1 DESCRIPTION
 
-Module which knows how to construct and submit the command line to LSF for creating bam files from bcl files, including initial phiX alignment, spatial filtering and deplexing of pools where appropriate
+Definition for p4 flow which creates cram files from bcl files, including initial phiX alignment, 
+spatial filtering and deplexing of pools where appropriate.
 
 =head1 SUBROUTINES/METHODS
 
-=head2 generate - generates the bsub jobs and submits them for creating the bam files, returning LSF job ID for an array of jobs.
+=head2 generate
 
-  my @job_ids = $oAfgfq->generate();
+Creates and returns an array of npg_pipeline::function::definition
+objects for all lanes.
 
 =head1 DIAGNOSTICS
 
@@ -602,7 +553,7 @@ Module which knows how to construct and submit the command line to LSF for creat
 
 =over
 
-=item Carp
+=item Try::Tiny
 
 =item English -no_match_vars
 
@@ -610,19 +561,19 @@ Module which knows how to construct and submit the command line to LSF for creat
 
 =item Moose
 
+=item Moose::Meta::Class
+
+=item namespace::autoclean
+
 =item File::Slurp
 
-=item JSON::XS
+=item JSON
 
-=item st::api::lims
+=item open
 
 =item npg_common::roles::software_location
 
-=item npg_pipeline::lsf_job
-
 =item npg_pipeline::cache::barcodes
-
-=item npg_tracking::illumina::run::long_info
 
 =back
 

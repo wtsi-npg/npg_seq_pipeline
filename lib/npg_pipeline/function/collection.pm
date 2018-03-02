@@ -1,10 +1,11 @@
 package npg_pipeline::function::collection;
 
 use Moose;
-use Readonly;
+use namespace::autoclean;
 use File::Spec;
 
-use npg_pipeline::lsf_job;
+use npg_pipeline::function::definition;
+
 extends q{npg_pipeline::base};
 
 our $VERSION = '0';
@@ -22,30 +23,27 @@ npg_pipeline::function::collection
 
 =head1 DESCRIPTION
 
-A collection of pipeline functions' implementors
+A collection of pipeline functions' implementations
 
 =head1 SUBROUTINES/METHODS
 
 =head2 update_warehouse
 
-Updates run data in the npg tables of the warehouse.
+Creates command definition to update run data in the npg tables
+of the warehouse.
 
 =cut
 
 sub update_warehouse {
   my ($self, $flag) = @_;
-  if ($self->no_warehouse_update) {
-    $self->warn(q{Update to warehouse is switched off.});
-    return ();
-  }
-  return $self->submit_bsub_command(
-    $self->_update_warehouse_command('warehouse_loader', $flag));
+  return $self->_update_warehouse_command('warehouse_loader', $flag);
 }
 
 =head2 update_warehouse_post_qc_complete
 
-Updates run data in the npg tables of the ml_warehouse.
-Runs when the runfolder is moved to the outgoing directory.
+Creates command definition to update run data in the npg tables
+of the warehouse at a stage when the runfolder is moved to the
+outgoing directory.
 
 =cut
 
@@ -56,24 +54,21 @@ sub update_warehouse_post_qc_complete {
 
 =head2 update_ml_warehouse
 
-Updates run data in the npg tables of the ml_warehouse.
+Creates command definition to update run data in the npg tables
+of the ml warehouse.
 
 =cut
 
 sub update_ml_warehouse {
   my ($self, $flag) = @_;
-  if ($self->no_warehouse_update) {
-    $self->warn(q{Update to warehouse is switched off.});
-    return ();
-  }
-  return $self->submit_bsub_command(
-    $self->_update_warehouse_command('npg_runs2mlwarehouse', $flag));
+  return $self->_update_warehouse_command('npg_runs2mlwarehouse', $flag);
 }
 
 =head2 update_ml_warehouse_post_qc_complete
 
-Updates run data in the npg tables of the ml_warehouse.
-Runs when the runfolder is moved to the outgoing directory.
+Creates command definition to update run data in the npg tables
+of the ml warehouse at a stage when the runfolder is moved to the
+outgoing directory.
 
 =cut
 
@@ -85,98 +80,115 @@ sub update_ml_warehouse_post_qc_complete {
 sub _update_warehouse_command {
   my ($self, $loader_name, $post_qc_complete) = @_;
 
+  my $d;
   my $id_run = $self->id_run;
-  my $command = qq{$loader_name --verbose --id_run $id_run};
-  if ($loader_name eq 'warehouse_loader') {
-    $command .= q{ --lims_driver_type };
-    $command .= $post_qc_complete ? 'ml_warehouse_fc_cache' : 'samplesheet';
-  }
-  my $job_name = join q{_}, $loader_name, $id_run, $self->pipeline_name;
-  my $path = $self->make_log_dir($self->recalibrated_path());
-  my $prereq = q[];
-  if ($post_qc_complete) {
-    $path = $self->path_in_outgoing($path);
-    $job_name .= '_postqccomplete';
-    $prereq = qq(-E "[ -d '$path' ]");
-  }
-  my $out = join q{_}, $job_name, $self->timestamp . q{.out};
-  $out =  File::Spec->catfile($path, $out);
 
-  return q{bsub -q } . $self->lowload_lsf_queue() . qq{ -J $job_name -o $out $prereq '$command'};
+  if ($self->no_warehouse_update) {
+    $self->warn(q{Update to warehouse is switched off.});
+    $d = npg_pipeline::function::definition->new(
+      created_by   => __PACKAGE__,
+      created_on   => $self->timestamp(),
+      identifier   => $id_run,
+      excluded     => 1
+    );
+  } else {
+
+    my $command = qq{$loader_name --verbose --id_run $id_run};
+    if ($loader_name eq 'warehouse_loader') {
+      $command .= q{ --lims_driver_type };
+      $command .= $post_qc_complete ? 'ml_warehouse_fc_cache' : 'samplesheet';
+    }
+    my $job_name = join q{_}, $loader_name, $id_run, $self->pipeline_name;
+    my $path = $self->make_log_dir($self->recalibrated_path());
+
+    my $prereq = q[];
+    if ($post_qc_complete) {
+      $path = $self->path_in_outgoing($path);
+      $prereq = "[ -d '$path' ]";
+    }
+
+    my $ref = {
+      created_by   => __PACKAGE__,
+      created_on   => $self->timestamp(),
+      identifier   => $id_run,
+      command      => $command,
+      queue        =>
+        $npg_pipeline::function::definition::SMALL_QUEUE
+    };
+
+    if ($post_qc_complete) {
+      $path = $self->path_in_outgoing($path);
+      $job_name .= '_postqccomplete';
+      $ref->{'command_preexec'} = "[ -d '$path' ]";
+    }
+    $ref->{'log_file_dir'} = $path;
+    $ref->{'job_name'}     = $job_name;
+
+    $d = npg_pipeline::function::definition->new($ref);
+  }
+
+  return [$d];
 }
 
 =head2 bam2fastqcheck_and_cached_fastq
 
-Creates and caches short fastq file for autoqc checks.
-Takes the lane bam file as input.
+Creates and returns command definition for generating and
+caching short fastq files that serve as input to autoqc checks.
+Th einput to the command is the lane bam file.
 
 =cut
 
 sub bam2fastqcheck_and_cached_fastq {
   my $self = shift;
-  my $id = $self->submit_bsub_command(
-    $self->_bam2fastqcheck_and_cached_fastq_command() );
-  return ($id);
-}
 
-sub _bam2fastqcheck_and_cached_fastq_command {
-  my $self = shift;
-
-  my $timestamp = $self->timestamp();
   my $id_run = $self->id_run();
+  my $job_name = join q{_}, q{bam2fastqcheck_and_cached_fastq},
+                            $id_run, $self->timestamp();
+  my $log_dir = $self->make_log_dir($self->recalibrated_path);
 
-  my $job_name = join q{_}, q{bam2fastqcheck_and_cached_fastq}, $id_run, $timestamp;
-  my $out = $job_name . q{.%I.%J.out};
-  $out =  File::Spec->catfile($self->make_log_dir($self->recalibrated_path), $out );
+  my $command = sub {
+    my ($c, $i, $p) = @_;
+    return sprintf '%s/%i_%i.bam', $c, $i, $p;
+  };
 
-  $job_name = q{'} . $job_name . npg_pipeline::lsf_job->create_array_string( $self->positions()) . q{'};
+  my $c = q{generate_cached_fastq}
+        . q{ --path } . $self->archive_path()
+        . q{ --file } . $self->recalibrated_path();
 
-  my $job_sub = q{bsub -q } . $self->lsf_queue() . q{ } .
-                $self->fs_resource_string( {counter_slots_per_job => 1,} ) .
-                qq{ -J $job_name -o $out };
-  $job_sub .= q{'} .
-              q{generate_cached_fastq --path } . $self->archive_path() .
-              q{ --file } . $self->recalibrated_path() . q{/} . $id_run . q{_} . $self->lsb_jobindex() . q{.bam} .
-              q{'};
-
-  return $job_sub;
-}
-
-sub _token_job {
-  my ($self, $function_name, $suspended) = @_;
-  my $runfolder_path = $self->runfolder_path();
-  my $job_name = join q{_}, $function_name, $self->id_run(), $self->pipeline_name();
-  my $out = join q{_}, $function_name, $self->timestamp, q{%J.out};
-  $out = join q{/}, $runfolder_path, $out;
-  my $cmd = q{bsub };
-  if ($suspended) {
-    $cmd .= q{-H };
+  my @definitions = ();
+  foreach my $p ($self->positions()) {
+    push @definitions, npg_pipeline::function::definition->new(
+      created_by   => __PACKAGE__,
+      created_on   => $self->timestamp(),
+      identifier   => $id_run,
+      job_name     => $job_name,
+      command      => $command->($c, $id_run, $p),
+      fs_slots_num => 1,
+      log_file_dir => $self->runfolder_path(),
+      composition  =>
+        $self->create_composition({id_run => $id_run, position => $p})
+    );
   }
-  $cmd .= q{-q } . $self->small_lsf_queue() . qq{ -J $job_name -o $out '/bin/true'};
-  my $job_id = $self->submit_bsub_command($cmd);
-  ($job_id) = $job_id =~ m/(\d+)/ixms;
-  return ($job_id);
+
+  return \@definitions;
 }
 
 =head2 pipeline_start
 
 First function that might be called by the pipeline.
-Submits a suspended token job to LSF. The user-defined functions that are run
-as LSF jobs will depend on the successful complition of this job. Therefore,
-the pipeline jobs will stay pending till the start job is resumed and gets
-successfully completed.
+Creates and returns a token job definition.
 
 =cut
 
 sub pipeline_start {
   my $self = shift;
-  return $self->_token_job('pipeline_start', 1);
+  return $self->_token_job('pipeline_start');
 }
 
 =head2 pipeline_end
 
 Last 'catch all' function that might be called by the pipeline.
-Submits a token job to LSF. 
+Creates and returns a token job definition. 
 
 =cut
 
@@ -185,7 +197,27 @@ sub pipeline_end {
   return $self->_token_job('pipeline_end');
 }
 
-no Moose;
+sub _token_job {
+  my ($self, $function_name) = @_;
+
+  my $job_name = join q{_}, $function_name, $self->id_run(), $self->pipeline_name();
+
+  my $d = npg_pipeline::function::definition->new(
+    created_by    => __PACKAGE__,
+    created_on    => $self->timestamp(),
+    identifier    => $self->id_run(),
+    job_name      => $job_name,
+    command       => '/bin/true',
+    log_file_dir  => $self->runfolder_path(),
+    queue         =>
+      $npg_pipeline::function::definition::SMALL_QUEUE,
+  );
+
+  return [$d];
+}
+
+__PACKAGE__->meta->make_immutable;
+
 1;
 __END__
 
@@ -199,7 +231,7 @@ __END__
 
 =item Moose
 
-=item Readonly
+=item namespace::autoclean
 
 =item File::Spec
 

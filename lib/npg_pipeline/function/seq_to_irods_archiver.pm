@@ -1,7 +1,10 @@
 package npg_pipeline::function::seq_to_irods_archiver;
 
 use Moose;
+use namespace::autoclean;
 use Readonly;
+
+use npg_pipeline::function::definition;
 
 extends qw{npg_pipeline::base};
 
@@ -10,78 +13,65 @@ our $VERSION = '0';
 Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
 Readonly::Scalar my $NUM_MAX_ERRORS      => 20;
 
-sub submit_to_lsf {
+sub create {
   my $self = shift;
+
+  my $ref = {
+    'created_by' => __PACKAGE__,
+    'created_on' => $self->timestamp(),
+    'identifier' => $self->id_run(),
+  };
+
   if ($self->no_irods_archival) {
     $self->info(q{Archival to iRODS is switched off.});
-    return ();
-  }
-  my $job_sub = $self->_generate_bsub_command();
-  my $job_id = $self->submit_bsub_command($job_sub);;
-  return ($job_id);
-}
+    $ref->{'excluded'} = 1;
+  } else {
+    my $job_name_prefix = join q{_}, q{publish_illumina_run}, $self->id_run();
+    $ref->{'job_name'}  = join q{_}, $job_name_prefix, $self->timestamp();
+    $ref->{'log_file_dir'} = $self->make_log_dir($self->recalibrated_path());
+    $ref->{'fs_slots_num'} = 1;
+    $ref->{'reserve_irods_slots'} = 1;
+    $ref->{'queue'} = $npg_pipeline::function::definition::SMALL_QUEUE;
+    $ref->{'command_preexec'} =
+      qq{npg_pipeline_script_must_be_unique_runner -job_name="$job_name_prefix"};
 
-sub _generate_bsub_command {
-  my ($self, $arg_refs) = @_;
+    my $publish_log_name = join q[_], $job_name_prefix, $self->random_string();
+    $publish_log_name .= q{.restart_file.json};
 
-  my $id_run = $self->id_run();
-  my @positions = $self->positions();
-
-  my $position_list = q{};
-  if (scalar @positions < scalar $self->lims->children) {
-    foreach my $p  (@positions){
-      $position_list .= qq{ --positions $p};
-    }
-  }
-
-  my $timestamp = $self->timestamp();
-  my $job_name_prefix = $PUBLISH_SCRIPT_NAME . q{_} . $self->id_run();
-  my $job_name = $job_name_prefix . q{_} . $timestamp;
-
-  my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
-  my $bsub_command = q{bsub -q } . $self->lowload_lsf_queue() . qq{ -J $job_name };
-
-  $bsub_command .=  ( $self->fs_resource_string( {
-    counter_slots_per_job => 1,
-    seq_irods             => $self->general_values_conf()->{'default_lsf_irods_resource'},
-  } ) ) . q{ };
-
-  $bsub_command .=  qq{-E 'npg_pipeline_script_must_be_unique_runner -job_name="$job_name_prefix"' };
-  $bsub_command .=  q{-o } . $location_of_logs . qq{/$job_name.out };
-  $bsub_command .=  q{'};
-
-  ##no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-  my $publish_process_log_name =  q(process_publish_${LSB_JOBID}.json);
-  ##use critic
-  my $max_errors = $self->general_values_conf()->{'publish2irods_max_errors'} || $NUM_MAX_ERRORS;
-  $bsub_command .= $PUBLISH_SCRIPT_NAME
+    my $max_errors = $self->general_values_conf()->{'publish2irods_max_errors'} || $NUM_MAX_ERRORS;
+    my $command = $PUBLISH_SCRIPT_NAME
     . q{ --archive_path }   . $self->archive_path()
     . q{ --runfolder_path } . $self->runfolder_path()
-    . q{ --restart_file }   . (join q[/], $self->archive_path(), $publish_process_log_name)
+    . q{ --restart_file }   . (join q[/], $self->archive_path(), $publish_log_name)
     . q{ --max_errors }     . $max_errors;
 
-  if ($self->qc_run) {
-    $bsub_command .= q{ --alt_process qc_run};
+    if ($self->qc_run) {
+      $command .= q{ --alt_process qc_run};
+    }
+
+    my @positions = $self->positions();
+    my $position_list = q{};
+    if (scalar @positions < scalar $self->lims->children) {
+      foreach my $p  (@positions){
+        $position_list .= qq{ --positions $p};
+      }
+      $command .=  $position_list;
+    }
+
+    if($self->has_lims_driver_type) {
+      $command .= q{ --driver-type } . $self->lims_driver_type;
+    }
+
+    $ref->{'command'} = $command;
   }
 
-  if($position_list){
-     $bsub_command .=  $position_list
-  }
-
-  if($self->has_lims_driver_type) {
-    $bsub_command .= q{ --driver-type } . $self->lims_driver_type;
-  }
-
-  $bsub_command .=  q{'};
-
-  $self->debug($bsub_command);
-
-  return $bsub_command;
+  return [npg_pipeline::function::definition->new($ref)];
 }
 
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 NAME
@@ -98,10 +88,11 @@ npg_pipeline::function::seq_to_irods_archiver
 
 =head1 SUBROUTINES/METHODS
 
-=head2 submit_to_lsf
+=head2 create
 
-handler for submitting to LSF the archival bam files to irods 
-returns an array of lsf job ids
+Creates and returns a single function definition as an array.
+Function definition is created as a npg_pipeline::function::definition
+type object.
 
   my @job_ids = $fsa->submit_to_lsf();
 
@@ -126,6 +117,7 @@ returns an array of lsf job ids
 =head1 AUTHOR
 
 Guoying Qi
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 

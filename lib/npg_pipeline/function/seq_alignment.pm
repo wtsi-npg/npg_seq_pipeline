@@ -1,12 +1,12 @@
 package npg_pipeline::function::seq_alignment;
 
 use Moose;
-use English qw{-no_match_vars};
-use Readonly;
 use Moose::Meta::Class;
+use namespace::autoclean;
+use Readonly;
 use File::Slurp;
 use File::Basename;
-use JSON::XS;
+use JSON;
 use List::Util qw(sum);
 use List::MoreUtils qw(any);
 use open q(:encoding(UTF8));
@@ -14,36 +14,37 @@ use open q(:encoding(UTF8));
 use npg_tracking::data::reference::find;
 use npg_tracking::data::transcriptome;
 use npg_tracking::data::bait;
-use npg_pipeline::lsf_job;
 use npg_common::roles::software_location;
 use st::api::lims;
+use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
 
 our $VERSION  = '0';
 
-Readonly::Scalar our $NUM_SLOTS                    => q(12,16);
-Readonly::Scalar our $MEMORY                       => q{32000}; # memory in megabytes
-Readonly::Scalar our $MORE_MEMORY                  => q{38000}; # idem
-Readonly::Scalar our $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
-Readonly::Scalar my  $QC_SCRIPT_NAME               => q{qc};
-Readonly::Scalar my  $DEFAULT_SJDB_OVERHANG        => q{74};
-Readonly::Scalar my  $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
-Readonly::Scalar my  $REFERENCE_ARRAY_TVERSION_IDX => q{2};
-Readonly::Scalar my  $DEFAULT_RNA_ANALYSIS         => q{tophat2};
-Readonly::Scalar my  $DEFAULT_JOB_ID_FOR_NO_BSUB   => q{50};
+Readonly::Scalar my $NUM_SLOTS                    => q(12,16);
+Readonly::Scalar my $FS_NUM_SLOTS                 => 4;
+Readonly::Scalar my $NUM_HOSTS                    => 1;
+Readonly::Scalar my $MEMORY                       => q{32000}; # memory in megabytes
+Readonly::Scalar my $MEMORY_FOR_STAR              => q{38000}; # idem
+Readonly::Scalar my $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
+Readonly::Scalar my $QC_SCRIPT_NAME               => q{qc};
+Readonly::Scalar my $DEFAULT_SJDB_OVERHANG        => q{74};
+Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
+Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
+Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 
 =head2 phix_reference
 
-A path to phix reference for bwa alignment to split phiX spike-in reads
+A path to Phix reference fasta file to split phiX spike-in reads
 
 =cut
+
 has 'phix_reference' => (isa        => 'Str',
                          is         => 'rw',
                          required   => 0,
                          lazy_build => 1,
                         );
-
 sub _build_phix_reference {
   my $self = shift;
 
@@ -81,141 +82,91 @@ sub _build_input_path {
   return $self->recalibrated_path();
 }
 
-has 'job_name_root'  => ( isa        => 'Str',
-                          is         => 'ro',
-                          lazy_build => 1,
-                        );
-sub _build_job_name_root {
-  my $self = shift;
-  return join q{_}, q{seq_alignment},$self->id_run(),$self->timestamp();
-}
-
-has '_job_args'   => ( isa     => 'HashRef',
-                       is      => 'ro',
-                       default => sub { return {};},
-                     );
-
-has '_job_mem_reqs' => ( isa     => 'HashRef',
-                         is      => 'ro',
-                         default => sub { return {};},
-                       );
-
-has '_using_alt_reference' => ( isa     => 'Bool',
-                                is      => 'rw',
-                                default => 0,
-                              );
-
 has '_ref_cache' => (isa      => 'HashRef',
                      is       => 'ro',
                      required => 0,
                      default  => sub {return {};},
                     );
 
-sub _create_lane_dirs {
-  my ($self, @positions) = @_;
+has '_job_id' => ( isa        => 'Str',
+                   is         => 'ro',
+                   lazy_build => 1,
+                 );
+sub _build__job_id {
+  my $self = shift;
+  return $self->random_string();
+}
 
-  if(!$self->is_indexed()) {
-    $self->info( qq{Run $self->id_run is not multiplex run and no need to split} );
-    return;
-  }
-
-  my %positions = map { $_=>1 } @positions;
-  my @indexed_lanes = grep { $positions{$_} } @{$self->multiplexed_lanes()};
-  if(!@indexed_lanes) {
-    $self->info( q{None of the lanes specified is multiplexed} );
-    return;
-  }
-
-  my $output_dir = $self->recalibrated_path() . q{/lane};
-  for my $position (@indexed_lanes) {
-    my $lane_output_dir = $output_dir . $position;
-    if( ! -d $lane_output_dir ) {
-      $self->info( qq{creating $lane_output_dir} );
-      my $rc = `mkdir -p $lane_output_dir`;
-      if ( $CHILD_ERROR ) {
-        $self->logcroak(qq{could not create $lane_output_dir\n\t$rc});
-      }
-    } else {
-      $self->info( qq{ already exists: $lane_output_dir} );
-    }
-  }
-
-  return;
+has '_num_cpus' => ( isa        => 'ArrayRef',
+                     is         => 'ro',
+                     lazy_build => 1,
+                   );
+sub _build__num_cpus {
+  my $self = shift;
+  return $self->num_cpus2array(
+    $self->general_values_conf()->{'seq_alignment_slots'} || $NUM_SLOTS);
 }
 
 sub generate {
   my ( $self ) = @_;
 
-  my (@lanes) = $self->positions();
-  if ( ref $lanes[0] && ref $lanes[0] eq q{ARRAY} ) {   @lanes = @{ $lanes[0] }; }
+  my @definitions = ();
 
-  $self->_generate_command_arguments(\@lanes);
+  my $lane_lims_all = $self->lims->children_ia();
+  foreach my $position ( $self->positions() ) {
 
-  my @job_indices = keys %{$self->_job_args};
-  if (!@job_indices) {
-    $self->debug('Nothing to do');
-    return ();
+    my $lane_lims = $lane_lims_all->{$position};
+    if (!$lane_lims) {
+      $self->logcroak(qq{No lims object for position $position});
+    }
+    #######
+    # If the run have an indexing read and the LIMS have pool information,
+    # do plex level analysis.
+    #######
+    if ( $self->is_indexed and $lane_lims->is_pool ) {
+      my $plex_lims = $lane_lims->children_ia();
+      $plex_lims->{0} ||= st::api::lims->new(driver    => $lane_lims->driver,
+                                             id_run    => $lane_lims->id_run,
+                                             position  => $lane_lims->position,
+                                             tag_index => 0);
+      foreach my $tag_index ( sort {$a <=> $b} keys %{$plex_lims} ) {
+        my $l = $plex_lims->{$tag_index};
+        my $ref = {};
+        $ref->{'command'} = $self->_alignment_command($l, $ref, 1);
+        push @definitions, $self->_create_definition($ref, $l);
+      }
+    } else { #######
+             # Alternatively, do lane level analysis.
+             #######
+      my $ref = {};
+      $ref->{'command'} = $self->_alignment_command($lane_lims, $ref);
+      push @definitions, $self->_create_definition($ref, $lane_lims);
+    }
   }
 
-  my $job_id = $self->submit_bsub_command($self->_command2submit());
-
-  # bmod jobs that require more memory
-  @job_indices = keys %{$self->_job_mem_reqs};
-  if (@job_indices) {
-    $self->debug('Requesting more memory for alignment jobs');
-    my $dummy = $self->submit_bsub_command(
-        $self->_bmodcommand2submit($job_id)
-    );
-  }
-
-  $self->_save_arguments($job_id);
-
-  return ($job_id);
+  return \@definitions;
 }
 
-sub _command2submit {
-  my ($self) = @_;
+sub _create_definition {
+  my ($self, $ref, $l) = @_;
 
-  my $outfile = join q{/} , $self->make_log_dir( $self->archive_path() ), $self->job_name_root . q{.%I.%J.out};
-  my @job_indices = sort {$a <=> $b} keys %{$self->_job_args};
-  my $job_name = q{'} . $self->job_name_root . npg_pipeline::lsf_job->create_array_string(@job_indices) . q{'};
-  my $resources = ( $self->fs_resource_string( {
-      counter_slots_per_job => 4,
-      resource_string => $self->_default_resources($MEMORY),
-    } ) );
-  return  q{bsub -q } . $self->lsf_queue()
-    .  q{ } . $self->ref_adapter_pre_exec_string()
-    . qq{ $resources -J $job_name -o $outfile}
-    .  q{ 'perl -Mstrict -MJSON -MFile::Slurp -Mopen='"'"':encoding(UTF8)'"'"' -e '"'"'exec from_json(read_file shift@ARGV)->{shift@ARGV} or die q(failed exec)'"'"'}
-    .  q{ }.(join q[/],$self->input_path,$self->job_name_root).q{_$}.q{LSB_JOBID}
-    .  q{ $}.q{LSB_JOBINDEX'} ;
+  $ref->{'created_by'}      = __PACKAGE__;
+  $ref->{'created_on'}      = $self->timestamp();
+  $ref->{'identifier'}      = $self->id_run();
+  $ref->{'job_name'}        = join q{_}, q{seq_alignment},$self->id_run(),$self->timestamp();
+  $ref->{'fs_slots_num'}    = $FS_NUM_SLOTS ;
+  $ref->{'num_hosts'}       = $NUM_HOSTS;
+  $ref->{'num_cpus'}        = $self->_num_cpus();
+  $ref->{'log_file_dir'}    = $self->make_log_dir( $self->archive_path() );
+  $ref->{'memory'}          = $ref->{'memory'} ? $ref->{'memory'} : $MEMORY;
+  $ref->{'command_preexec'} = $self->ref_adapter_pre_exec_string();
+  $ref->{'composition'}     = $self->create_composition($l);
+
+  return npg_pipeline::function::definition->new($ref);
 }
 
-sub _save_arguments {
-  my ($self, $job_id) = @_;
-  my $file_name = join q[_], $self->job_name_root, $job_id;
-  $file_name = join q[/], $self->input_path, $file_name;
-  write_file($file_name, encode_json $self->_job_args);
-
-  $self->debug(qq[Arguments written to $file_name]);
-
-  return $file_name;
-}
-
-sub _bmodcommand2submit {
-  my ($self, $job_id) = @_;
-  my @job_indices = sort {$a <=> $b} keys %{$self->_job_mem_reqs};
-  my $job_name = npg_pipeline::lsf_job->create_array_string(@job_indices);
-  # original request must be made again when asking for more memory
-  my $resources = ( $self->fs_resource_string( {
-      counter_slots_per_job => 4,
-      resource_string => $self->_default_resources($MORE_MEMORY),
-    } ) );
-  return qq{bmod $resources $job_id$job_name};
-}
-
-sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
-  my ( $self, $l, $is_plex ) = @_;
+sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
+  my ( $self, $l, $ref, $is_plex ) = @_;
 
   $is_plex ||= 0;
   my $id_run = $self->id_run;
@@ -234,6 +185,10 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
     $archive_path = $self->lane_archive_path($position);
     $qcpath       = $self->lane_qc_path($position);
   }
+
+  my $working_dir = join q{/}, $self->archive_path,
+                               (join q{_}, q{tmp}, $self->_job_id),
+                               $name_root;
 
   if (1 < sum $l->contains_nonconsented_xahuman, $l->separate_y_chromosome_data, $l->contains_nonconsented_human) {
     $self->logcroak(qq{Only one of nonconsented X and autosome human split, separate Y chromosome data, and nonconsented human split may be specified ($name_root)});
@@ -294,13 +249,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   }
 
   my $nchs = $l->contains_nonconsented_human;
-  my $nchs_template_label = q{};
-  if($nchs) {
-    $nchs_template_label = q{humansplit_};
-    if(not $do_target_alignment) {
-      $nchs_template_label .= q{notargetalign_};
-    }
-  }
+  my $nchs_template_label = $nchs? q{humansplit_}: q{};
   my $nchs_outfile_label = $nchs? q{human}: q{};
 
   #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
@@ -313,12 +262,16 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   # no target alignment:
   #  splice out unneeded p4 nodes, add -x flag to scramble,
   #   unset the reference for bam_stats and amend the AlignmentFilter command.
-  #  Note: currently human split (with and without target alignment) are handled with
-  #   separate templates, so these steps do not apply.
   ########
-  if(not $do_target_alignment and not $nchs and not $spike_tag) {
-      push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:phix_bam_in';
-      push @{$p4_ops->{splice}}, 'alignment_filter:-foptgt_bmd_multiway:';
+  if(not $do_target_alignment and not $spike_tag) {
+      if(not $nchs) {
+        push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:phix_bam_in';
+      }
+      else {
+        push @{$p4_ops->{prune}}, 'aln_tee4_tee4:to_tgtaln-alignment_filter:target_bam_in';
+        push @{$p4_ops->{splice}}, 'aln_amp_bamadapterclip_pre_auxmerge:-aln_bam12auxmerge_nchs:no_aln_bam';
+      }
+      push @{$p4_ops->{splice}}, 'alignment_filter:target_bam_out-foptgt_bmd_multiway:';
       $p4_param_vals->{scramble_reference_flag} = q[-x];
       $p4_param_vals->{stats_reference_flag} = undef;   # both samtools and bam_stats
       $p4_param_vals->{no_target_alignment} = 1;   # adjust AlignmentFilter (bambi select) command
@@ -362,13 +315,7 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       $p4_param_vals->{star_executable} = q[star];
       $p4_reference_genome_index = dirname($self->_ref($l, q(star)));
       # star jobs require more memory
-      my $ji;
-      if($is_plex){
-          $ji = $self->_job_index($position, $tag_index);
-      }else{
-          $ji = $self->_job_index($position);
-      }
-      $self->_job_mem_reqs->{$ji} = $MORE_MEMORY;
+      $ref->{'memory'} = $MEMORY_FOR_STAR;
     }
     else {
       if ($rna_analysis ne $DEFAULT_RNA_ANALYSIS){
@@ -379,8 +326,8 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
       $p4_param_vals->{transcriptome_val} = $self->_transcriptome($l, q(tophat2))->transcriptome_index_name();
       $p4_reference_genome_index = $self->_ref($l, q(bowtie2));
     }
-    if($rna_analysis eq q[tophat2]) { # create intermediate file to prevent deadlock
-      $p4_param_vals->{align_infile_opt} = 1;
+    if($rna_analysis eq q[tophat2] or $rna_analysis eq q[star]) { # create intermediate file to prevent deadlock
+      $p4_param_vals->{align_intfile_opt} = 1;
     }
     $p4_param_vals->{alignment_method} = $rna_analysis;
     $p4_param_vals->{annotation_val} = $self->_transcriptome($l)->gtf_file();
@@ -434,13 +381,14 @@ sub _lsf_alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity
   $self->info(q[  p4 parameters written to ] . $param_vals_fname);
   $self->info(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
+  my $id = $self->_job_id();
   return join q( ), q(bash -c '),
-                       q(mkdir -p), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{;},
-                       q(cd), (join q{/}, $self->archive_path, q{tmp_$}.q{LSB_JOBID}, $name_root) ,q{&&},
+                       q(mkdir -p), $working_dir, q{;},
+                       q(cd), $working_dir, q{&&},
                        q(vtfp.pl),
                          q{-template_path $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib},
                          q(-param_vals), $param_vals_fname,
-                         q(-export_param_vals), $name_root.q{_p4s2_pv_out_$}.q/{LSB_JOBID}.json/,
+                         q(-export_param_vals), qq(${name_root}_p4s2_pv_out_${id}.json),
                          q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
                          q(-keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads`),
                          q(-keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2`),
@@ -511,48 +459,6 @@ sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
   }
 
   return $QC_SCRIPT_NAME . $command;
-}
-
-sub _generate_command_arguments {
-  my ( $self, $positions ) = @_;
-
-  my @positions = @{ $positions };
-  if (!@positions) {
-    return;
-  }
-  my $bam_filename = $self->id_run . q{_};
-  my $ext = q{.bam};
-
-  my $lane_lims_all = $self->lims->children_ia();
-  foreach my $position ( @positions ) {
-
-    $self->_create_lane_dirs($position);
-
-    my $lane_lims = $lane_lims_all->{$position};
-    if (!$lane_lims) {
-      $self->debug(qq{No lims object for position $position});
-      next;
-    }
-    if ( $self->is_indexed and $lane_lims->is_pool ) { # does the run have an indexing read _and_ does the LIMS have pool information : if so do plex level analyses
-      my $plex_lims = $lane_lims->children_ia();
-      $plex_lims->{0} ||= st::api::lims->new(driver=>$lane_lims->driver, id_run=>$lane_lims->id_run, position=>$lane_lims->position, tag_index=>0);
-      foreach my $tag_index ( @{ $self->get_tag_index_list($position) } ) {
-        my $l = $plex_lims->{$tag_index};
-        if (!$l) {
-          $self->debug(qq{No lims object for position $position tag index $tag_index});
-          next;
-        }
-        my $ji = $self->_job_index($position, $tag_index);
-        $self->_job_args->{$ji} = $self->_lsf_alignment_command($l,1);
-        $self->_using_alt_reference($self->_is_alt_reference($l));
-      }
-    } else { # do lane level analyses
-      my $l = $lane_lims;
-      my $ji = $self->_job_index($position);
-      $self->_job_args->{$ji} = $self->_lsf_alignment_command($l);
-    }
-  }
-  return;
 }
 
 sub _has_newer_flowcell { # is HiSeq High Throughput >= V4, Rapid Run >= V2
@@ -681,24 +587,6 @@ sub _ref {
   return $ref;
 }
 
-sub _job_index {
-  my ($self, $position, $tag_index) = @_;
-  if (!$position) {
-    $self->logcroak('Position undefined or zero');
-  }
-  if (defined $tag_index) {
-    return sprintf q{%i%04i}, $position, $tag_index;
-  }
-  return $position;
-}
-
-sub _default_resources {
-  my ( $self, $memory ) = @_;
-  my $hosts = 1;
-  my $num_slots = $self->general_values_conf()->{'seq_alignment_slots'} || $NUM_SLOTS;
-  return (join q[ ], npg_pipeline::lsf_job->new(memory => $memory)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$num_slots");
-}
-
 sub _default_human_split_ref {
   my ($self, $aligner, $repos) = @_;
 
@@ -719,30 +607,28 @@ sub _default_human_split_ref {
 }
 
 sub _is_alt_reference {
-    my ($self, $l) = @_;
-    my $ref = $self->_ref($l, q{bwa0_6});
-    if ($ref) {
-      $ref .= q{.alt};
-      return -e $ref;
-    }
-    return;
+  my ($self, $l) = @_;
+  my $ref = $self->_ref($l, q{bwa0_6});
+  if ($ref) {
+    $ref .= q{.alt};
+    return -e $ref;
+  }
+  return;
 }
 
 sub _p4_stage2_params_path {
   my ($self, $position) = @_;
   my $path = $self->recalibrated_path;
-
   if($self->is_multiplexed_lane($position)) {
     $path .= q[/lane] . $position;
   }
-
   return $path;
 }
 
-no Moose;
 __PACKAGE__->meta->make_immutable;
 
 1;
+
 __END__
 
 
@@ -752,17 +638,21 @@ npg_pipeline::function::seq_alignment
 
 =head1 SYNOPSIS
 
-  my $oAfgfq = npg_pipeline::function::seq_alignment->new(
+  my $sa = npg_pipeline::function::seq_alignment->new(
     run_folder => $sRunFolder,
   );
 
 =head1 DESCRIPTION
 
-LSF job creation for alignment
+Definition creation for alignment, split by Phix and Human reads
+and some QC checks.
 
 =head1 SUBROUTINES/METHODS
 
-=head2 generate - generates and submits lsf job
+=head2 generate
+
+Creates and returns an array of npg_pipeline::function::definition
+objects for all entities of the run eligible for alignment and split.
 
 =head1 DIAGNOSTICS
 
@@ -772,17 +662,17 @@ LSF job creation for alignment
 
 =over
 
-=item English
-
 =item Readonly
 
 =item Moose
 
 =item Moose::Meta::Class
 
+=item namespace::autoclean
+
 =item File::Slurp
 
-=item JSON::XS
+=item JSON
 
 =item List::Util
 

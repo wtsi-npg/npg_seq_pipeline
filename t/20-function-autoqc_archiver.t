@@ -1,78 +1,74 @@
 use strict;
 use warnings;
-use Test::More tests => 10;
+use Test::More tests => 24;
 use Test::Exception;
 use t::util;
 
 use_ok('npg_pipeline::function::autoqc_archiver');
 
-my $util = t::util->new();
-
-$ENV{TEST_DIR} = $util->temp_directory();
-$ENV{TEST_FS_RESOURCE} = q{nfs_12};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 
+my $util = t::util->new();
 my $analysis_runfolder_path = $util->analysis_runfolder_path();
-my $rel_pbcal = 'Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal';
-my $nfs_pbcal = "/nfs/sf45/IL2/analysis/123456_IL2_1234/$rel_pbcal";
-my $pbcal = "$analysis_runfolder_path/$rel_pbcal";
-sub create_analysis {
-  `rm -rf /tmp/nfs/sf45`;
-  `mkdir -p $pbcal/archive`;
-  `mkdir $analysis_runfolder_path/Config`;
-  `cp t/data/Recipes/Recipe_GA2_37Cycle_PE_v6.1.xml $analysis_runfolder_path/`;
-  `ln -s $rel_pbcal $analysis_runfolder_path/Latest_Summary`;
-
-  return 1;
-}
+my $pbcal = $util->standard_analysis_recalibrated_path();
 
 {
-  my $aaq;
-
-  lives_ok { $aaq = npg_pipeline::function::autoqc_archiver->new(
-    run_folder => q{123456_IL2_1234},
-    runfolder_path => $analysis_runfolder_path,
-    timestamp => q{20090709-123456},
-    verbose => 0,
-  ); } q{created with run_folder ok};
-  isa_ok($aaq, q{npg_pipeline::function::autoqc_archiver}, q{$aaq});
-  create_analysis();
-
-  my @jids;
-  lives_ok { @jids = $aaq->submit_to_lsf(); } q{no croak submitting job to lsf};
-
-  is(scalar@jids, 1, q{only one job submitted});
-
-  my $bsub_command = $util->drop_temp_part_from_paths( $aaq->_generate_bsub_command() );
-  my $expected_cmd = qq{bsub -q lowload -J autoqc_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -o $nfs_pbcal/log/autoqc_loader_1234_20090709-123456.out 'npg_qc_autoqc_data.pl --id_run=1234 --path=$nfs_pbcal/archive/qc'};
-
-  is( $bsub_command, $expected_cmd, q{generated bsub command is correct} );
-}
-
-{
-  my $args = {};
-  $args->{qc_dir} = [2,3,5];
-
-  $util->create_multiplex_analysis($args);
-
+  $util->create_analysis();
   my $aaq;
   lives_ok { $aaq = npg_pipeline::function::autoqc_archiver->new(
     run_folder => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
     timestamp => q{20090709-123456},
-    verbose   => 0,
   ); } q{created with run_folder ok};
+  isa_ok($aaq, q{npg_pipeline::function::autoqc_archiver});
 
-  my @jids;
-  lives_ok { @jids = $aaq->submit_to_lsf(); } q{no croak submitting job to lsf};
+  my $da = $aaq->create();
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
+  my $d = $da->[0];
+  isa_ok($d, q{npg_pipeline::function::definition});
 
-  is(scalar@jids, 1, q{only one job submitted});
+  is ($d->created_by, q{npg_pipeline::function::autoqc_archiver},
+    'created_by is correct');
+  is ($d->created_on, $aaq->timestamp, 'created_on is correct');
+  is ($d->identifier, 1234, 'identifier is set correctly');
+  is ($d->job_name, q{autoqc_loader_1234_20090709-123456},
+    'job_name is correct');
+  is ($d->log_file_dir, qq{$pbcal/log}, 'log_file_dir is correct');
+  is ($d->command,
+    qq{npg_qc_autoqc_data.pl --id_run=1234 --path=$pbcal/archive/qc},
+    'command is correct');
+  ok (!$d->has_composition, 'composition not set');
+  ok (!$d->excluded, 'step not excluded');
+  ok (!$d->immediate_mode, 'immediate mode is false');
+  ok (!$d->has_num_cpus, 'number of cpus is not set');
+  ok (!$d->has_memory,'memory is not set');
+  is ($d->queue, 'small', 'small queue');
+  is ($d->fs_slots_num, 1, 'one fs slot is set');
+  lives_ok {$d->freeze()} 'definition can be serialized to JSON';
+}
 
-  my $bsub_command = $util->drop_temp_part_from_paths( $aaq->_generate_bsub_command() );
-  my $expected_cmd = qq{bsub -q lowload -J autoqc_loader_1234_20090709-123456 -R 'rusage[nfs_12=1]' -o $nfs_pbcal/log/autoqc_loader_1234_20090709-123456.out 'npg_qc_autoqc_data.pl --id_run=1234 --path=$nfs_pbcal/archive/qc --path=$nfs_pbcal/archive/lane2/qc --path=$nfs_pbcal/archive/lane3/qc --path=$nfs_pbcal/archive/lane5/qc'};
+{
+  $util->create_multiplex_analysis({'qc_dir' => [2,3,5]});
+  my $command = q{npg_qc_autoqc_data.pl --id_run=1234};
+  $command .= qq{ --path=$pbcal/archive/qc};
+  for my $p ((2,3,5)) {
+    $command .= qq{ --path=$pbcal/archive/lane${p}/qc};
+  }
 
-  is( $bsub_command, $expected_cmd, q{generated bsub command is correct} );
+  my $aaq = npg_pipeline::function::autoqc_archiver->new(
+    run_folder => q{123456_IL2_1234},
+    runfolder_path => $analysis_runfolder_path,
+    timestamp => q{20090709-123456}
+  );
+
+  my $da = $aaq->create();
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
+  my $d = $da->[0];
+  is ($d->job_name, 'autoqc_loader_1234_20090709-123456',
+    'job_name is correct');
+  is ($d->log_file_dir, qq{$pbcal/log}, 'log_file_dir is correct');
+  is ($d->command, $command, 'command is correct');
+  is ($d->fs_slots_num, 1, 'one fs slot is set');
 }
 
 1;

@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 4;
+use Test::More tests => 11;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
@@ -9,7 +9,6 @@ use_ok('npg_pipeline::function::runfolder_scaffold');
 
 my $util = t::util->new();
 my $tdir = $util->temp_directory();
-$ENV{TEST_DIR} = $tdir;
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
@@ -17,7 +16,6 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           utf8   => 1});
 
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
-local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 
 {
   $util->remove_staging;
@@ -25,14 +23,24 @@ local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH}
   my $afg;
   lives_ok {
     $afg = npg_pipeline::function::runfolder_scaffold->new(
-      run_folder => q{123456_IL2_1234},
+      run_folder     => q{123456_IL2_1234},
       runfolder_path => $util->analysis_runfolder_path(),
-      is_indexed => 1,      
+      is_indexed     => 1,      
     );
-  } q{no croak on creation when run_folder provided}; 
+  } q{no error on creation when run_folder provided};
+  isa_ok ($afg, 'npg_pipeline::function::runfolder_scaffold');
 
+  my $da;
+  lives_ok { $da = $afg->create_dir(q{staff}); } q{no error creating archive dir};
+  ok ($da && @{$da} == 1, 'an array with one definitions is returned');
+  my $d = $da->[0];
+  isa_ok($d, q{npg_pipeline::function::definition});
+  is ($d->created_by, q{npg_pipeline::function::runfolder_scaffold},
+    'created_by is correct');
+  is ($d->created_on, $afg->timestamp, 'created_on is correct');
+  is ($d->identifier, 1234, 'identifier is set correctly');
+  ok ($d->immediate_mode, 'immediate mode is true');
 
-  lives_ok { $afg->create_dir(q{staff}); } q{no croak creating archive dir};
-  lives_ok { $afg->create_dir(q{staff}); } q{no croak creating archive dir, already exists};
+  lives_ok { $afg->create_dir(q{staff}); } q{no error creating archive dir, already exists};
 }
 1;

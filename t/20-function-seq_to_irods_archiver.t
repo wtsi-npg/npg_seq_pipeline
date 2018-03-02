@@ -1,16 +1,13 @@
 use strict;
 use warnings;
-use Test::More tests => 15;
+use Test::More tests => 35;
 use Test::Exception;
 use t::util;
 
 use_ok('npg_pipeline::function::seq_to_irods_archiver');
 
 my $util = t::util->new();
-
-$ENV{TEST_FS_RESOURCE} = q{nfs_12};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
 
 my $tmp_dir = $util->temp_directory();
 
@@ -42,6 +39,7 @@ sub create_analysis {
 create_analysis();
 
 {
+  my $archive_path = "$pb_cal_path/archive";
   my $bam_irods;
   lives_ok { $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder        => q{123456_IL2_1234},
@@ -53,14 +51,33 @@ create_analysis();
   isa_ok($bam_irods , q{npg_pipeline::function::seq_to_irods_archiver}, q{object test});
   ok (!$bam_irods->no_irods_archival, 'no_irods_archival flag is unset');
 
-  my @jids;
-  lives_ok { @jids = $bam_irods->submit_to_lsf(); } q{no croak submitting job to lsf};
+  my $da = $bam_irods->create();
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
+  my $d = $da->[0];
+  isa_ok($d, q{npg_pipeline::function::definition});
 
-  is(scalar@jids, 1, q{only one job submitted});
-  my $archive_path = "$pb_cal_path/archive";
-  my $bsub_command = $bam_irods ->_generate_bsub_command();
-  my $expected_command = qq[bsub -q lowload -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'npg_pipeline_script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json --max_errors 10'];
-  is( $bsub_command, $expected_command, q{generated bsub command is correct});
+  is ($d->created_by, q{npg_pipeline::function::seq_to_irods_archiver},
+    'created_by is correct');
+  is ($d->created_on, $bam_irods->timestamp, 'created_on is correct');
+  is ($d->identifier, 1234, 'identifier is set correctly');
+  is ($d->job_name, q{publish_illumina_run_1234_20090709-123456},
+    'job_name is correct');
+  is ($d->log_file_dir, qq[${pb_cal_path}/log], 'log_file_dir is correct');
+  like ($d->command,
+    qr/npg_publish_illumina_run\.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}\/publish_illumina_run_1234_20090709-123456-\d+\.restart_file\.json --max_errors 10/,
+    'command is correct');
+  is ($d->command_preexec,
+    'npg_pipeline_script_must_be_unique_runner -job_name="publish_illumina_run_1234"',
+    'preexec command is correct');
+  ok (!$d->has_composition, 'composition not set');
+  ok (!$d->excluded, 'step not excluded');
+  ok (!$d->immediate_mode, 'immediate mode is false');
+  ok (!$d->has_num_cpus, 'number of cpus is not set');
+  ok (!$d->has_memory,'memory is not set');
+  is ($d->queue, 'small', 'small queue');
+  is ($d->fs_slots_num, 1, 'one fs slot is set');
+  ok ($d->reserve_irods_slots, 'iRODS slots to be reserved');
+  lives_ok {$d->freeze()} 'definition can be serialized to JSON';
   
   $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder        => q{123456_IL2_1234},
@@ -70,8 +87,12 @@ create_analysis();
     recalibrated_path => $pb_cal_path,
   );
   ok ($bam_irods->no_irods_archival, 'no_irods_archival flag is set');
-  ok (!$bam_irods->submit_to_lsf(), 'no jobs created');
-  
+  $da = $bam_irods->create();
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
+  $d = $da->[0];
+  isa_ok($d, q{npg_pipeline::function::definition});
+  ok ($d->excluded, 'step is excluded');
+
   $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder        => q{123456_IL2_1234},
     runfolder_path    => $analysis_runfolder_path,
@@ -80,7 +101,10 @@ create_analysis();
     recalibrated_path => $pb_cal_path,
   );
   ok ($bam_irods->no_irods_archival, 'no_irods_archival flag is set');
-  ok (!$bam_irods->submit_to_lsf(), 'no jobs created');
+  $da = $bam_irods->create();
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
+  $d = $da->[0];
+  ok ($d->excluded, 'step is excluded');
 
   $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder        => q{123456_IL2_1234},
@@ -90,12 +114,12 @@ create_analysis();
     verbose           => 0,
     lanes             => [8],
   );
-
-  lives_ok { @jids = $bam_irods->submit_to_lsf(); } q{no croak submitting job to lsf};
-  is(scalar@jids, 1, q{only one job submitted});
-  $bsub_command = $bam_irods ->_generate_bsub_command();
-  $expected_command = qq[bsub -q lowload -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'npg_pipeline_script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json --max_errors 10 --positions 8'];
-  is( $bsub_command, $expected_command, q{generated bsub command is correct} );
+  $da = $bam_irods->create();
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
+  $d = $da->[0];
+  like ($d->command,
+    qr/npg_publish_illumina_run\.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}\/publish_illumina_run_1234_20090709-123456-\d+\.restart_file\.json --max_errors 10 --positions 8/,
+    'command is correct');
 
   $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder        => q{123456_IL2_1234},
@@ -105,11 +129,28 @@ create_analysis();
     timestamp         => q{20090709-123456},
     verbose           => 0,
   );
+  $da = $bam_irods->create();
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
+  $d = $da->[0];
+  like ($d->command,
+    qr/npg_publish_illumina_run\.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}\/publish_illumina_run_1234_20090709-123456-\d+\.restart_file\.json --max_errors 10 --alt_process qc_run/,
+    'command is correct');
 
-  $bsub_command = $bam_irods ->_generate_bsub_command();
-  $expected_command = qq[bsub -q lowload -J npg_publish_illumina_run.pl_1234_20090709-123456 -R 'rusage[nfs_12=1,seq_irods=15]' -E 'npg_pipeline_script_must_be_unique_runner -job_name="npg_publish_illumina_run.pl_1234"' -o $pb_cal_path/log/npg_publish_illumina_run.pl_1234_20090709-123456.out 'npg_publish_illumina_run.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}/process_publish_\${LSB_JOBID}.json --max_errors 10 --alt_process qc_run'];
-  is( $bsub_command, $expected_command, q{generated bsub command is correct} );
+  $bam_irods = npg_pipeline::function::seq_to_irods_archiver->new(
+    run_folder        => q{123456_IL2_1234},
+    runfolder_path    => $analysis_runfolder_path,
+    recalibrated_path => $pb_cal_path,
+    timestamp         => q{20090709-123456},
+    verbose           => 0,
+    lims_driver_type  => 'samplesheet',
+  );
+  $da = $bam_irods->create();
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
+  $d = $da->[0];
+  like ($d->command,
+    qr/npg_publish_illumina_run\.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}\/publish_illumina_run_1234_20090709-123456-\d+\.restart_file\.json --max_errors 10 --driver-type samplesheet/,
+    'command is correct');
 }
 
 1;
-__END__
+
