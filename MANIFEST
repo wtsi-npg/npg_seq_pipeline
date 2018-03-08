@@ -7,7 +7,7 @@ bin/npg_pipeline_job_env_to_threads
 bin/npg_pipeline_post_qc_review
 bin/npg_pipeline_preexec_references
 bin/npg_pipeline_seqchksum_comparator
-bin/run_is_deletable
+bin/npg_run_is_deletable
 bin/script_must_be_unique_runner
 Build.PL
 Changes
