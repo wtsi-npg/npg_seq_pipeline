@@ -1,7 +1,8 @@
 package npg_pipeline::pluggable::central;
 
 use Moose;
-use npg_pipeline::lsf_job;
+use MooseX::StrictConstructor;
+use namespace::autoclean;
 
 extends qw{npg_pipeline::pluggable};
 
@@ -17,7 +18,7 @@ npg_pipeline::pluggable::central
 
 =head1 DESCRIPTION
 
-Pluggable module runner for the main pipeline
+Pluggable module runner for the main analysis pipeline
 
 =cut
 
@@ -86,11 +87,10 @@ sub _set_paths {
   return;
 }
 
-
-no Moose;
-
 __PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 DIAGNOSTICS
@@ -102,6 +102,10 @@ __END__
 =over
 
 =item Moose
+
+=item MooseX::StrictConstructor
+
+=item namespace::autoclean
 
 =back
 

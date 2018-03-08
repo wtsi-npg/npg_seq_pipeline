@@ -1,17 +1,19 @@
 package npg_pipeline::pluggable;
 
 use Moose;
+use MooseX::StrictConstructor;
+use namespace::autoclean;
 use Carp;
 use Try::Tiny;
 use Graph::Directed;
 use File::Spec::Functions;
-use Class::Load  qw(load_class);
+use Class::Load qw{load_class};
 use File::Slurp;
-use JSON qw/from_json/;
+use JSON qw{from_json};
 use Readonly;
 use English qw{-no_match_vars};
 
-use npg_tracking::util::abs_path qw(abs_path);
+use npg_tracking::util::abs_path qw{abs_path};
 use npg_pipeline::cache;
 use npg_pipeline::pluggable::registry;
 
@@ -25,10 +27,8 @@ our $VERSION = '0';
 Readonly::Scalar my $SUSPENDED_START_FUNCTION => q[pipeline_start];
 Readonly::Scalar my $END_FUNCTION             => q[pipeline_end];
 Readonly::Array  my @FLAG2FUNCTION_LIST       => qw/ qc_run /;
-Readonly::Scalar my $FUNCTION_DAG_FILE_TYPE   => q[json];
+Readonly::Scalar my $FUNCTION_DAG_FILE_TYPE   => q[.json];
 Readonly::Scalar my $DEFAULT_EXECUTOR_TYPE    => q[lsf];
-
-our $LSFJOB_DEPENDENCIES = q[];
 
 =head1 NAME
 
@@ -37,6 +37,13 @@ npg_pipeline::pluggable
 =head1 SYNOPSIS
 
 =head1 SUBROUTINES/METHODS
+
+##################################################################
+################## Public attributes #############################
+###### which will be available as script arguments ###############
+##################################################################
+
+############## Boolean flags #####################################
 
 =head2 spider
 
@@ -48,7 +55,7 @@ has q{spider} => (
   isa           => q{Bool},
   is            => q{ro},
   default       => 1,
-  documentation => q{Toggles spider (creating/reusing cached LIMs data), true by default},
+  documentation => q{Toggles creating/reusing cached LIMs data, true by default},
 );
 
 =head2 executor_type
@@ -76,12 +83,19 @@ has q{execute} => (
   is            => q{ro},
   default       => 1,
   documentation =>
-  q{A flag turning on/off transferring the graph to the executor, true by default},
+  q{A flag turning on/off transferring execution, true by default},
 );
+
+############## End of flags #####################################
 
 =head2 function_order
 
+A reference to an array of function names run. An optional attribute.
+If set, will be used in preference to a graph defined in a file
+(see function_list attribute).
+
 =cut
+
 has q{function_order} => (
   isa           => q{ArrayRef},
   is            => q{ro},
@@ -90,10 +104,26 @@ has q{function_order} => (
   q{A reference to an array of function names in the order they should run.},
 );
 
+=head2 function_list
+
+A lazy-build attribute with a wrapper around it. Is set to an 
+absolute path to a JSON file where the function graph is defined.
+Can be supplied as a hint for finding the file, will be resolved to
+an absolute path.
+
+For example, the following works for archival pipeline
+
+ npg_pipeline::pluggable->new_with_options(
+   function_list => 'post_qc_review');
+
+=cut
+
 has 'function_list' => (
-  isa        => q{Str},
-  is         => q{ro},
-  lazy_build => 1,
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation =>
+  q{An absolute path to a JSON file where the function graph is defined or a hint},
 );
 sub _build_function_list {
   my $self = shift;
@@ -117,11 +147,12 @@ around 'function_list' => sub {
       $self->logcroak("Bad function list name: $v");
     }
     try {
-      $file = $self->conf_file_path((join q[_],'function_list',$v) . q[.] .$FUNCTION_DAG_FILE_TYPE);
+      $file = $self->conf_file_path((join q[_],'function_list',$v) . $FUNCTION_DAG_FILE_TYPE);
     } catch {
       my $pipeline_name = $self->pipeline_name;
       if ($v !~ /^$pipeline_name/smx) {
-        $file = $self->conf_file_path((join q[_],'function_list',$self->pipeline_name,$v) . q[.] .$FUNCTION_DAG_FILE_TYPE);
+        $file = $self->conf_file_path(
+          (join q[_],'function_list',$self->pipeline_name,$v) . $FUNCTION_DAG_FILE_TYPE);
       } else {
         $self->logcroak($_);
       }
@@ -131,50 +162,150 @@ around 'function_list' => sub {
   return $file;
 };
 
-=head2 function_list_conf
+=head2 definitions_file_path
+
+A path to a JSON file where the function definitions will be
+serialised to. An attribute. The value defaults to a path
+returned by the log_file_path method with a json extention
+appended.  
 
 =cut
 
-has 'function_list_conf' => (
+has q{definitions_file_path} => (
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{Full file path of the file with function definition},
+);
+sub _build_definitions_file_path {
+  my $self = shift;
+  return $self->log_file_path() . $FUNCTION_DAG_FILE_TYPE;
+}
+
+=head2 BUILD
+
+Called by Moose at the end of object instantiation.
+Builds 'local' flag so that it can be passed to functions.
+
+=cut
+
+sub BUILD {
+  my $self = shift;
+  $self->local();
+  return;
+}
+
+##################################################################
+############## Public methods ####################################
+##################################################################
+
+=head2 main
+
+ Runs the pipeline.
+
+=cut
+
+sub main {
+  my $self = shift;
+
+  my $error = q{};
+  my $when = q{initializing pipeline};
+  try {
+    $self->prepare();
+    $when = q{running functions};
+    $self->_schedule_functions();
+    $when = q{saving definitions};
+    $self->_save_function_definitions();
+    if ($self->execute()) {
+      $when = q{submitting for execution};
+      $self->_executor->submit();
+    }
+  } catch {
+    $error = qq{Error $when: $_};
+    $self->error($error);
+  };
+  $self->_clear_env_vars();
+  if ($error) {
+    # This is the end of the pipeline script.
+    # We want to see this error in the pipeline daemon log,
+    # so it should be printed to standard error, not to
+    # this script's log, which might be a file.
+    # We currently tie STDERR so output to standard error
+    # goes to this script's log file. Hence the need to
+    # untie. Dies not cause an error if STDERR has not been
+    # tied. 
+    untie *STDERR;
+    croak($error);
+  }
+  return;
+}
+
+=head2 prepare
+
+ Actions that have to be performed by the pipeline before the functions
+ can be called, for example, creation of pipeline-specific directories.
+ In this module some envronment variables are printed to the log by this
+ method, then, if spider functionality is enabled, LIMs data are cached.
+
+=cut
+
+sub prepare {
+  my $self = shift;
+  foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
+    my $value = $ENV{$name} || q{Not defined};
+    $self->info(sprintf '*** %s: %s', $name, $value);
+  }
+  if ($self->spider) {
+    $self->info('Running spider');
+    $self->_run_spider();
+  } else {
+    $self->info('Not running spider');
+  }
+  return;
+}
+
+=head2 log_file_path
+
+Suggested log file full path.
+
+=cut
+
+sub log_file_path {
+  my $self = shift;
+  return catfile($self->runfolder_path(), $self->_log_file_name);
+}
+
+##################################################################
+############## Private attributes ################################
+##################################################################
+
+has '_function_list_conf' => (
   isa        => q{HashRef},
   is         => q{ro},
   lazy_build => 1,
-  metaclass  => 'NoGetopt',
   init_arg   => undef,
 );
-sub _build_function_list_conf {
+sub _build__function_list_conf {
   my $self = shift;
   my $input_file = $self->function_list;
   $self->info(qq{Reading function graph $input_file});
   return from_json(read_file($input_file));
 }
 
-=head2 script_name
-
-Current script's name (from $PROGRAM_NAME)
-
-=cut
-
-has q{script_name} => (
-  isa       => q{Str},
-  is        => q{ro},
-  default   => $PROGRAM_NAME,
-  init_arg  => undef,
-  metaclass => 'NoGetopt',
+has q{_script_name} => (
+  isa      => q{Str},
+  is       => q{ro},
+  default  => $PROGRAM_NAME,
+  init_arg => undef,
 );
 
-=head2 function_graph
-
-=cut
-
-has q{function_graph} => (
+has q{_function_graph} => (
   isa        => q{Graph::Directed},
   is         => q{ro},
   lazy_build => 1,
-  metaclass  => 'NoGetopt',
   init_arg   => undef,
 );
-sub _build_function_graph {
+sub _build__function_graph {
   my $self = shift;
 
   my $g = Graph::Directed->new();
@@ -204,7 +335,7 @@ sub _build_function_graph {
     }
     @nodes = map { {'id' => $_, 'label' => $_} } @functions;
   } else {
-    my $jgraph = $self->function_list_conf();
+    my $jgraph = $self->_function_list_conf();
     $self->_definitions->{'function_graph'} = $jgraph;
     foreach my $e (@{$jgraph->{'graph'}->{'edges'}}) {
       ($e->{'source'} and $e->{'target'}) or
@@ -231,42 +362,17 @@ sub _build_function_graph {
 }
 
 has q{_log_file_name} => (
-   isa           => q{Str},
-   is            => q{ro},
-   lazy_build    => 1,
+  isa        => q{Str},
+  is         => q{ro},
+  lazy_build => 1,
 );
 sub _build__log_file_name {
   my $self = shift;
-  my $log_name = $self->script_name . q{_} . $self->id_run();
+  my $log_name = $self->_script_name . q{_} . $self->id_run();
   $log_name .= q{_} . $self->timestamp() . q{.log};
   # If $self->script_name includes a directory path, change / to _
   $log_name =~ s{/}{_}gmxs;
   return $log_name;
-}
-
-=head2 log_file_path
-
-Suggested log file full path.
-
-=cut
-
-sub log_file_path {
-  my $self = shift;
-  return catfile($self->runfolder_path(), $self->_log_file_name);
-}
-
-=head2 definition_file_path
-
-=cut
-
-has q{definition_file_path} => (
-   isa           => q{Str},
-   is            => q{ro},
-   lazy_build    => 1,
-);
-sub _build_definition_file_path {
-  my $self = shift;
-  return join q[.], $self->log_file_path(), $FUNCTION_DAG_FILE_TYPE;
 }
 
 has q{_cloned_attributes} => (
@@ -282,52 +388,37 @@ sub _build__cloned_attributes {
 }
 
 has q{_registry} => (
-  isa        => q{npg_pipeline::pluggable::registry},
-  is         => q{ro},
-  init_arg   => undef,
-  lazy_build => 1,
+  isa      => q{npg_pipeline::pluggable::registry},
+  is       => q{ro},
+  init_arg => undef,
+  default  => sub {return npg_pipeline::pluggable::registry->new();},
 );
-sub _build__registry {
-  return npg_pipeline::pluggable::registry->new();
-}
 
 has q{_definitions} => (
-  isa        => q{HashRef},
-  is         => q{ro},
-  init_arg   => undef,
-  default    => sub {return {};},
+  isa      => q{HashRef},
+  is       => q{ro},
+  init_arg => undef,
+  default  => sub {return {};},
 );
 
 has q{_executor} => (
-  isa        => q{Maybe[Object]},
+  isa        => q{Object},
   is         => q{ro},
   init_arg   => undef,
   lazy_build => 1,
 );
 sub _build__executor {
   my $self = shift;
-  if ($self->execute) {
-    my $module = join q[::],
-      'npg_pipeline', 'executor', $self->executor_type;
-    load_class $module;
-    my %attrs = $self->_common_attributes($module);
-    return $module->new(%attrs);
-  }
-  return;
+  my $module = join q[::],
+    'npg_pipeline', 'executor', $self->executor_type;
+  load_class $module;
+  my %attrs = $self->_common_attributes($module);
+  return $module->new(%attrs);
 }
 
-=head2 BUILD
-
-Called by Moose at the end of object instantiation.
-Builds 'local' flag so that it can be passed to functions.
-
-=cut
-
-sub BUILD {
-  my $self = shift;
-  $self->local();
-  return;
-}
+##################################################################
+############## Private methods ###################################
+##################################################################
 
 sub _clear_env_vars {
   my $self = shift;
@@ -393,7 +484,7 @@ sub _run_function {
 sub _schedule_functions {
   my $self = shift;
 
-  my $g = $self->function_graph();
+  my $g = $self->_function_graph();
 
   #####
   # Topological ordering of a directed graph is a linear ordering of
@@ -421,12 +512,6 @@ sub _schedule_functions {
     if (!$definitions || !@{$definitions}) {
       $self->logcroak(q{At least one definition should be returned});
     }
-    if (@{$definitions} == 1) {
-      my $d = $definitions->[0];
-      if ($d->immediate_mode || $d->excluded) {
-        next;
-      }
-    }
     $self->_definitions->{$function} = $definitions;
   }
 
@@ -438,7 +523,7 @@ sub _schedule_functions {
 sub _save_function_definitions {
   my $self = shift;
 
-  my $file = $self->definition_file_path();
+  my $file = $self->definitions_file_path();
   $self->info(qq{***** Writing finction definitions to $file *****});
   open my $fh, q[>], $file
     or $self->logcroak(qq{Cannot open $file for writing});
@@ -451,17 +536,14 @@ sub _save_function_definitions {
   return;
 }
 
-=head2 run_spider
-
-Generates cached metadata that are needed by the pipeline
-or reuses the existing cache.
-Will set the relevant env. variables in the global scope.
-The new cache is created in the analysis_path directory.
-See npg_pipeline::cache for details.
-
-=cut
-
-sub run_spider {
+#####
+# Generates cached metadata that are needed by the pipeline
+# or reuses the existing cache.
+# Will set the relevant env. variables in the global scope.
+# The new cache is created in the analysis_path directory.
+# See npg_pipeline::cache for details.
+#
+sub _run_spider {
   my $self = shift;
   try {
     my $cache = npg_pipeline::cache->new(
@@ -480,74 +562,11 @@ sub run_spider {
   return;
 }
 
-=head2 prepare
-
- Actions that have to be performed by the pipeline before the functions
- can be called, for example, creation of pipeline-specific directories.
- In this module some envronment variables are printed to the log by this
- method, then, if spider functionality is enabled, LIMs data are cached.
-
-=cut
-sub prepare {
-  my $self = shift;
-  foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
-    my $value = $ENV{$name} || q{Not defined};
-    $self->info(sprintf '*** %s: %s', $name, $value);
-  }
-  if ($self->spider) {
-    $self->info('Running spider');
-    $self->run_spider();
-  } else {
-    $self->info('Not running spider');
-  }
-  return;
-}
-
-=head2 main
-
- Runs the pipeline.
-
-=cut
-sub main {
-  my $self = shift;
-
-  my $error = q{};
-  my $when = q{initializing pipeline};
-  try {
-    $self->prepare();
-    $when = q{running functions};
-    $self->_schedule_functions();
-    $when = q{saving definitions};
-    $self->_save_function_definitions();
-    if ($self->_executor) {
-      $when = q{submitting for execution};
-      $self->_executor->submit();
-    }
-  } catch {
-    $error = qq{Error $when: $_};
-    $self->error($error);
-  };
-  $self->_clear_env_vars();
-  if ($error) {
-    # This is the end of the pipeline script.
-    # We want to see this error in the pipeline daemon log,
-    # so it should be printed to standard error, not to
-    # this script's log, which might be a file.
-    # We currently tie STDERR so output to standard error
-    # goes to this script's log file. Hence the need to
-    # untie. Dies not cause an error if STDERR has not been
-    # tied. 
-    untie *STDERR;
-    croak($error);
-  }
-  return;
-}
-
-no Moose;
+__PACKAGE__->meta->make_immutable;
 
 1;
-__END__
 
+__END__
 
 =head1 DESCRIPTION
 
@@ -560,6 +579,10 @@ __END__
 =over
 
 =item Moose
+
+=item MooseX::StrictConstructor
+
+=item namespace::autoclean
 
 =item MooseX::AttributeCloner
 

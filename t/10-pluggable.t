@@ -42,7 +42,7 @@ subtest 'object with no function order set - simple methods' => sub {
   is($pluggable->interactive, 0, 'interactive false');
   ok(!$pluggable->has_function_order, 'function order is not set');
   is($pluggable->id_run(), 1234, q{id_run attribute populated});
-  is($pluggable->script_name(), q{t/10-pluggable.t}, q{script_name obtained});
+  is($pluggable->_script_name(), q{t/10-pluggable.t}, q{script_name obtained});
   is($pluggable->conf_path, abs_path(join(q[/], getcwd, $config_dir)),
     'local conf path is built');
 };
@@ -56,7 +56,7 @@ subtest 'graph creation from jgf files' => sub {
     no_bsub        => 1,
     function_list  => "$config_dir/function_list_central.json"
   );
-  lives_ok {$obj->function_graph()}
+  lives_ok {$obj->_function_graph()}
    'no error creating a graph for default analysis';
 
   $obj = npg_pipeline::pluggable->new(
@@ -65,7 +65,7 @@ subtest 'graph creation from jgf files' => sub {
     no_bsub        => 1,
     function_list  => "$config_dir/function_list_central_qc_run.json"
   );
-  lives_ok {  $obj->function_graph() }
+  lives_ok {  $obj->_function_graph() }
     'no error creating a graph for analysis of a qc run';
 
   $obj = npg_pipeline::pluggable->new(
@@ -74,7 +74,7 @@ subtest 'graph creation from jgf files' => sub {
     no_bsub        => 1,
     function_list  => "$config_dir/function_list_post_qc_review.json"
   );
-  lives_ok {  $obj->function_graph() }
+  lives_ok {  $obj->_function_graph() }
     'no error creating a graph for default archival';
 };
 
@@ -90,13 +90,13 @@ subtest 'graph creation from explicitly given function list' => sub {
   ok($obj->has_function_order(), 'function order is set');
   is(join(q[ ], @{$obj->function_order}), 'my_function your_function',
    'function order as set');
-  lives_ok {  $obj->function_graph() }
+  lives_ok {  $obj->_function_graph() }
     'no error creating a graph for a preset function order list';
   throws_ok { $obj->_schedule_functions() }
     qr/Handler for 'my_function' is not registered/,
     'cannot schedule non-existing function';
 
-  my $g = $obj->function_graph();
+  my $g = $obj->_function_graph();
   is($g->vertices(), 4, 'four graph nodes');
 
   my @p = $g->predecessors('my_function');
@@ -124,7 +124,7 @@ subtest 'graph creation from explicitly given function list' => sub {
     runfolder_path => $test_dir,
     no_bsub        => 1
   );
-  throws_ok { $obj->function_graph() }
+  throws_ok { $obj->_function_graph() }
     qr/Graph is not DAG/,
     'pipeline_end cannot be specified in function order';
 
@@ -134,7 +134,7 @@ subtest 'graph creation from explicitly given function list' => sub {
     runfolder_path => $test_dir,
     no_bsub        => 1
   );
-  throws_ok { $obj->function_graph() }
+  throws_ok { $obj->_function_graph() }
     qr/Graph is not DAG/,
     'pipeline_start cannot be specified in function order';
 };
@@ -195,7 +195,7 @@ subtest 'specifying functions via function_order' => sub {
       function_order   => \@functions_in_order,
       runfolder_path   => $runfolder_path,
       spider           => 0,
-      definition_file_path => "$test_dir/definitions.json",
+      definitions_file_path => "$test_dir/definitions.json",
     );
   } q{no croak on creation};
 
@@ -206,7 +206,7 @@ subtest 'specifying functions via function_order' => sub {
 };
 
 subtest 'positions and spidering' => sub {
-  plan tests => 11;
+  plan tests => 12;
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   my $p = npg_pipeline::pluggable->new(
@@ -229,7 +229,7 @@ subtest 'positions and spidering' => sub {
       function_order => [$function],
       runfolder_path => $runfolder_path,
       lanes          => [1,2],
-      definition_file_path => "$test_dir/definitions.json",
+      definitions_file_path => "$test_dir/definitions.json",
       spider         => 0,
   );
   is (join( q[ ], $p->positions), '1 2', 'positions array');
@@ -245,7 +245,7 @@ subtest 'positions and spidering' => sub {
       runfolder_path => $runfolder_path,
       lanes          => [1,2],
       interactive    => 1,
-      definition_file_path => "$test_dir/definitions.json",
+      definitions_file_path => "$test_dir/definitions.json",
       spider         => 0,
   );
   ok($p->interactive, 'start job will not be resumed');
@@ -268,7 +268,7 @@ subtest 'positions and spidering' => sub {
   mkdir $p->qc_path;
   is (join( q[ ], $p->positions), '4', 'positions array');
   is (join( q[ ], $p->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
-  ###lives_ok { $p->main() } q{running main for three qc functions};
+  lives_ok { $p->main() } q{running main for three qc functions};
 };
 
 subtest 'script name and function list' => sub {
@@ -276,7 +276,7 @@ subtest 'script name and function list' => sub {
 
   my $base = npg_pipeline::pluggable->new();
   my $path = join q[/], getcwd(), $config_dir, 'function_list_pluggable.json';
-  is ($base->script_name, $PROGRAM_NAME, 'script name');
+  is ($base->_script_name, $PROGRAM_NAME, 'script name');
   throws_ok { $base->function_list }
     qr/File $path does not exist or is not readable/,
     'error when default function list does not exist';
@@ -290,21 +290,21 @@ subtest 'script name and function list' => sub {
   $path = join q[/], getcwd(), $config_dir, 'function_list_central.json';
   $base = npg_pipeline::pluggable->new(function_list => $path);
   is( $base->function_list, $path, 'function list path as given');
-  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into a hash');
+  isa_ok( $base->_function_list_conf(), q{HASH}, 'function list is read into a hash');
   
   $base = npg_pipeline::pluggable->new(function_list => 'data/config_files/function_list_central.json');
   is( $base->function_list, $path, 'function list absolute path from relative path');
-  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
+  isa_ok( $base->_function_list_conf(), q{HASH}, 'function list is read into an array');
 
   $base = npg_pipeline::pluggable->new(function_list => 'central');
   is( $base->function_list, $path, 'function list absolute path from list name');
-  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
+  isa_ok( $base->_function_list_conf(), q{HASH}, 'function list is read into an array');
 
   $path =~ s/function_list_central/function_list_post_qc_review/;
 
   $base = npg_pipeline::pluggable->new(function_list => 'post_qc_review');
   is( $base->function_list, $path, 'function list absolute path from list name');
-  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
+  isa_ok( $base->_function_list_conf(), q{HASH}, 'function list is read into an array');
 
   my $test_path = '/some/test/path.json';
   $base = npg_pipeline::pluggable->new(function_list => $test_path);
@@ -317,7 +317,7 @@ subtest 'script name and function list' => sub {
 
   $base = npg_pipeline::pluggable->new(function_list => $path);
   is( $base->function_list, $path, 'function list absolute');
-  isa_ok( $base->function_list_conf(), q{HASH}, 'function list is read into an array');
+  isa_ok( $base->_function_list_conf(), q{HASH}, 'function list is read into an array');
 
   $base = npg_pipeline::pluggable->new(
     conf_path     => $test_dir,
@@ -346,7 +346,7 @@ subtest 'script name and function list' => sub {
   package main;
 
   my $c = mytest::central->new(qc_run => 1);
-  is ($base->script_name, $PROGRAM_NAME, 'script name');
+  is ($base->_script_name, $PROGRAM_NAME, 'script name');
   my $fl = join q[/], getcwd(), $config_dir, 'function_list_central_qc_run.json';
   is( $c->function_list, $fl, 'qc function list');
 };

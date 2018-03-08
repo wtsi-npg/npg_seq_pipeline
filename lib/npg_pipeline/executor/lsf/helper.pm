@@ -1,6 +1,8 @@
-package npg_pipeline::lsf_job;
+package npg_pipeline::executor::lsf::helper;
 
 use Moose;
+use MooseX::StrictConstructor;
+use namespace::autoclean;
 use List::MoreUtils qw/any/;
 use Sys::Hostname;
 use Carp;
@@ -19,7 +21,7 @@ Readonly::Scalar my $HI_MEM     => 96_000;
 
 =head1 NAME
 
-npg_pipeline::lsf_job
+npg_pipeline::executor::lsf::helper
 
 =head1 SYNOPSIS
 
@@ -226,9 +228,10 @@ sub create_array_string {
   return $ret;
 }
 
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 DESCRIPTION
@@ -249,6 +252,10 @@ A collection of LSF-specific helper methods.
 
 =item Moose
 
+=item MooseX::StrictConstructor
+
+=item namespace::autoclean
+
 =item Carp
 
 =item Readonly
@@ -267,12 +274,19 @@ A collection of LSF-specific helper methods.
 
 =head1 AUTHOR
 
-Kate Taylor
-Andy Brown
+=over
+
+=item Kate Taylor
+
+=item Andy Brown
+
+=item Marina Gourtovaia
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014 Genome Research Ltd.
+Copyright (C) 2018 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
