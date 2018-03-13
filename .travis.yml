@@ -22,7 +22,7 @@ env:
     - PLATFORM="ubuntu12"
     - ARCH="x86_64"
     - WTSI_NPG_GITHUB_URL=https://github.com/wtsi-npg
-    - DISPOSABLE_IRODS_VERSION="1.2"
+    - DISPOSABLE_IRODS_VERSION="1.3"
     - JANSSON_VERSION="2.9"
     - BATON_VERSION="1.1.0"
     - IRODS_VERSION="4.1.10"
