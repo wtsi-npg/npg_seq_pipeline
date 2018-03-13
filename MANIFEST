@@ -89,13 +89,9 @@ t/50-npg_pipeline-daemon-analysis.t
 t/60-npg_tracking-daemon-analysis.t
 t/60-npg_tracking-daemon-archival.t
 t/bin/bkill
-t/bin/bmod
 t/bin/bresume
 t/bin/bsub
-t/bin/dodo/lsadmin
 t/bin/dodo/machine-location
-t/bin/lenny/lsadmin
-t/bin/lsadmin
 t/bin/machine-location
 t/bin/red/machine-location
 t/bin/software/solexa/jars/AlignmentFilter.jar

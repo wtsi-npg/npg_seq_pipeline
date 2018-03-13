@@ -3,21 +3,29 @@ package npg_pipeline::executor::lsf::helper;
 use Moose;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
-use List::MoreUtils qw/any/;
-use Sys::Hostname;
-use Carp;
 use POSIX;
 use Readonly;
+use English qw{-no_match_vars};
 
-use npg_tracking::util::types;
-with qw{npg_common::roles::software_location};
+with qw{ WTSI::DNAP::Utilities::Loggable };
 
 our $VERSION = '0';
+
+Readonly::Scalar my $DEFAULT_MAX_TRIES => 3;
+Readonly::Scalar my $DEFAULT_MIN_SLEEP => 1;
 
 Readonly::Scalar my $THOUSANDTH => 0.001;
 Readonly::Scalar my $THOUSAND   => 1000;
 Readonly::Scalar my $LOW_MEM    => 1;
 Readonly::Scalar my $HI_MEM     => 96_000;
+Readonly::Scalar my $DEFAULT_MEMORY_UNIT => q{MB};
+Readonly::Hash   my %MEMORY_COEFFICIENTS => (
+                      $DEFAULT_MEMORY_UNIT => 1,
+                                      'KB' => $THOUSANDTH,
+                                      'GB' => $THOUSAND,
+                                            );
+
+Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
 
 =head1 NAME
 
@@ -27,178 +35,103 @@ npg_pipeline::executor::lsf::helper
 
 =head1 SUBROUTINES/METHODS
 
-=head2 memory - for inputting required memory 
+=head2 no_bsub
+
+Boolean flag, false by default. If true, the bsub commands
+are not executed.
 
 =cut
 
-has q{memory}       => (isa        => q{NpgTrackingPositiveInt},
+has q{no_bsub}      => (isa        => q{Bool},
                         is         => q{ro},
                        );
 
-=head2 memory_units - one of KB, MB, GB; defaults to MB. 
+=head2 lsf_conf
+
+LSF configuration hash. Not required, but have to be set for
+some of the methods to work.
 
 =cut
 
-has q{memory_units} => (isa => q{Str},
-                        is => q{ro},
-                        default => 'MB',
+has q{lsf_conf}     => (isa        => q{HashRef},
+                        required   => 0,
+                        is         => q{ro},
                        );
 
-=head2 memory_units - one of KB, MB, GB; defaults to MB. 
+=head2 memory_in_mb
+
+Returns memory in MB.  If memory unit is not given, MB is assumed.
+
+  my $minmb = $obj->memory_in_mb(400);
+  my $minmb = $obj->memory_in_mb(400, 'MB');
+  my $minmb = $obj->memory_in_mb(4, 'GB');
+  my $minmb = $obj->memory_in_mb(4000, 'KB');
 
 =cut
 
-has q{memory_in_mb} => (isa => q{NpgTrackingPositiveInt},
-                        is => q{ro},
-                        lazy_build => 1,
-                       );
+sub memory_in_mb {
+  my ($self, $memory, $unit) = @_;
 
-sub _build_memory_in_mb {
-  my $self = shift;
-
-  my $memory = $self->memory();
-  my $memory_units = $self->memory_units();
-
-  if (!($self->_is_valid_memory())) {
-    croak "lsf_job cannot handle request for memory $memory $memory_units";
+  if (!$memory) {
+    $self->logcroak('Memory required');
   }
-  if (!($self->_is_valid_memory_unit())) {
-    croak "lsf_job does not recognise requested memory unit $memory_units";
+  my $omemory = $memory;
+  {
+    use warnings FATAL => qw/numeric/;
+    $memory = int $memory;
+    if (!$memory || ($omemory ne $memory)) {
+      $self->logcroak('Memory should be an integer');
+    }
   }
 
-  return POSIX::floor($self->memory * $self->_find_memory_factor($self->memory_units));
+  $unit ||= $DEFAULT_MEMORY_UNIT;
+  my $coef = $MEMORY_COEFFICIENTS{$unit};
+  if (!$coef) {
+    $self->logcroak("Memory unit $unit is not recognised");
+  }
+
+  my $memory_requested =$memory * $coef;
+  if (($memory_requested > $HI_MEM) || ($memory_requested < $LOW_MEM)) {
+    $self->logcroak("Memory $memory $unit out of bounds");
+  }
+
+  return POSIX::floor($memory_requested);
 }
 
-=head2 lsadmin_cmd lsadmin command to build the correct memory_limit
- 
-=cut
+=head2 memory_spec
 
-has 'lsadmin_cmd'   => ( is      => 'ro',
-                         isa     => 'NpgCommonResolvedPathExecutable',
-                         coerce  => 1,
-                         default => 'lsadmin',
-                      );
+Returns an appropriate bsub component. If memory unit is not
+given, MB is assumed.
 
-
-=head2 memory_spec - returns an appropriate bsub component 
-
--R 'select[mem>8000] rusage[mem=8000]'  -M8000000" on lenny
 -R 'select[mem>8000] rusage[mem=8000]'  -M8000" on precise
+
+  my $spec = $obj->memory_spec(8000);
+  my $spec = $obj->memory_spec(8000, 'MB');
+  my $spec = $obj->memory_spec(8, 'GB');
+  my $spec = $obj->memory_spec(8000, 'KB');
 
 =cut
 
 sub memory_spec {
-  my ($self) = @_;
-
-  my $memory_limit = $self->_scale_mem_limit();
-  my $resource_memory = $self->memory_in_mb();
-  my $memory_spec = "-R 'select[mem>$resource_memory] rusage[mem=$resource_memory]' -M$memory_limit";
-  return $memory_spec;
-}
-
-=head2 _is_valid_memory
-
-Checks that memory requested is more than $LOW_MEM and less than $HI_MEM
-
-=cut
-
-sub _is_valid_memory {
-  my ($self) = @_;
-
-  my $memory_requested =$self->memory() * $self->_find_memory_factor($self->memory_units());
-
-  my $match = (($memory_requested < $HI_MEM) && ($memory_requested > $LOW_MEM));
-  my $ret = ($match eq q{}) ? 0 : 1;
-  return $ret;
-}
-
-=head2 _is_valid_memory_unit
-
-=cut
-
-sub _is_valid_memory_unit {
-  my ($self) = @_;
-  my @valid_memory_units = qw(KB MB GB);
-
-  my $ret = any { ($_ ) && ($_ eq $self->memory_units) } @valid_memory_units;
-  return $ret;
-}
-
-=head2  _is_valid_lsf_memory_unit
-
-=cut
-
-sub _is_valid_lsf_memory_unit {
-  my ($self, $lsf_memory_units) = @_;
-  my @valid_lsf_memory_units = qw(KB MB);
-
-  my $ret = any { $_ && $_ eq $lsf_memory_units } @valid_lsf_memory_units;
-  return $ret;
-}
-
-=head2 _find_memory_units
-
-=cut
-
-sub _find_memory_units {
-  my ($self) = @_;
-
-  my $hostname = hostname;
-  $hostname =~ s/\n//smx;
-
-  my $cmd = $self->lsadmin_cmd.q{ showconf lim }.$hostname.
-            q{ | grep LSF_UNIT_FOR_LIMITS} .
-            q{ || echo "LSF_UNIT_FOR_LIMITS = KB"};
-
-  my $version = `$cmd`;
-  my ($text, $equals, $unit) = split / /sm, $version;
-  $unit =~ s/\n//smx;
-  if ((defined $unit) && $self->_is_valid_lsf_memory_unit($unit)) {
-    return $unit;
-  } else {
-    croak qq{Cannot get LSF_UNIT_FOR_LIMITS via lsadmin ($cmd)};
-  }
-
-}
-
-=head2 _scale_mem_limit
-
-=cut
-
-sub _scale_mem_limit {
-  my ($self) = @_;
-
-  my $memory_in_mb = $self->memory_in_mb();
-
-  my $ret = ($self->_find_memory_units() eq 'KB') ? ($memory_in_mb * $THOUSAND) : $memory_in_mb;
-
-  return $ret;
-}
-
-=head2 _find_memory_factor
-
-=cut
-
-sub _find_memory_factor {
-  my ($self, $unit) = @_;
-  my $ret = (($unit eq 'KB') ? $THOUSANDTH : (($unit eq 'MB') ? 1 : (($unit eq 'GB') ? $THOUSAND : 1)));
-  return $ret;
+  my ($self, $memory, $unit) = @_;
+  $memory = $self->memory_in_mb($memory, $unit);
+  return "-R 'select[mem>$memory] rusage[mem=$memory]' -M$memory";
 }
 
 =head2 create_array_string
 
- Takes an array of integers, and then converts them to an LSF job array string
- for appending to a job_name
+ Takes an array of integers, and converts them to an LSF job array string
+ for appending to teh LSF job name.
 
- my $sArrayString = $oClass->create_array_string( 1,4,5,6,7,10... );
+ my $sArrayString = $obj->create_array_string( 1,4,5,6,7,10... );
 
 =cut
 
 sub create_array_string {
-  my ( $self, @lsf_indices ) = @_;
+  my ($self, @lsf_indices) = @_;
 
-  my ( $start_run, $end_run, $ret );
-  $ret = q{};
+  my ($start_run, $end_run);
+  my $ret = q{};
   foreach my $entry ( @lsf_indices ) {
     # have we already started looping through
     if ( defined $end_run ) {
@@ -223,9 +156,81 @@ sub create_array_string {
   if ( $start_run != $end_run ) {
     $ret .= q{-} . $end_run ;
   }
-  $ret = q{[} . $ret . q{]};
 
-  return $ret;
+  return q{[} . $ret . q{]};
+}
+
+=head2 execute_lsf_command
+
+Executes LSF command, retrying a few times if the return code is not zero.
+It will then error if it still cannnot execute the command.
+
+Recognises three LSF commands: bsub, bkill, bmod.
+
+For bsub command returns an id of the new LSF job.
+
+  my $id = $obj->execute_lsf_command($cmd);
+
+If the no_bsub attribute is set to true, the LSF command is not executed,
+default test job is is returned.
+
+For non bsub command returns an empty string.
+
+=cut
+
+sub execute_lsf_command {
+  my ($self, $cmd) = @_;
+
+  $cmd ||= q[];
+  $cmd =~ s/\A\s+//xms;
+  $cmd =~ s/\s+\Z//xms;
+  if (!$cmd) {
+    $self->logcroak('command have to be a non-empty string');
+  }
+
+  if ($cmd !~ /^b(?: kill|sub|resume )\s/xms) {
+    my $c = (split /\s/xms, $cmd)[0];
+    $self->logcroak(qq{'$c' is not one of supported LSF commands});
+  }
+
+  my $job_id;
+  my $error = 0;
+
+  if ($self->no_bsub()) {
+    $job_id =  $DEFAULT_JOB_ID_FOR_NO_BSUB;
+  } else {
+    local $ENV{'LSB_DEFAULTPROJECT'} ||= q{pipeline};
+    my $count = 1;
+    my $max_tries_plus_one =
+      ($self->lsf_conf()->{'max_tries'} || $DEFAULT_MAX_TRIES) + 1;
+    my $min_sleep = $self->lsf_conf()->{'min_sleep'} || $DEFAULT_MIN_SLEEP;
+
+    while ($count < $max_tries_plus_one) {
+      $job_id = qx/$cmd/;
+      if ($CHILD_ERROR) {
+        $error = 1;
+        $self->error(qq{Error code $CHILD_ERROR. } .
+                     qq{Error attempting ($count) to submit to LSF $cmd.});
+        sleep $min_sleep ** $count;
+        $count++;
+      } else {
+        $error = 0;
+        $count = $max_tries_plus_one;
+      }
+    }
+  }
+
+  if ($error) {
+    $self->logcroak('Failed to submit command to LSF');
+  } else {
+    if ($cmd =~ /bsub/xms) {
+      ($job_id) = $job_id =~ /(\d+)/xms;
+    } else {
+      $job_id = q[];
+    }
+  }
+
+  return $job_id;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -248,23 +253,19 @@ A collection of LSF-specific helper methods.
 
 =item List::MoreUtils
 
-=item Sys::Hostname
-
 =item Moose
 
 =item MooseX::StrictConstructor
 
 =item namespace::autoclean
 
-=item Carp
-
 =item Readonly
 
 =item POSIX
 
-=item npg_tracking::util::types
+=item English
 
-=item npg_common::roles::software_location
+=item WTSI::DNAP::Utilities::Loggable
 
 =back
 

@@ -1,9 +1,5 @@
-#!/usr/bin/env perl
+#!/bin/bash
 
-use strict;
-use warnings;
+echo 'Job <30> is submitted to queue <small>.';
 
-print 'Job <50> is submitted to queue <small>.';
-
-1;
 

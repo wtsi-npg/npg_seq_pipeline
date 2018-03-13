@@ -1,143 +1,103 @@
 use strict;
 use warnings;
-use Test::More tests => 34;
+use Test::More tests => 4;
 use Test::Exception;
-use Cwd;
+use File::Temp qw{ tempdir };
 
 use_ok('npg_pipeline::executor::lsf::helper');
 
-my $lsf_path = `which lsadmin`;
- 
-SKIP: {
-  if ($lsf_path eq q{}) {
-    skip 'not running any live LSF', 2;
-  }
-  my $expected_memory = 7000;
-  my $lsf_job = npg_pipeline::executor::lsf::helper->new(memory => $expected_memory);
+subtest 'object creation and default values of attributes' => sub {
+  plan tests => 3;
 
-  my $unit = ($lsf_path =~ /7/) ? q{KB} : q{MB};
-  my $expected_memory_limit = ($unit eq 'KB') ? $expected_memory * 1000 : $expected_memory;
-  my $expected_memory_string = qq{-R 'select[mem>$expected_memory] rusage[mem=$expected_memory]' -M$expected_memory_limit};
+  my $h = npg_pipeline::executor::lsf::helper->new();
+  isa_ok ($h, 'npg_pipeline::executor::lsf::helper');
+  ok (!$h->no_bsub, 'default - use bsub');
+  ok (!$h->lsf_conf, 'lsf config not defined by default');
+};
 
-  is($lsf_job->memory_spec(), $expected_memory_string, q{Using default memory units gives correct memory spec});
-  is($lsf_job->_scale_mem_limit(), $expected_memory_limit, qq{memory limit is $expected_memory_limit});
-} # end of skip
-
-local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
-{
-  my $response = `lsadmin`;
-  like($response, qr/LSF_UNIT_FOR_LIMITS = MB/, q{local lsadmin (LSF 9.x) is available});
-  my $expected_memory_string = q{-R 'select[mem>8000] rusage[mem=8000]' -M8000};
-  is(npg_pipeline::executor::lsf::helper->new(memory => 8000)->memory_spec(), $expected_memory_string,
+subtest 'memory' => sub {
+  plan tests => 12;
+  
+  my $h = npg_pipeline::executor::lsf::helper->new();
+  my $expected = q{-R 'select[mem>7000] rusage[mem=7000]' -M7000};;
+  is($h->memory_spec(7000), $expected,
     q{Using default memory units gives correct memory spec});
+  is($h->memory_spec(7000, q{MB}), $expected,
+    q{Using MB memory units gives correct memory spec});
 
-  local $ENV{PATH} = join q[:], q[t/bin/lenny], $ENV{PATH};
-  $response = `lsadmin`;
-  like($response, qr/LSF_UNIT_FOR_LIMITS = KB/, q{local lsadmin (LSF 7.x) is available});
-  $expected_memory_string = q{-R 'select[mem>8000] rusage[mem=8000]' -M8000000};
-  is(npg_pipeline::executor::lsf::helper->new(memory => 8000)->memory_spec(),
-    $expected_memory_string, q{Using default memory units gives correct memory spec});
-}
+  is($h->memory_in_mb(8_000_000, q{KB}), 8_000, q{memory in mb});
+  is($h->memory_spec(8_000_000, q{KB}), q{-R 'select[mem>8000] rusage[mem=8000]' -M8000},
+    q{memory spec from KB is correct});
+  is($h->memory_spec(8_000_050, q{KB}), q{-R 'select[mem>8000] rusage[mem=8000]' -M8000},
+    q{memory spec from KB is correct});
 
-{
-  my $expected_memory = 8_000_000;
-  my $expected_memory_in_mb = 8_000;
-  my $expected_memory_units = q{KB};
+  is($h->memory_in_mb(8, q{GB}), 8_000, q{memory in mb});
+  is($h->memory_spec(8, q{GB}), q{-R 'select[mem>8000] rusage[mem=8000]' -M8000},
+    q{memory spec from GB is correct});
 
-  my $lsf_job = npg_pipeline::executor::lsf::helper->new(
-    memory => $expected_memory,
-    memory_units => qq{$expected_memory_units},
-  );
-  isa_ok($lsf_job, q{npg_pipeline::executor::lsf::helper}, q{$lsf_job});
-  is($lsf_job->memory, $expected_memory, q{memory set correctly});
-  is($lsf_job->memory_in_mb, $expected_memory_in_mb, q{memory in mb set correctly});
-  is($lsf_job->_is_valid_memory(), 1, qq{memory $expected_memory is valid});
-  is($lsf_job->_is_valid_memory_unit(), 1, qq{memory unit $expected_memory_units is valid});
-  is($lsf_job->_scale_mem_limit(), 8000, qq{memory limit correct});
+  throws_ok { $h->memory_spec(1, q{TB}) }
+    qr/Memory unit TB is not recognised/,
+    q{error if memory units are not recognised};
 
-  is($lsf_job->memory_spec(), q{-R 'select[mem>8000] rusage[mem=8000]' -M8000},
-    q{$lsf_job->memory_spec() constructed correctly});
-}
+  throws_ok { $h->memory_spec(-8000) }
+    qr/Memory -8000 MB out of bounds/, q{negative memory is rejected};
+  throws_ok { $h->memory_spec(0) }
+    qr/Memory required/, q{zero memory is rejected};
+  throws_ok { $h->memory_spec(600.5) }
+    qr/Memory should be an integer/, q{floating point memory is rejected};
+  throws_ok { $h->memory_spec('some') }
+    qr/Argument \"some\" isn't numeric in int/,
+    q{Memory cannot be a string of characters};
+};
 
-{
-  my $expected_memory = 8000;
-  my $expected_memory_units = q{MB};
+subtest 'lsf command execution' => sub {
+  plan tests => 14;
+ 
+  my $h = npg_pipeline::executor::lsf::helper->new(lsf_conf => {});
 
-  my $lsf_job = npg_pipeline::executor::lsf::helper->new(
-    memory => $expected_memory,
-    memory_units => qq{$expected_memory_units},
-  );
-  is($lsf_job->_is_valid_memory(), 1, qq{memory $expected_memory is valid});
-  is($lsf_job->_is_valid_memory_unit(), 1, qq{memory unit $expected_memory_units is valid});
-  is($lsf_job->_scale_mem_limit(), 8000, qq{memory limit is correct});
-  is($lsf_job->memory_spec(), q{-R 'select[mem>8000] rusage[mem=8000]' -M8000}, q{memory spec constructed correctly});
-}
+  my $e = qr/command have to be a non-empty string/;
+  throws_ok {$h->execute_lsf_command()} $e, 'command has to be defined';
+  throws_ok {$h->execute_lsf_command(q[])} $e, 'command cannot be an empty string';
+  throws_ok {$h->execute_lsf_command(qq[ \n])} $e,
+    'command cannot be a string of white sspace characters';
+  
+  throws_ok {$h->execute_lsf_command('echo 3')}
+    qr/'echo' is not one of supported LSF commands/,
+    'error if the command is not supported';
+  throws_ok {$h->execute_lsf_command('bmod 3')}
+    qr/'bmod' is not one of supported LSF commands/,
+    'bmod LSF command is not supported';
+  throws_ok {$h->execute_lsf_command(' hostname ')}
+    qr/'hostname' is not one of supported LSF commands/,
+    'bmod LSF command is not supported';
 
-{
-  my $expected_memory = 8;
-  my $expected_memory_units = q{GB};
+  # mock supported LSF commands
+  local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'};
+  is ($h->execute_lsf_command('bsub some'), 30, 'mock LSF job submitted');
+  is ($h->execute_lsf_command('bkill some'), q[],
+    'mock bkill command is executed, empty string returned');  
+  is ($h->execute_lsf_command('bresume some'), q[],
+    'mock bresume command is executed, empty string returned');
 
-  my $lsf_job = npg_pipeline::executor::lsf::helper->new(
-    memory => $expected_memory,
-    memory_units => qq{$expected_memory_units},
-  );
-  is($lsf_job->_is_valid_memory(), 1, qq{memory $expected_memory is valid});
-  ok($lsf_job->_is_valid_memory_unit(), qq{memory unit $expected_memory_units is valid});
-  is($lsf_job->memory_spec(), q{-R 'select[mem>8000] rusage[mem=8000]' -M8000}, q{memory spec constructed correctly});
-}
+  $h = npg_pipeline::executor::lsf::helper->new(no_bsub => 1);
+  is ($h->execute_lsf_command('bsub some'), 50,
+    'bsub command is not executed, default job id is returned');
+  is ($h->execute_lsf_command('bkill some'), q[],
+    'bkill command is not executed, empty string returned');  
+  is ($h->execute_lsf_command('bresume some'), q[],
+    'bresume command is not executed, empty string returned');
 
-{
-  is(npg_pipeline::executor::lsf::helper->new(memory => 8000)->memory_spec(),
-    q{-R 'select[mem>8000] rusage[mem=8000]' -M8000}, q{Using default memory units gives correct memory spec});
-}
-
-{
-  my $expected_memory_units = 'TB';
-  my $lsf_job = npg_pipeline::executor::lsf::helper->new( memory => 8000, memory_units => $expected_memory_units,);
-  ok(!($lsf_job->_is_valid_memory_unit()), qq{memory unit $expected_memory_units is NOT valid}); 
-  ok(!($lsf_job->_is_valid_lsf_memory_unit($expected_memory_units)), qq{memory unit $expected_memory_units is NOT valid as an LSF memory unit}); 
-  throws_ok {
-    $lsf_job->memory_spec();
-    } qr/lsf_job does not recognise requested memory unit/, q{croak if memory units are not recognised};
-
-  throws_ok {
-    npg_pipeline::executor::lsf::helper->new(memory => -8000)->memory_spec();
-  } qr/failed/, q{Using negative memory is rejected};
-
-  $lsf_job = npg_pipeline::executor::lsf::helper->new( memory => 8000000, memory_units => qq{MB},);
-  is($lsf_job->_is_valid_memory(), 0, qq{memory is NOT valid}); 
-  throws_ok {
-    $lsf_job->memory_spec();
-    } qr/lsf_job cannot handle request for memory /, q{croak if memory is silly};
-}
-
-{
-  my $expected_memory = 8_550_050;
-  my $expected_memory_units = 'KB';
-  my $lsf_job = npg_pipeline::executor::lsf::helper->new(memory => $expected_memory, memory_units =>$expected_memory_units);
-  my $expected_memory_string = qq{-R 'select[mem>8550] rusage[mem=8550]' -M8550};
-  is($lsf_job->memory_spec(), $expected_memory_string, q{Using default memory units gives correct memory spec});
-  is($lsf_job->_scale_mem_limit(), 8_550, qq{memory limit is correct});
-}
-
-{
-  local $ENV{PATH} = join q[:], q[t/bin/dodo], $ENV{PATH};
-  my $response = `lsadmin`;
-  like($response, qr/LSF_UNIT_FOR_LIMITS = dodo/, q{local lsadmin is broken});
-
-  my $expected_memory = 8000;
-  my $lsf_job = npg_pipeline::executor::lsf::helper->new(memory => $expected_memory);
-  ok(!$lsf_job->_is_valid_lsf_memory_unit(q{dodo}), q{dodo is NOT a valid LSF memory unit});
-
-  throws_ok {
-    $lsf_job->_find_memory_units();
-    $lsf_job->memory_spec();
-  } qr/Cannot/, q{Error is thrown from _find_memory_units when local units are set to dodo};
-
-  throws_ok {
-    $lsf_job->memory_spec();
-  } qr/Cannot/, q{Error is thrown when asking for memory spec if local units are set to dodo};
-
-}
+  # soft-link bsub and bkill commands to /bin/false so that they fail
+  my $tmp = tempdir(CLEANUP => 1);
+  symlink '/bin/false', "$tmp/bsub";
+  symlink '/bin/false', "$tmp/bkill";
+  local $ENV{'PATH'} = join q[:], $tmp, $ENV{'PATH'};
+  $h = npg_pipeline::executor::lsf::helper->new(lsf_conf => {min_sleep => 1, max_tries => 2});
+  my $job_id;
+  throws_ok { $job_id = $h->execute_lsf_command('bsub some') }
+    qr/Failed to submit command to LSF/, 'error on failure to execute'; 
+  throws_ok { $job_id = $h->execute_lsf_command('bkill some') }
+    qr/Failed to submit command to LSF/, 'error on failure to execute'; 
+};
 
 1;
