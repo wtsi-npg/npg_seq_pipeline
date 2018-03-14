@@ -1,23 +1,31 @@
 package npg_pipeline::executor::lsf;
 
 use Moose;
+use MooseX::StrictConstructor;
+use namespace::autoclean;
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
 use File::Spec;
+use Try::Tiny;
+use List::MoreUtils qw(uniq);
 use Readonly;
 
 use npg_tracking::util::abs_path qw(abs_path network_abs_path);
+use npg_pipeline::executor::lsf::helper;
 
-with qw( npg_pipeline::executor::lsf::options );
+extends 'npg_tracking::illumina::runfolder';
+
+with qw( 
+         npg_pipeline::executor::lsf::options
+         npg_pipeline::roles::accessor
+         WTSI::DNAP::Utilities::Loggable
+       );
 
 our $VERSION = '0';
 
-$ENV{LSB_DEFAULTPROJECT} ||= q{pipeline};
-
-Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
 Readonly::Scalar my $VERTEX_LSF_JOB_IDS_ATTR_NAME => q[lsf_job_ids];
 Readonly::Scalar my $LSF_JOB_IDS_DELIM            => q[-];
-Readonly::Scalar my $SUSPENDED_START_FUNCTION => q[pipeline_start];
-Readonly::Scalar my $END_FUNCTION             => q[pipeline_end];
+Readonly::Scalar my $SUSPENDED_START_FUNCTION     => q[pipeline_start];
+Readonly::Scalar my $END_FUNCTION                 => q[pipeline_end];
 
 =head1 NAME
 
@@ -25,62 +33,107 @@ npg_pipeline::executor::lsf
 
 =head1 SYNOPSIS
 
-Bits and pieces that are not supposed to work. Work in progress.
+Submission of function definition for execution to LSF.
 
 =head1 SUBROUTINES/METHODS
 
 =cut
 
+=head2 lsf_conf
 
-has runfolder_path => (
+=cut
+
+has 'lsf_conf' => (
+  isa        => 'HashRef',
   is         => 'ro',
-  isa        => 'Str',
-  required   => 0,
+  lazy_build => 1,
+  init_arg   => undef,
+);
+sub _build_lsf_conf {
+  my $self = shift;
+  return $self->read_config($self->conf_file_path('lsf.ini'));
+}
+
+=head2 lsf_helper
+
+=cut
+
+has 'lsf_helper' => (
+  isa        => 'npg_pipeline::executor::lsf::helper',
+  is         => 'ro',
+  lazy_build => 1,
+);
+sub _build_lsf_helper {
+  my $self = shift;
+  return npg_pipeline::executor::lsf::helper->new(
+           lsf_conf => $self->lsf_conf,
+           no_bsub  => $self->no_bsub
+         );
+}
+
+=head2 function_graph
+
+=cut
+
+has 'function_graph' => (
+  is       => 'ro',
+  isa      => 'Graph::Directed',
+  required => 1,
 );
 
-has function_graph => (
-  is         => 'ro',
-  isa        => 'Obj',
-  required   => 0,
+=head2 function_definitions
+
+=cut
+
+has 'function_definitions' => (
+  is       => 'ro',
+  isa      => 'HashRef',
+  required => 1,
 );
 
-=head2 _fs_resource
+=head2 fs_resource
 
-Returns the fs_resource for the given runfolder_path
+Returns the fs_resource for the runfolder path
 
 =cut 
 
-has _fs_resource => (
+has 'fs_resource' => (
   is         => 'ro',
   isa        => 'Str',
   lazy_build => 1,
 );
-sub _build__fs_resource {
+sub _build_fs_resource {
   my ($self) = @_;
 
-  if ($ENV{TEST_FS_RESOURCE}) {
-    return $ENV{TEST_FS_RESOURCE};
-  }
   my $r = join '_', grep {$_} File::Spec->splitdir(
     network_abs_path path_to_mount_point($self->runfolder_path()));
   return join q(),$r=~/\w+/xsmg;
 }
 
-=head2 submit
+=head2 execute
 
 
 =cut 
 
-sub submit {
-  # Stab
+sub execute {
+  my $self = shift;
+
+  try {
+    $self->_submit();
+    if (!$self->interactive) {
+      $self->_resume();
+    }
+  } catch {
+    $self->logcroak('Error creating LSF jobs ' . $_);
+    $self->_kill_jobs();
+  };
+
   return;
 }
 
-
 sub _string_job_ids2list {
   my $string_ids = shift;
-  my @ids = split /$LSF_JOB_IDS_DELIM/smx, $string_ids;
-  return @ids;
+  return (split /$LSF_JOB_IDS_DELIM/smx, $string_ids);
 }
 
 sub _list_job_ids2string {
@@ -107,7 +160,6 @@ sub _lsf_predesessors {
   return @lsf_job_ids;
 }
 
-
 sub _resume {
   my $self = shift;
 
@@ -123,7 +175,7 @@ sub _resume {
     $self->info(qq{Suspended start job, id $suspended_start_job_id});
     if (!$self->interactive) {
       $self->info(qq{Resuming start job, id $suspended_start_job_id});
-      $self->submit_bsub_command(qq{bresume $suspended_start_job_id});
+      $self->lsf_helper()->execute_lsf_command(qq{bresume $suspended_start_job_id});
     }
   } else {
     $self->warn(q{No suspended start job.});
@@ -135,72 +187,91 @@ sub _resume {
 sub _kill_jobs {
   my $self = shift;
 
-  if ($self->has_function_graph()) {
-    my $g = $self->function_graph();
-    my @job_ids =
-      reverse
-      sort { $a <=> $b }
-      map  { _string_job_ids2list($_) }
-      grep { $g->get_vertex_attribute($_, $VERTEX_LSF_JOB_IDS_ATTR_NAME) }
-      grep { $g->has_vertex_attribute($_, $VERTEX_LSF_JOB_IDS_ATTR_NAME) ? $_ : q[] }
-      grep { $_ ne $SUSPENDED_START_FUNCTION }
-      $g->vertices();
+  my $g = $self->function_graph();
+  my @job_ids =
+    uniq
+    reverse
+    sort { $a <=> $b }
+    map  { _string_job_ids2list($_) }
+    grep { $g->get_vertex_attribute($_, $VERTEX_LSF_JOB_IDS_ATTR_NAME) }
+    grep { $g->has_vertex_attribute($_, $VERTEX_LSF_JOB_IDS_ATTR_NAME) ? $_ : q[] }
+    grep { $_ ne $SUSPENDED_START_FUNCTION }
+    $g->vertices();
 
-    if (@job_ids) {
-      my $all_jobs = join q{ }, @job_ids;
-      $self->info(q{Will try to kill submitted jobs with following ids: },
-                  $all_jobs);
-      $self->submit_bsub_command(qq{bkill -b $all_jobs});
-    } else {
-      $self->info(q{Early failure, no jobs to kill});
-    }
+  if (@job_ids) {
+    my $all_jobs = join q{ }, @job_ids;
+    $self->info(qq{Will try to kill submitted jobs with following ids: $all_jobs});
+    $self->lsf_helper()->execute_lsf_command(qq{bkill -b $all_jobs});
   } else {
-    $self->info(q{Early failure, function graph is not available, no jobs to kill});
+    $self->info(q{Early failure, no jobs to kill});
   }
+
   return;
 }
 
-sub _some {
+sub _submit {
   my $self = shift;
+
   my $g = $self->function_graph;
-  foreach my $function (qw//) {
+  foreach my $function ($g->topological_sort()) {
+
+    if (!exists $self->function_definitions()->{$function}) {
+      #####
+      # Probably a few function names were given explicitly.
+      #
+      $self->info(q{***** Function }.$function.q{ is not defined *****});
+      next;
+    }
+
+    my $definitions = $self->function_definitions()->{$function};
+    if (!$definitions) {
+      $self->logcroak("No definition array for function $function");
+    }
+    if(!@{$definitions}) {
+      $self->logcroak("Definition array for function $function is empty");
+    }
+
     $self->info(q{***** Processing }.$function.q{ *****});
+    if (@{$definitions} == 1) {
+      my $d = $definitions->[0];
+      if ($d->immediate_mode) {
+        $self->info(q{***** Function }.$function.q{ has been already run *****});
+        next;
+      }
+      if ($d->excluded) {
+        $self->info(q{***** Function }.$function.q{ is excluded *****});
+        next;
+      }
+    }
+
     #####
     # Need ids of upstream LSF jobs in order to set correctly dependencies
     # between LSF jobs
     #
-    my $dependencies = q[];
+    my @depends_on;
     if (!$g->is_source_vertex($function)) {
-      my @depends_on = _lsf_predesessors($g, $function);
+      @depends_on = _lsf_predesessors($g, $function);
       if (!@depends_on) {
         $self->logcroak(qq{"$function" should depend on at least one LSF job});
       }
-      $dependencies = $self->_lsf_job_complete_requirements(@depends_on);
-      $self->info(sprintf q{Setting dependencies for function "%s" to %s},
-                              $function, $dependencies);
     }
 
-    #####
-    # We've removed a long chain of passing the dependencies to the code
-    # that submits the LSF job in a hope that the job can be modified
-    # once submitted. This takes hours for large arrays, so, as a temporary
-    # measure, we have to restore previously available functionality in a
-    # rudimentary way. This will not be necessary once LSF job submission
-    # and function definition are properly separated.
-    #
-
-    my @ids = $self->_run_function($function);
-
+    my @ids = $self->_submit_function($function, @depends_on);
+    if (!@ids) {
+      $self->logcroak('A list of LSF job ids should be returned');
+    }
     my $job_ids = _list_job_ids2string(@ids);
-    if ($job_ids) {
-      $self->info(qq{Saving job ids: ${job_ids}\n});
-      $g->set_vertex_attribute($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME, $job_ids);
-    } else {
-      $self->info(q{Function was either not executed or did not create an LSF job});
-    }
+    $self->info(qq{Saving job ids: ${job_ids}\n});
+    $g->set_vertex_attribute($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME, $job_ids);
   }
   return;
 }
+
+sub _submit_function {
+  return (1);
+}
+
+__PACKAGE__->meta->make_immutable;
 
 1;
 
@@ -219,11 +290,25 @@ __END__
 
 =item Moose
 
+=item MooseX::StrictConstructor
+
+=item namespace::autoclean
+
+=item Sys::Filesystem::MountPoint
+
 =item File::Spec
+
+=item Try::Tiny
+
+=item List::MoreUtils
 
 =item Readonly
 
+=item npg_tracking::illumina::runfolder
+
 =item npg_tracking::util::abs_path
+
+=item WTSI::DNAP::Utilities::Loggable
 
 =back
 

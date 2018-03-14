@@ -188,7 +188,7 @@ sub execute_lsf_command {
     $self->logcroak('command have to be a non-empty string');
   }
 
-  if ($cmd !~ /^b(?: kill|sub|resume )\s/xms) {
+  if ($cmd !~ /\Ab(?: kill|sub|resume )\s/xms) {
     my $c = (split /\s/xms, $cmd)[0];
     $self->logcroak(qq{'$c' is not one of supported LSF commands});
   }
@@ -199,7 +199,6 @@ sub execute_lsf_command {
   if ($self->no_bsub()) {
     $job_id =  $DEFAULT_JOB_ID_FOR_NO_BSUB;
   } else {
-    local $ENV{'LSB_DEFAULTPROJECT'} ||= q{pipeline};
     my $count = 1;
     my $max_tries_plus_one =
       ($self->lsf_conf()->{'max_tries'} || $DEFAULT_MAX_TRIES) + 1;
@@ -223,7 +222,7 @@ sub execute_lsf_command {
   if ($error) {
     $self->logcroak('Failed to submit command to LSF');
   } else {
-    if ($cmd =~ /bsub/xms) {
+    if ($cmd =~ /\Absub/xms) {
       ($job_id) = $job_id =~ /(\d+)/xms;
     } else {
       $job_id = q[];

@@ -49,12 +49,12 @@ my $bin = $curdir . q[/bin];
   local $ENV{TEST_DIR} = $tmp_dir;
  
   lives_ok { qx{
-    $bin/npg_pipeline_post_qc_review --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234};}
+    $bin/npg_pipeline_post_qc_review --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234};}
     q{ran bin/npg_pipeline_post_qc_review};
   ok(!$CHILD_ERROR, qq{Return code of $CHILD_ERROR});
 
   lives_ok { qx{
-    $bin/npg_pipeline_post_qc_review --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234  --function_list some}; }
+    $bin/npg_pipeline_post_qc_review --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234  --function_list some}; }
     q{ran bin/npg_pipeline_post_qc_review with non-exisitng function list};
   ok($CHILD_ERROR, qq{Child error $CHILD_ERROR});
 }

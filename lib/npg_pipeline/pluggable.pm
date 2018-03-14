@@ -83,7 +83,7 @@ has q{execute} => (
   is            => q{ro},
   default       => 1,
   documentation =>
-  q{A flag turning on/off transferring execution, true by default},
+  q{A flag turning on/off execution, true by default},
 );
 
 ############## End of flags #####################################
@@ -118,7 +118,7 @@ For example, the following works for archival pipeline
 
 =cut
 
-has 'function_list' => (
+has q{function_list} => (
   isa           => q{Str},
   is            => q{ro},
   lazy_build    => 1,
@@ -135,7 +135,7 @@ sub _build_function_list {
   }
   return $self->pipeline_name . $suffix;
 }
-around 'function_list' => sub {
+around q{function_list} => sub {
   my $orig = shift;
   my $self = shift;
 
@@ -182,6 +182,120 @@ sub _build_definitions_file_path {
   return $self->log_file_path() . $FUNCTION_DAG_FILE_TYPE;
 }
 
+=head2 function_graph
+
+A Graph::Directed object representing the functions to be run
+as a directed acyclic graph (DAG).
+
+=cut
+
+has q{function_graph} => (
+  isa        => q{Graph::Directed},
+  is         => q{ro},
+  lazy_build => 1,
+  init_arg   => undef,
+  metaclass  => q{NoGetopt},
+);
+sub _build_function_graph {
+  my $self = shift;
+
+  my $g = Graph::Directed->new();
+  my @nodes;
+
+  if ($self->has_function_order && @{$self->function_order}) {
+
+    my @functions = @{$self->function_order};
+    $self->info(q{Function order is set by the user: } .
+                join q[, ], @functions);
+
+    unshift @functions, $SUSPENDED_START_FUNCTION;
+    push @functions, $END_FUNCTION;
+    $self->info(q{Function order to be executed: } .
+                join q[, ], @functions);
+    ###$self->function_definitions->{'function_order'} = \@functions;
+    my $current = 0;
+    my $previous = 0;
+    my $total = scalar @functions;
+
+    while ($current < $total) {
+      if ($current != $previous) {
+        $g->add_edge($functions[$previous], $functions[$current]);
+        $previous++;
+      }
+      $current++;
+    }
+    @nodes = map { {'id' => $_, 'label' => $_} } @functions;
+  } else {
+    my $jgraph = $self->_function_list_conf();
+    ###$self->function_definitions->{'function_graph'} = $jgraph;
+    foreach my $e (@{$jgraph->{'graph'}->{'edges'}}) {
+      ($e->{'source'} and $e->{'target'}) or
+	$self->logcroak(q{Both source and target should be defined for an edge});
+      $g->add_edge($e->{'source'}, $e->{'target'});
+    }
+    @nodes = @{$jgraph->{'graph'}->{'nodes'}};
+  }
+
+  $g->edges()  or $self->logcroak(q{No edges});
+  $g->is_dag() or $self->logcroak(q{Graph is not DAG});
+
+  foreach my $n ( @nodes ) {
+    ($n->{'id'} and $n->{'label'}) or
+      $self->logcroak(q{Both id and label should be defined for a node});
+    my $id = $n->{'id'};
+    if ( !$g->has_vertex($id) ) {
+      $self->logcroak(qq{Vertex for node $id is missing});
+    }
+    $g->set_vertex_attribute($id, 'label', $n->{'label'});
+  }
+
+  return $g;
+}
+
+=head2 function_definitions
+
+A hash reference of function definitions hashed by function ids.
+The values are arrays of npg_pipeline::function::definition objects.
+
+=cut
+
+has q{function_definitions} => (
+  isa        => q{HashRef},
+  is         => q{ro},
+  init_arg   => undef,
+  default    => sub {return {};},
+  metaclass  => q{NoGetopt},
+);
+
+=head2 executor
+
+Executor object of type specified by the executor_type attribute.
+
+=cut
+
+has q{executor} => (
+  isa        => q{Object},
+  is         => q{ro},
+  init_arg   => undef,
+  lazy_build => 1,
+  metaclass  => q{NoGetopt},
+);
+sub _build_executor {
+  my $self = shift;
+  my $module = join q[::],
+    'npg_pipeline', 'executor', $self->executor_type;
+  load_class $module;
+  my $attrs = $self->_common_attributes($module);
+  #####
+  # The following attributes are not recognised by MooseX::AttributeCloner;
+  # NoGetopt metaclass might be the reason. So copying by reference explicitly.
+  #
+  for my $aname (qw/function_graph function_definitions/) {
+    $attrs->{$aname} = $self->$aname;
+  }
+  return $module->new($attrs);
+}
+
 =head2 BUILD
 
 Called by Moose at the end of object instantiation.
@@ -218,7 +332,7 @@ sub main {
     $self->_save_function_definitions();
     if ($self->execute()) {
       $when = q{submitting for execution};
-      $self->_executor->submit();
+      $self->executor()->execute($self->function_graph, $self->function_definitions);
     }
   } catch {
     $error = qq{Error $when: $_};
@@ -279,7 +393,7 @@ sub log_file_path {
 ############## Private attributes ################################
 ##################################################################
 
-has '_function_list_conf' => (
+has q{_function_list_conf} => (
   isa        => q{HashRef},
   is         => q{ro},
   lazy_build => 1,
@@ -298,68 +412,6 @@ has q{_script_name} => (
   default  => $PROGRAM_NAME,
   init_arg => undef,
 );
-
-has q{_function_graph} => (
-  isa        => q{Graph::Directed},
-  is         => q{ro},
-  lazy_build => 1,
-  init_arg   => undef,
-);
-sub _build__function_graph {
-  my $self = shift;
-
-  my $g = Graph::Directed->new();
-  my @nodes;
-
-  if ($self->has_function_order && @{$self->function_order}) {
-
-    my @functions = @{$self->function_order};
-    $self->info(q{Function order is set by the user: } .
-                join q[, ], @functions);
-
-    unshift @functions, $SUSPENDED_START_FUNCTION;
-    push @functions, $END_FUNCTION;
-    $self->info(q{Function order to be executed: } .
-                join q[, ], @functions);
-    $self->_definitions->{'function_order'} = \@functions;
-    my $current = 0;
-    my $previous = 0;
-    my $total = scalar @functions;
-
-    while ($current < $total) {
-      if ($current != $previous) {
-        $g->add_edge($functions[$previous], $functions[$current]);
-        $previous++;
-      }
-      $current++;
-    }
-    @nodes = map { {'id' => $_, 'label' => $_} } @functions;
-  } else {
-    my $jgraph = $self->_function_list_conf();
-    $self->_definitions->{'function_graph'} = $jgraph;
-    foreach my $e (@{$jgraph->{'graph'}->{'edges'}}) {
-      ($e->{'source'} and $e->{'target'}) or
-	$self->logcroak(q{Both source and target should be defined for an edge});
-      $g->add_edge($e->{'source'}, $e->{'target'});
-    }
-    @nodes = @{$jgraph->{'graph'}->{'nodes'}};
-  }
-
-  $g->edges()  or $self->logcroak(q{No edges});
-  $g->is_dag() or $self->logcroak(q{Graph is not DAG});
-
-  foreach my $n ( @nodes ) {
-    ($n->{'id'} and $n->{'label'}) or
-      $self->logcroak(q{Both id and label should be defined for a node});
-    my $id = $n->{'id'};
-    if ( !$g->has_vertex($id) ) {
-      $self->logcroak(qq{Vertex for node $id is missing});
-    }
-    $g->set_vertex_attribute($id, 'label', $n->{'label'});
-  }
-
-  return $g;
-}
 
 has q{_log_file_name} => (
   isa        => q{Str},
@@ -394,28 +446,6 @@ has q{_registry} => (
   default  => sub {return npg_pipeline::pluggable::registry->new();},
 );
 
-has q{_definitions} => (
-  isa      => q{HashRef},
-  is       => q{ro},
-  init_arg => undef,
-  default  => sub {return {};},
-);
-
-has q{_executor} => (
-  isa        => q{Object},
-  is         => q{ro},
-  init_arg   => undef,
-  lazy_build => 1,
-);
-sub _build__executor {
-  my $self = shift;
-  my $module = join q[::],
-    'npg_pipeline', 'executor', $self->executor_type;
-  load_class $module;
-  my %attrs = $self->_common_attributes($module);
-  return $module->new(%attrs);
-}
-
 ##################################################################
 ############## Private methods ###################################
 ##################################################################
@@ -441,12 +471,12 @@ sub _common_attributes {
   #
   my %attrs = %{$self->_cloned_attributes()};
   my $meta = $module->meta();
-  foreach my $attr_name (keys %{$self->_cloned_attributes()}) {
+  foreach my $attr_name (keys %attrs) {
     if (!$meta->find_attribute_by_name($attr_name)) {
       delete $attrs{$attr_name};
     }
   }
-  return %attrs;
+  return \%attrs;
 }
 
 sub _run_function {
@@ -463,14 +493,14 @@ sub _run_function {
   # object. Both classes inherit from npg_pipeline::base, so
   # they have many attributes in common.
   #
-  my %attrs = $self->_common_attributes($module);
+  my $attrs = $self->_common_attributes($module);
 
   #####
   # Use some function-specific attributes that we received
   # from the registry.
   #  
   while (my ($key, $value) = each %{$params}) {
-    $attrs{$key} = $value;
+    $attrs->{$key} = $value;
   }
 
   #####
@@ -478,13 +508,13 @@ sub _run_function {
   # method whose name we received from the registry, return
   # the result.
   #    
-  return $module->new(\%attrs)->$method_name();
+  return $module->new($attrs)->$method_name();
 }
 
 sub _schedule_functions {
   my $self = shift;
 
-  my $g = $self->_function_graph();
+  my $g = $self->function_graph();
 
   #####
   # Topological ordering of a directed graph is a linear ordering of
@@ -512,10 +542,10 @@ sub _schedule_functions {
     if (!$definitions || !@{$definitions}) {
       $self->logcroak(q{At least one definition should be returned});
     }
-    $self->_definitions->{$function} = $definitions;
+    $self->function_definitions->{$function} = $definitions;
   }
 
-  $self->_definitions->{'topological_function_order'} = \@functions;
+  ###$self->function_definitions->{'topological_function_order'} = \@functions;
 
   return;
 }
@@ -529,7 +559,7 @@ sub _save_function_definitions {
     or $self->logcroak(qq{Cannot open $file for writing});
 
   my $json = JSON->new->convert_blessed;
-  print {$fh} $json->pretty->encode($self->_definitions)
+  print {$fh} $json->pretty->encode($self->function_definitions)
     or $self->logcroak(qq{Cannot write to $file});
 
   close $fh or $self->logerror(qq{Fail to close $file});

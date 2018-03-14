@@ -2,8 +2,6 @@ package npg_pipeline::executor::lsf::options;
 
 use Moose::Role;
 
-with 'npg_pipeline::roles::accessor';
-
 our $VERSION = '0';
 
 =head1 NAME
@@ -41,23 +39,12 @@ but will be overridden if given on the command line.
 
 =cut
 
-has q{job_name_prefix_store} => (
+has q{job_name_prefix} => (
   isa           => q{Str},
   is            => q{ro},
-  init_arg      => q{job_name_prefix},
-  predicate     => q{has_job_name_prefix_store},
+  predicate     => q{has_job_name_prefix},
   documentation => q{LSF jobs name prefix},
 );
-
-sub job_name_prefix {
-  my $self = shift;
-
-  return $self->has_job_name_prefix_store()
-         ? $self->job_name_prefix_store() . q{_}
-         : ( $self->_config()->{'job_name_prefix'}
-             ? $self->_config()->{'job_name_prefix'} . q{_}
-             : q{} );
-}
 
 =head2 job_priority
 
@@ -73,17 +60,6 @@ has q{job_priority} => (
   predicate     => q{has_job_priority},
   documentation => q{User defined LSF jobs priority},
 );
-
-has '_config' => (
-  isa        => 'HashRef',
-  is         => 'ro',
-  lazy_build => 1,
-  init_arg   => undef,
-);
-sub _build__config {
-  my $self = shift;
-  return $self->read_config($self->conf_file_path('lsf'));
-}
 
 =head2 no_sf_resource
 
@@ -135,14 +111,10 @@ shoudl be applied only if no_array_cpu_limit not set
 has q{array_cpu_limit} => (
   isa           => q{Int},
   is            => q{ro},
-  lazy_build    => 1,
+  predicate     => q{has_array_cpu_limit},
   documentation =>
   q{The largest number of CPUs that an LSF job array can use at a time},
 );
-sub _build_array_cpu_limit {
-  my $self = shift;
-  return $self->_config()->{'array_cpu_limit'};
-}
 
 1;
 

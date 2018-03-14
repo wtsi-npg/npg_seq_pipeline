@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Test::More tests => 10;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
@@ -10,22 +10,20 @@ use English;
 use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
 
-local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
-
 use_ok('npg_pipeline::pluggable');
 
 my $util = t::util->new();
 my $test_dir = $util->temp_directory();
-$ENV{OWNING_GROUP} = q{staff};
+
+local $ENV{OWNING_GROUP} = q{staff};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
-                          file   => join(q[/], $test_dir, 'logfile'),
+                          file   => join(q[/], $ENV{PWD}, 'logfile'),
                           utf8   => 1});
 
 my $config_dir = 'data/config_files';
-
 my $runfolder_path = $util->analysis_runfolder_path;
 $util->set_staging_analysis_area({with_latest_summary => 1});
 
@@ -34,8 +32,7 @@ subtest 'object with no function order set - simple methods' => sub {
 
   my $pluggable = npg_pipeline::pluggable->new(
     id_run         => 1234,
-    runfolder_path => $test_dir,
-    no_bsub        => 1,
+    runfolder_path => $test_dir
   );
   isa_ok($pluggable, q{npg_pipeline::pluggable});
   is($pluggable->pipeline_name, 'pluggable', 'pipeline name');
@@ -53,28 +50,25 @@ subtest 'graph creation from jgf files' => sub {
   my $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
     runfolder_path => $test_dir,
-    no_bsub        => 1,
     function_list  => "$config_dir/function_list_central.json"
   );
-  lives_ok {$obj->_function_graph()}
+  lives_ok {$obj->function_graph()}
    'no error creating a graph for default analysis';
 
   $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
     runfolder_path => $test_dir,
-    no_bsub        => 1,
     function_list  => "$config_dir/function_list_central_qc_run.json"
   );
-  lives_ok {  $obj->_function_graph() }
+  lives_ok {  $obj->function_graph() }
     'no error creating a graph for analysis of a qc run';
 
   $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
     runfolder_path => $test_dir,
-    no_bsub        => 1,
     function_list  => "$config_dir/function_list_post_qc_review.json"
   );
-  lives_ok {  $obj->_function_graph() }
+  lives_ok {  $obj->function_graph() }
     'no error creating a graph for default archival';
 };
 
@@ -84,19 +78,18 @@ subtest 'graph creation from explicitly given function list' => sub {
   my $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
     runfolder_path => $test_dir,
-    no_bsub        => 1,
     function_order => ['my_function', 'your_function'],
   );
   ok($obj->has_function_order(), 'function order is set');
   is(join(q[ ], @{$obj->function_order}), 'my_function your_function',
    'function order as set');
-  lives_ok {  $obj->_function_graph() }
+  lives_ok {  $obj->function_graph() }
     'no error creating a graph for a preset function order list';
   throws_ok { $obj->_schedule_functions() }
     qr/Handler for 'my_function' is not registered/,
     'cannot schedule non-existing function';
 
-  my $g = $obj->_function_graph();
+  my $g = $obj->function_graph();
   is($g->vertices(), 4, 'four graph nodes');
 
   my @p = $g->predecessors('my_function');
@@ -121,10 +114,9 @@ subtest 'graph creation from explicitly given function list' => sub {
   $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
     function_order => [qw/pipeline_end/],
-    runfolder_path => $test_dir,
-    no_bsub        => 1
+    runfolder_path => $test_dir
   );
-  throws_ok { $obj->_function_graph() }
+  throws_ok { $obj->function_graph() }
     qr/Graph is not DAG/,
     'pipeline_end cannot be specified in function order';
 
@@ -134,7 +126,7 @@ subtest 'graph creation from explicitly given function list' => sub {
     runfolder_path => $test_dir,
     no_bsub        => 1
   );
-  throws_ok { $obj->_function_graph() }
+  throws_ok { $obj->function_graph() }
     qr/Graph is not DAG/,
     'pipeline_start cannot be specified in function order';
 };
@@ -178,7 +170,7 @@ subtest 'switching off functions' => sub {
 };
 
 subtest 'specifying functions via function_order' => sub {
-  plan tests => 4;
+  plan tests => 3;
 
   my @functions_in_order = qw(
     run_archival_in_progress
@@ -186,35 +178,160 @@ subtest 'specifying functions via function_order' => sub {
     run_run_archived
     run_qc_complete
     update_warehouse_post_qc_complete
-    );
+  );
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[/t/data];
-  my $p;
-  lives_ok {
-    $p = npg_pipeline::pluggable->new(
-      function_order   => \@functions_in_order,
-      runfolder_path   => $runfolder_path,
-      spider           => 0,
-      definitions_file_path => "$test_dir/definitions.json",
-    );
-  } q{no croak on creation};
-
+  local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients
+  my $p = npg_pipeline::pluggable->new(
+    function_order        => \@functions_in_order,
+    runfolder_path        => $runfolder_path,
+    spider                => 0,
+    definitions_file_path => "$test_dir/definitions.json",
+    no_bsub               => 0
+  );
   is($p->id_run, 1234, 'run id set correctly');
-  lives_ok { $p->main(); } q{no error running main};
   is(join(q[ ], @{$p->function_order()}), join(q[ ], @functions_in_order),
     q{function_order set on creation});
+  lives_ok { $p->main() } q{no error running main};
+};
+
+subtest 'propagating options to the executor and helper' => sub {
+  plan tests => 24;
+
+  my @functions_in_order = qw(
+    run_archival_in_progress
+    upload_auto_qc_to_qc_database
+    run_run_archived
+    run_qc_complete
+    update_warehouse_post_qc_complete
+  );
+
+  my $ref = {
+    function_order        => \@functions_in_order,
+    runfolder_path        => $runfolder_path,
+    spider                => 0,
+    definitions_file_path => "$test_dir/definitions.json",
+  };
+
+  my $p = npg_pipeline::pluggable->new($ref);
+  is ($p->executor_type(), 'lsf', 'default executor type is "lsf"');
+  ok ($p->execute, '"execute" option is true by default');
+  my $e = $p->executor();
+  isa_ok ($e, 'npg_pipeline::executor::lsf');
+  
+  $ref->{'executor_type'} = 'some';
+  $p = npg_pipeline::pluggable->new($ref);
+  is ($p->executor_type(), 'some', 'executor type is "some" as set');
+  throws_ok { $p->executor() }
+    qr/Can't locate npg_pipeline\/executor\/some\.pm/,
+    'error if executor modules does not exist';
+  
+  $ref->{'executor_type'} = 'lsf';
+  $p = npg_pipeline::pluggable->new($ref);
+  is ($p->executor_type(), 'lsf', 'executor type is "lsf" as set');
+  $p->function_definitions();
+  $p->function_graph();
+
+  $e = $p->executor();
+  isa_ok ($e, 'npg_pipeline::executor::lsf');
+
+  my @boolean_attrs = qw/interactive no_sf_resource no_bsub no_array_cpu_limit/;
+  for my $attr (@boolean_attrs) {
+    ok (!$e->$attr, "executor: $attr value is false");
+  }
+
+  for my $attr (qw/job_name_prefix job_priority array_cpu_limit/) {
+    my $predicate = "has_$attr";
+    ok (!$e->$predicate, "executor: $attr is not set");
+  }
+
+  my $helper = $e->lsf_helper();
+  isa_ok ($helper, 'npg_pipeline::executor::lsf::helper');
+  ok (!$helper->no_bsub, 'helper: no_bsub is false');
+
+  for my $attr (@boolean_attrs) {
+    $ref->{$attr} = 1;
+  }
+  $ref->{'job_name_prefix'} = 'my';
+  $ref->{'job_priority'} = 80;
+  $ref->{'array_cpu_limit'} = 4;
+
+  $p = npg_pipeline::pluggable->new($ref);
+  $e = $p->executor();
+  for my $attr (@boolean_attrs) {
+    ok ($e->$attr, "executor: $attr value is true");
+  }
+  is ($e->job_name_prefix, 'my', 'job_name_prefix set correctly');
+  is ($e->job_priority, 80, 'job_priority set correctly');
+  is ($e->array_cpu_limit, 4, 'array_cpu_limit set correctly');
+
+  $helper = $e->lsf_helper();
+  ok ($helper->no_bsub, 'helper: no_bsub is true');
+};
+
+subtest 'options and error capture' => sub {
+  plan tests => 6;
+
+  my @functions_in_order = qw(
+    run_archival_in_progress
+    upload_auto_qc_to_qc_database
+    run_run_archived
+    run_qc_complete
+    update_warehouse_post_qc_complete
+  );
+
+  my $ref = {
+    function_order        => \@functions_in_order,
+    runfolder_path        => $runfolder_path,
+    spider                => 0,
+    definitions_file_path => "$test_dir/definitions.json",
+    execute               => 0
+  };
+
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[/t/data];
+  my $p = npg_pipeline::pluggable->new($ref);
+  lives_ok { $p->main(); } q{no error running main without execution };
+  
+  $ref->{'execute'} = 1;
+  $ref->{'no_bsub'} = 1;
+  $p = npg_pipeline::pluggable->new($ref);
+  lives_ok { $p->main(); } q{no error running main in no_bsub mode};
+
+  $ref->{'no_bsub'} = 0;
+  local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients
+  $p = npg_pipeline::pluggable->new($ref);
+  lives_ok { $p->main(); } q{no error running main with mock LSF client};
+
+  # soft-link bresume command to /bin/false so that it fails
+  my $bin = "$test_dir/bin";
+  mkdir $bin;
+  symlink '/bin/false', "$bin/bresume";
+  local $ENV{'PATH'} = join q[:], $bin, $ENV{'PATH'};
+  throws_ok { npg_pipeline::pluggable->new($ref)->main() }
+    qr/Failed to submit command to LSF/, q{error running main};
+
+  $ref->{'interactive'} = 1;
+  lives_ok { npg_pipeline::pluggable->new($ref)->main() }
+    'no failure in interactive mode';
+
+  $ref->{'interactive'} = 0;
+  # soft-link bkill command to /bin/false so that it fails
+  symlink '/bin/false', "$bin/bkill";
+  throws_ok { npg_pipeline::pluggable->new($ref)->main() }
+    qr/Failed to submit command to LSF/, q{error running main};
 };
 
 subtest 'positions and spidering' => sub {
   plan tests => 12;
+
+ local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients 
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   my $p = npg_pipeline::pluggable->new(
       id_run         => 1234,
       run_folder     => q{123456_IL2_1234},
       runfolder_path => $runfolder_path,
-      no_bsub        => 1,
-      spider         => 0,
+      spider         => 0
   );
   ok(!$p->spider, 'spidering is off');
   is (join( q[ ], $p->positions), '1 2 3 4 5 6 7 8', 'positions array');
