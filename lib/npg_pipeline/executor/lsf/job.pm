@@ -174,6 +174,48 @@ sub _command_lsf {
   return q['] . $self->definition()->command() .q['];
 }
 
+=head2 create_array_string
+
+ Takes an array of integers, and converts them to an LSF job array string
+ for appending to teh LSF job name.
+
+ my $sArrayString = $obj->create_array_string( 1,4,5,6,7,10... );
+
+=cut
+
+sub create_array_string {
+  my ($self, @lsf_indices) = @_;
+
+  my ($start_run, $end_run);
+  my $ret = q{};
+  foreach my $entry ( @lsf_indices ) {
+    # have we already started looping through
+    if ( defined $end_run ) {
+    # if the number is consecutive, increment end of the run
+      if ( $entry == $end_run + 1 ) {
+        $end_run = $entry;
+        # otherwise, finish up that run, which may just be a single number
+      } else {
+        if ( $start_run != $end_run ) {
+          $ret .= q{-} . $end_run;
+        }
+        $ret .= q{,} . $entry;
+        $start_run = $end_run = $entry;
+      }
+    # we haven't looped through at least once, so set up
+    } else {
+      $ret .= $entry;
+      $start_run = $end_run = $entry;
+    }
+  }
+
+  if ( $start_run != $end_run ) {
+    $ret .= q{-} . $end_run ;
+  }
+
+  return q{[} . $ret . q{]};
+}
+
 1;
 
 __END__

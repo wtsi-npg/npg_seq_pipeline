@@ -195,8 +195,8 @@ subtest 'specifying functions via function_order' => sub {
   lives_ok { $p->main() } q{no error running main};
 };
 
-subtest 'propagating options to the executor and helper' => sub {
-  plan tests => 24;
+subtest 'propagating options to the executor' => sub {
+  plan tests => 21;
 
   my @functions_in_order = qw(
     run_archival_in_progress
@@ -245,10 +245,6 @@ subtest 'propagating options to the executor and helper' => sub {
     ok (!$e->$predicate, "executor: $attr is not set");
   }
 
-  my $helper = $e->lsf_helper();
-  isa_ok ($helper, 'npg_pipeline::executor::lsf::helper');
-  ok (!$helper->no_bsub, 'helper: no_bsub is false');
-
   for my $attr (@boolean_attrs) {
     $ref->{$attr} = 1;
   }
@@ -264,9 +260,6 @@ subtest 'propagating options to the executor and helper' => sub {
   is ($e->job_name_prefix, 'my', 'job_name_prefix set correctly');
   is ($e->job_priority, 80, 'job_priority set correctly');
   is ($e->array_cpu_limit, 4, 'array_cpu_limit set correctly');
-
-  $helper = $e->lsf_helper();
-  ok ($helper->no_bsub, 'helper: no_bsub is true');
 };
 
 subtest 'options and error capture' => sub {
