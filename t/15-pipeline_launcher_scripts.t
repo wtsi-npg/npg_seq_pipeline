@@ -21,7 +21,7 @@ my $bin = $curdir . q[/bin];
   my $tmp_dir = $util->temp_directory();
   local $ENV{TEST_DIR} = $tmp_dir;
 
-  my $out = `$bin/npg_pipeline_central --spider --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo 2>&1`;
+  my $out = `$bin/npg_pipeline_central --spider --no_bsub --no_sf_resource --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo 2>&1`;
   like($out,
   qr/Error initializing pipeline: Error while spidering/,
   'error in spidering when pre-set samplesheet does not exist');
@@ -33,7 +33,7 @@ my $bin = $curdir . q[/bin];
   my $tmp_dir = $util->temp_directory();
   local $ENV{TEST_DIR} = $tmp_dir;
 
-  my $out = `$bin/npg_pipeline_central --no-spider --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo 2>&1`;
+  my $out = `$bin/npg_pipeline_central --no-spider --no_bsub --no_sf_resource --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo 2>&1`;
   like($out,
   qr/Handler for 'dodo' is not registered/,
   'error when function does not exist');
@@ -49,12 +49,12 @@ my $bin = $curdir . q[/bin];
   local $ENV{TEST_DIR} = $tmp_dir;
  
   lives_ok { qx{
-    $bin/npg_pipeline_post_qc_review --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234};}
+    $bin/npg_pipeline_post_qc_review --no_bsub --no_sf_resource --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234};}
     q{ran bin/npg_pipeline_post_qc_review};
   ok(!$CHILD_ERROR, qq{Return code of $CHILD_ERROR});
 
   lives_ok { qx{
-    $bin/npg_pipeline_post_qc_review --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234  --function_list some}; }
+    $bin/npg_pipeline_post_qc_review --no_bsub --no_sf_resource --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234  --function_list some}; }
     q{ran bin/npg_pipeline_post_qc_review with non-exisitng function list};
   ok($CHILD_ERROR, qq{Child error $CHILD_ERROR});
 }

@@ -83,6 +83,7 @@ t/20-function-seqchksum_comparator.t
 t/20-function-status.t
 t/21-references_adapters.t
 t/30-executor-lsf.t
+t/30-executor-lsf-job.t
 t/50-npg_pipeline-daemon-archival.t
 t/50-npg_pipeline-daemon-analysis.t
 t/60-npg_tracking-daemon-analysis.t

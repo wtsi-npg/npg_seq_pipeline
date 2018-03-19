@@ -1,23 +1,17 @@
 package npg_pipeline::executor::lsf::job;
 
 use Moose;
-use Readonly;
-use English qw{-no_match_vars};
+use MooseX::StrictConstructor;
+use namespace::autoclean;
+use List::MoreUtils qw(uniq);
 use Carp;
-use List::MoreUtils qw/ uniq /;
+use Readonly;
+
+use npg_pipeline::function::definition;
 
 with 'npg_pipeline::executor::lsf::options';
 
 our $VERSION = '0';
-
-Readonly::Array my @COMPONENTS => qw/
-                     queue
-                     job_name
-                     command
-                     log_file
-                                    /;
-
-Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
 
 =head1 NAME
 
@@ -25,171 +19,385 @@ npg_pipeline::executor::lsf::job
 
 =head1 SYNOPSIS
 
-Work in progress
+=head1 DESCRIPTION
+
+LSF job definition factory.
 
 =head1 SUBROUTINES/METHODS
 
 =cut
 
-has 'definition' => (
-  isa      => 'npg_pipeline::function::definition',
+Readonly::Scalar my $POSITION_MULTIPLIER => 10_000;
+
+##################################################################
+################## Public attributes #############################
+##################################################################
+
+=head2 definition
+
+An array of function definition objects for this LSF job.
+An attribute, required, the array cannot be empty.
+
+=cut
+
+has 'definitions' => (
+  isa      => 'ArrayRef[npg_pipeline::function::definition]',
   is       => 'ro',
   required => 1,
 );
 
-has 'function_name' => (
-  isa      => 'Str',
-  is       => 'ro',
-  required => 1,
-);
+=head2 upstream_job_ids
+
+An array of LSF job ids this job should depend on.
+An attribute, defaults to an empty array.
+
+=cut
 
 has 'upstream_job_ids' => (
   isa      => 'ArrayRef',
   is       => 'ro',
   required => 1,
+  default  => sub {return [];},
+);
+
+=head2 lsf_conf
+
+A hash reference with LSF-relevant configuration.
+An attribure, defaults to an empty hash.
+
+=cut
+
+has 'lsf_conf' => (
+  isa      => 'HashRef',
+  is       => 'ro',
+  required => 1,
+  default  => sub {return {};},
 );
 
 =head2 fs_resource
 
-Returns the fs_resource for the given runfolder_path
+fs resource for this LSF job.
+An string attribute, defaults to an undefined value.
 
-=cut 
+=cut
 
 has 'fs_resource' => (
-  is         => 'ro',
-  isa        => 'Str',
-  required    => 0,
+  is       => 'ro',
+  isa      => 'Maybe[Str]',
+  required => 1,
+  default  => undef,
 );
 
-=head2 fs_resource_string
+=head2 is_array.
 
-Returns a resource string for the bsub command in format
-
-  -R 'select rusage[nfs_sf=8]'
-  -R 'select[nfs_12>=0] rusage[nfs_sf=8]' # we would like to include this, but it doesn't work with lsf6.1
-
-optionally, can take a hashref which contains a resource string to modify and a value to use for the resource counter and
-number of slots it will take (for example the number of processors)
-
-  my $sSfResourceString = $oClass->fs_resource_string( {
-    total_counter => 56, # defaults to 72 - doesn't work with lsf6.1, so don't bother
-    counter_slots_per_job => 4, # defaults to 8
-    resource_string => q{-R 'select[mem>8000] rusage[mem=8000] span[hosts=1]'}
-  } );
+A boolean attribute. Is set to true if this LSF job should
+be submitted as a job array. Cannot be set via a constructor.
 
 =cut
 
-sub fs_resource_string {
-  my ( $self, $arg_refs ) = @_;
-  my $resource_string = $arg_refs->{'resource_string'} || q{-R 'rusage[]'}; # q{-R 'select[] rusage[]'}; for when we can get a differen version of lsf
-  my ( $rusage ) = $resource_string =~ /rusage\[(.*?)\]/xms;
-  $rusage ||= q{};
-  my $new_rusage = $rusage;
-  if (!$self->no_sf_resource()) {
-    if ( $new_rusage ) {
-      $new_rusage .= q{,};
-    }
-    $new_rusage .= $self->_fs_resource() . q{=} . ( $arg_refs->{'counter_slots_per_job'} || $self->general_values_conf()->{default_resource_slots} );
-    my $seq_irods = $arg_refs->{'seq_irods'};
-    if($seq_irods){
-      $new_rusage .= qq{,seq_irods=$seq_irods};
+has 'is_array' => (
+  is         => 'ro',
+  isa        => 'Bool',
+  lazy_build => 1,
+  init_arg   => {},
+);
+sub _build_is_array {
+  my $self = shift;
+  return (scalar @{$self->definitions()} != 1);
+}
+
+=head2 commands
+
+A hash reference with all commands for this LSF job.
+This attribute cannot be set via a constructor.
+If the value of is_array attribute is set to false,
+contains one entry. In case of a job array, the
+keys are the indexes of the proposed job array.
+
+=cut
+
+has 'commands' => (
+  is         => 'ro',
+  isa        => 'HashRef',
+  lazy_build => 1,
+  init_arg   => {},
+);
+sub _build_commands {
+  my $self = shift;
+  my $commands = {};
+  foreach my $d (@{$self->definitions()}) {
+    $commands->{$self->_array_index($d)} = $d->command();
+  }
+  return $commands;
+}
+
+=head2 params
+
+Options of the proposed LSF job as an array reference.
+This attribute cannot be set via a constructor.
+To be used with the bsub command, the array members
+should be concatenated using a singe white space.
+The parameters do not contain a command that should
+be executed by the LSF job.
+
+Each array member represents a full definition, ie
+both the bsub command option and its value separated
+by a white space. 
+
+As a minimum, the parameters contain the job name,
+including array definition if necessary, and log
+file path.
+
+=cut
+
+has 'params' => (
+  is         => 'ro',
+  isa        => 'Str',
+  lazy_build => 1,
+  init_arg   => {},
+);
+sub _build_params {
+  my $self = shift;
+  my @params = grep { defined }   # filter out undefined results
+               map  { $self->$_ } # apply method
+               map  { q(_) . $_ } # generate private method name
+               qw/ 
+                   priority
+                   dependencies
+                   queue
+                   job_name
+                   memory
+                   cpu_host
+                   fs_slots
+                   irods_slots
+                   preexec
+                 /;
+  return join q[ ], @params;
+}
+
+=head2 BUILD
+
+Called by Moose at the end of object instantiation.
+Checks object's attributes.
+
+=cut
+
+sub BUILD {
+  my $self = shift;
+  if (!@{$self->definitions}) {
+    croak 'Array of definitions cannot be empty';
+  }
+  return;
+}
+
+##################################################################
+############## Public methods ####################################
+##################################################################
+
+=head2 jjob_name
+
+The value returned by this method is derived
+from one of the job definition objects. The
+same applies to command_preexec, log_file_dir,
+num_cpus, num_hosts, memory, queue, fs_slots_num,
+reserve_irods_slots, array_cpu_limit and
+apply_array_cpu_limit methods.
+
+=head2 jcommand_preexec
+=head2 jlog_file_dir
+=head2 jnum_cpus
+=head2 jnum_hosts
+=head2 jmemory
+=head2 jqueue
+=head2 jfs_slots_num
+=head2 jreserve_irods_slots
+=head2 jarray_cpu_limit
+=head2 japply_array_cpu_limit
+=cut
+
+my $delegation = sub {
+  ##no critic (RegularExpressions::ProhibitComplexRegexes)
+  my %alist = map { q[j].$_ => $_ }
+              grep { not m{\A (?: composition |
+                                  identifier  |
+                                  created_by  |
+                                  created_on  |
+                                  excluded    |
+                                  command     |
+                                  immediate_mode
+                               ) \Z}smx }
+    npg_pipeline::function::definition->meta()
+                                      ->get_attribute_list();
+  return \%alist;
+};
+
+has '_lsf_definition' => (
+  isa        => 'npg_pipeline::function::definition',
+  is         => 'ro',
+  lazy_build => 1,
+  handles    => $delegation->(),
+);
+sub _build__lsf_definition {
+  my $self = shift;
+  return $self->definitions()->[0];
+}
+
+##################################################################
+############## Private methods ###################################
+##################################################################
+
+sub _priority {
+  my $self = shift;
+  if ($self->has_job_priority()) {
+    return q[-sp ] . $self->job_priority();
+  }
+  return;
+}
+
+sub _dependencies {
+  my $self = shift;
+  if (@{$self->upstream_job_ids()}) {
+    my @job_ids = map { qq[done($_)] }
+                  uniq
+                  sort { $a <=> $b }
+                  @{$self->upstream_job_ids()};
+    return q{-w'}.(join q{ && }, @job_ids).q{'};
+  }
+  return;
+}
+
+sub _cpu_host {
+  my $self = shift;
+  my $s;
+  if ($self->jnum_cpus()) {
+    $s = q[-n ] . join q[,], @{$self->jnum_cpus()};
+    if ($self->jnum_hosts()) {
+      $s .= sprintf q( -R 'span[hosts=%i]'), $self->jnum_hosts();
     }
   }
-  $resource_string =~ s/rusage\[${rusage}\]/rusage[${new_rusage}]/xms;
-  return $resource_string;
+  return $s;
 }
 
-=head2 lsb_jobindex
-
-Returns a useable string which can be dropped into the command which will be launched in the bsub job, where you
-need $LSB_JOBINDEX, as this doesn't straight convert if it is required as part of a longer string
-
-=cut
-
-sub lsb_jobindex {
-  return q{`echo $}. q{LSB_JOBINDEX`};
+sub _fs_slots {
+  my $self = shift;
+  if ($self->fs_resource && $self->jfs_slots_num()) {
+    return sprintf q(-R 'rusage[%s=%i]'),
+           $self->fs_resource, $self->jfs_slots_num();
+  }
+  return;
 }
 
-=head2 generate_command
+sub _preexec {
+  my $self = shift;
+  if ($self->jcommand_preexec()) {
+    return sprintf q[-E '%s'], $self->jcommand_preexec();
+  }
+  return;
+}
 
-=cut
+sub _irods_slots {
+  my $self = shift;
+  if ($self->jreserve_irods_slots()) {
+    return sprintf q(-R 'rusage[seq_irods=%i]'),
+           $self->jreserve_irods_slots();
+  }
+  return;
+}
 
-sub generate_command {
+sub _memory {
+  my $self = shift;
+  my $m = $self->jmemory();
+  if ($m) {
+    return qq(-M ${m} -R 'select[mem>${m}] rusage[mem=${m}]');
+  }
+  return;
+}
+
+sub _queue {
   my $self = shift;
 
-  my @command = qw/bsub/;
-  foreach my $f (@COMPONENTS) {
-    my $method = q[_] . $f . '_lsf';
-    push @command, $self->$method();
+  my $q = $self->jqueue() . '_queue';
+  my $queue = $self->lsf_conf->{$q};
+  if ($queue) {
+    $queue = q[-q ] . $queue;
+  } else {
+    carp "lsf config file does not have definition for $q";
   }
 
-  return q[ ], @command;
+  return $queue;
+}
+
+sub _log_file {
+  my $self = shift;
+
+  my $dir = $self->jlog_file_dir();
+
+  my $log_name = $self->jjob_name() . q[.%I];
+  if ($self->is_array()) {
+    $log_name .= q[.%J];
+  }
+  $log_name   .= q[.out];
+  return q[-o ] . join q[/], $dir, $log_name;
 }
 
 sub _job_name {
   my $self = shift;
-  return $self->definition()->job_name() || $self->function_name();
-}
 
-sub _prerequisites_lsf {
-  my ($self, @job_ids) = @_;
-  if (!@job_ids) {
-    $self->logcroak(q{List of job ids is expected});
+  my $job_name = $self->jjob_name();
+  my $prefix   = $self->has_job_name_prefix()
+                 ? $self->job_name_prefix()
+                 : $self->lsf_conf()->{'job_name_prefix'};
+  if ($prefix) {
+    $job_name  = join q[_], $prefix, $job_name;
   }
-  @job_ids = map { qq[done($_)] }
-             uniq
-             sort { $a <=> $b }
-             @job_ids;
-  return q{-w'}.(join q{ && }, @job_ids).q{'};
-}
 
-sub _queue_lsf {
-  my $self = shift;
-  my $q = $self->definition()->hints()->{'queue'} || 'default_queue';
-  $q = $self->_config->{$q} or croak qq[Failed to get LSF queue name for '$q'];
-  return $q;
-}
-
-sub _log_file_lsf {
-  my $self = shift;
-  if (!$self->definition()->has_log_file_dir()) {
-    croak 'Log file directory is required';
+  if ($self->is_array()) {
+    $job_name .= $self->_array_string();
   }
-  my $log_file = $self->_job_name();
-  $log_file = join q[/], $self->definition()->log_file_dir(), $log_file;
-  return join q[ ], q[-o], $log_file;
-}
 
-sub _job_name_lsf {
-  my $self = shift;
-  return q[-J] . $self->_job_name();
-}
-
-sub _command_lsf {
-  my $self = shift;
-
-  if (!$self->definition()->has_command()) {
-    croak 'Command is required';
+  if (!$self->no_array_cpu_limit()) {
+    my $l = $self->jarray_cpu_limit();
+    if (!$l && $self->japply_array_cpu_limit()) {
+      $l = $self->lsf_conf->{'array_cpu_limit'};
+    }
+    if ($l) {
+      $job_name .= q[%] . $l;
+    }
   }
-  return q['] . $self->definition()->command() .q['];
+
+  return qq[-J '$job_name'];
 }
 
-=head2 create_array_string
+sub _array_index {
+  my ($self, $d) = @_;
 
- Takes an array of integers, and converts them to an LSF job array string
- for appending to teh LSF job name.
+  my $index = $d->identifier();
+  if ($d->has_composition) {
+    my $c = $d->composition();
+    if ($c->num_components != 1) {
+      croak 'Cannot deal with multi-component composition';
+    }
+    my $component = $c->get_component(0);
+    $index = defined $component->tag_index()
+      ? $component->position() * $POSITION_MULTIPLIER + $component->tag_index()
+      : $component->position();
+  }
+  return $index;
+}
 
- my $sArrayString = $obj->create_array_string( 1,4,5,6,7,10... );
+#####
+# Converts a list of integers to an LSF job array string
+# for appending to the LSF job name.
+#
+sub _array_string {
+  my $self = shift;
 
-=cut
-
-sub create_array_string {
-  my ($self, @lsf_indices) = @_;
+  my @lsf_indices = sort { $a <=> $b } keys %{$self->commands()};
 
   my ($start_run, $end_run);
   my $ret = q{};
   foreach my $entry ( @lsf_indices ) {
-    # have we already started looping through
+    # have we already started looping hrough
     if ( defined $end_run ) {
     # if the number is consecutive, increment end of the run
       if ( $entry == $end_run + 1 ) {
@@ -216,11 +424,11 @@ sub create_array_string {
   return q{[} . $ret . q{]};
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;
 
 __END__
-
-=head1 DESCRIPTION
 
 =head1 DIAGNOSTICS
 
@@ -232,9 +440,15 @@ __END__
 
 =item Moose
 
-=item Readonly
+=item namespace::autoclean
+
+=item MooseX::StrictConstructor
+
+=item List::MoreUtils
 
 =item Carp
+
+=item Readonly
 
 =back
 

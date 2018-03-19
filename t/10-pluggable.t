@@ -187,6 +187,7 @@ subtest 'specifying functions via function_order' => sub {
     runfolder_path        => $runfolder_path,
     spider                => 0,
     definitions_file_path => "$test_dir/definitions.json",
+    no_sf_resource        => 1,
     no_bsub               => 0
   );
   is($p->id_run, 1234, 'run id set correctly');
@@ -278,7 +279,8 @@ subtest 'options and error capture' => sub {
     runfolder_path        => $runfolder_path,
     spider                => 0,
     definitions_file_path => "$test_dir/definitions.json",
-    execute               => 0
+    execute               => 0,
+    no_sf_resource        => 1,
   };
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[/t/data];
@@ -341,6 +343,7 @@ subtest 'positions and spidering' => sub {
       lanes          => [1,2],
       definitions_file_path => "$test_dir/definitions.json",
       spider         => 0,
+      no_sf_resource => 1,
   );
   is (join( q[ ], $p->positions), '1 2', 'positions array');
   is (join( q[ ], $p->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
@@ -357,6 +360,7 @@ subtest 'positions and spidering' => sub {
       interactive    => 1,
       definitions_file_path => "$test_dir/definitions.json",
       spider         => 0,
+      no_sf_resource => 1,
   );
   ok($p->interactive, 'start job will not be resumed');
   lives_ok { $p->main() } "running main for $function, interactively";
@@ -373,6 +377,7 @@ subtest 'positions and spidering' => sub {
       repository       => q{t/data/sequence},
       id_flowcell_lims => 2015,
       spider           => 0,
+      no_sf_resource   => 1,
   );
   mkdir $p->archive_path;
   mkdir $p->qc_path;

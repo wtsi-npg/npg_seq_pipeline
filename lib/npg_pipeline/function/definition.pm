@@ -255,6 +255,7 @@ has 'queue' => (
   isa        => 'Str',
   is         => 'ro',
   lazy_build => 1,
+  predicate  => 'has_queue',
 );
 sub _build_queue {
   return $DEFAULT_QUEUE;

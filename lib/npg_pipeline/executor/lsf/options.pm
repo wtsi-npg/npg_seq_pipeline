@@ -116,6 +116,8 @@ has q{array_cpu_limit} => (
   q{The largest number of CPUs that an LSF job array can use at a time},
 );
 
+no Moose::Role;
+
 1;
 
 __END__

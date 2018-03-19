@@ -41,6 +41,7 @@ npg_pipeline::pluggable
 ##################################################################
 ################## Public attributes #############################
 ###### which will be available as script arguments ###############
+########## unless their metaclass is NoGetopt ####################
 ##################################################################
 
 ############## Boolean flags #####################################
@@ -179,7 +180,8 @@ has q{definitions_file_path} => (
 );
 sub _build_definitions_file_path {
   my $self = shift;
-  return $self->log_file_path() . $FUNCTION_DAG_FILE_TYPE;
+  return join q[/], $self->analysis_path(),
+                    $self->_log_file_name() . $FUNCTION_DAG_FILE_TYPE;
 }
 
 =head2 function_graph
@@ -290,8 +292,13 @@ sub _build_executor {
   # The following attributes are not recognised by MooseX::AttributeCloner;
   # NoGetopt metaclass might be the reason. So copying by reference explicitly.
   #
-  for my $aname (qw/function_graph function_definitions/) {
+  for my $aname (qw/ function_graph function_definitions /) {
     $attrs->{$aname} = $self->$aname;
+  }
+  if ($self->executor_type() eq $DEFAULT_EXECUTOR_TYPE) { # LSF
+    my $path = $self->definitions_file_path();
+    $path =~ s/$FUNCTION_DAG_FILE_TYPE\Z/.commands4jobs$FUNCTION_DAG_FILE_TYPE/xms;
+    $attrs->{'commands4jobs_file_path'} = $path;
   }
   return $module->new($attrs);
 }
@@ -331,8 +338,12 @@ sub main {
     $when = q{saving definitions};
     $self->_save_function_definitions();
     if ($self->execute()) {
+      $self->info(sprintf q{***** Definitions will be submitted for execution to %s *****},
+                          uc $self->executor_type());
       $when = q{submitting for execution};
       $self->executor()->execute($self->function_graph, $self->function_definitions);
+    } else {
+      $self->info(q{***** Submission for execution is switched off *****});
     }
   } catch {
     $error = qq{Error $when: $_};
@@ -421,7 +432,7 @@ has q{_log_file_name} => (
 sub _build__log_file_name {
   my $self = shift;
   my $log_name = $self->_script_name . q{_} . $self->id_run();
-  $log_name .= q{_} . $self->timestamp() . q{.log};
+  $log_name .= q{_} . $self->random_string() . q{.log};
   # If $self->script_name includes a directory path, change / to _
   $log_name =~ s{/}{_}gmxs;
   return $log_name;
@@ -452,9 +463,10 @@ has q{_registry} => (
 
 sub _clear_env_vars {
   my $self = shift;
+  $self->info();
   foreach my $var_name (npg_pipeline::cache->env_vars()) {
     if ($ENV{$var_name}) {
-      $self->warn(qq[Unsetting $var_name]);
+      $self->info(qq[Unsetting $var_name]);
       $ENV{$var_name} = q{}; ## no critic (Variables::RequireLocalizedPunctuationVars)
     }
   }
@@ -554,16 +566,12 @@ sub _save_function_definitions {
   my $self = shift;
 
   my $file = $self->definitions_file_path();
-  $self->info(qq{***** Writing finction definitions to $file *****});
-  open my $fh, q[>], $file
-    or $self->logcroak(qq{Cannot open $file for writing});
-
-  my $json = JSON->new->convert_blessed;
-  print {$fh} $json->pretty->encode($self->function_definitions)
-    or $self->logcroak(qq{Cannot write to $file});
-
-  close $fh or $self->logerror(qq{Fail to close $file});
-  return;
+  $self->info( q[]);
+  $self->info(qq[***** Writing finction definitions to ${file}]);
+  $self->info( q[]);
+  my $json = JSON->new->convert_blessed->canonical;
+  return write_file($file,
+                    $json->pretty->encode($self->function_definitions));
 }
 
 #####

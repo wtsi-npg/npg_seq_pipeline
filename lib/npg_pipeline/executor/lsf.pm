@@ -2,10 +2,11 @@ package npg_pipeline::executor::lsf;
 
 use Moose;
 use MooseX::StrictConstructor;
-use MooseX::AttributeCloner;
 use namespace::autoclean;
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
 use File::Spec;
+use File::Slurp;
+use JSON;
 use Try::Tiny;
 use List::MoreUtils qw(uniq);
 use Readonly;
@@ -14,11 +15,11 @@ use English qw(-no_match_vars);
 use npg_tracking::util::abs_path qw(abs_path network_abs_path);
 use npg_pipeline::executor::lsf::job;
 
-extends 'npg_tracking::illumina::runfolder';
 with qw( 
          npg_pipeline::executor::lsf::options
          npg_pipeline::roles::accessor
          WTSI::DNAP::Utilities::Loggable
+         MooseX::AttributeCloner
        );
 
 our $VERSION = '0';
@@ -48,6 +49,17 @@ Submission of function definition for execution to LSF.
 ##################################################################
 ################## Public attributes #############################
 ##################################################################
+
+=head2 analysis_path
+
+=cut
+
+has 'analysis_path' => (
+  isa      => 'Str',
+  is       => 'ro',
+  required => 0,
+);
+
 
 =head2 lsf_conf
 
@@ -97,15 +109,41 @@ has 'fs_resource' => (
   lazy_build => 1,
 );
 sub _build_fs_resource {
-  my $self = @_;
+  my $self = shift;
   if (!$self->no_sf_resource()) {
     my $r = join '_', grep {$_}
                       File::Spec->splitdir(
                         network_abs_path
-                        path_to_mount_point($self->runfolder_path()));
+                        path_to_mount_point($self->analysis_path()));
     return join q(),$r=~/\w+/xsmg;
   }
   return;
+}
+
+=head2 commands4jobs
+
+=cut
+
+has 'commands4jobs' => (
+  is      => 'ro',
+  isa     => 'HashRef',
+  default => sub {return {};},
+);
+
+=head2 commands4jobs_file_path
+
+=cut
+
+has 'commands4jobs_file_path' => (
+  is         => 'ro',
+  isa        => 'Str',
+  lazy_build => 1,
+);
+sub _build_commands4jobs_file_path {
+  my $self = shift;
+  my $d = $self->function_definitions()->[0];
+  my $name = join q[_], 'commands4jobs', $d->identifier(), $d->timestamp();
+  return join q[/], $self->analysis_path(), $name;
 }
 
 ##################################################################
@@ -114,7 +152,6 @@ sub _build_fs_resource {
 
 =head2 execute
 
-
 =cut
 
 sub execute {
@@ -122,6 +159,7 @@ sub execute {
 
   try {
     $self->_submit();
+    $self->_save_commands4jobs();
     if (!$self->interactive) {
       $self->_resume();
     }
@@ -139,11 +177,12 @@ sub execute {
 
 has '_common_attrs' => (
   is         => 'ro',
-  isa        => 'Str',
+  isa        => 'HashRef',
   lazy_build => 1,
 );
 sub _build__common_attrs {
   my $self = shift;
+  $self->lsf_conf();
   # Using MooseX::AttributeCloner functionality
   my %attrs = %{$self->attributes_as_hashref()};
   my $meta = npg_pipeline::executor::lsf::job->meta();
@@ -158,6 +197,17 @@ sub _build__common_attrs {
 ##################################################################
 ############## Private methods ###################################
 ##################################################################
+
+sub _save_commands4jobs {
+  my $self = shift;
+
+  my $file = $self->commands4jobs_file_path();
+  $self->info();
+  $self->info(qq[***** Writing commands for jobs to ${file}]);
+  my $json = JSON->new->pretty->canonical;
+
+  return write_file($file, $json->encode($self->commands4jobs()));
+}
 
 sub _string_job_ids2list {
   my $string_ids = shift;
@@ -199,14 +249,14 @@ sub _resume {
   # state and if the value of the interactive attribute is false, resume
   # the pipeline_start job thus allowing the pipeline jobs to start running.
   #
+  $self->info();
   if ($suspended_start_job_id) {
-    $self->info(qq{Suspended start job, id $suspended_start_job_id});
+    $self->info(qq{***** Suspended start job, id $suspended_start_job_id});
     if (!$self->interactive) {
-      $self->info(qq{Resuming start job, id $suspended_start_job_id});
       $self->_execute_lsf_command(qq{bresume $suspended_start_job_id});
     }
   } else {
-    $self->warn(q{No suspended start job.});
+    $self->warn(q{***** No suspended start job.});
   }
 
   return;
@@ -247,7 +297,7 @@ sub _submit {
       #####
       # Probably a few function names were given explicitly.
       #
-      $self->info(q{***** Function }.$function.q{ is not defined *****});
+      $self->info(qq{***** Function $function is not defined *****});
       next;
     }
 
@@ -256,18 +306,19 @@ sub _submit {
       $self->logcroak("No definition array for function $function");
     }
     if(!@{$definitions}) {
-      $self->logcroak("Definition array for function $function is empty");
+      $self->logcroak(qq{Definition array for function $function is empty});
     }
 
-    $self->info(q{***** Processing }.$function.q{ *****});
+    $self->info();
+    $self->info(qq{***** Processing $function *****});
     if (@{$definitions} == 1) {
       my $d = $definitions->[0];
       if ($d->immediate_mode) {
-        $self->info(q{***** Function }.$function.q{ has been already run *****});
+        $self->info(qq{***** Function $function has been already run});
         next;
       }
       if ($d->excluded) {
-        $self->info(q{***** Function }.$function.q{ is excluded *****});
+        $self->info(qq{***** Function $function is excluded});
         next;
       }
     }
@@ -286,11 +337,10 @@ sub _submit {
 
     my @ids = $self->_submit_function($function, @depends_on);
     if (!@ids) {
-      $self->logcroak('A list of LSF job ids should be returned');
+      $self->logcroak(q{A list of LSF job ids should be returned});
     }
 
     my $job_ids = _list_job_ids2string(@ids);
-    $self->info(qq{Saving job ids: ${job_ids}\n});
     $g->set_vertex_attribute($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME, $job_ids);
   }
   return;
@@ -299,7 +349,42 @@ sub _submit {
 sub _submit_function {
   my ($self, $function_name, @depends_on) = @_;
 
-  return (1);
+  my $definitions = {};
+  #####
+  # Separate out definitions with different memory requirements
+  #
+  foreach my $d (@{$self->function_definitions()->{$function_name}}) {
+    my $key = join q[-], $function_name, $d->memory() || q[];
+    push @{$definitions->{$key}}, $d;
+  }
+
+  my @lsf_ids = ();
+  foreach my $da (values %{$definitions}) {
+
+    my %args = %{$self->_common_attrs()};
+    $args{'definitions'}      = $da;
+    $args{'upstream_job_ids'} = \@depends_on;
+    $args{'fs_resource'}      = $self->fs_resource();
+    my $job = npg_pipeline::executor::lsf::job->new(\%args);
+
+    my $file = $self->commands4jobs_file_path();
+    ##no critic (Variables::ProhibitPunctuationVars)
+    my $command = $job->is_array()
+      ? qq{eval $(cat $file | jq (\".[$function_name]\" | \"[\$LSB_JOBID]\" | \"[\$LSB_JOBINDEX]\"))}
+      : (values %{$job->commands()})[0];
+    ##use critic
+    my $bsub_cmd =  sprintf q(bsub %s '%s'),
+                       $job->params(),
+                       $command;
+    my $lsf_job_id = $self->_execute_lsf_command($bsub_cmd);
+    if ($job->is_array()) {
+      $self->commands4jobs->{$function_name}->{$lsf_job_id} = $job->commands();
+    }
+
+    push @lsf_ids, $lsf_job_id;
+  }
+
+  return @lsf_ids;
 }
 
 #####
@@ -333,6 +418,9 @@ sub _execute_lsf_command {
   my $job_id;
   my $error = 0;
 
+  $self->info( q{***** Will submit the following command to LSF:});
+  $self->info(qq{***** $cmd });
+
   if ($self->no_bsub()) {
     $job_id =  $DEFAULT_JOB_ID_FOR_NO_BSUB;
   } else {
@@ -345,8 +433,8 @@ sub _execute_lsf_command {
       $job_id = qx/$cmd/;
       if ($CHILD_ERROR) {
         $error = 1;
-        $self->error(qq{Error code $CHILD_ERROR. } .
-                     qq{Error attempting ($count) to submit to LSF $cmd.});
+        $self->error(
+          qq[Error $CHILD_ERROR submitting command to LSF, attempt No ${count}.]);
         sleep $min_sleep ** $count;
         $count++;
       } else {
@@ -357,13 +445,17 @@ sub _execute_lsf_command {
   }
 
   if ($error) {
-    $self->logcroak('Failed to submit command to LSF');
+    $self->logcroak('***** Failed to submit command to LSF');
   } else {
     if ($cmd =~ /\Absub/xms) {
       ($job_id) = $job_id =~ /(\d+)/xms;
     } else {
       $job_id = q[];
     }
+    my $m = sprintf q{Command successfully %s LSF%s},
+                    $self->no_bsub ? 'prepared for' : 'submitted to',
+                    $job_id ? q{, job id } . $job_id : q{};
+    $self->info(qq{***** $m *****});
   }
 
   return $job_id;
@@ -389,6 +481,8 @@ __END__
 
 =item MooseX::StrictConstructor
 
+=item MooseX::AttributeCloner
+
 =item namespace::autoclean
 
 =item MooseX::AttributeCloner
@@ -405,9 +499,11 @@ __END__
 
 =item Readonly
 
-=item English
+=item File::Slurp
 
-=item npg_tracking::illumina::runfolder
+=item JSON
+
+=item English
 
 =item npg_tracking::util::abs_path
 
