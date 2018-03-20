@@ -6,26 +6,16 @@ use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Log::Log4perl qw(:levels);
 
-use npg_pipeline::pluggable;
+use npg_pipeline::function::current_analysis_link;
 
 our $VERSION = '0';
 
-my $p = npg_pipeline::pluggable
-        ->new_with_options(function_list => 'post_qc_review');
-
-my $level   = $p->verbose() ? $DEBUG : $INFO;
-my $logfile = $p->log_file_path();
-##no critic (InputOutput::RequireCheckedSyscalls)
-print {*STDERR} "Pipeline log file: ${logfile}\n";
-##use critic
 my $layout = '%d %-5p %c - %m%n';
 Log::Log4perl->easy_init({layout => $layout,
-                          level  => $level,
-                          file   => $logfile,
+                          level  => $INFO,
                           utf8   => 1});
 
-$p->redirect_stderr();
-$p->main();
+npg_pipeline::function::current_analysis_link->new_with_options()->make_link();
 
 0;
 
@@ -33,27 +23,21 @@ __END__
 
 =head1 NAME
 
-npg_pipeline_post_qc_review
+ npg_pipeline_create_summary_link
 
 =head1 USAGE
 
-npg_pipeline_post_qc_review --run_folder=<run_folder> (--id_run <id_run> --verbose --lane <lane_position> --analysis_path <Data/path/to/gerald/dir>)
+ npg_pipeline_create_summary_link --run_folder=<run_folder>
 
 =head1 REQUIRED ARGUMENTS
 
-  run_folder and/or id_run is required
+ run_folder
 
 =head1 OPTIONS
 
-  run_folder - provide the run_folder name
-  id_run - provide the run id
-  verbose - adds additional logging
-  analysis_path - provide a Data/path/to/GERALD to be used instead of searching for it (useful if multiple analysis have been done)
-  lane - option to run only on a selected lane
-
 =head1 EXIT STATUS
 
-0
+ 0
 
 =head1 CONFIGURATION
 
@@ -61,8 +45,8 @@ npg_pipeline_post_qc_review --run_folder=<run_folder> (--id_run <id_run> --verbo
 
 =head1 DESCRIPTION
 
- Pipeline for archival of Illumina sequencing data for an individual run.
- Creates jobs that are run under LSF.
+ One of the scripts invoked by the analysis pipeline. Creates a soft link in the run folder,
+ which points to one of the subdirectories in the current analysis folder. 
 
 =head1 SUBROUTINES/METHODS
 
@@ -78,11 +62,13 @@ npg_pipeline_post_qc_review --run_folder=<run_folder> (--id_run <id_run> --verbo
 
 =item warnings
 
+=item FindBin
+
 =item lib
 
 =item Log::Log4perl
 
-=item FindBin
+=item npg_pipeline::run::folder::link
 
 =back
 
@@ -93,7 +79,6 @@ npg_pipeline_post_qc_review --run_folder=<run_folder> (--id_run <id_run> --verbo
 =head1 AUTHOR
 
 Andy Brown
-Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 

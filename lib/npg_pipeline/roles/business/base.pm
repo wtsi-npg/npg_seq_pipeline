@@ -166,22 +166,6 @@ sub _lims4lane {
   return $lane;
 }
 
-=head2 is_spiked_lane
-
-Returns true if the lane is spiked or if the force_phix_split
-flag is set ti true.
-
-=cut
-
-sub is_spiked_lane {
-  my ($self, $position) = @_;
-  if ($self->force_phix_split) {
-    return 1;
-  }
-  my $spike_tag_index = $self->_lims4lane($position)->spiked_phix_tag_index;
-  return (defined $spike_tag_index && $spike_tag_index);
-}
-
 =head2 get_tag_index_list
 
 Returns an array of sorted tag indices for a lane, including tag zero.
@@ -250,64 +234,6 @@ has q{repository} => ( isa       => q{Str},
                        is        => q{ro},
                        required  => 0,
                        predicate => q{has_repository},);
-
-=head2 control_ref
-
- Path to a default control reference for a default aligner
-
-=cut
-
-has q{control_ref} => (isa           => q{Str},
-                       is            => q{ro},
-                       lazy_build    => 1,
-                       documentation => q{path to a default control reference for a default aligner},);
-
-sub _build_control_ref {
-  my ( $self ) = @_;
-  return $self->get_control_ref();
-}
-
-=head2 get_control_ref
-
-Path to a default control reference for an aligner given by the argument or, if no argument is given, fo a default aligner
-
-=cut
-
-sub get_control_ref {
-  my ($self, $aligner) = @_;
-
-  $aligner ||= $self->pb_cal_pipeline_conf()->{default_aligner};
-  my $arg_refs = {
-    aligner => $aligner,
-    species => $self->general_values_conf()->{spiked_species},
-  };
-  if ( $self->repository() ) {
-    $arg_refs->{repository} = $self->repository();
-  }
-
-  return Moose::Meta::Class->create_anon_class(
-    roles => [qw/npg_tracking::data::reference::find/])->new_object($arg_refs)->refs->[0];
-}
-
-=head2 control_snp_file
-
-Path to a default control reference snp file.
-
-=cut
-
-sub control_snp_file {
-  my $self = shift;
-
-  my $path = $self->get_control_ref(q[snps]);
-  if (!$path) {
-    $self->logcroak('Failed to retrieve control SNP file');
-  }
-  $path .= q[.rod];
-  if (!-e $path) {
-    $self->logcroak("SNP file $path does not exist");
-  }
-  return $path;
-}
 
 =head2 get_study_library_sample_names
 
@@ -403,21 +329,6 @@ sub metadata_cache_dir {
   }
 
   return $ds[0];
-}
-
-=head2 fq_filename
-
-Generates fastq file names.
-
-=cut
-
-sub fq_filename {
-  my ($self, $position, $tag_index, $end) = @_;
-  return sprintf '%i_%i%s%s.fastq',
-    $self->id_run,
-    $position,
-    $end               ? "_$end"      : q[],
-    defined $tag_index ? "#$tag_index" : q[];
 }
 
 =head2 path_in_outgoing

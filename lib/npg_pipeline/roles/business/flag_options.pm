@@ -17,14 +17,23 @@ npg_pipeline::roles::business::flag_options
 
 =head1 DESCRIPTION
 
-This role gives some boolean flag options which should be set on construction (or via the command line if using MooseX::Getopt)
-so that you can turn off global features/functions without having to necessarily specify them.
-
-  --no_summary_link
-
-These would globally stop anything being done should functions be requested which do these (either directly, or by job submission)
+This role gives some boolean flag options which can be set
+on construction (or via the command line if using MooseX::Getopt)
+so that you can turn off global features/functions.
 
 =head1 SUBROUTINES/METHODS
+
+=head2 verbose
+
+Boolean option to switch on verbose mode
+
+=cut
+
+has q{verbose} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  documentation => q{Boolean decision to switch on verbose mode},
+);
 
 =head2 no_summary_link
 
@@ -38,18 +47,6 @@ has q{no_summary_link} => (
   lazy          => 1,
   builder       => '_default_to_local',
   documentation => q{Turn off creating a Latest_Summary link},
-);
-
-=head2 no_fix_config_files
-
-flag option to request that config files are not checked and fixed
-
-=cut
-
-has q{no_fix_config_files} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{Request that config files are not checked and fixed (where fixing is appropriate)},
 );
 
 =head2 no_array_cpu_limit
@@ -160,32 +157,6 @@ sub _build_local {
   return $self->no_bsub ? 1 : 0;
 }
 
-=head2 spatial_filter
-
-Do we want to use the spatial_filter program?
-
-=cut
-
-has q{spatial_filter} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  default       => 1,
-  documentation => q{Use the spatial_filter program},
-);
-
-=head2 spider
-
-Toggles spider (creating/reusing cached LIMs data), true by default
-
-=cut
-
-has q{spider} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  default       => 1,
-  documentation => q{Toggles spider (creating/reusing cached LIMs data), true by default},
-);
-
 1;
 __END__
 
@@ -211,7 +182,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2017 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

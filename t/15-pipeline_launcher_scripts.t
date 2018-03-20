@@ -10,12 +10,9 @@ local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH}
 local $ENV{http_proxy} = 'http://wibble';
 local $ENV{no_proxy} = q[];
 
-my $util = t::util->new();
-
 my $curdir = cwd();
 my $bin = $curdir . q[/bin];
 
-# Script failures
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{/does/not/exist.csv};
 
@@ -38,11 +35,10 @@ my $bin = $curdir . q[/bin];
 
   my $out = `$bin/npg_pipeline_central --no-spider --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo 2>&1`;
   like($out,
-  qr/Can't locate object method "dodo" via package "npg_pipeline::pluggable::harold::central"/,
+  qr/Handler for 'dodo' is not registered/,
   'error when function does not exist');
 }
 
-# Script passes
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
   local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = q{t}; # no chache here

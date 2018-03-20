@@ -1,0 +1,126 @@
+{
+   "graph" : {
+      "edges" : [
+         {
+            "relation" : "dependsOn",
+            "source" : "pipeline_start",
+            "target" : "run_archival_in_progress"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "update_ml_warehouse",
+            "source" : "run_archival_in_progress"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "update_ml_warehouse",
+            "target" : "archive_to_irods_ml_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "upload_fastqcheck_to_qc_database",
+            "source" : "archive_to_irods_ml_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "upload_illumina_analysis_to_qc_database",
+            "source" : "archive_to_irods_ml_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "upload_auto_qc_to_qc_database",
+            "source" : "archive_to_irods_ml_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "run_run_archived",
+            "source" : "upload_auto_qc_to_qc_database"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "run_run_archived",
+            "source" : "upload_illumina_analysis_to_qc_database"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "run_run_archived",
+            "source" : "upload_fastqcheck_to_qc_database"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_run_archived",
+            "target" : "run_qc_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "update_ml_warehouse_post_qc_complete",
+            "source" : "run_qc_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "update_warehouse_post_qc_complete",
+            "source" : "run_qc_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "pipeline_end",
+            "source" : "update_warehouse_post_qc_complete"
+         },        
+         {
+            "relation" : "dependsOn",
+            "target" : "pipeline_end",
+            "source" : "update_ml_warehouse_post_qc_complete"
+         }         
+      ],
+      "nodes" : [
+         {
+            "id" : "pipeline_start",
+            "label" : "pipeline_start"
+         },
+         {
+            "id" : "run_archival_in_progress",
+            "label" : "run_archival_in_progress"
+         },
+         {
+            "id" : "update_ml_warehouse",
+            "label" : "update_ml_warehouse"
+         },
+         {
+            "id" : "archive_to_irods_ml_warehouse",
+            "label" : "archive_to_irods_ml_warehouse"
+         },
+         {
+            "id" : "upload_fastqcheck_to_qc_database",
+            "label" : "upload_fastqcheck_to_qc_database"
+         },
+         {
+            "id" : "upload_illumina_analysis_to_qc_database",
+            "label" : "upload_illumina_analysis_to_qc_database"
+         },
+         {
+            "id" : "upload_auto_qc_to_qc_database",
+            "label" : "upload_auto_qc_to_qc_database"
+         },
+         {
+            "id" : "run_run_archived",
+            "label" : "run_run_archived"
+         },
+         {
+            "id" : "run_qc_complete",
+            "label" : "run_qc_complete"
+         },
+         {
+            "id" : "update_ml_warehouse_post_qc_complete",
+            "label" : "update_ml_warehouse_post_qc_complete"
+         },
+         {
+            "id" : "update_warehouse_post_qc_complete",
+            "label" : "update_warehouse_post_qc_complete"
+         },
+         {
+            "id" : "pipeline_end",
+            "label" : "pipeline_end"
+         }
+      ]
+   }
+}
