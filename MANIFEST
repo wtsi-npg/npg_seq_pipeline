@@ -1,13 +1,14 @@
-bin/npg_pipeline_create_summary_link
+bin/npg_pipeline_analysis_runner
 bin/npg_pipeline_archival_runner
 bin/npg_pipeline_central
 bin/npg_pipeline_check_cluster_count
-bin/npg_pipeline_analysis_runner
+bin/npg_pipeline_create_summary_link
+bin/npg_pipeline_execute_saved_command
 bin/npg_pipeline_job_env_to_threads
 bin/npg_pipeline_post_qc_review
 bin/npg_pipeline_preexec_references
-bin/npg_pipeline_seqchksum_comparator
 bin/npg_pipeline_script_must_be_unique_runner
+bin/npg_pipeline_seqchksum_comparator
 Build.PL
 Changes
 data/config_files/function_list_central.json

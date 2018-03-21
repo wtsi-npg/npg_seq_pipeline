@@ -32,6 +32,8 @@ Readonly::Scalar my $DEFAULT_MAX_TRIES            => 3;
 Readonly::Scalar my $DEFAULT_MIN_SLEEP            => 1;
 Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB   => 50;
 
+Readonly::Scalar my $SCRIPT4SAVED_COMMANDS => q[npg_pipeline_execute_saved_command];
+
 =head1 NAME
 
 npg_pipeline::executor::lsf
@@ -368,9 +370,8 @@ sub _submit_function {
     my $job = npg_pipeline::executor::lsf::job->new(\%args);
 
     my $file = $self->commands4jobs_file_path();
-    ##no critic (Variables::ProhibitPunctuationVars)
     my $command = $job->is_array()
-      ? qq{eval $(cat $file | jq (\".[$function_name]\" | \"[\$LSB_JOBID]\" | \"[\$LSB_JOBINDEX]\"))}
+      ? "$SCRIPT4SAVED_COMMANDS --path $file --function_name $function_name"
       : (values %{$job->commands()})[0];
     ##use critic
     my $bsub_cmd =  sprintf q(bsub %s '%s'),
