@@ -163,27 +163,6 @@ around q{function_list} => sub {
   return $file;
 };
 
-=head2 definitions_file_path
-
-A path to a JSON file where the function definitions will be
-serialised to. An attribute. The value defaults to a path
-returned by the log_file_path method with a json extention
-appended.  
-
-=cut
-
-has q{definitions_file_path} => (
-  isa           => q{Str},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{Full file path of the file with function definition},
-);
-sub _build_definitions_file_path {
-  my $self = shift;
-  return join q[/], $self->analysis_path(),
-                    $self->_log_file_name() . $FUNCTION_DAG_FILE_TYPE;
-}
-
 =head2 function_graph
 
 A Graph::Directed object representing the functions to be run
@@ -296,9 +275,8 @@ sub _build_executor {
     $attrs->{$aname} = $self->$aname;
   }
   if ($self->executor_type() eq $DEFAULT_EXECUTOR_TYPE) { # LSF
-    my $path = $self->definitions_file_path();
-    $path =~ s/$FUNCTION_DAG_FILE_TYPE\Z/.commands4jobs$FUNCTION_DAG_FILE_TYPE/xms;
-    $attrs->{'commands4jobs_file_path'} = $path;
+    $attrs->{'commands4jobs_file_path'} =
+      $self->_output_file_path(q[.commands4jobs] . $FUNCTION_DAG_FILE_TYPE);
   }
   return $module->new($attrs);
 }
@@ -424,6 +402,19 @@ has q{_script_name} => (
   init_arg => undef,
 );
 
+has q{_output_file_name_root} => (
+  isa        => q{Str},
+  is         => q{ro},
+  lazy_build => 1,
+);
+sub _build__output_file_name_root {
+  my $self = shift;
+  my $name = join q[_], $self->_script_name, $self->id_run(), $self->random_string();
+  # If $self->script_name includes a directory path, change / to _
+  $name =~ s{/}{_}gmxs;
+  return $name;
+}
+
 has q{_log_file_name} => (
   isa        => q{Str},
   is         => q{ro},
@@ -431,11 +422,7 @@ has q{_log_file_name} => (
 );
 sub _build__log_file_name {
   my $self = shift;
-  my $log_name = $self->_script_name . q{_} . $self->id_run();
-  $log_name .= q{_} . $self->random_string() . q{.log};
-  # If $self->script_name includes a directory path, change / to _
-  $log_name =~ s{/}{_}gmxs;
-  return $log_name;
+  return $self->_output_file_name_root() . q{.log};
 }
 
 has q{_cloned_attributes} => (
@@ -460,6 +447,18 @@ has q{_registry} => (
 ##################################################################
 ############## Private methods ###################################
 ##################################################################
+
+sub _output_file_path {
+  my ($self, $suffix) = @_;
+  $suffix ||= q[];
+  return join q[/], $self->analysis_path(),
+                    $self->_output_file_name_root() . $suffix;
+}
+
+sub _definitions_file_path {
+  my $self = shift;
+  return $self->_output_file_path(q[.definitions] . $FUNCTION_DAG_FILE_TYPE);
+}
 
 sub _clear_env_vars {
   my $self = shift;
@@ -565,7 +564,7 @@ sub _schedule_functions {
 sub _save_function_definitions {
   my $self = shift;
 
-  my $file = $self->definitions_file_path();
+  my $file = $self->_definitions_file_path();
   $self->info( q[]);
   $self->info(qq[***** Writing finction definitions to ${file}]);
   $self->info( q[]);

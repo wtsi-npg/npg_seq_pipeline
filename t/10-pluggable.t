@@ -186,7 +186,6 @@ subtest 'specifying functions via function_order' => sub {
     function_order        => \@functions_in_order,
     runfolder_path        => $runfolder_path,
     spider                => 0,
-    definitions_file_path => "$test_dir/definitions.json",
     no_sf_resource        => 1,
     no_bsub               => 0
   );
@@ -211,7 +210,6 @@ subtest 'propagating options to the executor' => sub {
     function_order        => \@functions_in_order,
     runfolder_path        => $runfolder_path,
     spider                => 0,
-    definitions_file_path => "$test_dir/definitions.json",
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
@@ -278,7 +276,6 @@ subtest 'options and error capture' => sub {
     function_order        => \@functions_in_order,
     runfolder_path        => $runfolder_path,
     spider                => 0,
-    definitions_file_path => "$test_dir/definitions.json",
     execute               => 0,
     no_sf_resource        => 1,
   };
@@ -341,7 +338,6 @@ subtest 'positions and spidering' => sub {
       function_order => [$function],
       runfolder_path => $runfolder_path,
       lanes          => [1,2],
-      definitions_file_path => "$test_dir/definitions.json",
       spider         => 0,
       no_sf_resource => 1,
   );
@@ -358,7 +354,6 @@ subtest 'positions and spidering' => sub {
       runfolder_path => $runfolder_path,
       lanes          => [1,2],
       interactive    => 1,
-      definitions_file_path => "$test_dir/definitions.json",
       spider         => 0,
       no_sf_resource => 1,
   );
