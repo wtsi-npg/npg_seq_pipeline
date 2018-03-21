@@ -93,6 +93,9 @@ has 'fs_resource' => (
 A boolean attribute. Is set to true if this LSF job should
 be submitted as a job array. Cannot be set via a constructor.
 
+Only run-level jobs should be executed directly. For consistency,
+lane-level job for one lane will be treated as arrays.
+
 =cut
 
 has 'is_array' => (
@@ -103,7 +106,8 @@ has 'is_array' => (
 );
 sub _build_is_array {
   my $self = shift;
-  return (scalar @{$self->definitions()} != 1);
+  return @{$self->definitions()} == 1
+         ? $self->definitions->[0]->has_composition() : 1;
 }
 
 =head2 commands
