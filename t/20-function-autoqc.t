@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 9;
+use Test::More tests => 8;
 use Test::Exception;
 use File::Path qw/make_path/;
 use t::util;
@@ -309,33 +309,6 @@ subtest 'tag_metrics' => sub {
   $da = $qc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
   ok ($da->[0]->excluded, 'step is excluded');
-};
-
-subtest 'gc_bias' => sub {
-  plan tests => 4;
-
-  SKIP: {
-    skip 'no legacy gc_bias window_depth tool available', 4 if not `which window_depth`;
-
-    local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
-    local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14353.csv';
-
-    my $qc = npg_pipeline::function::autoqc->new(
-      id_run       => 14353,
-      qc_to_run    => 'gc_bias',
-      repository   => 't',
-      is_indexed   => 1,
-      archive_path => $tmp,
-    );
-    ok( !$qc->_should_run({id_run => 14353, position => 1}, 1),
-      q{lane is a pool - do not run gc bias on a lane} );
-    ok( $qc->_should_run({id_run => 14353, position => 1, tag_index => 1}, 1),
-      q{lane is a pool - run gc bias on a plex} );
-    ok( $qc->_should_run({id_run => 14353, position => 1}, 0),
-      q{lane is not a pool - run gc bias on a lane} );
-    ok( !$qc->_should_run({id_run => 14353, position => 1, tag_index => 1}, 0),
-      q{lane is not pool - do not run gc bias on a plex} );    
-  }
 };
 
 subtest 'genotype and gc_fraction' => sub {

@@ -63,8 +63,7 @@ has q{_is_check4target_file} => (
 sub _build__is_check4target_file {
   my $self = shift;
   ##no critic (RegularExpressions::RequireBracesForMultiline)
-  return $self->qc_to_run() =~ /^ gc_bias |
-                                  verify_bam_id |
+  return $self->qc_to_run() =~ /^ verify_bam_id |
                                   genotype |
                                   pulldown_metrics $/smx;
 }
