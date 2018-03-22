@@ -2,7 +2,6 @@ package npg_pipeline::function::collection;
 
 use Moose;
 use namespace::autoclean;
-use File::Spec;
 
 use npg_pipeline::function::definition;
 
@@ -23,112 +22,9 @@ npg_pipeline::function::collection
 
 =head1 DESCRIPTION
 
-A collection of pipeline functions' implementations
+Definition for a step producing fastqcheck files and cached fastq files.
 
 =head1 SUBROUTINES/METHODS
-
-=head2 update_warehouse
-
-Creates command definition to update run data in the npg tables
-of the warehouse.
-
-=cut
-
-sub update_warehouse {
-  my ($self, $flag) = @_;
-  return $self->_update_warehouse_command('warehouse_loader', $flag);
-}
-
-=head2 update_warehouse_post_qc_complete
-
-Creates command definition to update run data in the npg tables
-of the warehouse at a stage when the runfolder is moved to the
-outgoing directory.
-
-=cut
-
-sub update_warehouse_post_qc_complete {
-  my $self = shift;
-  return $self->update_warehouse('post_qc_complete');
-}
-
-=head2 update_ml_warehouse
-
-Creates command definition to update run data in the npg tables
-of the ml warehouse.
-
-=cut
-
-sub update_ml_warehouse {
-  my ($self, $flag) = @_;
-  return $self->_update_warehouse_command('npg_runs2mlwarehouse', $flag);
-}
-
-=head2 update_ml_warehouse_post_qc_complete
-
-Creates command definition to update run data in the npg tables
-of the ml warehouse at a stage when the runfolder is moved to the
-outgoing directory.
-
-=cut
-
-sub update_ml_warehouse_post_qc_complete {
-  my $self = shift;
-  return $self->update_ml_warehouse('post_qc_complete');
-}
-
-sub _update_warehouse_command {
-  my ($self, $loader_name, $post_qc_complete) = @_;
-
-  my $d;
-  my $id_run = $self->id_run;
-
-  if ($self->no_warehouse_update) {
-    $self->warn(q{Update to warehouse is switched off.});
-    $d = npg_pipeline::function::definition->new(
-      created_by   => __PACKAGE__,
-      created_on   => $self->timestamp(),
-      identifier   => $id_run,
-      excluded     => 1
-    );
-  } else {
-
-    my $command = qq{$loader_name --verbose --id_run $id_run};
-    if ($loader_name eq 'warehouse_loader') {
-      $command .= q{ --lims_driver_type };
-      $command .= $post_qc_complete ? 'ml_warehouse_fc_cache' : 'samplesheet';
-    }
-    my $job_name = join q{_}, $loader_name, $id_run, $self->pipeline_name;
-    my $path = $self->make_log_dir($self->recalibrated_path());
-
-    my $prereq = q[];
-    if ($post_qc_complete) {
-      $path = $self->path_in_outgoing($path);
-      $prereq = "[ -d '$path' ]";
-    }
-
-    my $ref = {
-      created_by   => __PACKAGE__,
-      created_on   => $self->timestamp(),
-      identifier   => $id_run,
-      command      => $command,
-      queue        =>
-        $npg_pipeline::function::definition::SMALL_QUEUE
-    };
-
-    if ($post_qc_complete) {
-      $path = $self->path_in_outgoing($path);
-      $job_name .= '_postqccomplete';
-      $ref->{'command_preexec'} = "[ -d '$path' ]";
-    }
-    $ref->{'log_file_dir'} = $path;
-    $ref->{'job_name'}     = $job_name;
-
-    $d = npg_pipeline::function::definition->new($ref);
-  }
-
-  return [$d];
-}
 
 =head2 bam2fastqcheck_and_cached_fastq
 
@@ -173,49 +69,6 @@ sub bam2fastqcheck_and_cached_fastq {
   return \@definitions;
 }
 
-=head2 pipeline_start
-
-First function that might be called by the pipeline.
-Creates and returns a token job definition.
-
-=cut
-
-sub pipeline_start {
-  my $self = shift;
-  return $self->_token_job('pipeline_start');
-}
-
-=head2 pipeline_end
-
-Last 'catch all' function that might be called by the pipeline.
-Creates and returns a token job definition. 
-
-=cut
-
-sub pipeline_end {
-  my $self = shift;
-  return $self->_token_job('pipeline_end');
-}
-
-sub _token_job {
-  my ($self, $function_name) = @_;
-
-  my $job_name = join q{_}, $function_name, $self->id_run(), $self->pipeline_name();
-
-  my $d = npg_pipeline::function::definition->new(
-    created_by    => __PACKAGE__,
-    created_on    => $self->timestamp(),
-    identifier    => $self->id_run(),
-    job_name      => $job_name,
-    command       => '/bin/true',
-    log_file_dir  => $self->runfolder_path(),
-    queue         =>
-      $npg_pipeline::function::definition::SMALL_QUEUE,
-  );
-
-  return [$d];
-}
-
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -232,8 +85,6 @@ __END__
 =item Moose
 
 =item namespace::autoclean
-
-=item File::Spec
 
 =back
 

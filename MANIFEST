@@ -38,7 +38,9 @@ lib/npg_pipeline/function/runfolder_scaffold.pm
 lib/npg_pipeline/function/seq_alignment.pm
 lib/npg_pipeline/function/seq_to_irods_archiver.pm
 lib/npg_pipeline/function/seqchksum_comparator.pm
+lib/npg_pipeline/function/start_stop.pm
 lib/npg_pipeline/function/status.pm
+lib/npg_pipeline/function/warehouse_archiver.pm
 lib/npg_pipeline/executor/lsf.pm
 lib/npg_pipeline/executor/lsf/job.pm
 lib/npg_pipeline/executor/lsf/options.pm
@@ -81,7 +83,9 @@ t/20-function-runfolder_scaffold.t
 t/20-function-seq_alignment.t
 t/20-function-seq_to_irods_archiver.t
 t/20-function-seqchksum_comparator.t
+t/20-function-start_stop.t
 t/20-function-status.t
+t/20-function-warehouse_archiver.t
 t/21-references_adapters.t
 t/30-executor-lsf.t
 t/30-executor-lsf-job.t

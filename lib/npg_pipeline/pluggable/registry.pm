@@ -1,6 +1,7 @@
 package npg_pipeline::pluggable::registry;
 
 use Moose;
+use namespace::autoclean;
 use Carp;
 use Readonly;
 
@@ -13,10 +14,11 @@ npg_pipeline::pluggable::registry
 =head1 SYNOPSIS
 
   my $r = npg_pipeline::pluggable::registry->new();
+  $r->get_function_implementor('function_name');
 
 =head1 DESCRIPTION
 
-A collection of common pipeline functions
+Mapping from function names to modules implementing them.
 
 =head1 SUBROUTINES/METHODS
 
@@ -24,34 +26,33 @@ A collection of common pipeline functions
 
 Readonly::Hash my %REGISTRY => (
 
-  'pipeline_start' => {'collection' => 'pipeline_start'},
-  'pipeline_end'   => {'collection' => 'pipeline_end'},
+  'pipeline_start' => {'start_stop' => 'pipeline_start'},
+  'pipeline_end'   => {'start_stop' => 'pipeline_end'},
 
-  'update_warehouse' => {'collection' => 'update_warehouse'},
-  'update_ml_warehouse' => {'collection' => 'update_ml_warehouse'},
+  'update_warehouse'    => {'warehouse_archiver' => 'update_warehouse'},
+  'update_ml_warehouse' => {'warehouse_archiver' => 'update_ml_warehouse'},
   'update_warehouse_post_qc_complete' =>
-    {'collection' => 'update_warehouse_post_qc_complete'},
+    {'warehouse_archiver' => 'update_warehouse_post_qc_complete'},
   'update_ml_warehouse_post_qc_complete' =>
-    {'collection' => 'update_ml_warehouse_post_qc_complete'},
+    {'warehouse_archiver' => 'update_ml_warehouse_post_qc_complete'},
 
-  'create_archive_directory' => {'runfolder_scaffold' => 'create_dir'},
+  'create_archive_directory'     => {'runfolder_scaffold' => 'create_dir'},
   'bam2fastqcheck_and_cached_fastq' =>
     {'collection' => 'bam2fastqcheck_and_cached_fastq'},
-  'create_summary_link_analysis' =>
-    {'current_analysis_link' => 'create'},
-  'create_empty_fastq' => {'autoqc_input_scaffold' => 'create'},
+  'create_summary_link_analysis' => {'current_analysis_link' => 'create'},
+  'create_empty_fastq'           => {'autoqc_input_scaffold' => 'create'},
 
   'illumina_basecall_stats' => {'illumina_basecall_stats' => 'create'},
-  'p4_stage1_analysis' => {'p4_stage1_analysis' => 'generate'},
-  'seq_alignment' => {'seq_alignment' => 'generate'},
+  'p4_stage1_analysis'      => {'p4_stage1_analysis' => 'generate'},
+  'seq_alignment'           => {'seq_alignment' => 'generate'},
 
-  'archive_logs' => {'log_files_archiver' => 'create'},
+  'archive_logs'                            => {'log_files_archiver' => 'create'},
   'upload_illumina_analysis_to_qc_database' => {'illumina_qc_archiver' => 'create'},
-  'upload_fastqcheck_to_qc_database' => {'fastqcheck_archiver' => 'create'},
-  'upload_auto_qc_to_qc_database'=> {'autoqc_archiver' => 'create'},
+  'upload_fastqcheck_to_qc_database'        => {'fastqcheck_archiver' => 'create'},
+  'upload_auto_qc_to_qc_database'           => {'autoqc_archiver' => 'create'},
 
   'bam_cluster_counter_check'=> {'cluster_count' => 'create'},
-  'seqchksum_comparator' => {'seqchksum_comparator' => 'create'},
+  'seqchksum_comparator'     => {'seqchksum_comparator' => 'create'},
                                );
 
 Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>
@@ -143,6 +144,12 @@ sub _build__registry {
 
 =head2 get_function_implementor
 
+  my $i = $registry->get_function_implementor('function_name');
+  my $module = $i->{'module'};
+  my $method = $i->{'method'};
+  my $params = $i->{'params'}; # Might be undefined
+  my $definitions = $module->new($params)->method();
+
 =cut
 
 sub get_function_implementor {
@@ -157,8 +164,10 @@ sub get_function_implementor {
   return $implementor;
 }
 
-no Moose;
+__PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 DIAGNOSTICS
@@ -170,6 +179,8 @@ __END__
 =over
 
 =item Moose
+
+=item namespace::autoclean
 
 =item Carp
 
