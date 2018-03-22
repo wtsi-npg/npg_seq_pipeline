@@ -30,16 +30,18 @@ if (!$job_id) {
 }
 my $job_index = $ENV{'LSB_JOBINDEX'};
 if (!$job_index) {
-  croak 'LSB_JOBINDEX is not defined';
+  carp 'LSB_JOBINDEX is not defined';
 }
 
-my $description = "function $fn, LSF job id $job_id, array index $job_index";
+my $description = "function $fn, LSF job id $job_id";
 
 my $h = from_json(slurp $path);
-if (!exists $h->{$fn}->{$job_id}->{$job_index}) {
-  croak "No entry for $description in file $path";
+my $command = $h->{$fn}->{$job_id};
+if ($job_index) {
+  $description .= ", array index $job_index";
+  $command = $command->{$job_index};
 }
-my $command = $h->{$fn}->{$job_id}->{$job_index};
+
 if (!$command) {
   croak "Command is not defined for $description in file $path";
 }
@@ -58,10 +60,24 @@ npg_pipeline_execute_saved_command
 
 =head1 SYNOPSIS
 
-bin/npg_pipeline_execute_saved_command --path foo --function_name fn
+  bin/npg_pipeline_execute_saved_command --path foo --function_name fn
 
 =head1 DESCRIPTION
 
+A helper script for indirect execution of commands under LSF. The script
+will be executed by an LSF job. The script extracts a command from a
+file given by the --path attribute for a function given by the
+--function_name attribute. The scripts uses LSB_JOBID and LSB_JOBINDEX
+environment variables to find an entry for an LSF job the script is
+running under.
+
+Exit with error if LSB_JOBID value is not defined or the entry
+for the given function for this LSB_JOBID and, optionally, LSB_JOBINDEX
+does not exist.
+
+If the command is found it is executed. The script does not wait for
+the command to return. The script exits with an error if the shell fails
+to start the command.
 
 =head1 USAGE
 
@@ -78,8 +94,7 @@ No additional optional arguments
 
 =head1 EXIT STATUS
 
-1 , 0 if not.
-This satisfies the way that LSF determines if it is OK to proceed with the job in hand, or needs to put it back to pending
+0 if the command extracted and started executing successfully
 
 =head1 SUBROUTINES/METHODS
 

@@ -174,6 +174,7 @@ sub _build_params {
                    cpu_host
                    fs_slots
                    irods_slots
+                   log_file
                    preexec
                  /;
   return join q[ ], @params;
@@ -336,9 +337,9 @@ sub _log_file {
 
   my $dir = $self->jlog_file_dir();
 
-  my $log_name = $self->jjob_name() . q[.%I];
+  my $log_name = $self->jjob_name() . q[.%J];
   if ($self->is_array()) {
-    $log_name .= q[.%J];
+    $log_name .= q[.%I];
   }
   $log_name   .= q[.out];
   return q[-o ] . join q[/], $dir, $log_name;

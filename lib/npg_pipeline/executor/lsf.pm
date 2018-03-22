@@ -369,20 +369,18 @@ sub _submit_function {
     $args{'fs_resource'}      = $self->fs_resource();
     my $job = npg_pipeline::executor::lsf::job->new(\%args);
 
-    my $file = $self->commands4jobs_file_path();
-    my $command = $job->is_array()
-      ? "$SCRIPT4SAVED_COMMANDS --path $file --function_name $function_name"
-      : (values %{$job->commands()})[0];
-    ##use critic
-    my $bsub_cmd =  sprintf q(bsub %s '%s'),
-                       $job->params(),
-                       $command;
-    my $lsf_job_id = $self->_execute_lsf_command($bsub_cmd);
-    if ($job->is_array()) {
-      $self->commands4jobs->{$function_name}->{$lsf_job_id} = $job->commands();
-    }
+    my $bsub_cmd =  sprintf q(bsub %s%s '%s'),
+      $function_name eq $SUSPENDED_START_FUNCTION ? q[-H ] : q[],
+      $job->params(),
+      (join q[ ], $SCRIPT4SAVED_COMMANDS, '--path', $self->commands4jobs_file_path(),
+                                          '--function_name', $function_name);
 
+    my $lsf_job_id = $self->_execute_lsf_command($bsub_cmd);
     push @lsf_ids, $lsf_job_id;
+
+    $self->commands4jobs->{$function_name}->{$lsf_job_id} = $job->is_array()
+                                     ? $job->commands()
+                                     : (values %{$job->commands()})[0];
   }
 
   return @lsf_ids;
