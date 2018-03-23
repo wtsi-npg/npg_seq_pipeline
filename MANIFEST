@@ -7,6 +7,7 @@ bin/npg_pipeline_job_env_to_threads
 bin/npg_pipeline_post_qc_review
 bin/npg_pipeline_preexec_references
 bin/npg_pipeline_seqchksum_comparator
+bin/npg_run_is_deletable
 bin/script_must_be_unique_runner
 Build.PL
 Changes
@@ -45,6 +46,9 @@ lib/npg_pipeline/pluggable/harold/post_qc_review.pm
 lib/npg_pipeline/roles/accessor.pm
 lib/npg_pipeline/roles/business/base.pm
 lib/npg_pipeline/roles/business/flag_options.pm
+lib/npg_pipeline/validation/autoqc_files.pm
+lib/npg_pipeline/validation/common.pm
+lib/npg_pipeline/validation/sequence_files.pm
 lib/npg_pipeline/run/folder/link.pm
 lib/npg_tracking/daemon/analysis.pm
 lib/npg_tracking/daemon/archival.pm
@@ -63,6 +67,8 @@ t/10-pluggable_harold.t
 t/10-pluggable_harold_central.t
 t/10-pluggable_harold_post_qc_review.t
 t/10-script-job_env_to_threads.t
+t/10-validation-autoqc_files.t
+t/10-validation-sequence_files.t
 t/15-pipeline_launcher_scripts.t
 t/20-archive-fastqcheck.t
 t/20-archive_auto_qc_to_db.t
@@ -568,6 +574,9 @@ t/data/fixtures/mlwh/100-StudyUser.yml
 t/data/fixtures/wh/CurrentAliquot.yml
 t/data/fixtures/wh/CurrentLibraryTube.yml
 t/data/fixtures/wh/CurrentSampleTube.yml
+t/data/validation/20405/file_list
+t/data/validation/20405/samplesheet_20405.csv
 t/dbic_util.pm
+t/log4perl_test.conf
 t/perlcriticrc
 t/util.pm
