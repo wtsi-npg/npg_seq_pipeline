@@ -14,7 +14,7 @@ use Readonly;
 use Carp;
 use DateTime;
 use Getopt::Long;
-use English qw(-no_match_vars);
+use English qw{-no_match_vars};
 use List::MoreUtils qw{any none};
 use Log::Log4perl qw{:levels};
 use Try::Tiny;
@@ -38,48 +38,43 @@ Readonly::Scalar my $CRAM_FILE_EXTENSION  => q[cram];
 Readonly::Scalar my $BAM_FILE_EXTENSION   => q[bam];
 Readonly::Scalar my $DEFAULT_IRODS_ROOT   => q[/seq];
 
+Readonly::Array  my @SCRIPT_OPTIONS       => qw(
+                                            help 
+                                            ignore-npg-status
+                                            ignore-time-limit
+                                            ignore-irods-bam
+                                            ignore-autoqc
+                                            lims-driver-type
+                                            remove-staging-tag
+                                            exclude-bam
+                                            collection-root
+                                            collection
+                                            skip-autoqc-check
+                                            verbose
+                                               );
+
 my $opts = {'collection-root'   => $DEFAULT_IRODS_ROOT,
             'skip-autoqc-check' => [],
             'exclude-bam'       => 1 };
 
-## no critic (ValuesAndExpressions::ProhibitImplicitNewlines)
+my @options = map { /collection | driver/xms ? $_.q[=s]  :
+                   (/autoqc-check/xms ? $_.q[=s@] : $_) }
+              @SCRIPT_OPTIONS;
 
-if(!GetOptions($opts, qw(help 
-                         ignore-npg-status
-                         ignore-time-limit
-                         ignore-irods-bam
-                         ignore-autoqc
-                         lims-driver-type=s
-                         remove-staging-tag
-                         exclude-bam
-                         collection-root=s
-                         collection
-                         skip-autoqc-check=s@
-                         verbose)) ||
-     $opts->{help} ||
-     !scalar @ARGV ||
-     scalar @ARGV > 1) {
-  print q[Usage:
-  run_is_deletable <run-id> && do_something
-  run_is_deletable /path/to/run_folder && do_something
+if(!GetOptions($opts, @options) || $opts->{'help'} ||
+   !scalar @ARGV || scalar @ARGV > 1) {
 
-  Options:
-    -verbose
-    -ignore-npg-status
-    -ignore-time-limit
-    -ignore-irods-bam
-    -ignore-autoqc
-    -lims-driver-type
-    -remove-staging-tag
-    -exclude-bam
-    -collection-root
-    -collection 
-    -skip-autoqc-check
-] or croak qq{Error printing help: $EVAL_ERROR};
+  print join qq[\n],
+  q[Usage:],
+  q[run_is_deletable <run-id> && do_something],
+  q[run_is_deletable /path/to/run_folder && do_something],
+  q[],
+  q[Options:],
+  (map { qq[\t--] . $_} @SCRIPT_OPTIONS),
+  q[]
+  or croak qq{Error printing help: $EVAL_ERROR};
   exit 2;
 }
-
-##use critic
 
 my $run = shift @ARGV;
 
