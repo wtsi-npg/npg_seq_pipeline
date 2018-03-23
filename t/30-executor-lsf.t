@@ -2,10 +2,18 @@ use strict;
 use warnings;
 use Test::More tests => 3;
 use Test::Exception;
-use File::Temp qw{ tempdir };
+use File::Temp qw(tempdir);
 use Graph::Directed;
+use Log::Log4perl qw(:levels);
 
 use_ok('npg_pipeline::executor::lsf');
+
+my $tmp = tempdir(CLEANUP => 1);
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $tmp, 'logfile'),
+                          utf8   => 1});
 
 my $ref = {
   lsf_conf             => {},
@@ -61,7 +69,6 @@ subtest 'lsf command execution' => sub {
     'bresume command is not executed, empty string returned');
 
   # soft-link bsub and bkill commands to /bin/false so that they fail
-  my $tmp = tempdir(CLEANUP => 1);
   symlink '/bin/false', "$tmp/bsub";
   symlink '/bin/false', "$tmp/bkill";
   local $ENV{'PATH'} = join q[:], $tmp, $ENV{'PATH'};

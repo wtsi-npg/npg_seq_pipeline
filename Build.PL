@@ -103,6 +103,8 @@ my $builder = $class->new(
           'Test::Log::Log4perl'         => 0,
           'npg_testing::db'             => 0,
           'npg_tracking::util::build'   => 0,
+          'npg_tracking::glossary::composition::component::illumina' => 0,
+          'npg_tracking::glossary::composition' => 0,
          },
 );
 

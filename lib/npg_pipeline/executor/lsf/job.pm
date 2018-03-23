@@ -183,15 +183,56 @@ sub _build_params {
 =head2 BUILD
 
 Called by Moose at the end of object instantiation.
-Checks object's attributes.
+Checks object's attributes. Checks definitions array members for
+consistency.
 
 =cut
 
 sub BUILD {
   my $self = shift;
-  if (!@{$self->definitions}) {
+
+  my @definitions =  @{$self->definitions()};
+  if (!@definitions) {
     croak 'Array of definitions cannot be empty';
   }
+
+  my $deflate = sub {
+    my ($d, $method) = @_;
+    my $v = $_->$method;
+    $v = defined $v ? $v : 0;
+    my $type = ref $v;
+    if ($type) {
+      if ($type ne 'ARRAY') {
+        croak "Unexpected type $type returned by definition method or attribute $method";
+      }
+      $v = join q[ ], @{$v};
+    }
+    return $v;
+  };
+
+  foreach my $attr (_definition_attr_list()) {
+
+    my $has_method = q[has_] . $attr;
+    my @values = uniq
+                 map  { $deflate->($_, $has_method) }
+                 grep { $_->can($has_method) }
+                 @definitions;
+    if (@values > 1) {
+      croak qq[Inconsistent values for definition predicate method $has_method];
+    }
+
+    if ($attr =~ /\A composition | command \Z/smx) {
+      next;
+    }
+
+    @values = uniq
+              map  { $deflate->($_, $attr)  }
+              @definitions;
+    if (@values > 1) {
+      croak qq[Inconsistent values for definition attribute $attr];
+    }
+  }
+
   return;
 }
 
@@ -231,8 +272,8 @@ my $delegation = sub {
                                   command     |
                                   immediate_mode
                                ) \Z}smx }
-    npg_pipeline::function::definition->meta()
-                                      ->get_attribute_list();
+              _definition_attr_list();
+
   return \%alist;
 };
 
@@ -250,6 +291,11 @@ sub _build__lsf_definition {
 ##################################################################
 ############## Private methods ###################################
 ##################################################################
+
+sub _definition_attr_list {
+  return npg_pipeline::function::definition->meta()
+         ->get_attribute_list();
+}
 
 sub _priority {
   my $self = shift;
@@ -303,8 +349,11 @@ sub _preexec {
 sub _irods_slots {
   my $self = shift;
   if ($self->jreserve_irods_slots()) {
-    return sprintf q(-R 'rusage[seq_irods=%i]'),
-           $self->jreserve_irods_slots();
+    my $num_slots = $self->lsf_conf->{'default_lsf_irods_resource'};
+    if (!$num_slots) {
+      croak q[default_lsf_irods_resource not set in the LSF conf file];
+    }
+    return sprintf qq(-R 'rusage[seq_irods=$num_slots]');
   }
   return;
 }

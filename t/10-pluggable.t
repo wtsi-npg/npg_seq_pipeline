@@ -20,7 +20,7 @@ local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
-                          file   => join(q[/], $ENV{PWD}, 'logfile'),
+                          file   => join(q[/], $test_dir, 'logfile'),
                           utf8   => 1});
 
 my $config_dir = 'data/config_files';
