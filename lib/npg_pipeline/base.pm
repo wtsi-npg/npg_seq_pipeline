@@ -8,20 +8,15 @@ use Math::Random::Secure qw{irand};
 
 our $VERSION = '0';
 
+extends 'npg_tracking::illumina::runfolder';
+
 with qw{
         MooseX::Getopt
         WTSI::DNAP::Utilities::Loggable
         npg_pipeline::roles::accessor
-        npg_tracking::illumina::run::short_info
         npg_pipeline::roles::business::base
+        npg_pipeline::roles::business::flag_options
        };
-
-with 'npg_tracking::illumina::run::folder' => {
-       -excludes => [qw(pb_cal_path dif_files_path)]
-     };
-
-with q{npg_tracking::illumina::run::long_info};
-with q{npg_pipeline::roles::business::flag_options};
 
 =head1 NAME
 
@@ -61,17 +56,6 @@ has [qw/ +npg_tracking_schema
          +tracking_run /] => (metaclass => 'NoGetopt',);
 
 has q{+id_run} => (required => 0,);
-
-#####
-# This class ties together short_info and path_info,
-# so the following _build_run_folder will work
-#
-sub _build_run_folder {
-  my ($self) = @_;
-  my @temp = split m{/}xms, $self->runfolder_path();
-  my $run_folder = pop @temp;
-  return $run_folder;
-}
 
 =head2 timestamp
 
@@ -253,11 +237,7 @@ __END__
 
 =item WTSI::DNAP::Utilities::Loggable
 
-=item npg_tracking::illumina::run::short_info
-
-=item npg_tracking::illumina::run::long_info
-
-=item npg_tracking::illumina::run::folder
+=item npg_tracking::illumina::runfolder
 
 =back
 

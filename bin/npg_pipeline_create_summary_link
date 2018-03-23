@@ -68,8 +68,6 @@ __END__
 
 =item Log::Log4perl
 
-=item npg_pipeline::run::folder::link
-
 =back
 
 =head1 INCOMPATIBILITIES

@@ -5,15 +5,19 @@ matrix:
     - perl: "5.22-shrplib"
       dist: precise
       language: perl
-    - dist: xenial
-      # Language is not set to Perl so that the tests run under
-      # system's Perl, which we will try to update.
-      # Setting language to c gives the minimum possible
-      # environment. Setting langiage to something Travis does
-      # not recognise (bash) results in default (Ruby)
-      # and an unusable Postgresql database.
-      language: c
-
+    ######
+    #  Xenial build times out in the second 'sudo -E apt-get' in the
+    #  before_install section. Disable on 23.03.2018 pending investigation.
+    #
+    #- dist: xenial
+    #  # Language is not set to Perl so that the tests run under
+    #  # system's Perl, which we will try to update.
+    #  # Setting language to c gives the minimum possible
+    #  # environment. Setting langiage to something Travis does
+    #  # not recognise (bash) results in default (Ruby)
+    #  # and an unusable Postgresql database.
+    #  language: c
+    
 addons:
   postgresql: "9.3"
 
