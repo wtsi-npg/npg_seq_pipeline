@@ -254,12 +254,9 @@ An LSF queue hint.
 has 'queue' => (
   isa        => 'Str',
   is         => 'ro',
-  lazy_build => 1,
+  writer     => '_set_queue',
   predicate  => 'has_queue',
 );
-sub _build_queue {
-  return $DEFAULT_QUEUE;
-}
 
 =head2 fs_slots_num
 
@@ -331,7 +328,9 @@ sub BUILD {
     if ($self->has_array_cpu_limit && !$self->apply_array_cpu_limit) {
       croak 'array_cpu_limit is set, apply_array_cpu_limit should be set to true';
     }
-    $self->queue; # Build value
+    if (!$self->has_queue) {
+      $self->_set_queue($DEFAULT_QUEUE);
+    }
   }
   return;
 }
