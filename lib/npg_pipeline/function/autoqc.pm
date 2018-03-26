@@ -145,7 +145,7 @@ sub _create_definition_object {
   }
 
   if ($qc_to_run eq q[upstream_tags]) {
-    $ref->{'queue'} = $npg_pipeline::function::definition::SMALL_QUEUE;
+    $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
   }
 
   if ( ($qc_to_run eq 'adapter') || $self->_check_uses_refrepos() ) {

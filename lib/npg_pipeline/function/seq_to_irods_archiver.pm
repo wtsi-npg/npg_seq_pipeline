@@ -31,7 +31,7 @@ sub create {
     $ref->{'log_file_dir'} = $self->make_log_dir($self->recalibrated_path());
     $ref->{'fs_slots_num'} = 1;
     $ref->{'reserve_irods_slots'} = 1;
-    $ref->{'queue'} = $npg_pipeline::function::definition::SMALL_QUEUE;
+    $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
     $ref->{'command_preexec'} =
       qq{npg_pipeline_script_must_be_unique_runner -job_name="$job_name_prefix"};
 

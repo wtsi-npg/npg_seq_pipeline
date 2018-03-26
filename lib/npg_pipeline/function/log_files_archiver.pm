@@ -33,7 +33,7 @@ sub create {
                                $self->make_log_dir($self->recalibrated_path()));
     $ref->{'fs_slots_num'} = 1;
     $ref->{'reserve_irods_slots'} = 1;
-    $ref->{'queue'} = $npg_pipeline::function::definition::SMALL_QUEUE;
+    $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
     $ref->{'command_preexec'} = qq{[ -d '$future_path' ]};
   }
 

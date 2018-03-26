@@ -15,6 +15,15 @@ use_ok('npg_pipeline::pluggable');
 my $util = t::util->new();
 my $test_dir = $util->temp_directory();
 
+my @tools = map { "$test_dir/$_" } qw/bamtofastq blat norm_fit/;
+foreach my $tool (@tools) {
+  open my $fh, '>', $tool or die 'cannot open file for writing';
+  print $fh $tool or die 'cannot print';
+  close $fh or warn 'failed to close file handle';
+}
+chmod 0755, @tools;
+local $ENV{'PATH'} = join q[:], $test_dir, $ENV{'PATH'};
+
 local $ENV{OWNING_GROUP} = q{staff};
 local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 

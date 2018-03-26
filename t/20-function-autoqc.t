@@ -10,8 +10,7 @@ use_ok('npg_pipeline::function::autoqc');
 my $util = t::util->new();
 my $tmp = $util->temp_directory();
 
-my @tools = qw/bamtofastq norm_fit/;
-@tools = map { "$tmp/$_" } @tools;
+my @tools = map { "$tmp/$_" } qw/bamtofastq blat norm_fit/;
 foreach my $tool (@tools) {
   open my $fh, '>', $tool or die 'cannot open file for writing';
   print $fh $tool or die 'cannot print';

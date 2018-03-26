@@ -62,7 +62,7 @@ subtest 'warehouse updates' => sub {
     is ($d->command, $command, "command for $m");
     is ($d->log_file_dir, $log_directory, "log dir for $m");
     is ($d->job_name, $job_name, "job name for $m");
-    is ($d->queue, 'small', 'small queue');
+    is ($d->queue, 'lowload', 'queue');
     if ($postqcc) {
       is ($d->command_preexec, "[ -d '${log_dir_in_outgoing}' ]",
         "preexec command for $m");

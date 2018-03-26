@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 11;
+use Test::More tests => 12;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
@@ -40,6 +40,7 @@ local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
   is ($d->created_on, $afg->timestamp, 'created_on is correct');
   is ($d->identifier, 1234, 'identifier is set correctly');
   ok ($d->immediate_mode, 'immediate mode is true');
+  ok (!$d->has_queue, 'queue is not set');
 
   lives_ok { $afg->create_dir(q{staff}); } q{no error creating archive dir, already exists};
 }

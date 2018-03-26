@@ -112,7 +112,7 @@ sub _update_warehouse_command {
       identifier   => $id_run,
       command      => $command,
       queue        =>
-        $npg_pipeline::function::definition::SMALL_QUEUE
+        $npg_pipeline::function::definition::LOWLOAD_QUEUE
     };
 
     if ($post_qc_complete) {

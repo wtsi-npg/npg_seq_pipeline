@@ -47,7 +47,7 @@ my $pbcal_path = $tmp_dir . q{/nfs/sf45/IL2/analysis/123456_IL2_1234/} . $pbcal;
   ok (!$d->immediate_mode, 'immediate mode is false');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
   ok (!$d->has_memory,'memory is not set');
-  is ($d->queue, 'small', 'small queue');
+  is ($d->queue, 'lowload', 'queue');
   is ($d->fs_slots_num, 1, 'one fs slot is set');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 }

@@ -15,6 +15,15 @@ my $util = t::util->new();
 my $cwd = getcwd();
 my $tdir = $util->temp_directory();
 
+my @tools = map { "$tdir/$_" } qw/bamtofastq blat norm_fit/;
+foreach my $tool (@tools) {
+  open my $fh, '>', $tool or die 'cannot open file for writing';
+  print $fh $tool or die 'cannot print';
+  close $fh or warn 'failed to close file handle';
+}
+chmod 0755, @tools;
+local $ENV{'PATH'} = join q[:], $tdir, $ENV{'PATH'};
+
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
                           file   => join(q[/], $tdir, 'logfile'),

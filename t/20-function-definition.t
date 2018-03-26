@@ -6,18 +6,59 @@ use JSON;
 
 use_ok ('npg_pipeline::function::definition');
 
-subtest 'accessors' => sub {
-  plan tests => 1;
+subtest 'constructor and accessors' => sub {
+  plan tests => 27;
 
-  my $d = npg_pipeline::function::definition->new(
-            created_by   => 'module',
-            created_on   => 'June 25th',
-            job_name     => 'name',
-            identifier   => 2345,
-            command      => 'command',
-            log_file_dir => '/some/dir'
-          );
+  my %init = ( created_by   => 'module',
+               created_on   => 'June 25th',
+               job_name     => 'name',
+               identifier   => 2345,
+               command      => 'command',
+               log_file_dir => '/some/dir' );
+
+  my $d = npg_pipeline::function::definition->new(\%init);
   isa_ok ($d, 'npg_pipeline::function::definition');
+  is ($d->queue(), 'default', 'default queue is set');
+
+  for my $must_have ( qw/job_name identifier
+                         command log_file_dir/ ) {
+  
+    my %i = %init;
+    delete $i{$must_have};
+    throws_ok {npg_pipeline::function::definition->new(\%i)}
+      qr/'$must_have' should be defined/,
+      'error if must have attr is not given';
+    $i{'excluded'} = 1;
+    my $d;
+    lives_ok {$d = npg_pipeline::function::definition->new(\%i)}
+      'no restriction if function is excluded';
+    ok (!$d->has_queue(), 'queue attr is not set');
+    $i{'excluded'} = 0;
+    $i{'immediate_mode'} = 1;
+    lives_ok {$d = npg_pipeline::function::definition->new(\%i)}
+      'no restriction if function is run immediately';
+    ok (!$d->has_queue(), 'queue attr is not set');
+  }
+  
+  my %i = %init;
+  $i{'array_cpu_limit'} = 4;
+  throws_ok {npg_pipeline::function::definition->new(\%i)}
+    qr/array_cpu_limit is set, apply_array_cpu_limit should be set to true/,
+    'error if apply_array_cpu_limit is false and array_cpu_limit is set';
+  $i{'apply_array_cpu_limit'} = 1;
+  $i{'queue'} = 'small';
+  lives_ok {$d = npg_pipeline::function::definition->new(\%i)}
+    'no error if cpu limt attrs are set correctly';
+  is ($d->queue(), 'small', 'queue as set');
+
+  $i{'queue'} = 'large';
+  throws_ok {npg_pipeline::function::definition->new(\%i)}
+    qr/Unrecognised queue \'large\'/,
+    'error if queue value is not recognised';
+  $i{'queue'} = q[];
+  throws_ok {npg_pipeline::function::definition->new(\%i)}
+    qr/Unrecognised queue \'\'/,
+    'error if queue value is not recognised';
 };
 
 subtest 'serialization to JSON' => sub {

@@ -74,7 +74,7 @@ create_analysis();
   ok (!$d->immediate_mode, 'immediate mode is false');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
   ok (!$d->has_memory,'memory is not set');
-  is ($d->queue, 'small', 'small queue');
+  is ($d->queue, 'lowload', 'queue');
   is ($d->fs_slots_num, 1, 'one fs slot is set');
   ok ($d->reserve_irods_slots, 'iRODS slots to be reserved');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';

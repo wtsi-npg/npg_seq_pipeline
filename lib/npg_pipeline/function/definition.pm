@@ -12,10 +12,10 @@ our $VERSION = '0';
 
 with Storage('format' => 'JSON');
 
+Readonly::Scalar our $LOWLOAD_QUEUE => q[lowload];
 Readonly::Scalar our $SMALL_QUEUE   => q[small];
 Readonly::Scalar my  $DEFAULT_QUEUE => q[default];
 
-Readonly::Scalar my $DEFAULT_MIN_CPU_NUM => 1;
 Readonly::Array  my @MUST_HAVE_ATTRS => qw/
                                 job_name
                                 identifier
@@ -48,10 +48,10 @@ class from a JSON serialization.
 
 =head2 TO_JSON
 
-This method is provided in order to enable JSON serialization
-of complex Perl data structures containing instances of
-this class. Internally it calls 'pack' to provide a translation
-from this class' instance to a serializable Perl data structure.
+This method enables JSON serialization of complex Perl data structures,
+which contain instances of this class. It uses 'pack' to provide
+a translation from this class instance to a serializable Perl data
+structure.
 
   use JSON;
   use npg_pipeline::function::definition;
@@ -310,7 +310,10 @@ has 'apply_array_cpu_limit' => (
 =head2 BUILD
 
 Called by Moose at the end of object instantiation.
-Builds 'queue' attribute so that the value serialized.
+
+Validates 'queue' attribute. Sets 'queue' attribute
+so that the value is serialized.
+
 Throws an error if any of the attributes that are
 essential for a definition are not defined.
 
@@ -330,6 +333,10 @@ sub BUILD {
     }
     if (!$self->has_queue) {
       $self->_set_queue($DEFAULT_QUEUE);
+    } else {
+      if ($self->queue() !~ /\A $DEFAULT_QUEUE | $SMALL_QUEUE | $LOWLOAD_QUEUE \Z/smx) {
+        croak sprintf q(Unrecognised queue '%s'), $self->queue();
+      }
     }
   }
   return;

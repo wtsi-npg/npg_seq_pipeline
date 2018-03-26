@@ -43,7 +43,7 @@ sub create {
     log_file_dir    => $location_of_logs,
     fs_slots_num    => 1,
     queue           =>
-      $npg_pipeline::function::definition::SMALL_QUEUE,
+      $npg_pipeline::function::definition::LOWLOAD_QUEUE,
   );
 
   return [$d];
