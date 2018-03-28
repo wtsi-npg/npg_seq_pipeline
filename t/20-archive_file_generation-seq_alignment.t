@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 12;
+use Test::More tests => 13;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -46,6 +46,7 @@ $tbuilds{'3D7_Oct11v3'} = ['genedb_161015_transcriptome'];
 
 my $ref_dir = join q[/],$dir,'references';
 my $tra_dir = join q[/],$dir,'transcriptomes';
+
 foreach my $org (keys %builds){
     foreach my $rel (@{ $builds{$org} }){
         my $rel_dir     = join q[/],$ref_dir,$org,$rel,'all';
@@ -69,6 +70,13 @@ foreach my $org (keys %builds){
         }
     }
     symlink_default($ref_dir,$org,$builds{$org}->[0]);
+}
+
+my $gbs_dir    = join q[/],$dir,'gbs_plex','Hs_MajorQC','default','all';
+foreach my $gtype_dir ('fasta', 'bwa0_6', 'picard'){
+    my $gdir = join q[/],$gbs_dir,$gtype_dir;
+    make_path($gdir, {verbose => 0});
+    `touch $gdir/Hs_MajorQC.fa`;
 }
 
 # make default symlink 
@@ -172,7 +180,7 @@ subtest 'test 1' => sub {
   
   lives_ok {$rna_gen->_generate_command_arguments([4])}
     'no error generating command arguments';
-  
+
   cmp_deeply ($rna_gen->_job_args, $args,
     'correct command arguments for pooled RNASeq lane');
 
@@ -384,10 +392,10 @@ subtest 'test 2' => sub {
   lives_ok { $rna_gen->_lsf_alignment_command($l, 1) } 'executes _lsf_alignment_command method successfully';
   my $re = '^Reference\ set\ for.*$';
   $tlogger->debug(qr/Do\ RNAseq\ analysis/);
+  $tlogger->debug(qr/No\ gbs\ plex\ set$/);
 # for my $i (1..6) { $tlogger->info(qr/$re/); }
   for my $i (1..5) { $tlogger->info(qr/$re/); }
   $tlogger->debug(qr/No\ bait\ set$/);
-# $tlogger->info(qr/No\ bait\ set$/);
   $tlogger->info(qr/Analysis\:/);
   $tlogger->info(qr/Unsupported\ RNA\ analysis/);
   $tlogger->info(qr/$re/);
@@ -937,6 +945,50 @@ subtest 'test 11' => sub {
      'no error generating command arguments for a lane with one chromium sample';
   cmp_deeply ($chromium_gen->_job_args, $args,
     'correct command arguments for lane 16839_1 with one chromium sample');
+};
+
+
+subtest 'test 12' => sub {
+  plan tests => 4;
+
+  my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
+  my $runfolder_path = join q[/], $dir, $runfolder;
+  my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/no_cal';
+  `mkdir -p $bc_path`;
+  my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/metadata_cache_24135';
+  `mkdir -p $cache_dir`;
+
+  copy("t/data/miseq/24135_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!";
+  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/miseq];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135.csv];
+
+  my $ms_gen;
+  lives_ok {
+    $ms_gen = npg_pipeline::archive::file::generation::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2017},
+      repository        => $dir,
+      no_bsub           => 1,
+    )
+  } 'no error creating an object';
+  is ($ms_gen->id_run, 24135, 'id_run inferred correctly');
+
+  my $qc_in  = qq{$bc_path/archive/lane1};
+  my $qc_out = qq{$qc_in/qc};
+  my $args = {};
+
+  $args->{10001} = qq{bash -c ' mkdir -p $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/tmp_\$LSB_JOBID/24135_1#1 ; cd $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/tmp_\$LSB_JOBID/24135_1#1 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/lane1/24135_1#1_p4s2_pv_in.json -export_param_vals 24135_1#1_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#1.json && viv.pl -s -x -v 3 -o viv_24135_1#1.log run_24135_1#1.json  && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1 --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --tag_index 1 --skip_markdups_metrics && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1 --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --subset phix --tag_index 1 && qc --check alignment_filter_metrics --id_run 24135 --position 1 --qc_in \$PWD --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --tag_index 1 && qc --check genotype_call --id_run 24135 --position 1 --qc_in $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1 --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --tag_index 1 '};
+  $args->{10000} = qq{bash -c ' mkdir -p $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/tmp_\$LSB_JOBID/24135_1#0 ; cd $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/tmp_\$LSB_JOBID/24135_1#0 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/lane1/24135_1#0_p4s2_pv_in.json -export_param_vals 24135_1#0_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#0.json && viv.pl -s -x -v 3 -o viv_24135_1#0.log run_24135_1#0.json  && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1 --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --tag_index 0 --skip_markdups_metrics && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1 --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --subset phix --tag_index 0 && qc --check alignment_filter_metrics --id_run 24135 --position 1 --qc_in \$PWD --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --tag_index 0 && qc --check genotype_call --id_run 24135 --position 1 --qc_in $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1 --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --tag_index 0 '};
+  $args->{10002} = qq{bash -c ' mkdir -p $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/tmp_\$LSB_JOBID/24135_1#2 ; cd $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/tmp_\$LSB_JOBID/24135_1#2 && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/lane1/24135_1#2_p4s2_pv_in.json -export_param_vals 24135_1#2_p4s2_pv_out_\${LSB_JOBID}.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#2.json && viv.pl -s -x -v 3 -o viv_24135_1#2.log run_24135_1#2.json  && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1 --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --tag_index 2 --skip_markdups_metrics && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1 --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --subset phix --tag_index 2 && qc --check alignment_filter_metrics --id_run 24135 --position 1 --qc_in \$PWD --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --tag_index 2 && qc --check genotype_call --id_run 24135 --position 1 --qc_in $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1 --qc_out $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc --tag_index 2 '};
+
+  lives_ok {$ms_gen->_generate_command_arguments([1])}
+     'no error generating ms command arguments';
+
+  cmp_deeply ($ms_gen->_job_args, $args,
+    'correct command arguments for MiSeq lane 24135_1');
+
 };
 
 1;
