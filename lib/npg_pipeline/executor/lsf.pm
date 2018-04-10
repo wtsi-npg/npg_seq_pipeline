@@ -130,7 +130,7 @@ sub executor4function {
   #
   my @depends_on = ();
   if (!$g->is_source_vertex($function)) {
-      @depends_on = _lsf_predesessors($g, $function);
+      @depends_on = _lsf_predecessors($g, $function);
       if (!@depends_on) {
         $self->logcroak(qq{"$function" should depend on at least one LSF job});
       }
@@ -195,12 +195,12 @@ sub _list_job_ids2string {
   return @ids ? join $LSF_JOB_IDS_DELIM, @ids : q[];
 }
 
-sub _lsf_predesessors {
+sub _lsf_predecessors {
   my ($g, $v) = @_;
   #####
   # Recursive function. The recursion ends when we either
-  # reach the start point - the vertext that has no predesessors -
-  # or a vertex whose all predesessors are LSF jobs.
+  # reach the start point - the vertext that has no predecessors -
+  # or a vertex whose all predecessors are LSF jobs.
   #
   my @lsf_job_ids = ();
   foreach my $p (sort $g->predecessors($v)) {
@@ -208,7 +208,7 @@ sub _lsf_predesessors {
       push @lsf_job_ids, _string_job_ids2list(
         $g->get_vertex_attribute($p, $VERTEX_LSF_JOB_IDS_ATTR_NAME));
     } else {
-      push @lsf_job_ids, _lsf_predesessors($g, $p);
+      push @lsf_job_ids, _lsf_predecessors($g, $p);
     }
   }
   return @lsf_job_ids;
