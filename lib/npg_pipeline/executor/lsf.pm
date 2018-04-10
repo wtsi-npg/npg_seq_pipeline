@@ -15,10 +15,10 @@ use English qw(-no_match_vars);
 use npg_tracking::util::abs_path qw(abs_path network_abs_path);
 use npg_pipeline::executor::lsf::job;
 
+extends 'npg_pipeline::executor';
 with qw( 
          npg_pipeline::executor::lsf::options
          npg_pipeline::roles::accessor
-         WTSI::DNAP::Utilities::Loggable
          MooseX::AttributeCloner
        );
 
@@ -52,17 +52,6 @@ Submission of function definition for execution to LSF.
 ################## Public attributes #############################
 ##################################################################
 
-=head2 analysis_path
-
-=cut
-
-has 'analysis_path' => (
-  isa      => 'Str',
-  is       => 'ro',
-  required => 0,
-);
-
-
 =head2 lsf_conf
 
 =cut
@@ -76,26 +65,6 @@ sub _build_lsf_conf {
   my $self = shift;
   return $self->read_config($self->conf_file_path('lsf.ini'));
 }
-
-=head2 function_graph
-
-=cut
-
-has 'function_graph' => (
-  is       => 'ro',
-  isa      => 'Graph::Directed',
-  required => 1,
-);
-
-=head2 function_definitions
-
-=cut
-
-has 'function_definitions' => (
-  is       => 'ro',
-  isa      => 'HashRef',
-  required => 1,
-);
 
 =head2 fs_resource
 
@@ -122,32 +91,6 @@ sub _build_fs_resource {
   return;
 }
 
-=head2 commands4jobs
-
-=cut
-
-has 'commands4jobs' => (
-  is      => 'ro',
-  isa     => 'HashRef',
-  default => sub {return {};},
-);
-
-=head2 commands4jobs_file_path
-
-=cut
-
-has 'commands4jobs_file_path' => (
-  is         => 'ro',
-  isa        => 'Str',
-  lazy_build => 1,
-);
-sub _build_commands4jobs_file_path {
-  my $self = shift;
-  my $d = $self->function_definitions()->[0];
-  my $name = join q[_], 'commands4jobs', $d->identifier(), $d->timestamp();
-  return join q[/], $self->analysis_path(), $name;
-}
-
 ##################################################################
 ############## Public methods ####################################
 ##################################################################
@@ -156,11 +99,11 @@ sub _build_commands4jobs_file_path {
 
 =cut
 
-sub execute {
+override 'execute' => sub {
   my $self = shift;
 
   try {
-    $self->_submit();
+    super(); # loop over all nodes of the function graph
     $self->_save_commands4jobs();
     if (!$self->interactive) {
       $self->_resume();
@@ -169,6 +112,37 @@ sub execute {
     $self->logcroak('Error creating LSF jobs: ' . $_);
     $self->_kill_jobs();
   };
+
+  return;
+};
+
+=head2 executor4function
+
+=cut
+
+sub executor4function {
+  my ($self, $function) = @_;
+
+  my $g = $self->function_graph;
+  #####
+  # Need ids of upstream LSF jobs in order to set correctly dependencies
+  # between LSF jobs
+  #
+  my @depends_on = ();
+  if (!$g->is_source_vertex($function)) {
+      @depends_on = _lsf_predesessors($g, $function);
+      if (!@depends_on) {
+        $self->logcroak(qq{"$function" should depend on at least one LSF job});
+      }
+  }
+
+  my @ids = $self->_submit_function($function, @depends_on);
+  if (!@ids) {
+    $self->logcroak(q{A list of LSF job ids should be returned});
+  }
+
+  my $job_ids = _list_job_ids2string(@ids);
+  $g->set_vertex_attribute($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME, $job_ids);
 
   return;
 }
@@ -286,65 +260,6 @@ sub _kill_jobs {
     $self->info(q{Early failure, no jobs to kill});
   }
 
-  return;
-}
-
-sub _submit {
-  my $self = shift;
-
-  my $g = $self->function_graph;
-  foreach my $function ($g->topological_sort()) {
-
-    if (!exists $self->function_definitions()->{$function}) {
-      #####
-      # Probably a few function names were given explicitly.
-      #
-      $self->info(qq{***** Function $function is not defined *****});
-      next;
-    }
-
-    my $definitions = $self->function_definitions()->{$function};
-    if (!$definitions) {
-      $self->logcroak("No definition array for function $function");
-    }
-    if(!@{$definitions}) {
-      $self->logcroak(qq{Definition array for function $function is empty});
-    }
-
-    $self->info();
-    $self->info(qq{***** Processing $function *****});
-    if (@{$definitions} == 1) {
-      my $d = $definitions->[0];
-      if ($d->immediate_mode) {
-        $self->info(qq{***** Function $function has been already run});
-        next;
-      }
-      if ($d->excluded) {
-        $self->info(qq{***** Function $function is excluded});
-        next;
-      }
-    }
-
-    #####
-    # Need ids of upstream LSF jobs in order to set correctly dependencies
-    # between LSF jobs
-    #
-    my @depends_on = ();
-    if (!$g->is_source_vertex($function)) {
-      @depends_on = _lsf_predesessors($g, $function);
-      if (!@depends_on) {
-        $self->logcroak(qq{"$function" should depend on at least one LSF job});
-      }
-    }
-
-    my @ids = $self->_submit_function($function, @depends_on);
-    if (!@ids) {
-      $self->logcroak(q{A list of LSF job ids should be returned});
-    }
-
-    my $job_ids = _list_job_ids2string(@ids);
-    $g->set_vertex_attribute($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME, $job_ids);
-  }
   return;
 }
 
@@ -474,15 +389,9 @@ __END__
 
 =over
 
-=item List::MoreUtils
-
 =item Moose
 
 =item MooseX::StrictConstructor
-
-=item MooseX::AttributeCloner
-
-=item namespace::autoclean
 
 =item MooseX::AttributeCloner
 
@@ -505,8 +414,6 @@ __END__
 =item English
 
 =item npg_tracking::util::abs_path
-
-=item WTSI::DNAP::Utilities::Loggable
 
 =back
 

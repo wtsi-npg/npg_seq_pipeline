@@ -42,6 +42,7 @@ lib/npg_pipeline/function/seqchksum_comparator.pm
 lib/npg_pipeline/function/start_stop.pm
 lib/npg_pipeline/function/status.pm
 lib/npg_pipeline/function/warehouse_archiver.pm
+lib/npg_pipeline/executor.pm
 lib/npg_pipeline/executor/lsf.pm
 lib/npg_pipeline/executor/lsf/job.pm
 lib/npg_pipeline/executor/lsf/options.pm
@@ -93,6 +94,7 @@ t/20-function-start_stop.t
 t/20-function-status.t
 t/20-function-warehouse_archiver.t
 t/21-references_adapters.t
+t/30-executor.t
 t/30-executor-lsf.t
 t/30-executor-lsf-job.t
 t/50-npg_pipeline-daemon-archival.t
