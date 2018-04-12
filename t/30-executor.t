@@ -67,7 +67,7 @@ subtest 'builder for commands4jobs_file_path' => sub {
 };
 
 subtest 'builder for function_graph4jobs' => sub {
-  plan tests => 18;
+  plan tests => 19;
 
   my $e = npg_pipeline::executor->new(
     function_definitions => {},
@@ -182,6 +182,9 @@ subtest 'builder for function_graph4jobs' => sub {
   #
   is ($g4jobs->vertices(), 5, 'five nodes in the new graph');
   is ($g4jobs->edges(), 5, 'five edges in the new graph');
+
+  my @dependencies = sort $e->dependencies('node_three_b', 'num_definitions');
+  is_deeply (\@dependencies, [1, 2], 'correct dependencies');
 };
 
 1;

@@ -165,12 +165,13 @@ sub _execute_function {
   #
   my @depends_on = ();
   if (!$g->is_source_vertex($function)) {
-      @depends_on = $self->_lsf_predecessors($function);
-      if (!@depends_on) {
-        $self->logcroak(qq{"$function" should depend on at least one LSF job});
-      }
+    @depends_on = $self->dependencies($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
+    if (!@depends_on) {
+      $self->logcroak(qq{"$function" should depend on at least one LSF job});
+    }
   }
 
+  @depends_on = map { _string_job_ids2list($_) } @depends_on;
   my @ids = $self->_submit_function($function, @depends_on);
   if (!@ids) {
     $self->logcroak(q{A list of LSF job ids should be returned});
@@ -201,26 +202,6 @@ sub _string_job_ids2list {
 sub _list_job_ids2string {
   my @ids = @_;
   return @ids ? join $LSF_JOB_IDS_DELIM, @ids : q[];
-}
-
-sub _lsf_predecessors {
-  my ($self, $function_name) = @_;
-
-  my $g = $self->function_graph4jobs();
-  my @lsf_job_ids = ();
-  foreach my $p ($g->predecessors($function_name)) {
-    if (!$g->has_vertex_attribute($p, $VERTEX_LSF_JOB_IDS_ATTR_NAME)) {
-      $self->logcroak(qq{$VERTEX_LSF_JOB_IDS_ATTR_NAME attribute does not exist for $p})
-    }
-    my $attr_value = $g->get_vertex_attribute($p, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
-    if (!$attr_value) {
-      $self->logcroak(qq{Value of the $VERTEX_LSF_JOB_IDS_ATTR_NAME attribute } .
-                      qq{is not defined for $p});
-    }
-    push @lsf_job_ids, _string_job_ids2list($attr_value);
-  }
-
-  return @lsf_job_ids;
 }
 
 sub _resume {

@@ -273,6 +273,34 @@ sub predecessors {
   return @predecessors;
 }
 
+=head2 dependencies
+
+Returns a list of function's (jobs') dependencies that are saved
+in graph nodes' attributes given as the second argument;
+
+  my @dependencies = $e->dependencies('qc_insert_size', 'lsf_job_ids');
+
+=cut
+
+sub dependencies {
+  my ($self, $function_name, $attr_name) = @_;
+
+  my $g = $self->function_graph4jobs();
+  my @dependencies = ();
+  foreach my $p ($g->predecessors($function_name)) {
+    if (!$g->has_vertex_attribute($p, $attr_name)) {
+      $self->logcroak(qq{$attr_name attribute does not exist for $p})
+    }
+    my $attr_value = $g->get_vertex_attribute($p, $attr_name);
+    if (!$attr_value) {
+      $self->logcroak(qq{Value of the $attr_name is not defined for $p});
+    }
+    push @dependencies, $attr_value;
+  }
+
+  return @dependencies;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
