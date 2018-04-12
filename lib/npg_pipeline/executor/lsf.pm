@@ -97,55 +97,36 @@ sub _build_fs_resource {
 
 =head2 execute
 
+Creates and submits LSF jobs for execution.
+
 =cut
 
 override 'execute' => sub {
   my $self = shift;
 
-  try {
-    super(); # loop over all nodes of the function graph
-    $self->_save_commands4jobs();
-    if (!$self->interactive) {
-      $self->_resume();
-    }
-  } catch {
-    $self->logcroak('Error creating LSF jobs: ' . $_);
-    $self->_kill_jobs();
-  };
+  my @nodes = $self->function_graph4jobs()->topological_sort();
+
+  if (@nodes) {
+
+    try {
+      foreach my $function (@nodes) {
+        $self->_execute_function($function);
+      }
+      $self->_save_commands4jobs();
+      if (!$self->interactive) {
+        $self->_resume();
+      }
+    } catch {
+      $self->logcroak('Error creating LSF jobs: ' . $_);
+      $self->_kill_jobs();
+    };
+
+  } else {
+    $self->warn('Empty function4jobs graph');
+  }
 
   return;
 };
-
-=head2 executor4function
-
-=cut
-
-sub executor4function {
-  my ($self, $function) = @_;
-
-  my $g = $self->function_graph;
-  #####
-  # Need ids of upstream LSF jobs in order to set correctly dependencies
-  # between LSF jobs
-  #
-  my @depends_on = ();
-  if (!$g->is_source_vertex($function)) {
-      @depends_on = _lsf_predecessors($g, $function);
-      if (!@depends_on) {
-        $self->logcroak(qq{"$function" should depend on at least one LSF job});
-      }
-  }
-
-  my @ids = $self->_submit_function($function, @depends_on);
-  if (!@ids) {
-    $self->logcroak(q{A list of LSF job ids should be returned});
-  }
-
-  my $job_ids = _list_job_ids2string(@ids);
-  $g->set_vertex_attribute($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME, $job_ids);
-
-  return;
-}
 
 ##################################################################
 ############## Private attributes ################################
@@ -174,6 +155,33 @@ sub _build__common_attrs {
 ############## Private methods ###################################
 ##################################################################
 
+sub _execute_function {
+  my ($self, $function) = @_;
+
+  my $g = $self->function_graph4jobs;
+  #####
+  # Need ids of upstream LSF jobs in order to set correctly dependencies
+  # between LSF jobs
+  #
+  my @depends_on = ();
+  if (!$g->is_source_vertex($function)) {
+      @depends_on = $self->_lsf_predecessors($function);
+      if (!@depends_on) {
+        $self->logcroak(qq{"$function" should depend on at least one LSF job});
+      }
+  }
+
+  my @ids = $self->_submit_function($function, @depends_on);
+  if (!@ids) {
+    $self->logcroak(q{A list of LSF job ids should be returned});
+  }
+
+  my $job_ids = _list_job_ids2string(@ids);
+  $g->set_vertex_attribute($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME, $job_ids);
+
+  return;
+}
+
 sub _save_commands4jobs {
   my $self = shift;
 
@@ -196,28 +204,29 @@ sub _list_job_ids2string {
 }
 
 sub _lsf_predecessors {
-  my ($g, $v) = @_;
-  #####
-  # Recursive function. The recursion ends when we either
-  # reach the start point - the vertext that has no predecessors -
-  # or a vertex whose all predecessors are LSF jobs.
-  #
+  my ($self, $function_name) = @_;
+
+  my $g = $self->function_graph4jobs();
   my @lsf_job_ids = ();
-  foreach my $p (sort $g->predecessors($v)) {
-    if ($g->has_vertex_attribute($p, $VERTEX_LSF_JOB_IDS_ATTR_NAME)) {
-      push @lsf_job_ids, _string_job_ids2list(
-        $g->get_vertex_attribute($p, $VERTEX_LSF_JOB_IDS_ATTR_NAME));
-    } else {
-      push @lsf_job_ids, _lsf_predecessors($g, $p);
+  foreach my $p ($g->predecessors($function_name)) {
+    if (!$g->has_vertex_attribute($p, $VERTEX_LSF_JOB_IDS_ATTR_NAME)) {
+      $self->logcroak(qq{$VERTEX_LSF_JOB_IDS_ATTR_NAME attribute does not exist for $p})
     }
+    my $attr_value = $g->get_vertex_attribute($p, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
+    if (!$attr_value) {
+      $self->logcroak(qq{Value of the $VERTEX_LSF_JOB_IDS_ATTR_NAME attribute } .
+                      qq{is not defined for $p});
+    }
+    push @lsf_job_ids, _string_job_ids2list($attr_value);
   }
+
   return @lsf_job_ids;
 }
 
 sub _resume {
   my $self = shift;
 
-  my $g = $self->function_graph();
+  my $g = $self->function_graph4jobs();
   my $suspended_start_job_id = $g->get_vertex_attribute(
      $SUSPENDED_START_FUNCTION, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
   #####
@@ -241,7 +250,7 @@ sub _resume {
 sub _kill_jobs {
   my $self = shift;
 
-  my $g = $self->function_graph();
+  my $g = $self->function_graph4jobs();
   my @job_ids =
     uniq
     reverse

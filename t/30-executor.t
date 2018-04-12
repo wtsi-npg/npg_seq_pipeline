@@ -17,55 +17,89 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $tmp, 'logfile'),
                           utf8   => 1});
 
-subtest 'constructor and error conditions for an empty graph' => sub {
-  plan tests => 3;
+subtest 'constructor and basic consistency checking' => sub {
+  plan tests => 2;
 
   my $ref = {
     function_definitions => {},
     function_graph       => Graph::Directed->new(),
           };
-
   my $e = npg_pipeline::executor->new($ref);
   isa_ok ($e, 'npg_pipeline::executor');
-
-  throws_ok {$e->function_loop()} qr/Empty function graph/,
-    'error iterating an empty graph';
-
-  throws_ok {$e->execute()} qr/Empty function graph/,
-    'error executing function for an empty graph';
+  lives_ok {$e->execute()} 'execute command runs anyway';
 };
 
-subtest 'simple tests for the execute method' => sub {
-  plan tests => 6;
+subtest 'builder for commands4jobs_file_path' => sub {
+  plan tests => 4;
 
-  package npg::test::derived;
-  use Moose;
-  extends 'npg_pipeline::executor';
-  sub executor4function {
-    my ($self, $function) = @_;
-    $self->info("Function $function");
-    return;
-  }
-  1;
+  my $ref = {
+    function_definitions => {},
+    function_graph       => Graph::Directed->new(),
+          };
+  my $e = npg_pipeline::executor->new($ref);
+  throws_ok {$e->commands4jobs_file_path()}
+    qr/analysis_path attribute is not set/,
+    'error when analysis_path is not set';
 
-  package main;
+  $ref->{'analysis_path'} = $tmp;
+  $e = npg_pipeline::executor->new($ref);
+  throws_ok {$e->commands4jobs_file_path()}
+    qr/Definition hash is empty/,
+    'error when analysis_path definition hash is empty';
+
+  $ref->{'function_definitions'} = {'one' => []};
+  $e = npg_pipeline::executor->new($ref);
+  throws_ok {$e->commands4jobs_file_path()}
+    qr/Empty definition array for one/,
+    'error when analysis_path definitions array is empty';
+
+  my $init = { created_by   => 'module',
+               created_on   => 'June 25th',
+               job_name     => 'name',
+               identifier   => 2345,
+               command      => 'command',
+               log_file_dir => '/some/dir' };
+  my $d = npg_pipeline::function::definition->new($init);
+  $ref->{'function_definitions'} = {'one' => [$d]};
+  $e = npg_pipeline::executor->new($ref);
+  is ($e->commands4jobs_file_path(), "$tmp/commands4jobs_2345_June 25th",
+    'correct path');
+};
+
+subtest 'builder for function_graph4jobs' => sub {
+  plan tests => 18;
+
+  my $e = npg_pipeline::executor->new(
+    function_definitions => {},
+    function_graph       => Graph::Directed->new()
+  );
+  throws_ok {$e->function_graph4jobs()}
+    qr/Empty function graph/,
+    'error when function graph is empty';
 
   my $g =  Graph::Directed->new();
   $g->add_edge('node_one', 'node_two');
+  is ($g->vertices(), 2, 'two nodes in the graph');
+  is ($g->edges(), 1, 'one edge in the graph');
 
-  my $e1 = npg::test::derived->new({function_definitions => {},
-                                  function_graph       => $g});
-  throws_ok { $e1->execute() } qr/Function node_one is not defined/,
+  $e = npg_pipeline::executor->new(function_definitions => {},
+                                   function_graph       => $g);
+  throws_ok { $e->function_graph4jobs() }
+    qr/Function node_one is not defined/,
     'error if no definition for a function';
 
-  $e1 = npg::test::derived->new({function_definitions => {node_one => undef},
-                                 function_graph       => $g});
-  throws_ok { $e1->execute() } qr/No definition array for function node_one/,
+  $e = npg_pipeline::executor->new(
+         function_definitions => {node_one => undef},
+         function_graph       => $g);
+  throws_ok { $e->function_graph4jobs() }
+    qr/No definition array for function node_one/,
     'error if definition array is not defined';
 
-  $e1 = npg::test::derived->new({function_definitions => {node_one => []},
-                                 function_graph       => $g});
-  throws_ok { $e1->execute() } qr/Definition array for function node_one is empty/,
+  $e = npg_pipeline::executor->new(
+         function_definitions => {node_one => []},
+         function_graph       => $g);
+  throws_ok { $e->function_graph4jobs() }
+    qr/Definition array for function node_one is empty/,
     'error if definition array is empty';
 
   my $init = { created_by   => 'module',
@@ -78,46 +112,76 @@ subtest 'simple tests for the execute method' => sub {
   my $d1 = npg_pipeline::function::definition->new($init);
   my $d2 = npg_pipeline::function::definition->new($init);
 
-  $e1 = npg::test::derived->new(
-       {function_definitions => {node_one => [$d1], node_two => [$d2]},
-        function_graph       => $g});
-  lives_ok { $e1->execute() } 'two jobs processed';
+  $e = npg_pipeline::executor->new(
+         function_definitions => {node_one => [$d1], node_two => [$d2]},
+         function_graph       => $g);
+  my $g4jobs = $e->function_graph4jobs();
+  isa_ok ($g4jobs, 'Graph::Directed');
+  is ($g4jobs->vertices(), 2, 'two nodes in the new graph');
+  is ($g4jobs->edges(), 1, 'one edge in the new graph');
 
   $init->{'immediate_mode'} = 1;
   $d1 = npg_pipeline::function::definition->new($init);
-  $e1 = npg::test::derived->new(
-        {function_definitions => {node_one => [$d1], node_two => [$d2]},
-         function_graph       => $g});
-  lives_ok { $e1->execute() } 'two jobs processed, one of them in the immediate mode';
+  $e = npg_pipeline::executor->new(
+         function_definitions => {node_one => [$d2], node_two => [$d1]},
+         function_graph       => $g);
+  $g4jobs = $e->function_graph4jobs();
+  is ($g4jobs->vertices(), 1, 'one node in the new graph');
+  is ($g4jobs->edges(), 0, 'zero edges in the new graph');
 
   $init->{'immediate_mode'} = 0;
   $init->{'excluded'} = 1;
   $d1 = npg_pipeline::function::definition->new($init);
-  $e1 = npg::test::derived->new(
-    {function_definitions => {node_one => [$d1], node_two => [$d2]},
-     function_graph       => $g});
-  lives_ok { $e1->execute() } 'two jobs processed, one of them skipped';
-};
+  $e = npg_pipeline::executor->new(
+         function_definitions => {node_one => [$d2], node_two => [$d1]},
+         function_graph       => $g);
+  $g4jobs = $e->function_graph4jobs();
+  is ($g4jobs->vertices(), 1, 'one node in the new graph');
+  is ($g4jobs->edges(), 0, 'zero edges in the new graph');
 
-subtest 'generated path for files with commands' => sub {
-  plan tests => 1;
+  $e = npg_pipeline::executor->new(
+         function_definitions => {node_one => [$d1], node_two => [$d1]},
+         function_graph       => $g);
+  throws_ok {$e->function_graph4jobs()} qr/New function graph is empty/,
+    'error if the new graph is empty';
 
-  my $g =  Graph::Directed->new();
+  $g =  Graph::Directed->new();
   $g->add_edge('node_one', 'node_two');
+  $g->add_edge('node_two', 'node_two_a');
+  $g->add_edge('node_one', 'node_three');
+  $g->add_edge('node_three', 'node_three_a');
+  $g->add_edge('node_three', 'node_three_b');
+  $g->add_edge('node_two', 'node_three_b');
+  is ($g->vertices(), 6, 'seven nodes in the graph');
+  is ($g->edges(), 6, 'six edges in the graph');
 
-  my $init = { created_by   => 'module',
-               created_on   => 'June 25th',
-               job_name     => 'name',
-               identifier   => 2345,
-               command      => 'command',
-               log_file_dir => '/some/dir' };
-  my $d = npg_pipeline::function::definition->new($init);
+  #####
+  # graph $g
+  # node_one-node_three,node_one-node_two,
+  # node_three-node_three_a,node_three-node_three_b,
+  # node_two-node_three_b,node_two-node_two_a
 
-  my $e = npg_pipeline::executor->new({function_definitions => {node_one => [$d, $d]},
-                                       function_graph       => $g,
-                                       analysis_path        => '/tmp/data'});
-  is ($e->commands4jobs_file_path(), '/tmp/data/commands4jobs_2345_June 25th',
-    'path for files with commands');
+  my $definitions = {
+    node_one => [$d2],
+    node_two => [$d1],
+    node_two_a => [$d2, $d2, $d2],
+    node_three => [$d2, $d2],
+    node_three_a => [$d2],
+    node_three_b => [$d2],
+  };
+  
+  $e = npg_pipeline::executor->new(
+         function_definitions => $definitions,
+         function_graph       => $g);
+  $g4jobs = $e->function_graph4jobs();
+  #####
+  # New graph $g4jobs
+  # node_one-node_three,node_one-node_three_b,
+  # node_one-node_two_a,node_three-node_three_a,
+  # node_three-node_three_b
+  #
+  is ($g4jobs->vertices(), 5, 'five nodes in the new graph');
+  is ($g4jobs->edges(), 5, 'five edges in the new graph');
 };
 
 1;

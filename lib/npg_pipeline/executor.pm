@@ -3,10 +3,16 @@ package npg_pipeline::executor;
 use Moose;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
+use Graph::Directed;
+use Readonly;
 
-with qw( WTSI::DNAP::Utilities::Loggable );
+use npg_tracking::util::types;
+
+with qw{ WTSI::DNAP::Utilities::Loggable };
 
 our $VERSION = '0';
+
+Readonly::Scalar my $VERTEX_NUM_DEFINITIONS_ATTR_NAME => q{num_definitions};
 
 =head1 NAME
 
@@ -14,14 +20,51 @@ npg_pipeline::executor
 
 =head1 SYNOPSIS
 
+  package npg_pipeline::executor::exotic;
+  use Moose;
+  extends 'pg_pipeline::executor';
+  
+  override 'execute' => sub {
+    my $self = shift;
+    $self->info('Child implementation');
+  };
+  1;
+
+  package main;
+  use Graph::Directed;
+  use npg_pipeline::function::definition;
+
+  my $g =  Graph::Directed->new();
+  $g->add_edge('node_one', 'node_two');
+
+  my $d = npg_pipeline::function::definition->new(
+    created_by   => 'module',
+    created_on   => 'June 25th',
+    job_name     => 'name',
+    identifier   => 2345,
+    command      => '/bin/true',
+    log_file_dir => '/tmp/dir'
+  );
+
+  my $e1 = npg_pipeline::executor::exotic->new(
+    function_graph          => $g,
+    function_definitions    => {node_one => [$d]},
+    commands4jobs_file_path => '/tmp/path'
+  );
+  $e1->execute();
+
+  my $e2 = npg_pipeline::executor::exotic->new(
+    function_graph       => $g,
+    function_definitions => {node_one => [$d],
+    analysis_path        => '/tmp/analysis'
+  );
+  print $e2->commands4jobs_file_path();
+  $e2->execute(); 
+
 =head1 DESCRIPTION
 
 Submission of function definition for execution - parent object.
-
-Child classes should implement 'executor4function' method that
-performs executor-specific processesing of definitions for a single
-function. The name of the function is passed to this method as an
-argument. 
+Child classes should implement 'execute' method.
 
 =cut
 
@@ -38,9 +81,10 @@ argument.
 =cut
 
 has 'analysis_path' => (
-  isa      => 'Str',
-  is       => 'ro',
-  required => 0,
+  isa       => 'NpgTrackingDirectory',
+  is        => 'ro',
+  required  => 0,
+  predicate => 'has_analysis_path',
 );
 
 =head2 function_graph
@@ -84,42 +128,46 @@ has 'commands4jobs_file_path' => (
 );
 sub _build_commands4jobs_file_path {
   my $self = shift;
-  my $key = (keys %{$self->function_definitions()})[0];
-  my $d = $self->function_definitions()->{$key}->[0];
+
+  if (!$self->has_analysis_path()) {
+    $self->logcroak(q{analysis_path attribute is not set});
+  }
+  my @functions = keys %{$self->function_definitions()};
+  if (!@functions) {
+    $self->logcroak(q{Definition hash is empty});
+  }
+  my $d = $self->function_definitions()->{$functions[0]}->[0];
+  if (!$d) {
+    $self->logcroak(q{Empty definition array for } . $functions[0]);
+  }
   my $name = join q[_], 'commands4jobs', $d->identifier(), $d->created_on();
   return join q[/], $self->analysis_path(), $name;
 }
 
-##################################################################
-############## Public methods ####################################
-##################################################################
+=head2 function_graph4jobs
 
-=head2 execute
+The graph of functions that have to be executed. The same graph as in
+the 'function_graph' attribute, but the functions that have to be skipped
+or have definitions that are immediately executed are excluded.
 
-Basic implementation. Calls function_loop method and exits on its
-return.
-
-=cut
-
-sub execute {
-  my $self = shift;
-  $self->function_loop();
-  return;
-}
-
-=head2 function_loop
-
-Implementation of a function loop which relies on presence of a
-method that performs executor-specific processesing of definitions .
-The method is called as instance method and given one argument, the name
-of the function. 
+Each node of this graph has 'num_definitions' attribute set.
 
 =cut
 
-sub function_loop {
+has 'function_graph4jobs' => (
+  is         => 'ro',
+  isa        => 'Graph::Directed',
+  init_arg   => undef,
+  required   => 0,
+  lazy_build => 1,
+);
+sub _build_function_graph4jobs {
   my $self = shift;
 
-  my @nodes = $self->function_graph()->topological_sort();
+  my $graph = Graph::Directed->new();
+
+  my $g = $self->function_graph();
+  my @nodes = $g->topological_sort();
   if (!@nodes) {
     $self->logcroak('Empty function graph');
   }
@@ -137,9 +185,9 @@ sub function_loop {
       $self->logcroak(qq{Definition array for function $function is empty});
     }
 
-    $self->info();
-    $self->info(qq{***** Processing $function *****});
-    if (@{$definitions} == 1) {
+    my $num_definitions = scalar @{$definitions};
+
+    if ($num_definitions == 1) {
       my $d = $definitions->[0];
       if ($d->immediate_mode) {
         $self->info(qq{***** Function $function has been already run});
@@ -151,10 +199,78 @@ sub function_loop {
       }
     }
 
-    $self->executor4function($function);
+    #####
+    # Find all closest ancestors that represent functions that will be
+    # submitted for execution, bypassing the skipped functions and functions
+    # that have been executed in the immediate mode.
+    #
+    # For each returned predecessor create an edge from the redecessor function
+    # to this function. Adding an edge implicitly add its vertices. Adding
+    # a vertex is by default idempotent. Setting a vertex attribute creates
+    # a vertex if it does not already exists.
+    #
+    my @predecessors = predecessors($g, $function, $VERTEX_NUM_DEFINITIONS_ATTR_NAME);
+
+    if (@predecessors || $g->is_source_vertex($function)) {
+      foreach my $gr (($g, $graph)) {
+        $gr->set_vertex_attribute($function,
+                                  $VERTEX_NUM_DEFINITIONS_ATTR_NAME,
+                                  $num_definitions);
+      }
+      foreach my $p (@predecessors) {
+        $graph->add_edge($p, $function);
+      }
+    }
   }
 
-  return;
+  if (!$graph->vertices()) {
+    $self->logcroak('New function graph is empty');
+  }
+
+  return $graph;
+}
+
+##################################################################
+############## Public methods ####################################
+##################################################################
+
+=head2 execute
+
+Basic implementation that does not do anything. The method should be
+implemented by a child class.
+
+=cut
+
+sub execute { return; }
+
+=head2 predecessors
+
+Recursive function. The recursion ends when we either
+reach the start point - the vertext that has no predesessors -
+or a vertex whose all predesessors have the attribute, the name of
+which is given as an argument, set.
+
+Should not be called as a class or instance method.
+
+Returns a list of found predecessors.
+
+  my @predecessor_functions = predecessors($graph,
+                                           'qc_insert_size',
+                                           'num_definitions');
+=cut
+
+sub predecessors {
+  my ($g, $function_name, $attr_name) = @_;
+
+  my @predecessors = ();
+  foreach my $p (sort $g->predecessors($function_name)) {
+    if ($g->has_vertex_attribute($p, $attr_name)) {
+      push @predecessors, $p;
+    } else {
+      push @predecessors, predecessors($g, $p, $attr_name);
+    }
+  }
+  return @predecessors;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -176,6 +292,10 @@ __END__
 =item MooseX::StrictConstructor
 
 =item namespace::autoclean
+
+=item Graph::Directed
+
+=item Readonly
 
 =item WTSI::DNAP::Utilities::Loggable
 
