@@ -27,6 +27,9 @@ allow = _default_function_order _qc_runner _get_instrument_dir _mailer _log _use
 [ControlStructures::ProhibitDeepNests]
 max_nests = 6
 
+[ValuesAndExpressions::ProhibitLongChainsOfMethodCalls]
+max_chain_length=4
+
 [Documentation::RequirePodSections]
 lib_sections = NAME | SYNOPSIS | DESCRIPTION | SUBROUTINES/METHODS | BUGS AND LIMITATIONS | DEPENDENCIES | CONFIGURATION AND ENVIRONMENT | INCOMPATIBILITIES | AUTHOR | LICENSE AND COPYRIGHT
 

@@ -15,21 +15,16 @@ use npg_tracking::util::abs_path qw(abs_path network_abs_path);
 
 our $VERSION = '0';
 
+extends 'npg_tracking::illumina::runfolder';
+
 with qw{
         MooseX::Getopt
         MooseX::AttributeCloner
         WTSI::DNAP::Utilities::Loggable
         npg_pipeline::roles::accessor
-        npg_tracking::illumina::run::short_info
         npg_pipeline::roles::business::base
+        npg_pipeline::roles::business::flag_options
        };
-
-with 'npg_tracking::illumina::run::folder' => {
-       -excludes => [qw(pb_cal_path dif_files_path)]
-     };
-
-with q{npg_tracking::illumina::run::long_info};
-with q{npg_pipeline::roles::business::flag_options};
 
 Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB => 50;
 Readonly::Array  my @FLAG2FUNCTION_LIST         => qw/ qc_run /;
@@ -573,14 +568,6 @@ sub _build__fs_resource {
   return join q(),$r=~/\w+/xsmg;
 }
 
-# this class ties together short_info and path_info, so the following _build_run_folder will work
-sub _build_run_folder {
-  my ($self) = @_;
-  my @temp = split m{/}xms, $self->runfolder_path();
-  my $run_folder = pop @temp;
-  return $run_folder;
-}
-
 =head2 status_files_path
 
  a directory to save status files to
@@ -636,11 +623,7 @@ __END__
 
 =item WTSI::DNAP::Utilities::Loggable
 
-=item npg_tracking::illumina::run::short_info
-
-=item npg_tracking::illumina::run::long_info
-
-=item npg_tracking::illumina::run::folder
+=item npg_tracking::illumina::runfolder
 
 =item npg_tracking::util::abs_path
 
