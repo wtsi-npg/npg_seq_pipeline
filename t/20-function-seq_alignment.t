@@ -1,10 +1,9 @@
 use strict;
 use warnings;
-use Test::More tests => 12;
+use Test::More tests => 13;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
-use Test::Log::Log4perl;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path/;
 use Cwd qw/cwd abs_path/;
@@ -18,11 +17,13 @@ use List::Util qw/first/;
 use st::api::lims;
 
 use_ok('npg_pipeline::function::seq_alignment');
+
 local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/rna_seq];
 local $ENV{CLASSPATH} = q[t/bin/software/solexa/jars];
 
-my $odir = abs_path cwd;
-my $dir = tempdir( CLEANUP => 1);
+my $odir    = abs_path cwd;
+my $dir     = tempdir( CLEANUP => 1);
+my $logfile = join q[/], $dir, 'logfile';
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
@@ -68,6 +69,13 @@ foreach my $org (keys %builds){
         }
     }
     symlink_default($ref_dir,$org,$builds{$org}->[0]);
+}
+
+my $gbs_dir    = join q[/],$dir,'gbs_plex','Hs_MajorQC','default','all';
+foreach my $gtype_dir (qw/fasta bwa0_6 picard/) {
+    my $gdir = join q[/],$gbs_dir,$gtype_dir;
+    make_path($gdir, {verbose => 0});
+    `touch $gdir/Hs_MajorQC.fa`;
 }
 
 # make default symlink 
@@ -301,7 +309,7 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 17;
+  plan tests => 14;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
 
@@ -370,17 +378,15 @@ subtest 'test 2' => sub {
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = q[t/data/rna_seq/samplesheet_17550.csv];
 
   lives_ok {
-      $rna_gen = npg_pipeline::function::seq_alignment->new(
-        run_folder        => $runfolder,
-        runfolder_path    => $runfolder_path,
-        recalibrated_path => $bc_path,
-        timestamp         => q{2017},
-        repository        => $dir
-      )
+    $rna_gen = npg_pipeline::function::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2017},
+      repository        => $dir
+    )
   } 'no error creating an object';
   is ($rna_gen->id_run, 17550, 'id_run inferred correctly');
-
-  my $tlogger = Test::Log::Log4perl->get_logger('npg_pipeline.function.seq_alignment');
 
   $da = $rna_gen->generate();
   $d = _find($da, 3, 1);
@@ -390,37 +396,18 @@ subtest 'test 2' => sub {
 
   #test: reference genome selected has an unsupported 'analysis' defined
   $l = st::api::lims->new(id_run => 17550, position => 4, tag_index => 1);
-  Test::Log::Log4perl->start();
-  lives_ok { $rna_gen->_alignment_command($l, {}, 1) } 'executes _lsf_alignment_command method successfully';
-  my $re = '^Reference\ set\ for.*$';
-  $tlogger->debug(qr/Do\ RNAseq\ analysis/);
-  for my $i (1..5) { $tlogger->info(qr/$re/); }
-  $tlogger->debug(qr/No\ bait\ set$/);
-  $tlogger->info(qr/Analysis\:/);
-  $tlogger->info(qr/Unsupported\ RNA\ analysis/);
-  $tlogger->info(qr/$re/);
-  $tlogger->info(qr/Using\ p4/);
-  $tlogger->info(qr/do\_target\_alignment\ is\ true/);
-  $tlogger->info(qr/spike\_tag\ is\ false/);
-  $tlogger->info(qr/human\_split\ is/);
-  $tlogger->info(qr/nchs\ is\ false/);
-  $tlogger->info(qr/p4\ parameters\ written\ to/);
-  $tlogger->info(qr/Using\ p4\ template\ alignment\_wtsi\_stage2\_template\.json/);  
-  Test::Log::Log4perl->end('generated and logged: lsf command for unsupported rna analysis and used default aligner');
+  lives_ok { $rna_gen->_alignment_command($l, {}, 1) }
+    'executes _alignment_command method successfully';
 
-  #test: library type is RNA but no transcriptome version has been defined in reference: Homo_sapiens (GRCh38_15)
+  # Library type is RNA, but no transcriptome version has been defined in
+  # reference: Homo_sapiens (GRCh38_15)
   $l = st::api::lims->new(id_run => 17550, position => 6, tag_index => 2);
-  Test::Log::Log4perl->start();
-  is ($rna_gen->_do_rna_analysis($l), 0, 'no transcriptome version in reference, so no RNA analysis');
-  $tlogger->debug(qr/Reference without transcriptome/);
-  Test::Log::Log4perl->end('logged: no transcriptome version in reference');
-
-  #test: library type is not RNA: ChIP-Seq Auto
+  is ($rna_gen->_do_rna_analysis($l), 0,
+    'no transcriptome version in reference, so no RNA analysis');
+ 
+  #Library type is not RNA: ChIP-Seq Auto
   $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 1);
-  Test::Log::Log4perl->start();
   is ($rna_gen->_do_rna_analysis($l), 0, 'not an RNA library, so no RNA analysis');
-  $tlogger->debug(qr/not RNA library type/);
-  Test::Log::Log4perl->end('logged: not rna library type');
 };
 
 subtest 'test 3' => sub {
@@ -1015,6 +1002,58 @@ subtest 'test 11' => sub {
 
   $d = _find($da, 1, 0);
   is ($d->command, $command, 'command for run 16839 lane 1 tag 0');
+};
+
+subtest 'test 12' => sub {
+  plan tests => 5;
+
+  my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
+  my $runfolder_path = join q[/], $dir, $runfolder;
+  my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/no_cal';
+  `mkdir -p $bc_path`;
+  my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/metadata_cache_24135';
+  `mkdir -p $cache_dir`;
+  `mkdir $bc_path/lane1`;
+
+  copy("t/data/miseq/24135_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!";
+  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/miseq];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135.csv];
+
+  my $ms_gen;
+  lives_ok {
+    $ms_gen = npg_pipeline::function::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2017},
+      repository        => $dir
+    )
+  } 'no error creating an object';
+  is ($ms_gen->id_run, 24135, 'id_run inferred correctly');
+  my $da = $ms_gen->generate();
+
+  my $qc_in  = qq{$bc_path/archive/lane1};
+  my $qc_out = qq{$qc_in/qc};
+  my $unique_string = $ms_gen->_job_id();
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+
+  my $tmp_plex_dir = $tmp_dir . '/24135_1#1';
+  my $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/24135_1#1_p4s2_pv_in.json -export_param_vals 24135_1#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#1.json && viv.pl -s -x -v 3 -o viv_24135_1#1.log run_24135_1#1.json  && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 1 --skip_markdups_metrics && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 1 && qc --check alignment_filter_metrics --id_run 24135 --position 1 --qc_in \$PWD --qc_out $qc_out --tag_index 1 && qc --check genotype_call --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 1 '};
+ 
+  my $d = _find($da, 1, 1);
+  is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 1'); 
+
+  $tmp_plex_dir = $tmp_dir . '/24135_1#0'; 
+  $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/24135_1#0_p4s2_pv_in.json -export_param_vals 24135_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#0.json && viv.pl -s -x -v 3 -o viv_24135_1#0.log run_24135_1#0.json  && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0 --skip_markdups_metrics && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0 && qc --check alignment_filter_metrics --id_run 24135 --position 1 --qc_in \$PWD --qc_out $qc_out --tag_index 0 && qc --check genotype_call --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0 '};
+
+  $d = _find($da, 1, 0);
+  is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 0');
+
+  $tmp_plex_dir = $tmp_dir . '/24135_1#2';
+  $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/24135_1#2_p4s2_pv_in.json -export_param_vals 24135_1#2_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#2.json && viv.pl -s -x -v 3 -o viv_24135_1#2.log run_24135_1#2.json  && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 2 --skip_markdups_metrics && qc --check bam_flagstats --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 2 && qc --check alignment_filter_metrics --id_run 24135 --position 1 --qc_in \$PWD --qc_out $qc_out --tag_index 2 && qc --check genotype_call --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 2 '};
+  
+  $d = _find($da, 1, 2);
+  is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 2');
 };
 
 1;

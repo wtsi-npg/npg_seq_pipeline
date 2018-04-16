@@ -29,6 +29,8 @@ LIST OF CHANGES
      lims-driver-type argument is added to reset the default samplesheet driver type,
      iRODS build is added to Travis CI configuration to enable all new tests to run,
      Log::Log4perl is used for logging
+ - added support for GbS processing
+ - travis build tweak for npg_qc
 
 release 51.11.3
  - seq_alignment: fixes for no target alignment and no target alignment+non-consented human split 

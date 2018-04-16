@@ -3,6 +3,9 @@ use warnings;
 use Test::More tests => 8;
 use Test::Exception;
 use File::Path qw/make_path/;
+use File::Copy::Recursive qw/dircopy/;
+use File::Slurp;
+
 use t::util;
 
 use_ok('npg_pipeline::function::autoqc');
@@ -311,7 +314,7 @@ subtest 'tag_metrics' => sub {
 };
 
 subtest 'genotype and gc_fraction' => sub {
-  plan tests => 9;
+  plan tests => 10;
 
   my $rf_name = '140915_HS34_14043_A_C3R77ACXX';
   my $rf_path = join q[/], $tmp, $rf_name;
@@ -324,6 +327,13 @@ subtest 'genotype and gc_fraction' => sub {
   
   make_path($qc_dir);
   make_path($lane6_qc_dir);
+
+  my $destination = "$tmp/references";
+  dircopy('t/data/qc/references', $destination);
+  make_path("$tmp/genotypes");
+  my $new_dir = $destination . '/Homo_sapiens/CGP_GRCh37.NCBI.allchr_MT/all/fasta';
+  make_path($new_dir);
+  write_file("$new_dir/Homo_sapiens.GRCh37.NCBI.allchr_MT.fa", qw/some ref/);
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14043.csv';
@@ -339,6 +349,15 @@ subtest 'genotype and gc_fraction' => sub {
   };
 
   my $qc = npg_pipeline::function::autoqc->new($init);
+
+  throws_ok { $qc->_should_run({ id_run => 14043, position => 1}) }
+    qr/Attribute \(ref_repository\) does not pass the type constraint/,
+    'ref repository does not exists - error';
+
+  $init->{'repository'} = $tmp;
+
+  $qc = npg_pipeline::function::autoqc->new($init);
+
   ok ($qc->_should_run({id_run => 14043, position => 1}, 0),
     'genotype check can run for a non-indexed lane');
   ok (!$qc->_should_run({id_run => 14043, position => 6}, 1),
@@ -357,7 +376,7 @@ subtest 'genotype and gc_fraction' => sub {
   ok ($qc->_should_run({id_run => 14043, position => 6}, 0), 'gc_fraction check can run');
   ok ($qc->_should_run({id_run => 14043, position => 6, tag_index => 0}, 1),
     'gc_fraction check can run');
-  ok ($qc->_should_run({id_run => 14043, position => 6, tag_index => 0}, 1),
+  ok ($qc->_should_run({id_run => 14043, position => 8, tag_index => 22}, 1),
    'gc_fraction check can run');
 };
 

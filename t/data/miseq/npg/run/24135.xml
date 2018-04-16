@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<run id_run="24135" batch_id="57543" id_instrument="103" expected_cycle_count="316" actual_cycle_count="316" priority="1" id_run_pair="0" is_paired="0" team="RAD" id_instrument_format="11" flowcell_id="MS5476963-300V2" folder_name="171020_MS5_24135_A_MS5476963-300V2" folder_path_glob="/{export,nfs}/sf55/IL_seq_data/*/" name="MS5_24135" loader="sg21" loading_date="2017-10-20" run_folder="171020_MS5_24135_A_MS5476963-300V2">
+ <instrument id_instrument="103" name="MS5" id_instrument_format="11" external_name="" serial="" iscurrent="1" />
+ <run_lanes><run_lane id_run_lane="141845" id_run="24135" tile_count="12" tracks="1" position="1" />
+</run_lanes>
+ <current_run_status id_run_status="329280" id_run="24135" date="2017-11-12 15:28:11" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_statuses>
+ <run_status id_run_status="329280" id_run="24135" date="2017-11-12 15:28:11" id_run_status_dict="20" id_user="7" username="pipeline" iscurrent="1" description="qc complete" />
+ <run_status id_run_status="329279" id_run="24135" date="2017-11-12 15:28:10" id_run_status_dict="12" id_user="7" username="pipeline" iscurrent="0" description="run archived" />
+ <run_status id_run_status="329274" id_run="24135" date="2017-11-12 14:03:53" id_run_status_dict="18" id_user="7" username="pipeline" iscurrent="0" description="archival in progress" />
+ <run_status id_run_status="329273" id_run="24135" date="2017-11-12 14:00:03" id_run_status_dict="17" id_user="7" username="pipeline" iscurrent="0" description="archival pending" />
+ <run_status id_run_status="326667" id_run="24135" date="2017-10-22 10:39:20" id_run_status_dict="19" id_user="7" username="pipeline" iscurrent="0" description="qc review pending" />
+ <run_status id_run_status="326666" id_run="24135" date="2017-10-22 10:38:21" id_run_status_dict="9" id_user="7" username="pipeline" iscurrent="0" description="analysis complete" />
+ <run_status id_run_status="326560" id_run="24135" date="2017-10-21 20:01:43" id_run_status_dict="24" id_user="7" username="pipeline" iscurrent="0" description="secondary analysis in progress" />
+ <run_status id_run_status="326556" id_run="24135" date="2017-10-21 19:23:59" id_run_status_dict="7" id_user="7" username="pipeline" iscurrent="0" description="analysis in progress" />
+ <run_status id_run_status="326548" id_run="24135" date="2017-10-21 16:23:52" id_run_status_dict="11" id_user="7" username="pipeline" iscurrent="0" description="run mirrored" />
+ <run_status id_run_status="326549" id_run="24135" date="2017-10-21 16:23:52" id_run_status_dict="6" id_user="7" username="pipeline" iscurrent="0" description="analysis pending" />
+ <run_status id_run_status="326544" id_run="24135" date="2017-10-21 15:50:55" id_run_status_dict="4" id_user="7" username="pipeline" iscurrent="0" description="run complete" />
+ <run_status id_run_status="326533" id_run="24135" date="2017-10-21 13:35:51" id_run_status_dict="2" id_user="7" username="pipeline" iscurrent="0" description="run in progress" />
+ <run_status id_run_status="326459" id_run="24135" date="2017-10-20 14:38:31" id_run_status_dict="1" id_user="132" username="pipeline" iscurrent="0" description="run pending" />
+ </run_statuses>
+ <annotations>
+ <annotation id_run_annotation="80482" id_run="24135" id_annotation="86611" date="2017-10-21 13:29:09" id_user="71" username="srl" comment="Run not tracked because flowcell_id was wrong, tracking database updated" attachment_name="" run_current_ok="" current_cycle="" />
+ <annotation id_run_annotation="80593" id_run="24135" id_annotation="86838" date="2017-10-30 13:50:44" id_user="89" username="ces" comment="Runfolder kept for a few months for GbS auto process testing" attachment_name="" run_current_ok="" current_cycle="" />
+ </annotations>
+ <tags>
+   <tag id_tag="20" description="multiplex" />
+   <tag id_tag="17" description="paired_read" />
+   <tag id_tag="16" description="rta" />
+   <tag id_tag="19" description="staging" />
+ </tags>
+</run>

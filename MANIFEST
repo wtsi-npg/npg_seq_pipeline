@@ -114,6 +114,9 @@ t/bin/software/solexa/jars/BamMerger.jar
 t/bin/software/solexa/jars/Illumina2bam.jar
 t/bin/software/solexa/jars/SplitBamByReadGroup.jar
 t/data/samplesheet_1234.csv
+t/data/miseq/24135_RunInfo.xml
+t/data/miseq/npg/run/24135.xml
+t/data/miseq/samplesheet_24135.csv
 t/data/qc/1234_samplesheet_amended.csv
 t/data/qc/samplesheet_14353.csv
 t/data/qc/samplesheet_14043.csv
