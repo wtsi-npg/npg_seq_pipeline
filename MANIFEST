@@ -44,6 +44,7 @@ lib/npg_pipeline/function/status.pm
 lib/npg_pipeline/function/warehouse_archiver.pm
 lib/npg_pipeline/executor.pm
 lib/npg_pipeline/executor/lsf.pm
+lib/npg_pipeline/executor/wr.pm
 lib/npg_pipeline/executor/lsf/job.pm
 lib/npg_pipeline/executor/lsf/options.pm
 lib/npg_pipeline/pluggable.pm
@@ -97,6 +98,7 @@ t/21-references_adapters.t
 t/30-executor.t
 t/30-executor-lsf.t
 t/30-executor-lsf-job.t
+t/30-executor-wr.t
 t/50-npg_pipeline-daemon-archival.t
 t/50-npg_pipeline-daemon-analysis.t
 t/60-npg_tracking-daemon-analysis.t

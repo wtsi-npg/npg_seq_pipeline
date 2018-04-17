@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 10;
+use Test::More tests => 12;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
@@ -204,8 +204,45 @@ subtest 'specifying functions via function_order' => sub {
   lives_ok { $p->main() } q{no error running main};
 };
 
-subtest 'propagating options to the executor' => sub {
-  plan tests => 21;
+subtest 'creating executor object' => sub {
+  plan tests => 13;
+
+  my $ref = {
+    function_order        => [qw/run_archival_in_progress/],
+    runfolder_path        => $runfolder_path,
+    bam_basecall_path     => $runfolder_path,
+    spider                => 0,
+  };
+
+  my $p = npg_pipeline::pluggable->new($ref);
+  is ($p->executor_type(), 'lsf', 'default executor type is "lsf"');
+  ok ($p->execute, '"execute" option is true by default');
+  my $e = $p->executor();
+  isa_ok ($e, 'npg_pipeline::executor::lsf');
+
+  $ref->{'executor_type'} = 'some';
+  $p = npg_pipeline::pluggable->new($ref);
+  is ($p->executor_type(), 'some', 'executor type is "some" as set');
+  throws_ok { $p->executor() }
+    qr/Can't locate npg_pipeline\/executor\/some\.pm/,
+    'error if executor modules does not exist';
+
+  for my $etype (qw/lsf wr/) { 
+    $ref->{'executor_type'} = $etype;
+    my $pl = npg_pipeline::pluggable->new($ref);
+    is ($pl->executor_type(), $etype, "executor type is $etype as set");
+    my $ex = $pl->executor();
+    isa_ok ($ex, 'npg_pipeline::executor::' . $etype);
+    ok (!$ex->has_analysis_path, 'analysis path is not set');
+    my $path1 = join q[],$runfolder_path,'/t_10-pluggable.t_1234_',$pl->timestamp, q[-];
+    my $path2 = join q[], '.commands4', uc $etype, 'jobs.', $etype eq 'lsf' ? 'json' : 'txt';
+    like ($ex->commands4jobs_file_path(), qr/\A$path1(\d+)$path2\Z/,
+      'file path to save commands for jobs');
+  }
+};
+
+subtest 'propagating options to the lsf executor' => sub {
+  plan tests => 14;
 
   my @functions_in_order = qw(
     run_archival_in_progress
@@ -222,26 +259,7 @@ subtest 'propagating options to the executor' => sub {
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
-  is ($p->executor_type(), 'lsf', 'default executor type is "lsf"');
-  ok ($p->execute, '"execute" option is true by default');
   my $e = $p->executor();
-  isa_ok ($e, 'npg_pipeline::executor::lsf');
-  
-  $ref->{'executor_type'} = 'some';
-  $p = npg_pipeline::pluggable->new($ref);
-  is ($p->executor_type(), 'some', 'executor type is "some" as set');
-  throws_ok { $p->executor() }
-    qr/Can't locate npg_pipeline\/executor\/some\.pm/,
-    'error if executor modules does not exist';
-  
-  $ref->{'executor_type'} = 'lsf';
-  $p = npg_pipeline::pluggable->new($ref);
-  is ($p->executor_type(), 'lsf', 'executor type is "lsf" as set');
-  $p->function_definitions();
-  $p->function_graph();
-
-  $e = $p->executor();
-  isa_ok ($e, 'npg_pipeline::executor::lsf');
 
   my @boolean_attrs = qw/interactive no_sf_resource no_bsub no_array_cpu_limit/;
   for my $attr (@boolean_attrs) {
@@ -270,7 +288,7 @@ subtest 'propagating options to the executor' => sub {
   is ($e->array_cpu_limit, 4, 'array_cpu_limit set correctly');
 };
 
-subtest 'options and error capture' => sub {
+subtest 'running the pipeline (lsf executor)' => sub {
   plan tests => 6;
 
   my @functions_in_order = qw(
@@ -282,11 +300,11 @@ subtest 'options and error capture' => sub {
   );
 
   my $ref = {
-    function_order        => \@functions_in_order,
-    runfolder_path        => $runfolder_path,
-    spider                => 0,
-    execute               => 0,
-    no_sf_resource        => 1,
+    function_order => \@functions_in_order,
+    runfolder_path => $runfolder_path,
+    spider         => 0,
+    execute        => 0,
+    no_sf_resource => 1,
   };
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[/t/data];
@@ -320,6 +338,46 @@ subtest 'options and error capture' => sub {
   symlink '/bin/false', "$bin/bkill";
   throws_ok { npg_pipeline::pluggable->new($ref)->main() }
     qr/Failed to submit command to LSF/, q{error running main};
+};
+
+subtest 'running the pipeline (wr executor)' => sub {
+  plan tests => 3;
+
+  my @functions_in_order = qw(
+    run_archival_in_progress
+    upload_auto_qc_to_qc_database
+    run_run_archived
+    run_qc_complete
+    update_warehouse_post_qc_complete
+  );
+
+  my $ref = {
+    function_order => \@functions_in_order,
+    runfolder_path => $runfolder_path,
+    spider         => 0,
+    execute        => 0,
+    executor_type  => 'wr',
+  };
+
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[/t/data];
+  # soft-link wr command to /bin/false so that it fails
+  my $bin = "$test_dir/bin";
+  my $wr = "$bin/wr";
+  symlink '/bin/false', $wr;
+  local $ENV{'PATH'} = join q[:], $bin, $ENV{'PATH'};
+
+  my $p = npg_pipeline::pluggable->new($ref);
+  lives_ok { $p->main(); } q{no error running main without execution };
+
+  $ref->{'execute'} = 1; 
+  throws_ok { npg_pipeline::pluggable->new($ref)->main() }
+    qr/Error submitting for execution: Error submitting wr jobs/,
+    q{error running main};
+
+  # soft-link wr command to /bin/false so that it succeeds
+  unlink $wr;
+  symlink '/bin/true', $wr;
+  lives_ok { npg_pipeline::pluggable->new($ref)->main() } q{no error running main};
 };
 
 subtest 'positions and spidering' => sub {
