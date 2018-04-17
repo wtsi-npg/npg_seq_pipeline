@@ -1,18 +1,17 @@
 LIST OF CHANGES
 ---------------
 
- - capture dependencies between pipeline steps in a directed acyclic graph
+ - new modules to execute submission of definitions to LSF
+ - captured dependencies between pipeline steps in a directed acyclic graph
  - moved flags, attributes and method related to the overall
    pipeline logic to npg_pipeline::pluggable
  - flattened directory structure for modules implementing functions,
    they all now belong to npg_pipeline::function namespace
- - consolidated functions formely defined in the pluggable
-   namespace in npg_pipeline::function::collection module
  - removed methods representing functions, created mapping of
-   functions to modules, methods and options (a registry)
+   functions to modules, methods and options in
    npg_pipeline::pluggable::registry
  - removed ::harold:: component from pipelines'namespace
- - removed post_qc_review pipeline module 
+ - removed post_qc_review pipeline module
  - added npg_pipeline_ prefix to this package's script names if
    was not part of their name
  - removed unused module for fixing Illumina config files
@@ -21,7 +20,8 @@ LIST OF CHANGES
  - removed unused implementation for function copy_interop_files_to_irods
  - removed unused spatial_filter, fix_broken_files and force_phix_split flags
  - removed a number of unused methods in npg_pipeline::base
- - new modules to execute submission of commands in definitions to LSF
+
+release 51.12.0
  - Travis CI build - add iRODS test server
  - run_is_deletable script moved to this package from data_handling,
      custom conversion between run id and run folder path refactored to use
