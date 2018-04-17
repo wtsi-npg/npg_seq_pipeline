@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 51.12.0
  - Travis CI build - add iRODS test server
  - run_is_deletable script moved to this package from data_handling,
      custom conversion between run id and run folder path refactored to use
