@@ -26,8 +26,6 @@ our $VERSION = '0';
 
 Readonly::Scalar my $VERTEX_LSF_JOB_IDS_ATTR_NAME => q[lsf_job_ids];
 Readonly::Scalar my $LSF_JOB_IDS_DELIM            => q[-];
-Readonly::Scalar my $SUSPENDED_START_FUNCTION     => q[pipeline_start];
-Readonly::Scalar my $END_FUNCTION                 => q[pipeline_end];
 Readonly::Scalar my $DEFAULT_MAX_TRIES            => 3;
 Readonly::Scalar my $DEFAULT_MIN_SLEEP            => 1;
 Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB   => 50;
@@ -104,26 +102,20 @@ Creates and submits LSF jobs for execution.
 override 'execute' => sub {
   my $self = shift;
 
-  my @nodes = $self->function_graph4jobs()->topological_sort();
-
-  if (@nodes) {
-
-    try {
-      foreach my $function (@nodes) {
-        $self->_execute_function($function);
-      }
-      $self->_save_commands4jobs();
-      if (!$self->interactive) {
-        $self->_resume();
-      }
-    } catch {
-      $self->logcroak('Error creating LSF jobs: ' . $_);
-      $self->_kill_jobs();
-    };
-
-  } else {
-    $self->warn('Empty function4jobs graph');
-  }
+  try {
+    foreach my $function ($self->function_graph4jobs()
+                               ->topological_sort()) {
+      $self->_execute_function($function);
+    }
+    $self->_save_commands4jobs();
+    if (!$self->interactive) {
+      $self->_resume();
+    }
+  } catch {
+    my $error = $_;
+    $self->_kill_jobs();
+    $self->logcroak(qq{Error creating LSF jobs: $error});
+  };
 
   return;
 };
@@ -208,8 +200,15 @@ sub _resume {
   my $self = shift;
 
   my $g = $self->function_graph4jobs();
+  my @v = $g->source_vertices();
+  if (scalar @v == 0) {
+    $self->logcroak(q{At least one source vertice should exist});
+  }
+  if (scalar @v > 1) {
+    $self->logcroak(q{Multiple source vertices are not expected});
+  }
   my $suspended_start_job_id = $g->get_vertex_attribute(
-     $SUSPENDED_START_FUNCTION, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
+     $v[0], $VERTEX_LSF_JOB_IDS_ATTR_NAME);
   #####
   # If the pipeline_start job was used to keep all submitted jobs in pending
   # state and if the value of the interactive attribute is false, resume
@@ -236,10 +235,10 @@ sub _kill_jobs {
     uniq
     reverse
     sort { $a <=> $b }
-    map  { _string_job_ids2list($_) }
-    grep { $g->get_vertex_attribute($_, $VERTEX_LSF_JOB_IDS_ATTR_NAME) }
-    grep { $g->has_vertex_attribute($_, $VERTEX_LSF_JOB_IDS_ATTR_NAME) ? $_ : q[] }
-    grep { $_ ne $SUSPENDED_START_FUNCTION }
+    map  { _string_job_ids2list(
+             $g->get_vertex_attribute($_, $VERTEX_LSF_JOB_IDS_ATTR_NAME)) }
+    grep { !$g->is_source_vertex($_) &&
+           $g->has_vertex_attribute($_, $VERTEX_LSF_JOB_IDS_ATTR_NAME) }
     $g->vertices();
 
   if (@job_ids) {
@@ -275,7 +274,7 @@ sub _submit_function {
     my $job = npg_pipeline::executor::lsf::job->new(\%args);
 
     my $bsub_cmd =  sprintf q(bsub %s%s '%s'),
-      $function_name eq $SUSPENDED_START_FUNCTION ? q[-H ] : q[],
+      !@depends_on ? q[-H ] : q[],
       $job->params(),
       (join q[ ], $SCRIPT4SAVED_COMMANDS, '--path', $self->commands4jobs_file_path(),
                                           '--function_name', $function_name);
