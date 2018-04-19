@@ -25,7 +25,8 @@ npg_pipeline::executor::wr
 
 =head1 DESCRIPTION
 
-Submission of function definition for execution by wr.
+Submission of pipeline function definitions for execution by
+L<wr workflow runner|https://github.com/VertebrateResequencing/wr>.
 
 =cut
 
@@ -46,30 +47,24 @@ Creates and submits wr jobs for execution.
 override 'execute' => sub {
   my $self = shift;
 
-  my @nodes = $self->function_graph4jobs()->topological_sort();
-
-  if (@nodes) {
-    my $action = 'defining';
-    try {
-      foreach my $function (@nodes) {
-        $self->_process_function($function);
-      }
-      $action = 'saving';
-      my $json = JSON->new->canonical;
-      $self->save_commands4jobs(
-           map { $json->encode($_) } # convert every wr definition to JSON
-           map { @{$_} }             # expand arrays of wr definitions        
-           values %{$self->commands4jobs()}
+  my $action = 'defining';
+  try {
+    foreach my $function ($self->function_graph4jobs()
+                               ->topological_sort()) {
+      $self->_process_function($function);
+    }
+    $action = 'saving';
+    my $json = JSON->new->canonical;
+    $self->save_commands4jobs(
+         map { $json->encode($_) } # convert every wr definition to JSON
+         map { @{$_} }             # expand arrays of wr definitions        
+         values %{$self->commands4jobs()}
                                );
-      $action = 'submitting';
-      $self->_submit();
-    } catch {
-      $self->logcroak(qq[Error $action wr jobs: $_]);
-    };
-
-  } else {
-    $self->warn(q[Empty function4jobs graph]);
-  }
+    $action = 'submitting';
+    $self->_submit();
+  } catch {
+    $self->logcroak(qq[Error $action wr jobs: $_]);
+  };
 
   return;
 };
