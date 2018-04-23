@@ -38,7 +38,7 @@ subtest 'wr add command' => sub {
     function_graph          => Graph::Directed->new(),
     commands4jobs_file_path => $file);
   is ($e->_wr_add_command(),
-    "wr add --cwd /tmp --disk 0 --override 2 --priority 50 --retry 1 -f $file",
+    "wr add --cwd /tmp --disk 0 --override 2 --priority 50 --retries 1 -f $file",
     'wr command');
 }; 
 

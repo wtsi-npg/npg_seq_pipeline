@@ -110,7 +110,7 @@ sub _definitions4function {
     if (@depends_on) {
       $wr_def->{'deps'} = \@depends_on;
     }
-    $wr_def->{'dep_grps'} = $group_id;
+    $wr_def->{'dep_grps'} = [$group_id];
     push @{$self->commands4jobs()->{'function_name'}}, $wr_def;
   }
 
@@ -126,7 +126,8 @@ sub _definition4job {
   $def->{'memory'} .= q[M];
 
   if ($d->has_num_cpus()) {
-    $def->{'cpus'} = $d->num_cpus()->[0];
+    use warnings FATAL => qw(numeric);
+    $def->{'cpus'} = int $d->num_cpus()->[0];
   }
 
   my $log_file = sub {
@@ -136,7 +137,7 @@ sub _definition4job {
     return join q[/], $d->log_file_dir(), $log_name;
   };
 
-  $def->{'cmd'} = join q[ ], q[(], $d->command(), q[)], q[2>&1], $log_file->();
+  $def->{'cmd'} = join q[ ], q[(], $d->command(), q[)], q[2>&1], q[|], q[tee], $log_file->();
 
   return $def;
 }
@@ -151,7 +152,7 @@ sub _wr_add_command {
           '--disk'       => 0,
           '--override'   => 2,
           '--priority'   => 50,
-          '--retry'      => 1,
+          '--retries'    => 1,
                        );
 
   return join q[ ], qw/wr add/,
