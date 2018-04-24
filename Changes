@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - tweak to GbS library type check in seq_alignment.pm as arrived as GBS.
+
 release 51.12.0
  - Travis CI build - add iRODS test server
  - run_is_deletable script moved to this package from data_handling,

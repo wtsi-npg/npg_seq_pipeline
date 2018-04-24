@@ -694,7 +694,7 @@ sub _has_gbs_plex{
   if(not $self->_gbs_plex($l)->gbs_plex_path){
     $self->logcroak(qq{$lstring - GbS plex set but no gbs plex path found});
   }
-  if($l->library_type and $l->library_type !~ /GbS/smx){
+  if($l->library_type and $l->library_type !~ /^GbS/ismx){
     $self->logcroak(qq{$lstring - GbS plex set but library type incompatible});
   }
   $self->debug(qq{$lstring - Doing GbS plex analysis....});
