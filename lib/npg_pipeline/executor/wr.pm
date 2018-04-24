@@ -111,6 +111,7 @@ sub _definitions4function {
       $wr_def->{'deps'} = \@depends_on;
     }
     $wr_def->{'dep_grps'} = [$group_id];
+    $wr_def->{'rep_grp'}  = join q[-], $d->identifier(), $function_name;
     push @{$self->commands4jobs()->{'function_name'}}, $wr_def;
   }
 
