@@ -22,6 +22,7 @@ if($EVAL_ERROR) {
                              -verbose  => "%m at %f line %l, policy %p\n",
                              -exclude => [
                                'Miscellanea::RequireRcsKeywords',
+                               'Subroutines::ProhibitUnusedPrivateSubroutines'
                              ],
 			    );
   all_critic_ok();

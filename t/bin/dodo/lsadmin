@@ -1,4 +1,0 @@
-#!/bin/bash
-
-echo 'LSF_UNIT_FOR_LIMITS = dodo'
-

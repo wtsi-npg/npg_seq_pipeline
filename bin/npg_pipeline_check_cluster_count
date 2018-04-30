@@ -1,0 +1,101 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use Log::Log4perl qw(:levels);
+
+use npg_pipeline::function::cluster_count;
+
+our $VERSION = '0';
+
+my $layout = '%d %-5p %c - %m%n';
+Log::Log4perl->easy_init({layout => $layout,
+                          level  => $INFO,
+                          utf8   => 1});
+
+npg_pipeline::function::cluster_count->new_with_options()->run_cluster_count_check();
+
+0;
+
+__END__
+
+=head1 NAME
+
+npg_pipeline_check_cluster_count
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+This is one of the scripts invoked by the analysis pipeline, most likely
+as an LSF job.
+It checks pf cluster counts in BustardSummary.xml match the read counts
+in the bam files.
+
+=head1 USAGE
+
+  npg_pipeline_check_cluster_count --id_run 1234 --position 4 \
+    --bam_basecall_path /path/to/bam_basecall --archive_path /path/to/archive/directory
+
+=head1 REQUIRED ARGUMENTS
+
+  id_run
+  position
+  bam_basecall_path
+
+=head1 OPTIONS
+
+pathways which will eventually allow determination of bam_basecall and archive level directories
+
+=head1 EXIT STATUS
+
+ 0
+
+=head1 SUBROUTINES/METHODS
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item FindBin
+
+=item lib
+
+=item Log::Log4perl
+
+=back
+
+=head1 INCOMPATIBILITIES
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 AUTHOR
+
+Guoying Qi
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2018 Genome Research Limited
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.

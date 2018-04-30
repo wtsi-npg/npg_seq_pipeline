@@ -1,0 +1,111 @@
+use strict;
+use warnings;
+use Test::More tests => 3;
+use Test::Exception;
+use Log::Log4perl qw(:levels);
+
+use t::util;
+
+my $util = t::util->new();
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $util->temp_directory(), 'logfile'),
+                          utf8   => 1});
+
+my $runfolder_path = $util->analysis_runfolder_path();
+my $pqq_suffix = q[_post_qc_complete];
+my @wh_methods = qw/update_warehouse update_ml_warehouse/;
+@wh_methods = map {$_, $_ . $pqq_suffix} @wh_methods;
+
+use_ok('npg_pipeline::function::warehouse_archiver');
+
+subtest 'warehouse updates' => sub {
+  plan tests => 41;
+
+  my $c = npg_pipeline::function::warehouse_archiver->new(
+    run_folder          => q{123456_IL2_1234},
+    runfolder_path      => $runfolder_path,
+    recalibrated_path   => $runfolder_path,
+  );
+  isa_ok ($c, 'npg_pipeline::function::warehouse_archiver');
+  
+  my $recalibrated_path = $c->recalibrated_path();
+  my $log_dir = $c->make_log_dir($recalibrated_path);
+  my $log_dir_in_outgoing = $log_dir;
+  $log_dir_in_outgoing =~ s{/analysis/}{/outgoing/}smx;
+
+  foreach my $m (@wh_methods) {
+
+    my $postqcc  = $m =~ /$pqq_suffix/smx;
+    my $ml       = $m =~ /_ml_/smx;
+    my $command  = $ml ? 'npg_runs2mlwarehouse' : 'warehouse_loader';    
+    my $job_name = $command . '_1234_warehouse_archiver';
+    if ($postqcc) {
+      $job_name .= '_postqccomplete';
+    }  
+    $command    .= ' --verbose --id_run 1234';
+    if (!$ml) {
+      $command  .= ' --lims_driver_type ' . ($postqcc ?
+                   'ml_warehouse_fc_cache' : 'samplesheet');
+    }
+    my $log_directory = $postqcc ? $log_dir_in_outgoing : $log_dir;
+
+    my $ds = $c->$m();
+    ok ($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
+      'update to warehouse is enabled');
+    my $d = $ds->[0];
+    isa_ok ($d, 'npg_pipeline::function::definition');    
+
+    is ($d->identifier, '1234', 'identifier set to run id');
+    is ($d->created_by, 'npg_pipeline::function::warehouse_archiver', 'created_by');
+    ok (!$d->immediate_mode, 'mode is not immediate');
+    is ($d->command, $command, "command for $m");
+    is ($d->log_file_dir, $log_directory, "log dir for $m");
+    is ($d->job_name, $job_name, "job name for $m");
+    is ($d->queue, 'lowload', 'queue');
+    if ($postqcc) {
+      is ($d->command_preexec, "[ -d '${log_dir_in_outgoing}' ]",
+        "preexec command for $m");
+    } else {
+      ok (!$d->has_command_preexec, "preexec command not defined for $m");
+    }
+  }
+};
+
+subtest 'warehouse updates disabled' => sub {
+  plan tests => 12;
+
+  my $test_method = sub {
+    my ($f, $method, $switch) = @_;
+    my $d = $f->$method();
+    ok($d && scalar @{$d} == 1 &&
+      ($switch eq 'off' ? $d->[0]->excluded : !$d->[0]->excluded),
+      $method . ': update to warehouse switched ' . $switch);
+  };
+
+  foreach my $m (@wh_methods) {
+    my $c = npg_pipeline::function::warehouse_archiver->new(
+      runfolder_path      => $runfolder_path,
+      recalibrated_path   => $runfolder_path,
+      no_warehouse_update => 1
+    );
+    $test_method->($c, $m, 'off');
+
+    $c = npg_pipeline::function::warehouse_archiver->new(
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $runfolder_path,
+      local             => 1,
+    );
+    $test_method->($c, $m, 'off');    
+
+    $c = npg_pipeline::function::warehouse_archiver->new(
+      runfolder_path      => $runfolder_path,
+      recalibrated_path   => $runfolder_path,
+      local               => 1,
+      no_warehouse_update => 0,
+    );
+    $test_method->($c, $m, 'on');
+  }
+};
+
+1;

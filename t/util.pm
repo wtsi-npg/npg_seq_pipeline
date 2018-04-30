@@ -8,7 +8,7 @@ use Readonly;
 use Cwd qw(getcwd);
 use npg::api::request;
 
-Readonly::Scalar our $NFS_STAGING_DISK => q{/nfs/sf45};
+Readonly::Scalar my $NFS_STAGING_DISK => q{/nfs/sf45};
 
 has q{temp_directory} => (
   isa => q{Str},
@@ -16,8 +16,16 @@ has q{temp_directory} => (
   lazy_build => 1,
 );
 sub _build_temp_directory {
-  return tempdir(CLEANUP => 1);
+  my $self = shift;
+  my $clean = $self->clean_temp_directory ? 1 : 0;
+  return tempdir(CLEANUP => $clean);
 }
+
+has q{clean_temp_directory} => (
+  isa     => q{Bool},
+  is      => q{ro},
+  default => 1,
+);
 
 ###############
 # path setups
@@ -144,19 +152,6 @@ sub remove_staging {
   my $staging = $self->temp_directory() . $NFS_STAGING_DISK;
   `rm -rf $staging`;
   return 1;
-}
-
-# for dropping the generated temporary part from paths
-# and also anything which has the cwd in it, will be stripped out
-# since this will not be stable between test runs
-sub drop_temp_part_from_paths {
-  my ( $self, $path ) = @_;
-  my $temp_dir = $self->temp_directory();
-  my $cwd = getcwd();
-  $path =~ s{\Q$temp_dir\E}{}gxms;
-  $path =~ s{\Q$cwd/\E}{}gxms;
-  $path =~ s{\Q$cwd\E}{}gxms;
-  return $path;
 }
 
 # ensure that the environment variables do not get passed around

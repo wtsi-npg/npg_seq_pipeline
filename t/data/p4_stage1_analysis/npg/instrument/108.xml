@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrument id_instrument="108" name="HS31" id_instrument_format="10" model="HiSeq" external_name="" serial="" iscurrent="1">
+<current_runs>
+<current_run id_run="25329" id_instrument="108" priority="2" actual_cycle_count="18" expected_cycle_count="258" is_paired="0" id_run_pair="" name="HS31_25329" id_run_status="343002" date="2018-03-06 12:50:59" id_run_status_dict="2" id_user="7" username="pipeline" description="run in progress"  flowcell_slot="fc_slotA" /><current_run id_run="25330" id_instrument="108" priority="4" actual_cycle_count="18" expected_cycle_count="166" is_paired="0" id_run_pair="" name="HS31_25330" id_run_status="343009" date="2018-03-06 13:24:05" id_run_status_dict="2" id_user="7" username="pipeline" description="run in progress"  flowcell_slot="fc_slotB" /></current_runs>
+<runs>
+</runs>
+<current_instrument_status id_instrument_status="57173" id_instrument="108" date="2018-03-05 11:54:44" id_instrument_status_dict="1" id_user="57" username="lc2" iscurrent="1" description="up" comment="automatic status update" />
+<instrument_statuses>
+</instrument_statuses>
+<instrument_mods>
+</instrument_mods>
+<designations>
+ <designation id_designation="4" description="Accepted" />
+</designations>
+</instrument>
