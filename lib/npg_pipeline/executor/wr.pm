@@ -153,7 +153,7 @@ sub _wr_add_command {
           '--disk'       => 0,
           '--override'   => 2,
           '--priority'   => 50,
-          '--retries'    => 1,
+          '--retries'    => 0,
                        );
 
   return join q[ ], qw/wr add/,
