@@ -1,7 +1,1 @@
-NPG Sequencing Pipeline
-
-Analysis pipeline for processing data coming from Illumina sequencing instruments.
-
-Input data - bcl files, output - aligned bam files (both genomic and sequencing data).
-
-
+README.md

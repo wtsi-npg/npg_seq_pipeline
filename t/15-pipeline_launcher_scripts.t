@@ -3,71 +3,64 @@ use warnings;
 use English qw{-no_match_vars};
 use Test::More tests => 8;
 use Test::Exception;
-use t::util;
 use Cwd;
 
-local $ENV{PATH} = join q[:], q[t/bin], q[t/bin/software/solexa/bin], $ENV{PATH};
-local $ENV{http_proxy} = 'http://wibble';
-local $ENV{no_proxy} = q[];
+use t::util;
 
-my $util = t::util->new();
+my $util    = t::util->new();
+my $tmp_dir = $util->temp_directory();
+my $bin     = cwd() . q[/bin];
 
-my $curdir = cwd();
-my $bin = $curdir . q[/bin];
+my @tools = map { "$tmp_dir/$_" } qw/bamtofastq blat norm_fit/;
+foreach my $tool (@tools) {
+  open my $fh, '>', $tool or die 'cannot open file for writing';
+  print $fh $tool or die 'cannot print';
+  close $fh or warn 'failed to close file handle';
+}
+chmod 0755, @tools;
 
-# Script failures
+local $ENV{'PATH'}       = join q[:], $tmp_dir, $bin, $ENV{'PATH'};
+local $ENV{'http_proxy'} = q[http://wibble];
+local $ENV{'no_proxy'}   = q[];
+
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{/does/not/exist.csv};
-
-  my $util = t::util->new();
   $util->set_rta_staging_analysis_area();
-  my $tmp_dir = $util->temp_directory();
-  local $ENV{TEST_DIR} = $tmp_dir;
 
-  my $out = `$bin/npg_pipeline_central --spider --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo 2>&1`;
+  my $out = `$bin/npg_pipeline_central --spider --no_bsub --no_sf_resource --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo 2>&1`;
   like($out,
   qr/Error initializing pipeline: Error while spidering/,
   'error in spidering when pre-set samplesheet does not exist');
 }
 
 {
-  my $util = t::util->new();
   $util->set_rta_staging_analysis_area();
-  my $tmp_dir = $util->temp_directory();
-  local $ENV{TEST_DIR} = $tmp_dir;
 
-  my $out = `$bin/npg_pipeline_central --no-spider --no_bsub --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo 2>&1`;
+  my $out = `$bin/npg_pipeline_central --no-spider --no_bsub --no_sf_resource --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --function_order dodo 2>&1`;
   like($out,
-  qr/Can't locate object method "dodo" via package "npg_pipeline::pluggable::harold::central"/,
+  qr/Handler for 'dodo' is not registered/,
   'error when function does not exist');
 }
 
-# Script passes
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
   local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = q{t}; # no chache here
 
-  my $util = t::util->new();
   $util->set_rta_staging_analysis_area();
-  my $tmp_dir = $util->temp_directory();
-  local $ENV{TEST_DIR} = $tmp_dir;
  
   lives_ok { qx{
-    $bin/npg_pipeline_post_qc_review --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234};}
+    $bin/npg_pipeline_post_qc_review --no_bsub --no_sf_resource --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234};}
     q{ran bin/npg_pipeline_post_qc_review};
   ok(!$CHILD_ERROR, qq{Return code of $CHILD_ERROR});
 
   lives_ok { qx{
-    $bin/npg_pipeline_post_qc_review --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234  --function_list some}; }
+    $bin/npg_pipeline_post_qc_review --no_bsub --no_sf_resource --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234  --function_list some}; }
     q{ran bin/npg_pipeline_post_qc_review with non-exisitng function list};
   ok($CHILD_ERROR, qq{Child error $CHILD_ERROR});
 }
 
 {
-  my $util = t::util->new();
   $util->set_rta_staging_analysis_area();
-  my $tmp_dir = $util->temp_directory();
-  local $ENV{TEST_DIR} = $tmp_dir;
 
   lives_ok { qx{$bin/npg_pipeline_seqchksum_comparator --id_run=1234 --archive_path=$tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BAM_basecalls_20140815-114817/no_cal/archive --bam_basecall_path=$tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BAM_basecalls_20140815-114817 --lanes=1 };} q{ran bin/npg_pipeline_seqchksum_comparator with analysis and bam_basecall_path};
   ok($CHILD_ERROR, qq{Return code of $CHILD_ERROR as no files found});
