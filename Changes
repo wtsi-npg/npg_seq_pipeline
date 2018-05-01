@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - fixed lane taglist files for TraDIS libraries
+     no longer pad spiked phix tag simply add missing i5 tag for dual index runs
+
 release 51.12.1
  - tweak to GbS library type check in seq_alignment.pm as arrived as GBS (now case-insensitive).
 
