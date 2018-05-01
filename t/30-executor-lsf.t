@@ -34,7 +34,7 @@ subtest 'lsf command execution' => sub {
  
   my $l = npg_pipeline::executor::lsf->new($ref);
 
-  my $e = qr/command have to be a non-empty string/;
+  my $e = qr/command has to be a non-empty string/;
   throws_ok {$l->_execute_lsf_command()} $e, 'command has to be defined';
   throws_ok {$l->_execute_lsf_command(q[])} $e, 'command cannot be an empty string';
   throws_ok {$l->_execute_lsf_command(qq[ \n])} $e,

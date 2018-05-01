@@ -4,6 +4,7 @@ use Moose;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
 use Graph::Directed;
+use File::Slurp;
 use Readonly;
 
 use npg_tracking::util::types;
@@ -301,6 +302,25 @@ sub dependencies {
   return @dependencies;
 }
 
+=head2 save_commands4jobs 
+
+Saves a list of commands to a file defined by the commands4jobs_file_path
+attribute.
+
+=cut
+
+sub save_commands4jobs {
+  my ($self, @commands) = @_;
+
+  if (!@commands) {
+    $self->logcroak(q[List of commands cannot be empty]);
+  }
+  my $file = $self->commands4jobs_file_path();
+  $self->info();
+  $self->info(qq[***** Writing commands for jobs to ${file}]);
+  return write_file($file, map { $_ . qq[\n] } @commands);
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -322,6 +342,8 @@ __END__
 =item namespace::autoclean
 
 =item Graph::Directed
+
+=item File::Slurp
 
 =item Readonly
 

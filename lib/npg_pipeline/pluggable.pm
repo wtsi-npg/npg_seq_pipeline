@@ -263,8 +263,9 @@ has q{executor} => (
 );
 sub _build_executor {
   my $self = shift;
-  my $module = join q[::],
-    'npg_pipeline', 'executor', $self->executor_type;
+
+  my $type = $self->executor_type;
+  my $module = join q[::], 'npg_pipeline', 'executor', $type;
   load_class $module;
   my $attrs = $self->_common_attributes($module);
   #####
@@ -274,10 +275,12 @@ sub _build_executor {
   for my $aname (qw/ function_graph function_definitions /) {
     $attrs->{$aname} = $self->$aname;
   }
-  if ($self->executor_type() eq $DEFAULT_EXECUTOR_TYPE) { # LSF
-    $attrs->{'commands4jobs_file_path'} =
-      $self->_output_file_path(q[.commands4jobs] . $FUNCTION_DAG_FILE_TYPE);
-  }
+
+  my $ext = $type eq $DEFAULT_EXECUTOR_TYPE ? # LSF
+                     $FUNCTION_DAG_FILE_TYPE : q[.txt];
+  $attrs->{'commands4jobs_file_path'} =
+    $self->_output_file_path(join q[], q[.commands4], uc $type, q[jobs], $ext);
+
   return $module->new($attrs);
 }
 

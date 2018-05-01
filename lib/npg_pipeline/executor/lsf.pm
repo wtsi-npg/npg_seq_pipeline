@@ -5,7 +5,6 @@ use MooseX::StrictConstructor;
 use namespace::autoclean;
 use Sys::Filesystem::MountPoint qw(path_to_mount_point);
 use File::Spec;
-use File::Slurp;
 use JSON;
 use Try::Tiny;
 use List::MoreUtils qw(uniq);
@@ -107,7 +106,8 @@ override 'execute' => sub {
                                ->topological_sort()) {
       $self->_execute_function($function);
     }
-    $self->_save_commands4jobs();
+    my $json = JSON->new->pretty->canonical;
+    $self->save_commands4jobs($json->encode($self->commands4jobs()));
     if (!$self->interactive) {
       $self->_resume();
     }
@@ -173,17 +173,6 @@ sub _execute_function {
   $g->set_vertex_attribute($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME, $job_ids);
 
   return;
-}
-
-sub _save_commands4jobs {
-  my $self = shift;
-
-  my $file = $self->commands4jobs_file_path();
-  $self->info();
-  $self->info(qq[***** Writing commands for jobs to ${file}]);
-  my $json = JSON->new->pretty->canonical;
-
-  return write_file($file, $json->encode($self->commands4jobs()));
 }
 
 sub _string_job_ids2list {
@@ -310,7 +299,7 @@ sub _execute_lsf_command {
   $cmd =~ s/\A\s+//xms;
   $cmd =~ s/\s+\Z//xms;
   if (!$cmd) {
-    $self->logcroak('command have to be a non-empty string');
+    $self->logcroak('command has to be a non-empty string');
   }
 
   if ($cmd !~ /\Ab(?: kill|sub|resume )\s/xms) {
@@ -395,8 +384,6 @@ __END__
 =item List::MoreUtils
 
 =item Readonly
-
-=item File::Slurp
 
 =item JSON
 

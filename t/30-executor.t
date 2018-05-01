@@ -1,10 +1,11 @@
 use strict;
 use warnings;
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Exception;
 use File::Temp qw(tempdir);
 use Graph::Directed;
 use Log::Log4perl qw(:levels);
+use Perl6::Slurp;
 
 use npg_pipeline::function::definition;
 
@@ -64,6 +65,36 @@ subtest 'builder for commands4jobs_file_path' => sub {
   $e = npg_pipeline::executor->new($ref);
   is ($e->commands4jobs_file_path(), "$tmp/commands4jobs_2345_June 25th",
     'correct path');
+};
+
+subtest 'saving commands for jobs' => sub {
+ plan tests => 13;
+
+  my $path = "$tmp/commands.txt";
+  my $ref = {
+    function_definitions    => {},
+    function_graph          => Graph::Directed->new(),
+    commands4jobs_file_path => $path
+            };
+  my $e = npg_pipeline::executor->new($ref);
+  throws_ok { $e->save_commands4jobs() }
+    qr/List of commands cannot be empty/, 'error if no data to save';
+  
+  ok (!-e $path, 'prerequisite - file does not exist');
+  lives_ok { $e->save_commands4jobs('some data to save') } 'command saved';
+  ok (-f $path, 'file created');
+  my @lines = slurp $path;
+  is (scalar @lines, 1, 'file contains one line');
+  is ($lines[0], "some data to save\n", 'correct line content');
+  unlink $path or die "Failed to delete file $path";
+  lives_ok { $e->save_commands4jobs(qw/some data to save/) } 'commands saved';
+  ok (-f $path, 'file created');
+  @lines = slurp $path;
+  is (scalar @lines, 4, 'file contains four lines');
+  is ($lines[0], "some\n", 'correct line content');
+  is ($lines[1], "data\n", 'correct line content');
+  is ($lines[2], "to\n", 'correct line content');
+  is ($lines[3], "save\n", 'correct line content');
 };
 
 subtest 'builder for function_graph4jobs' => sub {
