@@ -7,13 +7,15 @@ use Getopt::Long;
 our $VERSION = '0';
 
 my $exclude_count = 0;
-my $divide_by = 1;
-my $maximum = 0;
+my $divide_by     = 1;
+my $maximum       = 0;
+my $user_num_theads = 0;
 
 GetOptions(
   'exclude_count=i' => \$exclude_count,
   'maximum=i'       => \$maximum,
-  'divide_by=i'     => \$divide_by
+  'divide_by=i'     => \$divide_by,
+  'num_threads=i'   => \$user_num_theads,
 ) or die "Problem with command line arguments\n";
 
 my $n = 0;
@@ -23,13 +25,21 @@ if( my $bindvar = $ENV{'LSB_BIND_CPU_LIST'} ) {
 if ( (!$n) && (my $mcpu_hosts = $ENV{'LSB_MCPU_HOSTS'})) {
   ($n) = $mcpu_hosts =~ /(\d+)\s*\Z/smx;
 }
+
+$n ||= $user_num_theads;
+my $total = $n;
+
 if ($maximum and $n > $maximum) {
   $n = $maximum;
 }
 $n -= $exclude_count;
 $n = int $n/$divide_by;
 $n = $n>1 ? $n : 1;
-print $n or die"Cannot print out threads to use\n";
+
+warn "Number of threads for the job: overall - $total, calculated - $n\n";
+
+print $n or die "Cannot print out threads to use\n";
+
 0;
 
 __END__
