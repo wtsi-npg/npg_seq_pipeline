@@ -4,6 +4,8 @@ LIST OF CHANGES
 release 51.12.2
  - fixed lane taglist files for TraDIS libraries
      no longer pad spiked phix tag simply add missing i5 tag for dual index runs
+ - update p4 stage defaul values in general_values.ini
+     p4_stage1_memory=20000, +p4_stage1_slots=8, +p4_stage1_i2b_thread_count=8
 
 release 51.12.1
  - tweak to GbS library type check in seq_alignment.pm as arrived as GBS (now case-insensitive).
