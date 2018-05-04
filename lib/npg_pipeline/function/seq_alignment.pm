@@ -15,7 +15,6 @@ use npg_tracking::data::reference::find;
 use npg_tracking::data::transcriptome;
 use npg_tracking::data::bait;
 use npg_tracking::data::gbs_plex;
-use npg_common::roles::software_location;
 use st::api::lims;
 use npg_pipeline::function::definition;
 
@@ -59,20 +58,6 @@ sub _build_phix_reference {
 
   return $ruser->refs->[0];
 }
-
-has q{_AlignmentFilter_jar} => (
-                           isa        => q{NpgCommonResolvedPathJarFile},
-                           is         => q{ro},
-                           coerce     => 1,
-                           default    => q{AlignmentFilter.jar},
-                                );
-
-has q{_SplitBamByChromosomes_jar} => (
-                           isa        => q{NpgCommonResolvedPathJarFile},
-                           is         => q{ro},
-                           coerce     => 1,
-                           default    => q{SplitBamByChromosomes.jar},
-                                );
 
 has 'input_path'      => ( isa        => 'Str',
                            is         => 'ro',
@@ -216,7 +201,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     af_metrics          => $name_root.q{.bam_alignment_filter_metrics.json},
     rpt                 => $name_root,
     phix_reference_genome_fasta => $self->phix_reference,
-    alignment_filter_jar => $self->_AlignmentFilter_jar,
   };
   my $p4_ops = {
     prune => [],
@@ -775,8 +759,6 @@ objects for all entities of the run eligible for alignment and split.
 =item npg_tracking::data::transcriptome
 
 =item npg_tracking::data::gbs_plex
-
-=item npg_common::roles::software_location
 
 =back
 

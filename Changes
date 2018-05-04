@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - remove redundant dependency on illumina2bam jars
+
  - added wr executor
  - new modules to execute submission of definitions to LSF
  - captured dependencies between pipeline steps in a directed acyclic graph

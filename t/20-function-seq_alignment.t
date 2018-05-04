@@ -19,7 +19,6 @@ use st::api::lims;
 use_ok('npg_pipeline::function::seq_alignment');
 
 local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/rna_seq];
-local $ENV{CLASSPATH} = q[t/bin/software/solexa/jars];
 
 my $odir    = abs_path cwd;
 my $dir     = tempdir( CLEANUP => 1);
