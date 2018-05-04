@@ -10,7 +10,6 @@ use File::Slurp;
 use JSON;
 use open q(:encoding(UTF8));
 
-use npg_common::roles::software_location;
 use npg_pipeline::cache::barcodes;
 use npg_pipeline::function::definition;
 
@@ -65,15 +64,6 @@ sub generate {
   }
 
   return \@definitions;
-}
-
-foreach my $jar_name (qw/Illumina2bam BamAdapterFinder BamIndexDecoder/) {
-  has q{_}.$jar_name.q{_jar} => (
-                           isa        => q{NpgCommonResolvedPathJarFile},
-                           is         => q{ro},
-                           coerce     => 1,
-                           default    => $jar_name.q{.jar},
-                         );
 }
 
 has 'p4_stage1_analysis_log_base' => (
@@ -266,7 +256,6 @@ sub _generate_command_params {
   my $outfile = $log_folder . q{/} . $job_name . q{.%J.out};
   $job_name = q{'} . $job_name . q{'};
 
-  $p4_params{illumina2bam_jar} = $self->_Illumina2bam_jar;
   $p4_params{i2b_run_path} = $runfolder_path;
   $p4_params{i2b_thread_count} = $self->general_values_conf()->{'p4_stage1_i2b_thread_count'} || $DEFAULT_I2B_THREAD_COUNT;
   $p4_params{i2b_runfolder} = $run_folder;
@@ -362,7 +351,6 @@ sub _generate_command_params {
       $self->logcroak('Tag list file path should be defined for multiplexed lane ', $position);
     }
 
-    $p4_params{bamindexdecoder_jar} = $self->_BamIndexDecoder_jar;
     $p4_params{$bid_flag_map{q/BARCODE_FILE/}} = $tag_list_file;
     $p4_params{$bid_flag_map{q/METRICS_FILE/}} = $full_bam_name . q{.tag_decode.metrics};
 
@@ -571,8 +559,6 @@ objects for all lanes.
 =item JSON
 
 =item open
-
-=item npg_common::roles::software_location
 
 =item npg_pipeline::cache::barcodes
 

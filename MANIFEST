@@ -109,12 +109,6 @@ t/bin/bsub
 t/bin/dodo/machine-location
 t/bin/machine-location
 t/bin/red/machine-location
-t/bin/software/solexa/jars/AlignmentFilter.jar
-t/bin/software/solexa/jars/BamAdapterFinder.jar
-t/bin/software/solexa/jars/BamIndexDecoder.jar
-t/bin/software/solexa/jars/BamMerger.jar
-t/bin/software/solexa/jars/Illumina2bam.jar
-t/bin/software/solexa/jars/SplitBamByReadGroup.jar
 t/data/samplesheet_1234.csv
 t/data/miseq/24135_RunInfo.xml
 t/data/miseq/npg/run/24135.xml

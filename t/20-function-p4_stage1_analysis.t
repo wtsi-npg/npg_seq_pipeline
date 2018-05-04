@@ -11,7 +11,6 @@ use t::util;
 
 my $util = t::util->new();
 my $dir = $util->temp_directory();
-local $ENV{CLASSPATH} = q{t/bin/software/solexa/jars};
 
 use_ok('npg_pipeline::function::p4_stage1_analysis');
 my $current = abs_path(getcwd());
@@ -142,7 +141,6 @@ subtest 'check_save_arguments' => sub {
 	  'i2b_run_path' => $dir . q[/nfs/sf45/IL2/analysis/123456_IL2_1234],
 	  'teepot_tempdir' => '.',
 	  'split_prefix' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/lane1',
-	  'illumina2bam_jar' => $current . '/t/bin/software/solexa/jars/Illumina2bam.jar',
 	  'i2b_intensity_dir' => $intensities_dir,
 	  'i2b_sample_aliases' => 'SRS000147',
 	  'phix_alignment_method' => 'bwa_aln_se',
