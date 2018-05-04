@@ -401,6 +401,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->info(q[  p4 parameters written to ] . $param_vals_fname);
   $self->info(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
+  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->_num_cpus->[0];
   my $id = $self->_job_id();
   return join q( ),
     q(bash -c '),
@@ -413,9 +414,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     q(-param_vals), $param_vals_fname,
     q(-export_param_vals), qq(${name_root}_p4s2_pv_out_${id}.json),
     q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
-    q(-keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads`),
-    q(-keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --exclude 1 --divide 2`),
-    q(-keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --exclude 2 --divide 2`),
+    qq(-keys aligner_numthreads -vals `$num_threads_expression`),
+    qq(-keys br_numthreads_val -vals `$num_threads_expression --exclude 1 --divide 2`),
+    qq(-keys b2c_mt_val -vals `$num_threads_expression --exclude 2 --divide 2`),
     q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
     qq(> run_$name_root.json),
     q{&&},
