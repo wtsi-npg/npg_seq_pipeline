@@ -12,6 +12,13 @@ use Try::Tiny;
 
 extends 'npg_pipeline::executor';
 
+with 'npg_pipeline::executor::options' => {
+  -excludes => [qw/ no_sf_resource
+                    no_bsub
+                    no_array_cpu_limit
+                    array_cpu_limit/ ]
+};
+
 our $VERSION = '0';
 
 Readonly::Scalar my $VERTEX_GROUP_DEP_ID_ATTR_NAME => q[wr_group_id];
@@ -111,7 +118,11 @@ sub _definitions4function {
       $wr_def->{'deps'} = \@depends_on;
     }
     $wr_def->{'dep_grps'} = [$group_id];
-    $wr_def->{'rep_grp'}  = join q[-], $d->identifier(), $function_name;
+    my @report_group = ($d->identifier(), $function_name);
+    if ($self->has_job_name_prefix()) {
+      unshift @report_group, $self->job_name_prefix();
+    }
+    $wr_def->{'rep_grp'}  = join q[-], @report_group;
     push @{$self->commands4jobs()->{'function_name'}}, $wr_def;
   }
 
@@ -146,13 +157,15 @@ sub _definition4job {
 sub _wr_add_command {
   my $self = shift;
 
+  my $priority = $self->has_job_priority ? $self->job_priority : 0;
+
   # If needed, in future, these options can be passed from the command line
   # or read fron a conf. file.
   my @common_options = (
           '--cwd'        => '/tmp',
           '--disk'       => 0,
           '--override'   => 2,
-          '--priority'   => 50,
+          '--priority'   => $priority,
           '--retries'    => 0,
                        );
 
@@ -165,12 +178,16 @@ sub _submit {
   my $self = shift;
 
   my $cmd = $self->_wr_add_command();
-  $self->info(qq[Submitting to wr: $cmd]);
-  qx/$cmd/;
-  if ($CHILD_ERROR) {
-    $self->logcroak(qq[Error $CHILD_ERROR running "$cmd"]);
+  $self->info(qq[Command to use with wr: $cmd]);
+  if ($self->interactive) {
+    $self->info(q[Interactive mode, commands not added to wr]);
+  } else {
+    qx/$cmd/;
+    if ($CHILD_ERROR) {
+      $self->logcroak(qq[Error $CHILD_ERROR running "$cmd"]);
+    }
+    $self->info(q[Commands successfully added to wr]);
   }
-  $self->info(q[Commands successfully added to wr]);
   return;
 }
 

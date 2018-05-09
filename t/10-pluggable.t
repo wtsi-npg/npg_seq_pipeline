@@ -341,7 +341,7 @@ subtest 'running the pipeline (lsf executor)' => sub {
 };
 
 subtest 'running the pipeline (wr executor)' => sub {
-  plan tests => 3;
+  plan tests => 5;
 
   my @functions_in_order = qw(
     run_archival_in_progress
@@ -374,10 +374,19 @@ subtest 'running the pipeline (wr executor)' => sub {
     qr/Error submitting for execution: Error submitting wr jobs/,
     q{error running main};
 
-  # soft-link wr command to /bin/false so that it succeeds
+  $ref->{'interactive'} = 1;
+  lives_ok { npg_pipeline::pluggable->new($ref)->main() }
+    q{interactive mode, no error running main};
+
+  # soft-link wr command to /bin/true so that it succeeds
   unlink $wr;
   symlink '/bin/true', $wr;
+  $ref->{'interactive'} = 0;
   lives_ok { npg_pipeline::pluggable->new($ref)->main() } q{no error running main};
+
+  $ref->{'job_name_prefix'} = 'test';
+  lives_ok { npg_pipeline::pluggable->new($ref)->main() }
+    q{job name prefix is set, no error running main};
 };
 
 subtest 'positions and spidering' => sub {

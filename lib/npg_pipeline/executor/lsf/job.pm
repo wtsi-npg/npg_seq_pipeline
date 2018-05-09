@@ -9,7 +9,7 @@ use Readonly;
 
 use npg_pipeline::function::definition;
 
-with 'npg_pipeline::executor::lsf::options';
+with 'npg_pipeline::executor::options';
 
 our $VERSION = '0';
 

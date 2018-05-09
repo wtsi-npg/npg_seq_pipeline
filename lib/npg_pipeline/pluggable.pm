@@ -20,7 +20,7 @@ use npg_pipeline::pluggable::registry;
 extends q{npg_pipeline::base};
 
 with qw{ MooseX::AttributeCloner
-         npg_pipeline::executor::lsf::options };
+         npg_pipeline::executor::options };
 
 our $VERSION = '0';
 
