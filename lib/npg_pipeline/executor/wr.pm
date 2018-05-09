@@ -182,11 +182,12 @@ sub _submit {
   if ($self->interactive) {
     $self->info(q[Interactive mode, commands not added to wr]);
   } else {
-    qx/$cmd/;
-    if ($CHILD_ERROR) {
-      $self->logcroak(qq[Error $CHILD_ERROR running "$cmd"]);
+    if (system($cmd) == 0) {
+      $self->info(q[Commands successfully added to wr]);
+    } else {
+      my $e = $CHILD_ERROR || q[];
+      $self->logcroak(qq[Error $e running "$cmd"]);
     }
-    $self->info(q[Commands successfully added to wr]);
   }
   return;
 }
