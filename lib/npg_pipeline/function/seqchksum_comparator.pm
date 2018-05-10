@@ -56,7 +56,6 @@ sub create {
         $self->create_composition({id_run => $self->id_run, position => $p}),
       job_name     => $job_name,
       command      => $command . q{ --lanes=} . $p,
-      log_file_dir => $self->archive_path() . q{/log}
     );
   }
 

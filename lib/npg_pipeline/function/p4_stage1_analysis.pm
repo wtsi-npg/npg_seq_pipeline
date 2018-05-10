@@ -12,6 +12,7 @@ use open q(:encoding(UTF8));
 
 use npg_pipeline::cache::barcodes;
 use npg_pipeline::function::definition;
+use npg_pipeline::function::runfolder_scaffold;
 
 extends q{npg_pipeline::base};
 
@@ -133,7 +134,6 @@ sub _create_definition {
     fs_slots_num    => $self->general_values_conf()->{'p4_stage1_fs_resource'} || $FS_RESOURCE,
     num_hosts       => $NUM_HOSTS,
     num_cpus        => $self->_num_cpus(),
-    log_file_dir    => $self->make_log_dir( $self->bam_basecall_path ),
     memory          => $self->general_values_conf()->{'p4_stage1_memory'} || $MEMORY,
     command         => $command,
     command_preexec => $self->ref_adapter_pre_exec_string(),
@@ -144,13 +144,13 @@ sub _create_definition {
 sub _create_p4_stage1_dirs {
   my $self = shift;
 
-  for my $d ( values %{$self->p4_stage1_params_paths},
-              values %{$self->p4_stage1_errlog_paths} ) {
-     $self->info(qq{creating $d});
-     my $rc = `mkdir -p $d`;
-     if ( $CHILD_ERROR ) {
-       $self->logcroak(qq{could not create $d\n\t$rc});
-     }
+  my @dirs = (values %{$self->p4_stage1_params_paths},
+              values %{$self->p4_stage1_errlog_paths});
+  my @errors = npg_pipeline::function::runfolder_scaffold->make_dir(@dirs);
+  if (@errors) {
+    $self->logcroak(join qq[\n], @errors);
+  } else {
+    $self->info(q[Created the following p4 stage1 log directories: ], join q[, ], @dirs);
   }
 
   return;
@@ -251,9 +251,7 @@ sub _generate_command_params {
   $p4_params{md5filename} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.md5}; # full name for the md5 for the spatially filtered lane-level file
   $p4_params{split_prefix} = $no_cal_path . q[/lane] . $position; # location for split bam files
 
-  my $log_folder = $self->make_log_dir($bam_basecall_path);
   my $job_name = join q/_/, (q{p4_stage1}, $id_run, $position, $self->timestamp());
-  my $outfile = $log_folder . q{/} . $job_name . q{.%J.out};
   $job_name = q{'} . $job_name . q{'};
 
   $p4_params{i2b_run_path} = $runfolder_path;

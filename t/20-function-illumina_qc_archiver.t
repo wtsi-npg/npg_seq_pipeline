@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 25;
+use Test::More tests => 23;
 use Test::Exception;
 use t::util;
 
@@ -36,7 +36,6 @@ my $pbcal_path = $tmp_dir . q{/nfs/sf45/IL2/analysis/123456_IL2_1234/} . $pbcal;
   is ($d->identifier, 1234, 'identifier is set correctly');
   is ($d->job_name, q{illumina_analysis_loader_1234_20090709-123456},
     'job_name is correct');
-  is ($d->log_file_dir, qq{$pbcal_path/log}, 'log_file_dir is correct');
   my $command = qq{npg_qc_illumina_analysis_loader --id_run 1234 --run_folder 123456_IL2_1234 --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --basecall_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls};
   is ($d->command, $command, 'command is correct');
   is ($d->command_preexec,
@@ -66,7 +65,6 @@ my $pbcal_path = $tmp_dir . q{/nfs/sf45/IL2/analysis/123456_IL2_1234/} . $pbcal;
   ok ($da && @{$da} == 1, 'an array with one definition is returned');
   my $d = $da->[0];
   isa_ok($d, q{npg_pipeline::function::definition});
-  is ($d->log_file_dir, qq{$pbcal_path/log}, 'log_file_dir is correct');
   my $command = qq{npg_qc_illumina_analysis_loader --id_run 1234 --run_folder 123456_IL2_1234 --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --bam_basecall_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234 --basecall_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls};
   is ($d->command, $command, 'command is correct');
   is ($d->command_preexec,

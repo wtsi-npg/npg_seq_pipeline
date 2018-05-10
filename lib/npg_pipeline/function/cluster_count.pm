@@ -75,7 +75,6 @@ sub create {
       identifier   => $self->id_run(),
       job_name     => $job_name,
       command      => $command,
-      log_file_dir => $self->archive_path() . q{/log},
       composition  =>
         $self->create_composition({id_run => $self->id_run, position => $p})
     );

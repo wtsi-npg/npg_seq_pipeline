@@ -17,7 +17,6 @@ sub create {
 
   my $job_name = join q[_], qw/autoqc loader/,
                             $self->id_run(), $self->timestamp();
-  my $log_dir  = $self->make_log_dir($self->recalibrated_path());
 
   my @qc_paths = ($self->qc_path());
   if ($self->is_indexed) {
@@ -41,7 +40,6 @@ sub create {
     identifier    => $self->id_run(),
     job_name      => $job_name,
     command       => $command,
-    log_file_dir  => $log_dir,
     fs_slots_num  => 1,
     queue         =>
       $npg_pipeline::function::definition::LOWLOAD_QUEUE,

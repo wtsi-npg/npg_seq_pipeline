@@ -58,8 +58,7 @@ subtest 'builder for commands4jobs_file_path' => sub {
                created_on   => 'June 25th',
                job_name     => 'name',
                identifier   => 2345,
-               command      => 'command',
-               log_file_dir => '/some/dir' };
+               command      => 'command'};
   my $d = npg_pipeline::function::definition->new($init);
   $ref->{'function_definitions'} = {'one' => [$d]};
   $e = npg_pipeline::executor->new($ref);
@@ -137,8 +136,7 @@ subtest 'builder for function_graph4jobs' => sub {
                created_on   => 'June 25th',
                job_name     => 'name',
                identifier   => 2345,
-               command      => 'command',
-               log_file_dir => '/some/dir' };
+               command      => 'command'};
 
   my $d1 = npg_pipeline::function::definition->new($init);
   my $d2 = npg_pipeline::function::definition->new($init);

@@ -33,7 +33,7 @@ Readonly::Scalar my $POSITION_MULTIPLIER => 10_000;
 ################## Public attributes #############################
 ##################################################################
 
-=head2 definition
+=head2 definitions
 
 An array of function definition objects for this LSF job.
 An attribute, required, the array cannot be empty.
@@ -88,6 +88,18 @@ has 'fs_resource' => (
   default  => undef,
 );
 
+=head2 log_dir
+
+Directory for log files.
+
+=cut
+
+has 'log_dir' => (
+  is       => 'ro',
+  isa      => 'Str',
+  required => 1,
+);
+
 =head2 is_array.
 
 A boolean attribute. Is set to true if this LSF job should
@@ -140,7 +152,7 @@ sub _build_commands {
 Options of the proposed LSF job as an array reference.
 This attribute cannot be set via a constructor.
 To be used with the bsub command, the array members
-should be concatenated using a singe white space.
+should be concatenated using a single white space.
 The parameters do not contain a command that should
 be executed by the LSF job.
 
@@ -242,15 +254,12 @@ sub BUILD {
 
 =head2 jjob_name
 
-The value returned by this method is derived
-from one of the job definition objects. The
-same applies to command_preexec, log_file_dir,
-num_cpus, num_hosts, memory, queue, fs_slots_num,
-reserve_irods_slots, array_cpu_limit and
-apply_array_cpu_limit methods.
+The value returned by this method is derived from one of the job
+definition objects. The same applies to command_preexec, num_cpus,
+num_hosts, memory, queue, fs_slots_num, reserve_irods_slots,
+array_cpu_limit and apply_array_cpu_limit methods.
 
 =head2 jcommand_preexec
-=head2 jlog_file_dir
 =head2 jnum_cpus
 =head2 jnum_hosts
 =head2 jmemory
@@ -384,14 +393,13 @@ sub _queue {
 sub _log_file {
   my $self = shift;
 
-  my $dir = $self->jlog_file_dir();
-
   my $log_name = $self->jjob_name() . q[.%J];
   if ($self->is_array()) {
     $log_name .= q[.%I];
   }
   $log_name   .= q[.out];
-  return q[-o ] . join q[/], $dir, $log_name;
+
+  return q[-o ] . join q[/], $self->log_dir(), $log_name;
 }
 
 sub _job_name {

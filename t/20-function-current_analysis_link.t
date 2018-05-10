@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 26;
+use Test::More tests => 25;
 use Test::Exception;
 use File::Path qw(make_path);
 use t::util;
@@ -60,7 +60,6 @@ make_path($recalibrated_path);
                 "--runfolder_path $runfolder_path " .
                 "--recalibrated_path $recalibrated_path";
   is ($d->command, $command, 'command');
-  is ($d->log_file_dir, $runfolder_path, 'log dir');
   is ($d->job_name, 'create_latest_summary_link_1234_123456_IL2_1234',
     'job name');
   is ($d->queue, 'small', 'small queue');  

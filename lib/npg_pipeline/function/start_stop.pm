@@ -63,7 +63,6 @@ sub _token_job {
     identifier    => $self->id_run(),
     job_name      => $job_name,
     command       => '/bin/true',
-    log_file_dir  => $self->runfolder_path(),
     queue         =>
       $npg_pipeline::function::definition::SMALL_QUEUE,
   );

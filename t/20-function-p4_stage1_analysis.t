@@ -64,7 +64,7 @@ subtest 'basics' => sub {
 };
 
 subtest 'check_save_arguments' => sub {
-  plan tests => 31;
+  plan tests => 30;
  
   my $bbp = $bam_generator->bam_basecall_path;
   my $unique = $bam_generator->_job_id();
@@ -83,7 +83,6 @@ subtest 'check_save_arguments' => sub {
   is ($d->fs_slots_num, 4, '4 sf slots');
   is ($d->num_hosts, 1, 'one host');
   is_deeply ($d->num_cpus, [8], 'num cpus as an array');
-  is ($d->log_file_dir, "$bbp/log", 'log dir');
   is ($d->memory, 20000, 'memory');
   is ($d->command_preexec,
       "npg_pipeline_preexec_references --repository $repos_root",

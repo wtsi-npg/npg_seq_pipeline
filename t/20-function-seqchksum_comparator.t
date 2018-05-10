@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 30;
+use Test::More tests => 29;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
@@ -59,7 +59,6 @@ my $archive_path = $recalibrated_path . q{/archive};
     'subset is not defined');
   is ($d->job_name, q{seqchksum_comparator_1234_20100907-142417},
     'job_name is correct');
-  is ($d->log_file_dir, qq{$archive_path/log}, 'log_file_dir is correct');
   is ($d->command,
     q{npg_pipeline_seqchksum_comparator --id_run=1234 --archive_path=} .
     qq{$archive_path --bam_basecall_path=$bam_basecall_path --lanes=1},

@@ -20,7 +20,6 @@ Readonly::Array  my @MUST_HAVE_ATTRS => qw/
                                 job_name
                                 identifier
                                 command
-                                log_file_dir
                                           /;
 =head1 NAME
 
@@ -189,19 +188,6 @@ has 'command_preexec' => (
   is         => 'ro',
   required   => 0,
   predicate  => 'has_command_preexec',
-);
-
-=head2 log_file_dir
-
-Suggested location for a log file.
-
-=cut
-
-has 'log_file_dir' => (
-  isa        => 'Str',
-  is         => 'ro',
-  required   => 0,
-  predicate  => 'has_log_file_dir',
 );
 
 =head2 num_cpus

@@ -5,6 +5,7 @@ use MooseX::StrictConstructor;
 use namespace::autoclean;
 use Graph::Directed;
 use File::Slurp;
+use File::Basename;
 use Readonly;
 
 use npg_tracking::util::types;
@@ -321,6 +322,40 @@ sub save_commands4jobs {
   return write_file($file, map { $_ . qq[\n] } @commands);
 }
 
+=head2 log_dir4function 
+
+Ensures a log directory for the argument function exists and return its path.
+
+=cut
+
+sub log_dir4function {
+  my ($self, $function_name) = @_;
+
+  my $log_dir_parent = $self->has_analysis_path()
+                       ? $self->analysis_path()
+                       : dirname($self->commands4jobs_file_path());
+
+  my ($dir, @errors) = npg_pipeline::function::runfolder_scaffold
+                       ->make_log_dir4name($log_dir_parent, $function_name);
+  if (@errors) {
+    $self->logcroak(join qq[\n], @errors);
+  } else {
+    $self->info(qq[Created log directory $dir for function $function_name]);
+  }
+
+  return $dir;
+}
+
+=head2 future_log_path
+
+=cut
+
+sub future_log_path {
+  my ($self, $definitions, $path) = @_;
+  return npg_pipeline::function::runfolder_scaffold
+         ->future_path($definitions->[0], $path);
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -344,6 +379,8 @@ __END__
 =item Graph::Directed
 
 =item File::Slurp
+
+=item File::Basename
 
 =item Readonly
 

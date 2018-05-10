@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 24;
+use Test::More tests => 22;
 use Test::Exception;
 use t::util;
 
@@ -33,7 +33,6 @@ my $pbcal = $util->standard_analysis_recalibrated_path();
   is ($d->identifier, 1234, 'identifier is set correctly');
   is ($d->job_name, q{autoqc_loader_1234_20090709-123456},
     'job_name is correct');
-  is ($d->log_file_dir, qq{$pbcal/log}, 'log_file_dir is correct');
   is ($d->command,
     qq{npg_qc_autoqc_data.pl --id_run=1234 --path=$pbcal/archive/qc},
     'command is correct');
@@ -66,7 +65,6 @@ my $pbcal = $util->standard_analysis_recalibrated_path();
   my $d = $da->[0];
   is ($d->job_name, 'autoqc_loader_1234_20090709-123456',
     'job_name is correct');
-  is ($d->log_file_dir, qq{$pbcal/log}, 'log_file_dir is correct');
   is ($d->command, $command, 'command is correct');
   is ($d->fs_slots_num, 1, 'one fs slot is set');
 }
