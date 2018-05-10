@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use English qw{-no_match_vars};
-use Test::More tests => 45;
+use Test::More tests => 44;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
@@ -66,9 +66,6 @@ my $archive_path = $recalibrated_path . q{/archive};
   map {$values->{$_->job_name} += 1} @{$da};
   is ($values->{'npg_pipeline_check_cluster_count_1234_20100907-142417'}, 8,
     'the same job name for all definitions');
-
-  map {$values->{$_->log_file_dir} += 1} @{$da};
-  is ($values->{"$archive_path/log"}, 8, 'the same log dir for all definitions');
   
   map {$values->{$_->queue} += 1} @{$da};
   is ($values->{'default'}, 8, 'the same default queue for all definitions');

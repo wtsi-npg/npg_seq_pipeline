@@ -28,7 +28,6 @@ sub create {
   } else {
     my $job_name_prefix = join q{_}, q{publish_illumina_run}, $self->id_run();
     $ref->{'job_name'}  = join q{_}, $job_name_prefix, $self->timestamp();
-    $ref->{'log_file_dir'} = $self->make_log_dir($self->recalibrated_path());
     $ref->{'fs_slots_num'} = 1;
     $ref->{'reserve_irods_slots'} = 1;
     $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;

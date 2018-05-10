@@ -5,6 +5,7 @@ use namespace::autoclean;
 use Readonly;
 
 use npg_pipeline::function::definition;
+use npg_pipeline::function::runfolder_scaffold;
 
 extends qw{npg_pipeline::base};
 
@@ -25,12 +26,11 @@ sub create {
     $self->warn(q{Archival to iRODS is switched off.});
     $ref->{'excluded'} = 1;
   } else {
-    my $future_path = $self->path_in_outgoing($self->runfolder_path());
+    my $future_path = npg_pipeline::function::runfolder_scaffold
+                        ->path_in_outgoing($self->runfolder_path());
     $ref->{'job_name'} = join q{_}, q{publish_illumina_logs}, $self->id_run(), $self->timestamp();
     $ref->{'command'} = join q[ ], $SCRIPT_NAME, q{--runfolder_path}, $future_path,
                                                  q{--id_run}, $self->id_run();
-    $ref->{'log_file_dir'} = $self->path_in_outgoing(
-                               $self->make_log_dir($self->recalibrated_path()));
     $ref->{'fs_slots_num'} = 1;
     $ref->{'reserve_irods_slots'} = 1;
     $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;

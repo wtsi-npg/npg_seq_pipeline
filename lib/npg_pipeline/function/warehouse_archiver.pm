@@ -4,6 +4,7 @@ use Moose;
 use namespace::autoclean;
 
 use npg_pipeline::function::definition;
+use npg_pipeline::function::runfolder_scaffold;
 
 extends q{npg_pipeline::base};
 
@@ -98,13 +99,6 @@ sub _update_warehouse_command {
       $command .= $post_qc_complete ? 'ml_warehouse_fc_cache' : 'samplesheet';
     }
     my $job_name = join q{_}, $loader_name, $id_run, $self->pipeline_name;
-    my $path = $self->make_log_dir($self->recalibrated_path());
-
-    my $prereq = q[];
-    if ($post_qc_complete) {
-      $path = $self->path_in_outgoing($path);
-      $prereq = "[ -d '$path' ]";
-    }
 
     my $ref = {
       created_by   => __PACKAGE__,
@@ -116,11 +110,11 @@ sub _update_warehouse_command {
     };
 
     if ($post_qc_complete) {
-      $path = $self->path_in_outgoing($path);
+      my $path = npg_pipeline::function::runfolder_scaffold
+                   ->path_in_outgoing($self->recalibrated_path());
       $job_name .= '_postqccomplete';
       $ref->{'command_preexec'} = "[ -d '$path' ]";
     }
-    $ref->{'log_file_dir'} = $path;
     $ref->{'job_name'}     = $job_name;
 
     $d = npg_pipeline::function::definition->new($ref);

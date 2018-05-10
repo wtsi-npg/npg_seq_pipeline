@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 34;
+use Test::More tests => 33;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
@@ -39,7 +39,6 @@ $orfpath =~ s/analysis/outgoing/xms;
   is ($d->identifier, 1234, 'identifier is set correctly');
   is ($d->job_name, q{publish_illumina_logs_1234_20090709-123456},
     'job_name is correct');
-  is ($d->log_file_dir, "${orfpath}/log", 'log_file_dir is correct');
   is ($d->command,
     qq{npg_publish_illumina_logs.pl --runfolder_path $orfpath --id_run 1234},
     'command is correct');

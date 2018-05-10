@@ -3,7 +3,6 @@ package npg_pipeline::base;
 use Moose;
 use namespace::autoclean;
 use POSIX qw(strftime);
-use English qw{-no_match_vars};
 use Math::Random::Secure qw{irand};
 
 our $VERSION = '0';
@@ -148,53 +147,6 @@ sub _build_general_values_conf {
   return $self->read_config( $self->conf_file_path(q{general_values.ini}) );
 }
 
-=head2 make_log_dir
-
-creates a log_directory in the given directory
-
-  $oMyPackage->make_log_dir( q{/dir/for/base} );
-
-=cut
-
-sub make_log_dir {
-  my ( $self, $dir, $owning_group ) = @_;
-
-  my $log_dir = qq{$dir/log};
-
-  $owning_group ||= $ENV{OWNING_GROUP};
-  $owning_group ||= $self->general_values_conf()->{group};
-
-  if ( -d $log_dir ) {
-    $self->info(qq{$log_dir already exists});
-    return $log_dir;
-  }
-
-  my $cmd = qq{mkdir -p $log_dir};
-  my $output = qx{$cmd};
-
-  $self->debug(qq{Command: $cmd});
-  $self->debug(qq{Output:  $output});
-
-  if ( $CHILD_ERROR ) {
-    $self->logcroak(qq{unable to create $log_dir:$output});
-  }
-
-  if ($owning_group) {
-    $self->info(qq{chgrp $owning_group $log_dir});
-
-    my $rc = qx{chgrp $owning_group $log_dir};
-    if ( $CHILD_ERROR ) {
-      $self->warn("could not chgrp $log_dir\n\t$rc");
-    }
-  }
-  my $rc = qx{chmod u=rwx,g=srxw,o=rx $log_dir};
-  if ( $CHILD_ERROR ) {
-    $self->warn("could not chmod $log_dir\n\t$rc");
-  }
-
-  return $log_dir;
-}
-
 =head2 status_files_path
 
  A directory to save status files to.
@@ -230,8 +182,6 @@ __END__
 =item MooseX::Getopt
 
 =item POSIX
-
-=item English
 
 =item Math::Random::Secure
 

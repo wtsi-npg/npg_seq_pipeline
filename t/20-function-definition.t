@@ -7,21 +7,20 @@ use JSON;
 use_ok ('npg_pipeline::function::definition');
 
 subtest 'constructor and accessors' => sub {
-  plan tests => 27;
+  plan tests => 22;
 
   my %init = ( created_by   => 'module',
                created_on   => 'June 25th',
                job_name     => 'name',
                identifier   => 2345,
-               command      => 'command',
-               log_file_dir => '/some/dir' );
+               command      => 'command'
+             );
 
   my $d = npg_pipeline::function::definition->new(\%init);
   isa_ok ($d, 'npg_pipeline::function::definition');
   is ($d->queue(), 'default', 'default queue is set');
 
-  for my $must_have ( qw/job_name identifier
-                         command log_file_dir/ ) {
+  for my $must_have ( qw/job_name identifier command/ ) {
   
     my %i = %init;
     delete $i{$must_have};
@@ -69,8 +68,7 @@ subtest 'serialization to JSON' => sub {
               created_on   => 'June 25th',
               job_name     => 'name',
               identifier   => 2345,
-              command      => 'command',
-              log_file_dir => '/some/dir'
+              command      => 'command'
             };
   my $d = npg_pipeline::function::definition->new($ref);
 

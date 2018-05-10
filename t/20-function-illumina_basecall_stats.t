@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 23;
+use Test::More tests => 22;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
@@ -59,7 +59,6 @@ use_ok(q{npg_pipeline::function::illumina_basecall_stats});
   is ($d->identifier, 1234, 'identifier is set correctly');
   is ($d->job_name, q{basecall_stats_1234_20091028-101635},
     'job_name is correct');
-  is ($d->log_file_dir, qq{$bam_basecall_path/log}, 'log_file_dir is correct');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
   ok (!$d->immediate_mode, 'immediate mode is false');

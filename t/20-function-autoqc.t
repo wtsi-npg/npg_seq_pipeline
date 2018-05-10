@@ -49,7 +49,7 @@ subtest 'errors' => sub {
 };
 
 subtest 'adapter' => sub {
-  plan tests => 32;
+  plan tests => 31;
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   $util->create_analysis({qc_dir => 1});
@@ -81,7 +81,6 @@ subtest 'adapter' => sub {
   ok ($d->apply_array_cpu_limit, 'array_cpu_limit should be applied');
   ok (!$d->has_array_cpu_limit, 'array_cpu_limit not set');
   is_deeply ($d->num_cpus, [2], 'num cpus as an array');
-  is ($d->log_file_dir, "$pbcal/archive/qc/log", 'log dir');
   is ($d->memory, 1500, 'memory');
   is ($d->command_preexec, 'npg_pipeline_preexec_references', 'preexec command');
   ok ($d->has_composition, 'composition object is set');
@@ -102,7 +101,7 @@ subtest 'adapter' => sub {
 };
 
 subtest 'qX_yield' => sub {
-  plan tests => 27;
+  plan tests => 26;
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   $util->create_analysis({'qc_dir' => 1});
@@ -126,7 +125,6 @@ subtest 'qX_yield' => sub {
   ok (!$d->has_num_cpus, 'num cpus is not set');
   ok (!$d->has_num_hosts, 'num hosts is not set');
   ok (!$d->has_command_preexec, 'preexec command is not set');
-  is ($d->log_file_dir, "$pbcal/archive/qc/log", 'log dir');
 
   foreach my $de (@{$da}) {
     my $p = $de->composition->get_component(0)->position;
@@ -186,7 +184,7 @@ subtest 'qX_yield' => sub {
 };
   
 subtest 'ref_match' => sub {
-  plan tests => 16;
+  plan tests => 15;
 
   $util->create_multiplex_analysis({'qc_dir' => [7,8]});
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
@@ -212,7 +210,6 @@ subtest 'ref_match' => sub {
   ok ($d->apply_array_cpu_limit, 'apply array_cpu_limit');
   is ($d->array_cpu_limit, 8, '8 - array_cpu_limit');
   ok (!$d->has_num_cpus, 'num cpus is not set');
-  is ($d->log_file_dir, "$pbcal/archive/qc/log", 'log dir');
   is ($d->memory, 6000, 'memory');
   is ($d->command_preexec,
     'npg_pipeline_preexec_references --repository t/data/sequence',

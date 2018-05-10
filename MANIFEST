@@ -77,7 +77,7 @@ t/10-validation-sequence_files.t
 t/15-pipeline_launcher_scripts.t
 t/20-function-autoqc.t
 t/20-function-autoqc_archiver.t
-t/20-function-autoqc_input_scaffold.pm
+t/20-function-autoqc_input_scaffold.t
 t/20-function-collection.t
 t/20-function-cluster_count.t
 t/20-function-current_analysis_link.t

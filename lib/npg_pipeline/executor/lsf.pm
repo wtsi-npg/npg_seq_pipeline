@@ -248,10 +248,14 @@ sub _submit_function {
   #####
   # Separate out definitions with different memory requirements
   #
-  foreach my $d (@{$self->function_definitions()->{$function_name}}) {
+  my $definitions_all = $self->function_definitions()->{$function_name};
+  foreach my $d (@{$definitions_all}) {
     my $key = join q[-], $function_name, $d->memory() || q[];
     push @{$definitions->{$key}}, $d;
   }
+
+  my $log_dir = $self->future_log_path(
+                  $definitions_all, $self->log_dir4function($function_name));
 
   my @lsf_ids = ();
   foreach my $da (values %{$definitions}) {
@@ -260,6 +264,7 @@ sub _submit_function {
     $args{'definitions'}      = $da;
     $args{'upstream_job_ids'} = \@depends_on;
     $args{'fs_resource'}      = $self->fs_resource();
+    $args{'log_dir'}          = $log_dir;
     my $job = npg_pipeline::executor::lsf::job->new(\%args);
 
     my $bsub_cmd =  sprintf q(bsub %s%s '%s'),

@@ -17,61 +17,60 @@ my $conf = {default_queue              => 'srpipeline',
             array_cpu_limit            => 64};
 
 my $fs_resource = q[nfs-sf44];
+my $ld = '/log';
 
 sub _create_definition_args {
   my %h = (created_by   => 'test',
            created_on   => '19 March 2018',
            job_name     => 'my_job',
            identifier   => '12345',
-           command      => '/bin/true',
-           log_file_dir => '/tmp');
+           command      => '/bin/true');
   return \%h;
 }
 
 subtest 'object creation, default values of attributes' => sub {
   plan tests => 7;
 
-  throws_ok {npg_pipeline::executor::lsf::job->new(definitions => [])}
+  throws_ok {npg_pipeline::executor::lsf::job->new(log_dir => $ld, definitions => [])}
     qr/Array of definitions cannot be empty/,
     'error if definitions array is empty';
 
   my $args = _create_definition_args();
   my $d = npg_pipeline::function::definition->new($args);
-  my $j = npg_pipeline::executor::lsf::job->new(definitions => [$d]);
+  my $j = npg_pipeline::executor::lsf::job->new(log_dir => $ld, definitions => [$d]);
   isa_ok ($j, 'npg_pipeline::executor::lsf::job');
   ok (!$j->is_array, 'job should not be an array');
 
-  $j = npg_pipeline::executor::lsf::job->new(definitions =>[$d, $d]);
+  $j = npg_pipeline::executor::lsf::job->new(log_dir => $ld, definitions =>[$d, $d]);
   ok ($j->is_array, 'job should be an array');
 
   $args->{'command'} = '/bin/false';
   my $d1 = npg_pipeline::function::definition->new($args);
-  lives_ok {npg_pipeline::executor::lsf::job->new(definitions =>[$d, $d1])}
+  lives_ok {npg_pipeline::executor::lsf::job->new(log_dir => $ld, definitions =>[$d, $d1])}
     'mismatch in values returned by the command attribute is allowed';
 
   $args->{'num_cpus'} = [2];
   my $d2 = npg_pipeline::function::definition->new($args);
-  throws_ok {npg_pipeline::executor::lsf::job->new(definitions =>[$d1, $d2])}
+  throws_ok {npg_pipeline::executor::lsf::job->new(log_dir => $ld, definitions =>[$d1, $d2])}
     qr/Inconsistent values for definition predicate method has_num_cpus/,
     'mismatch in values returned by the predicate - error';
 
   $args->{'num_cpus'} = [2,6];
   my $d3 = npg_pipeline::function::definition->new($args);
-  throws_ok {npg_pipeline::executor::lsf::job->new(definitions =>[$d2, $d3])}
+  throws_ok {npg_pipeline::executor::lsf::job->new(log_dir => $ld, definitions =>[$d2, $d3])}
     qr/Inconsistent values for definition attribute num_cpus/,
     'mismatch in values returned by an attribute - error';
 };
 
 subtest 'delegated methods' => sub {
-  plan tests => 24;
+  plan tests => 22;
 
   my $args = _create_definition_args();
   my $d = npg_pipeline::function::definition->new($args);
-  my $j = npg_pipeline::executor::lsf::job->new(definitions => [$d]);
+  my $j = npg_pipeline::executor::lsf::job->new(log_dir => $ld, definitions => [$d]);
 
   my @methods = map {q[j].$_ } qw/    job_name
                                       command_preexec
-                                      log_file_dir
                                       num_cpus
                                       num_hosts
                                       memory
@@ -88,7 +87,6 @@ subtest 'delegated methods' => sub {
   ok (!$j->can('command'),  'command method is not available');
 
   is ($j->jjob_name, 'my_job', 'job name');
-  is ($j->jlog_file_dir, '/tmp', 'log file dir');
   is ($j->jqueue, 'default', 'queue');
   ok (!$j->jcommand_preexec, 'preexec not set');
   ok (!$j->japply_array_cpu_limit, 'apply_array_cpu_limit is false');
@@ -111,7 +109,6 @@ subtest 'run level job' => sub {
          "fs_slots_num" : 4,
          "identifier" : 25438,
          "job_name" : "basecall_stats_25438_20180322-093445",
-         "log_file_dir" : "/tmp/BAM_basecalls_20180321-075511/log",
          "memory" : 350,
          "num_cpus" : [
             4
@@ -121,6 +118,7 @@ subtest 'run level job' => sub {
                }';
   my $d = npg_pipeline::function::definition->thaw($json);
   my $j = npg_pipeline::executor::lsf::job->new(
+                  log_dir          => $ld, 
                   upstream_job_ids => [40, 50],
                   definitions      => [$d],
                   fs_resource      => $fs_resource,
@@ -129,7 +127,7 @@ subtest 'run level job' => sub {
   is_deeply ($j->commands(), {25438 => "cd /nfs/sf55 && setupBclToQseq.py"},
     'commands');
   is ($j->params,
-    q[-w'done(40) && done(50)' -q srpipeline -J 'prod_basecall_stats_25438_20180322-093445' -M 350 -R 'select[mem>350] rusage[mem=350]' -n 4 -R 'span[hosts=1]' -R 'rusage[nfs-sf44=4]' -o /tmp/BAM_basecalls_20180321-075511/log/basecall_stats_25438_20180322-093445.%J.out],
+    q[-w'done(40) && done(50)' -q srpipeline -J 'prod_basecall_stats_25438_20180322-093445' -M 350 -R 'select[mem>350] rusage[mem=350]' -n 4 -R 'span[hosts=1]' -R 'rusage[nfs-sf44=4]' -o /log/basecall_stats_25438_20180322-093445.%J.out],
     'params');
 };
 
@@ -157,7 +155,6 @@ subtest 'arrays' => sub {
          "reserve_irods_slots": 1,
          "identifier" : 25438,
          "job_name" : "qc_adapter_25438_20180322-093445",
-         "log_file_dir" : "/tmp/BAM_basecalls_20180321-075511/no_cal/archive/qc/log",
          "memory" : 1500,
          "num_cpus" : [
             "2","6"
@@ -168,6 +165,7 @@ subtest 'arrays' => sub {
 
   my $d = npg_pipeline::function::definition->thaw($json);
   my $j = npg_pipeline::executor::lsf::job->new(
+                  log_dir          => $ld,
                   upstream_job_ids => [],
                   definitions      => [$d],
                   fs_resource      => $fs_resource,
@@ -178,6 +176,7 @@ subtest 'arrays' => sub {
   $conf->{'default_lsf_irods_resource'} = 15;
 
   $j = npg_pipeline::executor::lsf::job->new(
+                  log_dir          => $ld,
                   upstream_job_ids => [],
                   definitions      => [$d],
                   fs_resource      => $fs_resource,
@@ -185,29 +184,31 @@ subtest 'arrays' => sub {
   ok ($j->is_array(), 'is an array');
   my $command = q[qc --check=adapter --id_run=25438 --position=1 --file_type=bam --qc_in=/tmp/BAM_basecalls_20180321-075511/no_cal --qc_out=/tmp/BAM_basecalls_20180321-075511/no_cal/archive/qc];
   is_deeply ($j->commands(), {1 => $command}, 'commands');
-  my $params = q(-q srpipeline -J 'prod_qc_adapter_25438_20180322-093445[1]%64' -M 1500 -R 'select[mem>1500] rusage[mem=1500]' -n 2,6 -R 'span[hosts=1]' -R 'rusage[nfs-sf44=1]' -R 'rusage[seq_irods=15]' -o /tmp/BAM_basecalls_20180321-075511/no_cal/archive/qc/log/qc_adapter_25438_20180322-093445.%J.%I.out -E 'npg_pipeline_preexec_references');
+  my $params = q(-q srpipeline -J 'prod_qc_adapter_25438_20180322-093445[1]%64' -M 1500 -R 'select[mem>1500] rusage[mem=1500]' -n 2,6 -R 'span[hosts=1]' -R 'rusage[nfs-sf44=1]' -R 'rusage[seq_irods=15]' -o /log/qc_adapter_25438_20180322-093445.%J.%I.out -E 'npg_pipeline_preexec_references');
   is ($j->params, $params, 'params');
 
   $j = npg_pipeline::executor::lsf::job->new(
+                  log_dir            => $ld,
                   upstream_job_ids   => [],
                   definitions        => [$d],
                   no_array_cpu_limit => 1,
                   lsf_conf           => $conf,
                   fs_resource        => undef);
   is_deeply ($j->commands(), {1 => $command}, 'commands');
-  $params = q(-q srpipeline -J 'prod_qc_adapter_25438_20180322-093445[1]' -M 1500 -R 'select[mem>1500] rusage[mem=1500]' -n 2,6 -R 'span[hosts=1]' -R 'rusage[seq_irods=15]' -o /tmp/BAM_basecalls_20180321-075511/no_cal/archive/qc/log/qc_adapter_25438_20180322-093445.%J.%I.out -E 'npg_pipeline_preexec_references'); 
+  $params = q(-q srpipeline -J 'prod_qc_adapter_25438_20180322-093445[1]' -M 1500 -R 'select[mem>1500] rusage[mem=1500]' -n 2,6 -R 'span[hosts=1]' -R 'rusage[seq_irods=15]' -o /log/qc_adapter_25438_20180322-093445.%J.%I.out -E 'npg_pipeline_preexec_references'); 
   is ($j->params, $params, 'params');
 
   delete $conf->{'job_name_prefix'};
   delete $conf->{'array_cpu_limit'};
   $j = npg_pipeline::executor::lsf::job->new(
+                  log_dir          => $ld,
                   upstream_job_ids => [],
                   definitions      => [$d],
                   lsf_conf         => $conf,
                   fs_resource      => undef,
                   job_priority     => 80);
   is_deeply ($j->commands(), {1 => $command}, 'commands');
-  $params = q(-sp 80 -q srpipeline -J 'qc_adapter_25438_20180322-093445[1]' -M 1500 -R 'select[mem>1500] rusage[mem=1500]' -n 2,6 -R 'span[hosts=1]' -R 'rusage[seq_irods=15]' -o /tmp/BAM_basecalls_20180321-075511/no_cal/archive/qc/log/qc_adapter_25438_20180322-093445.%J.%I.out -E 'npg_pipeline_preexec_references');
+  $params = q(-sp 80 -q srpipeline -J 'qc_adapter_25438_20180322-093445[1]' -M 1500 -R 'select[mem>1500] rusage[mem=1500]' -n 2,6 -R 'span[hosts=1]' -R 'rusage[seq_irods=15]' -o /log/qc_adapter_25438_20180322-093445.%J.%I.out -E 'npg_pipeline_preexec_references');
   is ($j->params, $params, 'params'); 
 
   $json = '{
@@ -232,7 +233,6 @@ subtest 'arrays' => sub {
          "reserve_irods_slots" : 1,
          "identifier" : 25438,
          "job_name" : "qc_adapter_25438_20180322-093445",
-         "log_file_dir" : "/tmp/BAM_basecalls_20180321-075511/no_cal/archive/qc/log",
          "memory" : 1500,
          "num_cpus" : [
             "2", "6"
@@ -244,6 +244,7 @@ subtest 'arrays' => sub {
   my $d1 = npg_pipeline::function::definition->thaw($json);
 
   $j = npg_pipeline::executor::lsf::job->new(
+                  log_dir          => $ld,
                   upstream_job_ids => [],
                   definitions      => [$d, $d1],
                   lsf_conf         => $conf,
@@ -253,7 +254,7 @@ subtest 'arrays' => sub {
     { '1'     => 'qc --check=adapter --id_run=25438 --position=1 --file_type=bam --qc_in=/tmp/BAM_basecalls_20180321-075511/no_cal --qc_out=/tmp/BAM_basecalls_20180321-075511/no_cal/archive/qc',
       '10000' => 'qc --check=adapter --id_run=25438 --position=1 --tag_index=0 --file_type=bam --qc_in=/tmp/BAM_basecalls_20180321-075511/no_cal/lane1 --qc_out=/tmp/BAM_basecalls_20180321-075511/no_cal/archive/lane1/qc'},
     'commands');
-  $params = q(-q srpipeline -J 'qc_adapter_25438_20180322-093445[1,10000]' -M 1500 -R 'select[mem>1500] rusage[mem=1500]' -n 2,6 -R 'span[hosts=1]' -R 'rusage[seq_irods=15]' -o /tmp/BAM_basecalls_20180321-075511/no_cal/archive/qc/log/qc_adapter_25438_20180322-093445.%J.%I.out -E 'npg_pipeline_preexec_references');
+  $params = q(-q srpipeline -J 'qc_adapter_25438_20180322-093445[1,10000]' -M 1500 -R 'select[mem>1500] rusage[mem=1500]' -n 2,6 -R 'span[hosts=1]' -R 'rusage[seq_irods=15]' -o /log/qc_adapter_25438_20180322-093445.%J.%I.out -E 'npg_pipeline_preexec_references');
   is ($j->params, $params, 'params');
 };
 

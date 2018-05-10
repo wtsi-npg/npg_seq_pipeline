@@ -20,7 +20,7 @@ my @wh_methods = qw/update_warehouse update_ml_warehouse/;
 use_ok('npg_pipeline::function::warehouse_archiver');
 
 subtest 'warehouse updates' => sub {
-  plan tests => 41;
+  plan tests => 37;
 
   my $c = npg_pipeline::function::warehouse_archiver->new(
     run_folder          => q{123456_IL2_1234},
@@ -30,9 +30,9 @@ subtest 'warehouse updates' => sub {
   isa_ok ($c, 'npg_pipeline::function::warehouse_archiver');
   
   my $recalibrated_path = $c->recalibrated_path();
-  my $log_dir = $c->make_log_dir($recalibrated_path);
-  my $log_dir_in_outgoing = $log_dir;
-  $log_dir_in_outgoing =~ s{/analysis/}{/outgoing/}smx;
+  my $recalibrated_path_in_outgoing = $recalibrated_path;
+  $recalibrated_path_in_outgoing =~ s{/analysis/}{/outgoing/}smx;
+
 
   foreach my $m (@wh_methods) {
 
@@ -48,7 +48,6 @@ subtest 'warehouse updates' => sub {
       $command  .= ' --lims_driver_type ' . ($postqcc ?
                    'ml_warehouse_fc_cache' : 'samplesheet');
     }
-    my $log_directory = $postqcc ? $log_dir_in_outgoing : $log_dir;
 
     my $ds = $c->$m();
     ok ($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
@@ -60,11 +59,10 @@ subtest 'warehouse updates' => sub {
     is ($d->created_by, 'npg_pipeline::function::warehouse_archiver', 'created_by');
     ok (!$d->immediate_mode, 'mode is not immediate');
     is ($d->command, $command, "command for $m");
-    is ($d->log_file_dir, $log_directory, "log dir for $m");
     is ($d->job_name, $job_name, "job name for $m");
     is ($d->queue, 'lowload', 'queue');
     if ($postqcc) {
-      is ($d->command_preexec, "[ -d '${log_dir_in_outgoing}' ]",
+      is ($d->command_preexec, "[ -d '${recalibrated_path_in_outgoing}' ]",
         "preexec command for $m");
     } else {
       ok (!$d->has_command_preexec, "preexec command not defined for $m");

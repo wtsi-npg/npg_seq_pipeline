@@ -68,7 +68,6 @@ sub create {
     $ref->{'command'} = qq{$MAKE_LINK_SCRIPT --run_folder $run_folder}
                        . q{ --runfolder_path } . $self->runfolder_path()
                        . q{ --recalibrated_path } . $self->recalibrated_path();
-    $ref->{'log_file_dir'} = $self->runfolder_path();
     $ref->{'queue'} =
       $npg_pipeline::function::definition::SMALL_QUEUE;
   }

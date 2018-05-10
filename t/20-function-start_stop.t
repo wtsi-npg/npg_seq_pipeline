@@ -11,7 +11,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
 use_ok('npg_pipeline::function::start_stop');
 
 subtest 'start and stop functions' => sub {
-  plan tests => 18;
+  plan tests => 16;
 
   my $ss = npg_pipeline::function::start_stop->new(
     id_run         => 1234,
@@ -27,7 +27,6 @@ subtest 'start and stop functions' => sub {
     is ($d->created_by, 'npg_pipeline::function::start_stop', 'created_by');
     ok (!$d->immediate_mode, 'mode is not immediate');
     is ($d->command, '/bin/true', 'command');
-    is ($d->log_file_dir, $runfolder_path, "log dir for $m");
     is ($d->job_name, $m . '_1234_start_stop', "job name for $m");
     is ($d->queue, 'small', 'small queue');
   }

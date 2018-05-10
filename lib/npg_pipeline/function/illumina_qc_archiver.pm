@@ -17,7 +17,6 @@ sub create {
 
   my $job_name_prefix = q{illumina_analysis_loader};
   my $job_name = join q{_}, $job_name_prefix, $self->id_run(), $self->timestamp();
-  my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
 
   my $preexec =  qq{npg_pipeline_script_must_be_unique_runner -job_name="$job_name_prefix" -own_job_name="$job_name"};
 
@@ -40,7 +39,6 @@ sub create {
     job_name        => $job_name,
     command         => $command,
     command_preexec => $preexec,
-    log_file_dir    => $location_of_logs,
     fs_slots_num    => 1,
     queue           =>
       $npg_pipeline::function::definition::LOWLOAD_QUEUE,

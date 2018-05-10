@@ -11,7 +11,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
 use_ok('npg_pipeline::function::collection');
 
 subtest ' bam2fastqcheck_and_cached_fastq' => sub {
-  plan tests => 128;
+  plan tests => 120;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
 
@@ -34,7 +34,6 @@ subtest ' bam2fastqcheck_and_cached_fastq' => sub {
     ok (!$d->immediate_mode, 'mode is not immediate');
     ok (!$d->excluded, 'function is not excluded');
     is ($d->command, $command, 'command');
-    is ($d->log_file_dir, $runfolder_path, "log dir");
     is ($d->job_name, 'bam2fastqcheck_and_cached_fastq_1234_22-May', 'job name');
     is ($d->fs_slots_num, 1, 'one fs slot');
     ok ($d->has_composition, 'composition is set');

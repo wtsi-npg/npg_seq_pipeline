@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 32;
+use Test::More tests => 28;
 use Test::Exception;
 use File::Temp qw{ tempdir };
 
@@ -46,7 +46,6 @@ my $log_dir = join q[/], $status_dir, 'log';
   is ($d->identifier, 1234, 'identifier is set correctly');
   is ($d->job_name, 'save_run_status_1234_run_archived_20090709-123456',
     'job_name is correct');
-  is ($d->log_file_dir, $log_dir, 'log_file_dir is correct');
   is ($d->command,
     'npg_status2file --id_run 1234 --status "run archived" --dir_out '
     . $status_dir,
@@ -75,7 +74,6 @@ my $log_dir = join q[/], $status_dir, 'log';
   $d = $da->[0];
   is ($d->job_name, 'save_run_status_1234_qc_complete_20090709-123456',
     'job_name is correct');
-  is ($d->log_file_dir, $olog_dir, 'log_file_dir is correct');
   is ($d->command,
     'npg_status2file --id_run 1234 --status "qc complete" --dir_out '
     . $ostatus_dir,
@@ -97,7 +95,6 @@ my $log_dir = join q[/], $status_dir, 'log';
   $d = $da->[0];
   is ($d->job_name, 'save_lane_status_1234_analysis_in_progress_20090709-123456',
     'job_name is correct');
-  is ($d->log_file_dir, $log_dir, 'log_file_dir is correct');
   is ($d->command,
     'npg_status2file --id_run 1234 --status "analysis in progress" --dir_out '
     . $status_dir .  q' --lanes 3 --lanes 4 --lanes 5',
@@ -118,7 +115,6 @@ my $log_dir = join q[/], $status_dir, 'log';
   $d = $da->[0];
   is ($d->job_name, 'save_lane_status_1234_analysis_in_progress_20090709-123456',
     'job_name is correct');
-  is ($d->log_file_dir, $log_dir, 'log_file_dir is correct');
   is ($d->command,
     'npg_status2file --id_run 1234 --status "analysis in progress" --dir_out '
     . $status_dir .

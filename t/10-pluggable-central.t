@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 15;
+use Test::More tests => 16;
 use Test::Exception;
 use Cwd qw(getcwd);
 use Log::Log4perl qw(:levels);
@@ -83,27 +83,28 @@ my $runfolder_path = $util->analysis_runfolder_path();
   lives_ok { $pb->main() } q{no croak running qc->main()};
 }
 
-my $rf = join q[/], $tdir, 'myfolder';
-mkdir $rf;
 {
+  my $rf = join q[/], $tdir, 'myfolder';
+  mkdir $rf;
   my $init = {
-      id_run => 1234,
-      run_folder => 'myfolder',
+      id_run         => 1234,
+      run_folder     => 'myfolder',
       runfolder_path => $rf,
-      no_bsub => 1,
-      timestamp => '22-May',
+      timestamp      => '22-May',
+      spider         => 0,
   };
   my $pb;
-  lives_ok { $pb = $central->new($init); $pb->_set_paths() }
+  lives_ok { $pb = $central->new($init); $pb->prepare() }
     q{no error on object creation and analysis paths set for a flattened runfolder};
   is ($pb->intensity_path, $rf, 'intensities path is set to runfolder');
   is ($pb->basecall_path, $rf, 'basecall path is set to runfolder');
   is ($pb->bam_basecall_path, join(q[/],$rf,q{BAM_basecalls_22-May}), 'bam basecall path is created');
+  ok (-d $pb->bam_basecall_path, 'directory exists');
+  is ($pb->recalibrated_path, join(q[/],$pb->bam_basecall_path,'no_cal'),
+    'recalibrated path is created');
+  ok (-d $pb->recalibrated_path, 'directory exists');
+  is ($pb->analysis_path, $pb->bam_basecall_path, 'analysis path');
   is ($pb->recalibrated_path, join(q[/],$pb->bam_basecall_path, 'no_cal'), 'recalibrated path set');
-  my $status_path = $pb->status_files_path();
-  is ($status_path, join(q[/],$rf,q{BAM_basecalls_22-May}, q{status}), 'status directory path');
-  ok(-d $status_path, 'status directory created');
-  ok(-d "$status_path/log", 'log directory for status jobs created');
 }
 
 1;
