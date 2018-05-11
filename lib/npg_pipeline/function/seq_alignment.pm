@@ -33,6 +33,9 @@ Readonly::Scalar my $DEFAULT_SJDB_OVERHANG        => q{74};
 Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
+Readonly::Hash   my %RNA_ANALYSES                 => (q{tophat2} => 1,
+                                                      q{star}    => 1,
+                                                      q{salmon}  => 1);
 
 =head2 phix_reference
 
@@ -316,6 +319,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   elsif($do_rna) {
     my $rna_analysis = $self->_analysis($l) // $DEFAULT_RNA_ANALYSIS;
+    if (not exists $RNA_ANALYSES{$rna_analysis}){
+        $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
+        $rna_analysis = $DEFAULT_RNA_ANALYSIS;
+    }
     my $p4_reference_genome_index;
     if($rna_analysis eq q[star]) {
       # most common read length used for RNA-Seq is 75 bp so indices were generated using sjdbOverhang=74
@@ -324,37 +331,29 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $p4_reference_genome_index = dirname($self->_ref($l, q(star)));
       # star jobs require more memory
       $ref->{'memory'} = $MEMORY_FOR_STAR;
-    }
-    else {
-      if ($rna_analysis ne $DEFAULT_RNA_ANALYSIS){
-        $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
-        $rna_analysis = $DEFAULT_RNA_ANALYSIS;
-      }
+    } elsif ($rna_analysis eq q[tophat2]) {
       $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
       $p4_param_vals->{transcriptome_val} = $self->_transcriptome($l, q(tophat2))->transcriptome_index_name();
       $p4_reference_genome_index = $self->_ref($l, q(bowtie2));
-    }
-    if($rna_analysis eq q[tophat2] or $rna_analysis eq q[star]) { # create intermediate file to prevent deadlock
-      $p4_param_vals->{align_intfile_opt} = 1;
     }
     $p4_param_vals->{alignment_method} = $rna_analysis;
     $p4_param_vals->{annotation_val} = $self->_transcriptome($l)->gtf_file();
     $p4_param_vals->{quant_method} = q[salmon];
     $p4_param_vals->{salmon_transcriptome_val} = $self->_transcriptome($l, q(salmon))->transcriptome_index_path();
-    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $p4_reference_genome_index; }
+    $p4_param_vals->{alignment_reference_genome} = $p4_reference_genome_index;
+    # create intermediate file to prevent deadlock
+    $p4_param_vals->{align_intfile_opt} = 1;
     if($nchs) {
       # this human split alignment method is currently the same as the default, but this may change
       $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
       $p4_param_vals->{alignment_hs_method} = $hs_bwa;
     }
     if(not $self->is_paired_read) {
-      $p4_param_vals->{bwa_mem_p_flag} = undef;
+      $p4_param_vals->{alignment_reads_layout} = 1;
     }
-    
   }
   else {
     $p4_param_vals->{bwa_executable} = q[bwa0_6];
-
     $p4_param_vals->{alignment_method} = $bwa;
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bwa0_6)); }
     if($nchs) {
@@ -369,7 +368,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($human_split) {
     $p4_param_vals->{final_output_prep_target_name} = q[split_by_chromosome];
     $p4_param_vals->{split_indicator} = q{_} . $human_split;
-
     if($l->separate_y_chromosome_data) {
       $p4_param_vals->{chrsplit_subset_flag} = ['--subset', 'Y,chrY,ChrY,chrY_KI270740v1_random'];
       $p4_param_vals->{chrsplit_invert_flag} = q[--invert];
