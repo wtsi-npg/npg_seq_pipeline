@@ -347,6 +347,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
       $p4_param_vals->{alignment_hs_method} = $hs_bwa;
     }
+    if(not $self->is_paired_read) {
+      $p4_param_vals->{bwa_mem_p_flag} = undef;
+    }
+    
   }
   else {
     $p4_param_vals->{bwa_executable} = q[bwa0_6];
@@ -508,10 +512,6 @@ sub _do_rna_analysis {
   my $lstring = $l->to_string;
   if (!$l->library_type || $l->library_type !~ /(?:(?:cD|R)NA|DAFT)/sxm) {
     $self->debug(qq{$lstring - not RNA library type: skipping RNAseq analysis});
-    return 0;
-  }
-  if (not $self->is_paired_read) {
-    $self->debug(qq{$lstring - Single end run: skipping RNAseq analysis for now}); #TODO: RNAseq should work on single end data
     return 0;
   }
   my $reference_genome = $l->reference_genome();
