@@ -8,7 +8,7 @@ use File::Slurp;
 use File::Basename;
 use JSON;
 use List::Util qw(sum);
-use List::MoreUtils qw(any);
+use List::MoreUtils qw(any none);
 use open q(:encoding(UTF8));
 
 use npg_tracking::data::reference::find;
@@ -33,9 +33,7 @@ Readonly::Scalar my $DEFAULT_SJDB_OVERHANG        => q{74};
 Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
-Readonly::Hash   my %RNA_ANALYSES                 => (q{tophat2} => 1,
-                                                      q{star}    => 1,
-                                                      q{salmon}  => 1);
+Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star salmon};
 
 =head2 phix_reference
 
@@ -319,7 +317,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   elsif($do_rna) {
     my $rna_analysis = $self->_analysis($l) // $DEFAULT_RNA_ANALYSIS;
-    if (not exists $RNA_ANALYSES{$rna_analysis}){
+    if (none {$_ eq $rna_analysis} @RNA_ANALYSES){
         $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
         $rna_analysis = $DEFAULT_RNA_ANALYSIS;
     }
