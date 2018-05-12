@@ -147,20 +147,6 @@ sub _build_general_values_conf {
   return $self->read_config( $self->conf_file_path(q{general_values.ini}) );
 }
 
-=head2 status_files_path
-
- A directory to save status files to.
-
-=cut
-sub status_files_path {
-  my $self = shift;
-  my $apath = $self->analysis_path;
-  if (!$apath) {
-    $self->logcroak('Failed to retrieve analysis_path');
-  }
-  return join q[/], $apath, 'status';
-}
-
 __PACKAGE__->meta->make_immutable;
 
 1;

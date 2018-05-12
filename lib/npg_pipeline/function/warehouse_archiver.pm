@@ -4,7 +4,7 @@ use Moose;
 use namespace::autoclean;
 
 use npg_pipeline::function::definition;
-use npg_pipeline::function::runfolder_scaffold;
+use npg_pipeline::runfolder_scaffold;
 
 extends q{npg_pipeline::base};
 
@@ -110,8 +110,8 @@ sub _update_warehouse_command {
     };
 
     if ($post_qc_complete) {
-      my $path = npg_pipeline::function::runfolder_scaffold
-                   ->path_in_outgoing($self->recalibrated_path());
+      my $path = npg_pipeline::runfolder_scaffold
+                 ->path_in_outgoing($self->recalibrated_path());
       $job_name .= '_postqccomplete';
       $ref->{'command_preexec'} = "[ -d '$path' ]";
     }

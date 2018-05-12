@@ -36,7 +36,6 @@ Readonly::Hash my %REGISTRY => (
   'update_ml_warehouse_post_qc_complete' =>
     {'warehouse_archiver' => 'update_ml_warehouse_post_qc_complete'},
 
-  'create_archive_directory'     => {'runfolder_scaffold' => 'create'},
   'bam2fastqcheck_and_cached_fastq' =>
     {'collection' => 'bam2fastqcheck_and_cached_fastq'},
   'create_summary_link_analysis' => {'current_analysis_link' => 'create'},

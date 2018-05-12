@@ -12,7 +12,7 @@ use open q(:encoding(UTF8));
 
 use npg_pipeline::cache::barcodes;
 use npg_pipeline::function::definition;
-use npg_pipeline::function::runfolder_scaffold;
+use npg_pipeline::runfolder_scaffold;
 
 extends q{npg_pipeline::base};
 
@@ -146,7 +146,7 @@ sub _create_p4_stage1_dirs {
 
   my @dirs = (values %{$self->p4_stage1_params_paths},
               values %{$self->p4_stage1_errlog_paths});
-  my @errors = npg_pipeline::function::runfolder_scaffold->make_dir(@dirs);
+  my @errors = npg_pipeline::runfolder_scaffold->make_dir(@dirs);
   if (@errors) {
     $self->logcroak(join qq[\n], @errors);
   } else {

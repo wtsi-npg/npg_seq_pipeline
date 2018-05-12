@@ -9,6 +9,7 @@ use File::Basename;
 use Readonly;
 
 use npg_tracking::util::types;
+use npg_pipeline::runfolder_scaffold;
 
 with qw{ WTSI::DNAP::Utilities::Loggable };
 
@@ -335,11 +336,14 @@ sub log_dir4function {
                        ? $self->analysis_path()
                        : dirname($self->commands4jobs_file_path());
 
-  my ($dir, @errors) = npg_pipeline::function::runfolder_scaffold
-                       ->make_log_dir4name($log_dir_parent, $function_name);
+  my $output = npg_pipeline::runfolder_scaffold
+               ->make_log_dir4names($log_dir_parent, $function_name);
+  my @errors = @{$output->{'errors'}};
+  my $dir;
   if (@errors) {
     $self->logcroak(join qq[\n], @errors);
   } else {
+    $dir = $output->{'dirs'}->[0];
     $self->info(qq[Created log directory $dir for function $function_name]);
   }
 
@@ -352,7 +356,7 @@ sub log_dir4function {
 
 sub future_log_path {
   my ($self, $definitions, $path) = @_;
-  return npg_pipeline::function::runfolder_scaffold
+  return npg_pipeline::runfolder_scaffold
          ->future_path($definitions->[0], $path);
 }
 

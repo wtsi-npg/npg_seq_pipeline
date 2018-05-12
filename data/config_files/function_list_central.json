@@ -4,16 +4,11 @@
          {
             "relation" : "dependsOn",
             "source" : "pipeline_start",
-            "target" : "create_archive_directory"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "create_archive_directory",
             "target" : "create_summary_link_analysis"
          },
          {
             "relation" : "dependsOn",
-            "source" : "create_archive_directory",
+            "source" : "pipeline_start",
             "target" : "create_empty_fastq"
          },
          {
@@ -276,10 +271,6 @@
          {
             "id" : "pipeline_start",
             "label" : "pipeline_start"
-         },
-         {
-            "id" : "create_archive_directory",
-            "label" : "create_archive_directory"
          },
          {
             "id" : "create_empty_fastq",
