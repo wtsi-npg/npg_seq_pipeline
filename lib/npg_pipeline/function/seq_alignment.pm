@@ -253,8 +253,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
   #TODO: support these various options below in P4 analyses
-  if ((not $self->is_paired_read) and ($do_rna or $nchs)) {
-    $self->logcroak(qq{only paired reads supported for RNA or non-consented human ($name_root)});
+  if (not $self->is_paired_read and $nchs) {
+    $self->logcroak(qq{only paired reads supported for non-consented human ($name_root)});
   }
 
   ########
