@@ -69,6 +69,8 @@ sub create_analysis {
   `cp t/data/Recipes/TileLayout.xml $analysis_runfolder_path/Config/`;
   `mkdir $analysis_runfolder_path/Data/Intensities/archive`;
   `ln -s Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal $analysis_runfolder_path/Latest_Summary`;
+  `mkdir -p $analysis_runfolder_path/InterOp`;
+  `cp t/data/p4_stage1_analysis/TileMetricsOut.bin $analysis_runfolder_path/InterOp`;
   return 1;
 }
 
