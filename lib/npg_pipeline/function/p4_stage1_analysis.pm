@@ -22,6 +22,14 @@ Readonly::Scalar my $NUM_HOSTS                    => 1;
 Readonly::Scalar my $MEMORY                       => q{12000}; # memory in megabytes
 Readonly::Scalar my $FS_RESOURCE                  => 4; # LSF resource counter to control access to staging area file system
 Readonly::Scalar my $DEFAULT_I2B_THREAD_COUNT     => 3; # value passed to bambi i2b --threads flag
+Readonly::Scalar my $DEFAULT_SPLIT_THREADS_COUNT  => 0; # value passed to samtools split --threads flag
+
+Readonly::Scalar my $TILE_METRICS_INTEROP_CODES => {'cluster density'    => 100,
+                                                     'cluster density pf' => 101,
+                                                     'cluster count'      => 102,
+                                                     'cluster count pf'   => 103,
+                                                     'version3_cluster_counts' => ord('t'),
+                                                     };
 
 sub generate {
   my $self = shift;
@@ -54,13 +62,12 @@ sub generate {
     }
 
     my @generated = $self->_generate_command_params($l, $tag_list_file);
-    my $command = shift @generated;
+    my ($command, $p4_params, $p4_ops) = @generated;
     push @definitions, $self->_create_definition($l, $command);
 
     my $pfile_name = join q{/}, $self->p4_stage1_params_paths->{$p},
                                 $self->id_run.q{_}.$p.q{_p4s1_pv_in.json};
-    my %p4_params = @generated;
-    write_file($pfile_name, encode_json {'assign' => [ \%p4_params ]});
+    write_file($pfile_name, encode_json({'assign' => [ $p4_params, ], 'ops' => $p4_ops, }));
   }
 
   return \@definitions;
@@ -120,6 +127,29 @@ has '_job_id' => ( isa        => 'Str',
 sub _build__job_id {
   my $self = shift;
   return $self->random_string();
+}
+
+has 'interop_file_name'  => (
+                           isa        => 'Str',
+                           is         => 'ro',
+                           lazy_build => 1,
+                         );
+sub _build_interop_file_name {
+  my $self = shift;
+
+  return $self->runfolder_path . q{/InterOp/TileMetricsOut.bin};
+}
+
+has 'cluster_counts'   => (
+                       isa     => 'HashRef',
+                       is      => 'ro',
+                       lazy_build => 1,
+                     );
+
+sub _build_cluster_counts {
+  my $self = shift;
+
+  return $self->_parsing_interop($self->interop_file_name);
 }
 
 sub _create_definition {
@@ -184,7 +214,7 @@ sub _get_index_lengths {
 # Determine parameters for the lane from LIMS information and create the hash from which the p4 stage1
 #  analysis param_vals file will be generated. Generate the vtfp/viv commands using this param_vals file.
 #########################################################################################################
-sub _generate_command_params {
+sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexity)
   my ($self, $lane_lims, $tag_list_file) = @_;
   my %p4_params = (
                     samtools_executable => q{samtools1},
@@ -195,6 +225,8 @@ sub _generate_command_params {
                     reference_phix => $self->_default_phix_ref(q{bwa0_6}, $self->repository),
                     scramble_reference_fasta => $self->_default_phix_ref(q{fasta}, $self->repository),
                   );
+  my %p4_ops = ( splice => [], prune => [], );
+
   my %i2b_flag_map = (
     I => q[i2b_intensity_dir],
     L => q[i2b_lane],
@@ -343,9 +375,6 @@ sub _generate_command_params {
     }
   }
 
-
-  my $splice_flag = q[];
-  my $prune_flag = q[];
   if($self->is_multiplexed_lane($position)) {
     if (!$tag_list_file) {
       $self->logcroak('Tag list file path should be defined for multiplexed lane ', $position);
@@ -359,18 +388,33 @@ sub _generate_command_params {
       $p4_params{$bid_flag_map{q/MAX_NO_CALLS/}} = $self->general_values_conf()->{single_plex_decode_max_no_calls};
       $p4_params{bid_convert_low_quality_to_no_call_flag} = q[--convert-low-quality];
     }
+    if($self->no_adapterfind) {
+      push @{$p4_ops{splice}}, q[tee_i2b:baf:-bamcollate:];
+    }
   }
   else {
     $self->info(q{P4 stage1 analysis on non-plexed lane});
 
-    # This will avoid using BamIndexDecoder or attempting to split a non-muliplexed lane.
-    $splice_flag = q[-splice_nodes '"'"'bamadapterfind:-bamcollate:'"'"'];
-    $prune_flag = q[-prune_nodes '"'"'fs1p_tee_split:__SPLIT_BAM_OUT__-'"'"'];
+    if($self->no_adapterfind) {
+      push @{$p4_ops{splice}}, q[tee_i2b:baf:-bamcollate:];
+    }
+    else {
+      push @{$p4_ops{splice}}, q[bamadapterfind:-bamcollate:];
+    }
+    push @{$p4_ops{prune}}, q[tee_split:split_bam-];
   }
 
   if(!$self->is_paired_read) {
     $p4_params{phix_alignment_method} = q[bwa_aln_se];
   }
+
+  # cluster count (used to calculate FRAC for bam subsampling)
+  my $cluster_count = $self->cluster_counts->{$position}->{'cluster count pf'};
+  $p4_params{cluster_count} = $cluster_count;
+  ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
+  $p4_params{seed_frac} = sprintf q[%.8f], (10_000.0 / $cluster_count) + $id_run;
+
+  $p4_params{split_threads_val} = $self->general_values_conf()->{'p4_stage1_split_threads_count'} || $DEFAULT_SPLIT_THREADS_COUNT;
 
   my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->_num_cpus->[0];
   my $name_root = $id_run . q{_} . $position;
@@ -394,7 +438,7 @@ sub _generate_command_params {
   my $command = join q( ), q(bash -c '),
                            q(cd), $self->p4_stage1_errlog_paths->{$position}, q{&&},
                            q(vtfp.pl),
-                           $splice_flag, $prune_flag,
+                           q{-template_path $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib},
                            qq(-o run_$name_root.json),
                            q(-param_vals), (join q{/}, $self->p4_stage1_params_paths->{$position}, $name_root.q{_p4s1_pv_in.json}),
                            q(-export_param_vals), $name_root.q{_p4s1_pv_out_}.$self->_job_id().q/.json/,
@@ -407,11 +451,9 @@ sub _generate_command_params {
                            q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/bcl2bam_phix_deplex_wtsi_stage1_template.json},
                            q{&&},
                            qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json),
-                           q{&&},
-                           qq{qc --check spatial_filter --id_run $id_run --position $position --qc_out $qc_path < $spatial_filter_stats_file},
                            q(');
 
-  return ($command, %p4_params);
+  return ($command, \%p4_params, \%p4_ops);
 }
 
 sub _default_resources {
@@ -504,6 +546,83 @@ sub _build__extra_tradis_transposon_read {
   }
 
   return 0;
+}
+
+sub _parsing_interop {
+  my ($self, $interop) = @_;
+
+  my $cluster_count_by_lane = {};
+
+  my $version;
+  my $length;
+  my $data;
+
+  my $template = 'v3f'; # three two-byte integers and one 4-byte float
+
+  open my $fh, q{<}, $interop or
+    $self->logcroak(qq{Couldn't open interop file $interop, error $ERRNO});
+  binmode $fh, ':raw';
+
+  $fh->read($data, 1) or
+    $self->logcroak(qq{Couldn't read file version in interop file $interop, error $ERRNO});
+  $version = unpack 'C', $data;
+
+  $fh->read($data, 1) or
+    $self->logcroak(qq{Couldn't read record length in interop file $interop, error $ERRNO});
+  $length = unpack 'C', $data;
+
+  my $tile_metrics = {};
+
+   ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
+   if( $version == 3) {
+     $fh->read($data, 4) or
+       $self->logcroak(qq{Couldn't read area in interop file $interop, error $ERRNO});
+     my $area = unpack 'f', $data;
+     while ($fh->read($data, $length)) {
+       $template = 'vVc'; # one 2-byte integer, one 4-byte integer and one 1-byte char
+       my ($lane,$tile,$code) = unpack $template, $data;
+       if( $code == $TILE_METRICS_INTEROP_CODES->{'version3_cluster_counts'} ){
+         $data = substr $data, 7;
+         $template = 'f2'; # two 4-byte floats
+         my ($cluster_count, $cluster_count_pf) = unpack $template, $data;
+         push @{$tile_metrics->{$lane}->{'cluster count'}}, $cluster_count;
+         push @{$tile_metrics->{$lane}->{'cluster count pf'}}, $cluster_count_pf;
+       }
+     }
+   } elsif( $version == 2) {
+     $template = 'v3f'; # three 2-byte integers and one 4-byte float
+     while ($fh->read($data, $length)) {
+       my ($lane,$tile,$code,$value) = unpack $template, $data;
+       if( $code == $TILE_METRICS_INTEROP_CODES->{'cluster count'} ){
+         push @{$tile_metrics->{$lane}->{'cluster count'}}, $value;
+       }elsif( $code == $TILE_METRICS_INTEROP_CODES->{'cluster count pf'} ){
+         push @{$tile_metrics->{$lane}->{'cluster count pf'}}, $value;
+       }
+    }
+
+   } else {
+     $self->logcroak(qq{Unknown version $version in interop file $interop});
+  }
+
+  $fh->close() or
+    $self->logcroak(qq{Couldn't close interop file $interop, error $ERRNO});
+
+  my $lanes = scalar keys %{$tile_metrics};
+  if( $lanes == 0){
+    $self->warn('No cluster count data');
+    return $cluster_count_by_lane;
+  }
+
+  # calc lane totals
+  foreach my $lane (keys %{$tile_metrics}) {
+    for my $code (keys %{$tile_metrics->{$lane}}) {
+      my $total = 0;
+      for ( @{$tile_metrics->{$lane}->{$code}} ){ $total += $_};
+      $cluster_count_by_lane->{$lane}->{$code} = $total;
+    }
+  }
+
+  return $cluster_count_by_lane;
 }
 
 __PACKAGE__->meta->make_immutable;
