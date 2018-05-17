@@ -39,11 +39,6 @@
          {
             "relation" : "dependsOn",
             "source" : "run_analysis_in_progress",
-            "target" : "illumina_basecall_stats"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_in_progress",
             "target" : "update_warehouse"
          },
          {
@@ -73,42 +68,37 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "illumina_basecall_stats",
-            "target" : "pipeline_end"
-         },
-         {
-            "relation" : "dependsOn",
             "source" : "p4_stage1_analysis",
-            "target" : "bam2fastqcheck_and_cached_fastq"
+            "target" : "seq_alignment"
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "seq_alignment",
             "target" : "qc_qX_yield"
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "p4_stage1_analysis",
             "target" : "qc_adapter"
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "seq_alignment",
             "target" : "qc_insert_size"
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "seq_alignment",
             "target" : "qc_sequence_error"
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "seq_alignment",
             "target" : "qc_gc_fraction"
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "seq_alignment",
             "target" : "qc_ref_match"
          },
          {
@@ -174,11 +164,16 @@
          {
             "relation" : "dependsOn",
             "source" : "seq_alignment",
-            "target" : "qc_verify_bam_id"
+            "target" : "qc_spatial_filter"
          },
          {
             "relation" : "dependsOn",
             "source" : "seq_alignment",
+            "target" : "qc_verify_bam_id"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "p4_stage1_analysis",
             "target" : "qc_upstream_tags"
          },
          {
@@ -229,6 +224,11 @@
          {
             "relation" : "dependsOn",
             "source" : "qc_genotype",
+            "target" : "run_analysis_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "qc_spatial_filter",
             "target" : "run_analysis_complete"
          },
          {
@@ -298,10 +298,6 @@
             "label" : "lane_analysis_in_progress"
          },
          {
-            "id" : "illumina_basecall_stats",
-            "label" : "illumina_basecall_stats"
-         },
-         {
             "id" : "p4_stage1_analysis",
             "label" : "p4_stage1_analysis"
          },
@@ -316,10 +312,6 @@
          {
             "id" : "run_secondary_analysis_in_progress",
             "label" : "run_secondary_analysis_in_progress"
-         },
-         {
-            "id" : "bam2fastqcheck_and_cached_fastq",
-            "label" : "bam2fastqcheck_and_cached_fastq"
          },
          {
             "id" : "qc_qX_yield",
@@ -368,6 +360,10 @@
          {
             "id" : "qc_genotype",
             "label" : "qc_genotype"
+         },
+         {
+            "id" : "qc_spatial_filter",
+            "label" : "qc_spatial_filter"
          },
          {
             "id" : "qc_verify_bam_id",
