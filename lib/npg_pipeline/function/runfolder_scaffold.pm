@@ -17,6 +17,7 @@ sub create_dir {
   $owning_group ||= $self->general_values_conf()->{group};
 
   my @dirs = ( $self->archive_path(),
+               $self->archive_path() . q{/.npg_cache_10000},
                $self->qc_path(),
                $self->qc_path() . q{/tileviz}, );
   my @all_dirs = @dirs;
@@ -49,6 +50,12 @@ sub create_dir {
       my $lane_qc_dir = $lane_dir . q{/qc};
       push @all_dirs, $lane_qc_dir;
       push @all_dirs, $self->make_log_dir( $lane_qc_dir );
+      ###########
+      # cache directories for subsampled fastq output
+      #
+      my $lane_cache_dir = $lane_dir . q{/.npg_cache_10000};
+      push @all_dirs, $lane_cache_dir;
+      push @all_dirs, $self->make_log_dir( $lane_cache_dir );
     }
   }
 
