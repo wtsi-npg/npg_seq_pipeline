@@ -307,6 +307,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($do_target_alignment) {
     $p4_param_vals->{reference_dict} = $self->_ref($l,q(picard)) . q(.dict);
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($l,q(fasta));
+    if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
   }
   if($nchs) {
     $p4_param_vals->{reference_dict_hs} = $self->_default_human_split_ref(q{picard}, $self->repository);   # always human default
