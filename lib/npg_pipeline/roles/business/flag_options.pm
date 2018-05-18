@@ -114,6 +114,18 @@ has q{no_adapterfind} => (
   documentation => q{Switches off adapter finding/clipping.},
 );
 
+=head2 p4s2_aligner_intfile
+
+Forces p4 stage2 to create an intermediate file when doing alignments
+
+=cut
+
+has q{p4s2_aligner_intfile} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  documentation => q{Forces p4 stage2 to create an intermediate file when doing alignments.},
+);
+
 1;
 __END__
 
