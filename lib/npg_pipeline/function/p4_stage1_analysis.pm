@@ -389,7 +389,7 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
       $p4_params{bid_convert_low_quality_to_no_call_flag} = q[--convert-low-quality];
     }
     if($self->no_adapterfind) {
-      push @{$p4_ops{splice}}, q[tee_i2b:baf:-bamcollate:];
+      push @{$p4_ops{splice}}, q[bamadapterfind];
     }
   }
   else {
