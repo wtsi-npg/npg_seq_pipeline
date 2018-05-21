@@ -102,6 +102,30 @@ sub _build_local {
   return $self->can('no_bsub') && $self->no_bsub ? 1 : 0;
 }
 
+=head2 no_adapterfind
+
+Switches off adapter find/clip
+
+=cut
+
+has q{no_adapterfind} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  documentation => q{Switches off adapter finding/clipping.},
+);
+
+=head2 p4s2_aligner_intfile
+
+Forces p4 stage2 to create an intermediate file when doing alignments
+
+=cut
+
+has q{p4s2_aligner_intfile} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  documentation => q{Forces p4 stage2 to create an intermediate file when doing alignments.},
+);
+
 1;
 __END__
 
