@@ -14,6 +14,10 @@ extends qw{npg_pipeline::base};
 our $VERSION = '0';
 
 Readonly::Scalar my $CLUSTER_COUNT_SCRIPT => q{npg_pipeline_check_cluster_count};
+Readonly::Scalar my $VERSION_TWO          => 2;
+Readonly::Scalar my $VERSION_THREE        => 3;
+Readonly::Scalar my $FOUR                 => 4;
+Readonly::Scalar my $DATA_OFFSET          => 7;
 
 #keys used in hash and corresponding codes in tile metrics interop file
 Readonly::Scalar my $TILE_METRICS_INTEROP_CODES => {'cluster density'    => 100,
@@ -235,22 +239,22 @@ sub parsing_interop {
 
   my $tile_metrics = {};
 
-  if( $version == 3) {
-    $fh->read($data, 4) or
+  if( $version == $VERSION_THREE) {
+    $fh->read($data, $FOUR) or
       $self->logcroak(qq{Couldn't read area in interop file $interop, error $ERRNO});
     my $area = unpack 'f', $data;
     while ($fh->read($data, $length)) {
       my $template = 'vVc'; # one 2-byte integer, one 4-byte integer and one 1-byte char
       my ($lane,$tile,$code) = unpack $template, $data;
       if( $code == $TILE_METRICS_INTEROP_CODES->{'version3_cluster_counts'} ){
-        $data = substr($data,7);
+        $data = substr $data, $DATA_OFFSET;
         $template = 'f2'; # two 4-byte floats
         my ($cluster_count, $cluster_count_pf) = unpack $template, $data;
         push @{$tile_metrics->{$lane}->{'cluster count'}}, $cluster_count;
         push @{$tile_metrics->{$lane}->{'cluster count pf'}}, $cluster_count_pf;
-      } 
+      }
     }
-  } elsif( $version == 2) {
+  } elsif( $version == $VERSION_TWO) {
      my $template = 'v3f'; # three 2-byte integers and one 4-byte float
      while ($fh->read($data, $length)) {
        my ($lane,$tile,$code,$value) = unpack $template, $data;
@@ -260,9 +264,8 @@ sub parsing_interop {
          push @{$tile_metrics->{$lane}->{'cluster count pf'}}, $value;
        }
      }
-
    } else {
-     $self->logcroak(qq{Unknown version $version in interop file $interop}); 
+     $self->logcroak(qq{Unknown version $version in interop file $interop});
    }
 
   $fh->close() or
