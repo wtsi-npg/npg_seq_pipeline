@@ -20,7 +20,8 @@ my $current = abs_path(getcwd());
 my $new = "$dir/1234_samplesheet.csv";
 `cp -r t/data/p4_stage1_analysis/* $dir`;
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $new;
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $dir;
+local $ENV{'http_proxy'} = 'http://wibble.com';
+local $ENV{'no_proxy'} = q{};
 
 #################################
 # mock references

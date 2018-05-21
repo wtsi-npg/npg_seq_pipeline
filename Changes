@@ -15,6 +15,9 @@ LIST OF CHANGES
  - stopped forcing ownership and permissions when creating
    new directories
  - single log directory for all jobs with per-function subdirectories
+ - remove dependency on npg_tracking XML API in computation of the
+   extra_tradis_transposon_read value in p4_stage1_analysis function 
+ - added LSF-independent for number of threads
  - added wr executor
  - new modules to execute submission of definitions to LSF
  - captured dependencies between pipeline steps in a directed acyclic graph
