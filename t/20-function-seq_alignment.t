@@ -308,7 +308,7 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 14;
+  plan tests => 16;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
 
@@ -407,6 +407,34 @@ subtest 'test 2' => sub {
   #Library type is not RNA: ChIP-Seq Auto
   $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 1);
   is ($rna_gen->_do_rna_analysis($l), 0, 'not an RNA library, so no RNA analysis');
+
+  ##HiSeq, run 25269, single end RNA libraries suitable for RNA analysis
+  $runfolder = q{180228_HS35_25269_B_H7WJ3BCX2};
+  $runfolder_path = join q[/], $dir, $runfolder;
+  $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20180301-014343/no_cal';
+  $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20180301-014343/metadata_cache_25269';
+  `mkdir -p $bc_path`;
+  `mkdir -p $cache_dir`;
+  copy("t/data/rna_seq/25269_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is single end
+  for ((1,2)) {
+    `mkdir -p $bc_path/lane$_`;
+  }
+
+  local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = q[t/data/rna_seq/samplesheet_25269.csv];
+
+  lives_ok {
+    $rna_gen = npg_pipeline::function::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2018},
+      repository        => $dir
+    )
+  } 'no error creating an object';
+
+  # Single end RNA library: suitable for RNA analysis
+  $l = st::api::lims->new(id_run => 25269, position => 1, tag_index => 1);
+  is ($rna_gen->_do_rna_analysis($l), 1, 'do RNA analysis on single end RNA library');
 };
 
 subtest 'test 3' => sub {
