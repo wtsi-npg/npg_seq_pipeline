@@ -222,7 +222,7 @@ subtest 'ref_match' => sub {
   foreach my $d (@plexes) {
     my $t = $d->composition->get_component(0)->tag_index;
     is ($d->command,
-    "qc --check=ref_match --id_run=1234 --position=8 --tag_index=$t --qc_in=$pbcal/archive/lane8 --qc_out=$pbcal/archive/lane8/qc",
+    "qc --check=ref_match --id_run=1234 --position=8 --tag_index=$t --qc_in=$pbcal/archive/lane8/.npg_cache_10000 --qc_out=$pbcal/archive/lane8/qc",
     "ref_match command for lane 8 tag $t");
   }
 };

@@ -14,10 +14,12 @@ with 'WTSI::DNAP::Utilities::Loggable';
 our $VERSION = '0';
 
 Readonly::Scalar my $TAG_LIST_FILE_HEADER      => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
-Readonly::Scalar my $SPIKED_PHIX_PADDED        => q{ACAACGCATCTTTCCC};
-Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_PADDED => q{ACAACGCAAGATCTCG};
+# we used to set both the i7 and i5 spiked phix tags for dual index runs
 Readonly::Scalar my $SPIKED_PHIX_PADDED_2        => q{ACAACGCAATC-TCTTTCCC};
 Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_PADDED_2 => q{ACAACGCAATC-AGATCTCG};
+# now we simply add the missing i5 spiked phix tag for dual index runs
+Readonly::Scalar my $SPIKED_PHIX_TAG2        => q{TCTTTCCC};
+Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_TAG2 => q{AGATCTCG};
 
 =head1 NAME
 
@@ -133,13 +135,6 @@ sub generate {
     }
   }
 
-  # if tags are dual index, but PhiX is not, split the PhiX tag
-  if (scalar @{$self->index_lengths} > 1) {
-    if ($spiked_phix_tag_index and 0 > index $tags->{$spiked_phix_tag_index}, q{-}) {
-      substr $tags->{$spiked_phix_tag_index}, $self->index_lengths->[0], 0, q{-};
-    }
-  }
-
   my ($tag_index_list, $tag_seq_list) = $self->_process_tag_list($tags, $spiked_phix_tag_index);
 
   if  ($tag_index_list && $tag_seq_list) {
@@ -239,14 +234,17 @@ sub _get_tag_length {
 # truncate an index of the form "AAAAAA-GGGGGG"
 # to a length of the form [4,6]
 sub _truncate_index {
-  my ($self, $index, $index_lengths) = @_;
+  my ($self, $index, $index_lengths, $tag2) = @_;
   my @idx = split /-/smx, $index;
   my @ilengths = @{$index_lengths};
+  # if there is only one index length set the second index length to 0
   if (scalar @ilengths == 1) { push @ilengths, 0; }
-  if (scalar @idx == 1) { push @idx,q{}; }
+  # if there is no separator in the index set the second part of the index to $tag2
+  if (scalar @idx == 1) { push @idx, defined $tag2 ? $tag2 : q{}; }
   $idx[0] = substr $idx[0], 0, $ilengths[0];
   $idx[1] = substr $idx[1], 0, $ilengths[1];
   my $result = join q{-},@idx;
+  # remove the separator if the second part of the truncated index is empty
   if ($result =~ /-$/smx) { chop $result; }
   return $result;
 }
@@ -255,6 +253,8 @@ sub _check_tag_length {
   my ($self, $tag_seq_list, $tag_index_list, $spiked_phix_tag_index) = @_;
 
   # ensure no tags are longer than the index length
+  # Note: this is not correct for runs where not ALL the index reads appear in the BC(QT) tag i.e. TraDIS it
+  # works only because the first index read (the transposon) is longer that the second index read (the tag)
   my @indexed_length_tags = map {$self->_truncate_index($_, $self->index_lengths)} @{$tag_seq_list};
 
   my %tag_length;
@@ -286,19 +286,10 @@ sub _check_tag_length {
     if ($phix_entry < 2) {
       $self->debug(q{Yes, we have a PhiX tag});
       my $not_phix_entry = ($phix_entry + 1) % 2;
-      # If the PhiX tag is too short, pad it out
-      if ($self->_abs_len($temp[$phix_entry]) < $self->_abs_len($temp[$not_phix_entry])) {
-        my $phix_tag = (scalar @{$self->index_lengths()} > 1) ? ($self->i5opposite ? $SPIKED_PHIX_I5OPPOSITE_PADDED_2 : $SPIKED_PHIX_PADDED_2)
-                                                           : ($self->i5opposite ? $SPIKED_PHIX_I5OPPOSITE_PADDED : $SPIKED_PHIX_PADDED);
-        if (length $phix_tag < $self->_abs_len($temp[$not_phix_entry])) {
-          $self->logcroak(qq{Padded sequence for spiked Phix $phix_tag is shorter than longest tag length of $temp[$not_phix_entry]});
-        }
-        @indexed_length_tags = map { ($self->_get_tag_length($_) eq $temp[$phix_entry]) ? $phix_tag : $_ } @indexed_length_tags;
-      }
-
       # Truncate all tags to the non-phix length
       my @temp_lengths = split /,/smx, $temp[$not_phix_entry];
-      @indexed_length_tags = map { $self->_truncate_index($_, \@temp_lengths) } @indexed_length_tags;
+      # if the non-phix tags have two parts add the missing i5 spiked phix tag
+      @indexed_length_tags = map { $self->_truncate_index($_, \@temp_lengths, ($self->i5opposite ? $SPIKED_PHIX_I5OPPOSITE_TAG2 : $SPIKED_PHIX_TAG2)) } @indexed_length_tags;
       foreach my $t (@indexed_length_tags) {
         if ($self->_abs_len($self->_get_tag_length($t)) < $self->_abs_len($temp[$not_phix_entry])) {
           $self->logcroak(qq{It looks likes the padded sequence for spiked PhiX $t is too short});

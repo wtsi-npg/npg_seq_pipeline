@@ -85,6 +85,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
 
 {
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+
   my $rf = join q[/], $tdir, 'myfolder';
   mkdir $rf;
   my $init = {

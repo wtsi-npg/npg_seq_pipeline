@@ -106,9 +106,15 @@ sub _compare_lane {
   my $cram_file_name_glob = qq({lane$position/,}). $self->id_run . '_' . $position . q{*.cram};
   my @crams = glob $cram_file_name_glob or
     $self->logcroak("Cannot find any cram files using $cram_file_name_glob");
-  $self->info("Building .all.seqchksum for lane $position from cram in $cram_file_name_glob ...");
+  #my @seqchksums = map{s/\.cram$/\.seqchksum/r} @crams;
+  ## no critic (RegularExpressions::RequireDotMatchAnything)
+  ## no critic (RegularExpressions::RequireExtendedFormatting)
+  ## no critic (RegularExpressions::RequireLineBoundaryMatching)
+  my @seqchksums = map{s/[.]cram$/.seqchksum/r} @crams;
+  $self->info("Building .all.seqchksum for lane $position from seqchksum set based on $cram_file_name_glob ...");
 
-  my $cmd = 'seqchksum_merge.pl ' . join(q{ }, @crams) . qq{> $lane_seqchksum_file_name};
+  my $cmd = 'seqchksum_merge.pl ' . join(q{ }, @seqchksums) . qq{> $lane_seqchksum_file_name};
+
   $self->info("Running $cmd to generate $lane_seqchksum_file_name");
   system(qq[/bin/bash -c "set -o pipefail && $cmd"]) == 0 or $self->logcroak(
     "Failed to run command $cmd");

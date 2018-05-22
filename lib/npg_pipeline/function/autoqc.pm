@@ -43,6 +43,17 @@ sub _build__check_uses_refrepos {
     ->find_attribute_by_name('repository') ? 1 : 0;
 }
 
+has q{_is_lane_level_check} => (
+                                isa        => q{Bool},
+                                is         => q{ro},
+                                required   => 0,
+                                init_arg   => undef,
+                                lazy_build => 1,);
+sub _build__is_lane_level_check {
+  my $self = shift;
+  return $self->qc_to_run() =~ /^ spatial_filter $/smx;
+}
+
 has q{_is_lane_level_check4indexed_lane} => (
                                 isa        => q{Bool},
                                 is         => q{ro},
@@ -176,15 +187,20 @@ sub _generate_command {
     $c .= q[ --file_type=bam];
   }
 
-  my $qc_out = defined $tag_index ? $self->lane_qc_path($position) : $self->qc_path();
+  my $qc_out = (defined $tag_index and $check ne q[spatial_filter])? $self->lane_qc_path($position) : $self->qc_path();
   $qc_out or $self->logcroak('Failed to get qc_out directory');
   my $qc_in  = defined $tag_index ? $self->lane_archive_path($position) : $self->archive_path();
+  ##no critic (ControlStructures::ProhibitCascadingIfElse)
   if ($check eq q[adapter]) {
     $qc_in  = defined $tag_index
               ? File::Spec->catfile($self->recalibrated_path(), q[lane] . $position)
               : $self->recalibrated_path();
+  } elsif ($check eq q[spatial_filter]) {
+    $qc_in .= (q[/lane] . $position);
   } elsif ($check eq q[tag_metrics]) {
     $qc_in = $self->bam_basecall_path();
+  } elsif ($check eq q[sequence_error] or $check eq q[ref_match] or $check eq q[insert_size]) {
+    $qc_in .= q[/.npg_cache_10000]
   }
   $qc_in or $self->logcroak('Failed to get qc_in directory');
   $c .= qq[ --qc_in=$qc_in --qc_out=$qc_out];
@@ -197,6 +213,10 @@ sub _should_run {
 
   my $tag_index = $h->{'tag_index'};
   my $can_run = 1;
+
+  if ($self->_is_lane_level_check()) {
+    return !defined $tag_index;
+  }
 
   if ($self->_is_lane_level_check4indexed_lane()) {
     return $is_multiplexed_lane && !defined $tag_index;

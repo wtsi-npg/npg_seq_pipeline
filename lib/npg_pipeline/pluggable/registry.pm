@@ -80,6 +80,7 @@ Readonly::Array my @AUTOQC_FUNCTIONS =>
       qc_sequence_error
       qc_tag_metrics
       qc_upstream_tags
+      qc_spatial_filter
       qc_verify_bam_id 
     /;
 

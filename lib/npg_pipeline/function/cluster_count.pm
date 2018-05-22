@@ -20,6 +20,7 @@ Readonly::Scalar my $TILE_METRICS_INTEROP_CODES => {'cluster density'    => 100,
                                                     'cluster density pf' => 101,
                                                     'cluster count'      => 102,
                                                     'cluster count pf'   => 103,
+                                                    'version3_cluster_counts' => ord('t'),
                                                    };
 =head1 NAME
 
@@ -217,7 +218,7 @@ sub parsing_interop {
   my $length;
   my $data;
 
-  my $template = 'v3f'; # three two-byte integers and one 4-byte float
+###  my $template = 'v3f'; # three two-byte integers and one 4-byte float
 
   open my $fh, q{<}, $interop or
     $self->logcroak(qq{Couldn't open interop file $interop, error $ERRNO});
@@ -233,14 +234,35 @@ sub parsing_interop {
 
   my $tile_metrics = {};
 
-  while ($fh->read($data, $length)) {
-    my ($lane,$tile,$code,$value) = unpack $template, $data;
-    if( $code == $TILE_METRICS_INTEROP_CODES->{'cluster count'} ){
-      push @{$tile_metrics->{$lane}->{'cluster count'}}, $value;
-    }elsif( $code == $TILE_METRICS_INTEROP_CODES->{'cluster count pf'} ){
-      push @{$tile_metrics->{$lane}->{'cluster count pf'}}, $value;
+  if( $version == 3) {
+    $fh->read($data, 4) or
+      $self->logcroak(qq{Couldn't read area in interop file $interop, error $ERRNO});
+    my $area = unpack 'f', $data;
+    while ($fh->read($data, $length)) {
+      my $template = 'vVc'; # one 2-byte integer, one 4-byte integer and one 1-byte char
+      my ($lane,$tile,$code) = unpack $template, $data;
+      if( $code == $TILE_METRICS_INTEROP_CODES->{'version3_cluster_counts'} ){
+        $data = substr($data,7);
+        $template = 'f2'; # two 4-byte floats
+        my ($cluster_count, $cluster_count_pf) = unpack $template, $data;
+        push @{$tile_metrics->{$lane}->{'cluster count'}}, $cluster_count;
+        push @{$tile_metrics->{$lane}->{'cluster count pf'}}, $cluster_count_pf;
+      } 
     }
-  }
+  } elsif( $version == 2) {
+     my $template = 'v3f'; # three 2-byte integers and one 4-byte float
+     while ($fh->read($data, $length)) {
+       my ($lane,$tile,$code,$value) = unpack $template, $data;
+       if( $code == $TILE_METRICS_INTEROP_CODES->{'cluster count'} ){
+         push @{$tile_metrics->{$lane}->{'cluster count'}}, $value;
+       }elsif( $code == $TILE_METRICS_INTEROP_CODES->{'cluster count pf'} ){
+         push @{$tile_metrics->{$lane}->{'cluster count pf'}}, $value;
+       }
+     }
+
+   } else {
+     $self->logcroak(qq{Unknown version $version in interop file $interop}); 
+   }
 
   $fh->close() or
     $self->logcroak(qq{Couldn't close interop file $interop, error $ERRNO});

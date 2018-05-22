@@ -74,6 +74,21 @@ has '_ref_cache' => (isa      => 'HashRef',
                      default  => sub {return {};},
                     );
 
+has 'tag_metrics_files' => (
+                         isa     => 'HashRef',
+                         is      => 'ro',
+                         lazy_build => 1,
+                       );
+sub _build_tag_metrics_files {
+  my $self = shift;
+  my $h;
+
+  for my $lane ($self->positions) {
+    $h->{$lane} = sprintf q[%s/%d_%d.tag_metrics.json], $self->qc_path, $self->id_run, $lane;
+  }
+  return $h;
+}
+
 has '_job_id' => ( isa        => 'Str',
                    is         => 'ro',
                    lazy_build => 1,
@@ -166,6 +181,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $spike_tag;
   my $input_path= $self->input_path;
   my $archive_path= $self->archive_path;
+  my $recal_path= $self->recalibrated_path;
   my $qcpath= $self->qc_path;
   if($is_plex) {
     $tag_index = $l->tag_index;
@@ -197,9 +213,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     samtools_executable => q{samtools1},
     indatadir           => $input_path,
     outdatadir          => $archive_path,
+    recal_dir            => $recal_path,
     af_metrics          => $name_root.q{.bam_alignment_filter_metrics.json},
     rpt                 => $name_root,
     phix_reference_genome_fasta => $self->phix_reference,
+    s2_id_run => $id_run,
+    s2_position => $position,
+    s2_tag_index => $tag_index,
+    tag_metrics_file => $self->tag_metrics_files->{$position},
   };
   my $p4_ops = {
     prune => [],
@@ -208,6 +229,11 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   if(not $spike_tag) {
     push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:calibration_pu-';
+  }
+
+  if(not $is_plex) {
+    push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:subsample-';
+    push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:fqc-';
   }
 
   my $do_rna = $self->_do_rna_analysis($l);
@@ -280,6 +306,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($do_target_alignment) {
     $p4_param_vals->{reference_dict} = $self->_ref($l,q(picard)) . q(.dict);
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($l,q(fasta));
+    if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
   }
   if($nchs) {
     $p4_param_vals->{reference_dict_hs} = $self->_default_human_split_ref(q{picard}, $self->repository);   # always human default

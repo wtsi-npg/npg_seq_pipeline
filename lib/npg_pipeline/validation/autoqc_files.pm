@@ -34,6 +34,9 @@ Readonly::Array  my @COMMON_CHECKS         => qw/ qX_yield
                                                   fastqcheck
                                                 /;
 
+Readonly::Array  my @LANE_LEVELCHECKS      => qw/ spatial_filter
+                                                /;
+
 Readonly::Array  my @LANE_LEVELCHECKS4POOL => qw/ tag_metrics
                                                   upstream_tags
                                                 /;
@@ -134,9 +137,13 @@ sub _build__queries {
     my $query = {'position' => $position};
     $query->{'tag_index'} =  _value4query($DEFAULT_VALUE);
 
+    ## no critic (BuiltinFunctions::ProhibitComplexMappings)
+    ## no critic (ValuesAndExpressions::ProhibitCommaSeparatedStatements)
+    push @queries,
+      map { my %q; %q = %{$query}, $q{'check'} = $_; \%q; }
+      (@LANE_LEVELCHECKS);
+
     if ( $lane_is_plexed ) {
-      ## no critic (BuiltinFunctions::ProhibitComplexMappings)
-      ## no critic (ValuesAndExpressions::ProhibitCommaSeparatedStatements)
       push @queries,
         map { my %q; %q = %{$query}, $q{'check'} = $_; \%q; }
         (@LANE_LEVELCHECKS4POOL, @COMMON_CHECKS);
