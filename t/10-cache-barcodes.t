@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 64;
+use Test::More tests => 61;
 use Test::Exception;
 use File::Slurp;
 use File::Temp qw(tempdir);
@@ -139,35 +139,24 @@ use_ok(q{npg_pipeline::cache::barcodes});
 
   my $create_lane = npg_pipeline::cache::barcodes->new(
       lane_lims    => $lims->{1},
-      index_lengths=> [16],
+      index_lengths=> [8,8],
       location     => $dir,
   );
-  my $tag_list_lane_init = {1=> 'TAGCTTGTTGA', 2 => 'TGCGATGTTAATTTTT', 3 => 'GGCCAATGGGGAAAAA',};
+  my $tag_list_lane_init = {1=> 'ACAACGCAATC', 2 => 'TGCGATGT-TAATTTTT', 3 => 'GGCCAATG-GGGAAAAA',};
   my ($index_list, $tag_seq_list) = $create_lane->_process_tag_list($tag_list_lane_init, 1);
   is_deeply($create_lane->_check_tag_length($tag_seq_list, $index_list, 3),
-    [qw(ACAACGCATCTTTCCC TGCGATGTTAATTTTT GGCCAATGGGGAAAAA)],
-    'short phix tag is padded');
+    [qw(ACAACGCA-TCTTTCCC TGCGATGT-TAATTTTT GGCCAATG-GGGAAAAA)],
+    'short spiked phix tag is padded');
 
   $create_lane = npg_pipeline::cache::barcodes->new(
       lane_lims    => $lims->{1},
-      index_lengths=> [14],
+      index_lengths=> [12],
       location     => $dir,
   );
-  $tag_list_lane_init = {1=> 'TAGCTTGTTGA', 2 => 'TGCGATGTTAATTT', 3 => 'GGCCAATGGGGAAA',};
-  ($index_list, $tag_seq_list) = $create_lane->_process_tag_list($tag_list_lane_init, 1);
-  is_deeply($create_lane->_check_tag_length($tag_seq_list, $index_list, 3),
-    [qw(ACAACGCATCTTTC TGCGATGTTAATTT GGCCAATGGGGAAA)],
-    'short phix tag is padded'); 
-
-  $create_lane = npg_pipeline::cache::barcodes->new(
-      lane_lims    => $lims->{1},
-      index_lengths=> [18],
-      location     => $dir,
-  );
-  $tag_list_lane_init = {1=> 'TAGCTTGTTGA', 2 => 'TGCGATGTTAATTTTTTT', 3 => 'GGCCAATGGGGAAAAAAA',};
+  $tag_list_lane_init = {1=> 'ACAACGCAATC', 2 => 'TGCGATGTTAAT', 3 => 'GGCCAATGGGGA',};
   throws_ok { $create_lane->_process_tag_list($tag_list_lane_init, 1) }
-    qr/Padded sequence for spiked Phix ACAACGCATCTTTCCC is shorter than longest tag length of 18/,
-    'error when spiked phix padding is not long enough';  
+    qr/It looks likes the padded sequence for spiked PhiX ACAACGCAATC is too short/,
+    'error when spiked phix tag is not long enough';  
 }
 
 {
@@ -281,13 +270,6 @@ use_ok(q{npg_pipeline::cache::barcodes});
       qw{ AAAAA AAAAA AAAAA AAAA }
     ] , [ qw{1 2 3 4} ] , 168 ) ;
   } qr{AAAAA:AAAAA:AAAAA:AAAA}, q{2 different lengths, only one shortest};
-  lives_ok {
-    $tags_length_checked = $create_lane->_check_tag_length( [
-      qw{ AAAAA AAAAACCCC AAAAACCCC AAAAACCCC }
-    ] , [ qw{168 2 3 4} ] , 168 ) ;
-  } qq{tags returned ok};
-  $expected_tag_results = [ qw{ ACAACGCAT AAAAACCCC AAAAACCCC AAAAACCCC } ];
-  is_deeply( $tags_length_checked, $expected_tag_results, q{2 different lengths, only one shortest is PhiX} );
   throws_ok {
     $tags_length_checked = $create_lane->_check_tag_length( [
       qw{ AAAAA AAAAACCCC AAAAA AAAAACCCC }
@@ -362,7 +344,7 @@ use_ok(q{npg_pipeline::cache::barcodes});
   is($tag_list, "$dir/lane_2.taglist", 'i5opposite dual index tag list file path');
   my $file_contents;
   lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
-  my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACT-AGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACG-CAATCCGT\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
+  my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACT-AGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACG-AGATCTCG\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
   is($file_contents, $expected, 'i5opposite dual index tag list file contents as expected');
 }
 
