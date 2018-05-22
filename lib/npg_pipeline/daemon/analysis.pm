@@ -119,7 +119,7 @@ sub _clean_path {
   my ($self, $path) = @_;
   my $bin = $self->local_bin;
   my @path_components  = split /$PATH_DELIM/smx, $path;
-  return join $PATH_DELIM, grep { abs_path($_) ne $bin} @path_components;
+  return join $PATH_DELIM, grep { (abs_path($_) || q[]) ne $bin} @path_components;
 }
 
 sub _generate_command {
