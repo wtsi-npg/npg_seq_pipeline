@@ -1,14 +1,15 @@
 LIST OF CHANGES
 ---------------
 
+ - removed create_archive_directory function, scaffolding the runfolder
+   is called in the beginning of the pipeline within the 'prepare'
+   method of the analysis pipeline
  - increased number of threads for p4 stage1 (newer bambi version required)
  - added LSF-independent evaluation for number of threads
  - removed redundant dependency on illumina2bam jars
  - stopped forcing ownership and permissions when creating
    new directories
  - single log directory for all jobs with per-function subdirectories
- - added LSF-independent for number of threads
- - remove redundant dependency on illumina2bam jars
  - added wr executor
  - new modules to execute submission of definitions to LSF
  - captured dependencies between pipeline steps in a directed acyclic graph

@@ -84,6 +84,8 @@ my $runfolder_path = $util->analysis_runfolder_path();
 }
 
 {
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+
   my $rf = join q[/], $tdir, 'myfolder';
   mkdir $rf;
   my $init = {
@@ -92,6 +94,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
       runfolder_path => $rf,
       timestamp      => '22-May',
       spider         => 0,
+      is_indexed     => 0
   };
   my $pb;
   lives_ok { $pb = $central->new($init); $pb->prepare() }
