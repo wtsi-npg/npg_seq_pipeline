@@ -9,16 +9,18 @@ use Carp;
 our $VERSION = '0';
 
 Readonly::Scalar my $OUTGOING_PATH_COMPONENT => q[/outgoing/];
-Readonly::Scalar my $ANALYSIS_PATH_COMPONENT => q[/analysis/];
-Readonly::Scalar my $LOG_DIR_NAME            => q[log];
-Readonly::Scalar my $TILEVIZ_DIR_NAME        => q[tileviz];
-Readonly::Scalar my $STATUS_FILES_DIR_NAME   => q[status];
+Readonly::Scalar my $ANALYSIS_PATH_COMPONENT    => q[/analysis/];
+Readonly::Scalar my $LOG_DIR_NAME               => q[log];
+Readonly::Scalar my $TILEVIZ_DIR_NAME           => q[tileviz];
+Readonly::Scalar my $STATUS_FILES_DIR_NAME      => q[status];
+Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
 
 sub create_analysis_level {
   my $self = shift;
 
   my @dirs = (
                $self->archive_path(),
+               File::Spec->catdir($self->archive_path(), $SHORT_FILES_CACHE_DIR_NAME),
                $self->status_files_path(),
                $self->qc_path(),
                File::Spec->catdir($self->qc_path(), $TILEVIZ_DIR_NAME),
@@ -27,12 +29,10 @@ sub create_analysis_level {
   if ($self->is_indexed()) {
     foreach my $position ($self->positions()) {
       if ($self->is_multiplexed_lane($position)) {
-        ###########
-        # Lane directories for primary analysis output
-        #
         push @dirs, File::Spec->catdir($self->recalibrated_path(), q{lane} . $position);
-
-        push @dirs, $self->lane_archive_path($position);
+        my $lane_dir = $self->lane_archive_path($position);
+        push @dirs, $lane_dir;
+        push @dirs, File::Spec->catdir($lane_dir, $SHORT_FILES_CACHE_DIR_NAME);
         push @dirs, $self->lane_qc_path($position);
       }
     }
