@@ -16,7 +16,7 @@ use npg_pipeline::executor::lsf::job;
 
 extends 'npg_pipeline::executor';
 with qw( 
-         npg_pipeline::executor::lsf::options
+         npg_pipeline::executor::options
          npg_pipeline::roles::accessor
          MooseX::AttributeCloner
        );

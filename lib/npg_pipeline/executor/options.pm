@@ -1,4 +1,4 @@
-package npg_pipeline::executor::lsf::options;
+package npg_pipeline::executor::options;
 
 use Moose::Role;
 
@@ -6,7 +6,7 @@ our $VERSION = '0';
 
 =head1 NAME
 
-npg_pipeline::executor::lsf::options
+npg_pipeline::executor::options
 
 =head1 SYNOPSIS
 

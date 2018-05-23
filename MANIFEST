@@ -44,9 +44,9 @@ lib/npg_pipeline/function/status.pm
 lib/npg_pipeline/function/warehouse_archiver.pm
 lib/npg_pipeline/executor.pm
 lib/npg_pipeline/executor/lsf.pm
-lib/npg_pipeline/executor/wr.pm
 lib/npg_pipeline/executor/lsf/job.pm
-lib/npg_pipeline/executor/lsf/options.pm
+lib/npg_pipeline/executor/options.pm
+lib/npg_pipeline/executor/wr.pm
 lib/npg_pipeline/pluggable.pm
 lib/npg_pipeline/pluggable/central.pm
 lib/npg_pipeline/pluggable/registry.pm
