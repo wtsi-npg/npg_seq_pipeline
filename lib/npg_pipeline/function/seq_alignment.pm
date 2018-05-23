@@ -164,7 +164,6 @@ sub _create_definition {
   $ref->{'fs_slots_num'}    = $FS_NUM_SLOTS ;
   $ref->{'num_hosts'}       = $NUM_HOSTS;
   $ref->{'num_cpus'}        = $self->_num_cpus();
-  $ref->{'log_file_dir'}    = $self->make_log_dir( $self->archive_path() );
   $ref->{'memory'}          = $ref->{'memory'} ? $ref->{'memory'} : $MEMORY;
   $ref->{'command_preexec'} = $self->ref_adapter_pre_exec_string();
   $ref->{'composition'}     = $self->create_composition($l);

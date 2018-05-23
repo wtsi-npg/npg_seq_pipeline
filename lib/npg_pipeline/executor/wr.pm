@@ -111,9 +111,11 @@ sub _definitions4function {
 
   my $definitions = $self->function_definitions()->{$function_name};
   my $group_id = join q[-], $function_name, $definitions->[0]->identifier(), irand();
+  my $log_dir = $self->future_log_path(
+                  $definitions, $self->log_dir4function($function_name));
 
   foreach my $d (@{$definitions}) {
-    my $wr_def = $self->_definition4job($function_name, $d);
+    my $wr_def = $self->_definition4job($function_name, $log_dir, $d);
     if (@depends_on) {
       $wr_def->{'deps'} = \@depends_on;
     }
@@ -130,7 +132,7 @@ sub _definitions4function {
 }
 
 sub _definition4job {
-  my ($self, $function_name, $d) = @_;
+  my ($self, $function_name, $log_dir, $d) = @_;
 
   my $def = {};
 
@@ -146,7 +148,7 @@ sub _definition4job {
     my $log_name = join q[-], $function_name, $d->created_on(),
       $d->has_composition() ? $d->composition()->freeze2rpt () : $d->identifier();
     $log_name   .= q[.out];
-    return join q[/], $d->log_file_dir(), $log_name;
+    return join q[/], $log_dir, $log_name;
   };
 
   $def->{'cmd'} = join q[ ], q[(], $d->command(), q[)], q[2>&1], q[|], q[tee], $log_file->();

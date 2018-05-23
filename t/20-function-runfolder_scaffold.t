@@ -31,7 +31,7 @@ local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
   isa_ok ($afg, 'npg_pipeline::function::runfolder_scaffold');
 
   my $da;
-  lives_ok { $da = $afg->create_dir(q{staff}); } q{no error creating archive dir};
+  lives_ok { $da = $afg->create(); } q{no error creating archive dir};
   ok ($da && @{$da} == 1, 'an array with one definitions is returned');
   my $d = $da->[0];
   isa_ok($d, q{npg_pipeline::function::definition});
@@ -42,6 +42,6 @@ local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
   ok ($d->immediate_mode, 'immediate mode is true');
   ok (!$d->has_queue, 'queue is not set');
 
-  lives_ok { $afg->create_dir(q{staff}); } q{no error creating archive dir, already exists};
+  lives_ok { $afg->create() } q{no error creating archive dir which already exists};
 }
 1;

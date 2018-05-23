@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 35;
+use Test::More tests => 34;
 use Test::Exception;
 use t::util;
 
@@ -62,7 +62,6 @@ create_analysis();
   is ($d->identifier, 1234, 'identifier is set correctly');
   is ($d->job_name, q{publish_illumina_run_1234_20090709-123456},
     'job_name is correct');
-  is ($d->log_file_dir, qq[${pb_cal_path}/log], 'log_file_dir is correct');
   like ($d->command,
     qr/npg_publish_illumina_run\.pl --archive_path $archive_path --runfolder_path $analysis_runfolder_path --restart_file ${archive_path}\/publish_illumina_run_1234_20090709-123456-\d+\.restart_file\.json --max_errors 10/,
     'command is correct');

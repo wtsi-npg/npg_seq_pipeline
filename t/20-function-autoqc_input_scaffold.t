@@ -9,6 +9,8 @@ my $util = t::util->new();
 my $runfolder_path = $util->analysis_runfolder_path();
 $util->create_analysis();
 
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
+
 {
   my $s = npg_pipeline::function::autoqc_input_scaffold->new(
     id_run            => 1234,

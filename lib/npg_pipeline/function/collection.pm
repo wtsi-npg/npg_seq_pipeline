@@ -40,7 +40,6 @@ sub bam2fastqcheck_and_cached_fastq {
   my $id_run = $self->id_run();
   my $job_name = join q{_}, q{bam2fastqcheck_and_cached_fastq},
                             $id_run, $self->timestamp();
-  my $log_dir = $self->make_log_dir($self->recalibrated_path);
 
   my $command = sub {
     my ($c, $i, $p) = @_;
@@ -60,7 +59,6 @@ sub bam2fastqcheck_and_cached_fastq {
       job_name     => $job_name,
       command      => $command->($c, $id_run, $p),
       fs_slots_num => 1,
-      log_file_dir => $self->runfolder_path(),
       composition  =>
         $self->create_composition({id_run => $id_run, position => $p})
     );

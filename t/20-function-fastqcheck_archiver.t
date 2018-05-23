@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 24;
+use Test::More tests => 22;
 use Test::Exception;
 use t::util;
 
@@ -34,7 +34,6 @@ use_ok(q{npg_pipeline::function::fastqcheck_archiver});
   is ($d->identifier, 1234, 'identifier is set correctly');
   is ($d->job_name, q{fastqcheck_loader_1234_20090709-123456},
     'job_name is correct');
-  is ($d->log_file_dir, qq{$pbcal_path/log}, 'log_file_dir is correct');
   my $command = qq{npg_qc_save_files.pl --path=$pbcal_path/archive --path=$pbcal_path/archive/lane1 --path=$pbcal_path/archive/lane2 --path=$pbcal_path/archive/lane3 --path=$pbcal_path/archive/lane4 --path=$pbcal_path/archive/lane5 --path=$pbcal_path/archive/lane6 --path=$pbcal_path/archive/lane7};
   is ($d->command, $command, 'command is correct');
   ok (!$d->has_composition, 'composition not set');
@@ -61,7 +60,6 @@ use_ok(q{npg_pipeline::function::fastqcheck_archiver});
   isa_ok($d, q{npg_pipeline::function::definition});
   is ($d->job_name, q{fastqcheck_loader_1234_20090709-123456},
     'job_name is correct');
-  is ($d->log_file_dir, qq{$pbcal_path/log}, 'log_file_dir is correct');
   is ($d->command, qq{npg_qc_save_files.pl --path=$pbcal_path/archive},
     'command is correct');
 }

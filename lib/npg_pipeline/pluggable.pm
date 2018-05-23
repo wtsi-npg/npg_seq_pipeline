@@ -357,6 +357,12 @@ sub main {
 
 sub prepare {
   my $self = shift;
+
+  ######
+  # Build analysis_path attribute
+  #
+  $self->analysis_path();
+
   foreach my $name (qw/PATH CLASSPATH PERL5LIB/) {
     my $value = $ENV{$name} || q{Not defined};
     $self->info(sprintf '*** %s: %s', $name, $value);

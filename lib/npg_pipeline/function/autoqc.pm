@@ -134,7 +134,6 @@ sub _create_definition_object {
 
   $ref->{'job_name'}        = join q{_}, $QC_SCRIPT_NAME, $qc_to_run,
                                          $h->{'id_run'}, $self->timestamp();
-  $ref->{'log_file_dir'}    = $self->make_log_dir($self->qc_path());
   $ref->{'fs_slots_num'}    = 1;
   $ref->{'composition'}     = $self->create_composition($h);
   $ref->{'command'}         = $command;

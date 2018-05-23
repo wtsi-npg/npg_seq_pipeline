@@ -149,7 +149,7 @@ sub _find {
 }
 
 subtest 'test 1' => sub {
-  plan tests => 40;
+  plan tests => 38;
 
   my $runfolder = q{140409_HS34_12597_A_C333TACXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
@@ -211,7 +211,6 @@ subtest 'test 1' => sub {
   is ($d->command, $command, 'correct command for position 4, tag 3');
   is ($d->memory, $mem, "memory $mem");
   is ($d->command_preexec, "npg_pipeline_preexec_references --repository $dir", 'preexec');
-  is ($d->log_file_dir, "$bc_path/archive/log", 'log file directory');
   is ($d->queue, 'default', 'default queue');
   is_deeply ($d->num_cpus, [12,16], 'range of cpu numbers');
   is ($d->num_hosts, 1, 'one host');
@@ -230,7 +229,6 @@ subtest 'test 1' => sub {
   is ($d->command, $command, 'correct command for position 4, tag 0');
   is ($d->memory, $mem, "memory $mem");
   is ($d->command_preexec, "npg_pipeline_preexec_references --repository $dir", 'preexec');
-  is ($d->log_file_dir, "$bc_path/archive/log", 'log file directory');
   is_deeply ($d->num_cpus, [12,16], 'range of cpu numbers');
   is ($d->queue, 'default', 'default queue');
   is ($d->num_hosts, 1, 'one host');

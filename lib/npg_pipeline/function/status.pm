@@ -32,7 +32,6 @@ sub create {
     $self->id_run(),
     $status_with_underscores,
     $self->timestamp();
-  my $log_dir = join q[/], $status_files_path, 'log';
 
   my $d = npg_pipeline::function::definition->new(
     created_by    => __PACKAGE__,
@@ -40,7 +39,6 @@ sub create {
     identifier    => $self->id_run(),
     job_name      => $job_name,
     command       => $self->_command($status_files_path),
-    log_file_dir  => $log_dir,
     queue         =>
       $npg_pipeline::function::definition::SMALL_QUEUE,
   );

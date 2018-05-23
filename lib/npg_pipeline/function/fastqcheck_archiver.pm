@@ -16,7 +16,6 @@ Readonly::Scalar my $SCRIPT_NAME => q{npg_qc_save_files.pl};
 sub create {
   my $self = shift;
 
-  my $location_of_logs = $self->make_log_dir( $self->recalibrated_path() );
   my $job_name = join q{_}, q{fastqcheck_loader}, $self->id_run(), $self->timestamp();
 
   my @fqcheck_paths = ( $self->archive_path() );
@@ -40,7 +39,6 @@ sub create {
     identifier    => $self->id_run(),
     job_name      => $job_name,
     command       => $command,
-    log_file_dir  => $location_of_logs,
     fs_slots_num  => 1,
     queue         =>
       $npg_pipeline::function::definition::LOWLOAD_QUEUE,

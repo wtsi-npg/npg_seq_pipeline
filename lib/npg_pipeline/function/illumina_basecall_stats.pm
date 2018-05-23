@@ -66,7 +66,6 @@ sub create {
     my $dir = $self->bam_basecall_path();
 
     $ref->{'job_name'} = join q{_}, q{basecall_stats}, $self->id_run(), $self->timestamp();
-    $ref->{'log_file_dir'} = $self->make_log_dir( $dir );
     $ref->{'memory'}       = $MAKE_STATS_MEM;
     $ref->{'num_cpus'}     = [$MAKE_STATS_J];
     $ref->{'fs_slots_num'} = $MAKE_STATS_J;

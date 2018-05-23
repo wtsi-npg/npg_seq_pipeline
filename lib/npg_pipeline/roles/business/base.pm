@@ -352,20 +352,6 @@ sub metadata_cache_dir {
   return $ds[0];
 }
 
-=head2 path_in_outgoing
-
-Given a path in analysis directory changes it to outgoing directory.
-
-=cut
-
-sub path_in_outgoing {
-  my ($self, $path) = @_;
-  if ($path) {
-    $path =~ s{/analysis/}{/outgoing/}xms;
-  }
-  return $path;
-}
-
 =head2 num_cpus2array
 
 =cut
