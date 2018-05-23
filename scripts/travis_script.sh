@@ -3,7 +3,7 @@
 set -e -x
 
 export WTSI_NPG_iRODS_Test_IRODS_ENVIRONMENT_FILE=$HOME/.irods/irods_environment.json
-
+export TEST_AUTHOR=1
 # Perl environment has been already cached for this package.
 ./Build test --verbose
 
