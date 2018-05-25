@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - removed bam2fastqcheck_and_cached_fastq function
  - removed create_archive_directory function, scaffolding the runfolder
    is called in the beginning of the pipeline within the 'prepare'
    method of the analysis pipeline
