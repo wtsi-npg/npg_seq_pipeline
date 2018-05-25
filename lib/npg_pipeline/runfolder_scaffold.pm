@@ -182,8 +182,6 @@ Analysis run folder scaffolding.
 =head2 create_analysis_level
 
 Scaffolds the analysis directory.
-Returns an array with a single npg_pipeline::function::definition
-object, which has immediate_mode attribute set to true.
 
 =head2 create_top_level
 

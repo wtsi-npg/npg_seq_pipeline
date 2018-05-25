@@ -7,7 +7,7 @@ use JSON;
 use_ok ('npg_pipeline::function::definition');
 
 subtest 'constructor and accessors' => sub {
-  plan tests => 22;
+  plan tests => 16;
 
   my %init = ( created_by   => 'module',
                created_on   => 'June 25th',
@@ -31,11 +31,6 @@ subtest 'constructor and accessors' => sub {
     my $d;
     lives_ok {$d = npg_pipeline::function::definition->new(\%i)}
       'no restriction if function is excluded';
-    ok (!$d->has_queue(), 'queue attr is not set');
-    $i{'excluded'} = 0;
-    $i{'immediate_mode'} = 1;
-    lives_ok {$d = npg_pipeline::function::definition->new(\%i)}
-      'no restriction if function is run immediately';
     ok (!$d->has_queue(), 'queue attr is not set');
   }
   

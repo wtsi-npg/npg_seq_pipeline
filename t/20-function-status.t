@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 28;
+use Test::More tests => 27;
 use Test::Exception;
 use File::Temp qw{ tempdir };
 
@@ -52,7 +52,6 @@ my $log_dir = join q[/], $status_dir, 'log';
     'command is correct');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->immediate_mode, 'immediate mode is false');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
   ok (!$d->has_memory,'memory is not set');
   is ($d->queue, 'small', 'small queue');

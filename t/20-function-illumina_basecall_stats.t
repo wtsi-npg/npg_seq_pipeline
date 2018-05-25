@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 22;
+use Test::More tests => 21;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
@@ -61,7 +61,6 @@ use_ok(q{npg_pipeline::function::illumina_basecall_stats});
     'job_name is correct');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->immediate_mode, 'immediate mode is false');
   is_deeply ($d->num_cpus, [4], 'number of cpus');
   is ($d->num_hosts, 1, 'number of hosts');
   is ($d->fs_slots_num, 4, 'fs slots number');

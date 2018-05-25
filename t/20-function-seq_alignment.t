@@ -149,7 +149,7 @@ sub _find {
 }
 
 subtest 'test 1' => sub {
-  plan tests => 38;
+  plan tests => 37;
 
   my $runfolder = q{140409_HS34_12597_A_C333TACXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
@@ -203,7 +203,6 @@ subtest 'test 1' => sub {
   is ($d->identifier, 12597, 'identifier is set correctly');
   is ($d->job_name, 'seq_alignment_12597_2014', 'job name');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->immediate_mode, 'immediate mode is false');
   ok ($d->has_composition, 'composition is set');
   isa_ok ($d->composition, 'npg_tracking::glossary::composition',
     'composition object present');

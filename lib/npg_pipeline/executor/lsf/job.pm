@@ -271,15 +271,13 @@ array_cpu_limit and apply_array_cpu_limit methods.
 =cut
 
 my $delegation = sub {
-  ##no critic (RegularExpressions::ProhibitComplexRegexes)
   my %alist = map { q[j].$_ => $_ }
               grep { not m{\A (?: composition |
                                   identifier  |
                                   created_by  |
                                   created_on  |
                                   excluded    |
-                                  command     |
-                                  immediate_mode
+                                  command
                                ) \Z}smx }
               _definition_attr_list();
 

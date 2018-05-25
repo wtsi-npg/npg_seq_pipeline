@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 22;
+use Test::More tests => 21;
 use Test::Exception;
 use t::util;
 
@@ -38,7 +38,6 @@ my $pbcal = $util->standard_analysis_recalibrated_path();
     'command is correct');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->immediate_mode, 'immediate mode is false');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
   ok (!$d->has_memory,'memory is not set');
   is ($d->queue, 'lowload', 'queue');
