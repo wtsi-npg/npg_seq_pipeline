@@ -4,13 +4,13 @@ use Test::More tests => 21;
 use Test::Exception;
 use t::util;
 
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 my $util = t::util->new();
 my $pbcal_path = $util->temp_directory() . q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal};
 
 use_ok(q{npg_pipeline::function::fastqcheck_archiver});
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   $util->create_multiplex_analysis( { qc_dir => [1..7], } );
 
   my $fq_loader;
@@ -46,6 +46,7 @@ use_ok(q{npg_pipeline::function::fastqcheck_archiver});
 }
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   $util->create_analysis( {'qc_dir' => 1} );
   my $fq_loader = npg_pipeline::function::fastqcheck_archiver->new(
     run_folder => q{123456_IL2_1234},

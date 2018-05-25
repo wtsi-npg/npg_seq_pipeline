@@ -18,8 +18,6 @@ use st::api::lims;
 
 use_ok('npg_pipeline::function::seq_alignment');
 
-local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/rna_seq];
-
 my $odir    = abs_path cwd;
 my $dir     = tempdir( CLEANUP => 1);
 my $logfile = join q[/], $dir, 'logfile';
@@ -49,12 +47,11 @@ foreach my $org (keys %builds){
     foreach my $rel (@{ $builds{$org} }){
         my $rel_dir     = join q[/],$ref_dir,$org,$rel,'all';
         my $bowtie2_dir = join q[/],$rel_dir,'bowtie2'; 
-        my $bwa_dir     = join q[/],$rel_dir,'bwa';
         my $bwa0_6_dir  = join q[/],$rel_dir,'bwa0_6';
         my $fasta_dir   = join q[/],$rel_dir,'fasta';
         my $picard_dir  = join q[/],$rel_dir,'picard';
         my $star_dir    = join q[/],$rel_dir,'star';
-        make_path($bowtie2_dir, $bwa_dir, $bwa0_6_dir, $picard_dir, $star_dir, $fasta_dir, {verbose => 0});
+        make_path($bowtie2_dir, $bwa0_6_dir, $picard_dir, $star_dir, $fasta_dir, {verbose => 0});
         if ($tbuilds{$rel}) {
             foreach my $tra_ver (@{ $tbuilds{$rel} }){
                 my $tra_ver_dir = join q[/],$tra_dir,$org,$tra_ver,$rel;
@@ -86,7 +83,7 @@ sub symlink_default {
     eval { symlink($rel,"default") };
     print "symlink error $@" if $@;
     chdir $orig_dir;
-return;
+    return;
 }
 
 `touch $ref_dir/PhiX/default/all/bwa0_6/phix.fa`;
@@ -149,8 +146,9 @@ sub _find {
 }
 
 subtest 'test 1' => sub {
-  plan tests => 37;
+  plan tests => 31;
 
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/rna_seq/samplesheet_12597.csv];
   my $runfolder = q{140409_HS34_12597_A_C333TACXX};
   my $runfolder_path = join q[/], $dir, $runfolder;
   my $bc_path = join q[/], $runfolder_path,
@@ -159,8 +157,10 @@ subtest 'test 1' => sub {
     `mkdir -p $bc_path/lane$_`;
   }
  
-  copy("t/data/rna_seq/12597_RunInfo.xml","$runfolder_path/RunInfo.xml") or die
-    "Copy failed: $!"; #to get information that it is paired end
+  copy('t/data/rna_seq/12597_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die
+    'Copy failed';
+  copy('t/data/run_params/runParameters.hiseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
 
   my $rna_gen;
   lives_ok {
@@ -172,12 +172,10 @@ subtest 'test 1' => sub {
       verbose           => 0,
       repository        => $dir,
       force_phix_split  => 0,
-      ###uncomment to check V4 failure, flowcell_id=>'C333TANXX',
     )
   } 'no error creating an object';
 
   is ($rna_gen->id_run, 12597, 'id_run inferred correctly');
-  ok ((not $rna_gen->_has_newer_flowcell), 'not HT V4 or RR V2') or diag $rna_gen->flowcell_id;
 
   my $qc_in  = $dir . q[/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4];
   my $qc_out = join q[/], $qc_in, q[qc];
@@ -245,7 +243,6 @@ subtest 'test 1' => sub {
       force_phix_split  => 1,
     )
   } 'no error creating an object (forcing on phix split)';
-  ok((not $rna_gen->_has_newer_flowcell), 'HT V3 flowcell recognised as older flowcell');
 
   $da = $rna_gen->generate();
 
@@ -273,35 +270,6 @@ subtest 'test 1' => sub {
 
   $d = _find($da, 1);
   is ($d->command, $command, 'correct non-multiplex lane args generated');
-
-  #### check for newer flowcells
-  lives_ok {
-    $rna_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
-      runfolder_path    => $runfolder_path,
-      recalibrated_path => $bc_path,
-      timestamp         => q{2014},
-      verbose           => 0,
-      repository        => $dir,
-      force_phix_split  => 1,
-      flowcell_id       => 'C333TBCXX',
-    )
-  } 'no error creating an object with RR V2 flowcell (forcing on phix split)';
-  ok ($rna_gen->_has_newer_flowcell, 'RR V2 flowcell recognised as newer flowcell');
-
-  lives_ok {
-    $rna_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
-      runfolder_path    => $runfolder_path,
-      recalibrated_path => $bc_path,
-      timestamp         => q{2014},
-      verbose           => 0,
-      repository        => $dir,
-      force_phix_split  => 1,
-      flowcell_id       => 'C333TANXX',
-    )
-  } 'no error creating an object with HT V4 flowcell (forcing on phix split)';
-  ok ($rna_gen->_has_newer_flowcell, 'HT V4 flowcell recognised as newer flowcell');
 };
 
 subtest 'test 2' => sub {
@@ -315,7 +283,9 @@ subtest 'test 2' => sub {
   `mkdir -p $bc_path`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20140606-133530/metadata_cache_13066';
   `mkdir -p $cache_dir`;
-  copy("t/data/rna_seq/13066_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+  copy('t/data/rna_seq/13066_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.hiseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
 
   # Edited to add 1000Genomes_hs37d5 + ensembl_75_transcriptome to lane 8
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/rna_seq/samplesheet_13066.csv];
@@ -366,7 +336,10 @@ subtest 'test 2' => sub {
   $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20170629-170201/metadata_cache_17550';
   `mkdir -p $bc_path`;
   `mkdir -p $cache_dir`;
-  copy("t/data/rna_seq/17550_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+  copy('t/data/rna_seq/17550_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.hiseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
+
   for ((3,4,6,8)) {
     `mkdir -p $bc_path/lane$_`;
   }
@@ -412,7 +385,10 @@ subtest 'test 2' => sub {
   $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20180301-014343/metadata_cache_25269';
   `mkdir -p $bc_path`;
   `mkdir -p $cache_dir`;
-  copy("t/data/rna_seq/25269_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is single end
+  copy('t/data/rna_seq/25269_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.hiseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
+
   for ((1,2)) {
     `mkdir -p $bc_path/lane$_`;
   }
@@ -445,8 +421,9 @@ subtest 'test 3' => sub {
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20151215-215034';
   my $cache_dir = join q[/], $bc_path, 'metadata_cache_18472';
   `mkdir -p $bc_path/no_cal/lane2`;
+  copy('t/data/run_params/runParameters.hiseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
 
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'}  = $cache_dir;
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = join q[/], $cache_dir, q[samplesheet_18472.csv];
 
   my $se_gen;
@@ -490,10 +467,12 @@ subtest 'test 4' => sub {
 
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/metadata_cache_16839';
   `mkdir -p $cache_dir`;
-  copy("t/data/hiseqx/16839_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+  copy('t/data/hiseqx/16839_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.hiseqx.upgraded.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';  
+
   my $fasta_ref = "$ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa";
 
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseqx];
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = q[t/data/hiseqx/samplesheet_16839.csv];
 
   my $hsx_gen;
@@ -577,9 +556,10 @@ subtest 'test 5' => sub {
 
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-232614/metadata_cache_16807';
   `mkdir -p $cache_dir`;
-  copy("t/data/hiseq/16807_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+  copy('t/data/hiseq/16807_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.hiseqx.upgraded.xml', "$runfolder_path/runParameters.xml") 
+   or die 'Copy failed';
 
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseq];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/hiseq/samplesheet_16807.csv];
 
   my $hs_gen;
@@ -647,12 +627,10 @@ subtest 'test 6' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20160712-154117/metadata_cache_20268';
   `mkdir -p $cache_dir`;
 
-  copy("t/data/hiseq/20268_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!";
+  copy('t/data/hiseq/20268_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
 
-  # dummy reference should already exist
-  # system(qq[ls -lR $ref_dir]);
-
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseq];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/hiseq/samplesheet_20268.csv];
 
   my $bait_gen;
@@ -713,10 +691,11 @@ subtest 'test 7' => sub {
   `mkdir -p $bc_path/lane1`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-022206/metadata_cache_16850';
   `mkdir -p $cache_dir`;
-  copy("t/data/miseq/16850_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+  copy('t/data/miseq/16850_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
 
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/miseq];
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_16850.csv];
+ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_16850.csv];
 
   my $ms_gen;
   lives_ok {
@@ -776,10 +755,11 @@ subtest 'test 8' => sub {
   `mkdir -p $bc_path/lane1`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-132329/metadata_cache_16756';
   `mkdir -p $cache_dir`;
-  copy("t/data/hiseq/16756_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
+  copy('t/data/hiseq/16756_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
 
   # default human reference needed for alignment for unconsented human split
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseq];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/hiseq/samplesheet_16756.csv];
 
   my $hs_gen;
@@ -844,8 +824,10 @@ subtest 'test 9' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150714-133929/metadata_cache_16866';
   `mkdir -p $cache_dir`;
 
-  copy("t/data/miseq/16866_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/miseq];
+  copy('t/data/miseq/16866_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
+
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_16866.csv];
 
   my $ms_gen;
@@ -910,8 +892,10 @@ subtest 'test 10' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20161011-102905/metadata_cache_20990';
   `mkdir $cache_dir`;
 
-  copy("t/data/miseq/20990_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/miseq];
+  copy('t/data/miseq/20990_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
+
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_20990.csv];
 
   my $ms_gen;
@@ -965,9 +949,9 @@ subtest 'test 11' => sub {
   `mkdir -p $bc_path/lane1`;
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/metadata_cache_16839';
   `mkdir -p $cache_dir`;
-  copy("t/data/hiseqx/16839_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!"; #to get information that it is paired end
-
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/hiseqx];
+  copy('t/data/hiseqx/16839_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.hiseqx.upgraded.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
 
   # Chromium libs are not aligned
   my $old_ss = q[t/data/hiseqx/samplesheet_16839.csv];
@@ -1039,8 +1023,10 @@ subtest 'test 12' => sub {
   `mkdir -p $cache_dir`;
   `mkdir $bc_path/lane1`;
 
-  copy("t/data/miseq/24135_RunInfo.xml","$runfolder_path/RunInfo.xml") or die "Copy failed: $!";
-  local $ENV{'NPG_WEBSERVICE_CACHE_DIR'} = q[t/data/miseq];
+  copy('t/data/miseq/24135_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
+
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135.csv];
 
   my $ms_gen;

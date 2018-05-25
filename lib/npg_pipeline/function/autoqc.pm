@@ -185,6 +185,8 @@ sub _generate_command {
   }
   if ( $check eq q[adapter] ) {
     $c .= q[ --file_type=bam];
+  } elsif ($check eq q[insert_size]) {
+    $c .= $self->is_paired_read() ? q[ --is_paired_read] : q[ --no-is_paired_read];
   }
 
   my $qc_out = (defined $tag_index and $check ne q[spatial_filter])? $self->lane_qc_path($position) : $self->qc_path();
@@ -231,6 +233,9 @@ sub _should_run {
     my %init_hash = %{$h};
     if ($self->has_repository && $self->_check_uses_refrepos()) {
       $init_hash{'repository'} = $self->repository;
+    }
+    if ($self->qc_to_run() eq 'insert_size') {
+      $init_hash{'is_paired_read'} = $self->is_paired_read() ? 1 : 0;
     }
 
     load_class($self->_qc_module_name);

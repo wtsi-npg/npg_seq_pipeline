@@ -43,21 +43,6 @@ has q{id_flowcell_lims} => ( isa      => q{Int},
                              is       => q{ro},
                              required => 0,);
 
-=head2 run
-
-Run npg::api::run object, an id_run method is required for this.
-
-=cut
-
-has q{run} => (isa        => q{npg::api::run},
-               is         => q{ro},
-               metaclass  => q{NoGetopt},
-               lazy_build => 1,);
-sub _build_run {
-  my ($self) = @_;
-  return npg::api::run->new({id_run => $self->id_run(),});
-}
-
 =head2 lims
 
 st::api::lims run-level object
@@ -202,23 +187,6 @@ sub get_tag_index_list {
   my @tags = sort keys %{$self->_lims4lane($position)->tags()};
   unshift @tags, 0;
   return \@tags;
-}
-
-
-=head2 is_hiseqx_run
-
-A boolean flag
-
-=cut
-
-has q{is_hiseqx_run} => (isa           => q{Bool},
-                         is            => q{ro},
-                         metaclass     => q{NoGetopt},
-                         lazy_build    => 1,
-                         documentation => q{modified to also identify HiSeq 4000 runs which start with HF},);
-sub _build_is_hiseqx_run {
-  my ($self) = @_;
-  return $self->run->instrument->name =~ /\AH[XF]/xms;
 }
 
 =head2 positions
@@ -389,8 +357,6 @@ __END__
 =item npg_tracking::util::abs_path
 
 =item st::api::lims
-
-=item npg::api::run
 
 =item npg_tracking::data::reference::find
 

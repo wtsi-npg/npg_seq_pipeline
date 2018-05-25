@@ -5,7 +5,6 @@ use MooseX::StrictConstructor;
 use namespace::autoclean;
 
 extends 'npg_pipeline::pluggable';
-with    'npg_pipeline::runfolder_scaffold';
 
 our $VERSION = '0';
 
@@ -29,10 +28,6 @@ Pipeline runner for the analysis pipeline.
 
 Inherits from parent's method. Sets all paths needed during the lifetime
 of the analysis runfolder. Creates any of the paths that do not exist.
-<<<<<<< HEAD
-=======
-Ater that calls the parent's method.
->>>>>>> logs_location_change
 
 =cut
 

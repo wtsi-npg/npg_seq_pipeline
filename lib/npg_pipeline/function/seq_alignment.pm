@@ -8,7 +8,7 @@ use File::Slurp;
 use File::Basename;
 use JSON;
 use List::Util qw(sum);
-use List::MoreUtils qw(any none);
+use List::MoreUtils qw(all none);
 use open q(:encoding(UTF8));
 
 use npg_tracking::data::reference::find;
@@ -244,11 +244,11 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   # Also any human split will be overriden and alignments will be forced.
   my $do_gbs_plex = $self->_do_gbs_plex_analysis($self->_has_gbs_plex($l));
 
-  my $hs_bwa = ($self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se');
+  my $hs_bwa = $self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se';
   # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp)
-  my $bwa = ($self->is_hiseqx_run or $self->_has_newer_flowcell or any {$_ >= $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts)
-            ? 'bwa_mem'
-            : $hs_bwa;
+  my $bwa = (($self->platform_MiSeq or $self->is_rapid_run) and (all {$_ < $FORCE_BWAMEM_MIN_READ_CYCLES } $self->read_cycle_counts))
+            ? $hs_bwa
+            : 'bwa_mem';
 
   # There will be a new exception to the use of "aln": if you specify a reference
   # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla, then we will use
@@ -523,11 +523,6 @@ sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
   }
 
   return $QC_SCRIPT_NAME . $command;
-}
-
-sub _has_newer_flowcell { # is HiSeq High Throughput >= V4, Rapid Run >= V2
-  my ($self) = @_;
-  return $self->flowcell_id() =~ /(?:A[N-Z]|[B-Z][[:upper:]])XX\z/smx;
 }
 
 sub _do_rna_analysis {

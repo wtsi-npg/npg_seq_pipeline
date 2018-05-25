@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 9;
+use Test::More tests => 7;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use Cwd;
@@ -68,50 +68,6 @@ subtest 'flowcell id and barcode' => sub {
   is ($base->id_run, 15441, 'id run derived correctly from runfolder_path');
   is ($base->id_flowcell_lims, 45, 'lims flowcell id returned correctly');
   is ($base->flowcell_id, 'MS2806735-300V2', 'MiSeq reagent kit id derived from runfolder path');
-};
-
-subtest 'HiSeq flag' => sub {
-  plan tests => 2;
-
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data/hiseqx];
-  my $base = npg_pipeline::base->new(id_run => 13219);
-  ok($base->is_hiseqx_run, 'is a HiSeqX instrument run');
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-  $base = npg_pipeline::base->new(id_run => 1234);
-  ok(!$base->is_hiseqx_run, 'is not a HiSeqX instrument run');
-};
-
-subtest 'metadata cache directory' => sub {
-  plan tests => 8;
-
-  my $dir = tempdir( CLEANUP => 1 );
-  my ($fh, $file) = tempfile( 'tmpfileXXXX', DIR => $dir);
-  
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $dir;
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[];
-  is (npg_pipeline::base->metadata_cache_dir(), $dir, 'cache dir from webservice cache dir');
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $file;
-  is (npg_pipeline::base->metadata_cache_dir(), $dir, 'cache dir from two consistent caches');
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
-  is (npg_pipeline::base->metadata_cache_dir(), $dir, 'cache dir from samplesheet path');
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t];
-  throws_ok {npg_pipeline::base->metadata_cache_dir()}
-    qr/Multiple possible locations for metadata cache directory/,
-    'inconsistent locations give an error';
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[some];
-  is (npg_pipeline::base->metadata_cache_dir(), $dir, 'one valid and one invalid path is OK');
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[other];
-  throws_ok {npg_pipeline::base->metadata_cache_dir()}
-    qr/Cannot infer location of cache directory/,
-    'error with two invalid paths';
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[];
-  throws_ok {npg_pipeline::base->metadata_cache_dir()}
-    qr/Cannot infer location of cache directory/,
-    'error with one path that is invalid';
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
-  throws_ok {npg_pipeline::base->metadata_cache_dir()}
-    qr/Cannot infer location of cache directory/,
-    'error when no env vars are set';
 };
 
 subtest 'qc run flag' => sub {

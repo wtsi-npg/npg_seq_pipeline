@@ -7,7 +7,7 @@ use t::util;
 use_ok('npg_pipeline::function::seq_to_irods_archiver');
 
 my $util = t::util->new();
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
 
 my $tmp_dir = $util->temp_directory();
 

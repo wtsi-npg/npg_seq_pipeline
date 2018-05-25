@@ -59,7 +59,7 @@ sub generate {
         location      => $self->metadata_cache_dir,
         lane_lims     => $l,
         index_lengths => $self->_get_index_lengths($l),
-        i5opposite    => $self->is_hiseqx_run,
+        i5opposite    => $self->is_i5opposite ? 1 : 0,
         verbose       => $self->verbose
       )->generate();
     }
@@ -526,7 +526,7 @@ sub _build__extra_tradis_transposon_read {
   $num_index_reads ||= 0; # sum returns undef for an empty list
   my $is_tradis = any {$_->library_type && $_->library_type =~ /^TraDIS/smx}
                   $self->lims->descendants();
-  my $num_main_index_reads = any {$_->is_pool} $self->lims->children ? 1 : 0;
+  my $num_main_index_reads = (any {$_->is_pool} $self->lims->children) ? 1 : 0;
 
   my $num_extra = 0;
   if ($is_tradis) {
