@@ -25,7 +25,6 @@ lib/npg_pipeline/daemon/analysis.pm
 lib/npg_pipeline/daemon.pm
 lib/npg_pipeline/function/autoqc.pm
 lib/npg_pipeline/function/autoqc_archiver.pm
-lib/npg_pipeline/function/autoqc_input_scaffold.pm
 lib/npg_pipeline/function/collection.pm
 lib/npg_pipeline/function/cluster_count.pm
 lib/npg_pipeline/function/current_analysis_link.pm
@@ -78,7 +77,6 @@ t/10-validation-sequence_files.t
 t/15-pipeline_launcher_scripts.t
 t/20-function-autoqc.t
 t/20-function-autoqc_archiver.t
-t/20-function-autoqc_input_scaffold.t
 t/20-function-collection.t
 t/20-function-cluster_count.t
 t/20-function-current_analysis_link.t

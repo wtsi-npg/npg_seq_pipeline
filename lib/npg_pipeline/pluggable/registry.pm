@@ -39,7 +39,6 @@ Readonly::Hash my %REGISTRY => (
   'bam2fastqcheck_and_cached_fastq' =>
     {'collection' => 'bam2fastqcheck_and_cached_fastq'},
   'create_summary_link_analysis' => {'current_analysis_link' => 'create'},
-  'create_empty_fastq'           => {'autoqc_input_scaffold' => 'create'},
 
   'illumina_basecall_stats' => {'illumina_basecall_stats' => 'create'},
   'p4_stage1_analysis'      => {'p4_stage1_analysis' => 'generate'},
