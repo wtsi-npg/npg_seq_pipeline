@@ -46,12 +46,6 @@
             "source" : "illumina_basecall_stats",
             "target" : "run_analysis_complete"
          },
-
-         {
-            "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
-            "target" : "bam2fastqcheck_and_cached_fastq"
-         },
          {
             "relation" : "dependsOn",
             "source" : "p4_stage1_analysis",
@@ -59,32 +53,32 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "seq_alignment",
             "target" : "qc_qX_yield"
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "p4_stage1_analysis",
             "target" : "qc_adapter"
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "seq_alignment",
             "target" : "qc_insert_size"
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "seq_alignment",
             "target" : "qc_sequence_error"
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "seq_alignment",
             "target" : "qc_gc_fraction"
          },
          {
             "relation" : "dependsOn",
-            "source" : "bam2fastqcheck_and_cached_fastq",
+            "source" : "seq_alignment",
             "target" : "qc_ref_match"
          },
          {
@@ -268,10 +262,6 @@
          {
             "id" : "run_archival_in_progress",
             "label" : "run_archival_in_progress"
-         },
-         {
-            "id" : "bam2fastqcheck_and_cached_fastq",
-            "label" : "bam2fastqcheck_and_cached_fastq"
          },
          {
             "id" : "qc_qX_yield",
