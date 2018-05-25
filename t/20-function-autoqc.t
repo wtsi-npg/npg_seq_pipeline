@@ -49,7 +49,7 @@ subtest 'errors' => sub {
 };
 
 subtest 'adapter' => sub {
-  plan tests => 31;
+  plan tests => 30;
 
   local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
   $util->create_analysis({qc_dir => 1});
@@ -73,7 +73,6 @@ subtest 'adapter' => sub {
   is ($d->created_on, q{20090709-123456}, 'created on');
   is ($d->identifier, 1234, 'identifier');
   ok (!$d->excluded, 'step is not excluded');
-  ok (!$d->immediate_mode, 'not immediate mode');
   is ($d->queue, 'default', 'default queue');
   is ($d->job_name, 'qc_adapter_1234_20090709-123456', 'job name');
   is ($d->fs_slots_num, 1, 'one sf slots');

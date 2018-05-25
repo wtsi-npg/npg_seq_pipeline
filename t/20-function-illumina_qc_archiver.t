@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 23;
+use Test::More tests => 22;
 use Test::Exception;
 use t::util;
 
@@ -43,7 +43,6 @@ my $pbcal_path = $tmp_dir . q{/nfs/sf45/IL2/analysis/123456_IL2_1234/} . $pbcal;
     'preexec command is correct');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->immediate_mode, 'immediate mode is false');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
   ok (!$d->has_memory,'memory is not set');
   is ($d->queue, 'lowload', 'queue');

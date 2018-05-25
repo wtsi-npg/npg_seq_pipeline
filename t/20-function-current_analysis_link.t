@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 25;
+use Test::More tests => 24;
 use Test::Exception;
 use File::Path qw(make_path);
 use t::util;
@@ -54,7 +54,6 @@ make_path($recalibrated_path);
   is ($d->identifier, '1234', 'identifier set to run id');
   is ($d->created_by, 'npg_pipeline::function::current_analysis_link',
     'created_by');
-  ok (!$d->immediate_mode, 'mode is not immediate');
   my $command = 'npg_pipeline_create_summary_link ' .
                 '--run_folder 123456_IL2_1234 ' .
                 "--runfolder_path $runfolder_path " .

@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 27;
+use Test::More tests => 26;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
@@ -64,7 +64,6 @@ my $archive_path = $recalibrated_path . q{/archive};
     qq{$archive_path --bam_basecall_path=$bam_basecall_path --lanes=1},
     'command is correct');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->immediate_mode, 'immediate mode is false');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
   ok (!$d->has_memory,'memory is not set');
   is ($d->queue, 'default', 'default queue');

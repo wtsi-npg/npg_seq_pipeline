@@ -64,7 +64,7 @@ subtest 'basics' => sub {
 };
 
 subtest 'check_save_arguments' => sub {
-  plan tests => 30;
+  plan tests => 29;
  
   my $bbp = $bam_generator->bam_basecall_path;
   my $unique = $bam_generator->_job_id();
@@ -77,7 +77,6 @@ subtest 'check_save_arguments' => sub {
   is ($d->created_on, q{20090709-123456}, 'created on');
   is ($d->identifier, 1234, 'identifier');
   ok (!$d->excluded, 'step is not excluded');
-  ok (!$d->immediate_mode, 'not immediate mode');
   is ($d->queue, 'default', 'default queue');
   is ($d->job_name, 'p4_stage1_analysis_1234_20090709-123456', 'job name');
   is ($d->fs_slots_num, 4, '4 sf slots');

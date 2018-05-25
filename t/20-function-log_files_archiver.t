@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 33;
+use Test::More tests => 32;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
@@ -45,7 +45,6 @@ $orfpath =~ s/analysis/outgoing/xms;
   is ($d->command_preexec, qq{[ -d '$orfpath' ]}, 'preexec command');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->immediate_mode, 'immediate mode is false');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
   ok (!$d->has_memory,'memory is not set');
   is ($d->queue, 'lowload', 'queue');

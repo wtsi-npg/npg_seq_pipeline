@@ -146,25 +146,11 @@ has 'excluded' => (
   required   => 0,
 );
 
-=head2 immediate_mode
-
-Boolean flag, false by default. If set to true,
-the function was executed at the time the implementor
-was called.
-
-=cut
-
-has 'immediate_mode' => (
-  isa        => 'Bool',
-  is         => 'ro',
-  required   => 0,
-);
-
 =head2 command
 
 Command to execute. Might contain placeholders
 in place of some arguments. Cam be undefined if
-either excluded or immediate_mode is set to true.
+excluded is set to true.
 
 =cut
 
@@ -307,7 +293,7 @@ essential for a definition are not defined.
 
 sub BUILD {
   my $self = shift;
-  if (!$self->excluded && !$self->immediate_mode) {
+  if (!$self->excluded) {
     for my $a (@MUST_HAVE_ATTRS) {
       my $method = 'has_' . $a;
       if (!$self->$method) {

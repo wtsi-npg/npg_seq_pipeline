@@ -20,7 +20,7 @@ my @wh_methods = qw/update_warehouse update_ml_warehouse/;
 use_ok('npg_pipeline::function::warehouse_archiver');
 
 subtest 'warehouse updates' => sub {
-  plan tests => 37;
+  plan tests => 33;
 
   my $c = npg_pipeline::function::warehouse_archiver->new(
     run_folder          => q{123456_IL2_1234},
@@ -57,7 +57,6 @@ subtest 'warehouse updates' => sub {
 
     is ($d->identifier, '1234', 'identifier set to run id');
     is ($d->created_by, 'npg_pipeline::function::warehouse_archiver', 'created_by');
-    ok (!$d->immediate_mode, 'mode is not immediate');
     is ($d->command, $command, "command for $m");
     is ($d->job_name, $job_name, "job name for $m");
     is ($d->queue, 'lowload', 'queue');

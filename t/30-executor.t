@@ -97,7 +97,7 @@ subtest 'saving commands for jobs' => sub {
 };
 
 subtest 'builder for function_graph4jobs' => sub {
-  plan tests => 19;
+  plan tests => 17;
 
   my $e = npg_pipeline::executor->new(
     function_definitions => {},
@@ -149,16 +149,6 @@ subtest 'builder for function_graph4jobs' => sub {
   is ($g4jobs->vertices(), 2, 'two nodes in the new graph');
   is ($g4jobs->edges(), 1, 'one edge in the new graph');
 
-  $init->{'immediate_mode'} = 1;
-  $d1 = npg_pipeline::function::definition->new($init);
-  $e = npg_pipeline::executor->new(
-         function_definitions => {node_one => [$d2], node_two => [$d1]},
-         function_graph       => $g);
-  $g4jobs = $e->function_graph4jobs();
-  is ($g4jobs->vertices(), 1, 'one node in the new graph');
-  is ($g4jobs->edges(), 0, 'zero edges in the new graph');
-
-  $init->{'immediate_mode'} = 0;
   $init->{'excluded'} = 1;
   $d1 = npg_pipeline::function::definition->new($init);
   $e = npg_pipeline::executor->new(

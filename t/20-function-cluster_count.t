@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use English qw{-no_match_vars};
-use Test::More tests => 44;
+use Test::More tests => 43;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
@@ -46,7 +46,6 @@ my $archive_path = $recalibrated_path . q{/archive};
   is ($d->created_on, $object->timestamp, 'created_on is correct');
   is ($d->identifier, 1234, 'identifier is set correctly');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->immediate_mode, 'immediate mode is false');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
   ok (!$d->has_memory,'memory is not set');
   ok ($d->has_composition, 'composition is set');

@@ -151,7 +151,7 @@ sub _build_commands4jobs_file_path {
 
 The graph of functions that have to be executed. The same graph as in
 the 'function_graph' attribute, but the functions that have to be skipped
-or have definitions that are immediately executed are excluded.
+are excluded.
 
 Each node of this graph has 'num_definitions' attribute set.
 
@@ -192,10 +192,6 @@ sub _build_function_graph4jobs {
 
     if ($num_definitions == 1) {
       my $d = $definitions->[0];
-      if ($d->immediate_mode) {
-        $self->info(qq{***** Function $function has been already run});
-        next;
-      }
       if ($d->excluded) {
         $self->info(qq{***** Function $function is excluded});
         next;
@@ -204,8 +200,7 @@ sub _build_function_graph4jobs {
 
     #####
     # Find all closest ancestors that represent functions that will be
-    # submitted for execution, bypassing the skipped functions and functions
-    # that have been executed in the immediate mode.
+    # submitted for execution, bypassing the skipped functions.
     #
     # For each returned predecessor create an edge from the redecessor function
     # to this function. Adding an edge implicitly add its vertices. Adding
