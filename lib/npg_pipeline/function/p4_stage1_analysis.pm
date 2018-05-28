@@ -275,8 +275,6 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
   $p4_params{qc_check_qc_out_dir} = $qc_path; # used by tag_metrics qc check
   $p4_params{tileviz_dir} = $qc_path . q[/tileviz/] . $id_run . q[_] . $position ; # used by tileviz
   $p4_params{outdatadir} = $no_cal_path; # base for all (most?) outputs
-  $p4_params{spatial_filter_file} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.filter}; # full name for the spatial filter file
-  my $spatial_filter_stats_file = $p4_params{spatial_filter_stats} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.filter.stats}; # full name for the spatial filter stats file (for qc check)
   $p4_params{seqchksum_file} = $bam_basecall_path . q[/] . $id_run . q[_] . $position . q{.post_i2b.seqchksum}; # full name for the lane-level seqchksum file
   $p4_params{filtered_bam} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam}; # full name for the spatially filtered lane-level file
   $p4_params{unfiltered_cram_file} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.unfiltered.cram}; # full name for spatially unfiltered lane-level cram file
