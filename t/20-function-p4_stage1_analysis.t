@@ -135,6 +135,7 @@ subtest 'check_save_arguments' => sub {
 	  'samtools_executable' => 'samtools1',
 	  'i2b_library_name' => '51021',
 	  'outdatadir' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal',
+          'subsetsubpath' => 'archive/.npg_cache_10000/',
 	  'i2b_run_path' => $dir . q[/nfs/sf45/IL2/analysis/123456_IL2_1234],
 	  'teepot_tempdir' => '.',
 	  'split_prefix' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/lane1',

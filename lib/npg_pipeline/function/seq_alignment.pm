@@ -214,7 +214,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     samtools_executable => q{samtools1},
     indatadir           => $input_path,
     outdatadir          => $archive_path,
-    recal_dir            => $recal_path,
+    subsetsubpath       => q[.npg_cache_10000/], # below outdatadir
+    recal_dir           => $recal_path,
     af_metrics          => $name_root.q{.bam_alignment_filter_metrics.json},
     rpt                 => $name_root,
     phix_reference_genome_fasta => $self->phix_reference,
