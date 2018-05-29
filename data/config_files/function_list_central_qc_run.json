@@ -23,11 +23,6 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "run_analysis_in_progress",
-            "target" : "illumina_basecall_stats"
-         },
-         {
-            "relation" : "dependsOn",
             "source" : "run_run_archived",
             "target" : "update_warehouse"
          },
@@ -40,11 +35,6 @@
             "relation" : "dependsOn",
             "source" : "run_secondary_analysis_in_progress",
             "target" : "seq_alignment"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "illumina_basecall_stats",
-            "target" : "run_analysis_complete"
          },
          {
             "relation" : "dependsOn",
@@ -238,10 +228,6 @@
          {
             "id" : "lane_analysis_in_progress",
             "label" : "lane_analysis_in_progress"
-         },
-         {
-            "id" : "illumina_basecall_stats",
-            "label" : "illumina_basecall_stats"
          },
          {
             "id" : "p4_stage1_analysis",

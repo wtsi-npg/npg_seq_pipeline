@@ -37,7 +37,6 @@ lib/npg_pipeline/function/collection.pm
 lib/npg_pipeline/function/current_analysis_link.pm
 lib/npg_pipeline/function/definition.pm
 lib/npg_pipeline/function/fastqcheck_archiver.pm
-lib/npg_pipeline/function/illumina_basecall_stats.pm
 lib/npg_pipeline/function/illumina_qc_archiver.pm
 lib/npg_pipeline/function/log_files_archiver.pm
 lib/npg_pipeline/function/p4_stage1_analysis.pm
@@ -90,7 +89,6 @@ t/20-function-collection.t
 t/20-function-current_analysis_link.t
 t/20-function-definition.t
 t/20-function-fastqcheck_archiver.t
-t/20-function-illumina_basecall_stats.t
 t/20-function-illumina_qc_archiver.t
 t/20-function-log_files_archiver.t
 t/20-function-p4_stage1_analysis.t

@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - removed illumina_basecall_stats function and associated code
  - remove generation of empty fastq and fastqcheck files
  - removed bam2fastqcheck_and_cached_fastq function
  - removed create_archive_directory function, scaffolding the runfolder

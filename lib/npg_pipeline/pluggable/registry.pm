@@ -38,7 +38,6 @@ Readonly::Hash my %REGISTRY => (
 
   'create_summary_link_analysis' => {'current_analysis_link' => 'create'},
 
-  'illumina_basecall_stats' => {'illumina_basecall_stats' => 'create'},
   'p4_stage1_analysis'      => {'p4_stage1_analysis' => 'generate'},
   'seq_alignment'           => {'seq_alignment' => 'generate'},
 
