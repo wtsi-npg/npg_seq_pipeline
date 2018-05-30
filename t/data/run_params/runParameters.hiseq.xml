@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<RunParameters xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Setup>
+    <ExperimentName>24235</ExperimentName>
+    <ScanID>-999</ScanID>
+    <FCPosition>A</FCPosition>
+    <WorkFlowType>CUSTOM</WorkFlowType>
+    <PairEndFC>true</PairEndFC>
+    <Read1>75</Read1>
+    <IndexRead1>8</IndexRead1>
+    <IndexRead2>0</IndexRead2>
+    <Read2>75</Read2>
+    <OutputFolder>Y:\ILorHSany_sf44\incoming</OutputFolder>
+    <CompressBcls>true</CompressBcls>
+    <RemapQScores>v8bins</RemapQScores>
+    <PeriodicSave>Save All Thumbnails</PeriodicSave>
+    <Flowcell>HiSeq Flow Cell v4</Flowcell>
+    <FirstBaseConfirmation>true</FirstBaseConfirmation>
+    <SampleSheet />
+    <KeepIntensityFiles>false</KeepIntensityFiles>
+    <Sbs>HiSeq SBS Kit v4</Sbs>
+    <Pe>HiSeq PE Cluster Kit v4 - cBot - HS</Pe>
+    <Index>HiSeq v4 Dual Index</Index>
+    <AlignToPhiX>
+      <Lane>1</Lane>
+      <Lane>2</Lane>
+      <Lane>3</Lane>
+      <Lane>4</Lane>
+      <Lane>5</Lane>
+      <Lane>6</Lane>
+      <Lane>7</Lane>
+      <Lane>8</Lane>
+    </AlignToPhiX>
+    <ClusteringChoice>None</ClusteringChoice>
+    <RapidRunChemistry>None</RapidRunChemistry>
+    <RunMode>RapidHighOutput</RunMode>
+    <Rehyb>None</Rehyb>
+    <PerformPreRunFluidicsCheck>false</PerformPreRunFluidicsCheck>
+    <ServiceRun>false</ServiceRun>
+    <ApplicationName>HiSeq Control Software</ApplicationName>
+    <ApplicationVersion>2.2.68</ApplicationVersion>
+    <RunID>171113_HS31_24325_A_CBP08ANXX</RunID>
+    <RunStartDate>171113</RunStartDate>
+    <IntegrationMode>Standalone</IntegrationMode>
+    <BaseSpaceSettings>
+      <RunMonitoringOnly>false</RunMonitoringOnly>
+      <Username />
+      <PlannedRun>false</PlannedRun>
+      <RunId>42336294</RunId>
+      <TempFolder>D:\BaseSpaceTemp</TempFolder>
+      <SendInstrumentHealthToILMN>true</SendInstrumentHealthToILMN>
+    </BaseSpaceSettings>
+    <ScannerID>D00241</ScannerID>
+    <ScanNumber>837</ScanNumber>
+    <ComputerName>HS31</ComputerName>
+    <FPGAVersion>7.9.7</FPGAVersion>
+    <CPLDVersion>3.0.0</CPLDVersion>
+    <RTAVersion>1.18.66.3</RTAVersion>
+    <ChemistryVersion>Illumina,Bruno Fluidics Controller,0,v2.0420</ChemistryVersion>
+    <CameraFirmware>2.01-F20-R02</CameraFirmware>
+    <CameraDriver>6.45.20.3690</CameraDriver>
+    <FocusCameraFirmware />
+    <Barcode>CBP08ANXX</Barcode>
+    <WashBarcode>CBDNRANXX</WashBarcode>
+    <Username>ajw</Username>
+    <SelectedSections>
+      <Section Name="A_1" />
+      <Section Name="B_1" />
+      <Section Name="C_1" />
+      <Section Name="D_1" />
+      <Section Name="E_1" />
+      <Section Name="F_1" />
+      <Section Name="G_1" />
+      <Section Name="H_1" />
+    </SelectedSections>
+    <FocusMethod>DynamicITF</FocusMethod>
+    <SelectedSurface>BothLaneSurfaces</SelectedSurface>
+    <SwathScanMode>AutoSwath</SwathScanMode>
+    <EnableLft>true</EnableLft>
+    <AutoTiltOnce>true</AutoTiltOnce>
+    <EnableAutoCenter>true</EnableAutoCenter>
+    <EnableAnalysis>true</EnableAnalysis>
+    <EnableBasecalling>true</EnableBasecalling>
+    <EnableCameraLogging>false</EnableCameraLogging>
+    <AdapterPlate>HiSeq Adapter Plate</AdapterPlate>
+    <SlideHolder>HiSeq Flow Cell Holder</SlideHolder>
+    <TemplateCycleCount>5</TemplateCycleCount>
+    <NumAnalysisThreads>8</NumAnalysisThreads>
+    <FPGADynamicFocusSettings>
+      <MaxInitialZJumpHalfUm>3</MaxInitialZJumpHalfUm>
+      <MaxSubsequentZJumpHalfUm>7</MaxSubsequentZJumpHalfUm>
+      <NumberOfInitialZJumps>0</NumberOfInitialZJumps>
+      <CVGainStart>500</CVGainStart>
+      <CVGainPosLocked>500</CVGainPosLocked>
+      <Offset>250</Offset>
+      <HotPixel>350</HotPixel>
+      <MotorDelayFrames>10</MotorDelayFrames>
+      <SoftwareLaserLag>200</SoftwareLaserLag>
+      <DitherSize>100</DitherSize>
+      <GroupSize>40</GroupSize>
+      <DitherShift>0</DitherShift>
+      <IntensityCeiling>65535</IntensityCeiling>
+      <IGain>100</IGain>
+      <IHistory>4</IHistory>
+    </FPGADynamicFocusSettings>
+    <TileWidth>2048</TileWidth>
+    <TileHeight>10000</TileHeight>
+    <ImageWidth>2048</ImageWidth>
+    <ImageHeight>160000</ImageHeight>
+    <AreaPerPixelmm2>1.40625E-07</AreaPerPixelmm2>
+    <LaneLength>60</LaneLength>
+    <NumTilesPerSwath>16</NumTilesPerSwath>
+    <NumSwaths>3</NumSwaths>
+    <UseExistingRecipe>false</UseExistingRecipe>
+    <Reads>
+      <Read Number="1" NumCycles="75" IsIndexedRead="N" />
+      <Read Number="2" NumCycles="8" IsIndexedRead="Y" />
+      <Read Number="3" NumCycles="75" IsIndexedRead="N" />
+    </Reads>
+    <EnableNotifications>false</EnableNotifications>
+    <ReagentKits>
+      <Sbs>
+        <SbsReagentKit>
+          <ID>20181263</ID>
+          <Prime>false</Prime>
+          <NumberCyclesRemaining>275</NumberCyclesRemaining>
+          <IsNew50Cycle>false</IsNew50Cycle>
+          <IsNew200Cycle>true</IsNew200Cycle>
+          <IsNew500Cycle>false</IsNew500Cycle>
+        </SbsReagentKit>
+      </Sbs>
+      <Index>
+        <ReagentKit>
+          <ID />
+        </ReagentKit>
+      </Index>
+      <Pe>
+        <ReagentKit>
+          <ID>20183198</ID>
+        </ReagentKit>
+      </Pe>
+      <Rehyb />
+    </ReagentKits>
+    <ReagentBottles>
+      <Sbs />
+    </ReagentBottles>
+    <Resume>false</Resume>
+    <ResumeCycle>0</ResumeCycle>
+    <SupportMultipleSurfacesInUI>true</SupportMultipleSurfacesInUI>
+    <TempFolder>D:\Runs\171113_HS31_24325_A_CBP08ANXX</TempFolder>
+    <RecipeFragmentVersion>1.5.21.0</RecipeFragmentVersion>
+    <PromptForPeReagents>false</PromptForPeReagents>
+    <MockRun>false</MockRun>
+    <ScannedBarcode />
+  </Setup>
+  <Version>1</Version>
+</RunParameters>

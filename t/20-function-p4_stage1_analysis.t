@@ -3,6 +3,7 @@ use warnings;
 use Test::More tests => 3;
 use Test::Exception;
 use Cwd;
+use File::Copy qw(cp);
 use Perl6::Slurp;
 use JSON;
 
@@ -20,7 +21,8 @@ my $current = abs_path(getcwd());
 my $new = "$dir/1234_samplesheet.csv";
 `cp -r t/data/p4_stage1_analysis/* $dir`;
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $new;
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $dir;
+local $ENV{'http_proxy'} = 'http://wibble.com';
+local $ENV{'no_proxy'} = q{};
 
 #################################
 # mock references
@@ -33,7 +35,9 @@ my $repos_root = $dir . q{/srpipe_references};
 
 $util->create_analysis();
 my $runfolder = $util->analysis_runfolder_path() . '/';
-`cp t/data/runfolder/Data/RunInfo.xml $runfolder`;
+cp('t/data/runfolder/Data/RunInfo.xml', $runfolder) or die 'Faile to copy run info';
+cp('t/data/run_params/runParameters.hiseq.xml', $runfolder . 'runParameters.xml') or
+  die 'Failed to copy run params';
 
 my $bc_path = q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls};
 

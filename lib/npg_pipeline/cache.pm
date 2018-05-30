@@ -2,21 +2,16 @@ package npg_pipeline::cache;
 
 use Moose;
 use MooseX::StrictConstructor;
+use namespace::autoclean;
 use Readonly;
 use Carp;
-use English qw{-no_match_vars};
 use POSIX qw(strftime);
 use Cwd qw/cwd/;
-use File::Spec;
 use File::Copy;
-use File::Find;
-use File::Path qw/make_path/;
+use File::Spec;
 
 use npg_tracking::util::abs_path qw/abs_path/;
 use npg_tracking::util::types;
-use npg::api::request;
-use npg::api::run;
-use npg::api::run_status_dict;
 use st::api::lims;
 use npg::samplesheet;
 
@@ -38,7 +33,6 @@ npg_pipeline::cache
   npg_pipeline::cache->new(id_run         => 78,
                            lims           => [$run_lims->children],
                            set_env_vars   => 1,
-                           reuse_cache    => 1,
                            cache_location => 'my_dir',
                           )->setup;
 
@@ -46,14 +40,12 @@ npg_pipeline::cache
                            id_flowcell_lims => '5260271901788',
                            lims_driver_type => 'warehouse',
                            set_env_vars     => 1,
-                           reuse_cache      => 1,
                            cache_location   => 'my_dir',
                           )->setup;
 
   npg_pipeline::cache->new(id_run           => 78,
                            flowcell_barcode => 'HBF2DADXX',
                            set_env_vars     => 1,
-                           reuse_cache      => 0,
                            cache_location   => 'my_dir',
                           )->setup;
 
@@ -176,28 +168,6 @@ sub _build_lims {
   return $clims;
 }
 
-=head2 reuse_cache
-
-A boolean flag indicating whether to reuse the existing cache if found.
-Defaults to true. If set to false, the existing cache directory
-will be renamed.
-
-=cut
-has 'reuse_cache' => (isa     => 'Bool',
-                      is      => 'ro',
-                      writer  => '_set_reuse_cache',
-                      default => 1,);
-
-=head2 reuse_cache_only
-
-A boolean flag indicating whether to only reuse the existing cache without
-ever creating a new one. Defaults to false.
-
-=cut
-has 'reuse_cache_only' => (isa     => 'Bool',
-                           is      => 'ro',
-                           default => 0,);
-
 =head2 set_env_vars
 
 A boolean flag indicating whether to set environment variables in global scope.
@@ -236,12 +206,12 @@ sub _build_cache_dir_name {
 A path to the cache directory.
 
 =cut
-has 'cache_dir_path' => (isa        => 'Str',
+has 'cache_dir_path' => (isa        => 'NpgTrackingDirectory',
                          is         => 'ro',
                          lazy_build => 1,);
 sub _build_cache_dir_path {
   my $self = shift;
-  return File::Spec->catdir ($self->cache_location, $self->cache_dir_name);
+  return File::Spec->catdir($self->cache_location, $self->cache_dir_name);
 }
 
 =head2 samplesheet_file_name
@@ -295,109 +265,52 @@ sub mlwarehouse_driver_name {
 
 Generates cached data. If an existing directory with cached data found,
 unless reuse_cache flag is false, will not generate a new cache.
-If NPG_WEBSERVICE_CACHE_DIR env. variable is set, will not generate
-a new cache, no checks of the cache pointed to by this variable
-will be made. If set_env_vars is true (false by default), will set
-the relevant env. variables in the global scope.
+If set_env_vars is true (false by default), will set the relevant env.
+variables in the global scope.
 
 =cut
 sub setup {
   my $self = shift;
 
-  my $cache_dir_var_name = npg::api::request->cache_dir_var_name();
   my $samplesheet_file_var_name = st::api::lims->cached_samplesheet_var_name();
+  my $cache_path = abs_path $self->samplesheet_file_path;
+  my $given = $ENV{$samplesheet_file_var_name};
 
-  my $copy_cache = 0;
-  if ( $ENV{ $cache_dir_var_name } || $ENV{ $samplesheet_file_var_name } ) {
-    $copy_cache = 1;
-    $self->_set_reuse_cache(0);
-  }
-
-  my $cache_exists = (-l $self->cache_dir_path) || (-d $self->cache_dir_path);
-  if ($cache_exists) {
-    $self->_add_message(q[Found existing cache directory ] . $self->cache_dir_path);
-    if ($self->reuse_cache) {
-      $self->_add_message(q[Will use existing cache directory]);
+  if ($given) {
+    $self->_add_message(qq[Samplesheet is given as $given]);
+    if (-e $given) {
+      $self->_add_message(q[This samplesheet will be used]);
+      if (-e $cache_path) {
+        my $ts = strftime '%Y%m%d-%H%M%S', localtime time;
+        my $moved = join q[_], $cache_path, 'moved', $ts;
+        if (rename $cache_path, $moved) {
+          $self->_add_message(qq[Renamed existing $cache_path to $moved]);
+	} else {
+          croak qq[Failed to rename existing $cache_path to $moved];
+	}
+      }
+      if (copy($given, $cache_path)) {
+        $self->_add_message(qq[Copied $given to $cache_path]);
+      } else {
+        croak qq[Failed to copy $given to $cache_path];
+      }
     } else {
-      my $renamed = $self->_deprecate();
-      $self->_add_message(qq[Renamed existing cache directory to $renamed]);
-      $cache_exists = 0;
+      croak qq[$samplesheet_file_var_name points to non-existing file $given];
     }
-  }
-
-  if (!$cache_exists) {
-    if ($self->reuse_cache_only) {
-      croak 'Failed to find existing cache directory';
-    } else {
-      $self->_add_message(q[Will create a new cache directory ] . $self->cache_dir_path);
-      $self->create($copy_cache);
-    }
+  } else {
+    $self->_samplesheet();
   }
 
   if ($self->set_env_vars) {
     ##no critic (RequireLocalizedPunctuationVars)
-    my $cache_path = abs_path $self->cache_dir_path;
-    $ENV{ $cache_dir_var_name } = $cache_path;
-    $self->_add_message(qq[$cache_dir_var_name is set to $cache_path]);
-
     if (-e $self->samplesheet_file_path) {
-      $cache_path = abs_path $self->samplesheet_file_path;
       $ENV{ $samplesheet_file_var_name } = $cache_path;
       $self->_add_message(qq[$samplesheet_file_var_name is set to $cache_path]);
     } else {
-      if ($self->reuse_cache_only) {
-        croak 'Failed to find existing samplesheet';
-      }
-      $self->_add_message(sprintf '%s is not set, samplesheet %s not found]',
-                                  $samplesheet_file_var_name, $self->samplesheet_file_path);
+      croak sprintf '%s is not set, samplesheet %s not found',
+                     $samplesheet_file_var_name, $self->samplesheet_file_path;
     }
     ##use critic
-  }
-
-  return;
-}
-
-=head2 create
-
-Creates cache directory and generates cached metadata. reuse_cache and set_env_vars
-flags are irrelevant for this method.
-
-=cut
-sub create {
-  my ($self, $copy) = @_;
-  if (-e $self->cache_dir_path) {
-    croak sprintf '%s already exists, cannot create a new cache directory',
-                  $self->cache_dir_path;
-  }
-  my $dir_created = mkdir $self->cache_dir_path;
-  if (!$dir_created) {
-    croak sprintf 'Failed to create cache directory %s; error %s',
-    $self->cache_dir_path, $ERRNO;
-  }
-
-  my $cache_dir_var_name = npg::api::request->cache_dir_var_name();
-  if ($copy) {
-    if (!$ENV{ $cache_dir_var_name }) {
-      local $ENV{ $cache_dir_var_name } = $self->cache_dir_path;
-      $self->_xml_feeds();
-    }
-    $self->_copy_cache();
-    local $ENV{ $cache_dir_var_name } = $self->cache_dir_path;
-    $self->_samplesheet();
-  } else {
-    local $ENV{ $cache_dir_var_name } = $self->cache_dir_path;
-    $self->_xml_feeds();
-    $self->_samplesheet();
-  }
-
-  my $st = File::Spec->catdir ($self->cache_dir_path, 'st');
-  if (-d $st) {
-    my $new_st = File::Spec->catdir ($self->cache_dir_path, 'st_original');
-    my $moved = move $st, $new_st;
-    if (!$moved) {
-      croak sprintf 'Failed to move out of the way st directory (%s to %s), error number %s',
-      $st, $new_st, $ERRNO;
-    }
   }
 
   return;
@@ -409,12 +322,12 @@ A list of env. variables names that can be set by this module in global scope.
 
 =cut
 sub env_vars {
-  return (npg::api::request->cache_dir_var_name(), st::api::lims->cached_samplesheet_var_name());
+  return (st::api::lims->cached_samplesheet_var_name());
 }
 
 sub _samplesheet {
-  my ($self) = @_;
-  if(not -e $self->samplesheet_file_path){
+  my $self = shift;
+  if (not -e $self->samplesheet_file_path){
 
     npg::samplesheet->new(id_run => $self->id_run,
                           lims   => $self->lims,
@@ -426,79 +339,6 @@ sub _samplesheet {
   return;
 }
 
-sub _deprecate {
-  my $self = shift;
-  if (!-e $self->cache_dir_path) {
-    croak sprintf '%s does not exist, nothing to move', $self->cache_dir_path;
-  }
-  my $ts = strftime '%Y%m%d-%H%M%S', localtime time;
-  my $new_dir = join q[_], $self->cache_dir_path, 'moved', $ts;
-  my $moved = move $self->cache_dir_path, $new_dir;
-  if (!$moved) {
-    croak sprintf 'Failed to rename existing cache %s to %s, error number %s',
-                   $self->cache_dir_path, $new_dir, $ERRNO;
-  }
-  return $new_dir;
-}
-
-sub _xml_feeds {
-  my $self = shift;
-
-  local $ENV{npg::api::request->save2cache_dir_var_name()} = 1;
-
-  my $run = npg::api::run->new({id_run => $self->id_run});
-  $run->is_paired_run();
-  $run->current_run_status();
-  $run->instrument()->model();
-  npg::api::run_status_dict->new()->run_status_dicts();
-
-  return;
-}
-
-sub _copy_cache {
-  my $self = shift;
-
-  my $destination = $self->cache_dir_path;
-  my $var_name = st::api::lims->cached_samplesheet_var_name();
-  my $sh = $ENV{$var_name};
-  if ($sh) {
-    if (!-e $sh) {
-      croak qq[Samplesheet $sh does not exist];
-    }
-    copy $sh, File::Spec->catfile($destination, $self->samplesheet_file_name);
-    $ENV{$var_name} = q[]; ## no critic (Variables::RequireLocalizedPunctuationVars)
-    $self->_add_message("$sh copied to $destination, $var_name unset");
-  }
-
-  $var_name = npg::api::request->cache_dir_var_name();
-  my $cache_dir = $ENV{$var_name};
-  if ($cache_dir) {
-    $cache_dir =~ s{/\Z}{}smx;
-    if (!-e $cache_dir) {
-      croak qq[Cache directory $cache_dir does not exist];
-    }
-    my $new_cache_dir = $self->cache_dir_path;
-    my $copy_file_sub = sub {
-      my $file = $File::Find::name;
-      if ( -f $file && $file =~ /[.]xml\Z/xms ) {
-        my ($volume,$directories,$file_name) = File::Spec->splitpath($file);
-        $directories=~s/\Q$cache_dir\E//smx;
-        my $subdir = $new_cache_dir . $directories;
-        make_path $subdir;
-        copy $file, $subdir;
-      }
-      return;
-    };
-    find({'wanted'   => $copy_file_sub,
-          'follow'   => 0,
-          'no_chdir' => 1}, ($cache_dir));
-    $self->_add_message("$cache_dir copied to $destination, $var_name unset");
-    $ENV{$var_name} = q[]; ## no critic (Variables::RequireLocalizedPunctuationVars)
-  }
-
-  return;
-}
-
 sub _add_message {
   my ($self, $m) = @_;
   if ($m) {
@@ -507,7 +347,7 @@ sub _add_message {
   return;
 }
 
-no Moose;
+__PACKAGE__->meta->make_immutable;
 
 1;
 __END__
@@ -531,6 +371,8 @@ Creates or finds existing cache of lims and other metadata needed to run the pip
 
 =item MooseX::StrictConstructor
 
+=item namespace::autoclean
+
 =item Readonly
 
 =item Cwd
@@ -539,21 +381,11 @@ Creates or finds existing cache of lims and other metadata needed to run the pip
 
 =item File::Copy
 
-=item File::Find
-
-=item File::Path
-
-=item English
-
 =item POSIX
 
+=item npg_tracking::util::abs_path
+
 =item npg_tracking::util::types
-
-=item npg::api::request
-
-=item npg::api::run
-
-=item npg::api::run_status_dict
 
 =item st::api::lims
 
@@ -566,6 +398,8 @@ Creates or finds existing cache of lims and other metadata needed to run the pip
 =item WTSI::DNAP::Warehouse::Schema
 
 =item npg_tracking::glossary::run
+
+=item npg_tracking::glossary::flowcell
 
 =item npg::samplesheet
 

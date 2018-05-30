@@ -8,7 +8,7 @@ use t::util;
 my $util = t::util->new();
 my $tmp_dir = $util->temp_directory();
 
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
 # if REF_PATH is not set, force using ref defined in the header
 local $ENV{REF_PATH} = $ENV{REF_PATH} ? $ENV{REF_PATH} : 'DUMMY';
 

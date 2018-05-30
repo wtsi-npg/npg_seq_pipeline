@@ -8,12 +8,13 @@ use Carp;
 
 our $VERSION = '0';
 
-Readonly::Scalar my $OUTGOING_PATH_COMPONENT => q[/outgoing/];
+Readonly::Scalar my $OUTGOING_PATH_COMPONENT    => q[/outgoing/];
 Readonly::Scalar my $ANALYSIS_PATH_COMPONENT    => q[/analysis/];
 Readonly::Scalar my $LOG_DIR_NAME               => q[log];
 Readonly::Scalar my $TILEVIZ_DIR_NAME           => q[tileviz];
 Readonly::Scalar my $STATUS_FILES_DIR_NAME      => q[status];
 Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
+Readonly::Scalar my $METADATA_CACHE_DIR_NAME    => q[metadata_cache_];
 
 sub create_analysis_level {
   my $self = shift;
@@ -87,6 +88,10 @@ sub create_top_level {
   push @dirs, $self->recalibrated_path();
   push @info, 'no_cal path: ' . $self->recalibrated_path();
 
+  my $metadata_cache_dir = $self->metadata_cache_dir_path();
+  push @dirs, $metadata_cache_dir;
+  push @info, "metadata cache path: $metadata_cache_dir";
+
   my @errors = $self->make_dir(@dirs);
 
   return {'msgs' => \@info, 'errors' => \@errors};
@@ -99,6 +104,12 @@ sub status_files_path {
     croak 'Failed to retrieve analysis_path';
   }
   return File::Spec->catdir($apath, $STATUS_FILES_DIR_NAME);
+}
+
+sub metadata_cache_dir_path {
+  my $self = shift;
+  return File::Spec->catdir($self->bam_basecall_path(),
+                            $METADATA_CACHE_DIR_NAME . $self->id_run());
 }
 
 sub make_log_dir4names {
@@ -201,6 +212,8 @@ if they do not exist. Returns a list of errors, which, if all commands succeed,
 is empty. Can be called both as an instance and a class method.
 
   my @errors = $scaffold->make_dir(qw/first second/);
+
+=head2 metadata_cache_dir_path
 
 =head2 make_log_dir4names
 

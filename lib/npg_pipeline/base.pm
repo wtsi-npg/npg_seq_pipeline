@@ -25,7 +25,7 @@ npg_pipeline::base
 
 =head1 DESCRIPTION
 
-A base class to provide basic functionality to derived objects
+A parent class to provide basic functionality to derived objects
 within npg_pipeline package
 
 =head1 SUBROUTINES/METHODS

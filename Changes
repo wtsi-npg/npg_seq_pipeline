@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - remove dependency on tracking XML feeds
  - update p4 stage1 default values in general_values.ini
      restored p4_stage1_split_threads_count=4
  - removed illumina_basecall_stats function and associated code
@@ -15,6 +16,7 @@ LIST OF CHANGES
  - stopped forcing ownership and permissions when creating
    new directories
  - single log directory for all jobs with per-function subdirectories
+ - added LSF-independent for number of threads
  - added wr executor
  - new modules to execute submission of definitions to LSF
  - captured dependencies between pipeline steps in a directed acyclic graph

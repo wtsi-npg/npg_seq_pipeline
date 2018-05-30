@@ -7,6 +7,8 @@ use Try::Tiny;
 use English qw{-no_match_vars};
 use Readonly;
 use File::Slurp;
+use List::Util qw{sum};
+use List::MoreUtils qw{any};
 use JSON;
 use open q(:encoding(UTF8));
 
@@ -57,7 +59,7 @@ sub generate {
         location      => $self->metadata_cache_dir,
         lane_lims     => $l,
         index_lengths => $self->_get_index_lengths($l),
-        i5opposite    => $self->is_hiseqx_run,
+        i5opposite    => $self->is_i5opposite ? 1 : 0,
         verbose       => $self->verbose
       )->generate();
     }
@@ -520,29 +522,18 @@ has q{_extra_tradis_transposon_read} => (
 sub _build__extra_tradis_transposon_read {
   my $self = shift;
 
-  $self->is_indexed;
-  my @i = $self->reads_indexed;
-  my $reads_indexed = 0;
-  ## no critic (ControlStructures::ProhibitPostfixControls)
-  foreach (@i) { $reads_indexed++ if $_; }
+  my $num_index_reads = sum (map { $_ ? 1 : 0 } $self->reads_indexed());
+  $num_index_reads ||= 0; # sum returns undef for an empty list
+  my $is_tradis = any {$_->library_type && $_->library_type =~ /^TraDIS/smx}
+                  $self->lims->descendants();
+  my $num_main_index_reads = (any {$_->is_pool} $self->lims->children) ? 1 : 0;
 
-  my $is_tradis = 0;
-  foreach my $d ($self->lims->descendants()) {
-    if ($d->library_type && $d->library_type =~ /^TraDIS/smx) {
-      $is_tradis = 1;
-      last;
-    }
-  }
-
+  my $num_extra = 0;
   if ($is_tradis) {
-    if ($self->run->is_multiplexed) {
-      return 1 if ($reads_indexed > 1);
-    } else {
-      return 1 if ($reads_indexed > 0);
-    }
+    $num_extra = $num_index_reads - $num_main_index_reads;
   }
 
-  return 0;
+  return ($num_extra > 0) ? 1 : 0;
 }
 
 sub _parsing_interop {
@@ -671,6 +662,10 @@ objects for all lanes.
 =item namespace::autoclean
 
 =item File::Slurp
+
+=item List::Util
+
+=item List::MoreUtils
 
 =item JSON
 

@@ -18,9 +18,9 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 use_ok(q{npg_pipeline::cache::barcodes});
 
 {
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
+  local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = q[t/data];
   
-  my $lims = st::api::lims->new(id_run => 1234)->children_ia();
+  my $lims = st::api::lims->new(id_run => 1234, batch_id => 2015)->children_ia();
   my $create_lane = npg_pipeline::cache::barcodes->new(
       lane_lims     => $lims->{1},
       index_lengths => [6],
