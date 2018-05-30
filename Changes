@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - update p4 stage1 default values in general_values.ini
+     restored p4_stage1_split_threads_count=4
  - removed illumina_basecall_stats function and associated code
  - remove generation of empty fastq and fastqcheck files
  - removed bam2fastqcheck_and_cached_fastq function
