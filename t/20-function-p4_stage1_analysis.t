@@ -272,7 +272,7 @@ subtest 'check_save_arguments_minimap2' => sub {
 	  'qc_check_id_run' => '1234',
           'cluster_count' => '500077065',
           'seed_frac' => '1234.00002000',
-          'split_threads_val' => 0,
+          'split_threads_val' => 4,
         },
     ],
     'ops' => {
