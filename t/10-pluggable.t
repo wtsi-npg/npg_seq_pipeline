@@ -24,9 +24,6 @@ foreach my $tool (@tools) {
 chmod 0755, @tools;
 local $ENV{'PATH'} = join q[:], $test_dir, $ENV{'PATH'};
 
-local $ENV{OWNING_GROUP} = q{staff};
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
                           file   => join(q[/], $test_dir, 'logfile'),
@@ -189,7 +186,6 @@ subtest 'specifying functions via function_order' => sub {
     update_warehouse_post_qc_complete
   );
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[/t/data];
   local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients
   my $p = npg_pipeline::pluggable->new(
     function_order        => \@functions_in_order,
@@ -307,7 +303,6 @@ subtest 'running the pipeline (lsf executor)' => sub {
     no_sf_resource => 1,
   };
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[/t/data];
   my $p = npg_pipeline::pluggable->new($ref);
   lives_ok { $p->main(); } q{no error running main without execution };
   
@@ -359,7 +354,6 @@ subtest 'running the pipeline (wr executor)' => sub {
     executor_type  => 'wr',
   };
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[/t/data];
   # soft-link wr command to /bin/false so that it fails
   my $bin = "$test_dir/bin";
   my $wr = "$bin/wr";
@@ -392,51 +386,53 @@ subtest 'running the pipeline (wr executor)' => sub {
 subtest 'positions and spidering' => sub {
   plan tests => 12;
 
- local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients 
-
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+  local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients 
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $p = npg_pipeline::pluggable->new(
-      id_run         => 1234,
-      run_folder     => q{123456_IL2_1234},
-      runfolder_path => $runfolder_path,
-      spider         => 0
+      id_run           => 1234,
+      id_flowcell_lims => 2015,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      spider           => 0
   );
   ok(!$p->spider, 'spidering is off');
   is (join( q[ ], $p->positions), '1 2 3 4 5 6 7 8', 'positions array');
   is (join( q[ ], $p->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $function = 'run_analysis_complete';
 
   $p = npg_pipeline::pluggable->new(
-      id_run         => 1234,
-      run_folder     => q{123456_IL2_1234},
-      function_order => [$function],
-      runfolder_path => $runfolder_path,
-      lanes          => [1,2],
-      spider         => 0,
-      no_sf_resource => 1,
+      id_run           => 1234,
+      id_flowcell_lims => 2015,
+      run_folder       => q{123456_IL2_1234},
+      function_order   => [$function],
+      runfolder_path   => $runfolder_path,
+      lanes            => [1,2],
+      spider           => 0,
+      no_sf_resource   => 1,
   );
   is (join( q[ ], $p->positions), '1 2', 'positions array');
   is (join( q[ ], $p->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
   ok(!$p->interactive, 'start job will be resumed');
   lives_ok { $p->main() } "running main for $function, non-interactively";
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   $p = npg_pipeline::pluggable->new(
-      id_run         => 1234,
-      run_folder     => q{123456_IL2_1234},
-      function_order => [$function],
-      runfolder_path => $runfolder_path,
-      lanes          => [1,2],
-      interactive    => 1,
-      spider         => 0,
-      no_sf_resource => 1,
+      id_run           => 1234,
+      id_flowcell_lims => 2015,
+      run_folder       => q{123456_IL2_1234},
+      function_order   => [$function],
+      runfolder_path   => $runfolder_path,
+      lanes            => [1,2],
+      interactive      => 1,
+      spider           => 0,
+      no_sf_resource   => 1,
   );
   ok($p->interactive, 'start job will not be resumed');
   lives_ok { $p->main() } "running main for $function, interactively";
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   $util->set_staging_analysis_area();
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,

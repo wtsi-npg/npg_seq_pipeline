@@ -20,7 +20,8 @@ use npg_pipeline::pluggable::registry;
 extends q{npg_pipeline::base};
 
 with qw{ MooseX::AttributeCloner
-         npg_pipeline::executor::options };
+         npg_pipeline::executor::options
+         npg_pipeline::runfolder_scaffold };
 
 our $VERSION = '0';
 
@@ -591,11 +592,12 @@ sub _save_function_definitions {
 #
 sub _run_spider {
   my $self = shift;
+
   try {
     my $cache = npg_pipeline::cache->new(
       'id_run'           => $self->id_run,
       'set_env_vars'     => 1,
-      'cache_location'   => $self->analysis_path,
+      'cache_dir_path'   => $self->metadata_cache_dir_path(),
       'lims_driver_type' => $self->lims_driver_type,
       'id_flowcell_lims' => $self->id_flowcell_lims,
       'flowcell_barcode' => $self->flowcell_id

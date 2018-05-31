@@ -4,9 +4,9 @@ use Test::More tests => 27;
 use Test::Exception;
 use File::Temp qw{ tempdir };
 
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-
 use_ok('npg_pipeline::function::status');
+
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
 
 my $temp = tempdir(CLEANUP => 1);
 my $run_folder_path = join q[/], $temp, 'analysis';

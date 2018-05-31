@@ -29,7 +29,6 @@ my $pbcal = $recalibrated;
 subtest 'errors' => sub {
   plan tests => 2;
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14353.csv';
 
   throws_ok {
@@ -51,7 +50,7 @@ subtest 'errors' => sub {
 subtest 'adapter' => sub {
   plan tests => 30;
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_1234.csv';
   $util->create_analysis({qc_dir => 1});
   my $aqc;
   lives_ok {
@@ -102,7 +101,7 @@ subtest 'adapter' => sub {
 subtest 'qX_yield' => sub {
   plan tests => 26;
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_1234.csv';
   $util->create_analysis({'qc_dir' => 1});
 
   my $aqc = npg_pipeline::function::autoqc->new(
@@ -160,7 +159,6 @@ subtest 'qX_yield' => sub {
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned - lane is not a pool');
  
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/1234_samplesheet_amended.csv';
   $aqc = npg_pipeline::function::autoqc->new(
     runfolder_path    => $runfolder_path,
@@ -186,7 +184,6 @@ subtest 'ref_match' => sub {
   plan tests => 15;
 
   $util->create_multiplex_analysis({'qc_dir' => [7,8]});
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/1234_samplesheet_amended.csv';
   my $runfolder_path = $util->analysis_runfolder_path();
 
@@ -232,7 +229,7 @@ subtest 'insert_size' => sub {
   $util->create_multiplex_analysis({qc_dir => [7],});
   my $runfolder_path = $util->analysis_runfolder_path();
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_1234.csv';
 
   my $aqc = npg_pipeline::function::autoqc->new(
     runfolder_path    => $runfolder_path,
@@ -246,9 +243,7 @@ subtest 'insert_size' => sub {
   my $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned - lane is a not pool');
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14353.csv';
-
   $aqc = npg_pipeline::function::autoqc->new(
     id_run            => 14353,
     runfolder_path    => $util->analysis_runfolder_path(),
@@ -269,7 +264,6 @@ subtest 'tag_metrics' => sub {
   $util->create_multiplex_analysis({qc_dir => [1],});
   my $runfolder_path = $util->analysis_runfolder_path();
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14353.csv';
 
   my $qc = npg_pipeline::function::autoqc->new(
@@ -331,7 +325,6 @@ subtest 'genotype and gc_fraction' => sub {
   make_path($new_dir);
   write_file("$new_dir/Homo_sapiens.GRCh37.NCBI.allchr_MT.fa", qw/some ref/);
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14043.csv';
 
   my $init = {

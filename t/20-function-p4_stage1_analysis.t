@@ -21,7 +21,8 @@ my $current = abs_path(getcwd());
 my $new = "$dir/1234_samplesheet.csv";
 `cp -r t/data/p4_stage1_analysis/* $dir`;
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $new;
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $dir;
+local $ENV{'http_proxy'} = 'http://wibble.com';
+local $ENV{'no_proxy'} = q{};
 
 #################################
 # mock references
@@ -157,7 +158,7 @@ subtest 'check_save_arguments' => sub {
 	  'qc_check_id_run' => '1234',
           'cluster_count' => '500077065',
           'seed_frac' => '1234.00002000',
-          'split_threads_val' => 0,
+          'split_threads_val' => 4,
         },
     ],
     'ops' => {

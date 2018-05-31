@@ -23,7 +23,6 @@ package main;
 use t::util;
 
 my $util = t::util->new();
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
 
 {
   $util->create_analysis({skip_archive_dir => 1});

@@ -6,7 +6,7 @@ use t::util;
 
 use_ok('npg_pipeline::function::autoqc_archiver');
 
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
 
 my $util = t::util->new();
 my $analysis_runfolder_path = $util->analysis_runfolder_path();

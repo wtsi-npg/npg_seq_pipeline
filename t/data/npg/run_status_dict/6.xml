@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<run_status_dict id_run_status_dict="6" description="analysis pending"><runs>
-<run id_run="1234" batch_id="4443" id_instrument="11" priority="1" actual_cycle_count="108" expected_cycle_count="108" is_paired="0" id_run_pair="" is_dev="0" name="IL8_3659" id_run_status="52030" date="2009-09-14 12:28:44" id_run_status_dict="6" id_user="7" username="pipeline" description="analysis pending" loader="ajw" loading_date="2009-09-01"/>
-<run id_run="666" batch_id="4443" id_instrument="11" priority="1" actual_cycle_count="108" expected_cycle_count="108" is_paired="0" id_run_pair="" is_dev="0" name="IL8_3659" id_run_status="52030" date="2009-09-14 12:28:44" id_run_status_dict="6" id_user="7" username="pipeline" description="analysis pending" loader="js10" loading_date="2012-09-01"/>
-<run id_run="3412" batch_id="4443" id_instrument="11" priority="1" actual_cycle_count="108" expected_cycle_count="108" is_paired="1" id_run_pair="2341" is_dev="0" name="IL8_3610" id_run_status="52029" date="2009-09-14 12:28:42" id_run_status_dict="6" id_user="7" username="pipeline" description="analysis pending" loader="ips" loading_date="2009-08-26"/>
-<run id_run="2341" batch_id="4361" id_instrument="14" priority="1" actual_cycle_count="37" expected_cycle_count="37" is_paired="1" id_run_pair="3412" is_dev="0" name="IL11_3612" id_run_status="51333" date="2009-09-07 14:15:33" id_run_status_dict="6" id_user="7" username="pipeline" description="analysis pending" loader="jb2" loading_date="2009-08-26"/>
-</runs></run_status_dict>

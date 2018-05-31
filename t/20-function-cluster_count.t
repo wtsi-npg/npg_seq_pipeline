@@ -10,7 +10,6 @@ use_ok( q{npg_pipeline::function::cluster_count} );
 
 my $util = t::util->new();
 my $dir = $util->temp_directory();
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
@@ -24,6 +23,8 @@ my $recalibrated_path = $util->standard_analysis_recalibrated_path();
 my $archive_path = $recalibrated_path . q{/archive};
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
+
   my $object;
   lives_ok {
     $object = npg_pipeline::function::cluster_count->new(
@@ -86,6 +87,7 @@ my $archive_path = $recalibrated_path . q{/archive};
 }
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_8747.csv];
   my $analysis_runfolder_path = 't/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX';
   my $bam_basecall_path = "$analysis_runfolder_path/Data/Intensities/BAM_basecalls_20130122-085552";
   my $archive_path = "$bam_basecall_path/PB_cal_bam/archive";
@@ -110,6 +112,7 @@ my $archive_path = $recalibrated_path . q{/archive};
 }
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $object;
   lives_ok{
     $object = npg_pipeline::function::cluster_count->new(
@@ -141,6 +144,7 @@ my $archive_path = $recalibrated_path . q{/archive};
 }
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_8747.csv];
   my $analysis_runfolder_path = 't/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX';
   my $bam_basecall_path = "$analysis_runfolder_path/Data/Intensities/BAM_basecalls_20130122-085552";
   my $archive_path = "$bam_basecall_path/PB_cal_bam/archive";
@@ -164,6 +168,7 @@ my $archive_path = $recalibrated_path . q{/archive};
 }
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_8747.csv];
   my $analysis_runfolder_path = 't/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX';
   my $bam_basecall_path = "$analysis_runfolder_path/Data/Intensities/BAM_basecalls_20130122-085552";
   my $qc_path = "$bam_basecall_path/PB_cal_bam/archive/qc";
