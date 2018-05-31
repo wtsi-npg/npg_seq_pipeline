@@ -83,7 +83,7 @@ subtest 'graph creation from explicitly given function list' => sub {
 
   my $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
-    runfolder_path => $test_dir,
+    runfolder_path => $runfolder_path,
     function_order => ['my_function', 'your_function'],
   );
   ok($obj->has_function_order(), 'function order is set');
