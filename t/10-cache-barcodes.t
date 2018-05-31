@@ -18,9 +18,9 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 use_ok(q{npg_pipeline::cache::barcodes});
 
 {
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR}    = q[t/data];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch2015.csv];
   
-  my $lims = st::api::lims->new(id_run => 1234, batch_id => 2015)->children_ia();
+  my $lims = st::api::lims->new(id_run => 1234)->children_ia();
   my $create_lane = npg_pipeline::cache::barcodes->new(
       lane_lims     => $lims->{1},
       index_lengths => [6],
@@ -29,7 +29,9 @@ use_ok(q{npg_pipeline::cache::barcodes});
   isa_ok ($create_lane, q{npg_pipeline::cache::barcodes} );
   ok(!$create_lane->generate(), 'lane not a pool - path undefined');
 
-  $lims = st::api::lims->new(id_run => 1234, batch_id=>5378)->children_ia();
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch5378.csv];
+
+  $lims = st::api::lims->new(id_run => 1234)->children_ia();
   $create_lane = npg_pipeline::cache::barcodes->new(
       lane_lims     => $lims->{1},
       index_lengths => [6],
@@ -85,8 +87,9 @@ use_ok(q{npg_pipeline::cache::barcodes});
 }
 
 {  
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
-  my $lims = st::api::lims->new(id_run => 1234, batch_id=>6532)->children_ia;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch6532.csv];
+
+  my $lims = st::api::lims->new(id_run => 1234)->children_ia;
   my $create_lane = npg_pipeline::cache::barcodes->new(
       lane_lims    => $lims->{1},
       index_lengths=> [7],
@@ -134,8 +137,9 @@ use_ok(q{npg_pipeline::cache::barcodes});
 }
 
 {
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
-  my $lims = st::api::lims->new(id_run => 1234, batch_id=>6532)->children_ia;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch6532.csv];  
+
+  my $lims = st::api::lims->new(id_run => 1234)->children_ia;
 
   my $create_lane = npg_pipeline::cache::barcodes->new(
       lane_lims    => $lims->{1},
@@ -160,8 +164,9 @@ use_ok(q{npg_pipeline::cache::barcodes});
 }
 
 {
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
-  my $lims = st::api::lims->new(id_run => 1234, batch_id=>6713)->children_ia;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch6713.csv];
+
+  my $lims = st::api::lims->new(id_run => 1234)->children_ia;
   my $create_lane  = npg_pipeline::cache::barcodes->new(
       lane_lims     => $lims->{1},
       index_lengths=> [6],
@@ -283,13 +288,14 @@ use_ok(q{npg_pipeline::cache::barcodes});
 }
 
 {
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
-  my $lims = st::api::lims->new(id_run => 18124, batch_id=>42225)->children_ia;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch42225.csv];
+
+  my $lims = st::api::lims->new(id_run => 18124)->children_ia;
   my $create_lane  = npg_pipeline::cache::barcodes->new(
       lane_lims     => $lims->{1},
-      index_lengths=> [8,8],
-      location     => $dir,
-      i5opposite       => 1,
+      index_lengths => [8,8],
+      location      => $dir,
+      i5opposite    => 1,
   );
 
   my $tag_list;
@@ -305,21 +311,25 @@ use_ok(q{npg_pipeline::cache::barcodes});
 }
 
 {
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
-  my $lims = st::api::lims->new(id_run => 18124, batch_id=>42226)->children_ia;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch42225_amended1.csv];
+
+  my $expected_tag_list = "$dir/lane_1.taglist";
+  unlink  $expected_tag_list;
+
+  my $lims = st::api::lims->new(id_run => 18124)->children_ia;
   my $create_lane  = npg_pipeline::cache::barcodes->new(
-      lane_lims     => $lims->{2},
-      index_lengths=> [6,8],
-      location     => $dir,
-      i5opposite   => 1,
+      lane_lims     => $lims->{1},
+      index_lengths => [6,8],
+      location      => $dir,
+      i5opposite    => 1,
   );
 
   my $tag_list;
   lives_ok {
     $tag_list = $create_lane->generate();
-  } q{i5opposite dual index no croak running generate() for batch 42226};
+  } q{i5opposite dual index no croak running generate()};
 
-  is($tag_list, "$dir/lane_2.taglist", 'i5opposite dual index tag list file path');
+  is($tag_list, $expected_tag_list, 'i5opposite dual index tag list file path');
   my $file_contents;
   lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
   my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACT-AGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACG-AGATCTCG\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
@@ -327,10 +337,14 @@ use_ok(q{npg_pipeline::cache::barcodes});
 }
 
 {
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = 't/data';
-  my $lims = st::api::lims->new(id_run => 18124, batch_id=>42227)->children_ia;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch42225_amended2.csv];
+
+  my $expected_tag_list = "$dir/lane_1.taglist";
+  unlink  $expected_tag_list;
+
+  my $lims = st::api::lims->new(id_run => 18124)->children_ia;
   my $create_lane  = npg_pipeline::cache::barcodes->new(
-      lane_lims     => $lims->{2},
+      lane_lims     => $lims->{1},
       index_lengths=> [6,8],
       location     => $dir,
       i5opposite   => 1,
@@ -341,7 +355,7 @@ use_ok(q{npg_pipeline::cache::barcodes});
     $tag_list = $create_lane->generate();
   } q{i5opposite dual index no croak running generate() for batch 42227};
 
-  is($tag_list, "$dir/lane_2.taglist", 'i5opposite dual index tag list file path');
+  is($tag_list, $expected_tag_list, 'i5opposite dual index tag list file path');
   my $file_contents;
   lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
   my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACT-AGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACG-AGATCTCG\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
