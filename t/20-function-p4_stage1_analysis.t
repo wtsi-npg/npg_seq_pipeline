@@ -3,6 +3,7 @@ use warnings;
 use Test::More tests => 4;
 use Test::Exception;
 use Cwd;
+use File::Copy qw(cp);
 use Perl6::Slurp;
 use JSON;
 
@@ -11,8 +12,6 @@ use t::util;
 
 my $util = t::util->new();
 my $dir = $util->temp_directory();
-
-warn q[dir: ], $dir;
 
 use_ok('npg_pipeline::function::p4_stage1_analysis');
 my $current = abs_path(getcwd());
@@ -37,8 +36,9 @@ my $repos_root = $dir . q{/srpipe_references};
 
 $util->create_analysis();
 my $runfolder = $util->analysis_runfolder_path() . '/';
-`cp t/data/runfolder/Data/RunInfo.xml $runfolder`;
-`cp t/data/runfolder/Data/runParameters.xml $runfolder`;
+cp('t/data/runfolder/Data/RunInfo.xml', $runfolder) or die 'Failed to copy run info';
+cp('t/data/run_params/runParameters.hiseq.xml', $runfolder . 'runParameters.xml') or
+  die 'Failed to copy run params';
 
 my $bc_path = q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls};
 
