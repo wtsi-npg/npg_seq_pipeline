@@ -323,6 +323,7 @@ sub _generate_command_params {
   my $basecall_path = $self->basecall_path;
   my $no_cal_path       = $self->recalibrated_path;
   my $bam_basecall_path  = $self->bam_basecall_path;
+  my $no_adapterfind = ($self->no_adapterfind // $self->platform_NovaSeq);
 
   my $full_bam_name  = $bam_basecall_path . q{/}. $id_run . q{_} .$position. q{.bam};
 
@@ -441,14 +442,15 @@ sub _generate_command_params {
       $p4_params{$bid_flag_map{q/MAX_NO_CALLS/}} = $self->general_values_conf()->{single_plex_decode_max_no_calls};
       $p4_params{bid_convert_low_quality_to_no_call_flag} = q[--convert-low-quality];
     }
-    if($self->no_adapterfind) {
+    if($no_adapterfind) {
       push @{$p4_ops{splice}}, q[bamadapterfind];
     }
+    push @{$p4_ops{prune}}, q[tee_split:unsplit_bam-];
   }
   else {
     $self->info(q{P4 stage1 analysis on non-plexed lane});
 
-    if($self->no_adapterfind) {
+    if($no_adapterfind) {
       push @{$p4_ops{splice}}, q[tee_i2b:baf:-bamcollate:];
     }
     else {
