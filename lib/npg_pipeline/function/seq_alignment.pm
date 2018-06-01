@@ -380,9 +380,22 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     }
   }
   else {
+    my ($organism, $strain, $tversion, $analysis) = $self->_reference($l)->parse_reference_genome($l->reference_genome);
+
     $p4_param_vals->{bwa_executable} = q[bwa0_6];
-    $p4_param_vals->{alignment_method} = $bwa;
-    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bwa0_6)); }
+    $p4_param_vals->{alignment_method} = ($analysis || $bwa);
+
+    my %methods_to_aligners = (
+      bwa_aln => q[bwa0_6],
+      bwa_aln_se => q[bwa0_6],
+      bwa_mem => q[bwa0_6],
+    );
+    my $aligner = $p4_param_vals->{alignment_method};
+    if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
+      $aligner = $methods_to_aligners{$aligner};
+    }
+
+    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,$aligner); }
     if($nchs) {
       $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
       $p4_param_vals->{alignment_hs_method} = $hs_bwa;
