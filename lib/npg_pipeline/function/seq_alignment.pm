@@ -261,8 +261,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                     q();
 
   my $is_chromium_lib = $l->library_type && ($l->library_type =~ /Chromium/smx);
-  my $do_target_alignment = $is_chromium_lib ? 0 :
-    ($self->_ref($l,q[fasta]) && ($l->alignments_in_bam || $do_gbs_plex));
+  my $do_target_alignment = $is_chromium_lib ? 0
+                             : ((not ($self->platform_NovaSeq and $tag_index == 0))
+                               && $self->_ref($l,q[fasta])
+                               && ($l->alignments_in_bam || $do_gbs_plex));
 
   my $skip_target_markdup_metrics = (not $spike_tag and not $do_target_alignment);
 
