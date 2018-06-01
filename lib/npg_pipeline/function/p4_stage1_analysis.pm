@@ -155,6 +155,59 @@ sub _build_cluster_counts {
   return $self->_parsing_interop($self->interop_file_name);
 }
 
+has 'phix_alignment_method'  => (
+                           isa        => 'Str',
+                           is         => 'ro',
+                           lazy_build => 1,
+                         );
+sub _build_phix_alignment_method {
+  my $self = shift;
+
+  my $alignment_method = $self->platform_NovaSeq? q[minimap2]: q[bwa_aln];
+
+  if($alignment_method eq q[bwa_aln] and not $self->is_paired_read) {
+      $alignment_method = q[bwa_aln_se];
+  }
+
+  return $alignment_method;
+}
+
+# phix_aligner is used to determine the reference genome. Be aware that
+#  setting this will not affect the phix_alignment_method.
+has 'phix_aligner'  => (
+                           isa        => 'Str',
+                           is         => 'ro',
+                           lazy_build => 1,
+                         );
+sub _build_phix_aligner {
+  my $self = shift;
+
+  my %methods_to_aligners = (
+    bwa_aln => q[bwa0_6],
+    bwa_aln_se => q[bwa0_6],
+    bwa_mem => q[bwa0_6],
+  );
+
+  my $aligner = $self->phix_alignment_method;
+
+  if(exists $methods_to_aligners{$aligner}) {
+    $aligner = $methods_to_aligners{$aligner};
+  }
+
+  return $aligner;
+}
+
+has 'phix_alignment_reference'  => (
+                           isa        => 'Str',
+                           is         => 'ro',
+                           lazy_build => 1,
+                         );
+sub _build_phix_alignment_reference {
+  my $self = shift;
+
+  return $self->_default_phix_ref($self->phix_aligner, $self->repository);
+}
+
 sub _create_definition {
   my ($self, $l, $command) = @_;
 
@@ -216,7 +269,7 @@ sub _get_index_lengths {
 # Determine parameters for the lane from LIMS information and create the hash from which the p4 stage1
 #  analysis param_vals file will be generated. Generate the vtfp/viv commands using this param_vals file.
 #########################################################################################################
-sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexity)
+sub _generate_command_params {
   my ($self, $lane_lims, $tag_list_file) = @_;
   my %p4_params = (
                     samtools_executable => q{samtools1},
@@ -224,7 +277,8 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
                     teepot_tempdir => q{.},
                     teepot_wval => q{500},
                     teepot_mval => q{2G},
-                    reference_phix => $self->_default_phix_ref(q{bwa0_6}, $self->repository),
+                    phix_alignment_method => $self->phix_alignment_method,
+                    reference_phix => $self->phix_alignment_reference,
                     scramble_reference_fasta => $self->_default_phix_ref(q{fasta}, $self->repository),
                   );
   my %p4_ops = ( splice => [], prune => [], );
@@ -269,6 +323,7 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
   my $basecall_path = $self->basecall_path;
   my $no_cal_path       = $self->recalibrated_path;
   my $bam_basecall_path  = $self->bam_basecall_path;
+  my $no_adapterfind = ($self->no_adapterfind // $self->platform_NovaSeq);
 
   my $full_bam_name  = $bam_basecall_path . q{/}. $id_run . q{_} .$position. q{.bam};
 
@@ -387,24 +442,21 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
       $p4_params{$bid_flag_map{q/MAX_NO_CALLS/}} = $self->general_values_conf()->{single_plex_decode_max_no_calls};
       $p4_params{bid_convert_low_quality_to_no_call_flag} = q[--convert-low-quality];
     }
-    if($self->no_adapterfind) {
+    if($no_adapterfind) {
       push @{$p4_ops{splice}}, q[bamadapterfind];
     }
+    push @{$p4_ops{prune}}, q[tee_split:unsplit_bam-];
   }
   else {
     $self->info(q{P4 stage1 analysis on non-plexed lane});
 
-    if($self->no_adapterfind) {
+    if($no_adapterfind) {
       push @{$p4_ops{splice}}, q[tee_i2b:baf:-bamcollate:];
     }
     else {
       push @{$p4_ops{splice}}, q[bamadapterfind:-bamcollate:];
     }
     push @{$p4_ops{prune}}, q[tee_split:split_bam-];
-  }
-
-  if(!$self->is_paired_read) {
-    $p4_params{phix_alignment_method} = q[bwa_aln_se];
   }
 
   # cluster count (used to calculate FRAC for bam subsampling)
@@ -492,12 +544,17 @@ sub _default_phix_ref {
                         ($repos ? (q(repository)=>$repos) : ())
                        });
 
+  my %ref_suffix = (
+    picard => q{.dict},
+    minimap2 => q{.mmi},
+  );
+
    my $phix_ref;
    try {
       $phix_ref = $ruser->refs->[0];
-      if($aligner eq q{picard}) {
-        $phix_ref .= q{.dict};
-      }
+     if(exists $ref_suffix{$aligner}) {
+       $phix_ref .= $ref_suffix{$aligner}
+    }
    } catch {
       $self->warn($_);
    };
