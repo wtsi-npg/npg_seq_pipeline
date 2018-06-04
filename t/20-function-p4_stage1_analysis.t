@@ -38,7 +38,7 @@ my $repos_root = $dir . q{/srpipe_references};
 $util->create_analysis();
 my $runfolder = $util->analysis_runfolder_path() . '/';
 cp('t/data/runfolder/Data/RunInfo.xml', $runfolder) or die 'Failed to copy run info';
-cp('t/data/run_params/runParameters.hiseq.xml', $runfolder . 'runParameters.xml') or
+cp('t/data/run_params/runParameters.novaseq.xml', $runfolder . 'runParameters.xml') or
   die 'Failed to copy run params';
 
 my $bc_path = q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/BaseCalls};
@@ -132,7 +132,7 @@ subtest 'check_save_arguments' => sub {
 	  'i2b_rg' => '1234_1',
 	  'i2b_pu' => '123456_IL2_1234_1',
 	  'tileviz_dir' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/qc/tileviz/1234_1',
-	  'reference_phix' => $dir . '/srpipe_references/references/PhiX/default/all/bwa0_6/phix_unsnipped_short_no_N.fa',
+	  'reference_phix' => $dir . '/srpipe_references/references/PhiX/default/all/minimap2/phix_unsnipped_short_no_N.fa.mmi',
 	  'unfiltered_cram_file' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/1234_1.unfiltered.cram',
 	  'qc_check_qc_out_dir' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/qc',
 	  'i2b_lane' => '1',
@@ -147,7 +147,7 @@ subtest 'check_save_arguments' => sub {
 	  'split_prefix' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/lane1',
 	  'i2b_intensity_dir' => $intensities_dir,
 	  'i2b_sample_aliases' => 'SRS000147',
-	  'phix_alignment_method' => 'bwa_aln_se',
+	  'phix_alignment_method' => 'minimap2',
 	  'md5filename' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/1234_1.bam.md5',
 	  'teepot_mval' => '2G',
 	  'i2b_runfolder' => '123456_IL2_1234',
@@ -162,7 +162,7 @@ subtest 'check_save_arguments' => sub {
         },
     ],
     'ops' => {
-        'splice' => [ 'bamadapterfind:-bamcollate:', ],
+        'splice' => [ 'tee_i2b:baf-bamcollate:', ],
         'prune' => [ 'tee_split:split_bam-', ],
       },
   };
@@ -276,7 +276,7 @@ subtest 'check_save_arguments_minimap2' => sub {
         },
     ],
     'ops' => {
-        'splice' => [ 'bamadapterfind:-bamcollate:', ],
+        'splice' => [ 'tee_i2b:baf-bamcollate:', ],
         'prune' => [ 'tee_split:split_bam-', ],
       },
   };

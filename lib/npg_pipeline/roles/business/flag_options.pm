@@ -108,11 +108,43 @@ Switches off adapter find/clip
 
 =cut
 
-has q{no_adapterfind} => (
+has q{adapterfind} => (
   isa           => q{Bool},
   is            => q{ro},
+  lazy_build    => 1,
   documentation => q{Switches off adapter finding/clipping.},
 );
+sub _build_adapterfind {
+  my $self = shift;
+
+  return $self->platform_NovaSeq? 0: 1;
+}
+
+
+=head2 p4s1_alignment_method
+
+set the PhiX alignment method for p4 stage1
+
+=cut
+
+has q{p4s1_phix_alignment_method} => (
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{set the PhiX alignment method for p4 stage1},
+);
+sub _build_p4s1_phix_alignment_method {
+  my $self = shift;
+
+  my $alignment_method = $self->platform_NovaSeq? q[minimap2]: q[bwa_aln];
+
+  if($alignment_method eq q[bwa_aln] and not $self->is_paired_read) {
+      $alignment_method = q[bwa_aln_se];
+  }
+
+  return $alignment_method;
+}
+
 
 =head2 p4s2_aligner_intfile
 
