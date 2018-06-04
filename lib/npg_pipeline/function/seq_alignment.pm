@@ -292,7 +292,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   ########
   if(not $do_target_alignment and not $spike_tag) {
       if(not $nchs) {
-        push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:phix_bam_in';
+        push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-alignment_filter:phix_bam_in';
       }
       else {
         push @{$p4_ops->{prune}}, 'aln_tee4_tee4:to_tgtaln-alignment_filter:target_bam_in';
