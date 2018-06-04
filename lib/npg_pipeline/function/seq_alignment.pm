@@ -390,12 +390,21 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       bwa_aln_se => q[bwa0_6],
       bwa_mem => q[bwa0_6],
     );
+    my %ref_suffix = (
+      picard => q{.dict},
+      minimap2 => q{.mmi},
+    );
+
     my $aligner = $p4_param_vals->{alignment_method};
     if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
       $aligner = $methods_to_aligners{$aligner};
     }
 
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,$aligner); }
+    if(exists $ref_suffix{$aligner}) {
+      $p4_param_vals->{alignment_reference_genome} .= $ref_suffix{$aligner};
+    }
+
     if($nchs) {
       $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
       $p4_param_vals->{alignment_hs_method} = $hs_bwa;
