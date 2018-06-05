@@ -4,6 +4,7 @@ use Test::More tests => 16;
 use Test::Exception;
 use Cwd qw(getcwd);
 use Log::Log4perl qw(:levels);
+use File::Copy qw(cp);
 
 use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
@@ -62,6 +63,8 @@ my $runfolder_path = $util->analysis_runfolder_path();
 
   my $pb;
   $util->set_staging_analysis_area();
+  cp 't/data/run_params/runParameters.hiseq.xml',
+    join(q[/], $runfolder_path, 'runParameters.xml');
   my $init = {
       function_order   => [qw{qc_qX_yield qc_adapter update_warehouse qc_insert_size}],
       lanes            => [4],
