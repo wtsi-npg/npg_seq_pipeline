@@ -104,7 +104,7 @@ sub _build_local {
 
 =head2 no_adapterfind
 
-Switches off adapter find/clip
+Toggles adapter finding in stage1 analysis
 
 =cut
 
@@ -112,7 +112,7 @@ has q{adapterfind} => (
   isa           => q{Bool},
   is            => q{ro},
   lazy_build    => 1,
-  documentation => q{Switches off adapter finding/clipping.},
+  documentation => q{Toggles adapter finding in stage1 analysis.},
 );
 sub _build_adapterfind {
   my $self = shift;
