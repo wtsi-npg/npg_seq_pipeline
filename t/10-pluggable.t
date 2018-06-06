@@ -386,6 +386,10 @@ subtest 'running the pipeline (wr executor)' => sub {
 subtest 'positions and spidering' => sub {
   plan tests => 12;
 
+  cp 't/data/run_params/runParameters.hiseq.xml',
+    join(q[/], $runfolder_path, 'runParameters.xml')
+    or die 'Faile to copy run params file';
+
   local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $p = npg_pipeline::pluggable->new(
@@ -434,6 +438,9 @@ subtest 'positions and spidering' => sub {
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   $util->set_staging_analysis_area();
+  cp 't/data/run_params/runParameters.hiseq.xml',
+    join(q[/], $runfolder_path, 'runParameters.xml')
+    or die 'Faile to copy run params file';
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},

@@ -3,7 +3,7 @@ use warnings;
 use Test::More tests => 8;
 use Test::Exception;
 use File::Path qw/make_path/;
-use File::Copy::Recursive qw/dircopy/;
+use File::Copy::Recursive qw/fcopy dircopy/;
 use File::Slurp;
 
 use t::util;
@@ -103,9 +103,13 @@ subtest 'qX_yield' => sub {
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_1234.csv';
   $util->create_analysis({'qc_dir' => 1});
+  my $runfolder_path = $util->analysis_runfolder_path();
+  fcopy 't/data/run_params/runParameters.miseq.xml',
+    join(q[/], $runfolder_path, 'runParameters.xml')
+    or die 'Faile to copy run params file';
 
   my $aqc = npg_pipeline::function::autoqc->new(
-    runfolder_path    => $util->analysis_runfolder_path(),
+    runfolder_path    => $runfolder_path,
     recalibrated_path => $recalibrated,
     qc_to_run         => q{qX_yield},
     timestamp         => q{20090709-123456},
@@ -132,7 +136,7 @@ subtest 'qX_yield' => sub {
   }
 
   $aqc = npg_pipeline::function::autoqc->new(
-      runfolder_path    => $util->analysis_runfolder_path(),
+      runfolder_path    => $runfolder_path,
       recalibrated_path => $recalibrated,
       qc_to_run         => q{qX_yield},
       lanes             => [4],
@@ -145,7 +149,10 @@ subtest 'qX_yield' => sub {
       "qc --check=qX_yield --id_run=1234 --position=4 --qc_in=$pbcal/archive --qc_out=$pbcal/archive/qc",
       "qX_yield check command for lane 4");
   $util->create_multiplex_analysis({'qc_dir' => [7,8]});
-  my $runfolder_path = $util->analysis_runfolder_path();
+  $runfolder_path = $util->analysis_runfolder_path();
+  fcopy 't/data/run_params/runParameters.hiseq.xml',
+    join(q[/], $runfolder_path, 'runParameters.xml')
+    or die 'Faile to copy run params file';
 
   $aqc = npg_pipeline::function::autoqc->new(
     runfolder_path    => $runfolder_path,
@@ -175,7 +182,7 @@ subtest 'qX_yield' => sub {
   foreach my $d (@plexes) {
     my $t = $d->composition->get_component(0)->tag_index;
     is ($d->command,
-    "qc --check=qX_yield --id_run=1234 --position=8 --tag_index=$t --qc_in=$pbcal/archive/lane8 --qc_out=$pbcal/archive/lane8/qc",
+    "qc --check=qX_yield --id_run=1234 --position=8 --tag_index=$t --platform_is_hiseq --qc_in=$pbcal/archive/lane8 --qc_out=$pbcal/archive/lane8/qc",
     "qX_yield command for lane 8 tag $t");
   }
 };

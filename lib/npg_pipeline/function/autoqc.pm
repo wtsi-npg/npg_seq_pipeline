@@ -187,6 +187,8 @@ sub _generate_command {
     $c .= q[ --file_type=bam];
   } elsif ($check eq q[insert_size]) {
     $c .= $self->is_paired_read() ? q[ --is_paired_read] : q[ --no-is_paired_read];
+  } elsif ($check eq q[qX_yield] && $self->platform_HiSeq) {
+    $c .= q[ --platform_is_hiseq];
   }
 
   my $qc_out = (defined $tag_index and $check ne q[spatial_filter])? $self->lane_qc_path($position) : $self->qc_path();
