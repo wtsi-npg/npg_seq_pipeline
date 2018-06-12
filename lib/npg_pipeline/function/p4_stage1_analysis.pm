@@ -280,6 +280,7 @@ sub _generate_command_params {
                     phix_alignment_method => $self->phix_alignment_method,
                     reference_phix => $self->phix_alignment_reference,
                     scramble_reference_fasta => $self->_default_phix_ref(q{fasta}, $self->repository),
+                    s1_se_pe => ($self->is_paired_read)? q{pe} : q{se},
                   );
   my %p4_ops = ( splice => [], prune => [], );
 

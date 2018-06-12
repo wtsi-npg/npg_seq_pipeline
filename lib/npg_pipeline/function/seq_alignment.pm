@@ -223,6 +223,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     s2_position => $position,
     s2_tag_index => $tag_index,
     tag_metrics_file => $self->tag_metrics_files->{$position},
+    s2_se_pe => ($self->is_paired_read)? q{pe} : q{se},
   };
   my $p4_ops = {
     prune => [],
