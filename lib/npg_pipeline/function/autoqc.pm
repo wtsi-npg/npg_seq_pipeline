@@ -74,7 +74,8 @@ has q{_is_check4target_file} => (
 sub _build__is_check4target_file {
   my $self = shift;
   ##no critic (RegularExpressions::RequireBracesForMultiline)
-  return $self->qc_to_run() =~ /^ verify_bam_id |
+  return $self->qc_to_run() =~ /^ adapter |
+                                  verify_bam_id |
                                   genotype |
                                   pulldown_metrics $/smx;
 }
@@ -228,10 +229,6 @@ sub _should_run {
   if ($self->_is_check4target_file()) {
     $can_run = ((!defined $tag_index) && !$is_multiplexed_lane) ||
 	       ((defined $tag_index)  && $is_multiplexed_lane);
-  }
-
-  if ($self->qc_to_run() eq q[adapter]) {
-    $can_run = (defined $tag_index) || !$is_multiplexed_lane;
   }
 
   if ($can_run) {
