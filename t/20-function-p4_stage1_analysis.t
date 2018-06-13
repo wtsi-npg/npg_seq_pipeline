@@ -159,6 +159,7 @@ subtest 'check_save_arguments' => sub {
           'cluster_count' => '500077065',
           'seed_frac' => '1234.00002000',
           'split_threads_val' => 4,
+          's1_se_pe' => 'se',
         },
     ],
     'ops' => {
@@ -273,6 +274,7 @@ subtest 'check_save_arguments_minimap2' => sub {
           'cluster_count' => '500077065',
           'seed_frac' => '1234.00002000',
           'split_threads_val' => 4,
+          's1_se_pe' => 'se',
         },
     ],
     'ops' => {
