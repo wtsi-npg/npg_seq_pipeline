@@ -183,9 +183,8 @@ sub _generate_command {
   if (defined $tag_index) {
     $c .= q[ --tag_index=] . $tag_index;
   }
-  if ( $check eq q[adapter] ) {
-    $c .= q[ --file_type=bam];
-  } elsif ($check eq q[insert_size]) {
+
+  if ($check eq q[insert_size]) {
     $c .= $self->is_paired_read() ? q[ --is_paired_read] : q[ --no-is_paired_read];
   } elsif ($check eq q[qX_yield] && $self->platform_HiSeq) {
     $c .= q[ --platform_is_hiseq];
@@ -229,6 +228,10 @@ sub _should_run {
   if ($self->_is_check4target_file()) {
     $can_run = ((!defined $tag_index) && !$is_multiplexed_lane) ||
 	       ((defined $tag_index)  && $is_multiplexed_lane);
+  }
+
+  if ($self->qc_to_run() eq q[adapter]) {
+    $can_run = (defined $tag_index) || !$is_multiplexed_lane;
   }
 
   if ($can_run) {

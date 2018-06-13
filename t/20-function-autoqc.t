@@ -48,7 +48,7 @@ subtest 'errors' => sub {
 };
 
 subtest 'adapter' => sub {
-  plan tests => 30;
+  plan tests => 32;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_1234.csv';
   $util->create_analysis({qc_dir => 1});
@@ -93,9 +93,23 @@ subtest 'adapter' => sub {
   foreach my $de (@{$da}) {
     my $p = $de->composition->get_component(0)->position;
     is ($de->command,
-    "qc --check=adapter --id_run=1234 --position=$p --file_type=bam --qc_in=$pbcal --qc_out=$pbcal/archive/qc",
+    "qc --check=adapter --id_run=1234 --position=$p --qc_in=$pbcal --qc_out=$pbcal/archive/qc",
     "adapter check command for lane $p");
   }
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_8747.csv';
+  $aqc = npg_pipeline::function::autoqc->new(
+    runfolder_path    => $util->analysis_runfolder_path(),
+    recalibrated_path => $recalibrated,
+    qc_to_run         => q{adapter},
+    lanes             => [1],
+    timestamp         => q{20090709-123456},
+    is_indexed        => 1,
+  );
+  $da = $aqc->create();
+  ok ($da && (@{$da} == 5), 'five definitions returned - plexes only');
+  is (scalar(grep { /--tag_index=\d/smx} map {$_->command} @{$da}), 5,
+    'all commands are prex-level');
 };
 
 subtest 'qX_yield' => sub {
