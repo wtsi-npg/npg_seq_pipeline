@@ -261,8 +261,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                     q();
 
   my $is_chromium_lib = $l->library_type && ($l->library_type =~ /Chromium/smx);
-  my $do_target_alignment = $is_chromium_lib ? 0 :
-    ($self->_ref($l,q[fasta]) && ($l->alignments_in_bam || $do_gbs_plex));
+  my $do_target_alignment = $is_chromium_lib ? 0
+                             : ((not ($self->platform_NovaSeq and $tag_index == 0))
+                               && $self->_ref($l,q[fasta])
+                               && ($l->alignments_in_bam || $do_gbs_plex));
 
   my $skip_target_markdup_metrics = (not $spike_tag and not $do_target_alignment);
 
@@ -290,7 +292,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   ########
   if(not $do_target_alignment and not $spike_tag) {
       if(not $nchs) {
-        push @{$p4_ops->{splice}}, 'src_bam:-alignment_filter:phix_bam_in';
+        push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-alignment_filter:phix_bam_in';
       }
       else {
         push @{$p4_ops->{prune}}, 'aln_tee4_tee4:to_tgtaln-alignment_filter:target_bam_in';
@@ -329,7 +331,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   else {
     push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
-    push @{$p4_ops->{splice}}, 'src_bam:-foptgt_bamsort_coord:', 'foptgt_seqchksum_tee:final-scs_cmp_seqchksum:outputchk';
+    push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_bamsort_coord:', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk';
   }
 
   my $p4_local_assignments = {};
@@ -378,9 +380,31 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     }
   }
   else {
+    my ($organism, $strain, $tversion, $analysis) = $self->_reference($l)->parse_reference_genome($l->reference_genome);
+
     $p4_param_vals->{bwa_executable} = q[bwa0_6];
-    $p4_param_vals->{alignment_method} = $bwa;
-    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bwa0_6)); }
+    $p4_param_vals->{alignment_method} = ($analysis || $bwa);
+
+    my %methods_to_aligners = (
+      bwa_aln => q[bwa0_6],
+      bwa_aln_se => q[bwa0_6],
+      bwa_mem => q[bwa0_6],
+    );
+    my %ref_suffix = (
+      picard => q{.dict},
+      minimap2 => q{.mmi},
+    );
+
+    my $aligner = $p4_param_vals->{alignment_method};
+    if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
+      $aligner = $methods_to_aligners{$aligner};
+    }
+
+    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,$aligner); }
+    if(exists $ref_suffix{$aligner}) {
+      $p4_param_vals->{alignment_reference_genome} .= $ref_suffix{$aligner};
+    }
+
     if($nchs) {
       $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
       $p4_param_vals->{alignment_hs_method} = $hs_bwa;
