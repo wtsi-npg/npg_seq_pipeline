@@ -113,7 +113,7 @@ sub create {
 sub _create_definition {
   my ($self, $h, $is_multiplexed_lane) = @_;
   if ($self->_should_run($h, $is_multiplexed_lane)) {
-    my $command = $self->_generate_command($h);
+    my $command = $self->_generate_command($h, $is_multiplexed_lane);
     return $self->_create_definition_object($h, $command);
   }
   return;
@@ -172,7 +172,7 @@ sub _create_definition_object {
 }
 
 sub _generate_command {
-  my ($self, $h) = @_;
+  my ($self, $h, $is_multiplexed_lane) = @_;
 
   my $check     = $self->qc_to_run();
   my $position  = $h->{'position'};
@@ -191,7 +191,7 @@ sub _generate_command {
     $c .= q[ --platform_is_hiseq];
   }
 
-  my $qc_out = (defined $tag_index and $check ne q[spatial_filter])? $self->lane_qc_path($position) : $self->qc_path();
+  my $qc_out = defined $tag_index ? $self->lane_qc_path($position) : $self->qc_path();
   $qc_out or $self->logcroak('Failed to get qc_out directory');
   my $qc_in  = defined $tag_index ? $self->lane_archive_path($position) : $self->archive_path();
   ##no critic (ControlStructures::ProhibitCascadingIfElse)
@@ -199,7 +199,7 @@ sub _generate_command {
     $qc_in  = defined $tag_index
               ? File::Spec->catfile($self->recalibrated_path(), q[lane] . $position)
               : $self->recalibrated_path();
-  } elsif ($check eq q[spatial_filter]) {
+  } elsif ($check eq q[spatial_filter] && $is_multiplexed_lane) {
     $qc_in .= (q[/lane] . $position);
   } elsif ($check eq q[tag_metrics]) {
     $qc_in = $self->bam_basecall_path();

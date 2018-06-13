@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Exception;
 use File::Path qw/make_path/;
 use File::Copy::Recursive qw/fcopy dircopy/;
@@ -96,6 +96,51 @@ subtest 'adapter' => sub {
     "qc --check=adapter --id_run=1234 --position=$p --file_type=bam --qc_in=$pbcal --qc_out=$pbcal/archive/qc",
     "adapter check command for lane $p");
   }
+};
+
+subtest 'spatial_filter' => sub {
+  plan tests => 17;
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_1234.csv';
+  $util->create_analysis({qc_dir => 1});
+  my $aqc = npg_pipeline::function::autoqc->new(
+    runfolder_path    => $util->analysis_runfolder_path(),
+    recalibrated_path => $recalibrated,
+    qc_to_run         => q{spatial_filter},
+    timestamp         => q{20090709-123456},
+    is_indexed        => 0,
+  );
+
+  my $da = $aqc->create();
+  ok ($da && (@{$da} == 8), 'eight definitions returned');
+  my $d = $da->[0];
+  isa_ok ($d, 'npg_pipeline::function::definition');
+
+  foreach my $de (@{$da}) {
+    my $p = $de->composition->get_component(0)->position;
+    is ($de->command,
+    "qc --check=spatial_filter --id_run=1234 --position=$p --qc_in=$pbcal/archive --qc_out=$pbcal/archive/qc",
+    "spatial filter check command for lane $p, lane not indexed");
+  }
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_8747.csv';
+  $aqc = npg_pipeline::function::autoqc->new(
+    runfolder_path    => $util->analysis_runfolder_path(),
+    recalibrated_path => $recalibrated,
+    qc_to_run         => q{spatial_filter},
+    lanes             => [(1 .. 6)],
+    timestamp         => q{20090709-123456},
+    is_indexed        => 1,
+  );
+
+  $da = $aqc->create();
+  ok ($da && (@{$da} == 6), 'six definitions returned');
+  foreach my $de (@{$da}) {
+    my $p = $de->composition->get_component(0)->position;
+    is ($de->command,
+    "qc --check=spatial_filter --id_run=1234 --position=$p --qc_in=$pbcal/archive/lane${p} --qc_out=$pbcal/archive/qc",
+    "spatial filter check command for lane $p, lane is indexed");
+  }   
 };
 
 subtest 'qX_yield' => sub {
