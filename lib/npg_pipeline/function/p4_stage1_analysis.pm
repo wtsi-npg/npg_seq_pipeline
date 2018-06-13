@@ -155,25 +155,8 @@ sub _build_cluster_counts {
   return $self->_parsing_interop($self->interop_file_name);
 }
 
-has 'phix_alignment_method'  => (
-                           isa        => 'Str',
-                           is         => 'ro',
-                           lazy_build => 1,
-                         );
-sub _build_phix_alignment_method {
-  my $self = shift;
-
-  my $alignment_method = $self->platform_NovaSeq? q[minimap2]: q[bwa_aln];
-
-  if($alignment_method eq q[bwa_aln] and not $self->is_paired_read) {
-      $alignment_method = q[bwa_aln_se];
-  }
-
-  return $alignment_method;
-}
-
 # phix_aligner is used to determine the reference genome. Be aware that
-#  setting this will not affect the phix_alignment_method.
+#  setting this will not affect the p4s1_phix_alignment_method.
 has 'phix_aligner'  => (
                            isa        => 'Str',
                            is         => 'ro',
@@ -188,7 +171,7 @@ sub _build_phix_aligner {
     bwa_mem => q[bwa0_6],
   );
 
-  my $aligner = $self->phix_alignment_method;
+  my $aligner = $self->p4s1_phix_alignment_method;
 
   if(exists $methods_to_aligners{$aligner}) {
     $aligner = $methods_to_aligners{$aligner};
@@ -277,7 +260,7 @@ sub _generate_command_params {
                     teepot_tempdir => q{.},
                     teepot_wval => q{500},
                     teepot_mval => q{2G},
-                    phix_alignment_method => $self->phix_alignment_method,
+                    phix_alignment_method => $self->p4s1_phix_alignment_method,
                     reference_phix => $self->phix_alignment_reference,
                     scramble_reference_fasta => $self->_default_phix_ref(q{fasta}, $self->repository),
                   );
@@ -323,7 +306,6 @@ sub _generate_command_params {
   my $basecall_path = $self->basecall_path;
   my $no_cal_path       = $self->recalibrated_path;
   my $bam_basecall_path  = $self->bam_basecall_path;
-  my $no_adapterfind = ($self->no_adapterfind // $self->platform_NovaSeq);
 
   my $full_bam_name  = $bam_basecall_path . q{/}. $id_run . q{_} .$position. q{.bam};
 
@@ -442,7 +424,7 @@ sub _generate_command_params {
       $p4_params{$bid_flag_map{q/MAX_NO_CALLS/}} = $self->general_values_conf()->{single_plex_decode_max_no_calls};
       $p4_params{bid_convert_low_quality_to_no_call_flag} = q[--convert-low-quality];
     }
-    if($no_adapterfind) {
+    if(not $self->adapterfind) {
       push @{$p4_ops{splice}}, q[bamadapterfind];
     }
     push @{$p4_ops{prune}}, q[tee_split:unsplit_bam-];
@@ -450,8 +432,8 @@ sub _generate_command_params {
   else {
     $self->info(q{P4 stage1 analysis on non-plexed lane});
 
-    if($no_adapterfind) {
-      push @{$p4_ops{splice}}, q[tee_i2b:baf:-bamcollate:];
+    if(not $self->adapterfind) {
+      push @{$p4_ops{splice}}, q[tee_i2b:baf-bamcollate:];
     }
     else {
       push @{$p4_ops{splice}}, q[bamadapterfind:-bamcollate:];
