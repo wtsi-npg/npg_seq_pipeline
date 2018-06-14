@@ -52,7 +52,11 @@ my $bam_generator = npg_pipeline::function::p4_stage1_analysis->new(
     id_run                        => 1234,
     _extra_tradis_transposon_read => 1,
     bam_basecall_path             => $util->analysis_runfolder_path() . q{/Data/Intensities/BaseCalls},
-  );
+);
+
+mkdir $bam_generator->bam_basecall_path() or die 'Failed to create directory';
+mkdir join(q[/], $bam_generator->bam_basecall_path(), 'metadata_cache_1234')
+  or die 'Failed to create directory';
 
 subtest 'basics' => sub {
   plan tests => 5;
@@ -170,7 +174,7 @@ subtest 'check_save_arguments' => sub {
 
   is_deeply($h, $expected, 'correct json file content (for p4 stage1 params file)');
 
- };
+};
 
 # check_save_arguments_minimap2 test duplicates check_save_arguments, but forces phix_aligment_method to minimap2
 $bam_generator = npg_pipeline::function::p4_stage1_analysis->new(

@@ -4,6 +4,12 @@ use Moose;
 use namespace::autoclean;
 use POSIX qw(strftime);
 use Math::Random::Secure qw{irand};
+use List::MoreUtils qw{any};
+use File::Basename;
+
+use npg_tracking::glossary::rpt;
+use npg_tracking::glossary::composition::factory::rpt_list;
+use st::api::lims;
 
 our $VERSION = '0';
 
@@ -12,9 +18,8 @@ extends 'npg_tracking::illumina::runfolder';
 with qw{
         MooseX::Getopt
         WTSI::DNAP::Utilities::Loggable
-        npg_pipeline::roles::accessor
-        npg_pipeline::roles::business::base
-        npg_pipeline::roles::business::flag_options
+        npg_pipeline::base::config
+        npg_pipeline::base::options
        };
 
 =head1 NAME
@@ -25,23 +30,10 @@ npg_pipeline::base
 
 =head1 DESCRIPTION
 
-A parent class to provide basic functionality to derived objects
+A parent class providing basic functionality to derived objects
 within npg_pipeline package
 
 =head1 SUBROUTINES/METHODS
-
-=head2 conf_path
-
-An attribute inherited from npg_pipeline::roles::accesor,
-a full path to directory containing config files.
-
-=head2 conf_file_path
-
-Method inherited from npg_pipeline::roles::accessor.
-
-=head2 read_config
-
-Method inherited from npg_pipeline::roles::accessor.
 
 =cut
 
@@ -50,7 +42,6 @@ has [qw/ +npg_tracking_schema
          +flowcell_id
          +instrument_string
          +reports_path
-         +subpath
          +name
          +tracking_run /] => (metaclass => 'NoGetopt',);
 
@@ -61,7 +52,7 @@ has q{+id_run} => (required => 0,);
 A timestring YYYY-MM-DD HH:MM:SS, an attribute with a default
 value of current local time.
 
-  my $sTimeStamp = $class->timestamp();
+  my $sTimeStamp = $obj->timestamp();
 
 =cut
 
@@ -72,69 +63,162 @@ has q{timestamp} => (
   metaclass  => 'NoGetopt',
 );
 
+<<<<<<< HEAD
 =head2 random_string
 
-A method returning a random string, a timestamp attribute concatenated
-with a random 32-bit integer between 0 and 2^32.
+Returns a random string, a random 32-bit integer between 0 and 2^32,
+prepended with a value of the timestamp attribute it the latter is available.
 
-  my $rs = $class->random_string();
+  my $rs = $obj->random_string();
 
 =cut
 
 sub random_string {
   my $self = shift;
-  return join q[-], $self->timestamp(), irand();
+  return ($self->can('timestamp') ? $self->timestamp() . q[-] : q[]) . irand();
 }
 
-=head2 lanes
+=head2 positions
 
-Option to push through an arrayref of lanes to work with
-
-=head2 all_lanes
-
-An array of the elements in $class->lanes();
-
-=head2 no_lanes
-
-True if no lanes have been specified
-
-=head2 count_lanes
-
-Returns the number of lanes in $class->lanes()
+A sorted array of lanes (positions) this pipeline will be run on.
+Defaults to positions specified in LIMs.
 
 =cut
 
-has q{lanes} => (
-  traits        => ['Array'],
-  isa           => q{ArrayRef[Int]},
+sub positions {
+  my $self = shift;
+  my @positions = @{$self->lanes()} ? @{$self->lanes()} :
+                  map {$_->position()} $self->lims->children();
+  return (sort @positions);
+}
+
+=head2 merge_lanes
+
+Tells p4 stage2 (seq_alignment) to merge lanes (at their plex level if plexed)
+and to run its downstream tasks as corresponding compositions.
+
+=cut
+
+has q{merge_lanes} => (
+  isa           => q{Bool},
   is            => q{ro},
-  predicate     => q{has_lanes},
-  documentation => q{Option to push through selected lanes of a run},
-  default       => sub { [] },
-  handles       => {
-    all_lanes   => q{elements},
-    no_lanes    => q{is_empty},
-    count_lanes => q{count},
-  },
+  lazy          => 1,
+  builder       => q{_build_merge_lanes},
+  documentation => q{Tells p4 stage2 (seq_alignment) to merge lanes } .
+                   q{(at their plex level if plexed) and to run its } .
+                   q{downstream tasks as corresponding compositions},
 );
+sub _build_merge_lanes {
+  my $self = shift;
+  return $self->all_lanes_mergeable;
+}
 
-=head2 general_values_conf
+=head2 lims
 
-Returns a hashref of configuration details from the relevant configuration file
+st::api::lims run-level object
 
 =cut
 
-has 'general_values_conf' => (
-  isa        => q{HashRef},
-  is         => q{ro},
-  lazy_build => 1,
-  metaclass  => 'NoGetopt',
-  init_arg   => undef,
-);
-sub _build_general_values_conf {
-  my ( $self ) = @_;
-  return $self->read_config( $self->conf_file_path(q{general_values.ini}) );
+has q{lims} => (isa        => q{st::api::lims},
+                is         => q{ro},
+                metaclass  => q{NoGetopt},
+                lazy_build => 1,);
+sub _build_lims {
+  my ($self) = @_;
+  return st::api::lims->new(id_run => $self->id_run);
 }
+
+=head2 multiplexed_lanes
+
+An array of positions that correspond to, if the run is indexed, pooled lanes.
+Empty array for a not indexed run.
+
+=cut
+
+has q{multiplexed_lanes} => (isa        => q{ArrayRef},
+                             is         => q{ro},
+                             metaclass  => q{NoGetopt},
+                             lazy_build => 1,);
+sub _build_multiplexed_lanes {
+  my ($self) = @_;
+  if (!$self->is_indexed) {
+    return [];
+  }
+  my @lanes = map {$_->position} grep {$_->is_pool} $self->lims->children;
+  return \@lanes;
+}
+
+=head2 is_multiplexed_lane
+
+Boolean flag, true if the run is indexed and the lane is a pool.
+
+=cut
+
+sub is_multiplexed_lane {
+  my ($self, $position) = @_;
+  if (!$position) {
+    $self->logcroak('Position not given');
+  }
+  return any {$_ == $position} @{$self->multiplexed_lanes};
+}
+
+=head2 lims4lane
+ 
+Return lane -level st::api::lims object for the argument position.
+Error if the given lane (position) does not exist in LIMs.
+
+  my $lane4_lims = $self->lims4lane(4);
+
+=cut
+
+sub lims4lane {
+  my ($self, $position) = @_;
+  if (!$position) {
+    $self->logcroak('Position not given');
+  }
+  my $lane = $self->lims->children_ia->{$position};
+  if (!$lane) {
+    $self->logcroak("Failed to get lims data for lane $position");
+  }
+  return $lane;
+}
+
+=head2 get_tag_index_list
+
+Returns an array of sorted tag indices for a lane, including tag zero.
+
+=cut
+
+sub get_tag_index_list {
+  my ($self, $position) = @_;
+  if (!$self->is_multiplexed_lane($position)) {
+    return [];
+  }
+  my @tags = sort keys %{$self->lims4lane($position)->tags()};
+  unshift @tags, 0;
+  return \@tags;
+}
+
+=head2 create_composition
+
+Returns a one-component composition representing an input
+object or hash.
+ 
+  my $l = st::api::lims->new(id_run => 1, position => 2);
+  my $composition = $base->create_composition($l);
+
+  my $h = {id_run => 1, position => 2};
+  $composition = $base->create_composition($h);
+
+This method might be removed in the next round of development.
+
+=cut
+
+sub create_composition {
+  my ($self, $l) = @_;
+  return npg_tracking::glossary::composition::factory::rpt_list
+      ->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($l))
+      ->create_composition();
 
 __PACKAGE__->meta->make_immutable;
 
@@ -156,9 +240,19 @@ __END__
 
 =item MooseX::Getopt
 
+=item Math::Random::Secure
+
 =item POSIX
 
-=item Math::Random::Secure
+=item List::MoreUtils
+
+=item File::Basename
+
+=item npg_tracking::glossary::rpt
+
+=item npg_tracking::glossary::composition::factory::rpt_list
+
+=item st::api::lims
 
 =item WTSI::DNAP::Utilities::Loggable
 

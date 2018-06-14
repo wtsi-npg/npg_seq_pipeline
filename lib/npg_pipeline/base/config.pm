@@ -1,12 +1,12 @@
-package npg_pipeline::roles::accessor;
+package npg_pipeline::base::config;
 
 use Moose::Role;
 use Carp;
 use Config::Any;
-use Cwd qw(abs_path);
 use FindBin qw($Bin);
 use File::Spec::Functions qw(catfile);
 use Readonly;
+use MooseX::Getopt::Meta::Attribute::Trait::NoGetopt;
 
 use npg_tracking::util::abs_path qw/abs_path/;
 
@@ -16,17 +16,13 @@ Readonly::Scalar my $CONF_DIR => q{data/config_files};
 
 =head1 NAME
 
-npg_pipeline::roles::accessor
+npg_pipeline::base::config
 
 =head1 SYNOPSIS
 
-  package my_package;
-  use Moose;
-  with  qw{npg_pipeline::roles::accessor};
-
 =head1 DESCRIPTION
 
-A Moose role providing accessors for pipeline's sources of information.
+A Moose role providing accessors for pipeline's configuration files.
 
 =head1 SUBROUTINES/METHODS
 
@@ -37,10 +33,10 @@ Absolute path to directory containing the currently running script.
 =cut
 
 has q{local_bin} => (
-  isa           => q{Str},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{abs path to directory containing the currently running script},
+  isa         => q{Str},
+  is          => q{ro},
+  lazy_build  => 1,
+  traits      => ['NoGetopt'],
 );
 sub _build_local_bin {
   return abs_path($Bin);
@@ -57,7 +53,7 @@ has q{conf_path} => (
   isa           => q{Str},
   is            => q{ro},
   lazy_build    => 1,
-  documentation => q{a full path to directory containing config files},
+  documentation => q{A full path to directory containing config files},
 );
 sub _build_conf_path {
   my $self = shift;
@@ -97,6 +93,24 @@ sub read_config {
   return $config;
 }
 
+=head2 general_values_conf
+
+Returns a hashref of configuration details from the relevant configuration file
+
+=cut
+
+has 'general_values_conf' => (
+  isa        => q{HashRef},
+  is         => q{ro},
+  lazy_build => 1,
+  traits     => ['NoGetopt'],
+  init_arg   => undef,
+);
+sub _build_general_values_conf {
+  my $self = shift;
+  return $self->read_config( $self->conf_file_path(q{general_values.ini}) );
+}
+
 no Moose::Role;
 
 1;
@@ -112,11 +126,11 @@ __END__
 
 =item Moose::Role
 
+=item MooseX::Getopt::Meta::Attribute::Trait::NoGetopt
+
 =item Carp
 
 =item Config::Any
-
-=item Cwd
 
 =item File::Spec::Functions 
 
@@ -138,7 +152,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2017 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -6,6 +6,7 @@ use namespace::autoclean;
 use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
+with    q{npg_pipeline::base::util};
 
 our $VERSION = '0';
 

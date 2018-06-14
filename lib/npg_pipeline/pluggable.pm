@@ -20,6 +20,7 @@ use npg_pipeline::pluggable::registry;
 extends q{npg_pipeline::base};
 
 with qw{ MooseX::AttributeCloner
+         npg_pipeline::base::util
          npg_pipeline::executor::options
          npg_pipeline::runfolder_scaffold };
 

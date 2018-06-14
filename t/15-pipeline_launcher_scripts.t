@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use English qw{-no_match_vars};
-use Test::More tests => 8;
+use Test::More tests => 10;
 use Test::Exception;
 use Cwd;
 
@@ -63,6 +63,14 @@ my $bbp = "$rf/bam_basecall_path";
 
   lives_ok { qx{$bin/npg_pipeline_seqchksum_comparator --id_run=1234 --archive_path=$rf/Data/Intensities/BAM_basecalls_20140815-114817/no_cal/archive --bam_basecall_path=$rf/Data/Intensities/BAM_basecalls_20140815-114817 --lanes=1 };} q{ran bin/npg_pipeline_seqchksum_comparator with analysis and bam_basecall_path};
   ok($CHILD_ERROR, qq{Return code of $CHILD_ERROR as no files found});
+}
+
+{
+  `bin/npg_pipeline_preexec_references --repository t/data/sequence/refs 2>/dev/null`;
+  ok( $CHILD_ERROR, qq{failed as could not locate references directory - $CHILD_ERROR} );
+
+  qx{bin/npg_pipeline_preexec_references --repository t/data/sequence};
+  ok( ! $CHILD_ERROR, q{script runs OK} );
 }
 
 1;

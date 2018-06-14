@@ -19,6 +19,7 @@ use st::api::lims;
 use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
+with    q{npg_pipeline::function::util};
 
 our $VERSION  = '0';
 
@@ -165,7 +166,7 @@ sub _create_definition {
   $ref->{'num_hosts'}       = $NUM_HOSTS;
   $ref->{'num_cpus'}        = $self->_num_cpus();
   $ref->{'memory'}          = $ref->{'memory'} ? $ref->{'memory'} : $MEMORY;
-  $ref->{'command_preexec'} = $self->ref_adapter_pre_exec_string();
+  $ref->{'command_preexec'} = $self->repos_pre_exec_string();
   $ref->{'composition'}     = $self->create_composition($l);
 
   return npg_pipeline::function::definition->new($ref);
