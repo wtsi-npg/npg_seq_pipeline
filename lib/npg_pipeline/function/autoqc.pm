@@ -9,6 +9,7 @@ use Class::Load qw{load_class};
 use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
+with q{npg_pipeline::function::util};
 
 our $VERSION = '0';
 
@@ -161,7 +162,7 @@ sub _create_definition_object {
   }
 
   if ( ($qc_to_run eq 'adapter') || $self->_check_uses_refrepos() ) {
-    $ref->{'command_preexec'} = $self->ref_adapter_pre_exec_string();
+    $ref->{'command_preexec'} = $self->repos_pre_exec_string();
   }
 
   if ($qc_to_run =~ /insert_size|sequence_error/smx ) {

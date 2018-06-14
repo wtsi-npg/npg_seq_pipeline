@@ -384,7 +384,7 @@ subtest 'running the pipeline (wr executor)' => sub {
 };
 
 subtest 'positions and spidering' => sub {
-  plan tests => 12;
+  plan tests => 9;
 
   cp 't/data/run_params/runParameters.hiseq.xml',
     join(q[/], $runfolder_path, 'runParameters.xml')
@@ -401,7 +401,6 @@ subtest 'positions and spidering' => sub {
   );
   ok(!$p->spider, 'spidering is off');
   is (join( q[ ], $p->positions), '1 2 3 4 5 6 7 8', 'positions array');
-  is (join( q[ ], $p->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $function = 'run_analysis_complete';
@@ -417,7 +416,6 @@ subtest 'positions and spidering' => sub {
       no_sf_resource   => 1,
   );
   is (join( q[ ], $p->positions), '1 2', 'positions array');
-  is (join( q[ ], $p->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
   ok(!$p->interactive, 'start job will be resumed');
   lives_ok { $p->main() } "running main for $function, non-interactively";
 
@@ -456,7 +454,6 @@ subtest 'positions and spidering' => sub {
   mkdir $p->archive_path;
   mkdir $p->qc_path;
   is (join( q[ ], $p->positions), '4', 'positions array');
-  is (join( q[ ], $p->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
   lives_ok { $p->main() } q{running main for three qc functions};
 };
 

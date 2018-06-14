@@ -7,7 +7,8 @@ use List::Util qw(max min sum);
 use Readonly;
 use open q(:encoding(UTF8));
 
-use npg_pipeline::roles::business::base;
+use npg_tracking::util::types;
+use npg_pipeline::function::util;
 
 with 'WTSI::DNAP::Utilities::Loggable';
 
@@ -167,7 +168,7 @@ sub _construct_specific_file_expected_sequence_with_library {
   while ($array_index < $num_tags ) {
 
     my $tag_index = $tag_index_list->[$array_index];
-    my $names = npg_pipeline::roles::business::base->get_study_library_sample_names($alims->{$tag_index});
+    my $names = npg_pipeline::function::util->get_study_library_sample_names($alims->{$tag_index});
     my ($study_names, $library_names, $sample_names);
 
     if($names->{study}){
