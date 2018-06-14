@@ -7,6 +7,7 @@ use File::Temp qw{ tempdir };
 use Readonly;
 use Cwd qw(getcwd);
 use npg::api::request;
+#TODO: purge all reference to Recipes - we're RunParameters.xml and RunInfo.xml now
 
 Readonly::Scalar my $NFS_STAGING_DISK => q{/nfs/sf45};
 
@@ -102,6 +103,7 @@ sub set_staging_analysis_area {
   `mkdir -p $recalibrated_path`;
   `mkdir $analysis_runfolder_path/Config`;
   `mkdir $analysis_runfolder_path/t`;
+  `cp t/data/run_params/runParameters.miseq.xml $analysis_runfolder_path/runParameters.xml`;
   `cp t/data/Recipes/Recipe_GA2_37Cycle_PE_v6.1.xml $analysis_runfolder_path/`;
   `cp t/data/Recipes/TileLayout.xml $analysis_runfolder_path/Config/`;
   `touch $recalibrated_path/touch_file`;
@@ -127,6 +129,7 @@ sub set_rta_staging_analysis_area {
   `touch $bustard_path/s_1_2_001_qval.txt.gz`;
   `touch $bustard_path/s_2_1_001_qval.txt.gz`;
   `touch $bustard_path/s_2_2_001_qval.txt.gz`;
+  `cp t/data/run_params/runParameters.miseq.xml $analysis_runfolder_path/runParameters.xml`;
   `cp t/data/runfolder/Data/Intensities/Bustard_RTA/config.xml $bustard_path/`;
   `cp t/data/summary_files/after_v7_mp_hack_Summary.xml $recalibrated_path/Summary.xml`;
   `cp t/data/summary_files/after_v7_mp_hack_Summary.htm $recalibrated_path/Summary.htm`;
