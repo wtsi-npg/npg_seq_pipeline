@@ -74,7 +74,8 @@ has q{_is_check4target_file} => (
 sub _build__is_check4target_file {
   my $self = shift;
   ##no critic (RegularExpressions::RequireBracesForMultiline)
-  return $self->qc_to_run() =~ /^ verify_bam_id |
+  return $self->qc_to_run() =~ /^ adapter |
+                                  verify_bam_id |
                                   genotype |
                                   pulldown_metrics $/smx;
 }
@@ -183,9 +184,8 @@ sub _generate_command {
   if (defined $tag_index) {
     $c .= q[ --tag_index=] . $tag_index;
   }
-  if ( $check eq q[adapter] ) {
-    $c .= q[ --file_type=bam];
-  } elsif ($check eq q[insert_size]) {
+
+  if ($check eq q[insert_size]) {
     $c .= $self->is_paired_read() ? q[ --is_paired_read] : q[ --no-is_paired_read];
   } elsif ($check eq q[qX_yield] && $self->platform_HiSeq) {
     $c .= q[ --platform_is_hiseq];

@@ -38,6 +38,8 @@ LIST OF CHANGES
  - removed unused implementation for function copy_interop_files_to_irods
  - removed unused spatial_filter, fix_broken_files and force_phix_split flags
  - removed a number of unused methods in npg_pipeline::base
+ - no lane-lavel bam files are produced by p4 stage1 for pools - do not run
+   the adapter check in these cases
 
 release 51.12.2
  - fixed lane taglist files for TraDIS libraries
