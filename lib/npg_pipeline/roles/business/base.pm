@@ -8,7 +8,6 @@ use File::Basename;
 use npg_tracking::util::abs_path qw{abs_path};
 use npg_tracking::glossary::rpt;
 use npg_tracking::glossary::composition::factory::rpt_list;
-use npg::api::run;
 use st::api::lims;
 use npg_tracking::data::reference::find;
 use npg_pipeline::cache;
