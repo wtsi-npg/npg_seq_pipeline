@@ -464,19 +464,19 @@ subtest 'script name and function list' => sub {
   plan tests => 20;
 
   my $base = npg_pipeline::pluggable->new();
-  my $path = join q[/], getcwd(), $config_dir, 'function_list_pluggable.json';
+  my $path = abs_path(join q[/], getcwd(), $config_dir, 'function_list_pluggable.json');
   is ($base->_script_name, $PROGRAM_NAME, 'script name');
   throws_ok { $base->function_list }
     qr/File $path does not exist or is not readable/,
     'error when default function list does not exist';
 
   $base = npg_pipeline::pluggable->new(function_list => 'base');
-  $path = join q[/], getcwd(), $config_dir, 'function_list_pluggable_base.json';
+  $path = abs_path(join q[/], getcwd(), $config_dir, 'function_list_pluggable_base.json');
   throws_ok { $base->function_list }
     qr/File $path does not exist or is not readable/,
     'error when function list does not exist';
 
-  $path = join q[/], getcwd(), $config_dir, 'function_list_central.json';
+  $path = abs_path(join q[/], getcwd(), $config_dir, 'function_list_central.json');
   $base = npg_pipeline::pluggable->new(function_list => $path);
   is( $base->function_list, $path, 'function list path as given');
   isa_ok( $base->_function_list_conf(), q{HASH}, 'function list is read into a hash');
@@ -525,7 +525,7 @@ subtest 'script name and function list' => sub {
     'error when function list name contains illegal characters';
   
   $base = npg_pipeline::pluggable->new(qc_run => 1);
-  $path = join q[/], getcwd(), $config_dir, 'function_list_pluggable_qc_run.json';
+  $path = abs_path(join q[/], getcwd(), $config_dir, 'function_list_pluggable_qc_run.json');
   throws_ok { $base->function_list }
     qr/File $path does not exist or is not readable/,
     'error when default function list does not exist';
@@ -536,7 +536,7 @@ subtest 'script name and function list' => sub {
 
   my $c = mytest::central->new(qc_run => 1);
   is ($base->_script_name, $PROGRAM_NAME, 'script name');
-  my $fl = join q[/], getcwd(), $config_dir, 'function_list_central_qc_run.json';
+  my $fl = abs_path(join q[/], getcwd(), $config_dir, 'function_list_central_qc_run.json');
   is( $c->function_list, $fl, 'qc function list');
 };
 
