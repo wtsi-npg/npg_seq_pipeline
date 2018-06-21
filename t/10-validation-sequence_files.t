@@ -91,13 +91,6 @@ subtest 'deletable or not' => sub {
 
     skip 'Test iRODS not available (WTSI_NPG_iRODS_Test_IRODS_ENVIRONMENT_FILE not set?)',
          $num_tests unless $test_area_created;
-
-    my $irods_do = sub {
-      my $command = shift;
-      if (system($command)) {
-        die "Failed to execute command";
-      }
-    };
   
     local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} =
       't/data/validation/20405/samplesheet_20405.csv';
@@ -131,16 +124,16 @@ subtest 'deletable or not' => sub {
       write_file($md5_path, md5_hex($content)) ;
       
       my $ipath = join q[/], $IRODS_TEST_AREA1, $file;
-      $irods_do->("iput -K $path $ipath");
-      $irods_do->("iput -K $md5_path $ipath" . q[.md5]);
+      $irods->add_object($path, $ipath, 1);
+      $irods->add_object($md5_path, $ipath . q[.md5], 1);
       my $num_reads = ($i == $empty || $i == $empty_and_not_aligned) ? 0 : int(rand(100));
       my $align_flag = ($i == $not_aligned || $i == $empty_and_not_aligned) ? 0 : 1;
 
       if (none {$i == $_} ($empty, $not_aligned, $empty_and_not_aligned)) {
-        $irods_do->("iput $path ${ipath}.crai"); 
+        $irods->add_object($path, $ipath . q[.crai], 0); 
       }
-      $irods_do->("imeta add -d $ipath alignment $align_flag");
-      $irods_do->("imeta add -d $ipath total_reads $num_reads");
+      $irods->add_object_avu($ipath, 'alignment', $align_flag);
+      $irods->add_object_avu($ipath, 'total_reads', $num_reads);
 
       $i++;
     }  
@@ -161,7 +154,7 @@ subtest 'deletable or not' => sub {
     # Remove one of iRODS files
     my $temp = $file_list[$empty];
     my $to_remove = join q[/], $IRODS_TEST_AREA1, $temp; 
-    $irods_do->("irm $to_remove");
+    $irods->remove_object($to_remove);
     $v = npg_pipeline::validation::sequence_files->new($ref);
     my $result;
     warning_like { $result = $v->archived_for_deletion() }
@@ -173,33 +166,33 @@ subtest 'deletable or not' => sub {
     # so that the number of files is correct.
     my $wrong = "$IRODS_TEST_AREA1/wrong.cram";
     my ($f, $path) = each %{$file_map};
-    $irods_do->("iput $path $wrong");
+    $irods->add_object($path, $wrong, 0);
     $v = npg_pipeline::validation::sequence_files->new($ref);
     warning_like { $result = $v->archived_for_deletion() }
       qr/According to LIMS, file $temp is missing/,
       'not deletable - mismatch with lims data';
     ok(!$result, 'not deletable');
-    $irods_do->("irm $wrong");
+    $irods->remove_object($wrong);
   
     # Restore previously removed file, excluding metadata
-    $irods_do->(join q[ ], 'iput',  '-K', $file_map->{$temp}, $to_remove);
+    $irods->add_object($file_map->{$temp}, $to_remove, 1);
     $ref->{'irods'} = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
     $v = npg_pipeline::validation::sequence_files->new($ref);
     throws_ok { $v->archived_for_deletion() }
       qr/No or too many 'alignment' meta data for .+\/$to_remove/,
       'alignment metadata missing - error';
-    $irods_do->("imeta add -d $to_remove alignment 1");
+    $irods->add_object_avu($to_remove, 'alignment', 1);
     $ref->{'irods'} = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
     $v = npg_pipeline::validation::sequence_files->new($ref);
     throws_ok { $v->archived_for_deletion() }
       qr/No or too many 'total_reads' meta data for .+\/$to_remove/,
       'total_reads metadata missing - error';
-    $irods_do->("imeta add -d $to_remove total_reads 0");
+    $irods->add_object_avu($to_remove, 'total_reads', 0);
 
     $to_remove = $file_list[$num_files - 1];
     my $ito_remove = join q[/], $IRODS_TEST_AREA1, $to_remove . '.crai';
     # Remove an index file
-    $irods_do->("irm $ito_remove");
+    $irods->remove_object($ito_remove);
     $ref->{'irods'} = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
     $v = npg_pipeline::validation::sequence_files->new($ref);
     warning_like { $result = $v->archived_for_deletion() }
@@ -207,7 +200,7 @@ subtest 'deletable or not' => sub {
       'not deletable - index file is missing';
     ok(!$result, 'not deletable');
     # Put it back
-    $irods_do->("iput -K $path $ito_remove");
+    $irods->add_object($path, $ito_remove, 1);
 
     $ref->{'irods'} = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
     my $sfile = '20405_1#12.cram';
