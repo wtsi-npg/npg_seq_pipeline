@@ -8,7 +8,6 @@ use File::Basename;
 use npg_tracking::util::abs_path qw{abs_path};
 use npg_tracking::glossary::rpt;
 use npg_tracking::glossary::composition::factory::rpt_list;
-use npg::api::run;
 use st::api::lims;
 use npg_tracking::data::reference::find;
 use npg_pipeline::cache;
@@ -333,6 +332,25 @@ sub num_cpus2array {
     $self->logcroak('Non-empty array of up to two numbers is expected');
   }
   return [sort {$a <=> $b} @numbers];
+}
+
+=head2 merge_lanes
+
+Tells p4 stage2 (seq_alignment) to merge lanes (at their plex level if plexed) and to run its downstream tasks as corresponding compositions
+
+=cut
+
+has q{merge_lanes} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  lazy          => 1,
+  builder       => q{_build_merge_lanes},
+  documentation => q{Tells p4 stage2 (seq_alignment) to merge lanes (at their plex level if plexed) and to run its downstream tasks as corresponding compositions},
+);
+
+sub _build_merge_lanes {
+  my $self = shift;
+  return $self->all_lanes_mergeable;
 }
 
 1;

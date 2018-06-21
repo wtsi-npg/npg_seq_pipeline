@@ -74,7 +74,8 @@ has q{_is_check4target_file} => (
 sub _build__is_check4target_file {
   my $self = shift;
   ##no critic (RegularExpressions::RequireBracesForMultiline)
-  return $self->qc_to_run() =~ /^ verify_bam_id |
+  return $self->qc_to_run() =~ /^ adapter |
+                                  verify_bam_id |
                                   genotype |
                                   pulldown_metrics $/smx;
 }
@@ -113,7 +114,7 @@ sub create {
 sub _create_definition {
   my ($self, $h, $is_multiplexed_lane) = @_;
   if ($self->_should_run($h, $is_multiplexed_lane)) {
-    my $command = $self->_generate_command($h);
+    my $command = $self->_generate_command($h, $is_multiplexed_lane);
     return $self->_create_definition_object($h, $command);
   }
   return;
@@ -172,7 +173,7 @@ sub _create_definition_object {
 }
 
 sub _generate_command {
-  my ($self, $h) = @_;
+  my ($self, $h, $is_multiplexed_lane) = @_;
 
   my $check     = $self->qc_to_run();
   my $position  = $h->{'position'};
@@ -183,15 +184,14 @@ sub _generate_command {
   if (defined $tag_index) {
     $c .= q[ --tag_index=] . $tag_index;
   }
-  if ( $check eq q[adapter] ) {
-    $c .= q[ --file_type=bam];
-  } elsif ($check eq q[insert_size]) {
+
+  if ($check eq q[insert_size]) {
     $c .= $self->is_paired_read() ? q[ --is_paired_read] : q[ --no-is_paired_read];
   } elsif ($check eq q[qX_yield] && $self->platform_HiSeq) {
     $c .= q[ --platform_is_hiseq];
   }
 
-  my $qc_out = (defined $tag_index and $check ne q[spatial_filter])? $self->lane_qc_path($position) : $self->qc_path();
+  my $qc_out = defined $tag_index ? $self->lane_qc_path($position) : $self->qc_path();
   $qc_out or $self->logcroak('Failed to get qc_out directory');
   my $qc_in  = defined $tag_index ? $self->lane_archive_path($position) : $self->archive_path();
   ##no critic (ControlStructures::ProhibitCascadingIfElse)
@@ -199,7 +199,7 @@ sub _generate_command {
     $qc_in  = defined $tag_index
               ? File::Spec->catfile($self->recalibrated_path(), q[lane] . $position)
               : $self->recalibrated_path();
-  } elsif ($check eq q[spatial_filter]) {
+  } elsif ($check eq q[spatial_filter] && $is_multiplexed_lane) {
     $qc_in .= (q[/lane] . $position);
   } elsif ($check eq q[tag_metrics]) {
     $qc_in = $self->bam_basecall_path();

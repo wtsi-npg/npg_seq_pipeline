@@ -38,6 +38,16 @@ LIST OF CHANGES
  - removed unused implementation for function copy_interop_files_to_irods
  - removed unused spatial_filter, fix_broken_files and force_phix_split flags
  - removed a number of unused methods in npg_pipeline::base
+ - no lane-lavel bam files are produced by p4 stage1 for pools - do not run
+   the adapter check in these cases
+ - adapterfind flag added to switch adapterfind on/off (default: on)
+ - scaffolding of runfolder includes .npg_cache_10000 directory creation (lane and plex)
+ - stage1 analysis: parse interop data for cluster count calculation (used for 10K subsampling)
+ - seq_alignment reads tag_metrics files to calculate fraction for 10K subsampling
+ - seqchksum_comparator function now uses seqchksum files from analyses (no regeneration)
+ - QC spatial_filter now run as standard QC check
+ - add p4s2_aligner_intfile flag to force temporary file production in stage2 alignment
+ - p4 stage1 splice/prune directives moved from vtfp command line to params file
 
 release 51.12.2
  - fixed lane taglist files for TraDIS libraries

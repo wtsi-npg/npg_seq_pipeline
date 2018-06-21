@@ -23,7 +23,7 @@ local $ENV{'PATH'}       = join q[:], $tmp_dir, $bin, $ENV{'PATH'};
 local $ENV{'http_proxy'} = q[http://wibble];
 local $ENV{'no_proxy'}   = q[];
 
-my $rf = "$tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234";
+my $rf = $util->analysis_runfolder_path;
 my $bbp = "$rf/bam_basecall_path";
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{/does/not/exist.csv};
