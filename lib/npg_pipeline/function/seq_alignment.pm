@@ -211,7 +211,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   # base set of parameters for p4 vtfp
   ####################################
   my $p4_param_vals = {
-    samtools_executable => q{samtools1},
+    samtools_executable => q{samtools},
     indatadir           => $input_path,
     outdatadir          => $archive_path,
     subsetsubpath       => q[.npg_cache_10000/], # below outdatadir
@@ -265,6 +265,27 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     ($self->_ref($l,q[fasta]) && ($l->alignments_in_bam || $do_gbs_plex));
 
   my $skip_target_markdup_metrics = (not $spike_tag and not $do_target_alignment);
+
+  # handle extra stats file for aligned data with reference regions file
+  if($do_target_alignment) {
+    my $do_target_regions_stats = 0;
+    if (!$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
+       if($self->_do_bait_stats_analysis($l)){
+          $p4_param_vals->{target_regions_file} = $self->_bait($l)->target_intervals_path();
+          $do_target_regions_stats = 1;
+       }
+       elsif($self->_target_regions_file_path($l, q[target])) {
+          $p4_param_vals->{target_regions_file} = $self->_ref($l, q[target]) .q(.interval_list);
+          $do_target_regions_stats = 1;
+       }
+    }
+    if($do_target_regions_stats) {
+       push @{$p4_ops->{prune}}, 'fop(phx|hs)_samtools_stats_F0.*_target.*-';
+    }
+    else {
+       push @{$p4_ops->{prune}}, 'fop.*samtools_stats_F0.*_target.*-';
+    }
+  }
 
   if($human_split and not $do_target_alignment and not $spike_tag) {
     $do_target_alignment = 1;
@@ -635,6 +656,17 @@ sub _gbs_plex{
                  'tag_index'  => $l->tag_index,
                  ( $self->repository ? ('repository' => $self->repository):())
                 });
+}
+
+sub _target_regions_file_path {
+  my ($self, $l, $aligner) = @_;
+  if (!$aligner) {
+    $self->logcroak('Aligner missing');
+  }
+  my $path = 1;
+  eval  { $self->_ref($l, $aligner) ; 1; }
+  or do { $path = 0; };
+  return $path;
 }
 
 sub _ref {

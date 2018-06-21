@@ -272,7 +272,7 @@ sub _get_index_lengths {
 sub _generate_command_params {
   my ($self, $lane_lims, $tag_list_file) = @_;
   my %p4_params = (
-                    samtools_executable => q{samtools1},
+                    samtools_executable => q{samtools},
                     bwa_executable => q{bwa0_6}, # be sure that the version of bwa that is picked up is consistent with the phiX reference used for alignment
                     teepot_tempdir => q{.},
                     teepot_wval => q{500},

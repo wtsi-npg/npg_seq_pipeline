@@ -120,7 +120,8 @@ sub symlink_default {
 `touch $tra_dir/Mus_musculus/ensembl_84_transcriptome/GRCm38/gtf/ensembl_84_transcriptome-GRCm38.gtf`;
 `touch $tra_dir/Mus_musculus/ensembl_84_transcriptome/GRCm38/fasta/GRCm38.fa`;
 
-
+`mkdir $ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/target`;
+`touch $ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/target/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.interval_list`;
 
 ###12597_1    study: genomic sequencing, library type: No PCR
 ###12597_8#7  npg/run/12597.xml st/studies/2775.xml  batches/26550.xml samples/1886325.xml  <- Epigenetics, library type: qPCR only
@@ -455,7 +456,7 @@ subtest 'test 3' => sub {
 };
 
 subtest 'test 4' => sub {
-  plan tests => 8;
+  plan tests => 10;
   ##HiSeqX, run 16839_7
 
   my $runfolder = q{150709_HX4_16839_A_H7MHWCCXX};
@@ -472,6 +473,7 @@ subtest 'test 4' => sub {
     or die 'Copy failed';  
 
   my $fasta_ref = "$ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa";
+  my $target_file = "$ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/target/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa";
 
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = q[t/data/hiseqx/samplesheet_16839.csv];
 
@@ -489,6 +491,10 @@ subtest 'test 4' => sub {
 
   my $l = st::api::lims->new(id_run => 16839, position => 1, tag_index => 0);
   is ($hsx_gen->_ref($l, 'fasta'), $fasta_ref, 'reference for tag zero');
+  is ($hsx_gen->_ref($l, 'target'), $target_file, 'target for tag zero');
+  my $k = st::api::lims->new(id_run => 16839, position => 1, tag_index => 1);
+  is ($hsx_gen->_ref($k, 'target'), $target_file, 'target file for tag 1');
+
   my $old_ss = $ENV{'NPG_CACHED_SAMPLESHEET_FILE'};
   my $ss = slurp $old_ss;
   $ss =~ s/GRCh38_full_analysis_set_plus_decoy_hla/GRCh38X/;
