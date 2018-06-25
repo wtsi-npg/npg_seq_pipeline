@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 52.0
  - remove dependency of tests of LIMs XML, use samplesheet instead
  - remove dependency on tracking XML feeds
  - update p4 stage1 default values in general_values.ini
