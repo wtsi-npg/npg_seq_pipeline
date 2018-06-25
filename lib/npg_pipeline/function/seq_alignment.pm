@@ -270,24 +270,25 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $skip_target_markdup_metrics = (not $spike_tag and not $do_target_alignment);
 
   # handle extra stats file for aligned data with reference regions file
-  if($do_target_alignment) {
-    my $do_target_regions_stats = 0;
-    if (!$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
-       if($self->_do_bait_stats_analysis($l)){
-          $p4_param_vals->{target_regions_file} = $self->_bait($l)->target_intervals_path();
-          $do_target_regions_stats = 1;
-       }
-       elsif($self->_target_regions_file_path($l, q[target])) {
-          $p4_param_vals->{target_regions_file} = $self->_ref($l, q[target]) .q(.interval_list);
-          $do_target_regions_stats = 1;
-       }
+  my $do_target_regions_stats = 0;
+  if ($do_target_alignment && !$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
+    if($self->_do_bait_stats_analysis($l)){
+       $p4_param_vals->{target_regions_file} = $self->_bait($l)->target_intervals_path();
+       $do_target_regions_stats = 1;
     }
-    if($do_target_regions_stats) {
-       push @{$p4_ops->{prune}}, 'fop(phx|hs)_samtools_stats_F0.*_target.*-';
+    elsif($self->_target_regions_file_path($l, q[target])) {
+       $p4_param_vals->{target_regions_file} = $self->_ref($l, q[target]) .q(.interval_list);
+       $do_target_regions_stats = 1;
     }
-    else {
-       push @{$p4_ops->{prune}}, 'fop.*samtools_stats_F0.*_target.*-';
-    }
+  }
+  if($spike_tag) {
+    push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target.*-';
+  }
+  elsif($do_target_regions_stats) {
+    push @{$p4_ops->{prune}}, 'fop(phx|hs)_samtools_stats_F0.*_target.*-';
+  }
+  elsif( !($human_split and not $do_target_alignment) ){
+   push @{$p4_ops->{prune}}, 'fop.*samtools_stats_F0.*_target.*-';
   }
 
   if($human_split and not $do_target_alignment and not $spike_tag) {
@@ -627,7 +628,8 @@ sub _analysis {
 sub _do_bait_stats_analysis {
   my ($self, $l) = @_;
   my $lstring = $l->to_string;
-  if(not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam) {
+  if(not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam or
+     (defined $l->tag_index && $l->tag_index == 0)) {
     $self->debug(qq{$lstring - no reference or no alignments set});
     return 0;
   }
