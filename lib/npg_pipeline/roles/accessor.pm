@@ -84,7 +84,7 @@ sub conf_file_path {
 =head2 read_config
 
 Given a path of the configuration file, reads and parses the file
-(Config::Any is used) and returns the content of the fil as a hash.
+(Config::Any is used) and returns the content of the file as a hash.
 
 =cut
 

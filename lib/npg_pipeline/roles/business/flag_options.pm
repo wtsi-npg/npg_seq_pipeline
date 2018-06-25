@@ -17,14 +17,23 @@ npg_pipeline::roles::business::flag_options
 
 =head1 DESCRIPTION
 
-This role gives some boolean flag options which should be set on construction (or via the command line if using MooseX::Getopt)
-so that you can turn off global features/functions without having to necessarily specify them.
-
-  --no_summary_link
-
-These would globally stop anything being done should functions be requested which do these (either directly, or by job submission)
+This role gives some boolean flag options which can be set
+on construction (or via the command line if using MooseX::Getopt)
+so that you can turn off global features/functions.
 
 =head1 SUBROUTINES/METHODS
+
+=head2 verbose
+
+Boolean option to switch on verbose mode
+
+=cut
+
+has q{verbose} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  documentation => q{Boolean decision to switch on verbose mode},
+);
 
 =head2 no_summary_link
 
@@ -40,47 +49,6 @@ has q{no_summary_link} => (
   documentation => q{Turn off creating a Latest_Summary link},
 );
 
-=head2 no_fix_config_files
-
-flag option to request that config files are not checked and fixed
-
-=cut
-
-has q{no_fix_config_files} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{Request that config files are not checked and fixed (where fixing is appropriate)},
-);
-
-=head2 no_array_cpu_limit
-
-flag option to allow job arrays to flood, if able, the farm
-
-=cut
-
-has q{no_array_cpu_limit} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation => q{Allow job arrays to keep launching if cpus available},
-);
-
-=head2 array_cpu_limit
-
-set the most number of cpus which each job array can use at a time, applied only if no_array_cpu_limit not set
-
-=cut
-
-has q{array_cpu_limit} => (
-  isa           => q{Int},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{Set the most number of CPUs that a Job array can use at a time},
-);
-sub _build_array_cpu_limit {
-  my ( $self ) = @_;
-  return $self->general_values_conf()->{array_cpu_limit};
-}
-
 =head2 no_irods_archival
 
 Switches off archival to iRODS repository.
@@ -95,7 +63,6 @@ has q{no_irods_archival} => (
   documentation => q{Switches off archival to iRODS repository.},
 );
 
-## no critic (ProhibitUnusedPrivateSubroutines)
 sub _default_to_local {
   my $self = shift;
   return $self->local;
@@ -116,36 +83,11 @@ has q{no_warehouse_update} => (
   documentation => q{Switches off updating the NPG warehouse.},
 );
 
-=head2 no_sf_resource
-
-do not use sf resource tokens; set if working outside the npg sequencing farm
-
-=cut
-
-has q{no_sf_resource} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation =>
-  q{Do not use sf resource tokens; set if working outside the npg sequencing farm},
-);
-
-=head2 no_bsub
-
-disable submitting any jobs to bsub, so the pipeline can be run, and all cmds logged
-
-=cut
-
-has q{no_bsub} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  documentation =>
-  q{Turn off submitting any jobs to lsf, just logging them instead},
-);
-
 =head2 local
 
-sets the default for no_irods_archival, no_warehouse_update and no_summary_link to true;
-defaults to the value of no_bsub flag
+Sets the default for no_irods_archival, no_warehouse_update and
+no_summary_link to true.
+Defaults to the value of no_bsub flag if no_bsub flag is available.
 
 =cut
 
@@ -157,33 +99,63 @@ has q{local} => (
 );
 sub _build_local {
   my $self = shift;
-  return $self->no_bsub ? 1 : 0;
+  return $self->can('no_bsub') && $self->no_bsub ? 1 : 0;
 }
 
-=head2 spatial_filter
+=head2 no_adapterfind
 
-Do we want to use the spatial_filter program?
+Toggles adapter finding in stage1 analysis
 
 =cut
 
-has q{spatial_filter} => (
+has q{adapterfind} => (
   isa           => q{Bool},
   is            => q{ro},
-  default       => 1,
-  documentation => q{Use the spatial_filter program},
+  lazy_build    => 1,
+  documentation => q{Toggles adapter finding in stage1 analysis.},
 );
+sub _build_adapterfind {
+  my $self = shift;
 
-=head2 spider
+  return $self->platform_NovaSeq? 0: 1;
+}
 
-Toggles spider (creating/reusing cached LIMs data), true by default
+
+=head2 p4s1_alignment_method
+
+set the PhiX alignment method for p4 stage1
 
 =cut
 
-has q{spider} => (
+has q{p4s1_phix_alignment_method} => (
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{set the PhiX alignment method for p4 stage1},
+);
+sub _build_p4s1_phix_alignment_method {
+  my $self = shift;
+
+  my $alignment_method = $self->platform_NovaSeq? q[minimap2]: q[bwa_aln];
+
+  if($alignment_method eq q[bwa_aln] and not $self->is_paired_read) {
+      $alignment_method = q[bwa_aln_se];
+  }
+
+  return $alignment_method;
+}
+
+
+=head2 p4s2_aligner_intfile
+
+Forces p4 stage2 to create an intermediate file when doing alignments
+
+=cut
+
+has q{p4s2_aligner_intfile} => (
   isa           => q{Bool},
   is            => q{ro},
-  default       => 1,
-  documentation => q{Toggles spider (creating/reusing cached LIMs data), true by default},
+  documentation => q{Forces p4 stage2 to create an intermediate file when doing alignments.},
 );
 
 1;
@@ -211,7 +183,7 @@ Andy Brown
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2017 Genome Research Ltd
+Copyright (C) 2018 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

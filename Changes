@@ -1,6 +1,55 @@
 LIST OF CHANGES
 ---------------
 
+release 52.0
+ - remove dependency of tests of LIMs XML, use samplesheet instead
+ - remove dependency on tracking XML feeds
+ - update p4 stage1 default values in general_values.ini
+     restored p4_stage1_split_threads_count=4
+ - removed illumina_basecall_stats function and associated code
+ - remove generation of empty fastq and fastqcheck files
+ - removed bam2fastqcheck_and_cached_fastq function
+ - removed create_archive_directory function, scaffolding the runfolder
+   is called in the beginning of the pipeline within the 'prepare'
+   method of the analysis pipeline
+ - increased number of threads for p4 stage1 (newer bambi version required)
+ - added LSF-independent evaluation for number of threads
+ - removed redundant dependency on illumina2bam jars
+ - stopped forcing ownership and permissions when creating
+   new directories
+ - single log directory for all jobs with per-function subdirectories
+ - added LSF-independent for number of threads
+ - added wr executor
+ - new modules to execute submission of definitions to LSF
+ - captured dependencies between pipeline steps in a directed acyclic graph
+ - moved flags, attributes and method related to the overall
+   pipeline logic to npg_pipeline::pluggable
+ - flattened directory structure for modules implementing functions,
+   they all now belong to npg_pipeline::function namespace
+ - removed methods representing functions, created mapping of
+   functions to modules, methods and options in
+   npg_pipeline::pluggable::registry
+ - removed ::harold:: component from pipelines'namespace
+ - removed post_qc_review pipeline module
+ - added npg_pipeline_ prefix to this package's script names if
+   was not part of their name
+ - removed unused module for fixing Illumina config files
+ - removed unused module for LSF job creation for tag deplexing -
+   this is now done within p4 stage 1
+ - removed unused implementation for function copy_interop_files_to_irods
+ - removed unused spatial_filter, fix_broken_files and force_phix_split flags
+ - removed a number of unused methods in npg_pipeline::base
+ - no lane-lavel bam files are produced by p4 stage1 for pools - do not run
+   the adapter check in these cases
+ - adapterfind flag added to switch adapterfind on/off (default: on)
+ - scaffolding of runfolder includes .npg_cache_10000 directory creation (lane and plex)
+ - stage1 analysis: parse interop data for cluster count calculation (used for 10K subsampling)
+ - seq_alignment reads tag_metrics files to calculate fraction for 10K subsampling
+ - seqchksum_comparator function now uses seqchksum files from analyses (no regeneration)
+ - QC spatial_filter now run as standard QC check
+ - add p4s2_aligner_intfile flag to force temporary file production in stage2 alignment
+ - p4 stage1 splice/prune directives moved from vtfp command line to params file
+
 release 51.12.2
  - fixed lane taglist files for TraDIS libraries
      no longer pad spiked phix tag simply add missing i5 tag for dual index runs

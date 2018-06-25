@@ -6,7 +6,8 @@ use List::MoreUtils qw{any};
 use File::Basename;
 
 use npg_tracking::util::abs_path qw{abs_path};
-use npg::api::run;
+use npg_tracking::glossary::rpt;
+use npg_tracking::glossary::composition::factory::rpt_list;
 use st::api::lims;
 use npg_tracking::data::reference::find;
 use npg_pipeline::cache;
@@ -40,21 +41,6 @@ Optional LIMs identifier for flowcell
 has q{id_flowcell_lims} => ( isa      => q{Int},
                              is       => q{ro},
                              required => 0,);
-
-=head2 run
-
-Run npg::api::run object, an id_run method is required for this.
-
-=cut
-
-has q{run} => (isa        => q{npg::api::run},
-               is         => q{ro},
-               metaclass  => q{NoGetopt},
-               lazy_build => 1,);
-sub _build_run {
-  my ($self) = @_;
-  return npg::api::run->new({id_run => $self->id_run(),});
-}
 
 =head2 lims
 
@@ -166,20 +152,24 @@ sub _lims4lane {
   return $lane;
 }
 
-=head2 is_spiked_lane
+=head2 create_composition
 
-Returns true if the lane is spiked or if the force_phix_split
-flag is set ti true.
+Returns a one-component composition representing an input
+object or hash.
+ 
+  my $l = st::api::lims->new(id_run => 1, position => 2);
+  my $composition = $base->create_composition($l);
+
+  my $h = {id_run => 1, position => 2};
+  $composition = $base->create_composition($h);
 
 =cut
 
-sub is_spiked_lane {
-  my ($self, $position) = @_;
-  if ($self->force_phix_split) {
-    return 1;
-  }
-  my $spike_tag_index = $self->_lims4lane($position)->spiked_phix_tag_index;
-  return (defined $spike_tag_index && $spike_tag_index);
+sub create_composition {
+  my ($self, $l) = @_;
+  return npg_tracking::glossary::composition::factory::rpt_list
+      ->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($l))
+      ->create_composition();
 }
 
 =head2 get_tag_index_list
@@ -196,23 +186,6 @@ sub get_tag_index_list {
   my @tags = sort keys %{$self->_lims4lane($position)->tags()};
   unshift @tags, 0;
   return \@tags;
-}
-
-
-=head2 is_hiseqx_run
-
-A boolean flag
-
-=cut
-
-has q{is_hiseqx_run} => (isa           => q{Bool},
-                         is            => q{ro},
-                         metaclass     => q{NoGetopt},
-                         lazy_build    => 1,
-                         documentation => q{modified to also identify HiSeq 4000 runs which start with HF},);
-sub _build_is_hiseqx_run {
-  my ($self) = @_;
-  return $self->run->instrument->name =~ /\AH[XF]/xms;
 }
 
 =head2 positions
@@ -250,64 +223,6 @@ has q{repository} => ( isa       => q{Str},
                        is        => q{ro},
                        required  => 0,
                        predicate => q{has_repository},);
-
-=head2 control_ref
-
- Path to a default control reference for a default aligner
-
-=cut
-
-has q{control_ref} => (isa           => q{Str},
-                       is            => q{ro},
-                       lazy_build    => 1,
-                       documentation => q{path to a default control reference for a default aligner},);
-
-sub _build_control_ref {
-  my ( $self ) = @_;
-  return $self->get_control_ref();
-}
-
-=head2 get_control_ref
-
-Path to a default control reference for an aligner given by the argument or, if no argument is given, fo a default aligner
-
-=cut
-
-sub get_control_ref {
-  my ($self, $aligner) = @_;
-
-  $aligner ||= $self->pb_cal_pipeline_conf()->{default_aligner};
-  my $arg_refs = {
-    aligner => $aligner,
-    species => $self->general_values_conf()->{spiked_species},
-  };
-  if ( $self->repository() ) {
-    $arg_refs->{repository} = $self->repository();
-  }
-
-  return Moose::Meta::Class->create_anon_class(
-    roles => [qw/npg_tracking::data::reference::find/])->new_object($arg_refs)->refs->[0];
-}
-
-=head2 control_snp_file
-
-Path to a default control reference snp file.
-
-=cut
-
-sub control_snp_file {
-  my $self = shift;
-
-  my $path = $self->get_control_ref(q[snps]);
-  if (!$path) {
-    $self->logcroak('Failed to retrieve control SNP file');
-  }
-  $path .= q[.rod];
-  if (!-e $path) {
-    $self->logcroak("SNP file $path does not exist");
-  }
-  return $path;
-}
 
 =head2 get_study_library_sample_names
 
@@ -360,11 +275,10 @@ Pre-exec string to test the availability of the reference repository.
 sub ref_adapter_pre_exec_string {
   my ( $self ) = @_;
 
-  my $string = q{-E '} . q{npg_pipeline_preexec_references};
+  my $string = q{npg_pipeline_preexec_references};
   if ( $self->can( q{has_repository} ) && $self->has_repository() ) {
     $string .= q{ --repository } . $self->repository();
   }
-  $string .= q{'};
   return $string;
 }
 
@@ -405,33 +319,38 @@ sub metadata_cache_dir {
   return $ds[0];
 }
 
-=head2 fq_filename
-
-Generates fastq file names.
+=head2 num_cpus2array
 
 =cut
 
-sub fq_filename {
-  my ($self, $position, $tag_index, $end) = @_;
-  return sprintf '%i_%i%s%s.fastq',
-    $self->id_run,
-    $position,
-    $end               ? "_$end"      : q[],
-    defined $tag_index ? "#$tag_index" : q[];
+sub num_cpus2array {
+  my ($self, $num_cpus_as_string) = @_;
+  my @numbers = grep  { $_ > 0 }
+                map   { int }    # zero if conversion fails
+                split /,/xms, $num_cpus_as_string;
+  if (!@numbers || @numbers > 2) {
+    $self->logcroak('Non-empty array of up to two numbers is expected');
+  }
+  return [sort {$a <=> $b} @numbers];
 }
 
-=head2 path_in_outgoing
+=head2 merge_lanes
 
-Given a path in analysis directory changes it to outgoing directory.
+Tells p4 stage2 (seq_alignment) to merge lanes (at their plex level if plexed) and to run its downstream tasks as corresponding compositions
 
 =cut
 
-sub path_in_outgoing {
-  my ($self, $path) = @_;
-  if ($path) {
-    $path =~ s{/analysis/}{/outgoing/}xms;
-  }
-  return $path;
+has q{merge_lanes} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  lazy          => 1,
+  builder       => q{_build_merge_lanes},
+  documentation => q{Tells p4 stage2 (seq_alignment) to merge lanes (at their plex level if plexed) and to run its downstream tasks as corresponding compositions},
+);
+
+sub _build_merge_lanes {
+  my $self = shift;
+  return $self->all_lanes_mergeable;
 }
 
 1;
@@ -457,9 +376,11 @@ __END__
 
 =item st::api::lims
 
-=item npg::api::run
-
 =item npg_tracking::data::reference::find
+
+=item npg_tracking::glossary::rpt
+
+=item npg_tracking::glossary::composition::factory::rpt_list
 
 =back
 
@@ -470,10 +391,11 @@ __END__
 =head1 AUTHOR
 
 Andy Brown
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Limited
+Copyright (C) 2018 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
