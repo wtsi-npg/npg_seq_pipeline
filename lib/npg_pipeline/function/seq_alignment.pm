@@ -263,7 +263,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   my $is_chromium_lib = $l->library_type && ($l->library_type =~ /Chromium/smx);
   my $do_target_alignment = $is_chromium_lib ? 0
-                             : ((not ($self->platform_NovaSeq and $tag_index == 0))
+                             : ((not defined $tag_index or $tag_index != 0 or $self->align_tag0)
                                && $self->_ref($l,q[fasta])
                                && ($l->alignments_in_bam || $do_gbs_plex));
 

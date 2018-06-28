@@ -102,7 +102,7 @@ sub _build_local {
   return $self->can('no_bsub') && $self->no_bsub ? 1 : 0;
 }
 
-=head2 no_adapterfind
+=head2 adapterfind
 
 Toggles adapter finding in stage1 analysis
 
@@ -119,7 +119,6 @@ sub _build_adapterfind {
 
   return $self->platform_NovaSeq? 0: 1;
 }
-
 
 =head2 p4s1_alignment_method
 
@@ -156,6 +155,19 @@ has q{p4s2_aligner_intfile} => (
   isa           => q{Bool},
   is            => q{ro},
   documentation => q{Forces p4 stage2 to create an intermediate file when doing alignments.},
+);
+
+=head2 align_tag0
+
+Toggles alignment of tag#0 in secondary analysis
+
+=cut
+
+has q{align_tag0} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 0,
+  documentation => q{Do target alignment for tag#0 in stage2 analysis.},
 );
 
 1;

@@ -216,7 +216,7 @@ subtest 'test 1' => sub {
 
   $plex_temp_dir = $tmp_dir . q{/12597_4#0};
   $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane4/12597_4#0_p4s2_pv_in.json -export_param_vals 12597_4#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_4#0.json && viv.pl -s -x -v 3 -o viv_12597_4#0.log run_12597_4#0.json } .
-    qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
+    qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --tag_index 0 --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --id_run 12597 --position 4 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 12597 --position 4 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.  
      q{ '};
@@ -536,7 +536,7 @@ subtest 'test 4' => sub {
 
   $plex_temp_dir = $tmp_dir . q{/16839_7#0};
   $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane7/16839_7#0_p4s2_pv_in.json -export_param_vals 16839_7#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_7#0.json && viv.pl -s -x -v 3 -o viv_16839_7#0.log run_16839_7#0.json } .
-    qq{ && qc --check bam_flagstats --id_run 16839 --position 7 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
+    qq{ && qc --check bam_flagstats --id_run 16839 --position 7 --qc_in $qc_in --qc_out $qc_out --tag_index 0 --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 7 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 16839 --position 7 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
      q{ '};
@@ -602,7 +602,7 @@ subtest 'test 5' => sub {
 
   $plex_temp_dir = $tmp_dir . q{/16807_6#0};
   $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane6/16807_6#0_p4s2_pv_in.json -export_param_vals 16807_6#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16807_6#0.json && viv.pl -s -x -v 3 -o viv_16807_6#0.log run_16807_6#0.json } .
-    qq{ && qc --check bam_flagstats --id_run 16807 --position 6 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
+    qq{ && qc --check bam_flagstats --id_run 16807 --position 6 --qc_in $qc_in --qc_out $qc_out --tag_index 0 --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --id_run 16807 --position 6 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 16807 --position 6 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
      q{ '};
@@ -672,7 +672,7 @@ subtest 'test 6' => sub {
 
   $plex_temp_dir = $tmp_dir . q{/20268_1#0};
   $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/20268_1#0_p4s2_pv_in.json -export_param_vals 20268_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_20268_1#0.json && viv.pl -s -x -v 3 -o viv_20268_1#0.log run_20268_1#0.json } .
-    qq{ && qc --check bam_flagstats --id_run 20268 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
+    qq{ && qc --check bam_flagstats --id_run 20268 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0 --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --id_run 20268 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 20268 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
      q{ '};
@@ -736,7 +736,7 @@ subtest 'test 7' => sub {
 
   $plex_temp_dir = $tmp_dir . q{/16850_1#0};
   $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16850_1#0_p4s2_pv_in.json -export_param_vals 16850_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16850_1#0.json && viv.pl -s -x -v 3 -o viv_16850_1#0.log run_16850_1#0.json } .
-    qq{ && qc --check bam_flagstats --id_run 16850 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
+    qq{ && qc --check bam_flagstats --id_run 16850 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0 --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --id_run 16850 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 16850 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
      q{ '};
@@ -871,7 +871,7 @@ subtest 'test 9' => sub {
 
   $plex_temp_dir = $tmp_dir . q{/16866_1#0};
   $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16866_1#0_p4s2_pv_in.json -export_param_vals 16866_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_humansplit_template.json > run_16866_1#0.json && viv.pl -s -x -v 3 -o viv_16866_1#0.log run_16866_1#0.json } .
-    qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
+    qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0 --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 16866 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
     qq{ && qc --check bam_flagstats --id_run 16866 --position 1 --qc_in $qc_in --qc_out $qc_out --subset human --tag_index 0} .
@@ -1003,7 +1003,7 @@ subtest 'test 11' => sub {
 
   $plex_temp_dir = $tmp_dir . q{/16839_1#0}; 
   $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/lane1/16839_1#0_p4s2_pv_in.json -export_param_vals 16839_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_16839_1#0.json && viv.pl -s -x -v 3 -o viv_16839_1#0.log run_16839_1#0.json } .
-    qq{ && qc --check bam_flagstats --id_run 16839 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0} .
+    qq{ && qc --check bam_flagstats --id_run 16839 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0 --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --id_run 16839 --position 1 --qc_in $qc_in --qc_out $qc_out --subset phix --tag_index 0} .
      q{ && qc --check alignment_filter_metrics --id_run 16839 --position 1 --qc_in $PWD --qc_out } .$qc_out.q{ --tag_index 0}.
      q{ '};
