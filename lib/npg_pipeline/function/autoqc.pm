@@ -14,6 +14,7 @@ our $VERSION = '0';
 
 Readonly::Scalar my $QC_SCRIPT_NAME           => q{qc};
 Readonly::Scalar my $MEMORY_REQ               => 6000;
+Readonly::Scalar my $MEMORY_REQ_BWA           => 8000;
 Readonly::Scalar my $MEMORY_REQ_ADAPTER       => 1500;
 Readonly::Scalar my $REFMATCH_ARRAY_CPU_LIMIT => 8;
 
@@ -163,7 +164,9 @@ sub _create_definition_object {
     $ref->{'command_preexec'} = $self->ref_adapter_pre_exec_string();
   }
 
-  if ($qc_to_run =~ /insert_size|sequence_error|ref_match|pulldown_metrics/smx ) {
+  if ($qc_to_run =~ /insert_size|sequence_error/smx ) {
+    $ref->{'memory'} = $MEMORY_REQ_BWA;
+  } elsif ($qc_to_run  =~ /ref_match|pulldown_metrics/smx) {
     $ref->{'memory'} = $MEMORY_REQ;
   } elsif ($qc_to_run eq q[adapter]) {
     $ref->{'memory'} = $MEMORY_REQ_ADAPTER;
