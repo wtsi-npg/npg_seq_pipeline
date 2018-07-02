@@ -289,8 +289,8 @@ subtest 'ref_match' => sub {
   }
 };
 
-subtest 'insert_size' => sub {
-  plan tests => 3;
+subtest 'insert_size and sequence error' => sub {
+  plan tests => 6;
 
   $util->create_multiplex_analysis({qc_dir => [7],});
   my $runfolder_path = $util->analysis_runfolder_path();
@@ -310,6 +310,7 @@ subtest 'insert_size' => sub {
   ok ($da && (@{$da} == 1), 'one definition returned - lane is a not pool');
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14353.csv';
+
   $aqc = npg_pipeline::function::autoqc->new(
     id_run            => 14353,
     runfolder_path    => $util->analysis_runfolder_path(),
@@ -322,6 +323,21 @@ subtest 'insert_size' => sub {
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
+  is($da->[0]->memory, 8000, 'memory');
+
+  $aqc = npg_pipeline::function::autoqc->new(
+    id_run            => 14353,
+    runfolder_path    => $util->analysis_runfolder_path(),
+    recalibrated_path => $recalibrated,
+    lanes             => [1],
+    qc_to_run         => q{insert_size},
+    timestamp         => q{20090709-123456},
+    is_indexed        => 0,
+    repository        => 't/data/sequence',
+  );
+  $da = $aqc->create();
+  ok ($da && (@{$da} == 1), 'one definition returned');
+  is($da->[0]->memory, 8000, 'memory');
 };
 
 subtest 'tag_metrics' => sub {

@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+release 52.0.2
+ - allocate more memory to sequence_error and insert_size autoqc
+   checks since they now use newer bwa, which creates twice larger
+   reference index
+
 release 52.0.1
  - alignment of tag#0 not done by default (align_tag0 flag added)
 
