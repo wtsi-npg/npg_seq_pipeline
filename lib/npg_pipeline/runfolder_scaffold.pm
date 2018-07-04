@@ -108,8 +108,11 @@ sub status_files_path {
 
 sub metadata_cache_dir_path {
   my $self = shift;
-  return File::Spec->catdir($self->bam_basecall_path(),
-                            $METADATA_CACHE_DIR_NAME . $self->id_run());
+  my $apath = $self->analysis_path;
+  if (!$apath) {
+    croak 'Failed to retrieve analysis_path';
+  }
+  return File::Spec->catdir($apath, $METADATA_CACHE_DIR_NAME . $self->id_run());
 }
 
 sub make_log_dir4names {
