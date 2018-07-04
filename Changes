@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+release 52.0.4
+ - bug fix: change path for a file with LSF commands to a path in
+   outgoing for jobs that run after the run was moved to the outgoing
+   directory
+
 release 52.0.3
  - bug fix: use analysis_path instaed of bam_basecall_path in a method
    that is used by both analysis and archival pipelines; the value of
