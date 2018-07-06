@@ -10,6 +10,8 @@ use English qw(-no_match_vars);
 use Math::Random::Secure qw(irand);
 use Try::Tiny;
 
+use npg_pipeline::runfolder_scaffold;
+
 extends 'npg_pipeline::executor';
 
 with 'npg_pipeline::executor::options' => {
@@ -111,8 +113,11 @@ sub _definitions4function {
 
   my $definitions = $self->function_definitions()->{$function_name};
   my $group_id = join q[-], $function_name, $definitions->[0]->identifier(), irand();
-  my $log_dir = $self->future_log_path(
-                  $definitions, $self->log_dir4function($function_name));
+  my $outgoing_flag = $self->future_path_is_in_outgoing($function_name);
+  my $log_dir = $self->log_dir4function($function_name);
+  if ($outgoing_flag) {
+    $log_dir = npg_pipeline::runfolder_scaffold->path_in_outgoing($log_dir);
+  }
 
   foreach my $d (@{$definitions}) {
     my $wr_def = $self->_definition4job($function_name, $log_dir, $d);

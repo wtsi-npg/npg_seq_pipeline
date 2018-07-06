@@ -143,29 +143,8 @@ sub make_dir {
 
 sub path_in_outgoing {
   my ($pkg, $path) = @_;
+  $path or croak 'Path required';
   $path =~ s{$ANALYSIS_PATH_COMPONENT}{$OUTGOING_PATH_COMPONENT}xms;
-  return $path;
-}
-
-sub future_path {
-  my ($pkg, $d, $path) = @_;
-
-  ($d && $path) or croak 'Definition and path arguments required' ;
-  (ref($d) eq 'npg_pipeline::function::definition')
-      or croak 'First argument should be a definition object';
-
-  #####
-  # The jobs that should be executed after the run folder is moved to
-  # the outgoing directory have a preexec expression that check that
-  # the path has changed to the outgoing directory. This fact is used
-  # here to flag cases where the log directory pathe should change
-  # from analysis to outgoing.
-  #
-  if ($d->has_command_preexec() &&
-      $d->command_preexec() =~ /$OUTGOING_PATH_COMPONENT/smx) {
-    $path = __PACKAGE__->path_in_outgoing($path);
-  }
-
   return $path;
 }
 
@@ -223,11 +202,6 @@ is empty. Can be called both as an instance and a class method.
 =head2 path_in_outgoing
 
 Given a path in analysis directory changes it to outgoing directory.
-
-=head2 future_path
-
-If the job will run in the outgoing directory, a path in analysis directory
-is changed to a path in outgoing directory.
 
 =head1 DIAGNOSTICS
 

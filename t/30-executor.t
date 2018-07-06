@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use File::Temp qw(tempdir);
 use Graph::Directed;
@@ -204,6 +204,77 @@ subtest 'builder for function_graph4jobs' => sub {
 
   my @dependencies = sort $e->dependencies('node_three_b', 'num_definitions');
   is_deeply (\@dependencies, [1, 2], 'correct dependencies');
+};
+
+subtest 'will the job run in outgoing?' => sub {
+  plan tests => 15;
+
+  my $init = { created_by   => 'module',
+               created_on   => 'June 25th',
+               job_name     => 'name',
+               identifier   => 2345,
+               command      => 'command'};
+  my $d = npg_pipeline::function::definition->new($init);
+
+  my $definitions = {
+    node_one => [$d],
+    node_two => [$d],
+    norun_qc_complete => [$d],
+    node_three => [$d],
+    node_four => [$d],
+    node_five => [$d],
+  };
+
+  my $g =  Graph::Directed->new();
+  $g->add_edge('node_one', 'node_two');
+  $g->add_edge('node_two', 'norun_qc_complete');
+  $g->add_edge('node_one', 'node_three');
+  $g->add_edge('node_three', 'norun_qc_complete');
+  $g->add_edge('norun_qc_complete', 'node_four');
+  $g->add_edge('node_four', 'node_five');
+
+  my $e = npg_pipeline::executor->new(
+          function_definitions => $definitions,
+          function_graph       => $g);
+
+  throws_ok { $e->future_path_is_in_outgoing() }
+    qr/Function name is required/,
+    'error when function name is not given';
+  throws_ok { $e->future_path_is_in_outgoing(q[]) }
+    qr/Function name is required/,
+    'error when function name is an empty string';
+  throws_ok { $e->future_path_is_in_outgoing(q[run_xcross]) }
+    qr/'run_xcross' not found in the graph/,
+    'error when graph node with thi sname is not found';   
+
+  for my $function (keys %{$definitions}) {
+    ok (!$e->future_path_is_in_outgoing($function),
+      "future path is not in outgoing for $function");
+  }
+
+  $g =  Graph::Directed->new();
+  $g->add_edge('node_one', 'node_two');
+  $g->add_edge('node_two', 'run_qc_complete');
+  $g->add_edge('node_one', 'node_three');
+  $g->add_edge('node_three', 'run_qc_complete');
+  $g->add_edge('run_qc_complete', 'node_four');
+  $g->add_edge('node_four', 'node_five');
+
+  delete $definitions->{'norun_qc_complete'};
+  $definitions->{'run_qc_complete'} = [$d];
+
+  $e = npg_pipeline::executor->new(
+          function_definitions => $definitions,
+          function_graph       => $g);
+
+  for my $function (qw/node_one node_two node_three run_qc_complete/) {
+    ok (!$e->future_path_is_in_outgoing($function),
+      "future path is not in outgoing for $function");
+  }
+  for my $function (qw/node_four node_five/) {
+    ok ($e->future_path_is_in_outgoing($function),
+      "future path is in outgoing for $function");
+  } 
 };
 
 1;
