@@ -245,7 +245,7 @@ subtest 'will the job run in outgoing?' => sub {
     'error when function name is an empty string';
   throws_ok { $e->future_path_is_in_outgoing(q[run_xcross]) }
     qr/'run_xcross' not found in the graph/,
-    'error when graph node with thi sname is not found';   
+    'error when graph node with this name is not found';   
 
   for my $function (keys %{$definitions}) {
     ok (!$e->future_path_is_in_outgoing($function),
