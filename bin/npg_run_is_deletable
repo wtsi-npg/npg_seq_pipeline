@@ -127,8 +127,6 @@ if (!$deletable && !$opts->{'lims-driver-type'} ) {
   # Find the samplesheet and set env vars
   #
   my $cache = npg_pipeline::cache->new(
-    reuse_cache        => 1,
-    reuse_cache_only   => 1,
     set_env_vars       => 1,
     id_run             => $id_run,
     cache_location     => $rf->analysis_path()
