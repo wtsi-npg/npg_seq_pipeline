@@ -1,10 +1,29 @@
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 10;
 use Test::Exception;
 
 use_ok('npg_pipeline::runfolder_scaffold');
 use_ok('npg_tracking::illumina::runfolder');
+
+{
+  throws_ok {npg_pipeline::runfolder_scaffold->path_in_outgoing()}
+    qr/Path required/,
+    'error if argument path is not supplied';
+  throws_ok {npg_pipeline::runfolder_scaffold->path_in_outgoing(q[])}
+    qr/Path required/,
+    'error if argument path is empty';
+  my $path = '/tmp/analysis/folder';
+  my $opath = '/tmp/outgoing/folder';
+  is (npg_pipeline::runfolder_scaffold->path_in_outgoing($path),
+    $opath, 'path changed to outgoing');
+  is (npg_pipeline::runfolder_scaffold->path_in_outgoing($opath),
+    $opath, 'path remains in outgoing');
+  $path = '/tmp/incoming/folder';
+  is (npg_pipeline::runfolder_scaffold->path_in_outgoing($path),
+    $path, 'path is not changed');
+}
+
 
 package npg_test::runfolder_scaffold;
 use Moose;

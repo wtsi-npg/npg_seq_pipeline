@@ -255,8 +255,12 @@ sub _submit_function {
     push @{$definitions->{$key}}, $d;
   }
 
-  my $log_dir = $self->future_log_path(
-                  $definitions_all, $self->log_dir4function($function_name));
+  my $outgoing_flag = $self->future_path_is_in_outgoing($function_name);
+
+  my $log_dir = $self->log_dir4function($function_name);
+  if ($outgoing_flag) {
+    $log_dir = npg_pipeline::runfolder_scaffold->path_in_outgoing($log_dir);
+  }
 
   my @lsf_ids = ();
   foreach my $da (values %{$definitions}) {
@@ -269,7 +273,7 @@ sub _submit_function {
     my $job = npg_pipeline::executor::lsf::job->new(\%args);
 
     my $file_path = $self->commands4jobs_file_path();
-    if ($function_name =~ /post_qc_complete/xms) {
+    if ($outgoing_flag) {
       $file_path = npg_pipeline::runfolder_scaffold->path_in_outgoing($file_path);
     }
 
