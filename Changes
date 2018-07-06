@@ -4,6 +4,8 @@ LIST OF CHANGES
  - bug fix in npg_run_is_deletable: stop using unsupported options
    for npg_pipeline::cache
  - add log archiver to the end of the archival pipeline
+ - use outgoing paths for jobs which are run after the run_qc_complete
+   function
 
 release 52.0.4
  - bug fix: change path for a file with LSF commands to a path in
