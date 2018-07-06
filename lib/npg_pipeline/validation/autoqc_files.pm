@@ -146,7 +146,7 @@ sub _build__queries {
     if ( $lane_is_plexed ) {
       push @queries,
         map { my %q; %q = %{$query}, $q{'check'} = $_; \%q; }
-        (@LANE_LEVELCHECKS4POOL, @COMMON_CHECKS);
+        (@LANE_LEVELCHECKS4POOL, grep {$_ ne 'adapter'} @COMMON_CHECKS);
     }
 
     $query->{'subset'}    =  _value4query($DEFAULT_VALUE);
