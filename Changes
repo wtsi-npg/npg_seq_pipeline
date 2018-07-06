@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - bug fix in npg_run_is_deletable: stop using unsupported options
+   for npg_pipeline::cache
  - add log archiver to the end of the archival pipeline
 
 release 52.0.4
