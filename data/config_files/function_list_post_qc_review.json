@@ -63,14 +63,19 @@
          },
          {
             "relation" : "dependsOn",
-            "target" : "pipeline_end",
+            "target" : "archive_logs",
             "source" : "update_warehouse_post_qc_complete"
          },        
          {
             "relation" : "dependsOn",
-            "target" : "pipeline_end",
+            "target" : "archive_logs",
             "source" : "update_ml_warehouse_post_qc_complete"
-         }         
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "pipeline_end",
+            "source" : "archive_logs"
+         }       
       ],
       "nodes" : [
          {
@@ -116,6 +121,10 @@
          {
             "id" : "update_warehouse_post_qc_complete",
             "label" : "update_warehouse_post_qc_complete"
+         },
+         {
+            "id" : "archive_logs",
+            "label" : "archive_logs"
          },
          {
             "id" : "pipeline_end",

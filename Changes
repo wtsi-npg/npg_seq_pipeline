@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - add log archiver to the end of the archival pipeline
+
 release 52.0.4
  - bug fix: change path for a file with LSF commands to a path in
    outgoing for jobs that run after the run was moved to the outgoing
