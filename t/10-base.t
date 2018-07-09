@@ -1,18 +1,21 @@
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use Cwd;
 use Log::Log4perl qw(:levels);
-use Moose::Util qw( apply_all_roles );
+use Moose::Util qw(apply_all_roles);
+use File::Copy qw(cp);
 
 use t::util;
 use npg_tracking::util::abs_path qw(abs_path);
 
+my $util = t::util->new();
+
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
-                          file   => join(q[/], t::util->new()->temp_directory(), 'logfile'),
+                          file   => join(q[/], $util->temp_directory(), 'logfile'),
                           utf8   => 1});
 
 my $cwd = abs_path(getcwd());
@@ -34,7 +37,6 @@ subtest 'timestamp and random string' => sub {
   plan tests => 3;
 
   my $base = npg_pipeline::base->new();
-  apply_all_roles( $base, 'npg_pipeline::base::util' );
   ok ($base->timestamp eq $base->timestamp, 'timestamp is cached');
   ok ($base->random_string ne $base->random_string, 'random string is not cached');
   my $t = $base->timestamp;
@@ -133,6 +135,45 @@ subtest 'repository preexec' => sub {
   is( $ref_adapt->repos_pre_exec_string(),
     q{npg_pipeline_preexec_references --repository t/data/sequence},
     q{correct ref_adapter_pre_exec_string} );
+};
+
+subtest 'products' => sub {
+  plan tests => 18;
+
+  my $rf_info = $util->create_runfolder();
+  my $rf_path = $rf_info->{'runfolder_path'};
+  my $products;
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_novaseq4lanes.csv';
+  cp 't/data/run_params/runParameters.novaseq.xml',  "$rf_path/runParameters.xml";
+  my $b = npg_pipeline::base->new(runfolder_path => $rf_path);
+  ok ($b->merge_lanes, 'merge_lanes flag is set');
+  lives_ok {$products = $b->products} 'products hash created for NovaSeq run';
+  ok (exists $products->{'lanes'}, 'products lanes key exists');
+  is (scalar @{$products->{'lanes'}}, 4, 'four lane product');
+  ok (exists $products->{'data_products'}, 'products data_products key exists');
+  is (scalar @{$products->{'data_products'}}, 23, '23 data products'); 
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_rapidrun_nopool.csv';
+  cp 't/data/run_params/runParameters.hiseq.rr.xml',  "$rf_path/runParameters.xml"; 
+  $b = npg_pipeline::base->new(runfolder_path => $rf_path);
+  ok ($b->merge_lanes, 'merge_lanes flag is set');
+  lives_ok {$products = $b->products} 'products hash created for rapid run';
+  ok (exists $products->{'lanes'}, 'products lanes key exists');
+  is (scalar @{$products->{'lanes'}}, 2, 'two lane products');
+  ok (exists $products->{'data_products'}, 'products data_products key exists');
+  is (scalar @{$products->{'data_products'}}, 1, 'one data products');
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/miseq/samplesheet_16850.csv';
+  cp 't/data/run_params/runParameters.miseq.xml',  "$rf_path/runParameters.xml";
+  cp 't/data/miseq/16850_RunInfo.xml',  "$rf_path/RunInfo.xml";
+  $b = npg_pipeline::base->new(runfolder_path => $rf_path);
+  ok (!$b->merge_lanes, 'merge_lanes flag is not set');
+  lives_ok {$products = $b->products} 'products hash created for rapid run';
+  ok (exists $products->{'lanes'}, 'products lanes key exists');
+  is (scalar @{$products->{'lanes'}}, 1, 'one lane product');
+  ok (exists $products->{'data_products'}, 'products data_products key exists');
+  is (scalar @{$products->{'data_products'}}, 3, 'three data products');
 };
 
 1;

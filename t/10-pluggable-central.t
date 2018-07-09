@@ -27,14 +27,13 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $tdir, 'logfile'),
                           utf8   => 1});
 
-local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
-
 my $central = q{npg_pipeline::pluggable::central};
 use_ok($central);
 
 my $runfolder_path = $util->analysis_runfolder_path();
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   $util->set_staging_analysis_area();
   my $pipeline;
   lives_ok {
@@ -46,6 +45,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
 }
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $pb;
   lives_ok {
     $pb = $central->new(
@@ -60,7 +60,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
 
 {
   local $ENV{CLASSPATH} = undef;
-
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $pb;
   $util->set_staging_analysis_area();
   cp 't/data/run_params/runParameters.hiseq.xml',
@@ -83,8 +83,11 @@ my $runfolder_path = $util->analysis_runfolder_path();
 }
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $rf = join q[/], $tdir, 'myfolder';
   mkdir $rf;
+  cp 't/data/run_params/runParameters.hiseq.xml',
+    join(q[/], $rf, 'runParameters.xml');
   my $init = {
       id_run         => 1234,
       run_folder     => 'myfolder',

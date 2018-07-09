@@ -50,6 +50,7 @@ lib/npg_pipeline/function/warehouse_archiver.pm
 lib/npg_pipeline/pluggable.pm
 lib/npg_pipeline/pluggable/central.pm
 lib/npg_pipeline/pluggable/registry.pm
+lib/npg_pipeline/product.pm
 lib/npg_pipeline/runfolder_scaffold.pm
 lib/npg_pipeline/validation/autoqc_files.pm
 lib/npg_pipeline/validation/common.pm
@@ -74,6 +75,7 @@ t/10-cache.t
 t/10-pluggable-central.t
 t/10-pluggable-registry.t
 t/10-pluggable.t
+t/10-product.t
 t/10-runfolder_scaffold.t
 t/10-script-job_env_to_threads.t
 t/10-validation-autoqc_files.t
@@ -213,6 +215,8 @@ t/data/miseq/samplesheet_20990.csv
 t/data/miseq/samplesheet_24135.csv
 t/data/p4_stage1_analysis/1234_samplesheet.csv
 t/data/p4_stage1_analysis/TileMetricsOut.bin
+t/data/products/samplesheet_novaseq4lanes.csv
+t/data/products/samplesheet_rapidrun_nopool.csv
 t/data/qc/1234_samplesheet_amended.csv
 t/data/qc/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa
 t/data/qc/references/PhiX/default/all/fasta/PhiX.fasta
@@ -247,6 +251,7 @@ t/data/runfolder/Data/Intensities/single_end_3cycle_1tile_config.xml
 t/data/runfolder/Data/RunInfo.xml
 t/data/run_params/runParameters.hiseq.xml
 t/data/run_params/runParameters.hiseqx.upgraded.xml
+t/data/run_params/runParameters.hiseq.rr.xml
 t/data/run_params/runParameters.miseq.xml
 t/data/samplesheet_1234.csv
 t/data/samplesheet_8747.csv

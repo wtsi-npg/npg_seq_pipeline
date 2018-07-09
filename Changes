@@ -1,7 +1,13 @@
 LIST OF CHANGES
 ---------------
 
-- resuffle of roles in npg_pipeline::roles:
+ - a wrapper object npg_pipeline::product to repesent a product
+ - upfront definition of all products
+ - generic runfolder scaffolding for any products
+ - since the top-level qc directory is no longer required, the tileviz
+   directory is moved to the analysis directory
+
+ - resuffle of roles in npg_pipeline::roles:
      npg_pipeline::roles::business::base merged into npg_pipeline::base;
      npg_pipeline::roles::business::flag_options moved to
      npg_pipeline::base::options, a number of pipeline options from other

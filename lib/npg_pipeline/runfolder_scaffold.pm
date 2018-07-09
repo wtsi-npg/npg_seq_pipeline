@@ -13,34 +13,26 @@ Readonly::Scalar my $ANALYSIS_PATH_COMPONENT    => q[/analysis/];
 Readonly::Scalar my $LOG_DIR_NAME               => q[log];
 Readonly::Scalar my $TILEVIZ_DIR_NAME           => q[tileviz];
 Readonly::Scalar my $STATUS_FILES_DIR_NAME      => q[status];
-Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
 Readonly::Scalar my $METADATA_CACHE_DIR_NAME    => q[metadata_cache_];
 
-sub create_analysis_level {
-  my $self = shift;
+sub create_product_level {
+  my ($self, $products) = @_;
 
-  my @dirs = (
-               $self->archive_path(),
-               File::Spec->catdir($self->archive_path(), $SHORT_FILES_CACHE_DIR_NAME),
-               $self->status_files_path(),
-               $self->qc_path(),
-               File::Spec->catdir($self->qc_path(), $TILEVIZ_DIR_NAME),
-             );
+  if ($self->can('products')) {
+    $products = $self->products;
+  }
 
-  if ($self->is_indexed()) {
-    foreach my $position ($self->positions()) {
-      if ($self->is_multiplexed_lane($position)) {
-        push @dirs, File::Spec->catdir($self->recalibrated_path(), q{lane} . $position);
-        my $lane_dir = $self->lane_archive_path($position);
-        push @dirs, $lane_dir;
-        push @dirs, File::Spec->catdir($lane_dir, $SHORT_FILES_CACHE_DIR_NAME);
-        push @dirs, $self->lane_qc_path($position);
-      }
-    }
+  $products or croak 'products listing is required';
+
+  my @dirs = ();
+  foreach my $p ( (map { @{$_} } values %{$products}) ) {
+    push @dirs, ( map { $p->$_($self->archive_path()) }
+                  qw/path qc_out_path short_files_cache_path/ );
   }
 
   my @errors = $self->make_dir(@dirs);
-  return {'dirs' => \@dirs, 'errors' => \@errors};
+  my $m = join qq[\n], 'Created the following directories:', @dirs;
+  return {'msgs' => [$m], 'errors' => \@errors};
 }
 
 sub create_top_level {
@@ -92,9 +84,18 @@ sub create_top_level {
   push @dirs, $metadata_cache_dir;
   push @info, "metadata cache path: $metadata_cache_dir";
 
+  push @dirs, $self->archive_path(),
+              $self->status_files_path(),
+              $self->tileviz_path();
+
   my @errors = $self->make_dir(@dirs);
 
   return {'msgs' => \@info, 'errors' => \@errors};
+}
+
+sub tileviz_path {
+  my $self = shift;
+  return File::Spec->catdir($self->analysis_path(), $TILEVIZ_DIR_NAME);
 }
 
 sub status_files_path {
@@ -172,7 +173,7 @@ Analysis run folder scaffolding.
 
 =head1 SUBROUTINES/METHODS
 
-=head2 create_analysis_level
+=head2 create_product_level
 
 Scaffolds the analysis directory.
 
@@ -185,7 +186,7 @@ Creates any of the paths that do not exist.
 
 A directory path to save status files to.
 
-=cut
+=head2 tileviz_path
 
 =head2 make_dir
 

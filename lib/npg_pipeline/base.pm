@@ -10,6 +10,7 @@ use File::Basename;
 use npg_tracking::glossary::rpt;
 use npg_tracking::glossary::composition::factory::rpt_list;
 use st::api::lims;
+use npg_pipeline::product;
 
 our $VERSION = '0';
 
@@ -63,7 +64,6 @@ has q{timestamp} => (
   metaclass  => 'NoGetopt',
 );
 
-<<<<<<< HEAD
 =head2 random_string
 
 Returns a random string, a random 32-bit integer between 0 and 2^32,
@@ -219,6 +219,56 @@ sub create_composition {
   return npg_tracking::glossary::composition::factory::rpt_list
       ->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($l))
       ->create_composition();
+}
+
+has q{products} => (
+  isa        => q{HashRef},
+  is         => q{ro},
+  metaclass  => q{NoGetopt},
+  lazy_build => 1,
+);
+sub _build_products {
+  my $self = shift;
+
+  my $selected_lanes = (join q[], $self->positions) eq
+                       (join q[], map {$_->position} $self->lims->children());
+
+  my $lims2product = sub {
+    my $lims = shift;
+    return npg_pipeline::product->new(
+      rpt_list       => npg_tracking::glossary::rpt->deflate_rpt($lims),
+      lims           => $lims,
+      selected_lanes => $selected_lanes);
+  };
+
+  my @lanes = map { $self->lims4lane($_) } $self->positions;
+
+  my @data_products;
+  if ($self->merge_lanes) {
+    @data_products =
+      map {
+        npg_pipeline::product->new(lims           => $_,
+                                   rpt_list       => $_->rpt_list,
+                                   selected_lanes => $selected_lanes)
+          }
+      $self->lims->aggregate_xlanes($self->positions);
+  } else {
+    my @lims = ();
+    foreach my $lane (@lanes) {
+      if ($self->is_indexed && $lane->is_pool) {
+        push @lims, $lane->children;
+        push @lims, $lane->create_tag_zero_object();
+      } else {
+        push @lims, $lane;
+      }
+    }
+
+    @data_products = map { $lims2product->($_) } @lims;
+  }
+
+  return { 'data_products' => \@data_products,
+           'lanes'         => [map { $lims2product->($_) } @lanes] };
+}
 
 __PACKAGE__->meta->make_immutable;
 

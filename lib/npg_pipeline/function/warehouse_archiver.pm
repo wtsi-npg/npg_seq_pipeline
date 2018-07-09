@@ -7,7 +7,6 @@ use npg_pipeline::function::definition;
 use npg_pipeline::runfolder_scaffold;
 
 extends q{npg_pipeline::base};
-with    q{npg_pipeline::base::util};
 
 our $VERSION = '0';
 

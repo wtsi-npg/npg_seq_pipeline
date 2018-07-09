@@ -36,6 +36,7 @@ my $bbp = "$rf/bam_basecall_path";
 }
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
   $util->set_rta_staging_analysis_area();
 
   my $out = `$bin/npg_pipeline_central --no-spider --no_bsub --no_sf_resource --runfolder_path $rf --bam_basecall_path $bbp --function_order dodo 2>&1`;

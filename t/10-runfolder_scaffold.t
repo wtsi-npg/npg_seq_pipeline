@@ -1,7 +1,10 @@
 use strict;
 use warnings;
-use Test::More tests => 10;
+use Test::More tests => 8;
 use Test::Exception;
+use Moose::Meta::Class;
+
+use t::util;
 
 use_ok('npg_pipeline::runfolder_scaffold');
 use_ok('npg_tracking::illumina::runfolder');
@@ -24,38 +27,22 @@ use_ok('npg_tracking::illumina::runfolder');
     $path, 'path is not changed');
 }
 
-
-package npg_test::runfolder_scaffold;
-use Moose;
-extends 'npg_tracking::illumina::runfolder';
-with 'npg_pipeline::runfolder_scaffold'; 
-sub positions {
-  return (1 .. 8);
-}
-sub is_multiplexed_lane {
-  my ($self,$num)=@_;
-  return $num%2;
-}
-1;
-
-package main;
-use t::util;
-
-my $util = t::util->new();
-
 {
+  my $util = t::util->new();
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
   $util->create_analysis({skip_archive_dir => 1});
-  my $rfs;
-  lives_ok {
-    $rfs = npg_test::runfolder_scaffold->new(
+
+  my $rfs = Moose::Meta::Class->create_anon_class(
+    superclasses => ['npg_tracking::illumina::runfolder'],
+    roles        => [qw/npg_pipeline::runfolder_scaffold/],
+  )->new_object(
       run_folder     => q{123456_IL2_1234},
       runfolder_path => $util->analysis_runfolder_path(),
-      is_indexed     => 1,      
-    );
-  } q{scaffolder created OK};
+      is_indexed     => 1
+                );
 
-  lives_ok { $rfs->create_analysis_level() } q{no error scaffolding runfolder};
-  lives_ok { $rfs->create_analysis_level() } q{no error scaffolding directories which already exists};
+  lives_ok { $rfs->create_product_level({}) }
+    q{no error scaffolding runfolder for no products};
 }
 
 1;
