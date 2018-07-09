@@ -118,17 +118,6 @@ has q{lanes} => (
   },
 );
 
-=head2 pipeline_name
-
-=cut
-sub pipeline_name {
-  my $self = shift;
-  my $name = ref $self;
-  ($name) = $name =~ /(\w+)$/smx;
-  $name = lc $name;
-  return $name;
-}
-
 =head2 general_values_conf
 
 Returns a hashref of configuration details from the relevant configuration file

@@ -34,8 +34,8 @@ Creates and returns a token job definition.
 =cut
 
 sub pipeline_start {
-  my $self = shift;
-  return $self->_token_job();
+  my ($self, $pipeline_name) = @_;
+  return $self->_token_job($pipeline_name);
 }
 
 =head2 pipeline_end
@@ -46,16 +46,17 @@ Creates and returns a token job definition.
 =cut
 
 sub pipeline_end {
-  my $self = shift;
-  return $self->_token_job();
+  my ($self, $pipeline_name) = @_;
+  return $self->_token_job($pipeline_name);
 }
 
 sub _token_job {
-  my $self = shift;
+  my ($self, $pipeline_name) = @_;
 
   my ($package, $filename, $line, $subroutine_name) = caller 1;
   ($subroutine_name) = $subroutine_name =~ /(\w+)\Z/xms;
-  my $job_name = join q{_}, $subroutine_name, $self->id_run(), $self->pipeline_name();
+  $pipeline_name ||= q[];
+  my $job_name = join q{_}, $subroutine_name, $self->id_run(), $pipeline_name;
 
   my $d = npg_pipeline::function::definition->new(
     created_by    => __PACKAGE__,

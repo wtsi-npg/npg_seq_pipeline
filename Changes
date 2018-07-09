@@ -1,6 +1,16 @@
 LIST OF CHANGES
 ---------------
 
+ - bug fix in jobs names where jobs name should include the pipeline
+   name: pipeline name is now propagated from the pluggable module
+   to the function module; bug manifestation - job names contained
+   function module name instead of the pipeline name, ie, for
+   example prod_pipeline_end_26263_start_stop instead of
+   prod_lsf_start_26263_central
+ - pipeline name attribute is derived from the script name that
+   invoked the pipeline, making it unnecessary to explicitly pass
+   the function list name in the archival pipeline script
+
 release 52.0.5
  - bug fix in npg_run_is_deletable: stop using unsupported options
    for npg_pipeline::cache
