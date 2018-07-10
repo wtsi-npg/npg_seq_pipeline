@@ -571,7 +571,7 @@ sub _do_rna_analysis {
   my $transcriptome_version = $parsed_ref_genome[$REFERENCE_ARRAY_TVERSION_IDX] // q[];
   if (not $transcriptome_version) {
     if($rna_aligner) {
-       $self->logcroak(qq{$lstring - not possible to run an rna aligner without a transriptome});
+       $self->logcroak(qq{$lstring - not possible to run an rna aligner without a transcriptome});
     }
     $self->debug(qq{$lstring - Reference without transcriptome version: skipping RNAseq analysis});
     return 0;
