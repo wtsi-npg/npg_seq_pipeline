@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - fix for seq_alignment so specified rna aligners do rna analysis
+
 release 52.0.5
  - bug fix in npg_run_is_deletable: stop using unsupported options
    for npg_pipeline::cache

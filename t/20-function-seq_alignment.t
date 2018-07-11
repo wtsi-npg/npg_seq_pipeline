@@ -274,7 +274,7 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 16;
+  plan tests => 17;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
 
@@ -378,6 +378,10 @@ subtest 'test 2' => sub {
   #Library type is not RNA: ChIP-Seq Auto
   $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 1);
   is ($rna_gen->_do_rna_analysis($l), 0, 'not an RNA library, so no RNA analysis');
+
+  #Library type is not RNA: ChIP-Seq Auto but RNA aligner defined
+  $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 2);
+  is ($rna_gen->_do_rna_analysis($l), 1, 'not an RNA library but RNA aligner, so RNA analysis');
 
   ##HiSeq, run 25269, single end RNA libraries suitable for RNA analysis
   $runfolder = q{180228_HS35_25269_B_H7WJ3BCX2};

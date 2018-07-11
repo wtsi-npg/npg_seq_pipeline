@@ -575,17 +575,30 @@ sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
 sub _do_rna_analysis {
   my ($self, $l) = @_;
   my $lstring = $l->to_string;
+
+  my $analysis    = $self->_analysis($l) // q[];
+  my $rna_aligner = $analysis ?  (grep { /^$analysis$/sxm } @RNA_ANALYSES) : q[];
+
   if (!$l->library_type || $l->library_type !~ /(?:(?:cD|R)NA|DAFT)/sxm) {
-    $self->debug(qq{$lstring - not RNA library type: skipping RNAseq analysis});
-    return 0;
+    if ($l->library_type && $rna_aligner) {
+      $self->debug(qq{$lstring - over-riding library type with rna aligner $analysis});
+    }
+    else {
+      $self->debug(qq{$lstring - not RNA library type: skipping RNAseq analysis});
+      return 0;
+    }
   }
   my $reference_genome = $l->reference_genome();
   my @parsed_ref_genome = $self->_reference($l)->parse_reference_genome($reference_genome);
   my $transcriptome_version = $parsed_ref_genome[$REFERENCE_ARRAY_TVERSION_IDX] // q[];
   if (not $transcriptome_version) {
+    if($rna_aligner) {
+       $self->logcroak(qq{$lstring - not possible to run an rna aligner without a transcriptome});
+    }
     $self->debug(qq{$lstring - Reference without transcriptome version: skipping RNAseq analysis});
     return 0;
   }
+
   $self->debug(qq{$lstring - Do RNAseq analysis....});
   return 1;
 }
@@ -618,7 +631,7 @@ sub _reference {
 sub _analysis {
     my ($self, $l) = @_;
     my $lstring = $l->to_string;
-    my $reference_genome = $l->reference_genome();
+    my $reference_genome = $l->reference_genome() // q[];
     my @parsed_ref_genome = $self->_reference($l)->parse_reference_genome($reference_genome);
     my $analysis = $parsed_ref_genome[$REFERENCE_ARRAY_ANALYSIS_IDX];
     $self->info(qq[$lstring - Analysis: ] . (defined $analysis ? $analysis : qq[default for $reference_genome]));
