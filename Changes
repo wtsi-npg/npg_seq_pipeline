@@ -10,6 +10,7 @@ LIST OF CHANGES
  - pipeline name attribute is derived from the script name that
    invoked the pipeline, making it unnecessary to explicitly pass
    the function list name in the archival pipeline script
+ - fix for seq_alignment so specified rna aligners do rna analysis
 
 release 52.0.5
  - bug fix in npg_run_is_deletable: stop using unsupported options
