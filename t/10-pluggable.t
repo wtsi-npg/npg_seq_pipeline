@@ -41,7 +41,7 @@ subtest 'object with no function order set - simple methods' => sub {
     runfolder_path => $test_dir
   );
   isa_ok($pluggable, q{npg_pipeline::pluggable});
-  is($pluggable->pipeline_name, 'pluggable', 'pipeline name');
+  is($pluggable->_pipeline_name, '10-pluggable.t', 'pipeline name');
   is($pluggable->interactive, 0, 'interactive false');
   ok(!$pluggable->has_function_order, 'function order is not set');
   is($pluggable->id_run(), 1234, q{id_run attribute populated});
@@ -460,21 +460,21 @@ subtest 'positions and spidering' => sub {
   lives_ok { $p->main() } q{running main for three qc functions};
 };
 
-subtest 'script name and function list' => sub {
-  plan tests => 20;
+subtest 'script name, pipeline name and function list' => sub {
+  plan tests => 17;
 
   my $base = npg_pipeline::pluggable->new();
-  my $path = abs_path(join q[/], getcwd(), $config_dir, 'function_list_pluggable.json');
   is ($base->_script_name, $PROGRAM_NAME, 'script name');
+  is ($base->_pipeline_name, '10-pluggable.t', 'pipeline name');
   throws_ok { $base->function_list }
-    qr/File $path does not exist or is not readable/,
-    'error when default function list does not exist';
+    qr/Bad function list name: 10-pluggable\.t/,
+    'error when test name is used as function list name';
 
   $base = npg_pipeline::pluggable->new(function_list => 'base');
-  $path = abs_path(join q[/], getcwd(), $config_dir, 'function_list_pluggable_base.json');
+  my $path = abs_path(join q[/], getcwd(), $config_dir, 'function_list_10-pluggable.t_base.json');
   throws_ok { $base->function_list }
     qr/File $path does not exist or is not readable/,
-    'error when function list does not exist';
+    'error when file is not found';
 
   $path = abs_path(join q[/], getcwd(), $config_dir, 'function_list_central.json');
   $base = npg_pipeline::pluggable->new(function_list => $path);
@@ -513,31 +513,10 @@ subtest 'script name and function list' => sub {
     function_list => 'post_qc_review');
   is( $base->function_list, $path, 'function list absolute path from list name');
 
-  $path =~ s/function_list_post_qc_review/function_list_pluggable/;
-  $base = npg_pipeline::pluggable->new(conf_path => $test_dir);
-  throws_ok { $base->function_list }
-    qr/File $path does not exist or is not readable/,
-    'error when default function list does not exist';
-
   $base = npg_pipeline::pluggable->new(function_list => 'some+other:');
   throws_ok { $base->function_list }
     qr/Bad function list name: some\+other:/,
     'error when function list name contains illegal characters';
-  
-  $base = npg_pipeline::pluggable->new(qc_run => 1);
-  $path = abs_path(join q[/], getcwd(), $config_dir, 'function_list_pluggable_qc_run.json');
-  throws_ok { $base->function_list }
-    qr/File $path does not exist or is not readable/,
-    'error when default function list does not exist';
-
-  package mytest::central;
-  use base 'npg_pipeline::pluggable';
-  package main;
-
-  my $c = mytest::central->new(qc_run => 1);
-  is ($base->_script_name, $PROGRAM_NAME, 'script name');
-  my $fl = abs_path(join q[/], getcwd(), $config_dir, 'function_list_central_qc_run.json');
-  is( $c->function_list, $fl, 'qc function list');
 };
 
 1;

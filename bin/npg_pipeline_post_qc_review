@@ -10,8 +10,7 @@ use npg_pipeline::pluggable;
 
 our $VERSION = '0';
 
-my $p = npg_pipeline::pluggable
-        ->new_with_options(function_list => 'post_qc_review');
+my $p = npg_pipeline::pluggable->new_with_options();
 
 my $level   = $p->verbose() ? $DEBUG : $INFO;
 my $logfile = $p->log_file_path();
