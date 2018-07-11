@@ -19,6 +19,8 @@ data/config_files/function_list_post_qc_review.json
 data/config_files/general_values.ini
 data/config_files/lsf.ini
 lib/npg_pipeline/base.pm
+lib/npg_pipeline/base/config.pm
+lib/npg_pipeline/base/options.pm
 lib/npg_pipeline/cache.pm
 lib/npg_pipeline/cache/barcodes.pm
 lib/npg_pipeline/daemon.pm
@@ -43,13 +45,11 @@ lib/npg_pipeline/function/seq_to_irods_archiver.pm
 lib/npg_pipeline/function/seqchksum_comparator.pm
 lib/npg_pipeline/function/start_stop.pm
 lib/npg_pipeline/function/status.pm
+lib/npg_pipeline/function/util.pm
 lib/npg_pipeline/function/warehouse_archiver.pm
 lib/npg_pipeline/pluggable.pm
 lib/npg_pipeline/pluggable/central.pm
 lib/npg_pipeline/pluggable/registry.pm
-lib/npg_pipeline/roles/accessor.pm
-lib/npg_pipeline/roles/business/base.pm
-lib/npg_pipeline/roles/business/flag_options.pm
 lib/npg_pipeline/runfolder_scaffold.pm
 lib/npg_pipeline/validation/autoqc_files.pm
 lib/npg_pipeline/validation/common.pm
@@ -94,7 +94,6 @@ t/20-function-seqchksum_comparator.t
 t/20-function-start_stop.t
 t/20-function-status.t
 t/20-function-warehouse_archiver.t
-t/21-references_adapters.t
 t/30-executor-lsf-job.t
 t/30-executor-lsf.t
 t/30-executor-wr.t

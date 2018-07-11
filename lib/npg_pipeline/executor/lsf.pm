@@ -18,7 +18,7 @@ use npg_pipeline::runfolder_scaffold;
 extends 'npg_pipeline::executor';
 with qw( 
          npg_pipeline::executor::options
-         npg_pipeline::roles::accessor
+         npg_pipeline::base::config
          MooseX::AttributeCloner
        );
 

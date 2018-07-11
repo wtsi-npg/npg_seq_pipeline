@@ -1,6 +1,7 @@
 package npg_pipeline::daemon;
 
 use Moose;
+use namespace::autoclean;
 use Moose::Meta::Class;
 use MooseX::StrictConstructor;
 use Carp;
@@ -19,12 +20,12 @@ use npg_tracking::Schema;
 use WTSI::DNAP::Warehouse::Schema;
 use WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell;
 
-use npg_pipeline::roles::business::base;
+use npg_pipeline::base::options;
 
 with qw{ 
          MooseX::Getopt
          WTSI::DNAP::Utilities::Loggable
-         npg_pipeline::roles::accessor
+         npg_pipeline::base::config
        };
 
 our $VERSION = '0';
@@ -197,7 +198,7 @@ sub check_lims_link {
     $lims->{'qc_run'} = (defined $fcell_row->purpose && $fcell_row->purpose eq 'qc') ? 1 : undef;
   } else {
     $lims->{'qc_run'} =
-      npg_pipeline::roles::business::base->is_qc_run($lims->{'id'});
+      npg_pipeline::base::options->is_qc_run($lims->{'id'});
     if (!$lims->{'qc_run'}) {
       croak q{Not QC run and not in the ml warehouse};
     }
@@ -287,8 +288,8 @@ sub loop {
   return;
 }
 
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
 
 __END__
@@ -324,16 +325,16 @@ implemented by children.
 
 =head2 conf_path
 
-An attribute inherited from npg_pipeline::roles::accesor,
+An attribute inherited from npg_pipeline::base::config,
 a full path to directory containing config files.
 
 =head2 conf_file_path
 
-Method inherited from npg_pipeline::roles::accessor.
+Method inherited from npg_pipeline::base::config.
 
 =head2 read_config
 
-Method inherited from npg_pipeline::roles::accessor.
+Method inherited from npg_pipeline::base::config.
 
 =head2 daemon_conf
 
@@ -383,6 +384,8 @@ captured and printed to the log.
 
 =item Moose
 
+=item namespace::autoclean
+
 =item Moose::Meta::Class
 
 =item MooseX::StrictConstructor
@@ -427,7 +430,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Ltd.
+Copyright (C) 2018 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

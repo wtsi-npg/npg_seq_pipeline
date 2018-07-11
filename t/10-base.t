@@ -1,10 +1,11 @@
 use strict;
 use warnings;
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use Cwd;
 use Log::Log4perl qw(:levels);
+use Moose::Util qw( apply_all_roles );
 
 use t::util;
 use npg_tracking::util::abs_path qw(abs_path);
@@ -29,7 +30,7 @@ subtest 'local flag' => sub {
   is($base->local, 1, 'local flag is 1 as set');
 };
 
-subtest 'timestamp andrandom string' => sub {
+subtest 'timestamp and random string' => sub {
   plan tests => 3;
 
   my $base = npg_pipeline::base->new();
@@ -121,6 +122,16 @@ subtest 'lims driver type' => sub {
                                   qc_run=>1,
                                   id_flowcell_lims => 12345678);
   is($base->lims_driver_type, 'ml_warehouse');
+};
+
+subtest 'repository preexec' => sub {
+  plan tests => 1;
+
+  my $ref_adapt = npg_pipeline::base->new(repository => q{t/data/sequence});
+  apply_all_roles( $ref_adapt, 'npg_pipeline::function::util' );
+  is( $ref_adapt->repos_pre_exec_string(),
+    q{npg_pipeline_preexec_references --repository t/data/sequence},
+    q{correct ref_adapter_pre_exec_string} );
 };
 
 1;
