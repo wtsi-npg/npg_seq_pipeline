@@ -19,14 +19,14 @@ subtest 'start and stop functions' => sub {
   );
   
   foreach my $m (qw/pipeline_start pipeline_end/) {
-    my $ds = $ss->$m();
+    my $ds = $ss->$m('pname');
     ok ($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded, "$m is enabled");
     my $d = $ds->[0];
     isa_ok ($d, 'npg_pipeline::function::definition');
     is ($d->identifier, '1234', 'identifier set to run id');
     is ($d->created_by, 'npg_pipeline::function::start_stop', 'created_by');
     is ($d->command, '/bin/true', 'command');
-    is ($d->job_name, $m . '_1234_start_stop', "job name for $m");
+    is ($d->job_name, $m . '_1234_pname', "job name for $m");
     is ($d->queue, 'small', 'small queue');
   }
 };

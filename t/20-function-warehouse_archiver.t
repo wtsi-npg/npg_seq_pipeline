@@ -39,7 +39,7 @@ subtest 'warehouse updates' => sub {
     my $postqcc  = $m =~ /$pqq_suffix/smx;
     my $ml       = $m =~ /_ml_/smx;
     my $command  = $ml ? 'npg_runs2mlwarehouse' : 'warehouse_loader';    
-    my $job_name = $command . '_1234_warehouse_archiver';
+    my $job_name = $command . '_1234_pname';
     if ($postqcc) {
       $job_name .= '_postqccomplete';
     }  
@@ -49,7 +49,7 @@ subtest 'warehouse updates' => sub {
                    'ml_warehouse_fc_cache' : 'samplesheet');
     }
 
-    my $ds = $c->$m();
+    my $ds = $c->$m('pname');
     ok ($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
       'update to warehouse is enabled');
     my $d = $ds->[0];
