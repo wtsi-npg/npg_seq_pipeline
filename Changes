@@ -11,6 +11,8 @@ LIST OF CHANGES
    invoked the pipeline, making it unnecessary to explicitly pass
    the function list name in the archival pipeline script
  - fix for seq_alignment so specified rna aligners do rna analysis
+ - added (samtools) target stats to stage2 analysis
+ - correct p4 prunes for samtools stats (target/baits)
 
 release 52.0.5
  - bug fix in npg_run_is_deletable: stop using unsupported options
