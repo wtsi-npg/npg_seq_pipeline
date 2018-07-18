@@ -138,13 +138,15 @@ subtest 'file names for entities with subsets' => sub {
 };
 
 subtest 'paths for one-component compositions' => sub {
-  plan tests => 15;
+  plan tests => 16;
 
   my $p = npg_pipeline::product->new(rpt_list => '26219:1');
   is ($p->path('/tmp'), '/tmp/lane1', 'path');
   is ($p->qc_out_path('/tmp'), '/tmp/lane1/qc', 'qc out path');
   is ($p->short_files_cache_path('/tmp'), '/tmp/lane1/.npg_cache_10000',
     'short files cache path');
+  is ($p->tileviz_path('/tmp'), '/tmp/lane1/tileviz',
+    'tileviz path');
 
   is ($p->file_path('/tmp', ext => 'bam'), '/tmp/26219_1.bam',
     'file path with an extention');

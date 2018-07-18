@@ -11,7 +11,6 @@ our $VERSION = '0';
 Readonly::Scalar my $OUTGOING_PATH_COMPONENT    => q[/outgoing/];
 Readonly::Scalar my $ANALYSIS_PATH_COMPONENT    => q[/analysis/];
 Readonly::Scalar my $LOG_DIR_NAME               => q[log];
-Readonly::Scalar my $TILEVIZ_DIR_NAME           => q[tileviz];
 Readonly::Scalar my $STATUS_FILES_DIR_NAME      => q[status];
 Readonly::Scalar my $METADATA_CACHE_DIR_NAME    => q[metadata_cache_];
 
@@ -25,10 +24,14 @@ sub create_product_level {
   $products or croak 'products listing is required';
 
   my @dirs = ();
+  # Create cache dir for short files and qc out directory for every product
   foreach my $p ( (map { @{$_} } values %{$products}) ) {
     push @dirs, ( map { $p->$_($self->archive_path()) }
                   qw/path qc_out_path short_files_cache_path/ );
   }
+  # Create tileviz directory for lane products only
+  push @dirs, ( map { $_->tileviz_path($self->archive_path()) }
+                @{$products->{'lanes'}} );
 
   my @errors = $self->make_dir(@dirs);
   my $m = join qq[\n], 'Created the following directories:', @dirs;
@@ -84,18 +87,11 @@ sub create_top_level {
   push @dirs, $metadata_cache_dir;
   push @info, "metadata cache path: $metadata_cache_dir";
 
-  push @dirs, $self->archive_path(),
-              $self->status_files_path(),
-              $self->tileviz_path();
+  push @dirs, $self->archive_path(), $self->status_files_path();
 
   my @errors = $self->make_dir(@dirs);
 
   return {'msgs' => \@info, 'errors' => \@errors};
-}
-
-sub tileviz_path {
-  my $self = shift;
-  return File::Spec->catdir($self->analysis_path(), $TILEVIZ_DIR_NAME);
 }
 
 sub status_files_path {
@@ -175,18 +171,22 @@ Analysis run folder scaffolding.
 
 =head2 create_product_level
 
-Scaffolds the analysis directory.
+Creates product-level directories for all expected products, together with
+short file cache directories, qc output and tileviz direcgtories if appropriate.
 
 =head2 create_top_level
 
-Sets all paths needed during the lifetime of the analysis runfolder.
-Creates any of the paths that do not exist.
+Sets all top level paths needed during the lifetime of the analysis runfolder,
+starting from bam basecalls directory. Creates directories if they do not
+exist.
+
+Does not create product-level directories. Does not create top-level qc directory,
+which was created by earlier versions of the pipeline. Presence of the top-level
+qc directory will be used to distinguish between different directory structures.
 
 =head2 status_files_path
 
 A directory path to save status files to.
-
-=head2 tileviz_path
 
 =head2 make_dir
 

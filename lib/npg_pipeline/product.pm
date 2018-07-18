@@ -17,6 +17,7 @@ our $VERSION = '0';
 
 Readonly::Scalar my $QC_DIR_NAME                => q[qc];
 Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
+Readonly::Scalar my $TILEVIZ_DIR_NAME           => q[tileviz];
 
 =head1 NAME
 
@@ -298,6 +299,18 @@ taking argument directory path as a base.
 sub short_files_cache_path {
   my ($self, $dir) = @_;
   return File::Spec->catdir($self->path($dir), $SHORT_FILES_CACHE_DIR_NAME);
+}
+
+=head2 tileviz_path
+
+Returns path for tileviz output directory for this product taking
+argument directory path as a base.
+ 
+=cut
+
+sub tileviz_path {
+  my ($self, $dir) = @_;
+  return File::Spec->catdir($self->path($dir), $TILEVIZ_DIR_NAME);
 }
 
 =head2 file_path
