@@ -230,7 +230,7 @@ has q{products} => (
 sub _build_products {
   my $self = shift;
 
-  my $selected_lanes = (join q[], $self->positions) eq
+  my $selected_lanes = (join q[], $self->positions) ne
                        (join q[], map {$_->position} $self->lims->children());
 
   my $lims2product = sub {

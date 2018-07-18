@@ -298,7 +298,7 @@ subtest 'generation of product objects for lanes' => sub {
   is (join(q[-], map {$_->rpt_list} @p_lanes), '26219:1-26219:2', 'correct rpt lists');
 };
 
-subtest 'tests for simple function' => sub {
+subtest 'tests for simple functions' => sub {
   plan tests => 7;
 
   my $p = npg_pipeline::product->new(rpt_list => '26219:1:0;26219:2:0;26219:3:0;26219:4:0');

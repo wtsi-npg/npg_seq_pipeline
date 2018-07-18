@@ -15,23 +15,21 @@ Readonly::Scalar my $STATUS_FILES_DIR_NAME      => q[status];
 Readonly::Scalar my $METADATA_CACHE_DIR_NAME    => q[metadata_cache_];
 
 sub create_product_level {
-  my ($self, $products) = @_;
+  my $self = shift;
 
-  if ($self->can('products')) {
-    $products = $self->products;
+  if (!$self->can('products')) {
+    croak 'products attribute should be implemented';
   }
-
-  $products or croak 'products listing is required';
 
   my @dirs = ();
   # Create cache dir for short files and qc out directory for every product
-  foreach my $p ( (map { @{$_} } values %{$products}) ) {
+  foreach my $p ( (map { @{$_} } values %{$self->products}) ) {
     push @dirs, ( map { $p->$_($self->archive_path()) }
                   qw/path qc_out_path short_files_cache_path/ );
   }
   # Create tileviz directory for lane products only
   push @dirs, ( map { $_->tileviz_path($self->archive_path()) }
-                @{$products->{'lanes'}} );
+                @{$self->products->{'lanes'}} );
 
   my @errors = $self->make_dir(@dirs);
   my $m = join qq[\n], 'Created the following directories:', @dirs;
