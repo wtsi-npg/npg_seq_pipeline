@@ -1,6 +1,25 @@
 LIST OF CHANGES
 ---------------
 
+ - a wrapper object npg_pipeline::product to repesent a product
+ - upfront definition of all products
+ - generic runfolder scaffolding for any products
+ - since the top-level qc directory is no longer required, the tileviz
+   directory is moved to the analysis directory
+
+ - resuffle of roles in npg_pipeline::roles:
+     npg_pipeline::roles::business::base merged into npg_pipeline::base;
+     npg_pipeline::roles::business::flag_options moved to
+     npg_pipeline::base::options, a number of pipeline options from other
+     modules moved to this role;
+     npg_pipeline::roles::accessors moved to npg_pipeline::base::config;
+     helper functions moved to a new role - npg_pipeline::function::util
+ - ref_adapter_pre_exec_string method renamed to repos_pre_exec_string
+ - metadata_cache_dir method, formerly in npg_pipeline::roles::business::base,
+   removed; npg_pipeline::function::p4_stage1_analysis module, the only user
+   of this function, switched to use the relevant accessor from the
+   npg_pipeline::runfolder_scaffold role
+
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline
    name: pipeline name is now propagated from the pluggable module

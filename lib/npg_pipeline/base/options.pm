@@ -1,31 +1,26 @@
-package npg_pipeline::roles::business::flag_options;
+package npg_pipeline::base::options;
 
 use Moose::Role;
+use npg_pipeline::cache;
 
 our $VERSION = '0';
 
 =head1 NAME
 
-npg_pipeline::roles::business::flag_options
+npg_pipeline::base::options
 
 =head1 SYNOPSIS
 
-  package MyPackage;
-  use Moose;
-  ...
-  with qw{npg_pipeline::roles::business::flag_options};
-
 =head1 DESCRIPTION
 
-This role gives some boolean flag options which can be set
-on construction (or via the command line if using MooseX::Getopt)
-so that you can turn off global features/functions.
+This role defines options which can be set on object construction
+(or via the command line if using MooseX::Getopt).
 
 =head1 SUBROUTINES/METHODS
 
 =head2 verbose
 
-Boolean option to switch on verbose mode
+Boolean flag to switch on verbose mode
 
 =cut
 
@@ -67,7 +62,6 @@ sub _default_to_local {
   my $self = shift;
   return $self->local;
 }
-## use critic
 
 =head2 no_warehouse_update
 
@@ -101,6 +95,19 @@ sub _build_local {
   my $self = shift;
   return $self->can('no_bsub') && $self->no_bsub ? 1 : 0;
 }
+
+=head2 lanes
+
+An array of lanes (positions) to run the pipeline on.
+
+=cut
+
+has q{lanes} => (
+  isa           => q{ArrayRef[Int]},
+  is            => q{ro},
+  documentation => q{An array of lanes (positions) to run the pipeline on},
+  default       => sub { [] },
+);
 
 =head2 adapterfind
 
@@ -170,7 +177,88 @@ has q{align_tag0} => (
   documentation => q{Do target alignment for tag#0 in stage2 analysis.},
 );
 
+=head2 repository
+
+A custom repository root directory.
+
+=cut
+
+has q{repository} => (
+  isa           => q{Str},
+  is            => q{ro},
+  required      => 0,
+  predicate     => q{has_repository},
+  documentation => q{A custom repository root directory},
+);
+
+=head2 id_flowcell_lims
+
+Optional LIMs identifier for flowcell.
+
+=cut
+
+has q{id_flowcell_lims} => (
+  isa      => q{Int},
+  is       => q{ro},
+  required => 0,
+);
+
+=head2 qc_run
+
+Boolean flag indicating whether this run is a qc run,
+will be built if not supplied;
+
+=cut
+
+has q{qc_run} => (
+ isa           => q{Bool},
+ is            => q{ro},
+ lazy_build    => 1,
+ documentation => q{Boolean flag indicating whether the run is QC run, }.
+                  q{will be built if not supplied},);
+sub _build_qc_run {
+  my $self = shift;
+  return $self->is_qc_run();
+}
+
+=head2 is_qc_run
+
+Examines id_flowcell_lims attribute. If it consists of 13 digits, ie is a tube barcode,
+returns true, otherwise returns false.
+
+=cut
+
+sub is_qc_run {
+  my ($self, $lims_id) = @_;
+  $lims_id ||= $self->id_flowcell_lims;
+  return $lims_id && $lims_id =~ /\A\d{13}\z/smx; # it's a tube barcode
+}
+
+=head2 lims_driver_type
+
+Optional lims driver type name
+
+=cut
+
+has q{lims_driver_type} => (
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{Optional lims driver type name},
+);
+sub _build_lims_driver_type {
+  my $self = shift;
+  return $self->qc_run ?
+    ($self->is_qc_run($self->id_flowcell_lims) ?
+       npg_pipeline::cache->warehouse_driver_name :
+       npg_pipeline::cache->mlwarehouse_driver_name
+    ) : npg_pipeline::cache->mlwarehouse_driver_name;
+}
+
+no Moose::Role;
+
 1;
+
 __END__
 
 =head1 DIAGNOSTICS

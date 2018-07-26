@@ -11,36 +11,29 @@ our $VERSION = '0';
 Readonly::Scalar my $OUTGOING_PATH_COMPONENT    => q[/outgoing/];
 Readonly::Scalar my $ANALYSIS_PATH_COMPONENT    => q[/analysis/];
 Readonly::Scalar my $LOG_DIR_NAME               => q[log];
-Readonly::Scalar my $TILEVIZ_DIR_NAME           => q[tileviz];
 Readonly::Scalar my $STATUS_FILES_DIR_NAME      => q[status];
-Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
 Readonly::Scalar my $METADATA_CACHE_DIR_NAME    => q[metadata_cache_];
 
-sub create_analysis_level {
+sub create_product_level {
   my $self = shift;
 
-  my @dirs = (
-               $self->archive_path(),
-               File::Spec->catdir($self->archive_path(), $SHORT_FILES_CACHE_DIR_NAME),
-               $self->status_files_path(),
-               $self->qc_path(),
-               File::Spec->catdir($self->qc_path(), $TILEVIZ_DIR_NAME),
-             );
-
-  if ($self->is_indexed()) {
-    foreach my $position ($self->positions()) {
-      if ($self->is_multiplexed_lane($position)) {
-        push @dirs, File::Spec->catdir($self->recalibrated_path(), q{lane} . $position);
-        my $lane_dir = $self->lane_archive_path($position);
-        push @dirs, $lane_dir;
-        push @dirs, File::Spec->catdir($lane_dir, $SHORT_FILES_CACHE_DIR_NAME);
-        push @dirs, $self->lane_qc_path($position);
-      }
-    }
+  if (!$self->can('products')) {
+    croak 'products attribute should be implemented';
   }
 
+  my @dirs = ();
+  # Create cache dir for short files and qc out directory for every product
+  foreach my $p ( (map { @{$_} } values %{$self->products}) ) {
+    push @dirs, ( map { $p->$_($self->archive_path()) }
+                  qw/path qc_out_path short_files_cache_path/ );
+  }
+  # Create tileviz directory for lane products only
+  push @dirs, ( map { $_->tileviz_path($self->archive_path()) }
+                @{$self->products->{'lanes'}} );
+
   my @errors = $self->make_dir(@dirs);
-  return {'dirs' => \@dirs, 'errors' => \@errors};
+  my $m = join qq[\n], 'Created the following directories:', @dirs;
+  return {'msgs' => [$m], 'errors' => \@errors};
 }
 
 sub create_top_level {
@@ -91,6 +84,8 @@ sub create_top_level {
   my $metadata_cache_dir = $self->metadata_cache_dir_path();
   push @dirs, $metadata_cache_dir;
   push @info, "metadata cache path: $metadata_cache_dir";
+
+  push @dirs, $self->archive_path(), $self->status_files_path();
 
   my @errors = $self->make_dir(@dirs);
 
@@ -172,20 +167,24 @@ Analysis run folder scaffolding.
 
 =head1 SUBROUTINES/METHODS
 
-=head2 create_analysis_level
+=head2 create_product_level
 
-Scaffolds the analysis directory.
+Creates product-level directories for all expected products, together with
+short file cache directories, qc output and tileviz direcgtories if appropriate.
 
 =head2 create_top_level
 
-Sets all paths needed during the lifetime of the analysis runfolder.
-Creates any of the paths that do not exist.
+Sets all top level paths needed during the lifetime of the analysis runfolder,
+starting from bam basecalls directory. Creates directories if they do not
+exist.
+
+Does not create product-level directories. Does not create top-level qc directory,
+which was created by earlier versions of the pipeline. Presence of the top-level
+qc directory will be used to distinguish between different directory structures.
 
 =head2 status_files_path
 
 A directory path to save status files to.
-
-=cut
 
 =head2 make_dir
 

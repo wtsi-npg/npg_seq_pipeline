@@ -6,6 +6,7 @@ use English qw{-no_match_vars};
 use File::Temp qw{ tempdir };
 use Readonly;
 use Cwd qw(getcwd);
+use File::Path qw(make_path);
 use npg::api::request;
 #TODO: purge all reference to Recipes - we're RunParameters.xml and RunInfo.xml now
 
@@ -157,6 +158,17 @@ sub remove_staging {
   my $staging = $self->temp_directory() . $NFS_STAGING_DISK;
   `rm -rf $staging`;
   return 1;
+}
+
+sub create_runfolder {
+  my ($self, $dir) = @_;
+  $dir ||= $self->temp_directory;
+  my $paths = {};
+  $paths->{'runfolder_path'} = join q[/], $dir, q[180524_A00510_0008_BH3W7VDSXX];
+  $paths->{'intensity_path'} = join q[/], $paths->{'runfolder_path'}, q[Data/Intensities];
+  $paths->{'basecall_path'}  = join q[/], $paths->{'intensity_path'}, q[BaseCalls];
+  make_path(values %{$paths});
+  return $paths;
 }
 
 # ensure that the environment variables do not get passed around

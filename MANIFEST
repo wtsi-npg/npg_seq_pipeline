@@ -19,6 +19,8 @@ data/config_files/function_list_post_qc_review.json
 data/config_files/general_values.ini
 data/config_files/lsf.ini
 lib/npg_pipeline/base.pm
+lib/npg_pipeline/base/config.pm
+lib/npg_pipeline/base/options.pm
 lib/npg_pipeline/cache.pm
 lib/npg_pipeline/cache/barcodes.pm
 lib/npg_pipeline/daemon.pm
@@ -43,13 +45,12 @@ lib/npg_pipeline/function/seq_to_irods_archiver.pm
 lib/npg_pipeline/function/seqchksum_comparator.pm
 lib/npg_pipeline/function/start_stop.pm
 lib/npg_pipeline/function/status.pm
+lib/npg_pipeline/function/util.pm
 lib/npg_pipeline/function/warehouse_archiver.pm
 lib/npg_pipeline/pluggable.pm
 lib/npg_pipeline/pluggable/central.pm
 lib/npg_pipeline/pluggable/registry.pm
-lib/npg_pipeline/roles/accessor.pm
-lib/npg_pipeline/roles/business/base.pm
-lib/npg_pipeline/roles/business/flag_options.pm
+lib/npg_pipeline/product.pm
 lib/npg_pipeline/runfolder_scaffold.pm
 lib/npg_pipeline/validation/autoqc_files.pm
 lib/npg_pipeline/validation/common.pm
@@ -74,6 +75,7 @@ t/10-cache.t
 t/10-pluggable-central.t
 t/10-pluggable-registry.t
 t/10-pluggable.t
+t/10-product.t
 t/10-runfolder_scaffold.t
 t/10-script-job_env_to_threads.t
 t/10-validation-autoqc_files.t
@@ -94,7 +96,6 @@ t/20-function-seqchksum_comparator.t
 t/20-function-start_stop.t
 t/20-function-status.t
 t/20-function-warehouse_archiver.t
-t/21-references_adapters.t
 t/30-executor-lsf-job.t
 t/30-executor-lsf.t
 t/30-executor-wr.t
@@ -214,6 +215,8 @@ t/data/miseq/samplesheet_20990.csv
 t/data/miseq/samplesheet_24135.csv
 t/data/p4_stage1_analysis/1234_samplesheet.csv
 t/data/p4_stage1_analysis/TileMetricsOut.bin
+t/data/products/samplesheet_novaseq4lanes.csv
+t/data/products/samplesheet_rapidrun_nopool.csv
 t/data/qc/1234_samplesheet_amended.csv
 t/data/qc/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa
 t/data/qc/references/PhiX/default/all/fasta/PhiX.fasta
@@ -248,6 +251,7 @@ t/data/runfolder/Data/Intensities/single_end_3cycle_1tile_config.xml
 t/data/runfolder/Data/RunInfo.xml
 t/data/run_params/runParameters.hiseq.xml
 t/data/run_params/runParameters.hiseqx.upgraded.xml
+t/data/run_params/runParameters.hiseq.rr.xml
 t/data/run_params/runParameters.miseq.xml
 t/data/samplesheet_1234.csv
 t/data/samplesheet_8747.csv
