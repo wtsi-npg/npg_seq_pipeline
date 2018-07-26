@@ -12,6 +12,8 @@ use List::MoreUtils qw{any};
 use JSON;
 use open q(:encoding(UTF8));
 
+use Data::Dumper;
+
 use npg_pipeline::cache::barcodes;
 use npg_pipeline::function::definition;
 
@@ -51,12 +53,15 @@ sub generate {
   my $alims = $self->lims->children_ia;
   my @definitions = ();
 
-  for my $p ($self->positions()) {
+  for my $lane_product (@{$self->products->{lanes}}) {
+
+    my $p = $lane_product->composition->{components}->[0]->{position}; # there should be only one element in components
 
     my $l = $alims->{$p};
+#   my $l = $lane_product->lims;
     my $tag_list_file = q{};
 
-    if ($self->is_multiplexed_lane($p)) {
+    if ($l->tags) { # adequate proxy for is_multiplexed?
       $self->info(qq{Lane $p is indexed, generating tag list});
 
       $tag_list_file = npg_pipeline::cache::barcodes->new(
@@ -68,7 +73,7 @@ sub generate {
       )->generate();
     }
 
-    my @generated = $self->_generate_command_params($l, $tag_list_file);
+    my @generated = $self->_generate_command_params($l, $tag_list_file, $lane_product);
     my ($command, $p4_params, $p4_ops) = @generated;
     push @definitions, $self->_create_definition($l, $command);
 
@@ -257,7 +262,7 @@ sub _get_index_lengths {
 #  analysis param_vals file will be generated. Generate the vtfp/viv commands using this param_vals file.
 #########################################################################################################
 sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexity)
-  my ($self, $lane_lims, $tag_list_file) = @_;
+  my ($self, $lane_lims, $tag_list_file, $lane_product) = @_;
   my %p4_params = (
                     samtools_executable => q{samtools},
                     bwa_executable => q{bwa0_6}, # be sure that the version of bwa that is picked up is consistent with the phiX reference used for alignment
@@ -271,43 +276,14 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
                   );
   my %p4_ops = ( splice => [], prune => [], );
 
-  my %i2b_flag_map = (
-    I => q[i2b_intensity_dir],
-    L => q[i2b_lane],
-    B => q[i2b_basecalls_dir],
-    RG => q[i2b_rg],
-    PU => q[i2b_pu],
-    LIBRARY_NAME => q[i2b_library_name],
-    SAMPLE_ALIAS => q[i2b_sample_aliases],
-    STUDY_NAME => q[i2b_study_name],
-    SEC_BC_SEQ => q[i2b_sec_bc_seq_val],
-    SEC_BC_QUAL => q[i2b_sec_bc_qual_val],
-    BC_SEQ => q[i2b_bc_seq_val],
-    BC_QUAL => q[i2b_bc_qual_val],
-    BC_READ => q[i2b_bc_read],
-    FIRST_INDEX_0 => q[i2b_first_index_0],
-    FINAL_INDEX_0 => q[i2b_final_index_0],
-    FIRST_INDEX_1 => q[i2b_first_index_1],
-    FINAL_INDEX_1 => q[i2b_final_index_1],
-    FIRST_0 => q[i2b_first_0],
-    FINAL_0 => q[i2b_final_0],
-    FIRST_1 => q[i2b_first_1],
-    FINAL_1 => q[i2b_final_1],
-  );
-  my %bid_flag_map = (
-    BARCODE_FILE => q[barcode_file],
-    METRICS_FILE => q[decoder_metrics],
-    MAX_NO_CALLS => q[bid_max_no_calls],
-    CONVERT_LOW_QUALITY_TO_NO_CALL => q[bid_convert_low_quality_to_no_call],
-  );
-
   my $id_run             = $self->id_run();
   my $position = $lane_lims->position;
 
   my $runfolder_path     = $self->runfolder_path;
   my $run_folder     = $self->run_folder;
   my $intensity_path     = $self->intensity_path;
-  my $qc_path            = $self->qc_path;
+  my $archive_path            = $self->archive_path;
+  my $qc_path            = $self->qc_path; # NB: the value provided for qc_path is only valid for old-style runfolders
   my $basecall_path = $self->basecall_path;
   my $no_cal_path       = $self->recalibrated_path;
   my $bam_basecall_path  = $self->bam_basecall_path;
@@ -316,15 +292,15 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
 
   $p4_params{qc_check_id_run} = $id_run; # used by tag_metrics qc check
   $p4_params{qc_check_qc_in_dir} = $bam_basecall_path; # used by tag_metrics qc check
-  $p4_params{qc_check_qc_out_dir} = $qc_path; # used by tag_metrics qc check
-  $p4_params{tileviz_dir} = $qc_path . q[/tileviz/] . $id_run . q[_] . $position ; # used by tileviz
+  $p4_params{qc_check_qc_out_dir} = $lane_product->qc_out_path($self->archive_path); # used by tag_metrics qc check
+  $p4_params{tileviz_dir} = $lane_product->tileviz_path($self->archive_path); # used for tileviz
   $p4_params{outdatadir} = $no_cal_path; # base for all (most?) outputs
-  $p4_params{subsetsubpath} = q[archive/.npg_cache_10000/]; # below outdatadir
+  $p4_params{subsetsubpath} = $lane_product->short_files_cache_path($archive_path);
   $p4_params{seqchksum_file} = $bam_basecall_path . q[/] . $id_run . q[_] . $position . q{.post_i2b.seqchksum}; # full name for the lane-level seqchksum file
   $p4_params{filtered_bam} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam}; # full name for the spatially filtered lane-level file
   $p4_params{unfiltered_cram_file} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.unfiltered.cram}; # full name for spatially unfiltered lane-level cram file
   $p4_params{md5filename} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.md5}; # full name for the md5 for the spatially filtered lane-level file
-  $p4_params{split_prefix} = $no_cal_path . q[/lane] . $position; # location for split bam files
+  $p4_params{split_prefix} = $no_cal_path; # location for split bam files
 
   my $job_name = join q/_/, (q{p4_stage1}, $id_run, $position, $self->timestamp());
   $job_name = q{'} . $job_name . q{'};
@@ -332,30 +308,30 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
   $p4_params{i2b_run_path} = $runfolder_path;
   $p4_params{i2b_thread_count} = $self->general_values_conf()->{'p4_stage1_i2b_thread_count'} || $DEFAULT_I2B_THREAD_COUNT;
   $p4_params{i2b_runfolder} = $run_folder;
-  $p4_params{$i2b_flag_map{q/I/}} = $intensity_path;
-  $p4_params{$i2b_flag_map{q/L/}} = $position;
-  $p4_params{$i2b_flag_map{q/B/}} = $self->basecall_path;
-  $p4_params{$i2b_flag_map{q/RG/}} = join q[_], $id_run, $position;
-  $p4_params{$i2b_flag_map{q/PU/}} = join q[_], $self->run_folder, $position;
+  $p4_params{i2b_intensity_dir} = $intensity_path;
+  $p4_params{i2b_lane} = $position;
+  $p4_params{i2b_basecalls_dir} = $self->basecall_path;
+  $p4_params{i2b_rg} = join q[_], $id_run, $position;
+  $p4_params{i2b_pu} = join q[_], $self->run_folder, $position;
 
   my $st_names = $self->_get_library_sample_study_names($lane_lims);
 
   if($st_names->{library}){
-    $p4_params{$i2b_flag_map{q/LIBRARY_NAME/}} =  $st_names->{library};
+    $p4_params{i2b_library_name} =  $st_names->{library};
   }
   if($st_names->{sample}){
-    $p4_params{$i2b_flag_map{q/SAMPLE_ALIAS/}} =  $st_names->{sample};
+    $p4_params{i2b_sample_aliases} =  $st_names->{sample};
   }
   if($st_names->{study}){
     my $study = $st_names->{study};
     $study =~ s/"/\\"/gmxs;
-    $p4_params{$i2b_flag_map{q/STUDY_NAME/}} =  q{"} . $study . q{"};
+    $p4_params{i2b_study_name} =  q{"} . $study . q{"};
   }
   if ($self->_extra_tradis_transposon_read) {
-    $p4_params{$i2b_flag_map{q/SEC_BC_SEQ/}} = q[BC];
-    $p4_params{$i2b_flag_map{q/SEC_BC_QUAL/}} = q[QT];
-    $p4_params{$i2b_flag_map{q/BC_SEQ/}} = q[tr];
-    $p4_params{$i2b_flag_map{q/BC_QUAL/}} = q[tq];
+    $p4_params{i2b_sec_bc_seq_val} = q[BC];
+    $p4_params{i2b_sec_bc_qual_val} = q[QT];
+    $p4_params{i2b_bc_seq_val} = q[tr];
+    $p4_params{i2b_bc_qual_val} = q[tq];
   }
 
   if($lane_lims->inline_index_exists) {
@@ -368,39 +344,39 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
 
       my($first, $final) = $self->read1_cycle_range();
       if ($index_read == 1) {
-        $p4_params{$i2b_flag_map{q/BC_READ/}} = $p4_params{$i2b_flag_map{q/SEC_BC_READ/}} = 1;
+        $p4_params{i2b_bc_read} = 1;
         $index_start += ($first-1);
         $index_end += ($first-1);
-        $p4_params{$i2b_flag_map{q/FIRST_INDEX_0/}} = $index_start;
-        $p4_params{$i2b_flag_map{q/FINAL_INDEX_0/}} = $index_end;
-        $p4_params{$i2b_flag_map{q/FIRST_INDEX_1/}} = $first;
-        $p4_params{$i2b_flag_map{q/FINAL_INDEX_1/}} = $index_start-1;
-        $p4_params{$i2b_flag_map{q/FIRST_0/}} = $index_end+1;
-        $p4_params{$i2b_flag_map{q/FINAL_0/}} = $final;
+        $p4_params{i2b_first_index_0} = $index_start;
+        $p4_params{i2b_final_index_0} = $index_end;
+        $p4_params{i2b_first_index_1} = $first;
+        $p4_params{i2b_final_index_1} = $index_start-1;
+        $p4_params{i2b_first_0} = $index_end+1;
+        $p4_params{i2b_final_0} = $final;
         if ($self->is_paired_read()) {
           ($first, $final) = $self->read2_cycle_range();
-          $p4_params{$i2b_flag_map{q/FIRST_1/}} = $first;
-          $p4_params{$i2b_flag_map{q/FINAL_1/}} = $final;
+          $p4_params{i2b_first_1} = $first;
+          $p4_params{i2b_final_1} = $final;
         }
       } elsif ($index_read == 2) {
-        $p4_params{$i2b_flag_map{q/BC_READ/}} = $p4_params{$i2b_flag_map{q/SEC_BC_READ/}} = 2;
+        $p4_params{i2b_bc_read} = 2;
         $self->is_paired_read() or $self->logcroak(q{Inline index read (2) does not exist});
-        $p4_params{$i2b_flag_map{q/FIRST_0/}} = $first;
-        $p4_params{$i2b_flag_map{q/FINAL_0/}} = $final;
+        $p4_params{i2b_first_0} = $first;
+        $p4_params{i2b_final_0} = $final;
         ($first, $final) = $self->read2_cycle_range();
         $index_start += ($first-1);
         $index_end += ($first-1);
-        $p4_params{$i2b_flag_map{q/FIRST_INDEX_0/}} = $index_start;
-        $p4_params{$i2b_flag_map{q/FINAL_INDEX_0/}} = $index_end;
-        $p4_params{$i2b_flag_map{q/FIRST_INDEX_1/}} = $first;
-        $p4_params{$i2b_flag_map{q/FINAL_INDEX_1/}} = $index_start-1;
-        $p4_params{$i2b_flag_map{q/FIRST_1/}} = $index_end+1;
-        $p4_params{$i2b_flag_map{q/FINAL_1/}} = $final;
+        $p4_params{i2b_first_index_0} = $index_start;
+        $p4_params{i2b_final_index_0} = $index_end;
+        $p4_params{i2b_first_index_1} = $first;
+        $p4_params{i2b_final_index_1} = $index_start-1;
+        $p4_params{i2b_first_1} = $index_end+1;
+        $p4_params{i2b_final_1} = $final;
       } else {
         $self->logcroak("Invalid inline index read ($index_read)");
       }
-      $p4_params{$i2b_flag_map{q/SEC_BC_SEQ/}} = q{br};
-      $p4_params{$i2b_flag_map{q/SEC_BC_QUAL/}} = q{qr};
+      $p4_params{i2b_sec_bc_seq_val} = q{br};
+      $p4_params{i2b_sec_bc_qual_val} = q{qr};
     }
   }
 
@@ -421,12 +397,12 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
       $self->logcroak('Tag list file path should be defined for multiplexed lane ', $position);
     }
 
-    $p4_params{$bid_flag_map{q/BARCODE_FILE/}} = $tag_list_file;
-    $p4_params{$bid_flag_map{q/METRICS_FILE/}} = $full_bam_name . q{.tag_decode.metrics};
+    $p4_params{barcode_file} = $tag_list_file;
+    $p4_params{decoder_metrics} = $full_bam_name . q{.tag_decode.metrics};
 
     my $num_of_plexes_per_lane = $self->_get_number_of_plexes_excluding_control($lane_lims);
     if($num_of_plexes_per_lane == 1) {
-      $p4_params{$bid_flag_map{q/MAX_NO_CALLS/}} = $self->general_values_conf()->{single_plex_decode_max_no_calls};
+      $p4_params{bid_max_no_calls} = $self->general_values_conf()->{single_plex_decode_max_no_calls};
       $p4_params{bid_convert_low_quality_to_no_call_flag} = q[--convert-low-quality];
     }
     if(not $self->adapterfind) {
@@ -464,15 +440,6 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
   my $bamsormadup_slots = $self->general_values_conf()->{'p4_stage1_bamsort_slots'} || qq[`$num_threads_expression --divide 3`];
   my $bamrecompress_slots = $self->general_values_conf()->{'p4_stage1_bamrecompress_slots'} || qq[`$num_threads_expression`];
 
-  my $i2b_implementation_flag = q[];
-  if(my $val = $self->general_values_conf()->{'p4_stage1_i2b_implementation'}) {
-    $p4_params{i2b_implementation} = $val;
-  }
-
-# the way the CONVERT_LOW_QUALITY_TO_NO_CALL/--convert-low-quality flag is currently handled will only work for bambi decode.
-#  So I'll fix bid_implementation to that
-  $p4_params{bid_implementation} = q[bambi];
-
   my $command = join q( ), q(bash -c '),
                            q(cd), $self->p4_stage1_errlog_paths->{$position}, q{&&},
                            q(vtfp.pl),
@@ -485,7 +452,6 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
                            qq(-keys s2b_mt_val -vals $samtobam_slots),
                            qq(-keys bamsormadup_numthreads -vals $bamsormadup_slots),
                            qq(-keys br_numthreads_val -vals $bamrecompress_slots),
-                           $i2b_implementation_flag,
                            q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/bcl2bam_phix_deplex_wtsi_stage1_template.json},
                            q{&&},
                            qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json),
