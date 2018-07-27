@@ -6,6 +6,7 @@ use namespace::autoclean;
 use Readonly;
 use File::Slurp;
 use File::Basename;
+use File::Spec;
 use JSON;
 use List::Util qw(sum uniq);
 use List::MoreUtils qw(all none);
@@ -194,6 +195,11 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $rpt_list = $dp->{rpt_list};
   my $bfs_input_file = $dp_archive_path . q[/] . $dp->file_name(ext => 'bam');
   my $af_input_file = $dp->file_name(ext => 'json', suffix => 'bam_alignment_filter_metrics');
+  my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '_1'));
+  my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '_2'));
+  my $fqt_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '_t'));
+  my $fqc1_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '1'));
+  my $fqc2_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '2'));
 
   $self->debug(q{  run_vec: } . join ",", @{$run_vec});
   $self->debug(q{  lane_vec: } . join ",", @{$lane_vec});
@@ -242,9 +248,11 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     spatial_filter_rg_value => $spatial_filter_rg_value,
     tag_metrics_files => $tag_metrics_files,
     s2_se_pe => ($self->is_paired_read)? q{pe} : q{se},
-    run_lane_ss_fq1 => $cache10k_path . q[/] . $name_root . q[_1.fastq],
-    run_lane_ss_fq2 => $cache10k_path . q[/] . $name_root . q[_2.fastq],
-    run_lane_ss_fqt => $cache10k_path . q[/] . $name_root . q[_t.fastq],
+    run_lane_ss_fq1 => $fq1_filepath,
+    run_lane_ss_fq2 => $fq2_filepath,
+    run_lane_ss_fqt => $fqt_filepath,
+    fqc1 => $fqc1_filepath,
+    fqc2 => $fqc2_filepath,
   };
   my $p4_ops = {
     prune => [],
