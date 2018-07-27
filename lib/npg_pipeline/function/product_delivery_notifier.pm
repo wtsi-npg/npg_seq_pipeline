@@ -182,7 +182,7 @@ sub create {
       $self->_write_message_file($msg_file, $self->make_message($product));
 
       my $job_name =
-        sprintf q{%s_%d_%d}, 'notify_product_delivery', $id_run, $i;
+        sprintf q{%s_%d_%d}, 'npg_pipeline_notify_delivery', $id_run, $i;
       my $command =
         sprintf q{%s --host %s --port %d --vhost %s --exchange %s %s},
         $SEND_MESSAGE_SCRIPT, $self->message_host, $self->message_port,
