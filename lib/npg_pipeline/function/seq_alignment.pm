@@ -259,8 +259,11 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     splice => [],
   };
 
-  if(not $spike_tag) {
+  if(not $spike_tag) { # remove calibration_pu from all until it copes with multilanes
     push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:calibration_pu-';
+  }
+  else {
+    push @{$p4_ops->{prune}}, 'fopt.*_bmd_multiway:calibration_pu-';
   }
 
   if(not $is_plex) {
