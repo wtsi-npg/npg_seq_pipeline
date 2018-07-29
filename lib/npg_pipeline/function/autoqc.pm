@@ -3,6 +3,7 @@ package npg_pipeline::function::autoqc;
 use Moose;
 use namespace::autoclean;
 use Readonly;
+use List::MoreUtils qw{any};
 use File::Spec;
 use Class::Load qw{load_class};
 
@@ -88,20 +89,22 @@ sub create {
   $self->info(sprintf 'Running autoqc check %s for run %i',
                       $self->qc_to_run(), $self->id_run());
 
+
   my @definitions = ();
-  foreach my $p ( $self->positions() ) {
-    my $is_multiplexed_lane = $self->is_multiplexed_lane($p);
+  for my $dp (@{$self->products->{lanes}}) {
+    my $h = {'rpt_list' => $dp->{rpt_list}};
+    my $l = $dp->lims; #??
+    my $is_multiplexed_lane = $l->tags; #??
 
-    my $h = {'id_run' => $self->id_run, 'position' => $p};
-    push @definitions, $self->_create_definition($h, $is_multiplexed_lane);
+    push @definitions, $self->_create_definition($dp, $is_multiplexed_lane, 0);
+  }
 
-    if ( $self->is_indexed && $is_multiplexed_lane) {
-      foreach my $tag_index (@{$self->get_tag_index_list($p)}) {
-        my %th = %{$h};
-        $th{'tag_index'} = $tag_index;
-        push @definitions, $self->_create_definition(\%th, $is_multiplexed_lane);
-      }
-    }
+  for my $dp (@{$self->products->{data_products}}) {
+    my $h = {'rpt_list' => $dp->{rpt_list}};
+    my $l = $dp->lims; #??
+    my $is_multiplexed_lane = $l->tags; #??
+
+    push @definitions, $self->_create_definition($dp, $is_multiplexed_lane, 1);
   }
 
   if (!@definitions) {
@@ -114,10 +117,13 @@ sub create {
 }
 
 sub _create_definition {
-  my ($self, $h, $is_multiplexed_lane) = @_;
-  if ($self->_should_run($h, $is_multiplexed_lane)) {
-    my $command = $self->_generate_command($h, $is_multiplexed_lane);
-    return $self->_create_definition_object($h, $command);
+  my ($self, $dp, $is_multiplexed_lane, $is_plex) = @_;
+
+  my $h = {'rpt_list' => $dp->{rpt_list}};
+
+  if ($self->_should_run($h, $is_multiplexed_lane, $is_plex)) {
+    my $command = $self->_generate_command($dp);
+    return $self->_create_definition_object($dp, $command);
   }
   return;
 }
@@ -130,15 +136,15 @@ sub _basic_attrs {
 }
 
 sub _create_definition_object {
-  my ($self, $h, $command) = @_;
+  my ($self, $dp, $command) = @_;
 
   my $ref = $self->_basic_attrs();
   my $qc_to_run = $self->qc_to_run;
 
   $ref->{'job_name'}        = join q{_}, $QC_SCRIPT_NAME, $qc_to_run,
-                                         $h->{'id_run'}, $self->timestamp();
+                                         $self->id_run(), $self->timestamp();
   $ref->{'fs_slots_num'}    = 1;
-  $ref->{'composition'}     = $self->create_composition($h);
+  $ref->{'composition'}     = $dp->{composition};
   $ref->{'command'}         = $command;
 
   if ($qc_to_run eq q[adapter]) {
@@ -177,17 +183,23 @@ sub _create_definition_object {
 }
 
 sub _generate_command {
-  my ($self, $h, $is_multiplexed_lane) = @_;
+  my ($self, $dp) = @_;
 
   my $check     = $self->qc_to_run();
-  my $position  = $h->{'position'};
-  my $tag_index = $h->{'tag_index'};
-  my $c = sprintf '%s --check=%s --id_run=%i --position=%i',
-                  $QC_SCRIPT_NAME, $check, $h->{'id_run'}, $position;
+  my $archive_path = $self->archive_path;
+  my $recal_path= $self->recalibrated_path;
+  my $dp_archive_path = $dp->path($self->archive_path);
+  my $cache10k_path = $dp->short_files_cache_path($archive_path);
+  my $qc_out_path = $dp->qc_out_path($archive_path);
+  my $bamfile_path = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'bam'));
+  my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '_1'));
+  my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '_2'));
+  my $fqt_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '_t'));
+  my $fqc1_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '1'));
+  my $fqc2_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '2'));
 
-  if (defined $tag_index) {
-    $c .= q[ --tag_index=] . $tag_index;
-  }
+  my $c = sprintf '%s --check=%s --rpt_list="%s" --filename_root=%s --qc_out=%s',
+                  $QC_SCRIPT_NAME, $check, $dp->{rpt_list}, $dp->file_name_root, $qc_out_path;
 
   if ($check eq q[insert_size]) {
     $c .= $self->is_paired_read() ? q[ --is_paired_read] : q[ --no-is_paired_read];
@@ -195,44 +207,56 @@ sub _generate_command {
     $c .= q[ --platform_is_hiseq];
   }
 
-  my $qc_out = defined $tag_index ? $self->lane_qc_path($position) : $self->qc_path();
-  $qc_out or $self->logcroak('Failed to get qc_out directory');
-  my $qc_in  = defined $tag_index ? $self->lane_archive_path($position) : $self->archive_path();
-  ##no critic (ControlStructures::ProhibitCascadingIfElse)
-  if ($check eq q[adapter]) {
-    $qc_in  = defined $tag_index
-              ? File::Spec->catfile($self->recalibrated_path(), q[lane] . $position)
-              : $self->recalibrated_path();
-  } elsif ($check eq q[spatial_filter] && $is_multiplexed_lane) {
-    $qc_in .= (q[/lane] . $position);
-  } elsif ($check eq q[tag_metrics]) {
-    $qc_in = $self->bam_basecall_path();
-  } elsif ($check eq q[sequence_error] or $check eq q[ref_match] or $check eq q[insert_size]) {
-    $qc_in .= q[/.npg_cache_10000]
+  ###########
+  # set qc_in
+  ###########
+  if(any { /$check/ } qw( gc_fraction qX_yield insert_size ref_match sequence_error)) {
+    $c .= qq{ --qc_in=$cache10k_path} 
   }
-  $qc_in or $self->logcroak('Failed to get qc_in directory');
-  $c .= qq[ --qc_in=$qc_in --qc_out=$qc_out];
+  elsif(any { /$check/ } qw( adapter genotype verify_bam_id upstream_tags )) {
+    $c .= qq{ --qc_in=$archive_path} 
+  }
+  else {
+    ## default qc_in??
+  }
+
+  #################
+  # set input_files
+  #################
+  ##no critic (ControlStructures::ProhibitCascadingIfElse)
+  if(any { /$check/ } qw( gc_fraction qX_yield)) {
+    $c .= qq[ --input_files=$fqc1_filepath --input_files=$fqc2_filepath]
+  }
+  elsif(any { /$check/ } qw( insert_size ref_match sequence_error )) {
+    $c .= qq[ --input_files=$fq1_filepath --input_files=$fq2_filepath];
+  }
+  elsif(any { /$check/ } qw( adapter genotype verify_bam_id )) {
+    $c .= qq{ --input_files=$bamfile_path} # note: single bam file 
+  }
+  else {
+    ## default input_files [none]?
+  }
 
   return $c;
 }
 
 sub _should_run {
-  my ($self, $h, $is_multiplexed_lane) = @_;
+# my ($self, $h, $is_multiplexed_lane) = @_;
+  my ($self, $h, $is_multiplexed_lane, $is_plex) = @_;
 
-  my $tag_index = $h->{'tag_index'};
   my $can_run = 1;
 
   if ($self->_is_lane_level_check()) {
-    return !defined $tag_index;
+    return !$is_plex;
   }
 
   if ($self->_is_lane_level_check4indexed_lane()) {
-    return $is_multiplexed_lane && !defined $tag_index;
+    return $is_multiplexed_lane && !$is_plex;
   }
 
   if ($self->_is_check4target_file()) {
-    $can_run = ((!defined $tag_index) && !$is_multiplexed_lane) ||
-	       ((defined $tag_index)  && $is_multiplexed_lane);
+    $can_run = ((!$is_plex && !$is_multiplexed_lane) ||
+	       ($is_plex && $is_multiplexed_lane));
   }
 
   if ($can_run) {
