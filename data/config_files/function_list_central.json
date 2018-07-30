@@ -63,7 +63,7 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
+            "source" : "seq_alignment",
             "target" : "qc_adapter"
          },
          {

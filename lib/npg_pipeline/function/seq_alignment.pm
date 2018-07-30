@@ -195,9 +195,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $rpt_list = $dp->{rpt_list};
   my $bfs_input_file = $dp_archive_path . q[/] . $dp->file_name(ext => 'bam');
   my $af_input_file = $dp->file_name(ext => 'json', suffix => 'bam_alignment_filter_metrics');
-  my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '_1'));
-  my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '_2'));
-  my $fqt_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '_t'));
+  my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
+  my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
+  my $fqt_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => 't'));
   my $fqc1_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '1'));
   my $fqc2_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '2'));
 
