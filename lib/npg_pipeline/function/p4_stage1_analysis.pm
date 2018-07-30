@@ -287,6 +287,9 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
   my $basecall_path = $self->basecall_path;
   my $no_cal_path       = $self->recalibrated_path;
   my $bam_basecall_path  = $self->bam_basecall_path;
+  my $lp_archive_path = $lane_product->path($self->archive_path);
+  my $fqc1_filepath = File::Spec->catdir($lp_archive_path, $lane_product->file_name(ext => 'fastqcheck', suffix => '1'));
+  my $fqc2_filepath = File::Spec->catdir($lp_archive_path, $lane_product->file_name(ext => 'fastqcheck', suffix => '2'));
 
   my $full_bam_name  = $bam_basecall_path . q{/}. $id_run . q{_} .$position. q{.bam};
 
@@ -301,6 +304,8 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
   $p4_params{unfiltered_cram_file} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.unfiltered.cram}; # full name for spatially unfiltered lane-level cram file
   $p4_params{md5filename} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.md5}; # full name for the md5 for the spatially filtered lane-level file
   $p4_params{split_prefix} = $no_cal_path; # location for split bam files
+  $p4_params{fqc1} = $fqc1_filepath;
+  $p4_params{fqc2} = $fqc1_filepath;
 
   my $job_name = join q/_/, (q{p4_stage1}, $id_run, $position, $self->timestamp());
   $job_name = q{'} . $job_name . q{'};
