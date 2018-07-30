@@ -305,7 +305,7 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
   $p4_params{md5filename} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.md5}; # full name for the md5 for the spatially filtered lane-level file
   $p4_params{split_prefix} = $no_cal_path; # location for split bam files
   $p4_params{fqc1} = $fqc1_filepath;
-  $p4_params{fqc2} = $fqc1_filepath;
+  $p4_params{fqc2} = $fqc2_filepath;
 
   my $job_name = join q/_/, (q{p4_stage1}, $id_run, $position, $self->timestamp());
   $job_name = q{'} . $job_name . q{'};
