@@ -192,6 +192,8 @@ sub _generate_command {
   my $cache10k_path = $dp->short_files_cache_path($archive_path);
   my $qc_out_path = $dp->qc_out_path($archive_path);
   my $bamfile_path = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'bam'));
+  my $tagzerobamfile_path = File::Spec->catdir($recal_path, $dp->file_name(ext => 'bam', suffix => '#0'));
+  $tagzerobamfile_path =~ s/_#0/#0/;
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
   my $fqt_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => 't'));
@@ -207,31 +209,22 @@ sub _generate_command {
     $c .= q[ --platform_is_hiseq];
   }
 
-  ###########
-  # set qc_in
-  ###########
-  if(any { /$check/ } qw( gc_fraction qX_yield insert_size ref_match sequence_error)) {
-    $c .= qq{ --qc_in=$cache10k_path} 
-  }
-  elsif(any { /$check/ } qw( adapter genotype verify_bam_id upstream_tags )) {
-    $c .= qq{ --qc_in=$archive_path} 
-  }
-  else {
-    ## default qc_in??
-  }
-
   #################
   # set input_files
   #################
   ##no critic (ControlStructures::ProhibitCascadingIfElse)
   if(any { /$check/ } qw( gc_fraction qX_yield)) {
-    $c .= qq[ --input_files=$fqc1_filepath --input_files=$fqc2_filepath]
+    $c .= qq[ --input_files=$fqc1_filepath --input_files=$fqc2_filepath];
   }
   elsif(any { /$check/ } qw( insert_size ref_match sequence_error )) {
     $c .= qq[ --input_files=$fq1_filepath --input_files=$fq2_filepath];
   }
   elsif(any { /$check/ } qw( adapter genotype verify_bam_id )) {
-    $c .= qq{ --input_files=$bamfile_path} # note: single bam file 
+    $c .= qq{ --input_files=$bamfile_path}; # note: single bam file 
+  }
+  elsif($check eq q/upstream_tags/) {
+    $c .= qq{ --tag0_bam_file=$tagzerobamfile_path}; # note: single bam file 
+    $c .= qq{ --cal_path=$recal_path};
   }
   else {
     ## default input_files [none]?
@@ -241,7 +234,6 @@ sub _generate_command {
 }
 
 sub _should_run {
-# my ($self, $h, $is_multiplexed_lane) = @_;
   my ($self, $h, $is_multiplexed_lane, $is_plex) = @_;
 
   my $can_run = 1;
