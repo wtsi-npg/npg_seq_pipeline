@@ -197,7 +197,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $af_input_file = $dp->file_name(ext => 'json', suffix => 'bam_alignment_filter_metrics');
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
-  my $fqt_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => 't'));
   my $fqc1_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '1'));
   my $fqc2_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '2'));
 
@@ -250,7 +249,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     s2_se_pe => ($self->is_paired_read)? q{pe} : q{se},
     run_lane_ss_fq1 => $fq1_filepath,
     run_lane_ss_fq2 => $fq2_filepath,
-    run_lane_ss_fqt => $fqt_filepath,
     fqc1 => $fqc1_filepath,
     fqc2 => $fqc2_filepath,
   };
