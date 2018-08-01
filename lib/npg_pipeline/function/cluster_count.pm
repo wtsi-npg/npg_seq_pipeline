@@ -65,13 +65,16 @@ sub create {
                             $self->id_run(), $self->timestamp;
   my @definitions = ();
 
-  for my $p ($self->positions()) {
+  for my $lane_product (@{$self->products->{lanes}}) {
+
+    my $p = $lane_product->composition->{components}->[0]->{position}; # there should be only one element in components
+    my $qc_path = $lane_product->qc_out_path($self->archive_path); # used by tag_metrics qc check
 
     my $command = $CLUSTER_COUNT_SCRIPT;
     $command .= q{ --id_run=}            . $self->id_run();
     $command .= q{ --position=}          . $p;
     $command .= q{ --runfolder_path=}    . $self->runfolder_path();
-    $command .= q{ --qc_path=}           . $self->qc_path();
+    $command .= q{ --qc_path=}           . $qc_path;
     $command .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
 
     push @definitions,  npg_pipeline::function::definition->new(
