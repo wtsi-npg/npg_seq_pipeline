@@ -226,6 +226,18 @@ sub _generate_command {
     $c .= qq{ --tag0_bam_file=$tagzerobamfile_path}; # note: single bam file 
     $c .= qq{ --cal_path=$recal_path};
   }
+  elsif($check eq q/spatial_filter/) {
+
+    my $position = $dp->composition->get_component(0)->position; # lane-level check, so position is unique
+
+    for my $redp (@{$self->products->{data_products}}) {
+      # find any merged products with components from this position (lane)
+      if(any { $_->{position} == $position } @{$redp->composition->{components}}) {
+        my $input_file = File::Spec->catdir($redp->path($self->archive_path), $redp->file_name(ext => 'spatial_filter.stats'));
+        $c .= qq{ --input_files=$input_file};
+      }
+    }
+  }
   else {
     ## default input_files [none]?
   }
