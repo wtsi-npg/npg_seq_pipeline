@@ -78,6 +78,7 @@ sub _build__is_check4target_file {
   my $self = shift;
   ##no critic (RegularExpressions::RequireBracesForMultiline)
   return $self->qc_to_run() =~ /^ adapter |
+                                  bcfstats |
                                   verify_bam_id |
                                   genotype |
                                   pulldown_metrics $/smx;
@@ -219,7 +220,7 @@ sub _generate_command {
   elsif(any { /$check/ } qw( insert_size ref_match sequence_error )) {
     $c .= qq[ --input_files=$fq1_filepath --input_files=$fq2_filepath];
   }
-  elsif(any { /$check/ } qw( adapter genotype verify_bam_id )) {
+  elsif(any { /$check/ } qw( adapter bcfstats genotype verify_bam_id )) {
     $c .= qq{ --input_files=$bamfile_path}; # note: single bam file 
   }
   elsif($check eq q/upstream_tags/) {

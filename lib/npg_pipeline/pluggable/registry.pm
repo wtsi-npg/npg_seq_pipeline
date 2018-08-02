@@ -66,6 +66,7 @@ Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>
 Readonly::Array my @AUTOQC_FUNCTIONS =>
   qw/
       qc_adapter
+      qc_bcfstats
       qc_gc_fraction
       qc_genotype
       qc_insert_size
