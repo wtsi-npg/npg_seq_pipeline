@@ -62,16 +62,22 @@ has q{spider} => (
 
 =head2 executor_type
 
-Executor type. By default comands will be submitted to LSF.
+Executor type. By default commands will be submitted to LSF.
+Can be specified in the general configuration file.
 
 =cut
 
 has q{executor_type} => (
   isa           => q{Str},
   is            => q{ro},
-  default       => $DEFAULT_EXECUTOR_TYPE,
+  lazy_build    => 1,
   documentation => q{Executor type, defaults to lsf},
 );
+sub _build_executor_type {
+  my $self = shift;
+  my $et = $self->general_values_conf()->{'executor_type'};
+  return $et ? $et : $DEFAULT_EXECUTOR_TYPE;
+}
 
 =head2 execute
 
