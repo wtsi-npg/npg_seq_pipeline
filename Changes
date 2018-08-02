@@ -19,6 +19,7 @@ LIST OF CHANGES
    removed; npg_pipeline::function::p4_stage1_analysis module, the only user
    of this function, switched to use the relevant accessor from the
    npg_pipeline::runfolder_scaffold role
+ - minor changes for bcfstats qc check
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline

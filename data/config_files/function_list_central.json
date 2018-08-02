@@ -139,6 +139,12 @@
          {
             "relation" : "dependsOn",
             "source" : "seq_alignment",
+            "target" : "qc_bcfstats"
+         },
+
+         {
+            "relation" : "dependsOn",
+            "source" : "seq_alignment",
             "target" : "qc_pulldown_metrics"
          },
          {
@@ -199,6 +205,11 @@
          {
             "relation" : "dependsOn",
             "source" : "bam_cluster_counter_check",
+            "target" : "run_analysis_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "qc_bcfstats",
             "target" : "run_analysis_complete"
          },
          {
@@ -329,6 +340,10 @@
          {
             "id" : "seqchksum_comparator",
             "label" : "seqchksum_comparator"
+         },
+         {
+            "id" : "qc_bcfstats",
+            "label" : "qc_bcfstats"
          },
          {
             "id" : "qc_pulldown_metrics",
