@@ -223,7 +223,8 @@ sub _generate_command {
     $c .= qq{ --input_files=$bamfile_path}; # note: single bam file 
   }
   elsif($check eq q/upstream_tags/) {
-    $c .= qq{ --tag0_bam_file=$tagzerobamfile_path}; # note: single bam file 
+    $c .= qq{ --tag0_bam_file=$tagzerobamfile_path}; # note: single bam file
+    $c .= qq{ --qc_in=$qc_out_path}; #to find tag metrics
     $c .= qq{ --cal_path=$recal_path};
   }
   else {
