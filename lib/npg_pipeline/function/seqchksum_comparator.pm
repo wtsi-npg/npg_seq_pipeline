@@ -28,11 +28,17 @@ npg_pipeline::function::seqchksum_comparator
 
 =head2 create
 
-Creates and returns per-lane function definitions as an array.
-Each function definition is created as a npg_pipeline::function::definition
+Creates and returns a per-run function definition in an array.
+The function definition is created as a npg_pipeline::function::definition
 type object.
 
 =cut
+
+has 'input_globs' => ( isa        => 'ArrayRef',
+                     is         => 'ro',
+                     required   => 0,
+                     default  => sub {return [];}, # is sub necessary?
+                   );
 
 sub create {
   my $self = shift;
@@ -46,80 +52,75 @@ sub create {
     $command .= q{ --verbose};
   }
 
-  my @definitions = ();
-  foreach my $p ($self->positions()) {
-    push @definitions, npg_pipeline::function::definition->new(
-      created_by   => __PACKAGE__,
-      created_on   => $self->timestamp(),
-      identifier   => $self->id_run(),
-      composition  =>
-        $self->create_composition({id_run => $self->id_run, position => $p}),
-      job_name     => $job_name,
-      command      => $command . q{ --lanes=} . $p,
-    );
+  for my $dp (@{$self->products->{data_products}}) {
+    $command .= sprintf q{ --input_globs=%s/%s*.cram}, $dp->path($self->archive_path), $dp->file_name_root;
   }
+  
+  my @definitions = ();
+
+  push @definitions, npg_pipeline::function::definition->new(
+    created_by   => __PACKAGE__,
+    created_on   => $self->timestamp(),
+    identifier   => $self->id_run(),
+    composition  =>
+      $self->create_composition({id_run => $self->id_run, position => 1}),
+#     $self->create_composition({rpt_list => qq($self->id_run_1)}),
+    job_name     => $job_name,
+    command      => $command,
+  );
 
   return \@definitions;
 }
 
 =head2 do_comparison
 
-Bamcat any plex/split bamfiles back together to perform a bamseqchksum.
-Compare it with the one for the whole lane or croak if that has not been done.
-Use diff -u rather than cmp and store the file on disk to help work out what has gone wrong.
+Merge all product seqchksum files together, merge all lane checksum files (from stage1),
+and compare the results. Use diff -u rather than cmp and store the files on disk to help
+work out what has gone wrong.
 
 =cut
 
 sub do_comparison {
   my ($self) = @_;
 
-  my $lanes = $self->lanes();
-
-  if ( !$lanes || !@{$lanes}) {
-    $self->logcroak( 'Lanes have to be given explicitly');
-  }
-
-  foreach my $position (@{$lanes}) {
-    $self->info("About to build .all.seqchksum for lane $position");
-    $self->_compare_lane($position);
-  }
-
-  return;
-}
-
-sub _compare_lane {
-  my ($self, $position) = @_;
-
-  my $input_seqchksum_dir = $self->bam_basecall_path();
-  my $input_seqchksum_file_name = $self->id_run . '_' . $position . '.post_i2b.seqchksum';
-  my $lane_seqchksum_file_name = $self->id_run . '_' . $position . '.all.seqchksum';
-
-  my $input_lane_seqchksum_file_name = File::Spec->catfile($input_seqchksum_dir, $input_seqchksum_file_name);
-  if ( ! -e $input_lane_seqchksum_file_name ) {
-    $self->logcroak("Cannot find $input_lane_seqchksum_file_name to compare to");
-  }
-
   my $wd = getcwd();
   $self->info('Changing to archive directory ', $self->archive_path());
   chdir $self->archive_path() or $self->logcroak('Failed to change directory');
 
-  my $cram_file_name_glob = qq({lane$position/,}). $self->id_run . '_' . $position . q{*.cram};
-  my @crams = glob $cram_file_name_glob or
-    $self->logcroak("Cannot find any cram files using $cram_file_name_glob");
-  #my @seqchksums = map{s/\.cram$/\.seqchksum/r} @crams;
-  ## no critic (RegularExpressions::RequireDotMatchAnything)
-  ## no critic (RegularExpressions::RequireExtendedFormatting)
-  ## no critic (RegularExpressions::RequireLineBoundaryMatching)
-  my @seqchksums = map{s/[.]cram$/.seqchksum/r} @crams;
-  $self->info("Building .all.seqchksum for lane $position from seqchksum set based on $cram_file_name_glob ...");
+  my $prods_seqchksum_file_name = $self->id_run . '.allprods.seqchksum';
+  my $lanes_seqchksum_file_name = $self->id_run . '.alllanes.seqchksum';
 
-  my $cmd = 'seqchksum_merge.pl ' . join(q{ }, @seqchksums) . qq{> $lane_seqchksum_file_name};
+  # merge all product seqchksums
+  my $cmd = 'seqchksum_merge.pl ';
+  my @seqchksums = ();
+  for my $cram_file_name_glob (@{$self->input_globs}) {
+    my @crams = glob $cram_file_name_glob or $self->logcroak("Cannot find any cram files using $cram_file_name_glob");
 
-  $self->info("Running $cmd to generate $lane_seqchksum_file_name");
+    @seqchksums = map{s/[.]cram$/.seqchksum/r} @crams;
+    $self->info("Building .all.seqchksum for product from seqchksum set based on $cram_file_name_glob ...");
+
+    $cmd .= q{ } . join(q{ }, @seqchksums);
+  }
+  $cmd .= qq{ > $prods_seqchksum_file_name};
+  $self->info("Running $cmd to generate prods_seqchksum_file_name");
   system(qq[/bin/bash -c "set -o pipefail && $cmd"]) == 0 or $self->logcroak(
     "Failed to run command $cmd");
 
-  my $compare_cmd = q{diff -u <(grep '.all' } . $input_lane_seqchksum_file_name . q{ | sort) <(grep '.all' } . $lane_seqchksum_file_name . q{ | sort)};
+  # merge all lanes seqchksums (from i2b)
+  $cmd = 'seqchksum_merge.pl ';
+  @seqchksums = ();
+  for my $position ($self->positions) {
+    my $fn = $self->id_run . '_' . $position . '.post_i2b.seqchksum';
+    my $ffn = File::Spec->catfile($self->bam_basecall_path, $fn);
+    push @seqchksums, $ffn;
+  }
+  $cmd .= q{ } . join(q{ }, @seqchksums);
+  $cmd .= qq{ > $lanes_seqchksum_file_name};
+  $self->info("Running $cmd to generate lanes_seqchksum_file_name");
+  system(qq[/bin/bash -c "set -o pipefail && $cmd"]) == 0 or $self->logcroak(
+    "Failed to run command $cmd");
+
+  my $compare_cmd = q{diff -u <(grep '.all' } . $prods_seqchksum_file_name . q{ | sort) <(grep '.all' } . $lanes_seqchksum_file_name . q{ | sort)};
   $self->info($compare_cmd);
 
   my $ret = system qq[/bin/bash -c "$compare_cmd"];
