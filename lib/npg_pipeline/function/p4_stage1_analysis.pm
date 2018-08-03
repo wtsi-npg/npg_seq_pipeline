@@ -273,6 +273,7 @@ sub _generate_command_params {
                     reference_phix => $self->phix_alignment_reference,
                     scramble_reference_fasta => $self->_default_phix_ref(q{fasta}, $self->repository),
                     s1_se_pe => ($self->is_paired_read)? q{pe} : q{se},
+                    aln_filter_value => q{0x900},
                   );
   my %p4_ops = ( splice => [], prune => [], );
 
