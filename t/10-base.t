@@ -146,7 +146,7 @@ subtest 'products' => sub {
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_novaseq4lanes.csv';
   cp 't/data/run_params/runParameters.novaseq.xml',  "$rf_path/runParameters.xml";
-  my $b = npg_pipeline::base->new(runfolder_path => $rf_path);
+  my $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
   ok ($b->merge_lanes, 'merge_lanes flag is set');
   lives_ok {$products = $b->products} 'products hash created for NovaSeq run';
   ok (exists $products->{'lanes'}, 'products lanes key exists');
@@ -156,7 +156,7 @@ subtest 'products' => sub {
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_rapidrun_nopool.csv';
   cp 't/data/run_params/runParameters.hiseq.rr.xml',  "$rf_path/runParameters.xml"; 
-  $b = npg_pipeline::base->new(runfolder_path => $rf_path);
+  $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
   ok ($b->merge_lanes, 'merge_lanes flag is set');
   lives_ok {$products = $b->products} 'products hash created for rapid run';
   ok (exists $products->{'lanes'}, 'products lanes key exists');
@@ -167,7 +167,7 @@ subtest 'products' => sub {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/miseq/samplesheet_16850.csv';
   cp 't/data/run_params/runParameters.miseq.xml',  "$rf_path/runParameters.xml";
   cp 't/data/miseq/16850_RunInfo.xml',  "$rf_path/RunInfo.xml";
-  $b = npg_pipeline::base->new(runfolder_path => $rf_path);
+  $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
   ok (!$b->merge_lanes, 'merge_lanes flag is not set');
   lives_ok {$products = $b->products} 'products hash created for rapid run';
   ok (exists $products->{'lanes'}, 'products lanes key exists');

@@ -156,7 +156,7 @@ sub _definition4job {
     return join q[/], $log_dir, $log_name;
   };
 
-  $def->{'cmd'} = join q[ ], q[(], $d->command(), q[)], q[2>&1], q[|], q[tee], $log_file->();
+  $def->{'cmd'} = join q[ ], q[(], $d->command(), q[)], q[2>&1], q[|], q[tee], q["]. $log_file->() . q["];
 
   return $def;
 }

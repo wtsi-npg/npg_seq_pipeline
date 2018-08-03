@@ -78,6 +78,7 @@ sub _build__is_check4target_file {
   my $self = shift;
   ##no critic (RegularExpressions::RequireBracesForMultiline)
   return $self->qc_to_run() =~ /^ adapter |
+                                  bcfstats |
                                   verify_bam_id |
                                   genotype |
                                   pulldown_metrics $/smx;
@@ -220,11 +221,13 @@ sub _generate_command {
   elsif(any { /$check/sm } qw( insert_size ref_match sequence_error )) {
     $c .= qq[ --input_files=$fq1_filepath --input_files=$fq2_filepath];
   }
-  elsif(any { /$check/sm } qw( adapter genotype verify_bam_id )) {
+
+  elsif(any { /$check/sm } qw( adapter bcfstats genotype verify_bam_id )) {
     $c .= qq{ --input_files=$bamfile_path}; # note: single bam file 
   }
   elsif($check eq q/upstream_tags/) {
-    $c .= qq{ --tag0_bam_file=$tagzerobamfile_path}; # note: single bam file 
+    $c .= qq{ --tag0_bam_file=$tagzerobamfile_path}; # note: single bam file
+    $c .= qq{ --archive_qc_path=$qc_out_path}; # find locally produced tag metrics results
     $c .= qq{ --cal_path=$recal_path};
   }
   elsif($check eq q/spatial_filter/) {

@@ -6,7 +6,6 @@ LIST OF CHANGES
  - generic runfolder scaffolding for any products
  - since the top-level qc directory is no longer required, the tileviz
    directory is moved to the analysis directory
-
  - resuffle of roles in npg_pipeline::roles:
      npg_pipeline::roles::business::base merged into npg_pipeline::base;
      npg_pipeline::roles::business::flag_options moved to
@@ -19,6 +18,8 @@ LIST OF CHANGES
    removed; npg_pipeline::function::p4_stage1_analysis module, the only user
    of this function, switched to use the relevant accessor from the
    npg_pipeline::runfolder_scaffold role
+ - minor changes for bcfstats qc check
+ - executor type (lsf or wr) can be specified in the configuration file
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline
