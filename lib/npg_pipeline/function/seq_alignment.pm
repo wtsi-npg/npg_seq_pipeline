@@ -38,6 +38,7 @@ Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star salmon};
+Readonly::Scalar my $DEFAULT_SPIKE_TAG            => q{888};
 
 =head2 phix_reference
 
@@ -108,7 +109,8 @@ sub generate {
 
   my @definitions = ();
 
-  unless($self->platform_NovaSeq and $self->is_indexed) {
+  ## no critic (ControlStructures::ProhibitUnlessBlocks)
+  unless($self->platform_NovaSeq and $self->is_indexed) { # temporary warning
     $self->debug(q{this pipeline is currently intended for NovaSeq pools only});
   }
 
@@ -161,13 +163,13 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 # fetch base parameters from supplied data_product (dp)
 #######################################################
   my $run_vec = [ uniq (map { $_->{id_run} } @{$dp->composition->{components}}) ];
-  my $id_run = $run_vec ->[0]; # assume unique for the moment
+  my $id_run = $run_vec->[0]; # assume unique for the moment
   my $lane_vec = [ uniq (map { $_->{position} } @{$dp->composition->{components}}) ]; # use lane4products?
   my $tags_vec = [ uniq (map { $_->{tag_index} } @{$dp->composition->{components}}) ];
   my $tag_index = $tags_vec->[0]; # assume unique for the moment
 
   my $is_pool = $dp->{lims}->is_pool;
-  my $spike_tag = ($tag_index == 888? 1: 0);
+  my $spike_tag = ($tag_index == $DEFAULT_SPIKE_TAG? 1: 0); # is_spike_tag should be determined from lims?
 
   my $archive_path= $self->archive_path;
   my $dp_archive_path = $dp->path($self->archive_path);
@@ -180,11 +182,11 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $is_tag_zero_product = $dp->is_tag_zero_product;
   $self->info(qq{ is_tag_zero_product: $is_tag_zero_product});
 
-  my @incrams = map { $recal_path . '/' . $id_run . q[_] . $_ . q[#] . $tag_index . q[.bam] } @{$lane_vec};
+  my @incrams = map { $recal_path . q[/] . $id_run . q[_] . $_ . q[#] . $tag_index . q[.bam] } @{$lane_vec};
   my $incrams_pv = [ map { qq[I=$_] } @incrams ];
 
-  my $s2_filter_files = join ",", (map { $recal_path . '/' . $id_run . q[_] . $_ . q[.spatial_filter] } @{$lane_vec} );
-  my $spatial_filter_rg_value = join ",", (map { $id_run . q[_] . $_ . q[#] . $tag_index } @{$lane_vec} );
+  my $s2_filter_files = join q[,], (map { $recal_path . q[/] . $id_run . q[_] . $_ . q[.spatial_filter] } @{$lane_vec} );
+  my $spatial_filter_rg_value = join q[,], (map { $id_run . q[_] . $_ . q[#] . $tag_index } @{$lane_vec} );
   my $tag_metrics_files = join q[ ], (map { $archive_path . '/lane' . $_ . q[/qc/] . $id_run . q[_] . $_ . q[.tag_metrics.json] } @{$lane_vec});
 
   my $name_root = $dp->file_name_root;
@@ -200,9 +202,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $fqc1_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '1'));
   my $fqc2_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '2'));
 
-  $self->debug(q{  run_vec: } . join ",", @{$run_vec});
-  $self->debug(q{  lane_vec: } . join ",", @{$lane_vec});
-  $self->debug(q{  tags_vec: } . join ",", @{$tags_vec});
+  $self->debug(q{  run_vec: } . join q[,], @{$run_vec});
+  $self->debug(q{  lane_vec: } . join q[,], @{$lane_vec});
+  $self->debug(q{  tags_vec: } . join q[,], @{$tags_vec});
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});
   $self->debug(qq{  is_pool: $is_pool});

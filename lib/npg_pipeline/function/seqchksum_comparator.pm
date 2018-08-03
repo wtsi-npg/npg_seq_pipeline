@@ -55,7 +55,7 @@ sub create {
   for my $dp (@{$self->products->{data_products}}) {
     $command .= sprintf q{ --input_globs=%s/%s*.cram}, $dp->path($self->archive_path), $dp->file_name_root;
   }
-  
+
   my @definitions = ();
 
   push @definitions, npg_pipeline::function::definition->new(
@@ -96,10 +96,13 @@ sub do_comparison {
   for my $cram_file_name_glob (@{$self->input_globs}) {
     my @crams = glob $cram_file_name_glob or $self->logcroak("Cannot find any cram files using $cram_file_name_glob");
 
+    ## no critic (RegularExpressions::RequireDotMatchAnything)
+    ## no critic (RegularExpressions::RequireExtendedFormatting)
+    ## no critic (RegularExpressions::RequireLineBoundaryMatching)
     @seqchksums = map{s/[.]cram$/.seqchksum/r} @crams;
     $self->info("Building .all.seqchksum for product from seqchksum set based on $cram_file_name_glob ...");
 
-    $cmd .= q{ } . join(q{ }, @seqchksums);
+    $cmd .= q{ } . join q{ }, @seqchksums;
   }
   $cmd .= qq{ > $prods_seqchksum_file_name};
   $self->info("Running $cmd to generate prods_seqchksum_file_name");
@@ -114,7 +117,7 @@ sub do_comparison {
     my $ffn = File::Spec->catfile($self->bam_basecall_path, $fn);
     push @seqchksums, $ffn;
   }
-  $cmd .= q{ } . join(q{ }, @seqchksums);
+  $cmd .= q{ } . join q{ }, @seqchksums;
   $cmd .= qq{ > $lanes_seqchksum_file_name};
   $self->info("Running $cmd to generate lanes_seqchksum_file_name");
   system(qq[/bin/bash -c "set -o pipefail && $cmd"]) == 0 or $self->logcroak(
