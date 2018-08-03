@@ -261,7 +261,7 @@ sub _get_index_lengths {
 # Determine parameters for the lane from LIMS information and create the hash from which the p4 stage1
 #  analysis param_vals file will be generated. Generate the vtfp/viv commands using this param_vals file.
 #########################################################################################################
-sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexity)
+sub _generate_command_params {
   my ($self, $lane_lims, $tag_list_file, $lane_product) = @_;
   my %p4_params = (
                     samtools_executable => q{samtools},
