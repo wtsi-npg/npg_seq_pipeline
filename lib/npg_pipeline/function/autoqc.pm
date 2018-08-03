@@ -194,7 +194,10 @@ sub _generate_command {
   my $qc_out_path = $dp->qc_out_path($archive_path);
   my $bamfile_path = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'bam'));
   my $tagzerobamfile_path = File::Spec->catdir($recal_path, $dp->file_name(ext => 'bam', suffix => '#0'));
-  $tagzerobamfile_path =~ s/_#0/#0/smx;
+  ## no critic (RegularExpressions::RequireDotMatchAnything)
+  ## no critic (RegularExpressions::RequireExtendedFormatting)
+  ## no critic (RegularExpressions::RequireLineBoundaryMatching)
+  $tagzerobamfile_path =~ s/_#0/#0/;
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
   my $fqt_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => 't'));
