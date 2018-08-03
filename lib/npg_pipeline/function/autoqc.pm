@@ -41,7 +41,6 @@ has q{_check_uses_refrepos} => (isa        => q{Bool},
                                 lazy_build => 1,);
 sub _build__check_uses_refrepos {
   my $self = shift;
-  load_class($self->_qc_module_name);
   return $self->_qc_module_name()->meta()
     ->find_attribute_by_name('repository') ? 1 : 0;
 }
@@ -82,6 +81,12 @@ sub _build__is_check4target_file {
                                   verify_bam_id |
                                   genotype |
                                   pulldown_metrics $/smx;
+}
+
+sub BUILD {
+  my $self = shift;
+  load_class($self->_qc_module_name);
+  return;
 }
 
 sub create {
@@ -279,7 +284,6 @@ sub _should_run {
       $init_hash{'is_paired_read'} = $self->is_paired_read() ? 1 : 0;
     }
 
-    load_class($self->_qc_module_name);
     $can_run = $self->_qc_module_name()->new(\%init_hash)->can_run();
   }
 
@@ -313,6 +317,12 @@ Autoqc checks jobs definition.
 =head2 qc_to_run
 
 Name of the QC check to run, required attribute.
+
+=head2 BUILD
+
+Method called by Moose before returning a new object instance to the
+caller. Loads the auto qc check class defined by the qc_to_run attribute
+into memory, errors if this fails.
 
 =head2 create
 
