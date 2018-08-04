@@ -63,32 +63,38 @@ sub create {
 
   my $job_name = join q[_], $CLUSTER_COUNT_SCRIPT,
                             $self->id_run(), $self->timestamp;
-  my @definitions = ();
+
+  my $command = $CLUSTER_COUNT_SCRIPT;
+  $command .= q{ --id_run=}            . $self->id_run();
+  $command .= q{ --position=1};
+  $command .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
+  $command .= q{ --runfolder_path=}    . $self->runfolder_path();
+
+
+
+  for my $dp (@{$self->products->{data_products}}) {
+    my $bfs_path = $dp->qc_out_path($self->archive_path);
+    $command .= sprintf qq{ --bfs_paths=$bfs_path};
+  }
+
 
   for my $lane_product (@{$self->products->{lanes}}) {
 
-    my $p = $lane_product->composition->{components}->[0]->{position}; # there should be only one element in components
-    my $qc_path = $lane_product->qc_out_path($self->archive_path); # used by tag_metrics qc check
+    my $sf_path = $lane_product->qc_out_path($self->archive_path);
 
-    my $command = $CLUSTER_COUNT_SCRIPT;
-    $command .= q{ --id_run=}            . $self->id_run();
-    $command .= q{ --position=}          . $p;
-    $command .= q{ --runfolder_path=}    . $self->runfolder_path();
-    $command .= q{ --qc_path=}           . $qc_path;
-    $command .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
+    $command .= sprintf qq{ --sf_paths=$sf_path};
+  }
 
-    push @definitions,  npg_pipeline::function::definition->new(
+  return [
+      npg_pipeline::function::definition->new(
       created_by   => __PACKAGE__,
       created_on   => $self->timestamp(),
       identifier   => $self->id_run(),
       job_name     => $job_name,
       command      => $command,
-      composition  =>
-        $self->create_composition({id_run => $self->id_run, position => $p})
-    );
-  }
-
-  return \@definitions;
+      composition  => $self->create_composition({id_run => $self->id_run, position => 1,})
+    )
+  ];
 }
 
 =head2 run_cluster_count_check
@@ -150,6 +156,18 @@ sub run_cluster_count_check {
     return 1;
 }
 
+has 'bfs_paths' => ( isa        => 'ArrayRef',
+                     is         => 'ro',
+                     required   => 0,
+                     default  => sub {return [];}, # is sub necessary?
+                   );
+
+has 'sf_paths' => ( isa        => 'ArrayRef',
+                     is         => 'ro',
+                     required   => 0,
+                     default  => sub {return [];}, # is sub necessary?
+                   );
+
 has q{position} => (
   isa => q{Int},
   is  => q{ro},
@@ -187,24 +205,26 @@ sub _populate_cluster_counts {
 
   my $return;
 
+  my $bustard_pf_cluster_count;
+  my $bustard_raw_cluster_count;
   foreach my $l (keys %{$interop}) {
-    if ( $l != $self->position() ) {
-      next;
-    }
-    $self->_set_bustard_pf_cluster_count( $interop->{$l}->{'cluster count pf'} );
+    $bustard_pf_cluster_count += $interop->{$l}->{'cluster count pf'};
     if ( $type eq q{pf} ) {
-      $return = $interop->{$l}->{'cluster count pf'};
+      $return += $interop->{$l}->{'cluster count pf'};
     }
 
-    $self->_set_bustard_raw_cluster_count( $interop->{$l}->{'cluster count'} );
+    $bustard_raw_cluster_count += $interop->{$l}->{'cluster count'};
     if ( $type eq q{raw} ) {
-      $return = $interop->{$l}->{'cluster count'};
+      $return += $interop->{$l}->{'cluster count'};
     }
   }
 
   if ( !defined $return ) {
     $self->logcroak(q{Unable to determine a raw and/or pf cluster count});
   }
+
+  $self->_set_bustard_pf_cluster_count($bustard_pf_cluster_count);
+  $self->_set_bustard_raw_cluster_count($bustard_raw_cluster_count);
 
   return $return;
 
@@ -325,83 +345,75 @@ sub _build__spatial_filter_processed_count {
   return $self->_spatial_filter_processed_count();
 }
 
-sub _populate_spatial_filter_counts{
+sub _populate_spatial_filter_counts {
    my ( $self ) = @_;
 
-   my $position = $self->position();
-   my $qc_store = npg_qc::autoqc::qc_store->new( use_db => 0 );
-   my $collection = $qc_store->load_from_path( $self->qc_path() );
-   if( $collection->is_empty() ){
-     $self->warn("There are no qc results available for this lane $position in here: ",
-                 $self->qc_path);
-   }
-   my $collection_lane = $collection->slice(q[position], $position);
-   my $spatial_filter_collection = $collection_lane->slice('class_name', 'spatial_filter');
+  my $spatial_filter_processed_count;
+  my $spatial_filter_failed_count;
+  for my $sf_path (@{$self->sf_paths}) {
 
-   if( $spatial_filter_collection->is_empty() ){
-     $self->warn("There is no spatial_filter result available for this lane $position in here: ",
-                 $self->qc_path);
-   }
+    my $qc_store = npg_qc::autoqc::qc_store->new( use_db => 0 );
+    my $collection = $qc_store->load_from_path($sf_path);
+    if( $collection->is_empty() ){
+      $self->warn("There are no spatial_filter qc results available in here: ", $sf_path);
+      next;
+    }
+    my $spatial_filter_collection = $collection->slice('class_name', 'spatial_filter');
 
-   my $results = $spatial_filter_collection->results();
-   if(@{$results} > 1){
-     $self->logcroak("More than one spatial_filter result available for this lane $position in here: ",
-                     $self->qc_path);
-   }elsif(@{$results}){
-     my $qc_result = $results->[0];
-     $self->_set__spatial_filter_processed_count($qc_result->num_total_reads());
-     $self->_set__spatial_filter_failed_count($qc_result->num_spatial_filter_fail_reads());
-     return $qc_result;
-   }
-   #set undef for values if no qc results:
-   $self->_set__spatial_filter_processed_count();
-   $self->_set__spatial_filter_failed_count();
-   return;
+    if($spatial_filter_collection->is_empty()) {
+      $self->warn("There is no spatial_filter result available in here: ", $sf_path);
+    }
+
+    my $results = $spatial_filter_collection->results();
+    if(@{$results} > 1) {
+      $self->logcroak("More than one spatial_filter result available in here: ", $sf_path);
+    }
+    elsif(@{$results}) {
+      my $qc_result = $results->[0];
+
+      $spatial_filter_processed_count += $qc_result->num_total_reads();
+      $spatial_filter_failed_count += $qc_result->num_spatial_filter_fail_reads();
+    }
+  }
+
+  $self->_set__spatial_filter_processed_count($spatial_filter_processed_count);
+  $self->_set__spatial_filter_failed_count($spatial_filter_failed_count);
+
+  return;
 }
 
 sub _bam_cluster_count_total {
-   my ( $self, $args_ref ) = @_;
+  my ( $self, $args_ref ) = @_;
 
-   my $plex = $args_ref->{plex};
+  my $plex = $args_ref->{plex};
 
-   my $bam_cluster_count = 0;
+  my $bam_cluster_count = 0;
+  for my $bfs_path (@{$self->bfs_paths}) {
 
-   my $qc_store = npg_qc::autoqc::qc_store->new( use_db => 0 );
+  my $qc_store = npg_qc::autoqc::qc_store->new( use_db => 0 );
 
-   my $qc_path = $self->qc_path();
-   my $position = $self->position();
+    my $collection = $qc_store->load_from_path( $bfs_path );
 
-   if( $plex ){
-      $qc_path =~ s{(?<!lane.)/qc$}{/lane$position/qc}smx;
-   }
+    if( !$collection || $collection->is_empty() ){
+      $self->info("There is no auto qc results available here: $bfs_path");
+      next;
+    }
 
-   my $collection = $qc_store->load_from_path( $qc_path );
+    my $bam_flagstats_collection = $collection->slice('class_name', 'bam_flagstats');
 
-   if( !$collection || $collection->is_empty() ){
-     $self->info("There is no auto qc results available here: $qc_path");
-     return $bam_cluster_count;
-   }
+    if( !$bam_flagstats_collection || $bam_flagstats_collection->is_empty() ){
+      $self->info("There is no bam flagstats available in here: $bfs_path");
+      next;
+    }
 
-   my $collection_lane = $collection->slice(q[position], $position);
-   my $bam_flagstats_collection = $collection_lane->slice('class_name', 'bam_flagstats');
+    my $bam_flagstats_objs = $bam_flagstats_collection->results();
 
-   if( !$bam_flagstats_collection || $bam_flagstats_collection->is_empty() ){
-     $self->info("There is no bam flagstats available for this lane $position in here: $qc_path");
-     return $bam_cluster_count;
-   }
-
-   my $bam_flagstats_objs = $bam_flagstats_collection->results();
-
-   foreach my $bam_flagstats (@{$bam_flagstats_objs}){
-
-      if( $bam_flagstats->id_run() != $self->id_run() ){
-         next;
-      }
-
+    foreach my $bam_flagstats (@{$bam_flagstats_objs}) {
       $bam_cluster_count += $bam_flagstats->total_reads();
-   }
+    }
+  }
 
-   return $bam_cluster_count;
+  return $bam_cluster_count;
 }
 
 __PACKAGE__->meta->make_immutable;
