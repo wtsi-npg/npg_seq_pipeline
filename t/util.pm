@@ -67,7 +67,6 @@ sub create_analysis {
     `mkdir -p $recalibrated_path/archive/qc/log`;
   }
   `mkdir $analysis_runfolder_path/Config`;
-  `cp t/data/Recipes/Recipe_GA2_37Cycle_PE_v6.1.xml $analysis_runfolder_path/`;
   `cp t/data/Recipes/TileLayout.xml $analysis_runfolder_path/Config/`;
   `mkdir $analysis_runfolder_path/Data/Intensities/archive`;
   `ln -s Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal $analysis_runfolder_path/Latest_Summary`;
@@ -83,9 +82,6 @@ sub create_multiplex_analysis {
   $self->create_analysis($args);
   my $analysis_runfolder_path = $self->temp_directory() . $ANALYSIS_RUNFOLDER_PATH;
   my $recalibrated_path = $self->temp_directory() . $RECALIBRATED_PATH;
-  `rm $analysis_runfolder_path/Recipe_GA2_37Cycle_PE_v6.1.xml`;
-  `cp t/data/Recipes/Recipe_GA2-PEM_MP_2x76Cycle+8_v7.7.xml $analysis_runfolder_path/`;
-
   if ($args->{qc_dir}) {
     foreach my $lane (@{$args->{qc_dir}}) {
       `mkdir -p $recalibrated_path/archive/lane$lane/qc`;
@@ -105,7 +101,6 @@ sub set_staging_analysis_area {
   `mkdir $analysis_runfolder_path/Config`;
   `mkdir $analysis_runfolder_path/t`;
   `cp t/data/run_params/runParameters.miseq.xml $analysis_runfolder_path/runParameters.xml`;
-  `cp t/data/Recipes/Recipe_GA2_37Cycle_PE_v6.1.xml $analysis_runfolder_path/`;
   `cp t/data/Recipes/TileLayout.xml $analysis_runfolder_path/Config/`;
   `touch $recalibrated_path/touch_file`;
   if ($args->{with_latest_summary}) {
@@ -136,10 +131,7 @@ sub set_rta_staging_analysis_area {
   `cp t/data/summary_files/after_v7_mp_hack_Summary.htm $recalibrated_path/Summary.htm`;
   `cp t/data/summary_files/Summary.xsl $recalibrated_path/Summary.xsl`;
   `cp t/data/runfolder/Data/Intensities/Bustard_RTA/PB_cal/config.xml $recalibrated_path/`;
-  if ($indexed) {
-    `cp t/data/Recipes/Recipe_GA2-PEM_MP_2x76Cycle+8_v7.7.xml $analysis_runfolder_path/`;
-  } else {
-    `cp t/data/Recipes/Recipe_GA2_37Cycle_PE_v6.1.xml $analysis_runfolder_path/`;
+  if ( ! $indexed) {
     `cp t/data/runfolder/Data/Intensities/single_end_3cycle_1tile_config.xml $analysis_runfolder_path/Data/Intensities/config.xml`;
     foreach my $lane ( 1..8 ) {
       foreach my $cycle ( 1..3 ) {
