@@ -20,6 +20,7 @@ LIST OF CHANGES
    npg_pipeline::runfolder_scaffold role
  - minor changes for bcfstats qc check
  - executor type (lsf or wr) can be specified in the configuration file
+ - correction of build method for rpt_list attribute in product
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline
