@@ -68,7 +68,7 @@ $port     or pod2usage(-msg     => 'A --port argument is required',
 $password ||= $ENV{RABBITMQ_PASSWORD};
 
 
-my $mq = Net::AMQP::RabbitMQ->new;
+my $mq = Net::AMQP::RabbitMQ->new();
 my $retry = 0;
 while ($retry < $retries) {
   $mq->connect($host, {port     => $port,
@@ -77,7 +77,7 @@ while ($retry < $retries) {
                        user     => $user,
                        password => $password,});
 
-  if ($mq->is_connected) {
+  if ($mq->is_connected()) {
     $log->info("Connected to $host:$port");
     last;
   } else {
@@ -89,7 +89,7 @@ while ($retry < $retries) {
   }
 }
 
-if (not $mq->is_connected) {
+if (not $mq->is_connected()) {
   $log->logcroak("Failed to connect to $host:$port");
 }
 $mq->channel_open($channel);
@@ -120,7 +120,7 @@ foreach my $file (@ARGV) {
   };
 }
 
-$mq->disconnect;
+$mq->disconnect();
 
 if ($num_errors > 0) {
   $log->logcroak("Sending messages failed with $num_errors errors");
