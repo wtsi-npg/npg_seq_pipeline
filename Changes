@@ -20,6 +20,8 @@ LIST OF CHANGES
    npg_pipeline::runfolder_scaffold role
  - minor changes for bcfstats qc check
  - executor type (lsf or wr) can be specified in the configuration file
+ - for wr executor, set per-job priority, increase priority for p4 stage 1
+   job and its predecessors
  - correction of build method for rpt_list attribute in product
 
 release 52.1
