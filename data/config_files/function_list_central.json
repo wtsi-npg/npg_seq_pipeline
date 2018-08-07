@@ -23,12 +23,12 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "run_analysis_in_progress",
+            "source" : "p4_stage1_analysis",
             "target" : "update_warehouse"
          },
          {
             "relation" : "dependsOn",
-            "source" : "run_analysis_in_progress",
+            "source" : "p4_stage1_analysis",
             "target" : "update_ml_warehouse_1"
          },
          {

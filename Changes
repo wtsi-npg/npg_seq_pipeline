@@ -22,6 +22,7 @@ LIST OF CHANGES
  - executor type (lsf or wr) can be specified in the configuration file
  - for wr executor, set per-job priority, increase priority for p4 stage 1
    job and its predecessors
+ - correction of build method for rpt_list attribute in product
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline
