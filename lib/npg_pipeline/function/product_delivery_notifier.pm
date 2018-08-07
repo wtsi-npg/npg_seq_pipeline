@@ -22,7 +22,7 @@ Readonly::Scalar my $EVENT_LIMS_ID         => 'npg';
 Readonly::Scalar my $EVENT_USER_ID         => 'npg_pipeline';
 Readonly::Scalar my $EVENT_MESSAGE_DIRNAME => 'messages';
 
-Readonly::Scalar my $SEND_MESSAGE_SCRIPT   => 'notify_delivery.py';
+Readonly::Scalar my $SEND_MESSAGE_SCRIPT   => 'npg_pipeline_notify_delivery';
 
 Readonly::Scalar my $MD5SUM_LENGTH         => 32;
 
@@ -59,6 +59,13 @@ has 'message_exchange' =>
    is            => 'ro',
    required      => 1,
    documentation => 'The name of the messaging exchange to contact',);
+
+has 'message_routing_key' =>
+  (isa           => 'Str',
+   is            => 'ro',
+   required      => 1,
+   default       => q{},
+   documentation => 'The messaging routing key, or an empty string',);
 
 has 'message_dir' =>
   (isa           => 'Str',
@@ -182,11 +189,17 @@ sub create {
       $self->_write_message_file($msg_file, $self->make_message($product));
 
       my $job_name =
-        sprintf q{%s_%d_%d}, 'npg_pipeline_notify_delivery', $id_run, $i;
+        sprintf q{%s_%d_%d}, $SEND_MESSAGE_SCRIPT, $id_run, $i;
       my $command =
-        sprintf q{%s --host %s --port %d --vhost %s --exchange %s %s},
+        sprintf q{%s --host %s --port %d --vhost %s --exchange %s},
         $SEND_MESSAGE_SCRIPT, $self->message_host, $self->message_port,
-        $self->message_vhost, $self->message_exchange, $msg_file;
+        $self->message_vhost, $self->message_exchange;
+
+      if ($self->message_routing_key) {
+        $command .= sprintf q{ --routing-key %s}, $self->message_routing_key;
+      }
+
+      $command .= sprintf q{ %s}, $msg_file;
 
       push @definitions,
         npg_pipeline::function::definition->new
