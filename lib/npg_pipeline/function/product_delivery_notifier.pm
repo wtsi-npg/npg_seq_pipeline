@@ -9,11 +9,14 @@ use File::Spec::Functions;
 use JSON;
 use Moose;
 use Readonly;
+use Try::Tiny;
 use UUID qw{uuid};
 
 use npg_pipeline::function::definition;
 
 extends 'npg_pipeline::base';
+
+with 'npg_pipeline::base::config';
 
 Readonly::Scalar my $EVENT_TYPE            => 'npg.events.sample.completed';
 Readonly::Scalar my $EVENT_ROLE_TYPE       => 'sample';
@@ -23,6 +26,9 @@ Readonly::Scalar my $EVENT_USER_ID         => 'npg_pipeline';
 Readonly::Scalar my $EVENT_MESSAGE_DIRNAME => 'messages';
 
 Readonly::Scalar my $SEND_MESSAGE_SCRIPT   => 'npg_pipeline_notify_delivery';
+Readonly::Scalar my $SEND_MESSAGE_CONFIG   => 'notify_delivery.json';
+Readonly::Scalar my $CONFIG_ITEMS_KEY      => 'notify_delivery';
+Readonly::Scalar my $CONFIG_STUDY_KEY      => 'study_id';
 
 Readonly::Scalar my $MD5SUM_LENGTH         => 32;
 
@@ -120,7 +126,7 @@ sub make_message {
       'uuid'            => $message_uuid,
       'occurred_at'     => undef,
       'user_identifier' => $EVENT_USER_ID,
-      'roles'           =>[{
+      'subjects'        =>[{
                             'role_type'     => $EVENT_ROLE_TYPE,
                             'subject_type'  => $EVENT_SUBJECT_TYPE,
                             'friendly_name' => $supplier_names[0],
@@ -142,6 +148,7 @@ sub make_message {
   return $message_body;
 }
 
+
 =head2 create
 
   Arg [1]    : Data product which the message will describe.
@@ -162,54 +169,65 @@ sub create {
     make_path($self->message_dir);
   }
 
+  my $studies_config = $self->_read_config();
+
   my @definitions;
-  if ($self->no_s3_archival) {
-    $self->info('Archival to S3 is switched off');
+
+  my $i = 0;
+  foreach my $product (@{$self->products->{data_products}}) {
+    my $study_id = $product->lims->study_id;
+
+    if ($product->is_tag_zero_product) {
+      $self->info('Skipping delivery notification for tag zero product ',
+                  $product->file_name_root);
+      next;
+    }
+    if ($product->lims->is_control) {
+      $self->info('Skipping delivery notification for control product ',
+                  $product->file_name_root);
+      next;
+    }
+
+    if (exists $studies_config->{$study_id}) {
+      $self->info(sprintf q{Sending delivery notification for %s in study %s},
+                  $product->file_name_root, $study_id);
+    } else {
+      $self->info(sprintf q{Skipping delivery notification for %s in study %s},
+                  $product->file_name_root, $study_id);
+      next;
+    }
+
+    my $msg_file = $product->file_path($self->message_dir, ext => 'msg.json');
+    $self->_write_message_file($msg_file, $self->make_message($product));
+
+    my $job_name = sprintf q{%s_%d_%d}, $SEND_MESSAGE_SCRIPT, $id_run, $i;
+    my $command =
+      sprintf q{%s --host %s --port %d --vhost %s --exchange %s},
+      $SEND_MESSAGE_SCRIPT, $self->message_host(), $self->message_port(),
+      $self->message_vhost(), $self->message_exchange();
+
+    if ($self->message_routing_key()) {
+      $command .= sprintf q{ --routing-key %s}, $self->message_routing_key;
+    }
+
+    $command .= sprintf q{ %s}, $msg_file;
+
+    push @definitions,
+      npg_pipeline::function::definition->new
+        ('created_by' => __PACKAGE__,
+         'created_on' => $self->timestamp(),
+         'identifier' => $id_run,
+         'job_name'   => $job_name,
+         'command'    => $command);
+    $i++;
+  }
+
+  if (not @definitions) {
     push @definitions, npg_pipeline::function::definition->new
       ('created_by' => __PACKAGE__,
        'created_on' => $self->timestamp(),
        'identifier' => $id_run,
        'excluded'   => 1);
-  } else {
-    my $i = 0;
-    foreach my $product (@{$self->products->{data_products}}) {
-      if ($product->is_tag_zero_product) {
-        $self->info('Skipping delivery notification for tag zero product ',
-                    $product->file_name_root);
-        next;
-      }
-      if ($product->lims->is_control) {
-        $self->info('Skipping delivery notification for control product ',
-                    $product->file_name_root);
-        next;
-      }
-
-      my $msg_file = $product->file_path($self->message_dir,
-                                         ext => 'msg.json');
-      $self->_write_message_file($msg_file, $self->make_message($product));
-
-      my $job_name =
-        sprintf q{%s_%d_%d}, $SEND_MESSAGE_SCRIPT, $id_run, $i;
-      my $command =
-        sprintf q{%s --host %s --port %d --vhost %s --exchange %s},
-        $SEND_MESSAGE_SCRIPT, $self->message_host, $self->message_port,
-        $self->message_vhost, $self->message_exchange;
-
-      if ($self->message_routing_key) {
-        $command .= sprintf q{ --routing-key %s}, $self->message_routing_key;
-      }
-
-      $command .= sprintf q{ %s}, $msg_file;
-
-      push @definitions,
-        npg_pipeline::function::definition->new
-          ('created_by' => __PACKAGE__,
-           'created_on' => $self->timestamp(),
-           'identifier' => $id_run,
-           'job_name'   => $job_name,
-           'command'    => $command);
-      $i++;
-    }
   }
 
   return \@definitions;
@@ -219,6 +237,31 @@ sub _build_message_dir {
   my ($self) = @_;
 
   return catdir($self->runfolder_path, $EVENT_MESSAGE_DIRNAME);
+}
+
+sub _read_config {
+  my ($self) = @_;
+
+  my $config = {};
+  try {
+    $config = $self->read_config($self->conf_file_path($SEND_MESSAGE_CONFIG));
+  } catch {
+    $self->error('Failed to load messaging configuration: ', $_);
+  };
+
+  my $studies_config;
+  if (exists $config->{$CONFIG_ITEMS_KEY}) {
+    my $items = $config->{$CONFIG_ITEMS_KEY};
+    if (not ref $items eq 'ARRAY') {
+      $self->error('Failed to load messaging configuration: ', pp($items));
+    } else {
+      foreach my $item (@{$items}) {
+        $studies_config->{$item->{$CONFIG_STUDY_KEY}} = 1;
+      }
+    }
+  }
+
+  return $studies_config;
 }
 
 # Raise an error unless there are num_expected values.
@@ -275,8 +318,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
-
 __END__
 
 =head1 NAME
@@ -297,6 +338,19 @@ npg_pipeline::function::product_delivery_notifier
 
 Notifies a message queue that a set of data products from a sequencing
 run have been delivered to a customer.
+
+Notification is configured per-study using the configuration file
+notify_delivery.json which must contain an entry for the study_id of
+any study whose data products are to be included in notification:
+
+{
+  "notify_delivery": [
+    { "study_id": "5290" }
+  ]
+}
+
+An empty array here will result skipping notification for all studies.
+
 
 =head1 SUBROUTINES/METHODS
 
