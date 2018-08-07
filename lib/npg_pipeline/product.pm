@@ -129,7 +129,7 @@ Predicate method for the 'composition' attribute.
 
 #####
 # 'composition' accessor is required by the npg_tracking::glossary::moniker
-# role, so its definition should preceed consuming the role.
+# role, so its definition should precede consuming the role.
 #
 has 'composition' => (
   isa        => q[npg_tracking::glossary::composition],
@@ -171,7 +171,7 @@ has  '+rpt_list' => (
   predicate  => 'has_rpt_list',
   lazy_build => 1,
 );
-sub _build_rt_list {
+sub _build_rpt_list {
   my $self = shift;
   if (!$self->has_composition()) {
     croak 'composition attribute is not set, cannot build rpt_list attribute';
@@ -195,7 +195,7 @@ has  'selected_lanes' => (
 
 =head2 lims
 
-An optional attribute, an st::api::lims object corersponding to this product.
+An optional attribute, an st::api::lims object corresponding to this product.
 
 =head2 has_lims
 
