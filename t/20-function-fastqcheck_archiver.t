@@ -19,6 +19,7 @@ use_ok(q{npg_pipeline::function::fastqcheck_archiver});
       run_folder => q{123456_IL2_1234},
       runfolder_path => $util->analysis_runfolder_path(),
       timestamp => q{20090709-123456},
+      is_indexed => 1,
     );
   } q{fq_loader created ok};
   isa_ok( $fq_loader, q{npg_pipeline::function::fastqcheck_archiver});
