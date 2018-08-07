@@ -25,6 +25,7 @@ our $VERSION = '0';
 
 Readonly::Scalar my $VERTEX_GROUP_DEP_ID_ATTR_NAME => q[wr_group_id];
 Readonly::Scalar my $DEFAULT_MEMORY                => 2000;
+Readonly::Scalar my $VERTEX_JOB_PRIORITY_ATTR_NAME => q{job_priority};
 
 =head1 NAME
 
@@ -144,6 +145,9 @@ sub _definition4job {
   $def->{'memory'} = $d->has_memory() ? $d->memory() : $DEFAULT_MEMORY;
   $def->{'memory'} .= q[M];
 
+  $def->{'priority'} = $self->function_graph4jobs->get_vertex_attribute(
+                           $function_name, $VERTEX_JOB_PRIORITY_ATTR_NAME);
+
   if ($d->has_num_cpus()) {
     use warnings FATAL => qw(numeric);
     $def->{'cpus'} = int $d->num_cpus()->[0];
@@ -164,15 +168,12 @@ sub _definition4job {
 sub _wr_add_command {
   my $self = shift;
 
-  my $priority = $self->has_job_priority ? $self->job_priority : 0;
-
   # If needed, in future, these options can be passed from the command line
   # or read fron a conf. file.
   my @common_options = (
           '--cwd'        => '/tmp',
           '--disk'       => 0,
           '--override'   => 2,
-          '--priority'   => $priority,
           '--retries'    => 0,
                        );
 

@@ -6,7 +6,7 @@ use namespace::autoclean;
 use Graph::Directed;
 use File::Slurp;
 use File::Basename;
-use List::MoreUtils qw/firstidx/;
+use List::MoreUtils qw/any firstidx/;
 use Readonly;
 
 use npg_tracking::util::types;
@@ -17,6 +17,9 @@ with qw{ WTSI::DNAP::Utilities::Loggable };
 our $VERSION = '0';
 
 Readonly::Scalar my $VERTEX_NUM_DEFINITIONS_ATTR_NAME => q{num_definitions};
+Readonly::Scalar my $VERTEX_JOB_PRIORITY_ATTR_NAME    => q{job_priority};
+Readonly::Scalar my $JOB_PRIORITY_INCREMENT           => 10;
+Readonly::Scalar my $P4STAGE1_FUNCTION_NAME           => q{p4_stage1_analysis};
 Readonly::Scalar my $QC_COMPLETE_FUNCTION_NAME        => q{run_qc_complete};
 
 =head1 NAME
@@ -225,6 +228,18 @@ sub _build_function_graph4jobs {
 
   if (!$graph->vertices()) {
     $self->logcroak('New function graph is empty');
+  }
+
+  if ($self->can('job_priority')) {
+    my @pre = $graph->all_predecessors($P4STAGE1_FUNCTION_NAME);
+    push @pre, $P4STAGE1_FUNCTION_NAME;
+    my $priority = $self->job_priority ? $self->job_priority : 0;
+    my $higher_priority = $priority + $JOB_PRIORITY_INCREMENT;
+    foreach my $n ($graph->vertices()) {
+      my $p = (any {$_ eq $n } @pre) ? $higher_priority : $priority;
+      $self->warn(qq{***** Assigning job priority $p to $n});
+      $graph->set_vertex_attribute($n, $VERTEX_JOB_PRIORITY_ATTR_NAME, $p);
+    }
   }
 
   return $graph;

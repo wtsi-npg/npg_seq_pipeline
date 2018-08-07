@@ -33,7 +33,7 @@ subtest 'wr add command' => sub {
     function_graph          => Graph::Directed->new(),
     commands4jobs_file_path => $file);
   is ($e->_wr_add_command(),
-    "wr add --cwd /tmp --disk 0 --override 2 --priority 0 --retries 0 -f $file",
+    "wr add --cwd /tmp --disk 0 --override 2 --retries 0 -f $file",
     'wr command');
 
   $e = npg_pipeline::executor::wr->new(
@@ -42,7 +42,7 @@ subtest 'wr add command' => sub {
     commands4jobs_file_path => $file,
     job_priority            => 3);
   is ($e->_wr_add_command(),
-    "wr add --cwd /tmp --disk 0 --override 2 --priority 3 --retries 0 -f $file",
+    "wr add --cwd /tmp --disk 0 --override 2 --retries 0 -f $file",
     'wr command with priority set');
 }; 
 
