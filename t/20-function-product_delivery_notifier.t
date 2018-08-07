@@ -24,10 +24,11 @@ my $runfolder_path = 't/data/novaseq/180709_A00538_0010_BH3FCMDRXX';
 my $timestamp      = '20180701-123456';
 my $customer       = 'test_customer';
 
-my $msg_host      = 'test_msg_host';
-my $msg_port      = 5672;
-my $msg_vhost     = 'test_msg_vhost';
-my $msg_exchange  = 'test_msg_exchange';
+my $msg_host        = 'test_msg_host';
+my $msg_port        = 5672;
+my $msg_vhost       = 'test_msg_vhost';
+my $msg_exchange    = 'test_msg_exchange';
+my $msg_routing_key = 'test_msg_routing_key';
 
 
 subtest 'create' => sub {
@@ -36,13 +37,14 @@ subtest 'create' => sub {
   my $notifier;
   lives_ok {
     $notifier = $pkg->new
-      (customer_name    => $customer,
-       runfolder_path   => $runfolder_path,
-       timestamp        => $timestamp,
-       message_host     => $msg_host,
-       message_port     => $msg_port,
-       message_vhost    => $msg_vhost,
-       message_exchange => $msg_exchange);
+      (customer_name       => $customer,
+       runfolder_path      => $runfolder_path,
+       timestamp           => $timestamp,
+       message_host        => $msg_host,
+       message_port        => $msg_port,
+       message_vhost       => $msg_vhost,
+       message_exchange    => $msg_exchange,
+       message_routing_key => $msg_routing_key);
   } 'notifier created ok';
 
   my $defs = $notifier->create;
@@ -56,13 +58,14 @@ subtest 'commands' => sub {
   plan tests => 60;
 
   my $notifier = $pkg->new
-    (customer_name    => $customer,
-     runfolder_path   => $runfolder_path,
-     timestamp        => $timestamp,
-     message_host     => $msg_host,
-     message_port     => $msg_port,
-     message_vhost    => $msg_vhost,
-     message_exchange => $msg_exchange);
+    (customer_name       => $customer,
+     runfolder_path      => $runfolder_path,
+     timestamp           => $timestamp,
+     message_host        => $msg_host,
+     message_port        => $msg_port,
+     message_vhost       => $msg_vhost,
+     message_exchange    => $msg_exchange,
+     message_routing_key => $msg_routing_key);
 
   my $defs = $notifier->create;
 
@@ -72,12 +75,13 @@ subtest 'commands' => sub {
     is($def->created_by, $pkg, "created_by $i is correct");
     is($def->created_on, $timestamp, "created_on $i is correct");
     is($def->identifier, 26291, "identifier $i is set correctl");
-    is($def->job_name, "notify_product_delivery_26291_$i",
+    is($def->job_name, "npg_pipeline_notify_delivery_26291_$i",
        "job_name $i is correct");
 
     is($def->command,
-       "notify_delivery.py --host $msg_host --port $msg_port " .
+       "npg_pipeline_notify_delivery --host $msg_host --port $msg_port " .
        "--vhost $msg_vhost --exchange $msg_exchange " .
+       "--routing-key $msg_routing_key " .
        "$runfolder_path/messages/26291#$tag.msg.json",
        "command $i is correct");
     $i++;
@@ -89,14 +93,15 @@ subtest 'no_archival' => sub {
   plan tests => 1;
 
   my $notifier = $pkg->new
-    (customer_name    => $customer,
-     runfolder_path   => $runfolder_path,
-     timestamp        => $timestamp,
-     message_host     => $msg_host,
-     message_port     => $msg_port,
-     message_vhost    => $msg_vhost,
-     message_exchange => $msg_exchange,
-     no_s3_archival   => 1);
+    (customer_name       => $customer,
+     runfolder_path      => $runfolder_path,
+     timestamp           => $timestamp,
+     message_host        => $msg_host,
+     message_port        => $msg_port,
+     message_vhost       => $msg_vhost,
+     message_exchange    => $msg_exchange,
+     message_routing_key => $msg_routing_key,
+     no_s3_archival      => 1);
 
   my $defs = $notifier->create;
   my $num_defs_observed = scalar @{$defs};
