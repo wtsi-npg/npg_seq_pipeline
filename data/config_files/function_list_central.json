@@ -128,7 +128,7 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "seq_alignment",
+            "source" : "qc_spatial_filter",
             "target" : "bam_cluster_counter_check"
          },
          {
@@ -220,11 +220,6 @@
          {
             "relation" : "dependsOn",
             "source" : "qc_genotype",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_spatial_filter",
             "target" : "run_analysis_complete"
          },
          {
