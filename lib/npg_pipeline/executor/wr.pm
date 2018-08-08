@@ -145,7 +145,8 @@ sub _definition4job {
   $def->{'memory'} = $d->has_memory() ? $d->memory() : $DEFAULT_MEMORY;
   $def->{'memory'} .= q[M];
 
-  $def->{'priority'} = $self->function_graph4jobs->get_vertex_attribute(
+  # priority needs to be a number, rather than string, in JSON for wr,hence the addition
+  $def->{'priority'} = 0 + $self->function_graph4jobs->get_vertex_attribute(
                            $function_name, $VERTEX_JOB_PRIORITY_ATTR_NAME);
 
   if ($d->has_num_cpus()) {
