@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 9;
+use Test::More tests => 12;
 use Test::Exception;
 use File::Path qw/make_path/;
 use File::Copy::Recursive qw/fcopy dircopy/;
@@ -9,6 +9,9 @@ use File::Slurp;
 use t::util;
 
 use_ok('npg_pipeline::function::autoqc');
+use_ok('st::api::lims');
+use_ok('npg_tracking::glossary::composition');
+use_ok('npg_tracking::glossary::rpt');
 
 my $util = t::util->new();
 my $tmp = $util->temp_directory();
@@ -109,9 +112,9 @@ subtest 'adapter' => sub {
     is_indexed        => 1,
   );
   $da = $aqc->create();
-  ok ($da && (@{$da} == 5), 'five definitions returned - plexes only');
-  is (scalar(grep { /--tag_index=\d/smx} map {$_->command} @{$da}), 5,
-    'all commands are prex-level');
+  ok ($da && (@{$da} == 4), 'five definitions returned - plexes only');
+  is (scalar(grep { /--rpt_list=\"\d+:\d+:\d+\"/smx} map {$_->command} @{$da}), 4,
+    'all commands are plex-level');
 };
 
 subtest 'spatial_filter' => sub {
@@ -150,17 +153,23 @@ subtest 'spatial_filter' => sub {
     is_indexed        => 1,
   );
 
+  my %expected_tags = (
+    1 => [(1..3, 168,0)],
+    2 => [(4..6, 168,0)],
+    3 => [(7..9, 168,0)],
+    4 => [(1..6, 168,0)],
+    5 => [(1..6, 168,0)],
+    6 => [(1..6, 168,0)],
+  );
+
   $da = $aqc->create();
   ok ($da && (@{$da} == 6), 'six definitions returned');
   foreach my $de (@{$da}) {
     my $p = $de->composition->get_component(0)->position;
-    TODO: {
-      local $TODO = 'input is likely to change, not fixing for the current version';
-    is ($de->command, sprintf(
-    'qc --check=spatial_filter --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s',
-    qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}.spatial_filter.stats"),
+    my @t = (map { $_->tag_index } ($de->composition->components_list()));
+    is ($de->command, sprintf('qc --check=spatial_filter --rpt_list=%s --filename_root=%s --qc_out=%s %s',
+                                 qq["8747:${p}"], "8747_${p}", "$archive_dir/lane${p}/qc", join q{ }, map { "--input_files=$archive_dir/lane${p}/plex$_/8747_${p}#$_.spatial_filter.stats" } @{$expected_tags{${p}}},  ),
     "spatial filter check command for lane $p, lane is indexed");
-    };
   }   
 };
 
@@ -177,10 +186,7 @@ subtest 'qX_yield' => sub {
     is_indexed        => 0,
   );
   my $da = $aqc->create();
-  TODO: {
-    local $TODO = 'double number of definition returned at the moment';
   ok ($da && (@{$da} == 8), 'eight definitions returned');
-  };
   my $d = $da->[0];
   is ($d->queue, 'default', 'default queue');
   is ($d->job_name, 'qc_qX_yield_1234_20090709-123456', 'job name');
@@ -224,10 +230,7 @@ subtest 'qX_yield' => sub {
     is_indexed        => 1,
   );
   $da = $aqc->create();
-  TODO: {
-    local $TODO = 'double number of definition returned at the moment';
   ok ($da && (@{$da} == 1), 'one definition returned - lane is not a pool');
-  };
  
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/1234_samplesheet_amended.csv';
 
@@ -321,10 +324,7 @@ subtest 'insert_size and sequence error' => sub {
   );
 
   my $da = $aqc->create();
-  TODO: {
-    local $TODO = 'double number of definition returned at the moment';
   ok ($da && (@{$da} == 1), 'one definition returned - lane is a not pool');
-  };
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14353.csv';
 
@@ -338,10 +338,7 @@ subtest 'insert_size and sequence error' => sub {
     repository        => 't/data/sequence',
   );
   $da = $aqc->create();
-  TODO: {
-    local $TODO = 'double number of definition returned at the moment';
   ok ($da && (@{$da} == 1), 'one definition returned');
-  };
   is($da->[0]->memory, 8000, 'memory');
 
   $aqc = npg_pipeline::function::autoqc->new(
@@ -354,33 +351,42 @@ subtest 'insert_size and sequence error' => sub {
     repository        => 't/data/sequence',
   );
   $da = $aqc->create();
-  TODO: {
-    local $TODO = 'double number of definition returned at the moment';
   ok ($da && (@{$da} == 1), 'one definition returned');
-  };
   is($da->[0]->memory, 8000, 'memory');
 };
 
 subtest 'tag_metrics' => sub {
-  plan tests => 9;
+  plan tests => 11;
 
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14353.csv';
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_8747.csv';
 
-  my $qc = npg_pipeline::function::autoqc->new(
-    qc_to_run         => 'tag_metrics',
-    is_indexed        => 1,
-    id_run            => 14353,
-    runfolder_path    => $rf_path,
-    timestamp         => q{20090709-123456},
-  );
+  my $qc;
+  lives_ok {
+    $qc = npg_pipeline::function::autoqc->new(
+      qc_to_run         => 'tag_metrics',
+      is_indexed        => 1,
+      id_run            => 8747,
+      lanes             => [1],
+      runfolder_path    => $rf_path,
+      timestamp         => q{20090709-123456},
+    );
+  } q{no croak on new, as required params provided};
 
-  ok( $qc->_should_run({id_run => 14353, position => 1}, 1),
+# create products with the characteristics being tested
+  my $plexed_lane_lims = st::api::lims->new(id_run => 8747, position => 1);
+  my $library_lane_lims = st::api::lims->new(id_run => 8747, position => 7);
+  my $plex_lims = st::api::lims->new(id_run => 8747, position => 1, tag_index => 1);
+  my $plexed_lane_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plexed_lane_lims),lims => $plexed_lane_lims);
+  my $library_lane_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($library_lane_lims),lims => $library_lane_lims);
+  my $plex_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex_lims),lims => $plex_lims);
+
+  ok( $qc->_should_run(0, $plexed_lane_product),
     q{lane is multiplexed - run tag metrics on a lane} );
-  ok( !$qc->_should_run({id_run => 14353, position => 1}, 0),
+  ok( !$qc->_should_run(0, $library_lane_product),
     q{lane is not multiplexed - do not run tag metrics on a lane} );
-  ok( !$qc->_should_run({id_run => 14353, position => 1, tag_index => 1}, 1),
-    q{do not run tag metrics on a plex} );
-  ok( !$qc->_should_run({id_run => 14353, position => 1, tag_index => 1}, 0),
+  ok( !$qc->_should_run(0, $plex_product),
+    q{do not run tag metrics on a plex (hmm)} );
+  ok( !$qc->_should_run(1, $plex_product),
     q{do not run tag metrics on a plex} );
 
   my $da = $qc->create();
@@ -388,22 +394,26 @@ subtest 'tag_metrics' => sub {
   my $d = $da->[0];
   ok (!$d->excluded, 'step is not excluded');
   is ($d->command,
-      qq[qc --check=tag_metrics --rpt_list="14353:1" --filename_root=14353_1 --qc_out=$archive_dir/lane1/qc --qc_in=$rf_path],
+      qq[qc --check=tag_metrics --rpt_list="8747:1" --filename_root=8747_1 --qc_out=$archive_dir/lane1/qc],
       'tag metrics command for lane 1');
 
-  $qc = npg_pipeline::function::autoqc->new(
-    id_run         => 14353,
-    runfolder_path => $rf_path,
-    qc_to_run      => 'tag_metrics',
-    is_indexed     => 0
-  );
+  lives_ok {
+    $qc = npg_pipeline::function::autoqc->new(
+      id_run         => 8747,
+      lanes          => [8],
+      runfolder_path => $rf_path,
+      qc_to_run      => 'tag_metrics',
+      is_indexed     => 0
+    );
+  } q{no croak on new, as required params provided};
+
   $da = $qc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
   ok ($da->[0]->excluded, 'step is excluded');
 };
 
 subtest 'genotype and gc_fraction' => sub {
-  plan tests => 10;
+  plan tests => 11;
 
   my $destination = "$tmp/references";
   dircopy('t/data/qc/references', $destination);
@@ -424,7 +434,21 @@ subtest 'genotype and gc_fraction' => sub {
 
   my $qc = npg_pipeline::function::autoqc->new($init);
 
-  throws_ok { $qc->_should_run({ id_run => 14043, position => 1}) }
+# create products with the characteristics being tested
+  my $plexed_lane_lims = st::api::lims->new(id_run => 14043, position => 6);
+  my $library_lane_lims = st::api::lims->new(id_run => 14043, position => 1);
+  my $plex0_lims = st::api::lims->new(id_run => 8747, position => 6, tag_index => 0);
+  my $plex_lims = st::api::lims->new(id_run => 8747, position => 6, tag_index => 1);
+  my $plex_lims_alt = st::api::lims->new(id_run => 8747, position => 8, tag_index => 22);
+  my $plex168_lims = st::api::lims->new(id_run => 8747, position => 6, tag_index => 168);
+  my $plexed_lane_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plexed_lane_lims),lims => $plexed_lane_lims);
+  my $library_lane_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($library_lane_lims),lims => $library_lane_lims);
+  my $plex0_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex0_lims),lims => $plex0_lims);
+  my $plex_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex_lims),lims => $plex_lims);
+  my $plex_product_alt = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex_lims_alt),lims => $plex_lims_alt);
+  my $plex168_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex168_lims),lims => $plex168_lims);
+
+  throws_ok { $qc->_should_run(0, $library_lane_product) }
     qr/Attribute \(ref_repository\) does not pass the type constraint/,
     'ref repository does not exists - error';
 
@@ -432,25 +456,28 @@ subtest 'genotype and gc_fraction' => sub {
 
   $qc = npg_pipeline::function::autoqc->new($init);
 
-  ok ($qc->_should_run({id_run => 14043, position => 1}, 0),
+  ok ($qc->_should_run(0, $library_lane_product),
     'genotype check can run for a non-indexed lane');
-  ok (!$qc->_should_run({id_run => 14043, position => 6}, 1),
+  ok (!$qc->_should_run(0, $plexed_lane_product),
     'genotype check cannot run for an indexed lane');
-  ok ($qc->_should_run({id_run => 14043, position => 6, tag_index => 0}, 1),
-    'genotype check can run for tag 0 (the only plex is a human sample)');
-  ok ($qc->_should_run({id_run => 14043, position => 6, tag_index => 1}, 1),
+  ok (!$qc->_should_run(1, $plex0_product),
+    'genotype check cannot run for tag 0 (no alignment)');
+  ok ($qc->_should_run(1, $plex_product),
     'genotype check can run for tag 1 (human sample)');
-  ok (!$qc->_should_run({id_run => 14043, position => 6, tag_index => 168}, 1),
+  ok (!$qc->_should_run(1, $plex168_product),
     'genotype check cannot run for a spiked phix tag');
 
   $init->{'qc_to_run'} = q[gc_fraction];
 
-  $qc = npg_pipeline::function::autoqc->new($init);
-  ok ($qc->_should_run({id_run => 14043, position => 6}, 1), 'gc_fraction check can run');
-  ok ($qc->_should_run({id_run => 14043, position => 6}, 0), 'gc_fraction check can run');
-  ok ($qc->_should_run({id_run => 14043, position => 6, tag_index => 0}, 1),
+  lives_ok {
+    $qc = npg_pipeline::function::autoqc->new($init);
+  } q{no croak on new, as required params provided};
+
+  ok ($qc->_should_run(0, $plexed_lane_product), 'gc_fraction check can run');
+  ok ($qc->_should_run(1, $plexed_lane_product), 'gc_fraction check can run (hmm)');
+  ok ($qc->_should_run(1, $plex0_product),
     'gc_fraction check can run');
-  ok ($qc->_should_run({id_run => 14043, position => 8, tag_index => 22}, 1),
+  ok ($qc->_should_run(1, $plex_product_alt),
    'gc_fraction check can run');
 };
 
