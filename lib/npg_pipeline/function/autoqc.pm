@@ -95,22 +95,31 @@ sub create {
   $self->info(sprintf 'Running autoqc check %s for run %i',
                       $self->qc_to_run(), $self->id_run());
 
-
   my @definitions = ();
-  for my $dp (@{$self->products->{lanes}}) {
-    my $h = {'rpt_list' => $dp->{rpt_list}};
-    my $l = $dp->lims; #??
-    my $is_multiplexed_lane = $l->tags; #??
 
-    push @definitions, $self->_create_definition($dp, $is_multiplexed_lane, 0);
+  my %done_as_lane = ();
+  for my $lp (@{$self->products->{lanes}}) {
+
+    $self->debug(sprintf '  autoqc check %s for lane, rpt_list: %s, is_pool: %s',
+                            $self->qc_to_run(), $lp->rpt_list, ($lp->lims->is_pool? q[True]: q[False]));
+
+    $done_as_lane{$lp->rpt_list} = 1; # this could not be added to definitions (_create_definition() failure/rejection), but that shouldn't change if it were handled as a data_product (?)
+    push @definitions, $self->_create_definition($lp, 0); # is_plex is always 0 here
   }
 
   for my $dp (@{$self->products->{data_products}}) {
-    my $h = {'rpt_list' => $dp->{rpt_list}};
-    my $l = $dp->lims; #??
-    my $is_multiplexed_lane = $l->tags; #??
+    # TODO: handle data_products that are also lanes (i.e. libraries or single-sample pools)
 
-    push @definitions, $self->_create_definition($dp, $is_multiplexed_lane, 1);
+    if($done_as_lane{$dp->{rpt_list}}) { next; }
+
+    my $tag_index = $dp->composition->get_component(0)->tag_index;
+    my $is_plex = (defined $tag_index);
+
+    $self->debug(sprintf '  autoqc check %s for data_product, rpt_list: %s, is_plex: %s, is_pool: %s, tag_index: %s',
+                             $self->qc_to_run(), $dp->{rpt_list}, ($is_plex? q[True]: q[False]),
+                             ($dp->lims->is_pool? q[True]: q[False]), ($is_plex? $tag_index: q[NONE]));
+
+    push @definitions, $self->_create_definition($dp, $is_plex);
   }
 
   if (!@definitions) {
@@ -123,14 +132,13 @@ sub create {
 }
 
 sub _create_definition {
-  my ($self, $dp, $is_multiplexed_lane, $is_plex) = @_;
+  my ($self, $product, $is_plex) = @_;
 
-  my $h = {'rpt_list' => $dp->{rpt_list}};
-
-  if ($self->_should_run($h, $is_multiplexed_lane, $is_plex)) {
-    my $command = $self->_generate_command($dp);
-    return $self->_create_definition_object($dp, $command);
+  if ($self->_should_run($is_plex, $product)) {
+    my $command = $self->_generate_command($product);
+    return $self->_create_definition_object($product, $command);
   }
+
   return;
 }
 
@@ -142,7 +150,7 @@ sub _basic_attrs {
 }
 
 sub _create_definition_object {
-  my ($self, $dp, $command) = @_;
+  my ($self, $product, $command) = @_;
 
   my $ref = $self->_basic_attrs();
   my $qc_to_run = $self->qc_to_run;
@@ -150,7 +158,7 @@ sub _create_definition_object {
   $ref->{'job_name'}        = join q{_}, $QC_SCRIPT_NAME, $qc_to_run,
                                          $self->id_run(), $self->timestamp();
   $ref->{'fs_slots_num'}    = 1;
-  $ref->{'composition'}     = $dp->{composition};
+  $ref->{'composition'}     = $product->{composition};
   $ref->{'command'}         = $command;
 
   if ($qc_to_run eq q[adapter]) {
@@ -258,25 +266,31 @@ sub _generate_command {
 }
 
 sub _should_run {
-  my ($self, $h, $is_multiplexed_lane, $is_plex) = @_;
+  my ($self, $is_plex, $product) = @_;
 
   my $can_run = 1;
+
+  my $is_lane = !$is_plex; # if it's not a plex, it's a lane
+  my $rpt_list = $product->rpt_list;
+  my $is_pool = $product->lims->is_pool;
+  my $is_tag_zero = $product->is_tag_zero_product;
 
   if ($self->_is_lane_level_check()) {
     return !$is_plex;
   }
 
   if ($self->_is_lane_level_check4indexed_lane()) {
-    return $is_multiplexed_lane && !$is_plex;
+    return $is_lane && $is_pool;
   }
 
   if ($self->_is_check4target_file()) {
-    $can_run = ((!$is_plex && !$is_multiplexed_lane) ||
-	       ($is_plex && $is_multiplexed_lane));
+    $can_run = (($is_lane && !$is_pool) ||
+	       ($is_plex && !$is_tag_zero));
   }
 
   if ($can_run) {
-    my %init_hash = %{$h};
+    my %init_hash = ( rpt_list => $rpt_list );
+
     if ($self->has_repository && $self->_check_uses_refrepos()) {
       $init_hash{'repository'} = $self->repository;
     }
