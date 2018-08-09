@@ -39,6 +39,23 @@ my $bbp = "$rf/bam_basecall_path";
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
   $util->set_rta_staging_analysis_area();
 
+  my $fh;
+my $runinfofile = qq[$rf/RunInfo.xml];
+open($fh, '>', $runinfofile) or die "Could not open file '$runinfofile' $!";
+print $fh <<"ENDXML";
+<?xml version="1.0"?>
+<RunInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="3">
+<Run>
+  <Reads>
+  <Read Number="1" NumCycles="76" IsIndexedRead="N" />
+  </Reads>
+  <FlowcellLayout LaneCount="8" SurfaceCount="2" SwathCount="1" TileCount="60">
+  </FlowcellLayout>
+</Run>
+</RunInfo>
+ENDXML
+close $fh;
+
   my $out = `$bin/npg_pipeline_central --no-spider --no_bsub --no_sf_resource --runfolder_path $rf --bam_basecall_path $bbp --function_order dodo 2>&1`;
   like($out,
   qr/Handler for 'dodo' is not registered/,
@@ -47,7 +64,7 @@ my $bbp = "$rf/bam_basecall_path";
 
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
- 
+
   lives_ok { qx{
     $bin/npg_pipeline_post_qc_review --no_bsub --no_sf_resource --runfolder_path $rf --bam_basecall_path $bbp};}
     q{ran bin/npg_pipeline_post_qc_review};
@@ -61,6 +78,23 @@ my $bbp = "$rf/bam_basecall_path";
 
 {
   $util->set_rta_staging_analysis_area();
+
+  my $fh;
+my $runinfofile = qq[$rf/RunInfo.xml];
+open($fh, '>', $runinfofile) or die "Could not open file '$runinfofile' $!";
+print $fh <<"ENDXML";
+<?xml version="1.0"?>
+<RunInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="3">
+<Run>
+  <Reads>
+  <Read Number="1" NumCycles="76" IsIndexedRead="N" />
+  </Reads>
+  <FlowcellLayout LaneCount="8" SurfaceCount="2" SwathCount="1" TileCount="60">
+  </FlowcellLayout>
+</Run>
+</RunInfo>
+ENDXML
+close $fh;
 
   lives_ok { qx{$bin/npg_pipeline_seqchksum_comparator --id_run=1234 --archive_path=$rf/Data/Intensities/BAM_basecalls_20140815-114817/no_cal/archive --bam_basecall_path=$rf/Data/Intensities/BAM_basecalls_20140815-114817 --lanes=1 };} q{ran bin/npg_pipeline_seqchksum_comparator with analysis and bam_basecall_path};
   ok($CHILD_ERROR, qq{Return code of $CHILD_ERROR as no files found});
