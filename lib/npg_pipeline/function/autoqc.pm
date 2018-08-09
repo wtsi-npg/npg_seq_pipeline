@@ -103,14 +103,12 @@ sub create {
     $self->debug(sprintf '  autoqc check %s for lane, rpt_list: %s, is_pool: %s',
                             $self->qc_to_run(), $lp->rpt_list, ($lp->lims->is_pool? q[True]: q[False]));
 
-    $done_as_lane{$lp->rpt_list} = 1; # this could not be added to definitions (_create_definition() failure/rejection), but that shouldn't change if it were handled as a data_product (?)
+    $done_as_lane{$lp->rpt_list} = 1;
     push @definitions, $self->_create_definition($lp, 0); # is_plex is always 0 here
   }
 
   for my $dp (@{$self->products->{data_products}}) {
-    # TODO: handle data_products that are also lanes (i.e. libraries or single-sample pools)
-
-    if($done_as_lane{$dp->{rpt_list}}) { next; }
+    if($done_as_lane{$dp->{rpt_list}}) { next; } # skip data_products that have already been processed as lanes (i.e. libraries or single-sample pools)
 
     my $tag_index = $dp->composition->get_component(0)->tag_index;
     my $is_plex = (defined $tag_index);
@@ -259,7 +257,7 @@ sub _generate_command {
     }
   }
   else {
-    ## default input_files [none]?
+    ## default input_files [none?]
   }
 
   return $c;
