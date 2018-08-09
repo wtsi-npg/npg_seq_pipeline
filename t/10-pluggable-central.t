@@ -65,6 +65,24 @@ my $runfolder_path = $util->analysis_runfolder_path();
   $util->set_staging_analysis_area();
   cp 't/data/run_params/runParameters.hiseq.xml',
     join(q[/], $runfolder_path, 'runParameters.xml');
+
+  my $fh;
+  my $runinfofile = qq[$runfolder_path/RunInfo.xml];
+  open($fh, '>', $runinfofile) or die "Could not open file '$runinfofile' $!";
+  print $fh <<"ENDXML";
+<?xml version="1.0"?>
+<RunInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="3">
+  <Run>
+    <Reads>
+    <Read Number="1" NumCycles="76" IsIndexedRead="N" />
+    </Reads>
+    <FlowcellLayout LaneCount="8" SurfaceCount="2" SwathCount="1" TileCount="60">
+    </FlowcellLayout>
+  </Run>
+</RunInfo>
+ENDXML
+  close $fh;
+
   my $init = {
       function_order   => [qw{qc_qX_yield qc_adapter update_warehouse qc_insert_size}],
       lanes            => [4],
@@ -75,7 +93,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
       spider           => 0,
       no_sf_resource   => 1,
   };
- 
+
   lives_ok { $pb = $central->new($init); } q{no croak on new creation};
   mkdir $pb->archive_path;
   mkdir $pb->qc_path;
