@@ -95,12 +95,12 @@ sub create {
     }
 
     my $sample     = $product->lims->sample_supplier_name;
-    $sample or $self->logcroak("Failed to get a supplier sample name",
-                               "for product ", $product->file_name_root);
+    $sample or $self->logcroak('Failed to get a supplier sample name',
+                               'for product ', $product->file_name_root);
 
     my $study_id   = $product->lims->study_id;
-    $study_id or $self->logcroak("Failed to get a study_id",
-                                 "for product ", $product->file_name_root);
+    $study_id or $self->logcroak('Failed to get a study_id',
+                                 'for product ', $product->file_name_root);
 
     if (exists $archive_config->{$study_id}) {
       $self->info(sprintf q{S3 archiving %s in study %s to bucket URL %s},
@@ -114,11 +114,11 @@ sub create {
 
     my $job_name = sprintf q{%s_%d_%d}, $ARCHIVE_EXECUTABLE, $id_run, $i;
     my $base_url = $archive_config->{$study_id};
-    $self->debug(sprintf "Using base URL '%s' for study %s",
+    $self->debug(sprintf q{Using base URL '%s' for study %s},
                  $base_url, $study_id);
 
-    my @aws_args = ('--cli-connect-timeout', '300',
-                    '--acl', 'bucket-owner-full-control');
+    my @aws_args = qw{--cli-connect-timeout 300
+                      --acl bucket-owner-full-control};
 
     foreach my $file_path ($self->expected_files($product)) {
       my $filename   = basename($file_path);

@@ -148,10 +148,9 @@ sub make_message {
   return $message_body;
 }
 
-
 =head2 create
 
-  Arg [1]    : Data product which the message will describe.
+  Arg [1]    : None
 
   Example    : my $defs = $obj->create
   Description: Create per-product function definitions.
@@ -175,8 +174,6 @@ sub create {
 
   my $i = 0;
   foreach my $product (@{$self->products->{data_products}}) {
-    my $study_id = $product->lims->study_id;
-
     if ($product->is_tag_zero_product) {
       $self->info('Skipping delivery notification for tag zero product ',
                   $product->file_name_root);
@@ -188,6 +185,7 @@ sub create {
       next;
     }
 
+    my $study_id = $product->lims->study_id;
     if (exists $studies_config->{$study_id}) {
       $self->info(sprintf q{Sending delivery notification for %s in study %s},
                   $product->file_name_root, $study_id);
