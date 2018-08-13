@@ -240,12 +240,7 @@ sub _build_message_dir {
 sub _read_config {
   my ($self) = @_;
 
-  my $config = {};
-  try {
-    $config = $self->read_config($self->conf_file_path($SEND_MESSAGE_CONFIG));
-  } catch {
-    $self->error('Failed to load messaging configuration: ', $_);
-  };
+  my $config = $self->read_config($self->conf_file_path($SEND_MESSAGE_CONFIG));
 
   my $studies_config;
   if (exists $config->{$CONFIG_ITEMS_KEY}) {

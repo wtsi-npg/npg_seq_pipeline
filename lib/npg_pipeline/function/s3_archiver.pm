@@ -156,12 +156,7 @@ sub create {
 sub _read_config {
   my ($self) = @_;
 
-  my $config = {};
-  try {
-    $config = $self->read_config($self->conf_file_path($ARCHIVE_CONFIG));
-  } catch {
-    $self->error('Failed to load archiving configuration: ', $_);
-  };
+  my $config = $self->read_config($self->conf_file_path($ARCHIVE_CONFIG));
 
   my $archive_config;
   if (exists $config->{$CONFIG_ITEMS_KEY}) {
