@@ -10,11 +10,11 @@ use Test::More tests => 5;
 use Test::Exception;
 use t::util;
 
-Log::Log4perl->easy_init($ERROR);
+Log::Log4perl->easy_init($DEBUG);
 
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
   't/data/novaseq/180709_A00538_0010_BH3FCMDRXX/' .
-  'Data/Intensities/BAM_basecalls_20180723-111241/' .
+  'Data/Intensities/BAM_basecalls_20180805-013153/' .
   'metadata_cache_26291/samplesheet_26291.csv';
 
 my $pkg = 'npg_pipeline::function::s3_archiver';
@@ -36,7 +36,7 @@ subtest 'expected_files' => sub {
   my $product = shift @{$archiver->products->{data_products}};
 
   my $path = "$runfolder_path/Data/Intensities/" .
-             'BAM_basecalls_20180723-111241/no_cal/archive/plex1';
+             'BAM_basecalls_20180805-013153/no_cal/archive/plex1';
   my @expected = sort map { "$path/$_" }
     ('26291#1_F0x900.stats',
      '26291#1_F0xB00.stats',
@@ -98,7 +98,7 @@ subtest 'commands' => sub {
 
   my $defs = $archiver->create;
   my $num_defs_observed = scalar @{$defs};
-  my $num_defs_expected = 120;
+  my $num_defs_expected = 12;
   cmp_ok($num_defs_observed, '==', $num_defs_expected,
          "create returns $num_defs_expected definitions when archiving");
 
@@ -106,7 +106,11 @@ subtest 'commands' => sub {
 
   foreach my $def (@{$defs}) {
     my $cmd = $def->command;
-    like($cmd, $cmd_patt, "$cmd matches $cmd_patt");
+
+    my @parts = split / && /, $cmd; # Deconstruct the command
+    foreach my $part (@parts) {
+      like($cmd, $cmd_patt, "$cmd matches $cmd_patt");
+    }
   }
 };
 

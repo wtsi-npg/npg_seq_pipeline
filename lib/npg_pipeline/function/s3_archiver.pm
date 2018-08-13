@@ -121,28 +121,34 @@ sub create {
     $self->debug(sprintf q{Using base URL '%s' for study %s},
                  $base_url, $study_id);
 
+    my @file_paths = sort _cram_last $self->expected_files($product);
+    $self->_check_files(@file_paths);;
+
     my @aws_args = qw{--cli-connect-timeout 300
                       --acl bucket-owner-full-control};
-
-    foreach my $file_path ($self->expected_files($product)) {
+    my @commands;
+    foreach my $file_path (@file_paths) {
       my $filename   = basename($file_path);
       my $file_url   = "$base_url/$sample/$filename";
 
-      my $command = sprintf q{%s s3 cp %s %s %s},
+      push @commands, sprintf q{%s s3 cp %s %s %s},
         $ARCHIVE_EXECUTABLE, join(q{ }, @aws_args), $file_path, $file_url;
 
       $self->info(sprintf q{S3 archiving %s in study %s to %s},
                   $file_path, $study_id, $file_url);
-
-      push @definitions,
-      npg_pipeline::function::definition->new
-        ('created_by' => __PACKAGE__,
-         'created_on' => $self->timestamp(),
-         'identifier' => $id_run,
-         'job_name'   => $job_name,
-         'command'    => $command);
     }
 
+    my $command = join q{ && }, reverse @commands;
+    $self->debug("Adding command '$command'");
+
+    push @definitions,
+      npg_pipeline::function::definition->new
+        ('created_by'  => __PACKAGE__,
+         'created_on'  => $self->timestamp(),
+         'identifier'  => $id_run,
+         'job_name'    => $job_name,
+         'command'     => $command,
+         'composition' => $product->composition);
     $i++;
   }
 
@@ -155,6 +161,24 @@ sub create {
   }
 
   return \@definitions;
+}
+
+sub _check_files {
+  my ($self, @file_paths) = @_;
+
+  my @missing;
+  foreach my $file_path (@file_paths) {
+    if (not -e $file_path) {
+      push @missing, $file_path;
+    }
+  }
+
+  if (@missing) {
+    $self->logcroak('Failed to send files to S3; the following files ',
+                    'are missing: ', join q{ }, @missing);
+  }
+
+  return;
 }
 
 sub _read_config {
@@ -177,6 +201,11 @@ sub _read_config {
 
   return $archive_config;
 }
+
+sub _cram_last {
+   return $a =~ /[.]cram$/ ? 1 : -1;
+}
+
 
 __PACKAGE__->meta->make_immutable;
 
