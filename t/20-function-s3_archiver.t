@@ -29,9 +29,10 @@ subtest 'expected_files' => sub {
   plan tests => 1;
 
   my $archiver = $pkg->new
-    (conf_path           => "$config_path/archive_on",
-     runfolder_path      => $runfolder_path,
-     timestamp           => $timestamp);
+    (conf_path      => "$config_path/archive_on",
+     runfolder_path => $runfolder_path,
+     id_run         => 26291,
+     timestamp      => $timestamp);
 
   my $product = shift @{$archiver->products->{data_products}};
 
@@ -58,9 +59,10 @@ subtest 'create' => sub {
   plan tests => 155;
 
   my $archiver = $pkg->new
-    (conf_path           => "$config_path/archive_on",
-     runfolder_path      => $runfolder_path,
-     timestamp           => $timestamp);
+    (conf_path      => "$config_path/archive_on",
+     runfolder_path => $runfolder_path,
+     id_run         => 26291,
+     timestamp      => $timestamp);
 
   my $total_num_files = 0;
   foreach my $product (@{$archiver->products->{data_products}}) {
@@ -91,9 +93,10 @@ subtest 'commands' => sub {
   my $archiver;
   lives_ok {
     $archiver = $pkg->new
-      (conf_path           => "$config_path/archive_on",
-       runfolder_path      => $runfolder_path,
-       timestamp           => $timestamp);
+      (conf_path      => "$config_path/archive_on",
+       runfolder_path => $runfolder_path,
+       id_run         => 26291,
+       timestamp      => $timestamp);
   } 'archiver created ok';
 
   my $defs = $archiver->create;
@@ -118,9 +121,10 @@ subtest 'no_archive_study' => sub {
   plan tests => 1;
 
   my $archiver = $pkg->new
-    (conf_path           => "$config_path/archive_off",
-     runfolder_path      => $runfolder_path,
-     timestamp           => $timestamp);
+    (conf_path      => "$config_path/archive_off",
+     runfolder_path => $runfolder_path,
+     id_run         => 26291,
+     timestamp      => $timestamp);
 
   my $defs = $archiver->create;
   my $num_defs_observed = scalar @{$defs};
