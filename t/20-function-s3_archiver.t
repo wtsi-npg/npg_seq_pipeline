@@ -6,7 +6,7 @@ use File::Copy;
 use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:easy];
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Exception;
 use t::util;
 
@@ -23,6 +23,36 @@ use_ok($pkg);
 my $config_path    = 't/data/novaseq/config';
 my $runfolder_path = 't/data/novaseq/180709_A00538_0010_BH3FCMDRXX';
 my $timestamp      = '20180701-123456';
+
+
+subtest 'expected_files' => sub {
+  plan tests => 1;
+
+  my $archiver = $pkg->new
+    (conf_path           => "$config_path/archive_on",
+     runfolder_path      => $runfolder_path,
+     timestamp           => $timestamp);
+
+  my $product = shift @{$archiver->products->{data_products}};
+
+  my $path = "$runfolder_path/Data/Intensities/" .
+             'BAM_basecalls_20180723-111241/no_cal/archive/plex1';
+  my @expected = sort map { "$path/$_" }
+    ('26291#1_F0x900.stats',
+     '26291#1_F0xB00.stats',
+     '26291#1_F0xF04_target.stats',
+     '26291#1.bcfstats',
+     '26291#1.cram',
+     '26291#1.cram.crai',
+     '26291#1.cram.md5',
+     '26291#1.seqchksum',
+     '26291#1.sha512primesums512.seqchksum',
+     'qc/26291#1.verify_bam_id.json');
+
+  my @observed = $archiver->expected_files($product);
+  is_deeply(\@observed, \@expected, 'Expected files listed') or
+    diag explain \@observed;
+};
 
 subtest 'create' => sub {
   plan tests => 155;
@@ -55,7 +85,7 @@ subtest 'create' => sub {
   cmp_ok($total_num_files, '==', 140, "$total_num_files files expected");
 };
 
-subtest 'create' => sub {
+subtest 'commands' => sub {
   plan tests => 122;
 
   my $archiver;

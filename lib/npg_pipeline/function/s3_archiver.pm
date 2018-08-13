@@ -46,10 +46,14 @@ sub expected_files {
   my $dir_path = catdir($self->archive_path(), $product->dir_path());
   my @extensions = qw{cram cram.md5 cram.crai
                       seqchksum sha512primesums512.seqchksum
-                      F0x900.stats F0xB00.stats F0xF04_target.stats
                       bcfstats};
   push @expected_files,
     map { $product->file_path($dir_path, ext => $_) } @extensions;
+
+  my @suffixes = qw{F0x900 F0xB00 F0xF04_target};
+  push @expected_files,
+    map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
+    @suffixes;
 
   my $qc_path = $product->qc_out_path($self->archive_path());
 
