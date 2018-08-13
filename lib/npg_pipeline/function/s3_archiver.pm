@@ -219,7 +219,7 @@ npg_pipeline::function::s3_archiver
 
 =head1 SYNOPSIS
 
-  my $obj = npg_pipeline::function::s3_archiver
+  my $obj = npg_pipeline::function::s3_archiver->new
     (runfolder_path => $runfolder_path);
 
 =head1 DESCRIPTION
