@@ -20,7 +20,8 @@ use Net::AMQP::RabbitMQ;
 
 our $VERSION = '0';
 
-my $channel = 1;
+## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
+my $channel     = 1;
 my $debug;
 my $exchange;
 my $host;
@@ -34,6 +35,7 @@ my $timeout     = 30;
 my $user;
 my $verbose;
 my $vhost       = q{/};
+## use critic
 
 GetOptions('debug'         => \$debug,
            'exchange=s'    => \$exchange,
@@ -84,7 +86,7 @@ while ($retry < $retries) {
     $log->warn("Failed to connect to $host:$port ... ",
                "retrying in $retry_boff seconds [$retry / $retries]");
     $retry++;
-    sleep($retry_boff);
+    sleep $retry_boff;
     $retry_boff *= 2;
   }
 }
@@ -100,7 +102,7 @@ my $props   = {content_type  => 'application/json',
                delivery_mode => 1};
 
 my @localtime = localtime;
-my $timestamp = strftime("%Y-%m-%d %T", @localtime);
+my $timestamp = strftime('%Y-%m-%d %T', @localtime);
 
 my $num_errors = 0;
 foreach my $file (@ARGV) {
@@ -111,7 +113,7 @@ foreach my $file (@ARGV) {
     $msg->{event}->{occurred_at} = $timestamp;
 
     my $body = encode_json($msg);
-    $log->debug("Sending message body: ", $body);
+    $log->debug('Sending message body: ', $body);
     $mq->publish($channel, $routing_key, $body, $options, $props);
     $mq->recv($rv_timeout);
   } catch {
@@ -125,6 +127,8 @@ $mq->disconnect();
 if ($num_errors > 0) {
   $log->logcroak("Sending messages failed with $num_errors errors");
 }
+
+## no critic (Documentation::RequirePodSections)
 
 __END__
 

@@ -98,11 +98,11 @@ sub create {
       next;
     }
 
-    my $sample     = $product->lims->sample_supplier_name;
+    my $sample = $product->lims->sample_supplier_name;
     $sample or $self->logcroak('Failed to get a supplier sample name',
                                'for product ', $product->file_name_root);
 
-    my $study_id   = $product->lims->study_id;
+    my $study_id = $product->lims->study_id;
     $study_id or $self->logcroak('Failed to get a study_id',
                                  'for product ', $product->file_name_root);
 
@@ -202,10 +202,11 @@ sub _read_config {
   return $archive_config;
 }
 
+## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
 sub _cram_last {
-   return $a =~ /[.]cram$/ ? 1 : -1;
+  return $a =~ /[.]cram$/msx ? 1 : -1;
 }
-
+## use critic
 
 __PACKAGE__->meta->make_immutable;
 
