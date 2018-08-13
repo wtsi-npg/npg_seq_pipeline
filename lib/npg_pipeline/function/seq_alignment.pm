@@ -38,7 +38,6 @@ Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star salmon};
-Readonly::Scalar my $DEFAULT_SPIKE_TAG            => q{888};
 
 =head2 phix_reference
 
@@ -132,6 +131,7 @@ sub generate {
     my $spiked_phix_tag_index = $dp->lims->spiked_phix_tag_index;
     $self->info(q{  spiked_phix_tag_index: } . (defined $spiked_phix_tag_index? $spiked_phix_tag_index: q[UNDEF]));
 
+    $ref->{'memory'} = $MEMORY; # reset to default
     $ref->{'command'} = $self->_alignment_command($dp, $ref);
     push @definitions, $self->_create_definition($ref, $dp);
   }
@@ -169,7 +169,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $tag_index = $tags_vec->[0]; # assume unique for the moment
 
   my $is_pool = $dp->{lims}->is_pool;
-  my $spike_tag = ($tag_index == $DEFAULT_SPIKE_TAG? 1: 0); # is_spike_tag should be determined from lims?
+  my $spike_tag = $dp->{lims}->is_phix_spike;
 
   my $archive_path= $self->archive_path;
   my $dp_archive_path = $dp->path($self->archive_path);
