@@ -1,0 +1,18 @@
+Run 26291 has the following library manual QC results:
+
+# 26291:1:1;26291:2:1   => 1 # 1: Accepted preliminary
+# 26291:1:2;26291:2:2   => 2 # 2: Rejected preliminary
+# 26291:1:3;26291:2:3   => 3 # 3: Accepted final
+# 26291:1:4;26291:2:4   => 4 # 4: Rejected final
+# 26291:1:5;26291:2:5   => 5 # 5: Undecided
+# 26291:1:6;26291:2:6   => 6 # 6: Undecided final
+# 26291:1:7;26291:2:7   => 1
+# 26291:1:8;26291:2:8   => 2
+# 26291:1:9;26291:2:9   => 3 # 3: Accepted final
+# 26291:1:10;26291:2:10 => 4
+# 26291:1:11;26291:2:11 => 5
+# 26291:1:12;26291:2:12 => 6
+
+These results are used to test that pipeline jobs take the
+correct action when presented with data with a range of
+library QC outcomes.

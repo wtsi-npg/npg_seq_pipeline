@@ -6,11 +6,27 @@ use File::Copy;
 use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:easy];
-use Test::More tests => 5;
+use Test::More tests => 4;
 use Test::Exception;
 use t::util;
 
-Log::Log4perl->easy_init($DEBUG);
+
+use npg_tracking::glossary::composition::factory::rpt_list;
+
+Log::Log4perl->easy_init($ERROR);
+
+{
+  package TestDB;
+  use Moose;
+
+  with 'npg_testing::db';
+}
+
+# See README in fixtures for a description of the test data.
+my $qc = TestDB->new
+  (sqlite_utf8_enabled => 1,
+   verbose             => 0)->create_test_db('npg_qc::Schema',
+                                             't/data/qc_outcomes/fixtures');
 
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
   't/data/novaseq/180709_A00538_0010_BH3FCMDRXX/' .
@@ -32,7 +48,8 @@ subtest 'expected_files' => sub {
     (conf_path      => "$config_path/archive_on",
      runfolder_path => $runfolder_path,
      id_run         => 26291,
-     timestamp      => $timestamp);
+     timestamp      => $timestamp,
+     qc_schema      => $qc);
 
   my $product = shift @{$archiver->products->{data_products}};
 
@@ -56,39 +73,7 @@ subtest 'expected_files' => sub {
 };
 
 subtest 'create' => sub {
-  plan tests => 155;
-
-  my $archiver = $pkg->new
-    (conf_path      => "$config_path/archive_on",
-     runfolder_path => $runfolder_path,
-     id_run         => 26291,
-     timestamp      => $timestamp);
-
-  my $total_num_files = 0;
-  foreach my $product (@{$archiver->products->{data_products}}) {
-    my $name = $product->file_name_root;
-    my @observed = $archiver->expected_files($product);
-    my $num_files = scalar @observed;
-
-    my $sample = $product->lims->sample_supplier_name;
-    $sample ||= 'unnamed';
-
-    cmp_ok($num_files, '==', 10, "$num_files files for product $sample") or
-      diag explain \@observed;
-    $total_num_files += $num_files;
-
-    my $path_patt = qr|^$runfolder_path/.*/archive/plex\d+/(qc/)?$name|ms;
-    foreach my $path (@observed) {
-      like($path, $path_patt, "$path matches $path_patt");
-    }
-  }
-
-  # 140 includes 10 for tag 0 and 10 for tag 888
-  cmp_ok($total_num_files, '==', 140, "$total_num_files files expected");
-};
-
-subtest 'commands' => sub {
-  plan tests => 122;
+  plan tests => 23;
 
   my $archiver;
   lives_ok {
@@ -96,18 +81,32 @@ subtest 'commands' => sub {
       (conf_path      => "$config_path/archive_on",
        runfolder_path => $runfolder_path,
        id_run         => 26291,
-       timestamp      => $timestamp);
+       timestamp      => $timestamp,
+       qc_schema      => $qc);
   } 'archiver created ok';
 
-  my $defs = $archiver->create;
-  my $num_defs_observed = scalar @{$defs};
-  my $num_defs_expected = 12;
+  my @defs = @{$archiver->create};
+  my $num_defs_observed = scalar @defs;
+  my $num_defs_expected = 2; # Only 2 pass manual QC, tag index 3 and 9
   cmp_ok($num_defs_observed, '==', $num_defs_expected,
          "create returns $num_defs_expected definitions when archiving");
 
+  my @archived_rpts;
+  foreach my $def (@defs) {
+    push @archived_rpts,
+      [map { [$_->id_run, $_->position, $_->tag_index] }
+       $def->composition->components_list];
+  }
+
+  is_deeply(\@archived_rpts,
+            [[[26291, 1, 3], [26291, 2, 3]],
+             [[26291, 1, 9], [26291, 2, 9]]],
+            'Only "26291:1:3;26291:2:3" and "26291:1:9;26291:2:9" archived')
+    or diag explain \@archived_rpts;
+
   my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control $runfolder_path/.*/archive/plex\d+/.* s3://|;
 
-  foreach my $def (@{$defs}) {
+  foreach my $def (@defs) {
     my $cmd = $def->command;
 
     my @parts = split / && /, $cmd; # Deconstruct the command
@@ -118,17 +117,20 @@ subtest 'commands' => sub {
 };
 
 subtest 'no_archive_study' => sub {
-  plan tests => 1;
+  plan tests => 2;
 
   my $archiver = $pkg->new
     (conf_path      => "$config_path/archive_off",
      runfolder_path => $runfolder_path,
      id_run         => 26291,
-     timestamp      => $timestamp);
+     timestamp      => $timestamp,
+     qc_schema      => $qc);
 
-  my $defs = $archiver->create;
-  my $num_defs_observed = scalar @{$defs};
+  my @defs = @{$archiver->create};
+  my $num_defs_observed = scalar @defs;
   my $num_defs_expected = 1;
   cmp_ok($num_defs_observed, '==', $num_defs_expected,
          "create returns $num_defs_expected definitions when not archiving");
+
+  is($defs[0]->composition, undef, 'definition has no composition');
 };

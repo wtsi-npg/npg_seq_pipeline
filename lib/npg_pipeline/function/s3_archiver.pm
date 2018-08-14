@@ -9,6 +9,7 @@ use Readonly;
 use Try::Tiny;
 
 use npg_pipeline::function::definition;
+use npg_qc::mqc::outcomes;
 
 extends 'npg_pipeline::base';
 
@@ -24,9 +25,14 @@ Readonly::Scalar my $CONFIG_URL_KEY     => 'url';
 our $VERSION = '0';
 
 
+has 'qc_schema' =>
+  (isa        => 'npg_qc::Schema',
+   is         => 'ro',
+   required   => 1,);
+
 =head2 expected_files
 
-  Arg [1]    : Data product whose files to list,npg_pipeline::product.
+  Arg [1]    : Data product whose files to list, npg_pipeline::product.
 
   Example    : my @files = $obj->expected_files($product)
   Description: Return a list of the files expected to to present for
@@ -85,34 +91,61 @@ sub create {
 
   my @definitions;
 
+  my $mqc = npg_qc::mqc::outcomes->new(qc_schema => $self->qc_schema);
+
   my $i = 0;
   foreach my $product (@{$self->products->{data_products}}) {
-    if ($product->is_tag_zero_product) {
-      $self->info('Skipping archiving for tag zero product ',
+    if (not $product->has_rpt_list) {
+      $self->info(sprintf q{Skipping archiving for product %s } .
+                          q{because it has no rpt_list } .
+                          q{and so its manual QC state cannot be determined},
                   $product->file_name_root);
       next;
     }
+    my $rpt = $product->rpt_list;
+
+    if ($product->is_tag_zero_product) {
+      $self->info(sprintf q{Skipping archiving for tag zero product %s %s},
+                  $product->file_name_root, $rpt);
+      next;
+    }
     if ($product->lims->is_control) {
-      $self->info('Skipping archiving for control product ',
-                  $product->file_name_root);
+      $self->info(sprintf q{Skipping archiving for control product %s %s},
+                  $product->file_name_root, $rpt);
+      next;
+    }
+
+    my $qc_outcomes = npg_qc::mqc::outcomes->new
+      (qc_schema => $self->qc_schema);
+
+    $self->debug(sprintf q{Checking library QC outcome of %s %s},
+                 $product->file_name_root, $rpt);
+
+    if (not $qc_outcomes->get_library_outcomes([$rpt])->{$rpt}) {
+      $self->info(sprintf q{Skipping archiving for product %s %s } .
+                          q{because it did not pass manual QC},
+                  $product->file_name_root, $rpt);
       next;
     }
 
     my $sample = $product->lims->sample_supplier_name;
-    $sample or $self->logcroak('Failed to get a supplier sample name',
-                               'for product ', $product->file_name_root);
-
+    $sample or
+      $self->logcroak(sprintf q{Failed to get a supplier sample name for } .
+                              q{for product %s %s},
+                      $product->file_name_root, $rpt);
     my $study_id = $product->lims->study_id;
-    $study_id or $self->logcroak('Failed to get a study_id',
-                                 'for product ', $product->file_name_root);
+    $study_id or
+       $self->logcroak(sprintf q{Failed to get a study_id for } .
+                               q{for product %s %s},
+                      $product->file_name_root, $rpt);
 
     if (exists $archive_config->{$study_id}) {
-      $self->info(sprintf q{S3 archiving %s in study %s to bucket URL %s},
-                  $product->file_name_root, $study_id,
+      $self->info(sprintf q{S3 archiving %s %s in study %s to bucket URL %s},
+                  $product->file_name_root, $rpt, $study_id,
                   $archive_config->{$study_id});
     } else {
-      $self->info(sprintf q{Skipping S3 archiving %s in study %s},
-                  $product->file_name_root, $study_id);
+      $self->info(sprintf q{Skipping S3 archiving %s %s in study %s},
+                  $product->file_name_root, $rpt, $study_id);
       next;
     }
 
