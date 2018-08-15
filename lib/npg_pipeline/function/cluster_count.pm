@@ -355,18 +355,18 @@ sub _populate_spatial_filter_counts {
     my $qc_store = npg_qc::autoqc::qc_store->new( use_db => 0 );
     my $collection = $qc_store->load_from_path($sf_path);
     if( $collection->is_empty() ){
-      $self->warn("There are no spatial_filter qc results available in here: ", $sf_path);
+      $self->warn(q[There are no spatial_filter qc results available in here: ], $sf_path);
       next;
     }
     my $spatial_filter_collection = $collection->slice('class_name', 'spatial_filter');
 
     if($spatial_filter_collection->is_empty()) {
-      $self->warn("There is no spatial_filter result available in here: ", $sf_path);
+      $self->warn(q[There is no spatial_filter result available in here: ], $sf_path);
     }
 
     my $results = $spatial_filter_collection->results();
     if(@{$results} > 1) {
-      $self->logcroak("More than one spatial_filter result available in here: ", $sf_path);
+      $self->logcroak(q[More than one spatial_filter result available in here: ], $sf_path);
     }
     elsif(@{$results}) {
       my $qc_result = $results->[0];
