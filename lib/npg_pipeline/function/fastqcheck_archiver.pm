@@ -2,7 +2,6 @@ package npg_pipeline::function::fastqcheck_archiver;
 
 use Moose;
 use namespace::autoclean;
-use File::Spec;
 use Readonly;
 
 use npg_pipeline::function::definition;
@@ -18,20 +17,18 @@ sub create {
 
   my $job_name = join q{_}, q{fastqcheck_loader}, $self->id_run(), $self->timestamp();
 
-  my @fqcheck_paths = ( $self->archive_path() );
-  if ( $self->is_indexed() ) {
-    foreach my $position ( $self->positions ) {
-      my $lane_path = $self->lane_archive_path( $position );
-      if (-e $lane_path) {
-  	push @fqcheck_paths, $lane_path;
-      }
-    }
-  }
+  #####
+  # The loader disregards directories with no fastqcheck files, so
+  # it's safe to give it archival directory where lane-level files
+  # are found in case of the old runfolder structure.
+  # It skips plex-level files, therefore no need to give plex-level
+  # directories to the script.
+  #
+  my $apath = $self->archive_path();
+  my @fqcheck_paths = map { $_->path($apath) } @{$self->products->{'lanes'}};
+  push @fqcheck_paths, $apath;
 
-  my $command = $SCRIPT_NAME;
-  for my $path (@fqcheck_paths) {
-    $command .=  qq{ --path=$path};
-  }
+  my $command = join q[ ], $SCRIPT_NAME, map {"--path=$_"} @fqcheck_paths;
 
   my $d = npg_pipeline::function::definition->new(
     created_by    => __PACKAGE__,
@@ -86,8 +83,6 @@ type object.
 =item Moose
 
 =item namespace::autoclean
-
-=item File::Spec
 
 =item Readonly
 
