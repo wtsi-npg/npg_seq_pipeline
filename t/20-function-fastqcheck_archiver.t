@@ -13,24 +13,13 @@ use_ok(q{npg_pipeline::function::fastqcheck_archiver});
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   $util->create_multiplex_analysis( { qc_dir => [1..7], } );
 
-  my $fh;
   my $rf = $util->analysis_runfolder_path();
-  my $runinfofile = qq[$rf/RunInfo.xml];
-  open($fh, '>', $runinfofile) or die "Could not open file '$runinfofile' $!";
-  print $fh <<"ENDXML";
-<?xml version="1.0"?>
-<RunInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="3">
-  <Run>
-    <Reads>
-    <Read Number="1" NumCycles="76" IsIndexedRead="N" />
-    <Read NumCycles="11" Number="2" IsIndexedRead="Y" />
-    </Reads>
-    <FlowcellLayout LaneCount="8" SurfaceCount="2" SwathCount="1" TileCount="60">
-    </FlowcellLayout>
-  </Run>
-</RunInfo>
-ENDXML
-  close $fh;
+  my $reads = <<"EOXML";
+  <Read Number="1" NumCycles="76" IsIndexedRead="N" />
+  <Read NumCycles="11" Number="2" IsIndexedRead="Y" />
+EOXML
+
+  $util->create_run_info($reads);
 
   my $fq_loader;
   lives_ok {
@@ -72,6 +61,7 @@ ENDXML
     run_folder => q{123456_IL2_1234},
     runfolder_path => $util->analysis_runfolder_path(),
     timestamp => q{20090709-123456},
+    is_indexed => 0,
   );
 
   my $da = $fq_loader->create();

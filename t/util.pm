@@ -174,6 +174,31 @@ sub create_runfolder {
   return $paths;
 }
 
+sub create_run_info {
+  my ($self, $reads_wanted) = @_;
+
+  my $default_reads_wanted = q[    <Read Number="1" NumCycles="76" IsIndexedRead="N" />];
+
+  my $reads = ( defined $reads_wanted ) ? $reads_wanted : $default_reads_wanted;
+
+  my $fh;
+  my $runinfofile = $self->analysis_runfolder_path() . q[/RunInfo.xml];
+  open($fh, '>', $runinfofile) or die "Could not open file '$runinfofile' $!";
+  print $fh <<"ENDXML";
+<?xml version="1.0"?>
+<RunInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="3">
+  <Run>
+    <Reads>
+$reads
+    </Reads>
+    <FlowcellLayout LaneCount="8" SurfaceCount="2" SwathCount="1" TileCount="60">
+    </FlowcellLayout>
+  </Run>
+</RunInfo>
+ENDXML
+  close $fh;
+}
+
 # ensure that the environment variables do not get passed around
 sub DEMOLISH {
   $ENV{ npg::api::request->cache_dir_var_name() } = q{};

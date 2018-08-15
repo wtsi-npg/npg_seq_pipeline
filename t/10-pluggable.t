@@ -443,22 +443,9 @@ subtest 'positions and spidering' => sub {
   cp 't/data/run_params/runParameters.hiseq.xml',
     join(q[/], $runfolder_path, 'runParameters.xml')
     or die 'Faile to copy run params file';
-  my $fh;
-  my $runinfofile = qq[$runfolder_path/RunInfo.xml];
-  open($fh, '>', $runinfofile) or die "Could not open file '$runinfofile' $!";
-  print $fh <<"ENDXML";
-<?xml version="1.0"?>
-<RunInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="3">
-  <Run>
-    <Reads>
-    <Read Number="1" NumCycles="76" IsIndexedRead="N" />
-    </Reads>
-    <FlowcellLayout LaneCount="8" SurfaceCount="2" SwathCount="1" TileCount="60">
-    </FlowcellLayout>
-  </Run>
-</RunInfo>
-ENDXML
-  close $fh;
+
+  $util->create_run_info();
+
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
