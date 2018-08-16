@@ -1,0 +1,29 @@
+---
+default:
+  s3:
+    enable: false
+    url: null
+    notify: false
+  irods:
+    enable: true
+    notify: false
+
+study:
+  - study_id: "5290"
+    s3:
+      enable: true
+      url: "s3://product_bucket"
+      notify: true
+    irods:
+      enable: false
+      notify: true
+
+  - study_id: "1000"
+    s3:
+      enable: false
+      url: null
+      notify: false
+    irods:
+      enable: true
+      notify: false
+ 

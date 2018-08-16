@@ -16,7 +16,8 @@ use npg_pipeline::function::definition;
 
 extends 'npg_pipeline::base';
 
-with 'npg_pipeline::base::config';
+with qw{npg_pipeline::base::config
+        npg_pipeline::product::release};
 
 Readonly::Scalar my $EVENT_TYPE            => 'npg.events.sample.completed';
 Readonly::Scalar my $EVENT_ROLE_TYPE       => 'sample';
@@ -26,10 +27,6 @@ Readonly::Scalar my $EVENT_USER_ID         => 'npg_pipeline';
 Readonly::Scalar my $EVENT_MESSAGE_DIRNAME => 'messages';
 
 Readonly::Scalar my $SEND_MESSAGE_SCRIPT   => 'npg_pipeline_notify_delivery';
-Readonly::Scalar my $SEND_MESSAGE_CONFIG   => 'notify_delivery.json';
-Readonly::Scalar my $CONFIG_ITEMS_KEY      => 'notify_delivery';
-Readonly::Scalar my $CONFIG_STUDY_KEY      => 'study_id';
-
 Readonly::Scalar my $MD5SUM_LENGTH         => 32;
 
 
@@ -103,16 +100,13 @@ sub make_message {
   my $cram_md5_file  = $product->file_path($dir_path, ext => 'cram.md5');
   my $cram_md5       = $self->_read_md5_file($cram_md5_file);
 
-  my $lims             = $product->lims();
-  my $flowcell_barcode = $lims->flowcell_barcode();
-
-  my @names          = $lims->sample_names();
-  my @ids            = $lims->sample_ids();
-  my @supplier_names = $lims->sample_supplier_names();
-
-  $self->_check_count("$cram_file sample_name",          1, @names);
-  $self->_check_count("$cram_file sample_id",            1, @ids);
-  $self->_check_count("$cram_file sample_supplier_name", 1, @supplier_names);
+  my $flowcell_barcode = $product->lims->flowcell_barcode();
+  my $sample_id        = $product->lims->sample_id();
+  my $sample_name      = $product->lims->sample_name();
+  my $supplier_name    = $product->lims->sample_supplier_name();
+  $supplier_name or
+    $self->logcroak(sprintf q{Missing supplier name for product %s, %s},
+                    $product->file_name_root(), $product->rpt_list());
 
   my $message_uuid = uuid();
   my $subject_uuid = uuid(); # This is a placeholder until we can
@@ -129,14 +123,15 @@ sub make_message {
       'subjects'        =>[{
                             'role_type'     => $EVENT_ROLE_TYPE,
                             'subject_type'  => $EVENT_SUBJECT_TYPE,
-                            'friendly_name' => $supplier_names[0],
+                            'friendly_name' => $supplier_name,
                             'uuid'          => $subject_uuid,
                            }],
       'metadata' =>
       {
        'customer_name'        => $self->customer_name,
-       'sample_name'          => $names[0],
-       'sample_supplier_name' => $supplier_names[0],
+       'sample_id'            => $sample_id,
+       'sample_name'          => $sample_name,
+       'sample_supplier_name' => $supplier_name,
        'flowcell_barcode'     => $flowcell_barcode,
        'file_path'            => $cram_file,
        'file_md5'             => $cram_md5,
@@ -162,38 +157,19 @@ sub make_message {
 sub create {
   my ($self) = @_;
 
-  my $id_run = $self->id_run();
-
   if (! -d $self->message_dir) {
     make_path($self->message_dir);
   }
 
-  my $studies_config = $self->_read_config();
-
+  my $id_run = $self->id_run();
   my @definitions;
 
   my $i = 0;
   foreach my $product (@{$self->products->{data_products}}) {
-    if ($product->is_tag_zero_product) {
-      $self->info('Skipping delivery notification for tag zero product ',
-                  $product->file_name_root);
-      next;
-    }
-    if ($product->lims->is_control) {
-      $self->info('Skipping delivery notification for control product ',
-                  $product->file_name_root);
-      next;
-    }
-
-    my $study_id = $product->lims->study_id;
-    if (exists $studies_config->{$study_id}) {
-      $self->info(sprintf q{Sending delivery notification for %s in study %s},
-                  $product->file_name_root, $study_id);
-    } else {
-      $self->info(sprintf q{Skipping delivery notification for %s in study %s},
-                  $product->file_name_root, $study_id);
-      next;
-    }
+    next if not $self->is_release_data($product);
+    next if not $self->has_qc_for_release($product);
+    next if not $self->is_for_s3_release($product);
+    next if not $self->is_for_s3_release_notification($product);
 
     my $msg_file = $product->file_path($self->message_dir, ext => 'msg.json');
     $self->_write_message_file($msg_file, $self->make_message($product));
@@ -212,11 +188,12 @@ sub create {
 
     push @definitions,
       npg_pipeline::function::definition->new
-        ('created_by' => __PACKAGE__,
-         'created_on' => $self->timestamp(),
-         'identifier' => $id_run,
-         'job_name'   => $job_name,
-         'command'    => $command);
+        ('created_by'  => __PACKAGE__,
+         'created_on'  => $self->timestamp(),
+         'identifier'  => $id_run,
+         'job_name'    => $job_name,
+         'command'     => $command,
+         'composition' => $product->composition());
     $i++;
   }
 
@@ -235,41 +212,6 @@ sub _build_message_dir {
   my ($self) = @_;
 
   return catdir($self->runfolder_path, $EVENT_MESSAGE_DIRNAME);
-}
-
-sub _read_config {
-  my ($self) = @_;
-
-  my $config = $self->read_config($self->conf_file_path($SEND_MESSAGE_CONFIG));
-
-  my $studies_config;
-  if (exists $config->{$CONFIG_ITEMS_KEY}) {
-    my $items = $config->{$CONFIG_ITEMS_KEY};
-    if (not ref $items eq 'ARRAY') {
-      $self->error('Failed to load messaging configuration: ', pp($items));
-    } else {
-      foreach my $item (@{$items}) {
-        $studies_config->{$item->{$CONFIG_STUDY_KEY}} = 1;
-      }
-    }
-  }
-
-  return $studies_config;
-}
-
-# Raise an error unless there are num_expected values.
-sub _check_count {
-  my ($self, $name, $num_expected, @values) = @_;
-
-  my $num_values = scalar @values;
-  if ($num_values != $num_expected) {
-    $self->logcroak("Expected $num_expected '$name' ",
-                    "but found $num_values: ", pp(\@values));
-  }
-
-  $self->debug("Found $num_expected '$name' as expected: ", pp(\@values));
-
-  return;
 }
 
 sub _read_md5_file {

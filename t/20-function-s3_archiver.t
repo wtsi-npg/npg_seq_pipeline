@@ -5,15 +5,13 @@ use Digest::MD5;
 use File::Copy;
 use File::Path qw[make_path];
 use File::Temp;
-use Log::Log4perl qw[:easy];
+use Log::Log4perl qw[:levels];
 use Test::More tests => 4;
 use Test::Exception;
 use t::util;
 
-
-use npg_tracking::glossary::composition::factory::rpt_list;
-
-Log::Log4perl->easy_init($ERROR);
+Log::Log4perl->easy_init({level  => $INFO,
+                          layout => '%d %p %m %n'});
 
 {
   package TestDB;
@@ -36,16 +34,14 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
 my $pkg = 'npg_pipeline::function::s3_archiver';
 use_ok($pkg);
 
-my $config_path    = 't/data/novaseq/config';
 my $runfolder_path = 't/data/novaseq/180709_A00538_0010_BH3FCMDRXX';
 my $timestamp      = '20180701-123456';
-
 
 subtest 'expected_files' => sub {
   plan tests => 1;
 
   my $archiver = $pkg->new
-    (conf_path      => "$config_path/archive_on",
+    (conf_path      => "t/data/release/config/archive_on",
      runfolder_path => $runfolder_path,
      id_run         => 26291,
      timestamp      => $timestamp,
@@ -73,12 +69,12 @@ subtest 'expected_files' => sub {
 };
 
 subtest 'create' => sub {
-  plan tests => 23;
+  plan tests => 27;
 
   my $archiver;
   lives_ok {
     $archiver = $pkg->new
-      (conf_path      => "$config_path/archive_on",
+      (conf_path      => "t/data/release/config/archive_on",
        runfolder_path => $runfolder_path,
        id_run         => 26291,
        timestamp      => $timestamp,
@@ -107,8 +103,10 @@ subtest 'create' => sub {
   my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control $runfolder_path/.*/archive/plex\d+/.* s3://|;
 
   foreach my $def (@defs) {
-    my $cmd = $def->command;
+    is($def->created_by, $pkg, "created_by is $pkg");
+    is($def->identifier, 26291, "identifier is set correctly");
 
+    my $cmd = $def->command;
     my @parts = split / && /, $cmd; # Deconstruct the command
     foreach my $part (@parts) {
       like($cmd, $cmd_patt, "$cmd matches $cmd_patt");
@@ -120,7 +118,7 @@ subtest 'no_archive_study' => sub {
   plan tests => 2;
 
   my $archiver = $pkg->new
-    (conf_path      => "$config_path/archive_off",
+    (conf_path      => "t/data/release/config/archive_off",
      runfolder_path => $runfolder_path,
      id_run         => 26291,
      timestamp      => $timestamp,
@@ -130,7 +128,9 @@ subtest 'no_archive_study' => sub {
   my $num_defs_observed = scalar @defs;
   my $num_defs_expected = 1;
   cmp_ok($num_defs_observed, '==', $num_defs_expected,
-         "create returns $num_defs_expected definitions when not archiving");
+         "create returns $num_defs_expected definitions when not archiving") or
+           diag explain \@defs;
 
-  is($defs[0]->composition, undef, 'definition has no composition');
+  is($defs[0]->composition, undef, 'definition has no composition') or
+    diag explain \@defs;
 };

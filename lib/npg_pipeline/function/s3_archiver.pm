@@ -2,6 +2,7 @@ package npg_pipeline::function::s3_archiver;
 
 use namespace::autoclean;
 
+use Data::Dump qw{pp};
 use File::Basename;
 use File::Spec::Functions qw{catdir catfile};
 use Moose;
@@ -13,22 +14,12 @@ use npg_qc::mqc::outcomes;
 
 extends 'npg_pipeline::base';
 
-with 'npg_pipeline::base::config';
+with qw{npg_pipeline::base::config
+        npg_pipeline::product::release};
 
 Readonly::Scalar my $ARCHIVE_EXECUTABLE => 'aws';
-Readonly::Scalar my $ARCHIVE_CONFIG     => 's3_archive.json';
-
-Readonly::Scalar my $CONFIG_ITEMS_KEY   => 's3_archive';
-Readonly::Scalar my $CONFIG_STUDY_KEY   => 'study_id';
-Readonly::Scalar my $CONFIG_URL_KEY     => 'url';
 
 our $VERSION = '0';
-
-
-has 'qc_schema' =>
-  (isa        => 'npg_qc::Schema',
-   is         => 'ro',
-   required   => 1,);
 
 =head2 expected_files
 
@@ -86,73 +77,25 @@ sub expected_files {
 sub create {
   my ($self) = @_;
 
-  my $id_run         = $self->id_run();
-  my $archive_config = $self->_read_config();
-
+  my $id_run = $self->id_run();
   my @definitions;
-
-  my $mqc = npg_qc::mqc::outcomes->new(qc_schema => $self->qc_schema);
 
   my $i = 0;
   foreach my $product (@{$self->products->{data_products}}) {
-    if (not $product->has_rpt_list) {
-      $self->info(sprintf q{Skipping archiving for product %s } .
-                          q{because it has no rpt_list } .
-                          q{and so its manual QC state cannot be determined},
-                  $product->file_name_root);
-      next;
-    }
-    my $rpt = $product->rpt_list;
+    next if not $self->is_release_data($product);
+    next if not $self->has_qc_for_release($product);
+    next if not $self->is_for_s3_release($product);
 
-    if ($product->is_tag_zero_product) {
-      $self->info(sprintf q{Skipping archiving for tag zero product %s %s},
-                  $product->file_name_root, $rpt);
-      next;
-    }
-    if ($product->lims->is_control) {
-      $self->info(sprintf q{Skipping archiving for control product %s %s},
-                  $product->file_name_root, $rpt);
-      next;
-    }
-
-    my $qc_outcomes = npg_qc::mqc::outcomes->new
-      (qc_schema => $self->qc_schema);
-
-    $self->debug(sprintf q{Checking library QC outcome of %s %s},
-                 $product->file_name_root, $rpt);
-
-    if (not $qc_outcomes->get_library_outcomes([$rpt])->{$rpt}) {
-      $self->info(sprintf q{Skipping archiving for product %s %s } .
-                          q{because it did not pass manual QC},
-                  $product->file_name_root, $rpt);
-      next;
-    }
-
-    my $sample = $product->lims->sample_supplier_name;
-    $sample or
-      $self->logcroak(sprintf q{Failed to get a supplier sample name for } .
-                              q{for product %s %s},
-                      $product->file_name_root, $rpt);
-    my $study_id = $product->lims->study_id;
-    $study_id or
-       $self->logcroak(sprintf q{Failed to get a study_id for } .
-                               q{for product %s %s},
-                      $product->file_name_root, $rpt);
-
-    if (exists $archive_config->{$study_id}) {
-      $self->info(sprintf q{S3 archiving %s %s in study %s to bucket URL %s},
-                  $product->file_name_root, $rpt, $study_id,
-                  $archive_config->{$study_id});
-    } else {
-      $self->info(sprintf q{Skipping S3 archiving %s %s in study %s},
-                  $product->file_name_root, $rpt, $study_id);
-      next;
-    }
+    # This is required for our initial customer, but we should arrange
+    # an alternative for when supplier_name is not provided
+    my $supplier_name = $product->lims->sample_supplier_name();
+    $supplier_name or
+      $self->logcroak(sprintf q{Missing supplier name for product %s, %s},
+                      $product->file_name_root(), $product->rpt_list());
 
     my $job_name = sprintf q{%s_%d_%d}, $ARCHIVE_EXECUTABLE, $id_run, $i;
-    my $base_url = $archive_config->{$study_id};
-    $self->debug(sprintf q{Using base URL '%s' for study %s},
-                 $base_url, $study_id);
+    my $base_url = $self->s3_url($product);
+    $self->info("Using base S3 URL '$base_url'");
 
     my @file_paths = sort _cram_last $self->expected_files($product);
     $self->_check_files(@file_paths);;
@@ -162,13 +105,10 @@ sub create {
     my @commands;
     foreach my $file_path (@file_paths) {
       my $filename   = basename($file_path);
-      my $file_url   = "$base_url/$sample/$filename";
+      my $file_url   = "$base_url/$supplier_name/$filename";
 
       push @commands, sprintf q{%s s3 cp %s %s %s},
         $ARCHIVE_EXECUTABLE, join(q{ }, @aws_args), $file_path, $file_url;
-
-      $self->info(sprintf q{S3 archiving %s in study %s to %s},
-                  $file_path, $study_id, $file_url);
     }
 
     my $command = join q{ && }, reverse @commands;
@@ -181,7 +121,7 @@ sub create {
          'identifier'  => $id_run,
          'job_name'    => $job_name,
          'command'     => $command,
-         'composition' => $product->composition);
+         'composition' => $product->composition());
     $i++;
   }
 
@@ -212,27 +152,6 @@ sub _check_files {
   }
 
   return;
-}
-
-sub _read_config {
-  my ($self) = @_;
-
-  my $config = $self->read_config($self->conf_file_path($ARCHIVE_CONFIG));
-
-  my $archive_config;
-  if (exists $config->{$CONFIG_ITEMS_KEY}) {
-    my $items = $config->{$CONFIG_ITEMS_KEY};
-    if (not ref $items eq 'ARRAY') {
-      $self->error('Failed to load archiving configuration: ', pp($items));
-    } else {
-      foreach my $item (@{$items}) {
-        $archive_config->{$item->{$CONFIG_STUDY_KEY}} =
-          $item->{$CONFIG_URL_KEY};
-      }
-    }
-  }
-
-  return $archive_config;
 }
 
 ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
