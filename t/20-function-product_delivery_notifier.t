@@ -35,6 +35,8 @@ my $pkg = 'npg_pipeline::function::product_delivery_notifier';
 use_ok($pkg);
 
 my $runfolder_path = 't/data/novaseq/180709_A00538_0010_BH3FCMDRXX';
+my $archive_path   = "$runfolder_path/Data/Intensities/" .
+                     'BAM_basecalls_20180805-013153/no_cal/archive';
 my $timestamp      = '20180701-123456';
 my $customer       = 'test_customer';
 
@@ -82,7 +84,7 @@ subtest 'create' => sub {
     or diag explain \@notified_rpts;
 
 
-  my $cmd_patt = qr|npg_pipeline_notify_delivery --host $msg_host --port $msg_port --vhost $msg_vhost --exchange $msg_exchange --routing-key $msg_routing_key $runfolder_path/messages/26291#[3,9].msg.json|;
+  my $cmd_patt = qr|npg_pipeline_notify_delivery --host $msg_host --port $msg_port --vhost $msg_vhost --exchange $msg_exchange --routing-key $msg_routing_key $archive_path/[.][.]/[.][.]/messages/26291#[3,9][.]msg[.]json|;
 
   foreach my $def (@defs) {
     is($def->created_by, $pkg, "created_by is $pkg");
