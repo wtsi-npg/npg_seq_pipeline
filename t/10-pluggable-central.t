@@ -65,6 +65,9 @@ my $runfolder_path = $util->analysis_runfolder_path();
   $util->set_staging_analysis_area();
   cp 't/data/run_params/runParameters.hiseq.xml',
     join(q[/], $runfolder_path, 'runParameters.xml');
+
+  $util->create_run_info();
+
   my $init = {
       function_order   => [qw{qc_qX_yield qc_adapter update_warehouse qc_insert_size}],
       lanes            => [4],
@@ -75,7 +78,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
       spider           => 0,
       no_sf_resource   => 1,
   };
- 
+
   lives_ok { $pb = $central->new($init); } q{no croak on new creation};
   mkdir $pb->archive_path;
   mkdir $pb->qc_path;

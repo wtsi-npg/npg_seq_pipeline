@@ -222,8 +222,6 @@ t/data/qc/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa
 t/data/qc/references/PhiX/default/all/fasta/PhiX.fasta
 t/data/qc/samplesheet_14043.csv
 t/data/qc/samplesheet_14353.csv
-t/data/Recipes/Recipe_GA2-PEM_MP_2x76Cycle+8_v7.7.xml
-t/data/Recipes/Recipe_GA2_37Cycle_PE_v6.1.xml
 t/data/Recipes/TileLayout.xml
 t/data/rna_seq/12597_RunInfo.xml
 t/data/rna_seq/13066_RunInfo.xml

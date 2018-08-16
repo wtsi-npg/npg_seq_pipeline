@@ -13,12 +13,21 @@ use_ok(q{npg_pipeline::function::fastqcheck_archiver});
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   $util->create_multiplex_analysis( { qc_dir => [1..7], } );
 
+  my $rf = $util->analysis_runfolder_path();
+  my $reads = <<"EOXML";
+  <Read Number="1" NumCycles="76" IsIndexedRead="N" />
+  <Read NumCycles="11" Number="2" IsIndexedRead="Y" />
+EOXML
+
+  $util->create_run_info($reads);
+
   my $fq_loader;
   lives_ok {
     $fq_loader = npg_pipeline::function::fastqcheck_archiver->new(
       run_folder => q{123456_IL2_1234},
-      runfolder_path => $util->analysis_runfolder_path(),
+      runfolder_path => $rf,
       timestamp => q{20090709-123456},
+      is_indexed => 1,
     );
   } q{fq_loader created ok};
   isa_ok( $fq_loader, q{npg_pipeline::function::fastqcheck_archiver});
@@ -52,6 +61,7 @@ use_ok(q{npg_pipeline::function::fastqcheck_archiver});
     run_folder => q{123456_IL2_1234},
     runfolder_path => $util->analysis_runfolder_path(),
     timestamp => q{20090709-123456},
+    is_indexed => 0,
   );
 
   my $da = $fq_loader->create();

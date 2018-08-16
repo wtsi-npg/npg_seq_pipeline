@@ -15,10 +15,12 @@ my $pbcal = $util->standard_analysis_recalibrated_path();
 {
   $util->create_analysis();
   my $aaq;
+  $util->create_run_info();
+
   lives_ok { $aaq = npg_pipeline::function::autoqc_archiver->new(
-    run_folder => q{123456_IL2_1234},
+    run_folder     => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
-    timestamp => q{20090709-123456},
+    timestamp      => q{20090709-123456},
   ); } q{created with run_folder ok};
   isa_ok($aaq, q{npg_pipeline::function::autoqc_archiver});
 
@@ -54,9 +56,10 @@ my $pbcal = $util->standard_analysis_recalibrated_path();
   }
 
   my $aaq = npg_pipeline::function::autoqc_archiver->new(
-    run_folder => q{123456_IL2_1234},
+    run_folder     => q{123456_IL2_1234},
     runfolder_path => $analysis_runfolder_path,
-    timestamp => q{20090709-123456}
+    timestamp      => q{20090709-123456},
+    is_indexed     => 1,
   );
 
   my $da = $aaq->create();

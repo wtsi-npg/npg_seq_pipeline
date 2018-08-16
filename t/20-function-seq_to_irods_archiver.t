@@ -18,7 +18,6 @@ my $pb_cal_path = $analysis_runfolder_path . $pb_cal;
 sub create_analysis {
   `mkdir -p $analysis_runfolder_path/$pb_cal/archive`;
   `mkdir -p $analysis_runfolder_path/Config`;
-  `cp t/data/Recipes/Recipe_GA2_37Cycle_PE_v6.1.xml $analysis_runfolder_path/`;
   `cp t/data/Recipes/TileLayout.xml $analysis_runfolder_path/Config/`;
   `ln -s $pb_cal $analysis_runfolder_path/Latest_Summary`;
 

@@ -39,6 +39,8 @@ my $bbp = "$rf/bam_basecall_path";
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
   $util->set_rta_staging_analysis_area();
 
+  $util->create_run_info();
+
   my $out = `$bin/npg_pipeline_central --no-spider --no_bsub --no_sf_resource --runfolder_path $rf --bam_basecall_path $bbp --function_order dodo 2>&1`;
   like($out,
   qr/Handler for 'dodo' is not registered/,
@@ -47,7 +49,7 @@ my $bbp = "$rf/bam_basecall_path";
 
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
- 
+
   lives_ok { qx{
     $bin/npg_pipeline_post_qc_review --no_bsub --no_sf_resource --runfolder_path $rf --bam_basecall_path $bbp};}
     q{ran bin/npg_pipeline_post_qc_review};
@@ -61,6 +63,8 @@ my $bbp = "$rf/bam_basecall_path";
 
 {
   $util->set_rta_staging_analysis_area();
+
+  $util->create_run_info();
 
   lives_ok { qx{$bin/npg_pipeline_seqchksum_comparator --id_run=1234 --archive_path=$rf/Data/Intensities/BAM_basecalls_20140815-114817/no_cal/archive --bam_basecall_path=$rf/Data/Intensities/BAM_basecalls_20140815-114817 --lanes=1 };} q{ran bin/npg_pipeline_seqchksum_comparator with analysis and bam_basecall_path};
   ok($CHILD_ERROR, qq{Return code of $CHILD_ERROR as no files found});
