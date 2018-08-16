@@ -38,7 +38,8 @@ my $archive_path = $recalibrated_path . q{/archive};
       bam_basecall_path => $bam_basecall_path,
       id_run            => 1234,
       timestamp         => $timestamp,
-      lanes             => [1,2]
+      lanes             => [1,2],
+      is_indexed        => 0,
     );
   } q{object ok};
 
@@ -139,7 +140,8 @@ my $archive_path = $recalibrated_path . q{/archive};
     bam_basecall_path => $bam_basecall_path,
     archive_path      => $archive_path,
     id_run            => 1234,
-    lanes             => [1]
+    lanes             => [1],
+    is_indexed        => 0,
   );
   my $da = $object->create();
   ok ($da && @{$da} == 1, 'an array with one definitions is returned');
@@ -149,7 +151,8 @@ my $archive_path = $recalibrated_path . q{/archive};
     runfolder_path    => $analysis_runfolder_path,
     bam_basecall_path => $bam_basecall_path,
     archive_path      => $archive_path,
-    id_run            => 1234
+    id_run            => 1234,
+    is_indexed        => 0,
   );
   $da = $object->create();
   # seqchksum_comparator is now a run-level function, so only one definition returned
