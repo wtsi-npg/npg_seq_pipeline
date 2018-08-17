@@ -1,35 +1,23 @@
 use strict;
 use warnings;
-use Test::More tests => 21;
+use Test::More tests => 17;
 use Test::Exception;
 use t::util;
 
 my $util = t::util->new();
-my $pbcal_path = $util->temp_directory() . q{/nfs/sf45/IL2/analysis/123456_IL2_1234/Data/Intensities/Bustard1.3.4_09-07-2009_auto/PB_cal};
+my $rfh = $util->create_runfolder(undef, {'analysis_path' => 'BAM_basecalls_3445'});
+my $arpath = $rfh->{'archive_path'};
 
 use_ok(q{npg_pipeline::function::fastqcheck_archiver});
-
+local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
 {
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
-  $util->create_multiplex_analysis( { qc_dir => [1..7], } );
-
-  my $rf = $util->analysis_runfolder_path();
-  my $reads = <<"EOXML";
-  <Read Number="1" NumCycles="76" IsIndexedRead="N" />
-  <Read NumCycles="11" Number="2" IsIndexedRead="Y" />
-EOXML
-
-  $util->create_run_info($reads);
-
-  my $fq_loader;
-  lives_ok {
-    $fq_loader = npg_pipeline::function::fastqcheck_archiver->new(
-      run_folder => q{123456_IL2_1234},
-      runfolder_path => $rf,
-      timestamp => q{20090709-123456},
-      is_indexed => 1,
-    );
-  } q{fq_loader created ok};
+  my $fq_loader = npg_pipeline::function::fastqcheck_archiver->new(
+    id_run         => 1234,
+    archive_path   => $arpath,
+    merge_lanes    => 0,
+    is_indexed     => 0,
+    timestamp      => q{20090709-123456},
+  );
   isa_ok( $fq_loader, q{npg_pipeline::function::fastqcheck_archiver});
 
   my $da = $fq_loader->create();
@@ -43,7 +31,7 @@ EOXML
   is ($d->identifier, 1234, 'identifier is set correctly');
   is ($d->job_name, q{fastqcheck_loader_1234_20090709-123456},
     'job_name is correct');
-  my $command = qq{npg_qc_save_files.pl --path=$pbcal_path/archive --path=$pbcal_path/archive/lane1 --path=$pbcal_path/archive/lane2 --path=$pbcal_path/archive/lane3 --path=$pbcal_path/archive/lane4 --path=$pbcal_path/archive/lane5 --path=$pbcal_path/archive/lane6 --path=$pbcal_path/archive/lane7};
+  my $command = qq{npg_qc_save_files.pl --path=$arpath/lane1 --path=$arpath/lane2 --path=$arpath/lane3 --path=$arpath/lane4 --path=$arpath/lane5 --path=$arpath/lane6 --path=$arpath/lane7 --path=$arpath/lane8 --path=$arpath};
   is ($d->command, $command, 'command is correct');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
@@ -52,26 +40,19 @@ EOXML
   is ($d->queue, 'lowload', 'queue');
   is ($d->fs_slots_num, 1, 'one fs slot is set');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
-}
 
-{
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
-  $util->create_analysis( {'qc_dir' => 1} );
-  my $fq_loader = npg_pipeline::function::fastqcheck_archiver->new(
-    run_folder => q{123456_IL2_1234},
-    runfolder_path => $util->analysis_runfolder_path(),
-    timestamp => q{20090709-123456},
-    is_indexed => 0,
+  $fq_loader = npg_pipeline::function::fastqcheck_archiver->new(
+    id_run       => 1234,
+    archive_path => $arpath,
+    merge_lanes  => 1,
+    is_indexed   => 0,
+    lanes        => [2, 3],
+    timestamp    => q{20090709-123456},
   );
-
-  my $da = $fq_loader->create();
-  ok ($da && @{$da} == 1, 'an array with one definition is returned');
-  my $d = $da->[0];
-  isa_ok($d, q{npg_pipeline::function::definition});
-  is ($d->job_name, q{fastqcheck_loader_1234_20090709-123456},
-    'job_name is correct');
-  is ($d->command, qq{npg_qc_save_files.pl --path=$pbcal_path/archive},
-    'command is correct');
+  $da = $fq_loader->create();
+  $d = $da->[0];
+  $command = qq{npg_qc_save_files.pl --path=$arpath/lane2 --path=$arpath/lane3 --path=$arpath};
+  is ($d->command, $command, 'command is correct - two lane-level directories');
 }
 
 1;

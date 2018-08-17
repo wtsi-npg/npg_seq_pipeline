@@ -160,6 +160,7 @@ sub create_runfolder {
   my $rf_name = $names->{'runfolder_name'} || q[180524_A00510_0008_BH3W7VDSXX];
 
   my $paths = {};
+  $paths->{'runfolder_name'} = $rf_name;
   $paths->{'runfolder_path'} = join q[/], $dir, $rf_name;
   $paths->{'intensity_path'} = join q[/], $paths->{'runfolder_path'}, q[Data/Intensities];
   $paths->{'basecall_path'}  = join q[/], $paths->{'intensity_path'}, q[BaseCalls];
