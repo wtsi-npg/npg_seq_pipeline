@@ -179,8 +179,6 @@ t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_base
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/PB_cal_bam/archive/lane6/qc/8747_6#5_phix_bam_flagstats.json
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/PB_cal_bam/archive/lane6/qc/8747_6#6_bam_flagstats.json
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/PB_cal_bam/archive/lane6/qc/8747_6#6_phix_bam_flagstats.json
-t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/PB_cal_bam/archive/qc/8747_4.spatial_filter.json
-t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/PB_cal_bam/archive/qc/8747_6.spatial_filter.json
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/InterOp/TileMetricsOut.bin
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/RunInfo.xml
 t/data/example_runfolder/130917_MS6_10808_A_MS2030455-300V2/RunInfo.xml
