@@ -25,6 +25,13 @@ has 'release_config' =>
    required   => 1,
    default    => sub { return {} },);
 
+=head2 BUILD
+
+Method called by Moose before returning newly constructed object having loaded
+product release config.
+
+=cut
+
 sub BUILD {
   my ($self) = @_;
 
@@ -270,6 +277,8 @@ product release.
 =item Moose::Role
 
 =item Readonly
+
+=back
 
 =head1 AUTHOR
 

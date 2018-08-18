@@ -36,7 +36,7 @@ env:
 before_install:
   - sleep 100
   - sudo -E apt-get -yq update
-  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install odbc-postgresql libgd2-xpm-dev uuid-dev perl
+  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install odbc-postgresql libgd2-xpm-dev uuid-dev librabbitmq-dev
   - ./scripts/travis_before_install.sh
 
 install:
