@@ -34,6 +34,7 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
 my $pkg = 'npg_pipeline::function::product_delivery_notifier';
 use_ok($pkg);
 
+my $id_run         = 26291;
 my $runfolder_path = 't/data/novaseq/180709_A00538_0010_BH3FCMDRXX';
 my $archive_path   = "$runfolder_path/Data/Intensities/" .
                      'BAM_basecalls_20180805-013153/no_cal/archive';
@@ -53,6 +54,7 @@ subtest 'create' => sub {
   lives_ok {
     $notifier = $pkg->new
       (conf_path           => "t/data/release/config/notify_on",
+       id_run              => $id_run,
        customer_name       => $customer,
        runfolder_path      => $runfolder_path,
        timestamp           => $timestamp,
@@ -101,6 +103,7 @@ subtest 'no_message_study' => sub {
 
   my $notifier = $pkg->new
     (conf_path           => "t/data/release/config/notify_off",
+     id_run              => $id_run,
      customer_name       => $customer,
      runfolder_path      => $runfolder_path,
      timestamp           => $timestamp,
