@@ -34,9 +34,7 @@ my $analysis_runfolder_path = $util->analysis_runfolder_path();
     'job_name is correct');
   my $command = qq{npg_qc_illumina_analysis_loader --id_run 1234 --run_folder 123456_IL2_1234 --runfolder_path $tmp_dir/nfs/sf45/IL2/analysis/123456_IL2_1234};
   is ($d->command, $command, 'command is correct');
-  is ($d->command_preexec,
-    q{npg_pipeline_script_must_be_unique_runner -job_name="illumina_analysis_loader" -own_job_name="illumina_analysis_loader_1234_20090709-123456"},
-    'preexec command is correct');
+  ok (!$d->command_preexec, 'preexec command is not set');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
