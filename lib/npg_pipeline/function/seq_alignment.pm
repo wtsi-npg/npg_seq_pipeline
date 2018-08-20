@@ -38,7 +38,6 @@ Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star salmon};
-Readonly::Scalar my $DEFAULT_SPIKE_TAG            => q{888};
 
 =head2 phix_reference
 
@@ -132,6 +131,7 @@ sub generate {
     my $spiked_phix_tag_index = $dp->lims->spiked_phix_tag_index;
     $self->info(q{  spiked_phix_tag_index: } . (defined $spiked_phix_tag_index? $spiked_phix_tag_index: q[UNDEF]));
 
+    $ref->{'memory'} = $MEMORY; # reset to default
     $ref->{'command'} = $self->_alignment_command($dp, $ref);
     push @definitions, $self->_create_definition($ref, $dp);
   }
@@ -169,7 +169,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $tag_index = $tags_vec->[0]; # assume unique for the moment
 
   my $is_pool = $dp->{lims}->is_pool;
-  my $spike_tag = ($tag_index == $DEFAULT_SPIKE_TAG? 1: 0); # is_spike_tag should be determined from lims?
+  my $spike_tag = $dp->{lims}->is_phix_spike;
 
   my $archive_path= $self->archive_path;
   my $dp_archive_path = $dp->path($self->archive_path);
@@ -308,7 +308,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $do_target_regions_stats = 0;
   if ($do_target_alignment && !$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
     if($self->_do_bait_stats_analysis($rpt_list)){
-       $p4_param_vals->{target_regions_file} = $self->_bait($l)->target_intervals_path();
+#      $p4_param_vals->{target_regions_file} = $self->_bait($l)->target_intervals_path();
+       $p4_param_vals->{target_regions_file} = $self->_bait($rpt_list)->target_intervals_path();
        $do_target_regions_stats = 1;
     }
     elsif($self->_target_regions_file_path($l, q[target])) {
@@ -380,7 +381,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $spike_splicing = q[];
   if(not $spike_tag) {
     if($self->_do_bait_stats_analysis($rpt_list)) {
-      $p4_param_vals->{bait_regions_file} = $self->_bait($l)->bait_intervals_path();
+#     $p4_param_vals->{bait_regions_file} = $self->_bait($l)->bait_intervals_path();
+      $p4_param_vals->{bait_regions_file} = $self->_bait($rpt_list)->bait_intervals_path();
       push @{$p4_ops->{prune}}, 'fop(phx|hs)_samtools_stats_F0.*00_bait.*-';
     }
     else {
@@ -543,12 +545,12 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
       $human_split ? (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $l, $is_plex, $human_split, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $l, $is_plex, $human_split, undef, $rpt_list, $name_root, [$bfs_input_file]),
       ) : q()),
 
       $nchs ? (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $l, $is_plex, $nchs_outfile_label, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $l, $is_plex, $nchs_outfile_label, undef, $rpt_list, $name_root, [$bfs_input_file]),
       ) : q(),
 
       $do_rna ? (join q( ),

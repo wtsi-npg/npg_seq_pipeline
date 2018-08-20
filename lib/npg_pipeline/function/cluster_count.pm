@@ -4,6 +4,7 @@ use Moose;
 use namespace::autoclean;
 use English qw{-no_match_vars};
 use File::Spec;
+use List::MoreUtils qw{any};
 use Readonly;
 
 use npg_qc::autoqc::qc_store;
@@ -52,7 +53,7 @@ npg_pipeline::function::cluster_count
 
 Creates and returns function definitions as an array.
 Each function definition is created as a npg_pipeline::function::definition
-type object. A separate object is created for each lane (position).
+type object. One object is created for a set of lanes (defaults to all lanes).
 
   my $definitions = $obj->create();
 
@@ -61,22 +62,20 @@ type object. A separate object is created for each lane (position).
 sub create {
   my $self = shift;
 
+  my $id_run = $self->id_run;
+
   my $job_name = join q[_], $CLUSTER_COUNT_SCRIPT,
                             $self->id_run(), $self->timestamp;
 
   my $command = $CLUSTER_COUNT_SCRIPT;
-  $command .= q{ --id_run=}            . $self->id_run();
-  $command .= q{ --position=1};
+  $command .= q{ --id_run=}            . $id_run;
   $command .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
   $command .= q{ --runfolder_path=}    . $self->runfolder_path();
-
-
 
   for my $dp (@{$self->products->{data_products}}) {
     my $bfs_path = $dp->qc_out_path($self->archive_path);
     $command .= sprintf qq{ --bfs_paths=$bfs_path};
   }
-
 
   for my $lane_product (@{$self->products->{lanes}}) {
 
@@ -85,11 +84,12 @@ sub create {
     $command .= sprintf qq{ --sf_paths=$sf_path};
   }
 
+  # TODO: deal with dummy position argument in composition creation
   return [
       npg_pipeline::function::definition->new(
       created_by   => __PACKAGE__,
       created_on   => $self->timestamp(),
-      identifier   => $self->id_run(),
+      identifier   => $id_run,
       job_name     => $job_name,
       command      => $command,
       composition  => $self->create_composition({id_run => $self->id_run, position => 1,})
@@ -134,12 +134,8 @@ sub run_cluster_count_check {
        $self->info(q{Spatial filter not applied (well, not recorded anyway)});
    }
 
-   my $total_bam_cluster_count;
-   if ( $self->is_multiplexed_lane($self->position() ) ) {
-      $total_bam_cluster_count += $self->_bam_cluster_count_total({plex=>1});
-   }else{
-      $total_bam_cluster_count += $self->_bam_cluster_count_total({});
-   }
+   my $total_bam_cluster_count = $self->_bam_cluster_count_total();
+
    if($self->is_paired_read()){
        $total_bam_cluster_count /= 2;
     }
@@ -167,11 +163,6 @@ has 'sf_paths' => ( isa        => 'ArrayRef',
                      required   => 0,
                      default  => sub {return [];}, # is sub necessary?
                    );
-
-has q{position} => (
-  isa => q{Int},
-  is  => q{ro},
-);
 
 has q{_bustard_pf_cluster_count} => (
   isa => q{Int},
@@ -207,7 +198,10 @@ sub _populate_cluster_counts {
 
   my $bustard_pf_cluster_count;
   my $bustard_raw_cluster_count;
+  my @positions = $self->positions();
   foreach my $l (keys %{$interop}) {
+    if(not any { $_ == $l } @positions) { next; }
+
     $bustard_pf_cluster_count += $interop->{$l}->{'cluster count pf'};
     if ( $type eq q{pf} ) {
       $return += $interop->{$l}->{'cluster count pf'};
@@ -355,18 +349,18 @@ sub _populate_spatial_filter_counts {
     my $qc_store = npg_qc::autoqc::qc_store->new( use_db => 0 );
     my $collection = $qc_store->load_from_path($sf_path);
     if( $collection->is_empty() ){
-      $self->warn("There are no spatial_filter qc results available in here: ", $sf_path);
+      $self->warn(q[There are no spatial_filter qc results available in here: ], $sf_path);
       next;
     }
     my $spatial_filter_collection = $collection->slice('class_name', 'spatial_filter');
 
     if($spatial_filter_collection->is_empty()) {
-      $self->warn("There is no spatial_filter result available in here: ", $sf_path);
+      $self->warn(q[There is no spatial_filter result available in here: ], $sf_path);
     }
 
     my $results = $spatial_filter_collection->results();
     if(@{$results} > 1) {
-      $self->logcroak("More than one spatial_filter result available in here: ", $sf_path);
+      $self->logcroak(q[More than one spatial_filter result available in here: ], $sf_path);
     }
     elsif(@{$results}) {
       my $qc_result = $results->[0];
@@ -383,9 +377,7 @@ sub _populate_spatial_filter_counts {
 }
 
 sub _bam_cluster_count_total {
-  my ( $self, $args_ref ) = @_;
-
-  my $plex = $args_ref->{plex};
+  my ($self) = @_;
 
   my $bam_cluster_count = 0;
   for my $bfs_path (@{$self->bfs_paths}) {

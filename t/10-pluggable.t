@@ -176,7 +176,7 @@ subtest 'switching off functions' => sub {
 };
 
 subtest 'specifying functions via function_order' => sub {
-  plan tests => 3;
+  plan tests => 4;
 
   my @functions_in_order = qw(
     run_archival_in_progress
@@ -192,9 +192,11 @@ subtest 'specifying functions via function_order' => sub {
     runfolder_path        => $runfolder_path,
     spider                => 0,
     no_sf_resource        => 1,
-    no_bsub               => 0
+    no_bsub               => 0,
+    is_indexed            => 0
   );
   is($p->id_run, 1234, 'run id set correctly');
+  is($p->is_indexed, 0, 'is not indexed');
   is(join(q[ ], @{$p->function_order()}), join(q[ ], @functions_in_order),
     q{function_order set on creation});
   lives_ok { $p->main() } q{no error running main};
@@ -223,7 +225,7 @@ subtest 'creating executor object' => sub {
     qr/Can't locate npg_pipeline\/executor\/some\.pm/,
     'error if executor modules does not exist';
 
-  for my $etype (qw/lsf wr/) { 
+  for my $etype (qw/lsf wr/) {
     $ref->{'executor_type'} = $etype;
     my $pl = npg_pipeline::pluggable->new($ref);
     is ($pl->executor_type(), $etype, "executor type is $etype as set");
@@ -301,11 +303,12 @@ subtest 'running the pipeline (lsf executor)' => sub {
     spider         => 0,
     execute        => 0,
     no_sf_resource => 1,
+    is_indexed     => 0,
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
   lives_ok { $p->main(); } q{no error running main without execution };
-  
+
   $ref->{'execute'} = 1;
   $ref->{'no_bsub'} = 1;
   $p = npg_pipeline::pluggable->new($ref);
@@ -352,6 +355,7 @@ subtest 'running the pipeline (wr executor)' => sub {
     spider         => 0,
     execute        => 0,
     executor_type  => 'wr',
+    is_indexed     => 0,
   };
 
   # soft-link wr command to /bin/false so that it fails
@@ -363,7 +367,7 @@ subtest 'running the pipeline (wr executor)' => sub {
   my $p = npg_pipeline::pluggable->new($ref);
   lives_ok { $p->main(); } q{no error running main without execution };
 
-  $ref->{'execute'} = 1; 
+  $ref->{'execute'} = 1;
   throws_ok { npg_pipeline::pluggable->new($ref)->main() }
     qr/Error submitting for execution: Error submitting wr jobs/,
     q{error running main};
@@ -390,7 +394,7 @@ subtest 'positions and spidering' => sub {
     join(q[/], $runfolder_path, 'runParameters.xml')
     or die 'Faile to copy run params file';
 
-  local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients 
+  local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
@@ -439,6 +443,9 @@ subtest 'positions and spidering' => sub {
   cp 't/data/run_params/runParameters.hiseq.xml',
     join(q[/], $runfolder_path, 'runParameters.xml')
     or die 'Faile to copy run params file';
+
+  $util->create_run_info();
+
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
@@ -477,7 +484,7 @@ subtest 'script name, pipeline name and function list' => sub {
   $base = npg_pipeline::pluggable->new(function_list => $path);
   is( $base->function_list, $path, 'function list path as given');
   isa_ok( $base->_function_list_conf(), q{HASH}, 'function list is read into a hash');
-  
+
   $base = npg_pipeline::pluggable->new(function_list => 'data/config_files/function_list_central.json');
   is( $base->function_list, $path, 'function list absolute path from relative path');
   isa_ok( $base->_function_list_conf(), q{HASH}, 'function list is read into an array');
@@ -497,7 +504,7 @@ subtest 'script name, pipeline name and function list' => sub {
   throws_ok { $base->function_list }
     qr/Bad function list name: $test_path/,
     'error when function list does not exist, neither it can be interpreted as a function list name';
-  
+
   cp $path, $test_dir;
   $path = $test_dir . '/function_list_post_qc_review.json';
 

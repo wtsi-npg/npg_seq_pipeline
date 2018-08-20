@@ -179,8 +179,6 @@ t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_base
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/PB_cal_bam/archive/lane6/qc/8747_6#5_phix_bam_flagstats.json
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/PB_cal_bam/archive/lane6/qc/8747_6#6_bam_flagstats.json
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/PB_cal_bam/archive/lane6/qc/8747_6#6_phix_bam_flagstats.json
-t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/PB_cal_bam/archive/qc/8747_4.spatial_filter.json
-t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/PB_cal_bam/archive/qc/8747_6.spatial_filter.json
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/InterOp/TileMetricsOut.bin
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/RunInfo.xml
 t/data/example_runfolder/130917_MS6_10808_A_MS2030455-300V2/RunInfo.xml
@@ -222,8 +220,6 @@ t/data/qc/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa
 t/data/qc/references/PhiX/default/all/fasta/PhiX.fasta
 t/data/qc/samplesheet_14043.csv
 t/data/qc/samplesheet_14353.csv
-t/data/Recipes/Recipe_GA2-PEM_MP_2x76Cycle+8_v7.7.xml
-t/data/Recipes/Recipe_GA2_37Cycle_PE_v6.1.xml
 t/data/Recipes/TileLayout.xml
 t/data/rna_seq/12597_RunInfo.xml
 t/data/rna_seq/13066_RunInfo.xml
