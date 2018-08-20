@@ -28,6 +28,8 @@ LIST OF CHANGES
  - archival daemon - sleep for an hour after a successful submission -
      we want to avoid doing parallel s3 uploads for multiple runs
  - wr executor - explicitly propagate pipeline's environment to jobs
+ - illumina archiver job - exclude discontinued verbose attribute and paths
+   that are not needed for the minimal work this loader is doing now
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline

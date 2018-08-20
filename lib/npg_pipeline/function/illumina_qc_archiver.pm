@@ -24,13 +24,6 @@ sub create {
   $command .= q{ --id_run } . $self->id_run;
   $command .= q{ --run_folder } . $self->run_folder;
   $command .= q{ --runfolder_path } . $self->runfolder_path;
-  if ($self->bam_basecall_path) {
-    $command .= q{ --bam_basecall_path } . $self->bam_basecall_path;
-  }
-  $command .= q{ --basecall_path } . $self->basecall_path;
-  if ($self->verbose()) {
-    $command .= q{ --verbose};
-  }
 
   my $d = npg_pipeline::function::definition->new(
     created_by      => __PACKAGE__,
