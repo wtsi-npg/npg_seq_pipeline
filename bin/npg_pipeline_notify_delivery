@@ -6,6 +6,7 @@ use warnings;
 use FindBin qw{$Bin};
 use lib (-d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib");
 
+use Config::Any;
 use Data::Dump qw{pp};
 use Date::Format;
 use File::Slurp;
@@ -22,6 +23,7 @@ our $VERSION = '0';
 
 ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
 my $channel     = 1;
+my $config_file;
 my $debug;
 my $exchange;
 my $host;
@@ -37,7 +39,8 @@ my $verbose;
 my $vhost       = q{/};
 ## use critic
 
-GetOptions('debug'         => \$debug,
+GetOptions('config=s'      => \$config_file,
+           'debug'         => \$debug,
            'exchange=s'    => \$exchange,
            'help'          => sub {
              pod2usage(-verbose => 2,
@@ -60,24 +63,57 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 
 my $log = Log::Log4perl->get_logger('main');
 
-$exchange or pod2usage(-msg     => 'An --exchange argument is required',
-                       -exitval => 2);
+if ($config_file) {
+  -e $config_file or
+    $log->logcroak("Config file '$config_file' does not exist");
+
+  my $config = Config::Any->load_files({files   => [$config_file],
+                                        use_ext => 1})->[0];
+  $config or $log->logcroak("Failed to read config file '$config_file'");
+  $config = $config->{$config_file};
+
+  $config->{host}        and $host        = $config->{host};
+  $config->{port}        and $port        = $config->{port};
+  $config->{user}        and $user        = $config->{user};
+  $config->{password}    and $password    = $config->{password};
+
+  $config->{vhost}       and $vhost       = $config->{vhost};
+  $config->{routing_key} and $routing_key = $config->{routing_key};
+
+  $config->{timeout}     and $timeout     = $config->{timeout};
+  $config->{retries}     and $retries     = $config->{retries};
+
+  defined $config->{exchange} and $exchange = $config->{exchange};
+}
+
 $host     or pod2usage(-msg     => 'A --host argument is required',
                        -exitval => 2);
 $port     or pod2usage(-msg     => 'A --port argument is required',
                        -exitval => 2);
+$user     or pod2usage(-msg     => 'A --user argument is required',
+                       -exitval => 2);
+defined $exchange or
+  pod2usage(-msg     => 'An --exchange argument is required',
+            -exitval => 2);
 
 $password ||= $ENV{RABBITMQ_PASSWORD};
 
+$password or pod2usage(-msg     => 'No password was provided. ' .
+                                   'Please set RABBITMQ_PASSWORD ' .
+                                   'in the environment',
+                       -exitval => 2);
+
+$log->info("Connecting to $host:$port, vhost: $vhost, exchange: '$exchange' ",
+           "as user: $user (timeout: $timeout, retries: $retries)");
 
 my $mq = Net::AMQP::RabbitMQ->new();
 my $retry = 0;
 while ($retry < $retries) {
   $mq->connect($host, {port     => $port,
-                       vhost    => $vhost,
-                       timeout  => $timeout,
                        user     => $user,
-                       password => $password,});
+                       password => $password,
+                       vhost    => $vhost,
+                       timeout  => $timeout,});
 
   if ($mq->is_connected()) {
     $log->info("Connected to $host:$port");
@@ -142,6 +178,20 @@ npg_pipeline_notify_delivery --host <host> --port <port> --user <user>
   [--vhost <vhost>] --exchange <exchange> [message_file [message_file ...]]
 
  Options:
+   --config          The path to a configuration file specifying the
+                     values to use for command line options --host, --port,
+                     --user, --password, --vhost, --exchange, --routing-key,
+                     --timeout and --retries. If a config file is used, those
+                     options that are documented as "Required" become
+                     "Optional" on the command line. If these options are
+                     provided in addition to a config file, the values given
+                     on the command line take precedence.
+                     The format of the config file is .ini style:
+
+                       host=
+                       port=
+                       ...
+
    --debug           Enable debug level logging. Optional, defaults to
                      false.
    --exchange        The RabbitMQ exchange name. Required.
