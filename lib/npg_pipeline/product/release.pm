@@ -114,6 +114,44 @@ sub has_qc_for_release {
   return 0;
 }
 
+=head2 customer_name
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->customer_name($product)
+  Description: Return a name for the customer to whom data are being
+               released.
+
+  Returntype : Str
+
+=cut
+
+sub customer_name {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+  my $study_config = $self->_find_study_config($product);
+
+  my $customer_name;
+
+  if ($study_config) {
+    $customer_name = $study_config->{s3}->{customer_name};
+    $customer_name or
+      $self->logconfess(sprintf q{Missing customer name in } .
+                                q{configuration file: %s for study %s'},
+                        $self->conf_file_path($RELEASE_CONFIG_FILE),
+                        $study_config->{study_id});
+
+    if (ref $customer_name) {
+      $self->logconfess('Invalid customer name in configuration file: ',
+                        pp($customer_name));
+    }
+  }
+
+  return $customer_name;
+}
+
 =head2 is_for_s3_release
 
   Arg [1]    : npg_pipeline::product

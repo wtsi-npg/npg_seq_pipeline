@@ -35,12 +35,6 @@ Readonly::Scalar my $MD5SUM_LENGTH         => 32;
 
 our $VERSION = '0';
 
-has 'customer_name' =>
-  (isa           => 'Str',
-   is            => 'ro',
-   required      => 1,
-   documentation => 'The name of the customer (for message metadata)',);
-
 ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
 has 'message_config' =>
   (isa           => 'Str',
@@ -50,7 +44,7 @@ has 'message_config' =>
    lazy          => 1,
    documentation => 'The path of the configuration file for the messaging ' .
                     'script. The default location for this file is in ' .
-                    '$HOME/.npg/ and te default filename is ' .
+                    '$HOME/.npg/ and the default filename is ' .
                     'npg_message_queue.conf',);
 ## use critic
 
@@ -84,6 +78,9 @@ sub make_message {
   my $cram_md5_file  = $product->file_path($dir_path, ext => 'cram.md5');
   my $cram_md5       = $self->_read_md5_file($cram_md5_file);
 
+  my $customer_name = $self->customer_name($product);
+  $self->info("Using customer name '$customer_name'");
+
   my $flowcell_barcode = $product->lims->flowcell_barcode();
   my $sample_id        = $product->lims->sample_id();
   my $sample_name      = $product->lims->sample_name();
@@ -112,11 +109,11 @@ sub make_message {
                            }],
       'metadata' =>
       {
-       'customer_name'        => $self->customer_name,
+       'customer_name'        => $customer_name,
        'sample_id'            => $sample_id,
        'sample_name'          => $sample_name,
        'sample_supplier_name' => $supplier_name,
-       'flowcell_barcode'     => $flowcell_barcode,
+       # 'flowcell_barcode'     => $flowcell_barcode,
        'file_path'            => $cram_file,
        'file_md5'             => $cram_md5,
        'rpt_list'             => $product->rpt_list,

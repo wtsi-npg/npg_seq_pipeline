@@ -13,6 +13,7 @@ study:
     s3:
       enable: true
       url: "s3://product_bucket"
+      customer_name: test_customer
       notify: true
     irods:
       enable: false
