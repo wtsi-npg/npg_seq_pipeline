@@ -6,6 +6,7 @@ use Data::Dump qw{pp};
 use File::Basename;
 use File::Spec::Functions qw{catdir catfile};
 use Moose;
+use MooseX::StrictConstructor;
 use Readonly;
 use Try::Tiny;
 

@@ -6,7 +6,7 @@ use File::Copy;
 use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:easy];
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Exception;
 use t::util;
 
@@ -47,22 +47,39 @@ my $msg_vhost       = 'test_msg_vhost';
 my $msg_exchange    = 'test_msg_exchange';
 my $msg_routing_key = 'test_msg_routing_key';
 
+my $config_path    = 't/data/release/config/notify_on';
+my $message_config = "$config_path/npg_message_queue.conf";
+
+subtest 'message_config' => sub {
+  plan tests => 1;
+
+  my $notifier = $pkg->new
+    (conf_path           => "t/data/release/config/notify_on",
+     id_run              => $id_run,
+     customer_name       => $customer,
+     runfolder_path      => $runfolder_path,
+     timestamp           => $timestamp,
+     qc_schema           => $qc);
+
+  my $expected_config = sprintf q{%s/.npg/npg_message_queue.conf}, $ENV{HOME};
+  my $observed_config = $notifier->message_config();
+  is($observed_config, $expected_config,
+     "Messaging config file is $expected_config") or
+       diag explain $observed_config;
+};
+
 subtest 'create' => sub {
   plan tests => 9;
 
   my $notifier;
   lives_ok {
     $notifier = $pkg->new
-      (conf_path           => "t/data/release/config/notify_on",
+      (conf_path           => $config_path,
        id_run              => $id_run,
        customer_name       => $customer,
+       message_config      => $message_config,
        runfolder_path      => $runfolder_path,
        timestamp           => $timestamp,
-       message_host        => $msg_host,
-       message_port        => $msg_port,
-       message_vhost       => $msg_vhost,
-       message_exchange    => $msg_exchange,
-       message_routing_key => $msg_routing_key,
        qc_schema           => $qc);
   } 'notifier created ok';
 
@@ -85,15 +102,14 @@ subtest 'create' => sub {
             'Only "26291:1:3;26291:2:3" and "26291:1:9;26291:2:9" notified')
     or diag explain \@notified_rpts;
 
-
-  my $cmd_patt = qr|npg_pipeline_notify_delivery --host $msg_host --port $msg_port --vhost $msg_vhost --exchange $msg_exchange --routing-key $msg_routing_key $archive_path/[.][.]/[.][.]/messages/26291#[3,9][.]msg[.]json|;
+  my $cmd_patt = qr|npg_pipeline_notify_delivery --config $config_path/npg_message_queue.conf $archive_path/[.][.]/[.][.]/messages/26291#[3,9][.]msg[.]json|;
 
   foreach my $def (@defs) {
     is($def->created_by, $pkg, "created_by is $pkg");
     is($def->identifier, 26291, "identifier is set correctly");
 
     my $cmd = $def->command;
-    like($cmd, $cmd_patt, "$cmd matches $cmd_patt");
+    like($cmd, $cmd_patt, "$cmd matches $cmd_patt") or diag explain $cmd;
   }
 
 };
@@ -105,13 +121,9 @@ subtest 'no_message_study' => sub {
     (conf_path           => "t/data/release/config/notify_off",
      id_run              => $id_run,
      customer_name       => $customer,
+     message_config      => $message_config,
      runfolder_path      => $runfolder_path,
      timestamp           => $timestamp,
-     message_host        => $msg_host,
-     message_port        => $msg_port,
-     message_vhost       => $msg_vhost,
-     message_exchange    => $msg_exchange,
-     message_routing_key => $msg_routing_key,
      qc_schema           => $qc);
 
   my @defs = @{$notifier->create};

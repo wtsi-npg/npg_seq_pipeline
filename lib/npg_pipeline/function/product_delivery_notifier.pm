@@ -8,11 +8,13 @@ use File::Path qw{make_path};
 use File::Spec::Functions;
 use JSON;
 use Moose;
+use MooseX::StrictConstructor;
 use Readonly;
 use Try::Tiny;
 use UUID qw{uuid};
 
 use npg_pipeline::function::definition;
+use npg_tracking::util::config_constants qw{$NPG_CONF_DIR_NAME};
 
 extends 'npg_pipeline::base';
 
@@ -26,7 +28,7 @@ Readonly::Scalar my $EVENT_USER_ID         => 'npg_pipeline';
 Readonly::Scalar my $EVENT_MESSAGE_DIRNAME => 'messages';
 
 Readonly::Scalar my $SEND_MESSAGE_SCRIPT   => 'npg_pipeline_notify_delivery';
-Readonly::Scalar my $MESSAGE_CONFIG_FILE   => 'message_config.conf';
+Readonly::Scalar my $MESSAGE_CONFIG_FILE   => 'npg_message_queue.conf';
 
 Readonly::Scalar my $MD5SUM_LENGTH         => 32;
 
@@ -39,6 +41,7 @@ has 'customer_name' =>
    required      => 1,
    documentation => 'The name of the customer (for message metadata)',);
 
+## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
 has 'message_config' =>
   (isa           => 'Str',
    is            => 'ro',
@@ -46,7 +49,10 @@ has 'message_config' =>
    builder       => '_build_message_config',
    lazy          => 1,
    documentation => 'The path of the configuration file for the messaging ' .
-                    'script',);
+                    'script. The default location for this file is in ' .
+                    '$HOME/.npg/ and te default filename is ' .
+                    'npg_message_queue.conf',);
+## use critic
 
 has 'message_dir' =>
   (isa           => 'Str',
@@ -181,7 +187,9 @@ sub create {
 sub _build_message_config {
   my ($self) = @_;
 
-  my $file = $self->conf_file_path($MESSAGE_CONFIG_FILE);
+  my $dir  = $ENV{'HOME'} || q{.};
+  my $path = catdir($dir, $NPG_CONF_DIR_NAME);
+  my $file = catfile($path, $MESSAGE_CONFIG_FILE);
   $self->info("Using messaging configuration file '$file'");
 
   return $file;
@@ -242,10 +250,7 @@ npg_pipeline::function::product_delivery_notifier
 
   my $obj = npg_pipeline::function::product_delivery_notifier
     (customer_name    => $customer,
-     message_host     => $msg_host,
-     message_port     => $msg_port,
-     message_vhost    => $msg_vhost,
-     message_exchange => $msg_exchange,
+     message_config   => '/path/to/config',
      runfolder_path   => $runfolder_path);
 
 =head1 DESCRIPTION
@@ -254,16 +259,23 @@ Notifies a message queue that a set of data products from a sequencing
 run have been delivered to a customer.
 
 Notification is configured per-study using the configuration file
-notify_delivery.json which must contain an entry for the study_id of
-any study whose data products are to be included in notification:
+product_release.yml, see npg_pipeline::product::release.
 
-{
-  "notify_delivery": [
-    { "study_id": "5290" }
-  ]
-}
+The message_config file describes the host, port, user, password,
+vhost, routing key and exchange for the message queue. E.g.
 
-An empty array here will result skipping notification for all studies.
+  host=localhost
+  port=5672
+  user=npg
+  password=test
+  vhost=/
+  exchange=""
+
+The password may be set through an environment variable. See the
+npg_pipeline_notify_delivery script which is executed by this
+notifier.
+
+The default location of the file is $HOME/.npg/npg_message_queue.conf
 
 
 =head1 SUBROUTINES/METHODS
