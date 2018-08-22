@@ -180,6 +180,39 @@ sub s3_url {
   return $url;
 }
 
+=head2 s3_profile
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->s3_profile($product)
+  Description: Return an S3 profile name for release of the product or
+               undef if there is no profile. A profile is a named set of
+               credentials used by some S3 client software.
+
+  Returntype : Str
+
+=cut
+
+sub s3_profile {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+  my $study_config = $self->_find_study_config($product);
+
+  my $profile;
+
+  if ($study_config) {
+    $profile = $study_config->{s3}->{profile};
+    if (ref $profile) {
+      $self->logconfess('Invalid S3 profile in configuration file: ',
+                        pp($profile));
+    }
+  }
+
+  return $profile;
+}
+
 =head2 is_for_s3_release_notification
 
   Arg [1]    : npg_pipeline::product

@@ -100,7 +100,7 @@ subtest 'create' => sub {
             'Only "26291:1:3;26291:2:3" and "26291:1:9;26291:2:9" archived')
     or diag explain \@archived_rpts;
 
-  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control $runfolder_path/.*/archive/plex\d+/.* s3://|;
+  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control --profile s3_profile_name $runfolder_path/.*/archive/plex\d+/.* s3://|;
 
   foreach my $def (@defs) {
     is($def->created_by, $pkg, "created_by is $pkg");

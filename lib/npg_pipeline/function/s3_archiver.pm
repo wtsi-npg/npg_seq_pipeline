@@ -97,11 +97,23 @@ sub create {
     my $base_url = $self->s3_url($product);
     $self->info("Using base S3 URL '$base_url'");
 
+    my $profile = $self->s3_profile($product);
+    if ($profile) {
+      $self->info("Using S3 client profile '$profile'");
+    }
+    else {
+      $self->info('Using the default S3 client profile');
+    }
+
     my @file_paths = sort _cram_last $self->expected_files($product);
     $self->_check_files(@file_paths);;
 
     my @aws_args = qw{--cli-connect-timeout 300
                       --acl bucket-owner-full-control};
+    if ($profile) {
+      push @aws_args, '--profile', $profile;
+    }
+
     my @commands;
     foreach my $file_path (@file_paths) {
       my $filename   = basename($file_path);
