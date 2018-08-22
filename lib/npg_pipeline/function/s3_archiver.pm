@@ -14,8 +14,7 @@ use npg_qc::mqc::outcomes;
 
 extends 'npg_pipeline::base';
 
-with qw{npg_pipeline::base::config
-        npg_pipeline::product::release};
+with qw{npg_pipeline::product::release};
 
 Readonly::Scalar my $ARCHIVE_EXECUTABLE => 'aws';
 
@@ -180,22 +179,7 @@ npg_pipeline::function::s3_archiver
 Uploads files for a data product to S3.
 
 Upload is configured per-study using the configuration file
-s3_archive.json which must contain an entry for the study_id of any
-study whose data products are to be included in notification:
-
-{
-    "s3_archive": [
-        {"study_id": "5290", "url": "s3://product_bucket"}
-    ]
-}
-
-An empty array here will result skipping S3 upload for all studies.
-
-The "url" value indicates the S3 bucket destination for the files. The
-files will be copied to the bucket with a prefix of the supplier's
-sample name. i.e.
-
-<file> => s3://product_bucket/<sample name>/<file>
+product_release.yml, see npg_pipeline::product::release.
 
 
 =head1 SUBROUTINES/METHODS
