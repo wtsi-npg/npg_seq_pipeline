@@ -16,8 +16,7 @@ use npg_pipeline::function::definition;
 
 extends 'npg_pipeline::base';
 
-with qw{npg_pipeline::base::config
-        npg_pipeline::product::release};
+with qw{npg_pipeline::product::release};
 
 Readonly::Scalar my $EVENT_TYPE            => 'npg.events.sample.completed';
 Readonly::Scalar my $EVENT_ROLE_TYPE       => 'sample';
@@ -27,6 +26,8 @@ Readonly::Scalar my $EVENT_USER_ID         => 'npg_pipeline';
 Readonly::Scalar my $EVENT_MESSAGE_DIRNAME => 'messages';
 
 Readonly::Scalar my $SEND_MESSAGE_SCRIPT   => 'npg_pipeline_notify_delivery';
+Readonly::Scalar my $MESSAGE_CONFIG_FILE   => 'message_config.conf';
+
 Readonly::Scalar my $MD5SUM_LENGTH         => 32;
 
 
@@ -38,37 +39,14 @@ has 'customer_name' =>
    required      => 1,
    documentation => 'The name of the customer (for message metadata)',);
 
-has 'message_host' =>
+has 'message_config' =>
   (isa           => 'Str',
    is            => 'ro',
    required      => 1,
-   documentation => 'The FQDN of the messaging host',);
-
-has 'message_port' =>
-  (isa           => 'Int',
-   is            => 'ro',
-   required      => 1,
-   documentation => 'The port number of the messaging service',);
-
-has 'message_vhost' =>
-  (isa           => 'Str',
-   is            => 'ro',
-   required      => 1,
-   documentation => 'The virtual host of the messaging service, without ' .
-                    'any leading slash i.e. "production", not "/production"',);
-
-has 'message_exchange' =>
-  (isa           => 'Str',
-   is            => 'ro',
-   required      => 1,
-   documentation => 'The name of the messaging exchange to contact',);
-
-has 'message_routing_key' =>
-  (isa           => 'Str',
-   is            => 'ro',
-   required      => 1,
-   default       => q{},
-   documentation => 'The messaging routing key, or an empty string',);
+   builder       => '_build_message_config',
+   lazy          => 1,
+   documentation => 'The path of the configuration file for the messaging ' .
+                    'script',);
 
 has 'message_dir' =>
   (isa           => 'Str',
@@ -175,16 +153,8 @@ sub create {
     $self->_write_message_file($msg_file, $self->make_message($product));
 
     my $job_name = sprintf q{%s_%d_%d}, $SEND_MESSAGE_SCRIPT, $id_run, $i;
-    my $command =
-      sprintf q{%s --host %s --port %d --vhost %s --exchange %s},
-      $SEND_MESSAGE_SCRIPT, $self->message_host(), $self->message_port(),
-      $self->message_vhost(), $self->message_exchange();
-
-    if ($self->message_routing_key()) {
-      $command .= sprintf q{ --routing-key %s}, $self->message_routing_key;
-    }
-
-    $command .= sprintf q{ %s}, $msg_file;
+    my $command = sprintf q{%s --config %s %s},
+      $SEND_MESSAGE_SCRIPT, $self->message_config(), $msg_file;
 
     push @definitions,
       npg_pipeline::function::definition->new
@@ -206,6 +176,15 @@ sub create {
   }
 
   return \@definitions;
+}
+
+sub _build_message_config {
+  my ($self) = @_;
+
+  my $file = $self->conf_file_path($MESSAGE_CONFIG_FILE);
+  $self->info("Using messaging configuration file '$file'");
+
+  return $file;
 }
 
 sub _build_message_dir {
