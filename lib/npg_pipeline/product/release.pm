@@ -5,6 +5,7 @@ use namespace::autoclean;
 use Data::Dump qw[pp];
 use Moose::Role;
 
+use npg_qc::Schema;
 use npg_qc::mqc::outcomes;
 
 with qw{WTSI::DNAP::Utilities::Loggable
@@ -17,7 +18,9 @@ Readonly::Scalar my $RELEASE_CONFIG_FILE => 'product_release.yml';
 has 'qc_schema' =>
   (isa        => 'npg_qc::Schema',
    is         => 'ro',
-   required   => 1,);
+   required   => 1,
+   builder    => '_build_qc_schema',
+   lazy       => 1,);
 
 has 'release_config' =>
   (isa        => 'HashRef',
@@ -204,6 +207,12 @@ sub is_for_s3_release_notification {
   $self->info("Product $name, $rpt is NOT for S3 release notification");
 
   return 0;
+}
+
+sub _build_qc_schema {
+  my ($self) = @_;
+
+  return npg_qc::Schema->connect();
 }
 
 sub _find_study_config {
