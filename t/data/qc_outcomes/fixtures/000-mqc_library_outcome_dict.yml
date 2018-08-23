@@ -1,0 +1,32 @@
+---
+- id_mqc_library_outcome : 1
+  short_desc : 'Accepted preliminary'
+  long_desc : 'Library is preliminary accepted.'
+  iscurrent : 1
+  isvisible : 1
+- id_mqc_library_outcome : 2
+  short_desc : 'Rejected preliminary'
+  long_desc : 'Library is preliminary rejected.'
+  iscurrent : 1
+  isvisible : 1
+- id_mqc_library_outcome : 3
+  short_desc : 'Accepted final'
+  long_desc : 'Library has been accepted as a final decision.'
+  iscurrent : 1
+  isvisible : 1
+- id_mqc_library_outcome : 4
+  short_desc : 'Rejected final'
+  long_desc : 'Library has been rejected as a final decision.'
+  iscurrent : 1
+  isvisible : 1
+- id_mqc_library_outcome : 5
+  short_desc : 'Undecided'
+  long_desc : 'Library has no current outcome.'
+  iscurrent : 1
+  isvisible : 1
+- id_mqc_library_outcome : 6
+  short_desc : 'Undecided final'
+  long_desc : 'Library has no outcome as final decision.'
+  iscurrent : 1
+  isvisible : 1
+

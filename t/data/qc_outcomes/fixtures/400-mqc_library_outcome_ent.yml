@@ -1,0 +1,121 @@
+---
+- id_mqc_library_outcome_ent: 1
+  id_mqc_outcome: 4
+  id_run: ~
+  id_seq_composition: 1
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1
+- id_mqc_library_outcome_ent: 2
+  id_mqc_outcome: 4
+  id_run: ~
+  id_seq_composition: 2
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1
+- id_mqc_library_outcome_ent: 3
+  id_mqc_outcome: 1
+  id_run: ~
+  id_seq_composition: 3
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1
+- id_mqc_library_outcome_ent: 4
+  id_mqc_outcome: 2
+  id_run: ~
+  id_seq_composition: 4
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1
+- id_mqc_library_outcome_ent: 5
+  id_mqc_outcome: 1
+  id_run: ~
+  id_seq_composition: 5
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1
+- id_mqc_library_outcome_ent: 6
+  id_mqc_outcome: 3
+  id_run: ~
+  id_seq_composition: 6
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1
+- id_mqc_library_outcome_ent: 7
+  id_mqc_outcome: 6
+  id_run: ~
+  id_seq_composition: 7
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1
+- id_mqc_library_outcome_ent: 8
+  id_mqc_outcome: 5
+  id_run: ~
+  id_seq_composition: 8
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1
+- id_mqc_library_outcome_ent: 9
+  id_mqc_outcome: 6
+  id_run: ~
+  id_seq_composition: 9
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1
+- id_mqc_library_outcome_ent: 10
+  id_mqc_outcome: 2
+  id_run: ~
+  id_seq_composition: 10
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1
+- id_mqc_library_outcome_ent: 11
+  id_mqc_outcome: 5
+  id_run: ~
+  id_seq_composition: 11
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1
+- id_mqc_library_outcome_ent: 12
+  id_mqc_outcome: 3
+  id_run: ~
+  id_seq_composition: 12
+  last_modified: 2018-08-14 12:06:28
+  modified_by: 'user'
+  position: ~
+  reported: ~
+  tag_index: ~
+  username: u1

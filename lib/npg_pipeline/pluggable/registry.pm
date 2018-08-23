@@ -48,7 +48,9 @@ Readonly::Hash my %REGISTRY => (
 
   'bam_cluster_counter_check'=> {'cluster_count' => 'create'},
   'seqchksum_comparator'     => {'seqchksum_comparator' => 'create'},
-                               );
+  'archive_to_s3'            => {'s3_archiver' => 'create'},
+  'notify_product_delivery'  => {'product_delivery_notifier' => 'create'},
+);
 
 Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>
   qw/
