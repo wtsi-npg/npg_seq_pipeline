@@ -28,7 +28,7 @@ Readonly::Scalar my $EVENT_USER_ID         => 'npg_pipeline';
 Readonly::Scalar my $EVENT_MESSAGE_DIRNAME => 'messages';
 
 Readonly::Scalar my $SEND_MESSAGE_SCRIPT   => 'npg_pipeline_notify_delivery';
-Readonly::Scalar my $MESSAGE_CONFIG_FILE   => 'npg_message_queue.conf';
+Readonly::Scalar my $MESSAGE_CONFIG_FILE   => 'psd_production_events.conf';
 
 Readonly::Scalar my $MD5SUM_LENGTH         => 32;
 
@@ -45,7 +45,7 @@ has 'message_config' =>
    documentation => 'The path of the configuration file for the messaging ' .
                     'script. The default location for this file is in ' .
                     '$HOME/.npg/ and the default filename is ' .
-                    'npg_message_queue.conf',);
+                    'psd_production_events.conf',);
 ## use critic
 
 has 'message_dir' =>

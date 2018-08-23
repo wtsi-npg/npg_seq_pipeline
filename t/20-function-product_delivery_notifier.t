@@ -60,7 +60,8 @@ subtest 'message_config' => sub {
      timestamp           => $timestamp,
      qc_schema           => $qc);
 
-  my $expected_config = sprintf q{%s/.npg/npg_message_queue.conf}, $ENV{HOME};
+  my $expected_config = sprintf q{%s/.npg/psd_production_events.conf},
+    $ENV{HOME};
   my $observed_config = $notifier->message_config();
   is($observed_config, $expected_config,
      "Messaging config file is $expected_config") or
