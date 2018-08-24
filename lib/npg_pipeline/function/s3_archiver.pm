@@ -109,7 +109,8 @@ sub create {
     $self->_check_files(@file_paths);;
 
     my @aws_args = qw{--cli-connect-timeout 300
-                      --acl bucket-owner-full-control};
+                      --acl bucket-owner-full-control
+                      --quiet};
     if ($profile) {
       push @aws_args, '--profile', $profile;
     }
