@@ -25,6 +25,8 @@ LIST OF CHANGES
  - correction of build method for rpt_list attribute in product
  - make bam_cluster_count_check pipeline job dependent on
      qc_spatial_filter (in function_list_central.json)
+ - archival daemon - sleep for an hour after a successful submission -
+     we want to avoid doing parallel s3 uploads for multiple runs
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline

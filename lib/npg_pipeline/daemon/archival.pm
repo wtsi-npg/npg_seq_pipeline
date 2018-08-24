@@ -10,6 +10,16 @@ our $VERSION = '0';
 
 Readonly::Scalar our $POST_QC_REVIEW_SCRIPT => q{npg_pipeline_post_qc_review};
 Readonly::Scalar our $ARCHIVAL_PENDING      => q{archival pending};
+Readonly::Scalar  my $SLEEPY_TIME           => 3600;
+
+has 'sleep_time_between_runs' => (
+  isa        => q{Int},
+  is         => q{ro},
+  required   => 1,
+  default    => $SLEEPY_TIME ,
+  documentation => 'sleep time between runs, one hour by default',
+);
+
 
 sub build_pipeline_script_name {
   return $POST_QC_REVIEW_SCRIPT;
@@ -21,13 +31,19 @@ sub run {
   foreach my $run ($self->runs_with_status($ARCHIVAL_PENDING)) {
     my $id_run = $run->id_run();
     try {
+      $self->info();
       $self->info(qq{Considering run $id_run});
       if ($self->seen->{$id_run}) {
         $self->info(qq{Already seen run $id_run, skipping...});
       } else {
         if ( $self->staging_host_match($run->folder_path_glob)) {
-          my $lims = $self->check_lims_link($run);
+          $self->check_lims_link($run);
           $self->run_command($id_run, $self->_generate_command($id_run));
+          $self->info();
+          $self->info(qq{Submitted run $id_run for archival});
+          my $stime = $self->sleep_time_between_runs();
+          $self->info(qq{Going to sleep for $stime secs});
+          sleep $stime;
         }
       }
     } catch {
@@ -79,6 +95,8 @@ from npg_pipeline::base.
 Invokes the archival pipeline for runs with a status 'archival pending'.
 
 =head2 build_pipeline_script_name
+
+=head2 sleep_time_between_runs
 
 =head1 DIAGNOSTICS
 
