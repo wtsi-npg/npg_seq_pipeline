@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 18;
+use Test::More tests => 19;
 use Test::Exception;
 use Cwd;
 use List::MoreUtils qw{any};
@@ -47,8 +47,13 @@ package main;
 {
   my $runner;
   lives_ok { $runner = test_archival_runner->new(
-    npg_tracking_schema => $schema) } q{object creation ok};
+    npg_tracking_schema     => $schema) } q{object creation ok};
   isa_ok($runner, q{test_archival_runner});
+  is ($runner->sleep_time_between_runs, 3600,'default speel time');
+
+  $runner = test_archival_runner->new(
+    npg_tracking_schema     => $schema,
+    sleep_time_between_runs => 1);
   is($runner->pipeline_script_name(), $script_name, 'pipeline script name correct'); 
   lives_ok { $runner->run(); } q{no croak on $runner->run()};
   my $prefix = $runner->daemon_conf()->{command_prefix};
@@ -78,8 +83,9 @@ package main;
   is($schema->resultset(q[Run])->find(3)->folder_path_glob(), undef,
     'run 3 folder path glob undefined, will never match any host');
   my $runner = test_archival_runner->new(
-    pipeline_script_name => '/bin/true',
-    npg_tracking_schema  => $schema
+    pipeline_script_name    => '/bin/true',
+    npg_tracking_schema     => $schema,
+    sleep_time_between_runs => 1,
   );
 
   lives_ok {
