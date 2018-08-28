@@ -27,6 +27,7 @@ LIST OF CHANGES
      qc_spatial_filter (in function_list_central.json)
  - archival daemon - sleep for an hour after a successful submission -
      we want to avoid doing parallel s3 uploads for multiple runs
+ - wr executor - explicitly propagate pipeline's environment to jobs
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline

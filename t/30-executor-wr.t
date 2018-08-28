@@ -25,25 +25,40 @@ subtest 'object creation' => sub {
 };
 
 subtest 'wr add command' => sub {
-  plan tests => 2; 
-  
+  plan tests => 4;
+
+  my $get_env = sub {
+    my @env = ();
+    for my $name (qw/CLASSPATH NPG_CACHED_SAMPLESHEET_FILE PATH PERL5LIB/) {
+      my $v = $ENV{$name};
+      if ($v) {
+        push @env, join(q[=], $name, $v);
+      }
+    }
+    my $env_string = join q[,], @env;
+    return q['] . $env_string . q['];
+  }; 
+ 
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[];
+  my $env_string = $get_env->();
+  unlike  ($env_string, qr/NPG_CACHED_SAMPLESHEET_FILE/,
+    'env does not contain samplesheet');
   my $file = "$tmp/commands.txt";  
   my $e = npg_pipeline::executor::wr->new(
     function_definitions    => {},
     function_graph          => Graph::Directed->new(),
     commands4jobs_file_path => $file);
   is ($e->_wr_add_command(),
-    "wr add --cwd /tmp --disk 0 --override 2 --retries 0 -f $file",
+    "wr add --cwd /tmp --disk 0 --override 2 --retries 0 --env $env_string -f $file",
     'wr command');
 
-  $e = npg_pipeline::executor::wr->new(
-    function_definitions    => {},
-    function_graph          => Graph::Directed->new(),
-    commands4jobs_file_path => $file,
-    job_priority            => 3);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_1234.csv';
+  $env_string = $get_env->();
+  like  ($env_string, qr/NPG_CACHED_SAMPLESHEET_FILE/,
+    'env contains samplesheet');
   is ($e->_wr_add_command(),
-    "wr add --cwd /tmp --disk 0 --override 2 --retries 0 -f $file",
-    'wr command with priority set');
+    "wr add --cwd /tmp --disk 0 --override 2 --retries 0 --env $env_string -f $file",
+    'wr command');
 }; 
 
 1;
