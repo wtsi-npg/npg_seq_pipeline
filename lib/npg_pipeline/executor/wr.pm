@@ -25,7 +25,10 @@ our $VERSION = '0';
 
 Readonly::Scalar my $VERTEX_GROUP_DEP_ID_ATTR_NAME => q[wr_group_id];
 Readonly::Scalar my $DEFAULT_MEMORY                => 2000;
-Readonly::Scalar my $VERTEX_JOB_PRIORITY_ATTR_NAME => q{job_priority};
+Readonly::Scalar my $VERTEX_JOB_PRIORITY_ATTR_NAME => q[job_priority];
+Readonly::Scalar my $WR_ENV_LIST_DELIM             => q[,];
+Readonly::Array  my @ENV_VARS_TO_PROPAGATE         =>
+              qw/PATH PERL5LIB CLASSPATH NPG_CACHED_SAMPLESHEET_FILE/;
 
 =head1 NAME
 
@@ -170,12 +173,24 @@ sub _wr_add_command {
   my $self = shift;
 
   # If needed, in future, these options can be passed from the command line
-  # or read fron a conf. file.
+  # or read from a conf. file.
+
+  # Explicitly pass the pipeline's environment to jobs
+  my @env_list = ();
+  foreach my $var_name (sort @ENV_VARS_TO_PROPAGATE) {
+    my $value = $ENV{$var_name};
+    if (defined $value && $value ne q[]) {
+      push @env_list, "${var_name}=${value}";
+    }
+  }
+  my $stack = join $WR_ENV_LIST_DELIM, @env_list;
+
   my @common_options = (
           '--cwd'        => '/tmp',
           '--disk'       => 0,
           '--override'   => 2,
           '--retries'    => 0,
+          '--env'        => q['] . $stack . q['],
                        );
 
   return join q[ ], qw/wr add/,
