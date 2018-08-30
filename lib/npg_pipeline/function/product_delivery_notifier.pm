@@ -6,6 +6,7 @@ use Data::Dump qw{pp};
 use English qw{-no_match_vars};
 use File::Path qw{make_path};
 use File::Spec::Functions;
+use FindBin qw{$Bin};
 use JSON;
 use Moose;
 use MooseX::StrictConstructor;
@@ -157,7 +158,7 @@ sub create {
 
     my $job_name = sprintf q{%s_%d_%d}, $SEND_MESSAGE_SCRIPT, $id_run, $i;
     my $command = sprintf q{%s --config %s %s},
-      $SEND_MESSAGE_SCRIPT, $self->message_config(), $msg_file;
+      "$Bin/$SEND_MESSAGE_SCRIPT", $self->message_config(), $msg_file;
 
     push @definitions,
       npg_pipeline::function::definition->new

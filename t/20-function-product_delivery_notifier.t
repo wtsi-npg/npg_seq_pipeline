@@ -10,6 +10,7 @@ use Test::More tests => 4;
 use Test::Exception;
 use t::util;
 
+
 Log::Log4perl->easy_init({level  => $INFO,
                           layout => '%d %p %m %n'});
 
@@ -101,7 +102,7 @@ subtest 'create' => sub {
             'Only "26291:1:3;26291:2:3" and "26291:1:9;26291:2:9" notified')
     or diag explain \@notified_rpts;
 
-  my $cmd_patt = qr|npg_pipeline_notify_delivery --config $config_path/npg_message_queue.conf $archive_path/[.][.]/[.][.]/messages/26291#[3,9][.]msg[.]json|;
+  my $cmd_patt = qr|^/.*/npg_pipeline_notify_delivery --config $config_path/npg_message_queue.conf $archive_path/[.][.]/[.][.]/messages/26291#[3,9][.]msg[.]json|;
 
   foreach my $def (@defs) {
     is($def->created_by, $pkg, "created_by is $pkg");
