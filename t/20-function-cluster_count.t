@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use English qw{-no_match_vars};
-use Test::More tests => 36;
+use Test::More tests => 31;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use File::Copy qw(cp);
@@ -53,13 +53,7 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
   ok (!$d->excluded, 'step not excluded');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
   ok (!$d->has_memory,'memory is not set');
-  ok ($d->has_composition, 'composition is set');
-  is ($d->composition->num_components, 1, 'one component in a composition');
-  is ($d->composition->get_component(0)->position, 1, 'correct position');
-  ok (!defined $d->composition->get_component(0)->tag_index,
-    'tag index is not defined');
-  ok (!defined $d->composition->get_component(0)->subset,
-    'subset is not defined');
+  ok (!$d->has_composition, 'composition is not set');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
   my $values = {};
@@ -75,11 +69,9 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
   is ($values->{'default'}, 1, 'the queue is set to default for the definition');
   
   TODO: { local $TODO = 'currently returning one position - review';
-  is (join(q[ ], map {$_->composition->get_component(0)->position} @{$da}),
-    '1 2 3 4 5 6 7 8', 'positions');
   }
 
-  my $command = sprintf q[npg_pipeline_check_cluster_count --id_run=1234 --bam_basecall_path=%s --runfolder_path=%s %s %s], $bam_basecall_path, $analysis_runfolder_path, join(q{ }, (map {qq[--bfs_paths=$archive_path/lane$_/qc]} (1..8))), join(q{ }, (map {qq[--sf_paths=$archive_path/lane$_/qc]} (1..8)));
+  my $command = sprintf q[npg_pipeline_check_cluster_count --id_run=1234 --lanes=1 --lanes=2 --lanes=3 --lanes=4 --lanes=5 --lanes=6 --lanes=7 --lanes=8 --bam_basecall_path=%s --runfolder_path=%s %s %s], $bam_basecall_path, $analysis_runfolder_path, join(q{ }, (map {qq[--bfs_paths=$archive_path/lane$_/qc]} (1..8))), join(q{ }, (map {qq[--sf_paths=$archive_path/lane$_/qc]} (1..8)));
 
   is ($da->[0]->command, $command, 'correct command');
 }

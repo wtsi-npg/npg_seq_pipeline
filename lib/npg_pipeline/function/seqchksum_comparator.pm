@@ -46,6 +46,8 @@ sub create {
   my $job_name = join q{_}, 'seqchksum_comparator', $self->id_run(), $self->timestamp();
   my $command = $SEQCHKSUM_SCRIPT;
   $command .= q{ --id_run=} . $self->id_run();
+  $command .= q[ ];
+  $command .= join q[ ], (map { qq{--lanes=$_} } ($self->positions));
   $command .= q{ --archive_path=} . $self->archive_path();
   $command .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
   if ($self->verbose() ) {
@@ -62,9 +64,6 @@ sub create {
     created_by   => __PACKAGE__,
     created_on   => $self->timestamp(),
     identifier   => $self->id_run(),
-    composition  =>
-      $self->create_composition({id_run => $self->id_run, position => 1}),
-#     $self->create_composition({rpt_list => qq($self->id_run_1)}),
     job_name     => $job_name,
     command      => $command,
   );
