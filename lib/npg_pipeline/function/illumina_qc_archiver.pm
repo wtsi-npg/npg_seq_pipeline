@@ -18,19 +18,10 @@ sub create {
   my $job_name_prefix = q{illumina_analysis_loader};
   my $job_name = join q{_}, $job_name_prefix, $self->id_run(), $self->timestamp();
 
-  my $preexec =  qq{npg_pipeline_script_must_be_unique_runner -job_name="$job_name_prefix" -own_job_name="$job_name"};
-
   my $command =  $SCRIPT_NAME;
   $command .= q{ --id_run } . $self->id_run;
   $command .= q{ --run_folder } . $self->run_folder;
   $command .= q{ --runfolder_path } . $self->runfolder_path;
-  if ($self->bam_basecall_path) {
-    $command .= q{ --bam_basecall_path } . $self->bam_basecall_path;
-  }
-  $command .= q{ --basecall_path } . $self->basecall_path;
-  if ($self->verbose()) {
-    $command .= q{ --verbose};
-  }
 
   my $d = npg_pipeline::function::definition->new(
     created_by      => __PACKAGE__,
@@ -38,7 +29,6 @@ sub create {
     identifier      => $self->id_run(),
     job_name        => $job_name,
     command         => $command,
-    command_preexec => $preexec,
     fs_slots_num    => 1,
     queue           =>
       $npg_pipeline::function::definition::LOWLOAD_QUEUE,
