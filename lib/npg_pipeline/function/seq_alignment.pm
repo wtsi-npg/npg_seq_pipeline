@@ -266,7 +266,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     push @{$p4_ops->{prune}}, 'fopt.*_bmd_multiway:calibration_pu-';
   }
 
-  if(not $is_plex) {
+# if(not $is_plex) {
+  if(not $is_pool) {
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:subsample-';
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:fqc-';
   }
@@ -533,34 +534,36 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     q{&&},
     qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
     q{&&},
-    _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $l, $is_plex, undef,
+    _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $is_pool, undef,
                 $skip_target_markdup_metrics, $rpt_list, $name_root, [$bfs_input_file]),
     (grep {$_}
       ($spike_tag ? q() : (join q( ),
         q{&&},
-        _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $l, $is_plex, 'phix', undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $is_pool, 'phix', undef, $rpt_list, $name_root, [$bfs_input_file]),
         q{&&},
-        _qc_command_alt('alignment_filter_metrics', undef, $qc_out_path, $l, $is_plex, undef, undef, $rpt_list, $name_root, [$af_input_file]),
+        _qc_command_alt('alignment_filter_metrics', undef, $qc_out_path, $is_pool, undef, undef, $rpt_list, $name_root, [$af_input_file]),
       ),
 
       $human_split ? (join q( ),
         q{&&},
-        _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $l, $is_plex, $human_split, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $is_pool, $human_split, undef, $rpt_list, $name_root, [$bfs_input_file]),
       ) : q()),
 
       $nchs ? (join q( ),
         q{&&},
-        _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $l, $is_plex, $nchs_outfile_label, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $is_pool, $nchs_outfile_label, undef, $rpt_list, $name_root, [$bfs_input_file]),
       ) : q(),
 
       $do_rna ? (join q( ),
         q{&&},
-        _qc_command('rna_seqc', $dp_archive_path, $qc_out_path, $l, $is_plex),
+#       _qc_command('rna_seqc', $dp_archive_path, $qc_out_path, $l, $is_pool),
+        _qc_command_alt('rna_seqc', $dp_archive_path, $qc_out_path, $is_pool, undef, undef, $rpt_list, $name_root),
       ) : q(),
 
       $do_gbs_plex ? (join q( ),
         q{&&},
-        _qc_command('genotype_call', $dp_archive_path, $qc_out_path, $l, $is_plex),
+#       _qc_command('genotype_call', $dp_archive_path, $qc_out_path, $l, $is_pool),
+        _qc_command_alt('genotype_call', $dp_archive_path, $qc_out_path, $is_pool, undef, undef, $rpt_list, $name_root),
       ) : q()
     ),
 
@@ -568,7 +571,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 }
 
 sub _qc_command_alt {##no critic (Subroutines::ProhibitManyArgs)
-  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset, $skip_markdups_metrics, $rpt_list, $filename_root, $input_files) = @_;
+  my ($check_name, $qc_in, $qc_out, $is_pool, $subset, $skip_markdups_metrics, $rpt_list, $filename_root, $input_files) = @_;
 
   my $args = {
                'rpt_list' => q["] . $rpt_list . q["],
