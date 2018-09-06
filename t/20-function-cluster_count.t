@@ -67,10 +67,7 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
   
   map {$values->{$_->queue} += 1} @{$da};
   is ($values->{'default'}, 1, 'the queue is set to default for the definition');
-  
-  TODO: { local $TODO = 'currently returning one position - review';
-  }
-
+ 
   my $command = sprintf q[npg_pipeline_check_cluster_count --id_run=1234 --lanes=1 --lanes=2 --lanes=3 --lanes=4 --lanes=5 --lanes=6 --lanes=7 --lanes=8 --bam_basecall_path=%s --runfolder_path=%s %s %s], $bam_basecall_path, $analysis_runfolder_path, join(q{ }, (map {qq[--bfs_paths=$archive_path/lane$_/qc]} (1..8))), join(q{ }, (map {qq[--sf_paths=$archive_path/lane$_/qc]} (1..8)));
 
   is ($da->[0]->command, $command, 'correct command');
