@@ -69,6 +69,8 @@ sub create {
 
   my $command = $CLUSTER_COUNT_SCRIPT;
   $command .= q{ --id_run=}            . $id_run;
+  $command .= q[ ];
+  $command .= join q[ ], (map { qq{--lanes=$_} } ($self->positions));
   $command .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
   $command .= q{ --runfolder_path=}    . $self->runfolder_path();
 
@@ -84,7 +86,6 @@ sub create {
     $command .= sprintf qq{ --sf_paths=$sf_path};
   }
 
-  # TODO: deal with dummy position argument in composition creation
   return [
       npg_pipeline::function::definition->new(
       created_by   => __PACKAGE__,
@@ -92,7 +93,6 @@ sub create {
       identifier   => $id_run,
       job_name     => $job_name,
       command      => $command,
-      composition  => $self->create_composition({id_run => $self->id_run, position => 1,})
     )
   ];
 }
