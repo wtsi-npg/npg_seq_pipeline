@@ -33,6 +33,9 @@ LIST OF CHANGES
      for the minimal work this loader is doing now;
      remove LSF preexec requesting that the job is a unique runner since
      db queries are much simpler now
+ - change signature of the autoqc archival job in line with extended
+   functionality of the autoqc db loader (ability to find JSON files
+   in the run folder)
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline

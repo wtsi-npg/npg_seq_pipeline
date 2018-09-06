@@ -187,6 +187,7 @@ subtest 'specifying functions via function_order' => sub {
   );
 
   local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $p = npg_pipeline::pluggable->new(
     function_order        => \@functions_in_order,
     runfolder_path        => $runfolder_path,
@@ -250,6 +251,8 @@ subtest 'propagating options to the lsf executor' => sub {
     update_warehouse_post_qc_complete
   );
 
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
+
   my $ref = {
     function_order        => \@functions_in_order,
     runfolder_path        => $runfolder_path,
@@ -307,16 +310,19 @@ subtest 'running the pipeline (lsf executor)' => sub {
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { $p->main(); } q{no error running main without execution };
 
   $ref->{'execute'} = 1;
   $ref->{'no_bsub'} = 1;
   $p = npg_pipeline::pluggable->new($ref);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { $p->main(); } q{no error running main in no_bsub mode};
 
   $ref->{'no_bsub'} = 0;
   local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients
   $p = npg_pipeline::pluggable->new($ref);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { $p->main(); } q{no error running main with mock LSF client};
 
   # soft-link bresume command to /bin/false so that it fails
@@ -324,16 +330,19 @@ subtest 'running the pipeline (lsf executor)' => sub {
   mkdir $bin;
   symlink '/bin/false', "$bin/bresume";
   local $ENV{'PATH'} = join q[:], $bin, $ENV{'PATH'};
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   throws_ok { npg_pipeline::pluggable->new($ref)->main() }
     qr/Failed to submit command to LSF/, q{error running main};
 
   $ref->{'interactive'} = 1;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { npg_pipeline::pluggable->new($ref)->main() }
     'no failure in interactive mode';
 
   $ref->{'interactive'} = 0;
   # soft-link bkill command to /bin/false so that it fails
   symlink '/bin/false', "$bin/bkill";
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   throws_ok { npg_pipeline::pluggable->new($ref)->main() }
     qr/Failed to submit command to LSF/, q{error running main};
 };
@@ -365,14 +374,17 @@ subtest 'running the pipeline (wr executor)' => sub {
   local $ENV{'PATH'} = join q[:], $bin, $ENV{'PATH'};
 
   my $p = npg_pipeline::pluggable->new($ref);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { $p->main(); } q{no error running main without execution };
 
   $ref->{'execute'} = 1;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   throws_ok { npg_pipeline::pluggable->new($ref)->main() }
     qr/Error submitting for execution: Error submitting wr jobs/,
     q{error running main};
 
   $ref->{'interactive'} = 1;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { npg_pipeline::pluggable->new($ref)->main() }
     q{interactive mode, no error running main};
 
@@ -380,9 +392,11 @@ subtest 'running the pipeline (wr executor)' => sub {
   unlink $wr;
   symlink '/bin/true', $wr;
   $ref->{'interactive'} = 0;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { npg_pipeline::pluggable->new($ref)->main() } q{no error running main};
 
   $ref->{'job_name_prefix'} = 'test';
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { npg_pipeline::pluggable->new($ref)->main() }
     q{job name prefix is set, no error running main};
 };
