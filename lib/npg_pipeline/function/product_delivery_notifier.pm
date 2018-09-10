@@ -5,6 +5,7 @@ use namespace::autoclean;
 use Data::Dump qw{pp};
 use English qw{-no_match_vars};
 use File::Path qw{make_path};
+use File::Slurp;
 use File::Spec::Functions;
 use FindBin qw{$Bin};
 use JSON;
@@ -154,7 +155,20 @@ sub create {
     next if not $self->is_for_s3_release_notification($product);
 
     my $msg_file = $product->file_path($self->message_dir, ext => 'msg.json');
-    $self->_write_message_file($msg_file, $self->make_message($product));
+    if (-e $msg_file) {
+      $self->info("Message file '$msg_file' exists");
+      if ($self->_message_content_changed($msg_file,
+                                          $self->make_message($product))) {
+        $self->info("Message content in file '$msg_file' has ",
+                    'changed. Writing new contents');
+        $self->_write_message_file($msg_file, $self->make_message($product));
+      } else {
+        $self->info("Message content in file '$msg_file' is unchanged");
+      }
+    } else {
+      $self->debug("Saving message file '$msg_file'");
+      $self->_write_message_file($msg_file, $self->make_message($product));
+    }
 
     my $job_name = sprintf q{%s_%d_%d}, $SEND_MESSAGE_SCRIPT, $id_run, $i;
     my $command = sprintf q{%s --config %s %s},
@@ -218,6 +232,15 @@ sub _read_md5_file {
   return $md5;
 }
 
+sub _read_message_file {
+  my ($self, $file_path) = @_;
+
+  my $json    = read_file($file_path, binmode => ':utf8');
+  my $message = decode_json($json);
+
+  return $message;
+}
+
 sub _write_message_file {
   my ($self, $file_path, $message) = @_;
 
@@ -231,6 +254,37 @@ sub _write_message_file {
   close $fh or $self->logcroak("Failed to close '$file_path': $ERRNO");
 
   return;
+}
+
+sub _message_content_changed {
+  my ($self, $file_path, $new_message) = @_;
+
+  my $old_message = $self->_read_message_file($file_path);
+  $self->debug('Comparing old message ', pp($old_message),
+               ' with new message ',     pp($new_message));
+
+  my $changed = 0;
+  # These metadata are sufficient to detect a LIMS change.
+  foreach my $attr (qw{customer_name sample_id
+                       sample_name sample_supplier_name
+                       file_path file_md5 rpt_list}) {
+    my $old_value = $old_message->{event}->{metadata}->{$attr};
+    my $new_value = $new_message->{event}->{metadata}->{$attr};
+
+    if (not defined $old_value) {
+       $self->logcroak("The old value of $attr was not defined");
+     }
+    if (not defined $new_value) {
+      $self->logcroak("The new value of $attr is not defined");
+    }
+    if ($new_value ne $old_value) {
+      $self->warn("$attr changed from '$old_value' to ",
+                  "'$new_value' in $file_path");
+      $changed = 1;
+    }
+  }
+
+  return $changed;
 }
 
 __PACKAGE__->meta->make_immutable;
