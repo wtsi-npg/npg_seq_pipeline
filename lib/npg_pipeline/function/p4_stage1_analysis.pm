@@ -57,11 +57,10 @@ sub generate {
 
     my $p = $lane_product->composition->{components}->[0]->{position}; # there should be only one element in components
 
-    my $l = $alims->{$p};
-#   my $l = $lane_product->lims;
+    my $l = $lane_product->lims;
     my $tag_list_file = q{};
 
-    if ($l->tags) { # adequate proxy for is_multiplexed?
+    if($l->is_pool) {
       $self->info(qq{Lane $p is indexed, generating tag list});
 
       $tag_list_file = npg_pipeline::cache::barcodes->new(
