@@ -108,11 +108,6 @@ sub generate {
 
   my @definitions = ();
 
-  ## no critic (ControlStructures::ProhibitUnlessBlocks)
-  unless($self->platform_NovaSeq and $self->is_indexed) { # temporary warning
-    $self->debug(q{this pipeline is currently intended for NovaSeq pools only});
-  }
-
   my $recal_path = $self->recalibrated_path;
   $self->info(q{  recalibrated_path: } . $recal_path);
   my $archive_path = $self->archive_path;
@@ -159,20 +154,14 @@ sub _create_definition {
 sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my ( $self, $dp, $ref) = @_;   # this should be enough?
 
-#######################################################
-# fetch base parameters from supplied data_product (dp)
-#######################################################
-  my $run_vec = [ uniq (map { $_->{id_run} } @{$dp->composition->{components}}) ];
-  my $id_run = $run_vec->[0]; # assume unique for the moment
-  my $lane_vec = [ uniq (map { $_->{position} } @{$dp->composition->{components}}) ]; # use lane4products?
-  my $tags_vec = [ uniq (map { $_->{tag_index} } @{$dp->composition->{components}}) ];
-  my $tag_index = $tags_vec->[0]; # assume unique for the moment
-
+  ########################################################
+  # derive base parameters from supplied data_product (dp)
+  ########################################################
   my $is_pool = $dp->{lims}->is_pool;
   my $spike_tag = $dp->{lims}->is_phix_spike;
 
   my $archive_path= $self->archive_path;
-  my $dp_archive_path = $dp->path($self->archive_path);
+  my $dp_archive_path = $dp->path($archive_path);
   my $recal_path= $self->recalibrated_path;
   my $qc_out_path = $dp->qc_out_path($archive_path);
   my $cache10k_path = $dp->short_files_cache_path($self->archive_path);
@@ -182,12 +171,22 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $is_tag_zero_product = $dp->is_tag_zero_product;
   $self->info(qq{ is_tag_zero_product: $is_tag_zero_product});
 
-  my @incrams = map { $recal_path . q[/] . $id_run . q[_] . $_ . q[#] . $tag_index . q[.bam] } @{$lane_vec};
+  my (@incrams, @spatial_filter_rg_value);
+  for my $rpt ($dp->{rpt_list}->inflate_rpts) {
+    my $rpt_elem = $rpt->deflate_rpt;
+    push @incrams, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => 'cram');
+    push @spatial_filter_rg_value, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name_root;
+  }
   my $incrams_pv = [ map { qq[I=$_] } @incrams ];
+  my $spatial_filter_rg_value = join q[,], @spatial_filter_rg_value;
 
-  my $s2_filter_files = join q[,], (map { $recal_path . q[/] . $id_run . q[_] . $_ . q[.spatial_filter] } @{$lane_vec} );
-  my $spatial_filter_rg_value = join q[,], (map { $id_run . q[_] . $_ . q[#] . $tag_index } @{$lane_vec} );
-  my $tag_metrics_files = join q[ ], (map { $archive_path . '/lane' . $_ . q[/qc/] . $id_run . q[_] . $_ . q[.tag_metrics.json] } @{$lane_vec});
+  my (@s2_filter_files,@tag_metrics_files);
+  for my $lane_rpt ($dp->lanes_as_products->{rpt_list}->inflate_rpts) {
+    push @s2_filter_files, npg_pipeline::product->new(rpt_list => $lane_rpt)->file_name(ext => 'spatial_filter');
+    push @tag_metrics_files, npg_pipeline::product->new(rpt_list => $lane_rpt)->file_name(ext => 'tag_metrics.json', );
+  }
+  my $s2_filter_files = join q[,], @s2_filter_files;
+  my $tag_metrics_files = join q[ ], @tag_metrics_files;
 
   my $name_root = $dp->file_name_root;
   my $working_dir = join q{/}, $archive_path,
@@ -201,10 +200,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
   my $fqc1_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '1'));
   my $fqc2_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '2'));
+  my $seqchksum_orig_file = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => '.orig.seqchksum'));
 
-  $self->debug(q{  run_vec: } . join q[,], @{$run_vec});
-  $self->debug(q{  lane_vec: } . join q[,], @{$lane_vec});
-  $self->debug(q{  tags_vec: } . join q[,], @{$tags_vec});
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});
   $self->debug(qq{  is_pool: $is_pool});
@@ -214,9 +211,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->debug(qq{  cache10k_path: $cache10k_path});
   $self->debug(qq{  bfs_input_file: $bfs_input_file});
   $self->debug(qq{  af_input_file: $af_input_file});
-#####################
 
-  my $is_plex = defined $tag_index;  #?? TBR
+  my $is_plex = defined $dp->lims->tag_index; # would this work if there were multiple tag indexes in the product?
   my $l = $dp->lims;  #??!!  Maybe OK, TBR
 
   if (1 < sum $l->contains_nonconsented_xahuman, $l->separate_y_chromosome_data, $l->contains_nonconsented_human) {
@@ -240,9 +236,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     af_metrics          => $af_input_file,
     rpt                 => $name_root,
     phix_reference_genome_fasta => $self->phix_reference,
-    s2_id_run => $id_run,
+    s2_id_run => q[RUN],
     s2_position => q[POSITION],
-    s2_tag_index => $tag_index,
+    s2_tag_index => q[TAG],
     incrams => $incrams_pv,
     spatial_filter_file => q[DUMMY],
     s2_filter_files => $s2_filter_files,
@@ -253,6 +249,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     run_lane_ss_fq2 => $fq2_filepath,
     fqc1 => $fqc1_filepath,
     fqc2 => $fqc2_filepath,
+    seqchksum_orig_file => $seqchksum_orig_file,
   };
   my $p4_ops = {
     prune => [],
@@ -266,8 +263,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     push @{$p4_ops->{prune}}, 'fopt.*_bmd_multiway:calibration_pu-';
   }
 
-# if(not $is_plex) {
-  if(not $is_pool) {
+  if(not $is_plex) {
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:subsample-';
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:fqc-';
   }
@@ -276,7 +272,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   # Reference for target alignment will be overridden where gbs_plex exists.
   # Also any human split will be overriden and alignments will be forced.
-  my $do_gbs_plex = $self->_do_gbs_plex_analysis($self->_has_gbs_plex($rpt_list));
+  my $do_gbs_plex = $self->_do_gbs_plex_analysis($self->_has_gbs_plex($rpt_list, $l->library_type));
 
   my $hs_bwa = $self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se';
   # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp)
@@ -308,8 +304,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   # handle extra stats file for aligned data with reference regions file
   my $do_target_regions_stats = 0;
   if ($do_target_alignment && !$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
-    if($self->_do_bait_stats_analysis($rpt_list)){
-#      $p4_param_vals->{target_regions_file} = $self->_bait($l)->target_intervals_path();
+    if($self->_do_bait_stats_analysis($l, $rpt_list, $is_tag_zero_product)){
        $p4_param_vals->{target_regions_file} = $self->_bait($rpt_list)->target_intervals_path();
        $do_target_regions_stats = 1;
     }
@@ -381,8 +376,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $bait_stats_flag = q[];
   my $spike_splicing = q[];
   if(not $spike_tag) {
-    if($self->_do_bait_stats_analysis($rpt_list)) {
-#     $p4_param_vals->{bait_regions_file} = $self->_bait($l)->bait_intervals_path();
+    if($self->_do_bait_stats_analysis($l, $rpt_list, $is_tag_zero_product)) {
       $p4_param_vals->{bait_regions_file} = $self->_bait($rpt_list)->bait_intervals_path();
       push @{$p4_ops->{prune}}, 'fop(phx|hs)_samtools_stats_F0.*00_bait.*-';
     }
@@ -534,44 +528,42 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     q{&&},
     qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
     q{&&},
-    _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $is_pool, undef,
+    _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, undef,
                 $skip_target_markdup_metrics, $rpt_list, $name_root, [$bfs_input_file]),
     (grep {$_}
       ($spike_tag ? q() : (join q( ),
         q{&&},
-        _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $is_pool, 'phix', undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', undef, $rpt_list, $name_root, [$bfs_input_file]),
         q{&&},
-        _qc_command_alt('alignment_filter_metrics', undef, $qc_out_path, $is_pool, undef, undef, $rpt_list, $name_root, [$af_input_file]),
+        _qc_command('alignment_filter_metrics', undef, $qc_out_path, undef, undef, $rpt_list, $name_root, [$af_input_file]),
       ),
 
       $human_split ? (join q( ),
         q{&&},
-        _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $is_pool, $human_split, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $human_split, undef, $rpt_list, $name_root, [$bfs_input_file]),
       ) : q()),
 
       $nchs ? (join q( ),
         q{&&},
-        _qc_command_alt('bam_flagstats', $dp_archive_path, $qc_out_path, $is_pool, $nchs_outfile_label, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $nchs_outfile_label, undef, $rpt_list, $name_root, [$bfs_input_file]),
       ) : q(),
 
       $do_rna ? (join q( ),
         q{&&},
-#       _qc_command('rna_seqc', $dp_archive_path, $qc_out_path, $l, $is_pool),
-        _qc_command_alt('rna_seqc', $dp_archive_path, $qc_out_path, $is_pool, undef, undef, $rpt_list, $name_root),
+        _qc_command('rna_seqc', $dp_archive_path, $qc_out_path, undef, undef, $rpt_list, $name_root),
       ) : q(),
 
       $do_gbs_plex ? (join q( ),
         q{&&},
-#       _qc_command('genotype_call', $dp_archive_path, $qc_out_path, $l, $is_pool),
-        _qc_command_alt('genotype_call', $dp_archive_path, $qc_out_path, $is_pool, undef, undef, $rpt_list, $name_root),
+        _qc_command('genotype_call', $dp_archive_path, $qc_out_path, undef, undef, $rpt_list, $name_root),
       ) : q()
     ),
 
     q(');
 }
 
-sub _qc_command_alt {##no critic (Subroutines::ProhibitManyArgs)
-  my ($check_name, $qc_in, $qc_out, $is_pool, $subset, $skip_markdups_metrics, $rpt_list, $filename_root, $input_files) = @_;
+sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
+  my ($check_name, $qc_in, $qc_out, $subset, $skip_markdups_metrics, $rpt_list, $filename_root, $input_files) = @_;
 
   my $args = {
                'rpt_list' => q["] . $rpt_list . q["],
@@ -600,45 +592,6 @@ sub _qc_command_alt {##no critic (Subroutines::ProhibitManyArgs)
 
   for my $input_file (@{$input_files}) {
     $command .= qq[ --input_files $input_file];
-  }
-
-  if(@flags) {
-    $command .= q[ ];
-    $command .= join q[ ], @flags;
-  }
-
-  return $QC_SCRIPT_NAME . $command;
-}
-
-sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
-  my ($check_name, $qc_in, $qc_out, $l, $is_plex, $subset, $skip_markdups_metrics) = @_;
-
-  my $args = {'id_run' => $l->id_run,
-              'position'=> $l->position,
-              'qc_out' => $qc_out,
-              'check' => $check_name,};
-  my @flags = ();
-
-  if ($is_plex && defined $l->tag_index) {
-    $args->{'tag_index'} = $l->tag_index;
-  }
-
-  if ($check_name =~ /^bam_flagstats$/smx and $skip_markdups_metrics) {
-      push @flags, q[--skip_markdups_metrics];
-  }
-
-  if ($check_name =~ /^bam_flagstats|genotype_call|rna_seqc$/smx) {
-    if ($subset) {
-      $args->{'subset'} = $subset;
-    }
-    $args->{'qc_in'}  = $qc_in;
-  } else {
-    $args->{'qc_in'}  = q[$] . 'PWD';
-  }
-
-  my $command = q[];
-  foreach my $arg (sort keys %{$args}) {
-    $command .= join q[ ], q[ --].$arg, $args->{$arg};
   }
 
   if(@flags) {
@@ -716,27 +669,19 @@ sub _analysis {
 }
 
 sub _do_bait_stats_analysis {
-# my ($self, $l) = @_;
-  my ($self, $rpt_list) = @_;
-# my $lstring = $l->to_string;
+  my ($self, $l, $rpt_list, $is_tag_zero_product) = @_;
   my $lstring = $rpt_list;
 
-################################
-# disable this check temporarily
-################################
-##if(not $self->_ref($l,q(fasta)) or not $l->alignments_in_bam or
-##   (defined $l->tag_index && $l->tag_index == 0)) {
-##  $self->debug(qq{$lstring - no reference or no alignments set});
-##  return 0;
-##}
-################################
-################################
-# if(not $self->_bait($l)->bait_name){
+  if(not $self->_ref($l,q{fasta})
+     or not $l->alignments_in_bam
+     or $is_tag_zero_product) {
+    $self->debug(qq{$lstring - no reference or no alignments set});
+    return 0;
+  }
   if(not $self->_bait($rpt_list)->bait_name){
     $self->debug(qq{$lstring - No bait set});
     return 0;
   }
-# if(not $self->_bait($l)->bait_path){
   if(not $self->_bait($rpt_list)->bait_path){
     $self->debug(qq{$lstring - No bait path found});
     return 0;
@@ -747,55 +692,40 @@ sub _do_bait_stats_analysis {
 }
 
 sub _bait{
-# my($self,$l) = @_;
   my($self,$rpt_list) = @_;
   return npg_tracking::data::bait->new (
                 {
                  'rpt_list' => $rpt_list,
-#                'id_run'     => $l->id_run,
-#                'position'   => $l->position,
-#                'tag_index'  => $l->tag_index,
                  ( $self->repository ? ('repository' => $self->repository):())
                 });
 }
 
 sub _has_gbs_plex{
-# my ($self, $l) = @_;
-  my ($self, $rpt_list) = @_;
-# my $lstring = $l->to_string;
+  my ($self, $rpt_list, $library_type) = @_;
   my $lstring = $rpt_list;
 
-# if(not $self->_gbs_plex($l)->gbs_plex_name){
   if(not $self->_gbs_plex($rpt_list)->gbs_plex_name){
     $self->debug(qq{$lstring - No gbs plex set});
     return 0;
   }
-# if(not $self->_gbs_plex($l)->gbs_plex_path){
   if(not $self->_gbs_plex($rpt_list)->gbs_plex_path){
     $self->logcroak(qq{$lstring - GbS plex set but no gbs plex path found});
   }
-########################################
-# disable library_type check temporarily
-########################################
-##if($l->library_type and $l->library_type !~ /^GbS/ismx){
-##  $self->logcroak(qq{$lstring - GbS plex set but library type incompatible});
-##}
-########################################
-########################################
+
+  if($library_type and $library_type !~ /^GbS/ismx){
+    $self->logcroak(qq{$lstring - GbS plex set but library type incompatible});
+  }
+
   $self->debug(qq{$lstring - Doing GbS plex analysis....});
 
   return 1;
 }
 
 sub _gbs_plex{
-# my($self,$l) = @_;
   my($self,$rpt_list) = @_;
   return npg_tracking::data::gbs_plex->new (
                 {
                  'rpt_list' => $rpt_list,
-#                'id_run'     => $l->id_run,
-#                'position'   => $l->position,
-#                'tag_index'  => $l->tag_index,
                  ( $self->repository ? ('repository' => $self->repository):())
                 });
 }
