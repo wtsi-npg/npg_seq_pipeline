@@ -34,6 +34,16 @@ Readonly::Scalar my $MESSAGE_CONFIG_FILE   => 'psd_production_events.conf';
 
 Readonly::Scalar my $MD5SUM_LENGTH         => 32;
 
+# These metadata are sufficient to detect a LIMS change.
+Readonly::Array  my @DISTINGUISHING_LIMS_DATA => qw{
+                                                     customer_name
+                                                     file_md5
+                                                     file_path
+                                                     rpt_list
+                                                     sample_id
+                                                     sample_name
+                                                     sample_supplier_name
+                                                 };
 
 our $VERSION = '0';
 
@@ -155,19 +165,20 @@ sub create {
     next if not $self->is_for_s3_release_notification($product);
 
     my $msg_file = $product->file_path($self->message_dir, ext => 'msg.json');
+    my $msg_body = $self->make_message($product);
+
     if (-e $msg_file) {
       $self->info("Message file '$msg_file' exists");
-      if ($self->_message_content_changed($msg_file,
-                                          $self->make_message($product))) {
+      if ($self->_message_content_changed($msg_file, $msg_body)) {
         $self->info("Message content in file '$msg_file' has ",
                     'changed. Writing new contents');
-        $self->_write_message_file($msg_file, $self->make_message($product));
+        $self->_write_message_file($msg_file, $msg_body);
       } else {
         $self->info("Message content in file '$msg_file' is unchanged");
       }
     } else {
       $self->debug("Saving message file '$msg_file'");
-      $self->_write_message_file($msg_file, $self->make_message($product));
+      $self->_write_message_file($msg_file, $msg_body);
     }
 
     my $job_name = sprintf q{%s_%d_%d}, $SEND_MESSAGE_SCRIPT, $id_run, $i;
@@ -264,10 +275,7 @@ sub _message_content_changed {
                ' with new message ',     pp($new_message));
 
   my $changed = 0;
-  # These metadata are sufficient to detect a LIMS change.
-  foreach my $attr (qw{customer_name sample_id
-                       sample_name sample_supplier_name
-                       file_path file_md5 rpt_list}) {
+  foreach my $attr (@DISTINGUISHING_LIMS_DATA) {
     my $old_value = $old_message->{event}->{metadata}->{$attr};
     my $new_value = $new_message->{event}->{metadata}->{$attr};
 
