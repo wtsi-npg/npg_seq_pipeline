@@ -38,6 +38,7 @@ Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star salmon};
+Readonly::Scalar my $INPUT_EXT                    => q{bam};
 
 =head2 phix_reference
 
@@ -108,24 +109,8 @@ sub generate {
 
   my @definitions = ();
 
-  my $recal_path = $self->recalibrated_path;
-  $self->info(q{  recalibrated_path: } . $recal_path);
-  my $archive_path = $self->archive_path;
-  $self->info(q{  archive_path: } . $archive_path);
-  my $qc_path = $self->qc_path;
-  $self->info(q{  qc_path: } . $qc_path);
-
-  for my $lane (@{$self->products->{lanes}}) {
-    my $fnr = $lane->file_name_root;
-    $self->info(qq{  lanes fnr: $fnr});
-  }
-
   my $ref = {};
   for my $dp (@{$self->products->{data_products}}) {
-
-    my $spiked_phix_tag_index = $dp->lims->spiked_phix_tag_index;
-    $self->info(q{  spiked_phix_tag_index: } . (defined $spiked_phix_tag_index? $spiked_phix_tag_index: q[UNDEF]));
-
     $ref->{'memory'} = $MEMORY; # reset to default
     $ref->{'command'} = $self->_alignment_command($dp, $ref);
     push @definitions, $self->_create_definition($ref, $dp);
@@ -146,7 +131,7 @@ sub _create_definition {
   $ref->{'num_cpus'}        = $self->_num_cpus();
   $ref->{'memory'}          = $ref->{'memory'} ? $ref->{'memory'} : $MEMORY;
   $ref->{'command_preexec'} = $self->repos_pre_exec_string();
-  $ref->{'composition'}     = $dp->{composition};
+  $ref->{'composition'}     = $dp->composition;
 
   return npg_pipeline::function::definition->new($ref);
 }
@@ -157,33 +142,36 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   ########################################################
   # derive base parameters from supplied data_product (dp)
   ########################################################
-  my $is_pool = $dp->{lims}->is_pool;
-  my $spike_tag = $dp->{lims}->is_phix_spike;
-
-  my $archive_path= $self->archive_path;
-  my $dp_archive_path = $dp->path($archive_path);
-  my $recal_path= $self->recalibrated_path;
-  my $qc_out_path = $dp->qc_out_path($archive_path);
-  my $cache10k_path = $dp->short_files_cache_path($self->archive_path);
-  my $dp_qc_path = $dp->path($self->qc_path); #??
-  my $dp_recal_path = $dp->path($self->recalibrated_path);  #??
-  my $reference_genome = $dp->{lims}->reference_genome;
+  my $rpt_list = $dp->rpt_list;
+  my $is_pool = $dp->lims->is_pool;
+  my $spike_tag = $dp->lims->is_phix_spike;
+  my $reference_genome = $dp->lims->reference_genome || q[UNSPEC];
   my $is_tag_zero_product = $dp->is_tag_zero_product;
-  $self->info(qq{ is_tag_zero_product: $is_tag_zero_product});
+
+  my $archive_path = $self->archive_path;
+  my $dp_archive_path = $dp->path($archive_path);
+  my $recal_path= $self->recalibrated_path; #?
+
+  my $qc_out_path = $dp->qc_out_path($archive_path);
+  my $cache10k_path = $dp->short_files_cache_path($archive_path);
 
   my (@incrams, @spatial_filter_rg_value);
-  for my $rpt ($dp->{rpt_list}->inflate_rpts) {
-    my $rpt_elem = $rpt->deflate_rpt;
-    push @incrams, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => 'cram');
+  for my $rpt_elem (map { $_->rpt_list } ($dp->components_as_products)) {
+    $self->debug(qq{  rpt_elem (component): $rpt_elem});
+    push @incrams, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => $INPUT_EXT);
     push @spatial_filter_rg_value, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name_root;
   }
-  my $incrams_pv = [ map { qq[I=$_] } @incrams ];
+  my $incrams_pv = [ map { sprintf q{I=%s/%s}, $recal_path, $_ } @incrams ];
   my $spatial_filter_rg_value = join q[,], @spatial_filter_rg_value;
 
   my (@s2_filter_files,@tag_metrics_files);
-  for my $lane_rpt ($dp->lanes_as_products->{rpt_list}->inflate_rpts) {
-    push @s2_filter_files, npg_pipeline::product->new(rpt_list => $lane_rpt)->file_name(ext => 'spatial_filter');
-    push @tag_metrics_files, npg_pipeline::product->new(rpt_list => $lane_rpt)->file_name(ext => 'tag_metrics.json', );
+  for my $ldp ($dp->lanes_as_products) {
+    my $rpt_elem = $ldp->rpt_list;
+    my $ldp_archive_path = $ldp->path($archive_path);
+    my $ldp_qc_path = $ldp->qc_out_path($archive_path);
+    $self->debug(qq{  rpt_elem (lane): $rpt_elem});
+    push @s2_filter_files, File::Spec->catdir($recal_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => 'spatial_filter'));
+    push @tag_metrics_files, File::Spec->catdir($ldp_qc_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => 'tag_metrics.json', ));
   }
   my $s2_filter_files = join q[,], @s2_filter_files;
   my $tag_metrics_files = join q[ ], @tag_metrics_files;
@@ -193,7 +181,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                                (join q{_}, q{tmp}, $self->_job_id),
                                $name_root;
 
-  my $rpt_list = $dp->{rpt_list};
   my $bfs_input_file = $dp_archive_path . q[/] . $dp->file_name(ext => 'bam');
   my $af_input_file = $dp->file_name(ext => 'json', suffix => 'bam_alignment_filter_metrics');
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
@@ -204,17 +191,21 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});
+  $self->debug(qq{  is_tag_zero_product: $is_tag_zero_product});
   $self->debug(qq{  is_pool: $is_pool});
-  $self->debug(qq{  dp_recal_path: $dp_recal_path});
   $self->debug(qq{  dp_archive_path: $dp_archive_path});
-  $self->debug(qq{  dp_qc_path: $dp_qc_path});
   $self->debug(qq{  cache10k_path: $cache10k_path});
   $self->debug(qq{  bfs_input_file: $bfs_input_file});
   $self->debug(qq{  af_input_file: $af_input_file});
 
+  my $id_run = (defined $dp->lims->id_run? $dp->lims->id_run: q[UNDEF]);
+  my $tag_index = (defined $dp->lims->tag_index? $dp->lims->tag_index: q[UNDEF]);
   my $is_plex = defined $dp->lims->tag_index; # would this work if there were multiple tag indexes in the product?
-  my $l = $dp->lims;  #??!!  Maybe OK, TBR
+  my $l = $dp->lims;
 
+  ################################################
+  # check for illegal analysis option combinations
+  ################################################
   if (1 < sum $l->contains_nonconsented_xahuman, $l->separate_y_chromosome_data, $l->contains_nonconsented_human) {
     $self->logcroak(qq{Only one of nonconsented X and autosome human split, separate Y chromosome data, and nonconsented human split may be specified ($name_root)});
   }
@@ -236,9 +227,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     af_metrics          => $af_input_file,
     rpt                 => $name_root,
     phix_reference_genome_fasta => $self->phix_reference,
-    s2_id_run => q[RUN],
+    s2_id_run => $id_run,
     s2_position => q[POSITION],
-    s2_tag_index => q[TAG],
+    s2_tag_index => $tag_index,
     incrams => $incrams_pv,
     spatial_filter_file => q[DUMMY],
     s2_filter_files => $s2_filter_files,
@@ -268,11 +259,11 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:fqc-';
   }
 
-  my $do_rna = $self->_do_rna_analysis($l);
+  my $do_rna = $self->_do_rna_analysis($dp);
 
   # Reference for target alignment will be overridden where gbs_plex exists.
   # Also any human split will be overriden and alignments will be forced.
-  my $do_gbs_plex = $self->_do_gbs_plex_analysis($self->_has_gbs_plex($rpt_list, $l->library_type));
+  my $do_gbs_plex = $self->_do_gbs_plex_analysis($self->_has_gbs_plex($dp));
 
   my $hs_bwa = $self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se';
   # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp)
@@ -288,7 +279,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $is_chromium_lib = $l->library_type && ($l->library_type =~ /Chromium/smx);
   my $do_target_alignment = $is_chromium_lib ? 0
                              : ((not $is_tag_zero_product or $self->align_tag0)
-                               && $self->_ref($l,q[fasta])
+                               && $self->_ref($dp, q[fasta])
                                && ($l->alignments_in_bam || $do_gbs_plex));
 
   $self->info(qq{ do_target_alignment for $name_root is } . ($do_target_alignment?q[TRUE]:q[FALSE]));
@@ -296,7 +287,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   # There will be a new exception to the use of "aln": if you specify a reference
   # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla, then we will use
   # bwa's "mem"
-  $bwa = ($do_target_alignment and $self->_is_alt_reference($l)) ? 'bwa_mem' : $bwa;
+  $bwa = ($do_target_alignment and $self->_is_alt_reference($dp)) ? 'bwa_mem' : $bwa;
 
 
   my $skip_target_markdup_metrics = (not $spike_tag and not $do_target_alignment);
@@ -304,12 +295,12 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   # handle extra stats file for aligned data with reference regions file
   my $do_target_regions_stats = 0;
   if ($do_target_alignment && !$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
-    if($self->_do_bait_stats_analysis($l, $rpt_list, $is_tag_zero_product)){
+    if($self->_do_bait_stats_analysis($dp)){
        $p4_param_vals->{target_regions_file} = $self->_bait($rpt_list)->target_intervals_path();
        $do_target_regions_stats = 1;
     }
-    elsif($self->_target_regions_file_path($l, q[target])) {
-       $p4_param_vals->{target_regions_file} = $self->_ref($l, q[target]) .q(.interval_list);
+    elsif($self->_target_regions_file_path($dp, q[target])) {
+       $p4_param_vals->{target_regions_file} = $self->_ref($dp, q[target]) .q(.interval_list);
        $do_target_regions_stats = 1;
     }
   }
@@ -363,8 +354,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   # use collected information to update final p4_param_vals entries
   #################################################################
   if($do_target_alignment) {
-    $p4_param_vals->{reference_dict} = $self->_ref($l,q(picard)) . q(.dict);
-    $p4_param_vals->{reference_genome_fasta} = $self->_ref($l,q(fasta));
+    $p4_param_vals->{reference_dict} = $self->_ref($dp, q(picard)) . q(.dict);
+    $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
   }
   if($nchs) {
@@ -373,10 +364,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
 
   # handle targeted stats_(bait_stats_analysis) here, handling the interaction with spike tag case
-  my $bait_stats_flag = q[];
-  my $spike_splicing = q[];
   if(not $spike_tag) {
-    if($self->_do_bait_stats_analysis($l, $rpt_list, $is_tag_zero_product)) {
+    if($self->_do_bait_stats_analysis($dp)) {
       $p4_param_vals->{bait_regions_file} = $self->_bait($rpt_list)->bait_intervals_path();
       push @{$p4_ops->{prune}}, 'fop(phx|hs)_samtools_stats_F0.*00_bait.*-';
     }
@@ -394,13 +383,15 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
      $p4_param_vals->{bwa_executable}   = q[bwa0_6];
      $p4_param_vals->{bsc_executable}   = q[bamsort];
      $p4_param_vals->{alignment_method} = $bwa;
-     $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,q(bwa0_6));
+     $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, q(bwa0_6));
      $p4_local_assignments->{'final_output_prep_target'}->{'scramble_embed_reference'} = q[1];
-     push @{$p4_ops->{splice}}, 'foptgt_bamsort_coord:-foptgt_bmd_multiway:';
+     if($do_target_alignment) {
+       push @{$p4_ops->{splice}}, 'foptgt_bamsort_coord:-foptgt_bmd_multiway:';
+     }
      $skip_target_markdup_metrics = 1;
   }
   elsif($do_rna) {
-    my $rna_analysis = $self->_analysis($l) // $DEFAULT_RNA_ANALYSIS;
+    my $rna_analysis = $self->_analysis($l->reference_genome, $rpt_list) // $DEFAULT_RNA_ANALYSIS;
     if (none {$_ eq $rna_analysis} @RNA_ANALYSES){
         $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
         $rna_analysis = $DEFAULT_RNA_ANALYSIS;
@@ -410,18 +401,18 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       # most common read length used for RNA-Seq is 75 bp so indices were generated using sjdbOverhang=74
       $p4_param_vals->{sjdb_overhang_val} = $DEFAULT_SJDB_OVERHANG;
       $p4_param_vals->{star_executable} = q[star];
-      $p4_reference_genome_index = dirname($self->_ref($l, q(star)));
+      $p4_reference_genome_index = dirname($self->_ref($dp, q(star)));
       # star jobs require more memory
       $ref->{'memory'} = $MEMORY_FOR_STAR;
     } elsif ($rna_analysis eq q[tophat2]) {
       $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
-      $p4_param_vals->{transcriptome_val} = $self->_transcriptome($l, q(tophat2))->transcriptome_index_name();
-      $p4_reference_genome_index = $self->_ref($l, q(bowtie2));
+      $p4_param_vals->{transcriptome_val} = $self->_transcriptome($rpt_list, q(tophat2))->transcriptome_index_name();
+      $p4_reference_genome_index = $self->_ref($dp, q(bowtie2));
     }
     $p4_param_vals->{alignment_method} = $rna_analysis;
-    $p4_param_vals->{annotation_val} = $self->_transcriptome($l)->gtf_file();
+    $p4_param_vals->{annotation_val} = $self->_transcriptome($rpt_list)->gtf_file();
     $p4_param_vals->{quant_method} = q[salmon];
-    $p4_param_vals->{salmon_transcriptome_val} = $self->_transcriptome($l, q(salmon))->transcriptome_index_path();
+    $p4_param_vals->{salmon_transcriptome_val} = $self->_transcriptome($rpt_list, q(salmon))->transcriptome_index_path();
     $p4_param_vals->{alignment_reference_genome} = $p4_reference_genome_index;
     # create intermediate file to prevent deadlock
     $p4_param_vals->{align_intfile_opt} = 1;
@@ -435,7 +426,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     }
   }
   else {
-    my ($organism, $strain, $tversion, $analysis) = $self->_reference($l)->parse_reference_genome($l->reference_genome);
+    my ($organism, $strain, $tversion, $analysis) = npg_tracking::data::reference->new(rpt_list => $rpt_list)->parse_reference_genome($l->reference_genome);
 
     $p4_param_vals->{bwa_executable} = q[bwa0_6];
     $p4_param_vals->{alignment_method} = ($analysis || $bwa);
@@ -455,7 +446,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $aligner = $methods_to_aligners{$aligner};
     }
 
-    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($l,$aligner); }
+    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $aligner); }
     if(exists $ref_suffix{$aligner}) {
       $p4_param_vals->{alignment_reference_genome} .= $ref_suffix{$aligner};
     }
@@ -550,7 +541,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
       $do_rna ? (join q( ),
         q{&&},
-        _qc_command('rna_seqc', $dp_archive_path, $qc_out_path, undef, undef, $rpt_list, $name_root),
+        _qc_command('rna_seqc', $dp_archive_path, $qc_out_path, undef, undef, $rpt_list, $name_root, [$bfs_input_file]),
       ) : q(),
 
       $do_gbs_plex ? (join q( ),
@@ -603,41 +594,42 @@ sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
 }
 
 sub _do_rna_analysis {
-  my ($self, $l) = @_;
-  my $lstring = $l->to_string;
+  my ($self, $dp) = @_;
 
-  my $analysis    = $self->_analysis($l) // q[];
-  my $rna_aligner = $analysis ?  (grep { /^$analysis$/sxm } @RNA_ANALYSES) : q[];
+  my $rpt_list = $dp->rpt_list;
+  my $reference_genome = $dp->lims->reference_genome;
+  my $library_type = $dp->lims->library_type;
 
-  if (!$l->library_type || $l->library_type !~ /(?:(?:cD|R)NA|DAFT)/sxm) {
-    if ($l->library_type && $rna_aligner) {
-      $self->debug(qq{$lstring - over-riding library type with rna aligner $analysis});
+  my $analysis    = $self->_analysis($reference_genome, $rpt_list) // q[];
+  my $rna_aligner = $analysis? (grep { /^$analysis$/sxm } @RNA_ANALYSES): q[];
+
+  if (!$library_type || $library_type !~ /(?:(?:cD|R)NA|DAFT)/sxm) {
+    if ($library_type && $rna_aligner) {
+      $self->debug(qq{$rpt_list - over-riding library type with rna aligner $analysis});
     }
     else {
-      $self->debug(qq{$lstring - not RNA library type: skipping RNAseq analysis});
+      $self->debug(qq{$rpt_list - not RNA library type: skipping RNAseq analysis});
       return 0;
     }
   }
-  my $reference_genome = $l->reference_genome();
-  my @parsed_ref_genome = $self->_reference($l)->parse_reference_genome($reference_genome);
+  my @parsed_ref_genome = npg_tracking::data::reference->new({rpt_list => $rpt_list})->parse_reference_genome($reference_genome);
   my $transcriptome_version = $parsed_ref_genome[$REFERENCE_ARRAY_TVERSION_IDX] // q[];
   if (not $transcriptome_version) {
     if($rna_aligner) {
-       $self->logcroak(qq{$lstring - not possible to run an rna aligner without a transcriptome});
+       $self->logcroak(qq{$rpt_list - not possible to run an rna aligner without a transcriptome});
     }
-    $self->debug(qq{$lstring - Reference without transcriptome version: skipping RNAseq analysis});
+    $self->debug(qq{$rpt_list - Reference without transcriptome version: skipping RNAseq analysis});
     return 0;
   }
 
-  $self->debug(qq{$lstring - Do RNAseq analysis....});
+  $self->debug(qq{$rpt_list - Do RNAseq analysis....});
   return 1;
 }
 
 sub _transcriptome {
-  my ($self, $l, $analysis) = @_;
-  my $href = {'id_run'     => $l->id_run, #TODO: use lims object?
-              'position'   => $l->position,
-              'tag_index'  => $l->tag_index,
+  my ($self, $rpt_list, $analysis) = @_;
+  my $href = {
+              'rpt_list'   => $rpt_list,
               ($self->repository ? ('repository' => $self->repository):())
              };
   if (defined $analysis) {
@@ -646,47 +638,37 @@ sub _transcriptome {
   return npg_tracking::data::transcriptome->new($href);
 }
 
-sub _reference {
-    my ($self, $l, $aligner) = @_;
-    my $href = { 'lims' => $l };
-    if (defined $self->repository) {
-        $href->{'repository'} = $self->repository;
-    }
-    if (defined $aligner) {
-        $href->{'aligner'} = $aligner;
-    }
-    return npg_tracking::data::reference->new($href);
-}
-
 sub _analysis {
-    my ($self, $l) = @_;
-    my $lstring = $l->to_string;
-    my $reference_genome = $l->reference_genome() // q[];
-    my @parsed_ref_genome = $self->_reference($l)->parse_reference_genome($reference_genome);
+    my ($self, $reference_genome, $rpt_list) = @_;
+    $reference_genome //= q[];
+    my @parsed_ref_genome = npg_tracking::data::reference->new({ rpt_list => $rpt_list, })->parse_reference_genome($reference_genome);
     my $analysis = $parsed_ref_genome[$REFERENCE_ARRAY_ANALYSIS_IDX];
-    $self->info(qq[$lstring - Analysis: ] . (defined $analysis ? $analysis : qq[default for $reference_genome]));
+    $self->info(qq[$rpt_list - Analysis: ] . (defined $analysis ? $analysis : qq[default for $reference_genome]));
     return $analysis;
 }
 
 sub _do_bait_stats_analysis {
-  my ($self, $l, $rpt_list, $is_tag_zero_product) = @_;
-  my $lstring = $rpt_list;
+  my ($self, $dp) = @_;
 
-  if(not $self->_ref($l,q{fasta})
-     or not $l->alignments_in_bam
+  my $dplims = $dp->lims;
+  my $rpt_list = $dp->rpt_list;
+  my $is_tag_zero_product = $dp->is_tag_zero_product;
+
+  if(not $self->_ref($dp, q{fasta})
+     or not $dplims->alignments_in_bam
      or $is_tag_zero_product) {
-    $self->debug(qq{$lstring - no reference or no alignments set});
+    $self->debug(qq{$rpt_list - no reference or no alignments set});
     return 0;
   }
   if(not $self->_bait($rpt_list)->bait_name){
-    $self->debug(qq{$lstring - No bait set});
+    $self->debug(qq{$rpt_list - No bait set});
     return 0;
   }
   if(not $self->_bait($rpt_list)->bait_path){
-    $self->debug(qq{$lstring - No bait path found});
+    $self->debug(qq{$rpt_list - No bait path found});
     return 0;
   }
-  $self->debug(qq{$lstring - Doing optional bait stats analysis....});
+  $self->debug(qq{$rpt_list - Doing optional bait stats analysis....});
 
   return 1;
 }
@@ -701,22 +683,24 @@ sub _bait{
 }
 
 sub _has_gbs_plex{
-  my ($self, $rpt_list, $library_type) = @_;
-  my $lstring = $rpt_list;
+  my ($self, $dp) = @_;
+
+  my $rpt_list = $dp->rpt_list;
+  my $library_type = $dp->lims->library_type;
 
   if(not $self->_gbs_plex($rpt_list)->gbs_plex_name){
-    $self->debug(qq{$lstring - No gbs plex set});
+    $self->debug(qq{$rpt_list - No gbs plex set});
     return 0;
   }
   if(not $self->_gbs_plex($rpt_list)->gbs_plex_path){
-    $self->logcroak(qq{$lstring - GbS plex set but no gbs plex path found});
+    $self->logcroak(qq{$rpt_list - GbS plex set but no gbs plex path found});
   }
 
   if($library_type and $library_type !~ /^GbS/ismx){
-    $self->logcroak(qq{$lstring - GbS plex set but library type incompatible});
+    $self->logcroak(qq{$rpt_list - GbS plex set but library type incompatible});
   }
 
-  $self->debug(qq{$lstring - Doing GbS plex analysis....});
+  $self->debug(qq{$rpt_list - Doing GbS plex analysis....});
 
   return 1;
 }
@@ -731,27 +715,33 @@ sub _gbs_plex{
 }
 
 sub _target_regions_file_path {
-  my ($self, $l, $aligner) = @_;
+  my ($self, $dp, $aligner) = @_;
+
   if (!$aligner) {
     $self->logcroak('Aligner missing');
   }
+
   my $path = 1;
-  eval  { $self->_ref($l, $aligner) ; 1; }
+  eval  { $self->_ref($dp, $aligner) ; 1; }
   or do { $path = 0; };
   return $path;
 }
 
 sub _ref {
-  my ($self, $l, $aligner) = @_;
+  my ($self, $dp, $aligner) = @_;
+
   if (!$aligner) {
     $self->logcroak('Aligner missing');
   }
-  my $ref_name = $self->_do_gbs_plex_analysis ?
-                 $l->gbs_plex_name : $l->reference_genome();
+
+  my $dplims = $dp->lims;
+  my $rpt_list = $dp->rpt_list;
+  my $is_tag_zero_product = $dp->is_tag_zero_product;
+  my $ref_name = $self->_do_gbs_plex_analysis ? $dplims->gbs_plex_name : $dplims->reference_genome();
+
   my $ref = $ref_name ? $self->_ref_cache->{$ref_name}->{$aligner} : undef;
-  my $lstring = $l->to_string;
   if (!$ref) {
-    my $href = { 'aligner' => $aligner, 'lims' => $l, };
+    my $href = { 'aligner' => $aligner, 'lims' => $dplims, };
     if ($self->repository) {
       $href->{'repository'} = $self->repository;
     }
@@ -760,12 +750,13 @@ sub _ref {
             roles => ["npg_tracking::data::${role}::find"])->new_object($href);
     my @refs = @{$ruser->refs};
     if (!@refs) {
-      $self->warn(qq{No reference genome set for $lstring});
+      $self->warn(qq[No reference genome set for $rpt_list]);
     } else {
       if (scalar @refs > 1) {
-        my $m = qq{Multiple references for $lstring};
-        (defined $l->tag_index && $l->tag_index == 0)
-          ? $self->logwarn($m) : $self->logcroak($m);
+        my $m = qq{Multiple references for $rpt_list};
+        ($is_tag_zero_product)
+          ? $self->logwarn($m)
+          : $self->logcroak($m);
       } else {
         $ref = $refs[0];
         if ($ref_name) {
@@ -775,7 +766,7 @@ sub _ref {
     }
   }
   if ($ref) {
-    $self->info(qq{Reference set for $lstring: $ref});
+    $self->info(qq{Reference set for $rpt_list: $ref});
   }
   return $ref;
 }
@@ -800,8 +791,8 @@ sub _default_human_split_ref {
 }
 
 sub _is_alt_reference {
-  my ($self, $l) = @_;
-  my $ref = $self->_ref($l, q{bwa0_6});
+  my ($self, $dp) = @_;
+  my $ref = $self->_ref($dp, q{bwa0_6});
   if ($ref) {
     $ref .= q{.alt};
     return -e $ref;
