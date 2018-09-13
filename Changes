@@ -1,7 +1,7 @@
 LIST OF CHANGES
 ---------------
 
- - a wrapper object npg_pipeline::product to repesent a product
+ - a wrapper object npg_pipeline::product to represent a product
  - upfront definition of all products
  - generic runfolder scaffolding for any products
  - since the top-level qc directory is no longer required, the tileviz
@@ -36,6 +36,9 @@ LIST OF CHANGES
  - change signature of the autoqc archival job in line with extended
    functionality of the autoqc db loader (ability to find JSON files
    in the run folder)
+ - change components_as_products method of npg_pipeline::product to
+   return a list with one item when there is only one component in
+   the composition (instead of an empty list)
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline

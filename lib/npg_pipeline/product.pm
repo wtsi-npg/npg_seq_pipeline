@@ -358,7 +358,7 @@ sub is_tag_zero_product {
 
 =head2 components_as_products
 
-For a product with multiple components, returns a list of
+For a product with any number of components, returns a list of
 objects of this class representing individual components.
 
 The subset information is not retained in the returned objects.
@@ -377,11 +377,9 @@ The lims attribute of the returned objects is not set.
 sub components_as_products {
   my $self = shift;
   my @components = ();
-  if ($self->composition->num_components() > 1) {
-    foreach my $c ($self->composition->components_list()) {
-      push  @components, __PACKAGE__->new(selected_lanes => $self->selected_lanes,
-                                          rpt_list       => $c->freeze2rpt());
-    }
+  foreach my $c ($self->composition->components_list()) {
+    push  @components, __PACKAGE__->new(selected_lanes => $self->selected_lanes,
+                                        rpt_list       => $c->freeze2rpt());
   }
   return @components;
 }
