@@ -233,10 +233,11 @@ subtest 'generation of product objects for components' => sub {
   plan tests => 17;
 
   my $p = npg_pipeline::product->new(rpt_list => '26219:1:3');
-  is ($p->components_as_products(), 0, 'empty list for a single component');
+  my @p_components = $p->components_as_products();
+  is (scalar @p_components, 1, 'one-item list for a single component');
 
   $p = npg_pipeline::product->new(rpt_list => '26219:1:3;26219:2:3;26219:3:3;26219:4:3');
-  my @p_components = $p->components_as_products();
+  @p_components = $p->components_as_products();
   is (scalar @p_components, 4, 'four products');
   map { isa_ok ($_, 'npg_pipeline::product') }  @p_components;
   ok ((all { ! $_->selected_lanes } @p_components),
