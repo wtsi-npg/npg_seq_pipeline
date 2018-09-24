@@ -114,6 +114,10 @@ sub generate {
     $ref->{'memory'} = $MEMORY; # reset to default
     $ref->{'command'} = $self->_alignment_command($dp, $ref);
     push @definitions, $self->_create_definition($ref, $dp);
+
+    my $composition_file = File::Spec->catdir($dp->path($self->archive_path), $dp->file_name(ext => 'json', suffix => 'composition'));
+    my $contents = $dp->composition->freeze;
+    write_file($composition_file, $contents);
   }
 
   return \@definitions;
