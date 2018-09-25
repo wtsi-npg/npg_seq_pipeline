@@ -21,7 +21,8 @@ use st::api::lims;
 use_ok('npg_pipeline::function::seq_alignment');
 
 my $odir    = abs_path cwd;
-my $dir     = tempdir( CLEANUP => 0);
+my $dir     = tempdir( CLEANUP => 1);
+
 my $logfile = join q[/], $dir, 'logfile';
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
@@ -187,6 +188,7 @@ subtest 'test 1' => sub {
   $rna_gen->create_product_level();
 
   my $da = $rna_gen->generate();
+
   ok ($da && @{$da} == 8, 'array of 8 definitions is returned');
 
   my $unique_string = $rna_gen->_job_id();
