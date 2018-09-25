@@ -14,6 +14,7 @@ use JSON;
 use Cwd;
 use List::Util qw/first/;
 
+use Moose::Util qw(apply_all_roles);
 
 use st::api::lims;
 
@@ -174,6 +175,7 @@ subtest 'test 1' => sub {
       verbose           => 0,
       repository        => $dir,
       force_phix_split  => 0,
+      roles => qw/npg_pipeline::runfolder_scaffold/,
     )
   } 'no error creating an object';
 
@@ -181,6 +183,9 @@ subtest 'test 1' => sub {
 
   my $qc_in  = $dir . q[/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/plex3];
   my $qc_out = join q[/], $qc_in, q[qc];
+
+  apply_all_roles($rna_gen, 'npg_pipeline::runfolder_scaffold');
+  $rna_gen->create_product_level();
 
   my $da = $rna_gen->generate();
   ok ($da && @{$da} == 8, 'array of 8 definitions is returned');
@@ -192,7 +197,7 @@ subtest 'test 1' => sub {
     qq{ && qc --check bam_flagstats --filename_root 12597_4#3 --qc_in $qc_in --qc_out $qc_out --rpt_list "12597:4:3" --input_files $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/plex3/12597_4#3.bam} .
     qq{ && qc --check bam_flagstats --filename_root 12597_4#3_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "12597:4:3" --subset phix --input_files $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/plex3/12597_4#3.bam} .
      q{ && qc --check alignment_filter_metrics --filename_root 12597_4#3 --qc_in $PWD --qc_out }.$qc_out.q{ --rpt_list "12597:4:3" --input_files 12597_4#3_bam_alignment_filter_metrics.json} .
-    qq{ && qc --check rna_seqc --filename_root 12597_4#3 --qc_in $qc_in --qc_out } . $qc_out . q{ --rpt_list "12597:4:3"}.
+    qq{ && qc --check rna_seqc --filename_root 12597_4#3 --qc_in $qc_in --qc_out } . $qc_out . qq{ --rpt_list "12597:4:3" --input_files $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/plex3/12597_4#3.bam}.
      q{ '};
 
   my $mem = 32000;
@@ -309,6 +314,9 @@ subtest 'test 2' => sub {
   } 'no error creating an object';
   is ($rna_gen->id_run, 13066, 'id_run inferred correctly');
 
+  apply_all_roles($rna_gen, 'npg_pipeline::runfolder_scaffold');
+  $rna_gen->create_product_level();
+
   my $da = $rna_gen->generate();
   ok ($da && @{$da} == 2, 'array of two definitions is returned');
   my $d = _find($da, 8);
@@ -320,7 +328,7 @@ subtest 'test 2' => sub {
     qq{ && qc --check bam_flagstats --filename_root 13066_8 --qc_in $qc_in --qc_out $qc_out --rpt_list "13066:8" --input_files $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive/lane8/13066_8.bam} .
     qq{ && qc --check bam_flagstats --filename_root 13066_8_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "13066:8" --subset phix --input_files $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive/lane8/13066_8.bam} .
      q{ && qc --check alignment_filter_metrics --filename_root 13066_8 --qc_in $PWD --qc_out } . $qc_out . qq{ --rpt_list "13066:8" --input_files 13066_8_bam_alignment_filter_metrics.json} .
-    qq{ && qc --check rna_seqc --filename_root 13066_8 --qc_in $qc_in --qc_out } . $qc_out . q{ --rpt_list "13066:8" '};
+    qq{ && qc --check rna_seqc --filename_root 13066_8 --qc_in $qc_in --qc_out } . $qc_out . qq{ --rpt_list "13066:8" --input_files $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive/lane8/13066_8.bam '};
 
   is ($d->command, $command, 'correct command for lane 8');
   is ($d->memory, 32000, 'memory');
@@ -361,6 +369,9 @@ subtest 'test 2' => sub {
     )
   } 'no error creating an object';
   is ($rna_gen->id_run, 17550, 'id_run inferred correctly');
+
+  apply_all_roles($rna_gen, 'npg_pipeline::runfolder_scaffold');
+  $rna_gen->create_product_level();
 
   $da = $rna_gen->generate();
   $d = _find($da, 3, 1);
@@ -463,6 +474,9 @@ subtest 'test 3' => sub {
      q{ && qc --check alignment_filter_metrics --filename_root 18472_2#1 --qc_in $PWD --qc_out } .$qc_out.q{ --rpt_list "18472:2:1" --input_files 18472_2#1_bam_alignment_filter_metrics.json}.
      q{ '};
 
+  apply_all_roles($se_gen, 'npg_pipeline::runfolder_scaffold');
+  $se_gen->create_product_level();
+
   my $da = $se_gen->generate();
   my $d = _find($da, 2, 1);
   is ($d->command, $command, 'correct command for lane 2 plex 1');
@@ -543,6 +557,9 @@ subtest 'test 4' => sub {
      q{ && qc --check alignment_filter_metrics --filename_root 16839_7#7 --qc_in $PWD --qc_out } .$qc_out.q{ --rpt_list "16839:7:7" --input_files 16839_7#7_bam_alignment_filter_metrics.json}.
      q{ '};
 
+  apply_all_roles($hsx_gen, 'npg_pipeline::runfolder_scaffold');
+  $hsx_gen->create_product_level();
+
   my $da = $hsx_gen->generate();
   my $d = _find($da, 7, 7);
   is ($d->command, $command, 'command for HiSeqX run 16839 lane 7 tag 7');
@@ -600,6 +617,10 @@ subtest 'test 5' => sub {
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16807, 'id_run inferred correctly');
+
+  apply_all_roles($hs_gen, 'npg_pipeline::runfolder_scaffold');
+  $hs_gen->create_product_level();
+
   my $da = $hs_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane6/plex1};
@@ -678,6 +699,9 @@ subtest 'test 6' => sub {
 
   is ($bait_gen->id_run, 20268, 'id_run inferred correctly');
 
+  apply_all_roles($bait_gen, 'npg_pipeline::runfolder_scaffold');
+  $bait_gen->create_product_level();
+
   my $da = $bait_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
@@ -746,6 +770,10 @@ subtest 'test 7' => sub {
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16850, 'id_run inferred correctly');
+
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
   my $da = $ms_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
@@ -815,6 +843,10 @@ subtest 'test 8' => sub {
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16756, 'id_run inferred correctly');
+
+  apply_all_roles($hs_gen, 'npg_pipeline::runfolder_scaffold');
+  $hs_gen->create_product_level();
+
   my $da = $hs_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
@@ -887,6 +919,10 @@ subtest 'test 9' => sub {
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16866, 'id_run inferred correctly');
+
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
   my $da = $ms_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
@@ -959,6 +995,10 @@ subtest 'test 10' => sub {
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 20990, 'id_run (20990) inferred correctly');
+
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
   my $da = $ms_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
@@ -1029,6 +1069,10 @@ subtest 'test 11' => sub {
     )
   } 'no error creating an object';
   is ($chromium_gen->id_run, 16839, 'id_run inferred correctly');
+
+  apply_all_roles($chromium_gen, 'npg_pipeline::runfolder_scaffold');
+  $chromium_gen->create_product_level();
+
   my $da = $chromium_gen->generate();
 
   my $qc_in  = qq{$dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane1/plex1};
@@ -1098,6 +1142,10 @@ subtest 'test 12' => sub {
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 24135, 'id_run inferred correctly');
+
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
   my $da = $ms_gen->generate();
 
   my $unique_string = $ms_gen->_job_id();
