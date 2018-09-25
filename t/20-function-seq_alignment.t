@@ -175,7 +175,6 @@ subtest 'test 1' => sub {
       verbose           => 0,
       repository        => $dir,
       force_phix_split  => 0,
-      roles => qw/npg_pipeline::runfolder_scaffold/,
     )
   } 'no error creating an object';
 
