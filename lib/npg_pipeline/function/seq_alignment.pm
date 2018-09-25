@@ -296,6 +296,16 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   my $skip_target_markdup_metrics = (not $spike_tag and not $do_target_alignment);
 
+  if($human_split and not $do_target_alignment and not $spike_tag) {
+    # human_split needs alignment. The final_output_prep_no_y_target parameter specifies a p4 template
+    #  which will undo the alignment from the target product after the split has been done.
+
+    $do_target_alignment = 1;
+    $skip_target_markdup_metrics = 1;
+
+    $p4_param_vals->{final_output_prep_no_y_target} = q[final_output_prep_chrsplit_noaln.json];
+  }
+
   # handle extra stats file for aligned data with reference regions file
   my $do_target_regions_stats = 0;
   if ($do_target_alignment && !$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
@@ -316,13 +326,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   elsif( !($human_split and not $do_target_alignment) ){
    push @{$p4_ops->{prune}}, 'fop.*samtools_stats_F0.*_target.*-';
-  }
-
-  if($human_split and not $do_target_alignment and not $spike_tag) {
-    $do_target_alignment = 1;
-    $skip_target_markdup_metrics = 1;
-
-    $p4_param_vals->{final_output_prep_no_y_target} = q[final_output_prep_chrsplit_noaln.json];
   }
 
   my $nchs = $do_gbs_plex ? q{} : $l->contains_nonconsented_human;
