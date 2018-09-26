@@ -112,18 +112,13 @@ sub generate {
   my $ref = {};
   for my $dp (@{$self->products->{data_products}}) {
 
-#   my $phix_subset_file = $dp->file_name(ext => 'cram', suffix => 'phix');
-#   $ref->{'composition_subsets'} = { composition => $dp->composition->freeze, subsets => [ $phix_subset_file, ], };
-    my $css = { composition => $dp->composition->freeze, subsets => [ $dp->file_name(ext => 'cram', suffix => 'phix'), ], };
-
+    my $subsets_composition = { composition => from_json($dp->composition->freeze), subsets => [ $dp->file_name(ext => 'cram', suffix => 'phix'), ], };
     $ref->{'memory'} = $MEMORY; # reset to default
-    $ref->{'command'} = $self->_alignment_command($dp, $ref);
+    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets_composition);
     push @definitions, $self->_create_definition($ref, $dp);
 
     my $composition_file = File::Spec->catdir($dp->path($self->archive_path), $dp->file_name(ext => 'json', suffix => 'composition'));
-#   my $contents = $dp->composition->freeze;
-#   write_file($composition_file, $contents);
-    write_file($composition_file, encode_json($css));
+    write_file($composition_file, encode_json($subsets_composition));
   }
 
   return \@definitions;
@@ -147,7 +142,7 @@ sub _create_definition {
 }
 
 sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
-  my ( $self, $dp, $ref) = @_;   # this should be enough?
+  my ( $self, $dp, $ref, $subsets_composition) = @_;
 
   ########################################################
   # derive base parameters from supplied data_product (dp)
@@ -439,8 +434,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     }
   }
   else {
-#   my ($organism, $strain, $tversion, $analysis) = npg_tracking::data::reference->new(rpt_list => $rpt_list)->parse_reference_genome($l->reference_genome);
-#   my ($organism, $strain, $tversion, $analysis) = npg_tracking::data::reference->new(repository => $self->repository)->parse_reference_genome($l->reference_genome);
     my ($organism, $strain, $tversion, $analysis) = npg_tracking::data::reference->new(($self->repository ? (q(repository)=>$self->repository) : ()))->parse_reference_genome($l->reference_genome);
 
     $p4_param_vals->{bwa_executable} = q[bwa0_6];
@@ -482,6 +475,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $p4_param_vals->{chrsplit_subset_flag} = ['--subset', 'Y,chrY,ChrY,chrY_KI270740v1_random'];
       $p4_param_vals->{chrsplit_invert_flag} = q[--invert];
     }
+  }
+
+  # update subsets for composition file
+  if($human_split) {
+    push @{$subsets_composition->{subsets}}, $dp->file_name(ext => 'cram', suffix => $human_split);
+  }
+  if($nchs) {
+    push @{$subsets_composition->{subsets}}, $dp->file_name(ext => 'cram', suffix => 'human');
   }
 
   # write p4 parameters to file
@@ -627,8 +628,6 @@ sub _do_rna_analysis {
       return 0;
     }
   }
-# my @parsed_ref_genome = npg_tracking::data::reference->new({rpt_list => $rpt_list})->parse_reference_genome($reference_genome);
-# my @parsed_ref_genome = npg_tracking::data::reference->new({rpt_list => $rpt_list})->parse_reference_genome($reference_genome);
   my @parsed_ref_genome = npg_tracking::data::reference->new(($self->repository ? (q(repository)=>$self->repository) : ()))->parse_reference_genome($reference_genome);
   my $transcriptome_version = $parsed_ref_genome[$REFERENCE_ARRAY_TVERSION_IDX] // q[];
   if (not $transcriptome_version) {
@@ -658,7 +657,6 @@ sub _transcriptome {
 sub _analysis {
     my ($self, $reference_genome, $rpt_list) = @_;
     $reference_genome //= q[];
-#   my @parsed_ref_genome = npg_tracking::data::reference->new({ rpt_list => $rpt_list, })->parse_reference_genome($reference_genome);
     my @parsed_ref_genome = npg_tracking::data::reference->new(($self->repository ? (q(repository)=>$self->repository) : ()))->parse_reference_genome($reference_genome);
     my $analysis = $parsed_ref_genome[$REFERENCE_ARRAY_ANALYSIS_IDX];
     $self->info(qq[$rpt_list - Analysis: ] . (defined $analysis ? $analysis : qq[default for $reference_genome]));
