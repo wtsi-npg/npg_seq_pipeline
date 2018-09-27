@@ -152,6 +152,11 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $spike_tag = $dp->lims->is_phix_spike;
   my $reference_genome = $dp->lims->reference_genome || q[UNSPEC];
   my $is_tag_zero_product = $dp->is_tag_zero_product;
+  my $run_vec = [ uniq (map { $_->{id_run} } @{$dp->composition->{components}}) ];
+  my $id_run = $run_vec->[0]; # assume unique for the moment
+  my $tags_vec = [ uniq (map { $_->{tag_index} } @{$dp->composition->{components}}) ];
+  my $tag_index = $tags_vec->[0]; # assume unique for the moment
+  my $is_plex = defined $tag_index;
 
   my $archive_path = $self->archive_path;
   my $dp_archive_path = $dp->path($archive_path);
@@ -203,9 +208,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->debug(qq{  bfs_input_file: $bfs_input_file});
   $self->debug(qq{  af_input_file: $af_input_file});
 
-  my $id_run = (defined $dp->lims->id_run? $dp->lims->id_run: q[UNDEF]);
-  my $tag_index = (defined $dp->lims->tag_index? $dp->lims->tag_index: q[UNDEF]);
-  my $is_plex = defined $dp->lims->tag_index; # would this work if there were multiple tag indexes in the product?
   my $l = $dp->lims;
 
   ################################################
