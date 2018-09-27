@@ -230,10 +230,16 @@ sub _generate_command {
   ##no critic (RegularExpressions::RequireExtendedFormatting)
   ##no critic (ControlStructures::ProhibitCascadingIfElse)
   if(any { /$check/sm } qw( gc_fraction qX_yield )) {
-    $c .= qq[ --input_files=$fqc1_filepath --input_files=$fqc2_filepath];
+    $c .= qq[ --input_files=$fqc1_filepath];
+    if($self->is_paired_read) {
+      $c .= qq[ --input_files=$fqc2_filepath];
+    }
   }
   elsif(any { /$check/sm } qw( insert_size ref_match sequence_error )) {
-    $c .= qq[ --input_files=$fq1_filepath --input_files=$fq2_filepath];
+    $c .= qq[ --input_files=$fq1_filepath];
+    if($self->is_paired_read) {
+      $c .= qq[ --input_files=$fq2_filepath];
+    }
   }
 
   elsif(any { /$check/sm } qw( adapter bcfstats genotype verify_bam_id pulldown_metrics )) {
