@@ -171,7 +171,7 @@ subtest 'check_save_arguments' => sub {
         },
     ],
     'ops' => {
-      'splice' => [ 'bamadapterfind:-bamcollate:' ],
+      'splice' => [ 'tee_i2b:baf-bamcollate:' ],
       'prune' => [ 'tee_split:split_bam-'
       ]
     },
@@ -290,7 +290,7 @@ subtest 'check_save_arguments_minimap2' => sub {
         },
     ],
     'ops' => {
-      'splice' => [ 'bamadapterfind:-bamcollate:' ],
+      'splice' => [ 'tee_i2b:baf-bamcollate:' ],
       'prune' => [ 'tee_split:split_bam-'
       ]
     },

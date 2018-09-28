@@ -412,21 +412,17 @@ sub _generate_command_params {
       $p4_params{bid_max_no_calls} = $self->general_values_conf()->{single_plex_decode_max_no_calls};
       $p4_params{bid_convert_low_quality_to_no_call_flag} = q[--convert-low-quality];
     }
-    if(not $self->adapterfind) {
-      push @{$p4_ops{splice}}, q[bamadapterfind];
-    }
-    push @{$p4_ops{prune}}, q[tee_split:unsplit_bam-];
+    push @{$p4_ops{prune}}, q[tee_split:unsplit_bam-]; # no lane-level bam/cram when plexed
   }
   else {
     $self->info(q{P4 stage1 analysis on non-plexed lane});
 
-    if(not $self->adapterfind) {
-      push @{$p4_ops{splice}}, q[tee_i2b:baf-bamcollate:];
-    }
-    else {
-      push @{$p4_ops{splice}}, q[bamadapterfind:-bamcollate:];
-    }
-    push @{$p4_ops{prune}}, q[tee_split:split_bam-];
+    push @{$p4_ops{splice}}, q[tee_i2b:baf-bamcollate:]; # skip decode when unplexed
+    push @{$p4_ops{prune}}, q[tee_split:split_bam-]; # no split output when unplexed
+  }
+
+  if(not $self->adapterfind) {
+    push @{$p4_ops{splice}}, q[bamadapterfind];
   }
 
   # cluster count (used to calculate FRAC for bam subsampling)
