@@ -78,9 +78,9 @@ sub create {
   my ($self) = @_;
 
   my $id_run = $self->id_run();
+  my $job_name = sprintf q{%s_%d}, $ARCHIVE_EXECUTABLE, $id_run;
   my @definitions;
 
-  my $i = 0;
   foreach my $product (@{$self->products->{data_products}}) {
     next if not $self->is_release_data($product);
     next if not $self->has_qc_for_release($product);
@@ -93,7 +93,6 @@ sub create {
       $self->logcroak(sprintf q{Missing supplier name for product %s, %s},
                       $product->file_name_root(), $product->rpt_list());
 
-    my $job_name = sprintf q{%s_%d_%d}, $ARCHIVE_EXECUTABLE, $id_run, $i;
     my $base_url = $self->s3_url($product);
     $self->info("Using base S3 URL '$base_url'");
 
@@ -135,7 +134,6 @@ sub create {
          'job_name'    => $job_name,
          'command'     => $command,
          'composition' => $product->composition());
-    $i++;
   }
 
   if (not @definitions) {
