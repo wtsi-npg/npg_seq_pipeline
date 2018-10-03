@@ -5,6 +5,7 @@ use Digest::MD5;
 use File::Copy;
 use File::Path qw[make_path remove_tree];
 use File::Temp;
+use Cwd;
 use Log::Log4perl qw[:easy];
 use Test::More tests => 5;
 use Test::Exception;
@@ -30,6 +31,8 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
   't/data/novaseq/180709_A00538_0010_BH3FCMDRXX/' .
   'Data/Intensities/BAM_basecalls_20180805-013153/' .
   'metadata_cache_26291/samplesheet_26291.csv';
+
+local $ENV{PATH} = join q[:], getcwd().'/bin', $ENV{PATH};
 
 my $pkg = 'npg_pipeline::function::product_delivery_notifier';
 use_ok($pkg);
@@ -110,7 +113,7 @@ subtest 'create' => sub {
             'Only "26291:1:3;26291:2:3" and "26291:1:9;26291:2:9" notified')
     or diag explain \@notified_rpts;
 
-  my $cmd_patt = qr|^/.*/npg_pipeline_notify_delivery --config $config_path/npg_message_queue.conf $message_dir/26291#[3,9][.]msg[.]json|;
+  my $cmd_patt = qr|^npg_pipeline_notify_delivery --config $config_path/npg_message_queue.conf $message_dir/26291#[3,9][.]msg[.]json|;
 
   foreach my $def (@defs) {
     is($def->created_by, $pkg, "created_by is $pkg");
