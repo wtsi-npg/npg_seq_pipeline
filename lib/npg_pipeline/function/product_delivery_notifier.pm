@@ -155,9 +155,9 @@ sub create {
   }
 
   my $id_run = $self->id_run();
+  my $job_name = sprintf q{%s_%d}, $SEND_MESSAGE_SCRIPT, $id_run;
   my @definitions;
 
-  my $i = 0;
   foreach my $product (@{$self->products->{data_products}}) {
     next if not $self->is_release_data($product);
     next if not $self->has_qc_for_release($product);
@@ -181,7 +181,6 @@ sub create {
       $self->_write_message_file($msg_file, $msg_body);
     }
 
-    my $job_name = sprintf q{%s_%d_%d}, $SEND_MESSAGE_SCRIPT, $id_run, $i;
     my $command = sprintf q{%s --config %s %s},
       "$Bin/$SEND_MESSAGE_SCRIPT", $self->message_config(), $msg_file;
 
@@ -193,7 +192,6 @@ sub create {
          'job_name'    => $job_name,
          'command'     => $command,
          'composition' => $product->composition());
-    $i++;
   }
 
   if (not @definitions) {
