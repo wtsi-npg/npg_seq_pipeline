@@ -221,7 +221,7 @@ sub _build_message_config {
 sub _build_message_dir {
   my ($self) = @_;
 
-  return catdir($self->archive_path(), q[..], q[..], $EVENT_MESSAGE_DIRNAME);
+  return catdir($self->analysis_path(), $EVENT_MESSAGE_DIRNAME);
 }
 
 sub _read_md5_file {
