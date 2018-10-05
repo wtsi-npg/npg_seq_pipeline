@@ -240,22 +240,7 @@ the value of the file_name_root attribute.
 sub file_name {
   my ($self, @options) = @_;
 
-  my $name = $self->file_name_root();
-  if (@options) {
-    ##no critic (TestingAndDebugging::ProhibitNoWarnings)
-    use warnings FATAL => qw/misc/; # Turn warning
-                                    # 'Odd number of elements in hash assignment'
-                                    # into an error...
-    my %h = @options;
-    no warnings FATAL => qw/misc/;  # and back into a warning.
-    if (exists $h{'suffix'} && $h{'suffix'} ne q[]) {
-      $name .= q[_] . $h{'suffix'};
-    }
-    if (exists $h{'ext'} && $h{'ext'} ne q[]) {
-      $name .= q[.] . $h{'ext'};
-    }
-  }
-  return $name;
+  return $self->file_name_full($self->file_name_root(), @options);
 }
 
 =head2 dir_path
