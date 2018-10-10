@@ -138,8 +138,8 @@ subtest 'spatial_filter' => sub {
   foreach my $de (@{$da}) {
     my $p = $de->composition->get_component(0)->position;
     is ($de->command, sprintf(
-    'qc --check=spatial_filter --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s',
-    qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}.spatial_filter.stats"),
+    'qc --check=spatial_filter --rpt_list=%s --filename_root=%s --qc_out=%s --qc_in=%s',
+    qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", $archive_dir),
     "spatial filter check command for lane $p, lane not indexed");
   }
 
@@ -167,8 +167,8 @@ subtest 'spatial_filter' => sub {
   foreach my $de (@{$da}) {
     my $p = $de->composition->get_component(0)->position;
     my @t = (map { $_->tag_index } ($de->composition->components_list()));
-    is ($de->command, sprintf('qc --check=spatial_filter --rpt_list=%s --filename_root=%s --qc_out=%s %s',
-                                 qq["8747:${p}"], "8747_${p}", "$archive_dir/lane${p}/qc", join q{ }, map { "--input_files=$archive_dir/lane${p}/plex$_/8747_${p}#$_.spatial_filter.stats" } @{$expected_tags{${p}}},  ),
+    is ($de->command, sprintf('qc --check=spatial_filter --rpt_list=%s --filename_root=%s --qc_out=%s --qc_in=%s',
+                                 qq["8747:${p}"], "8747_${p}", "$archive_dir/lane${p}/qc", $archive_dir),
     "spatial filter check command for lane $p, lane is indexed");
   }   
 };
