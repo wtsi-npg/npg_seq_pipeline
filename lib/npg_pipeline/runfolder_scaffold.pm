@@ -3,6 +3,7 @@ package npg_pipeline::runfolder_scaffold;
 use Moose::Role;
 use File::Path qw/make_path/;
 use File::Spec;
+use File::Slurp;
 use Readonly;
 use Carp;
 
@@ -13,6 +14,8 @@ Readonly::Scalar my $ANALYSIS_PATH_COMPONENT    => q[/analysis/];
 Readonly::Scalar my $LOG_DIR_NAME               => q[log];
 Readonly::Scalar my $STATUS_FILES_DIR_NAME      => q[status];
 Readonly::Scalar my $METADATA_CACHE_DIR_NAME    => q[metadata_cache_];
+Readonly::Scalar my $TILEVIZ_INDEX_DIR_NAME     => q[tileviz];
+Readonly::Scalar my $TILEVIZ_INDEX_FILE_NAME    => q[index.html];
 
 sub create_product_level {
   my $self = shift;
@@ -30,6 +33,7 @@ sub create_product_level {
   # Create tileviz directory for lane products only
   push @dirs, ( map { $_->tileviz_path($self->archive_path()) }
                 @{$self->products->{'lanes'}} );
+  $self->_create_tileviz_index();
 
   my @errors = $self->make_dir(@dirs);
   my $m = join qq[\n], 'Created the following directories:', @dirs;
@@ -86,6 +90,7 @@ sub create_top_level {
   push @info, "metadata cache path: $metadata_cache_dir";
 
   push @dirs, $self->archive_path(), $self->status_files_path();
+  push @dirs, $self->_tileviz_index_dir_path();
 
   my @errors = $self->make_dir(@dirs);
 
@@ -141,6 +146,33 @@ sub path_in_outgoing {
   $path or croak 'Path required';
   $path =~ s{$ANALYSIS_PATH_COMPONENT}{$OUTGOING_PATH_COMPONENT}xms;
   return $path;
+}
+
+sub _tileviz_index_dir_path {
+  my $self = shift;
+  return File::Spec->catdir($self->archive_path, $TILEVIZ_INDEX_DIR_NAME);
+}
+
+sub _create_tileviz_index {
+  my $self = shift;
+
+  my %lanes =  map { $_->composition->get_component(0)->position,
+                     $_->tileviz_path(q[..]) } @{$self->products->{'lanes'}};
+  my $title = join q[ ], 'Run', $self->id_run(), 'Tileviz', 'Reports';
+  my @content = ();
+  push @content, "<html><head><title>$title</title></head>";
+  push @content, "<h2>$title</h2>";
+  foreach my $lane (sort keys %lanes) {
+    my $ref = $lanes{$lane};
+    push @content, qq[<div><a href="$ref">Lane $lane</a></div>];
+  }
+  push @content, '</html>';
+
+  my $index = File::Spec->catfile($self->_tileviz_index_dir_path(),
+                                  $TILEVIZ_INDEX_FILE_NAME);
+  write_file($index, map { $_ . qq[\n] } @content);
+
+  return;
 }
 
 sub _log_path {
@@ -217,6 +249,8 @@ Given a path in analysis directory changes it to outgoing directory.
 =item File::Path
 
 =item File::Spec
+
+=item File::Slurp
 
 =item Readonly
 

@@ -4,6 +4,7 @@ use Test::More tests => 5;
 use Test::Exception;
 use Moose::Meta::Class;
 use File::Copy qw(cp);
+use File::Slurp;
 
 use t::util;
 
@@ -30,7 +31,7 @@ subtest 'tests for class methods' => sub {
 };
 
 subtest 'top level scaffold' => sub {
-  plan tests => 5;
+  plan tests => 6;
 
   my $util = t::util->new();
   my $rfh = $util->create_runfolder();
@@ -52,12 +53,13 @@ subtest 'top level scaffold' => sub {
   ok (-e $dir, 'no_cal directory created');
   $dir = "$dir/archive";
   ok (-e $dir, 'archive directory created');
+  ok (-e "$dir/tileviz", 'tileviz index directory created');
   ok (-e "$bbc_path/status", 'status directory created');
   ok (-e "$bbc_path/metadata_cache_999", 'metadata cache directory created');
 };
 
 subtest 'product level scaffold, NovaSeq all lanes' => sub {
-  plan tests => 85;
+  plan tests => 87;
 
   my $util = t::util->new();
   my $rfh = $util->create_runfolder();
@@ -92,10 +94,15 @@ subtest 'product level scaffold, NovaSeq all lanes' => sub {
   push @dirs, (map {join q[/], $_, 'qc'} @original);
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
   map { ok (-d $_, "$_ created") } map {join q[/], $apath, $_} @dirs;
+
+  my $tileviz_index = join q[/], $apath, 'tileviz', 'index.html';
+  ok (-e $tileviz_index, 'tileviz index created');
+  my @lines = read_file($tileviz_index);
+  is (scalar @lines, 7, 'tileviz index contains sevel lines');
 };
 
 subtest 'product level scaffold, NovaSeq selected lanes' => sub {
-  plan tests => 79;
+  plan tests => 81;
 
   my $util = t::util->new();
   my $rfh = $util->create_runfolder();
@@ -133,6 +140,11 @@ subtest 'product level scaffold, NovaSeq selected lanes' => sub {
   push @dirs, (map {join q[/], $_, 'qc'} @original);
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
   map { ok (-d $_, "$_ created") } map {join q[/], $apath, $_} @dirs;
+
+  my $tileviz_index = join q[/], $apath, 'tileviz', 'index.html';
+  ok (-e $tileviz_index, 'tileviz index created');
+  my @lines = read_file($tileviz_index);
+  is (scalar @lines, 5, 'tileviz index contains five lines');
 };
 
 1;
