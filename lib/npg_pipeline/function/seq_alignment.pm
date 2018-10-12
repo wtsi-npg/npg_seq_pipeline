@@ -38,7 +38,6 @@ Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star salmon};
-Readonly::Scalar my $INPUT_EXT                    => q{bam};
 
 =head2 phix_reference
 
@@ -168,10 +167,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my (@incrams, @spatial_filter_rg_value);
   for my $rpt_elem (map { $_->rpt_list } ($dp->components_as_products)) {
     $self->debug(qq{  rpt_elem (component): $rpt_elem});
-    push @incrams, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => $INPUT_EXT);
+    push @incrams, File::Spec->catdir($recal_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => $self->s1_s2_intfile_format));
     push @spatial_filter_rg_value, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name_root;
   }
-  my $incrams_pv = [ map { sprintf q{I=%s/%s}, $recal_path, $_ } @incrams ];
   my $spatial_filter_rg_value = join q[,], @spatial_filter_rg_value;
 
   my (@s2_filter_files,@tag_metrics_files);
@@ -237,7 +235,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     s2_id_run => $id_run,
     s2_position => q[POSITION],
     s2_tag_index => $tag_index,
-    incrams => $incrams_pv,
+    incrams => \@incrams,
     spatial_filter_file => q[DUMMY],
     s2_filter_files => $s2_filter_files,
     spatial_filter_rg_value => $spatial_filter_rg_value,
@@ -248,6 +246,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     fqc1 => $fqc1_filepath,
     fqc2 => $fqc2_filepath,
     seqchksum_orig_file => $seqchksum_orig_file,
+    s2_input_format => $self->s1_s2_intfile_format,
   };
   my $p4_ops = {
     prune => [],

@@ -127,6 +127,19 @@ sub _build_adapterfind {
   return $self->platform_NovaSeq? 0: 1;
 }
 
+=head2 s1_s2_intfile_format
+
+format (bam/cram) for stage1_output/stage2_input files
+
+=cut
+
+has 's1_s2_intfile_format' => (
+                           isa        => 'Str',
+                           is         => 'ro',
+                           default    => 'cram',
+                         );
+
+
 =head2 p4s1_alignment_method
 
 set the PhiX alignment method for p4 stage1

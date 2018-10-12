@@ -273,6 +273,7 @@ sub _generate_command_params {
                     scramble_reference_fasta => $self->_default_phix_ref(q{fasta}, $self->repository),
                     s1_se_pe => ($self->is_paired_read)? q{pe} : q{se},
                     aln_filter_value => q{0x900},
+                    s1_output_format => $self->s1_s2_intfile_format,
                   );
   my %p4_ops = ( splice => [], prune => [], );
 

@@ -204,7 +204,7 @@ sub _generate_command {
   my $cache10k_path = $dp->short_files_cache_path($archive_path);
   my $qc_out_path = $dp->qc_out_path($archive_path);
   my $bamfile_path = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'bam'));
-  my $tagzerobamfile_path = File::Spec->catdir($recal_path, $dp->file_name(ext => 'bam', suffix => '#0'));
+  my $tagzerobamfile_path = File::Spec->catdir($recal_path, $dp->file_name(ext => $self->s1_s2_intfile_format, suffix => '#0'));
   ## no critic (RegularExpressions::RequireDotMatchAnything)
   ## no critic (RegularExpressions::RequireExtendedFormatting)
   ## no critic (RegularExpressions::RequireLineBoundaryMatching)
