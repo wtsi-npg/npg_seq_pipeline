@@ -3,6 +3,7 @@ package npg_pipeline::function::seqchksum_comparator;
 use Moose;
 use namespace::autoclean;
 use File::Spec;
+use File::Slurp;
 use Readonly;
 use Cwd;
 
@@ -40,6 +41,17 @@ has 'input_globs' => ( isa        => 'ArrayRef',
                      default  => sub {return [];}, # is sub necessary?
                    );
 
+has 'input_fofg_name' => ( isa        => 'Str',
+                         is         => 'ro',
+                         required   => 0,
+                         lazy_build => 1,
+                       );
+sub _build_input_fofg_name {
+  my ( $self ) = @_;
+
+  return sprintf q{%s/%s_input_fofn.txt}, $self->recalibrated_path, $self->id_run;
+}
+
 sub create {
   my $self = shift;
 
@@ -54,8 +66,15 @@ sub create {
     $command .= q{ --verbose};
   }
 
-  for my $dp (@{$self->products->{data_products}}) {
-    $command .= sprintf q{ --input_globs=%s/%s*.cram}, $dp->path($self->archive_path), $dp->file_name_root;
+  if($self->input_fofg_name) {
+    push my @input_fgs, (map { sprintf q{%s/%s*.cram}, $_->path($self->archive_path), $_->file_name_root } @{$self->products->{data_products}});
+    write_file($self->input_fofg_name, (map { "$_\n" } @input_fgs));
+    $command .= q{ --input_fofg_name=} . $self->input_fofg_name;
+  }
+  else {
+    for my $dp (@{$self->products->{data_products}}) {
+      $command .= sprintf q{ --input_globs=%s/%s*.cram}, $dp->path($self->archive_path), $dp->file_name_root;
+    }
   }
 
   my @definitions = ();
@@ -89,26 +108,38 @@ sub do_comparison {
   my $prods_seqchksum_file_name = $self->id_run . '.allprods.seqchksum';
   my $lanes_seqchksum_file_name = $self->id_run . '.alllanes.seqchksum';
 
+  ##############################
   # merge all product seqchksums
+  ##############################
   my $cmd = 'seqchksum_merge.pl ';
   my @seqchksums = ();
-  for my $cram_file_name_glob (@{$self->input_globs}) {
-    my @crams = glob $cram_file_name_glob or $self->logcroak("Cannot find any cram files using $cram_file_name_glob");
+  # specify product input files via EITHER a fofn (of globs) OR a list of globs in the input_globs attribute
+  if($self->input_fofg_name) {
+     $cmd .= q[-f ] . $self->input_fofg_name;
+  } else {
+    my @input_globs = @{$self->input_globs};
 
-    ## no critic (RegularExpressions::RequireDotMatchAnything)
-    ## no critic (RegularExpressions::RequireExtendedFormatting)
-    ## no critic (RegularExpressions::RequireLineBoundaryMatching)
-    @seqchksums = map{s/[.]cram$/.seqchksum/r} @crams;
-    $self->info("Building .all.seqchksum for product from seqchksum set based on $cram_file_name_glob ...");
+    for my $cram_file_name_glob (@input_globs) {
+      my @crams = glob $cram_file_name_glob or $self->logcroak("Cannot find any cram files using $cram_file_name_glob");
 
-    $cmd .= q{ } . join q{ }, @seqchksums;
+      ## no critic (RegularExpressions::RequireDotMatchAnything)
+      ## no critic (RegularExpressions::RequireExtendedFormatting)
+      ## no critic (RegularExpressions::RequireLineBoundaryMatching)
+      @seqchksums = map{s/[.]cram$/.seqchksum/r} @crams;
+      $self->info("Building .all.seqchksum for product from seqchksum set based on $cram_file_name_glob ...");
+
+      $cmd .= q{ } . join q{ }, @seqchksums;
+    }
   }
+
   $cmd .= qq{ > $prods_seqchksum_file_name};
   $self->info("Running $cmd to generate prods_seqchksum_file_name");
   system(qq[/bin/bash -c "set -o pipefail && $cmd"]) == 0 or $self->logcroak(
     "Failed to run command $cmd");
 
+  #######################################
   # merge all lanes seqchksums (from i2b)
+  #######################################
   $cmd = 'seqchksum_merge.pl ';
   @seqchksums = ();
   for my $position ($self->positions) {

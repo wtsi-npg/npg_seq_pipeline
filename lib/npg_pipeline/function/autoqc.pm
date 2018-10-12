@@ -204,7 +204,7 @@ sub _generate_command {
   my $cache10k_path = $dp->short_files_cache_path($archive_path);
   my $qc_out_path = $dp->qc_out_path($archive_path);
   my $bamfile_path = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'bam'));
-  my $tagzerobamfile_path = File::Spec->catdir($recal_path, $dp->file_name(ext => 'bam', suffix => '#0'));
+  my $tagzerobamfile_path = File::Spec->catdir($recal_path, $dp->file_name(ext => $self->s1_s2_intfile_format, suffix => '#0'));
   ## no critic (RegularExpressions::RequireDotMatchAnything)
   ## no critic (RegularExpressions::RequireExtendedFormatting)
   ## no critic (RegularExpressions::RequireLineBoundaryMatching)
@@ -230,10 +230,16 @@ sub _generate_command {
   ##no critic (RegularExpressions::RequireExtendedFormatting)
   ##no critic (ControlStructures::ProhibitCascadingIfElse)
   if(any { /$check/sm } qw( gc_fraction qX_yield )) {
-    $c .= qq[ --input_files=$fqc1_filepath --input_files=$fqc2_filepath];
+    $c .= qq[ --input_files=$fqc1_filepath];
+    if($self->is_paired_read) {
+      $c .= qq[ --input_files=$fqc2_filepath];
+    }
   }
   elsif(any { /$check/sm } qw( insert_size ref_match sequence_error )) {
-    $c .= qq[ --input_files=$fq1_filepath --input_files=$fq2_filepath];
+    $c .= qq[ --input_files=$fq1_filepath];
+    if($self->is_paired_read) {
+      $c .= qq[ --input_files=$fq2_filepath];
+    }
   }
 
   elsif(any { /$check/sm } qw( adapter bcfstats genotype verify_bam_id pulldown_metrics )) {
@@ -248,13 +254,14 @@ sub _generate_command {
 
     my $position = $dp->composition->get_component(0)->position; # lane-level check, so position is unique
 
+    my %qc_in_roots = ();
     for my $redp (@{$self->products->{data_products}}) {
       # find any merged products with components from this position (lane)
       if(any { $_->{position} == $position } @{$redp->composition->{components}}) {
-        my $input_file = File::Spec->catdir($redp->path($self->archive_path), $redp->file_name(ext => 'spatial_filter.stats'));
-        $c .= qq{ --input_files=$input_file};
+        $qc_in_roots{$self->archive_path} = 1;
       }
     }
+    $c .= q[ ] . join q[ ], (map {"--qc_in=$_"} (keys %qc_in_roots));
   }
   else {
     ## default input_files [none?]

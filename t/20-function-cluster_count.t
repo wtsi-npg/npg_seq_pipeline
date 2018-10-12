@@ -25,6 +25,8 @@ my $archive_path = $recalibrated_path . q{/archive};
 
 cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runParameters.xml";
 
+`touch $recalibrated_path/1234_bfs_fofn.txt`;
+`touch $recalibrated_path/1234_sf_fofn.txt`;
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
 
@@ -37,6 +39,8 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       id_run            => 1234,
       timestamp         => q{20100907-142417},
       is_indexed        => 0,
+      bfs_fofp_name => q{},
+      sf_fofp_name => q{},
     );
   } q{obtain object ok};
 
@@ -69,6 +73,7 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
   is ($values->{'default'}, 1, 'the queue is set to default for the definition');
  
   my $command = sprintf q[npg_pipeline_check_cluster_count --id_run=1234 --lanes=1 --lanes=2 --lanes=3 --lanes=4 --lanes=5 --lanes=6 --lanes=7 --lanes=8 --bam_basecall_path=%s --runfolder_path=%s %s %s], $bam_basecall_path, $analysis_runfolder_path, join(q{ }, (map {qq[--bfs_paths=$archive_path/lane$_/qc]} (1..8))), join(q{ }, (map {qq[--sf_paths=$archive_path/lane$_/qc]} (1..8)));
+# my $command = sprintf q[npg_pipeline_check_cluster_count --id_run=1234 --lanes=1 --lanes=2 --lanes=3 --lanes=4 --lanes=5 --lanes=6 --lanes=7 --lanes=8 --bam_basecall_path=%s --runfolder_path=%s --bfs_fofp_name=%s/1234_bfs_fofn.txt --sf_fofp_name=%s/1234_sf_fofn.txt], $bam_basecall_path, $analysis_runfolder_path, $recalibrated_path, $recalibrated_path;
 
   is ($da->[0]->command, $command, 'correct command');
 }
@@ -88,6 +93,8 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       bam_basecall_path => $bam_basecall_path,
       archive_path => $archive_path,
       bfs_paths    => [ qq[$archive_path/lane1/qc] ],
+      bfs_fofp_name => q{},
+      sf_fofp_name => q{},
     );
   } q{obtain object ok};
 
@@ -109,6 +116,8 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       bam_basecall_path => $bam_basecall_path,
       archive_path => $archive_path,
       bfs_paths    => [ qq{$archive_path/lane3/qc} ],
+      bfs_fofp_name => q{},
+      sf_fofp_name => q{},
     );
   } q{obtain object ok};
   
@@ -147,6 +156,8 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       archive_path => $archive_path,
       bfs_paths    => [ qq{$archive_path/lane1/qc} ],
       sf_paths     => [ qq{$archive_path/lane1/qc} ],
+      bfs_fofp_name => q{},
+      sf_fofp_name => q{},
     );
   } q{obtain object ok};
 
@@ -163,11 +174,12 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
   my $analysis_runfolder_path = 't/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX';
   my $bam_basecall_path = "$analysis_runfolder_path/Data/Intensities/BAM_basecalls_20130122-085552";
   my $archive_path = "$bam_basecall_path/PB_cal_bam/archive";
+  my $recalibrated_path = "$bam_basecall_path/PB_cal_bam";
   my $qc_path = "$archive_path/qc";
 
   my $common_command = sub {
     my $p = shift;
-    return sprintf q{$EXECUTABLE_NAME bin/npg_pipeline_check_cluster_count --id_run 8747 --bam_basecall_path %s --qc_path %s --lanes %d --bfs_paths=%s/lane%d/qc --sf_paths=%s/lane%d/qc}, $bam_basecall_path, $qc_path, $p, $archive_path, $p, $archive_path, $p;
+    return sprintf q{$EXECUTABLE_NAME bin/npg_pipeline_check_cluster_count --bfs_fofp_name %s/lane%d/8747_bfs_fofn.txt --sf_fofp_name %s/lane%d/8747_sf_fofn.txt --id_run 8747 --bam_basecall_path %s --qc_path %s --lanes %d}, $archive_path, $p, $archive_path, $p, $bam_basecall_path, $qc_path, $p;
   };
 
   my $c;
