@@ -326,7 +326,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   elsif($do_target_regions_stats) {
     push @{$p4_ops->{prune}}, 'fop(phx|hs)_samtools_stats_F0.*_target.*-';
   }
-  elsif( !($human_split and not $do_target_alignment) ){
+  else {
    push @{$p4_ops->{prune}}, 'fop.*samtools_stats_F0.*_target.*-';
   }
 
@@ -556,7 +556,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
         _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $nchs_outfile_label, undef, $rpt_list, $name_root, [$bfs_input_file]),
       ) : q(),
 
-      $do_rna ? (join q( ),
+      ($do_rna and not $is_tag_zero_product) ? (join q( ),
         q{&&},
         _qc_command('rna_seqc', $dp_archive_path, $qc_out_path, undef, undef, $rpt_list, $name_root, [$bfs_input_file]),
       ) : q(),
@@ -616,12 +616,13 @@ sub _do_rna_analysis {
   my $rpt_list = $dp->rpt_list;
   my $reference_genome = $dp->lims->reference_genome;
   my $library_type = $dp->lims->library_type;
+  my $is_tag_zero_product = $dp->is_tag_zero_product;
 
   my $analysis    = $self->_analysis($reference_genome, $rpt_list) // q[];
   my $rna_aligner = $analysis? (grep { /^$analysis$/sxm } @RNA_ANALYSES): q[];
 
   if (!$library_type || $library_type !~ /(?:(?:cD|R)NA|DAFT)/sxm) {
-    if ($library_type && $rna_aligner) {
+    if (($library_type || $is_tag_zero_product) && $rna_aligner) { # if tag#0 is being aligned, it should use an explicitly requested RNA aligner
       $self->debug(qq{$rpt_list - over-riding library type with rna aligner $analysis});
     }
     else {
