@@ -55,11 +55,11 @@ my $archive_path = $recalibrated_path . q{/archive};
   ok (!$d->has_composition, 'no composition is not set');
   is ($d->job_name, q{seqchksum_comparator_1234_20100907-142417},
     'job_name is correct');
+  my $rp = $object->recalibrated_path;
   is ($d->command,
     q{npg_pipeline_seqchksum_comparator --id_run=1234 --lanes=1 --lanes=2} .
     qq{ --archive_path=$archive_path --bam_basecall_path=$bam_basecall_path} .
-    qq{ --input_globs=$archive_path/lane1/1234_1*.cram} .
-    qq{ --input_globs=$archive_path/lane2/1234_2*.cram},
+    qq{ --input_fofg_name=$rp/1234_input_fofn.txt},
     'command is correct');
   ok (!$d->excluded, 'step not excluded');
   ok (!$d->has_num_cpus, 'number of cpus is not set');

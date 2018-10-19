@@ -4,6 +4,7 @@ use Moose;
 use namespace::autoclean;
 use English qw{-no_match_vars};
 use File::Spec;
+use File::Slurp;
 use List::MoreUtils qw{any};
 use Readonly;
 
@@ -74,16 +75,28 @@ sub create {
   $command .= q{ --bam_basecall_path=} . $self->bam_basecall_path();
   $command .= q{ --runfolder_path=}    . $self->runfolder_path();
 
-  for my $dp (@{$self->products->{data_products}}) {
-    my $bfs_path = $dp->qc_out_path($self->archive_path);
-    $command .= sprintf qq{ --bfs_paths=$bfs_path};
+  if($self->bfs_fofp_name) {
+    push my @bfs_fps, (map { $_->qc_out_path($self->archive_path) } @{$self->products->{data_products}});
+    write_file($self->bfs_fofp_name, (map { "$_\n" } @bfs_fps));
+    $command .= q{ --bfs_fofp_name=} . $self->bfs_fofp_name;
+  }
+  else {
+    for my $dp (@{$self->products->{data_products}}) {
+      my $bfs_path = $dp->qc_out_path($self->archive_path);
+      $command .= sprintf qq{ --bfs_paths=$bfs_path};
+    }
   }
 
-  for my $lane_product (@{$self->products->{lanes}}) {
-
-    my $sf_path = $lane_product->qc_out_path($self->archive_path);
-
-    $command .= sprintf qq{ --sf_paths=$sf_path};
+  if($self->sf_fofp_name) {
+    push my @sf_fps, (map { $_->qc_out_path($self->archive_path) } @{$self->products->{lanes}});
+    write_file($self->sf_fofp_name, (map { "$_\n" } @sf_fps));
+    $command .= q{ --sf_fofp_name=} . $self->sf_fofp_name;
+  }
+  else {
+    for my $lane_product (@{$self->products->{lanes}}) {
+      my $sf_path = $lane_product->qc_out_path($self->archive_path);
+      $command .= sprintf qq{ --sf_paths=$sf_path};
+    }
   }
 
   return [
@@ -162,7 +175,29 @@ has 'sf_paths' => ( isa        => 'ArrayRef',
                      is         => 'ro',
                      required   => 0,
                      default  => sub {return [];}, # is sub necessary?
-                   );
+                  );
+
+has 'bfs_fofp_name' => ( isa        => 'Str',
+                         is         => 'ro',
+                         required   => 0,
+                         lazy_build => 1,
+                       );
+sub _build_bfs_fofp_name {
+  my ( $self ) = @_;
+
+  return sprintf q{%s/%s_bfs_fofn.txt}, $self->recalibrated_path, $self->id_run;
+}
+
+has 'sf_fofp_name' => ( isa        => 'Str',
+                        is         => 'ro',
+                        required   => 0,
+                        lazy_build => 1,
+                      );
+sub _build_sf_fofp_name {
+  my ( $self ) = @_;
+
+  return sprintf q{%s/%s_sf_fofn.txt}, $self->recalibrated_path, $self->id_run;
+}
 
 has q{_bustard_pf_cluster_count} => (
   isa => q{Int},
@@ -342,9 +377,18 @@ sub _build__spatial_filter_processed_count {
 sub _populate_spatial_filter_counts {
    my ( $self ) = @_;
 
+  my @sf_paths = ();
+  if($self->sf_fofp_name) {
+#   @sf_paths = read_file($self->sf_fofp_name); # more careful existence/contents check?
+    @sf_paths = read_file($self->sf_fofp_name, chomp => 1, ); # more careful existence/contents check?
+  }
+  else {
+    @sf_paths = @{$self->sf_paths};
+  }
+
   my $spatial_filter_processed_count;
   my $spatial_filter_failed_count;
-  for my $sf_path (@{$self->sf_paths}) {
+  for my $sf_path (@sf_paths) {
 
     my $qc_store = npg_qc::autoqc::qc_store->new( use_db => 0 );
     my $collection = $qc_store->load_from_path($sf_path);
@@ -379,10 +423,19 @@ sub _populate_spatial_filter_counts {
 sub _bam_cluster_count_total {
   my ($self) = @_;
 
-  my $bam_cluster_count = 0;
-  for my $bfs_path (@{$self->bfs_paths}) {
+  my @bfs_paths = ();
+  if($self->bfs_fofp_name) {
+#   @bfs_paths = read_file($self->bfs_fofp_name); # more careful existence/contents check?
+    @bfs_paths = read_file($self->bfs_fofp_name, chomp => 1, ); # more careful existence/contents check?
+  }
+  else {
+    @bfs_paths = @{$self->bfs_paths};
+  }
 
-  my $qc_store = npg_qc::autoqc::qc_store->new( use_db => 0 );
+  my $bam_cluster_count = 0;
+  for my $bfs_path (@bfs_paths) {
+
+    my $qc_store = npg_qc::autoqc::qc_store->new( use_db => 0 );
 
     my $collection = $qc_store->load_from_path( $bfs_path );
 

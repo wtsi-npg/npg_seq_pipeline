@@ -138,8 +138,8 @@ subtest 'spatial_filter' => sub {
   foreach my $de (@{$da}) {
     my $p = $de->composition->get_component(0)->position;
     is ($de->command, sprintf(
-    'qc --check=spatial_filter --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s',
-    qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}.spatial_filter.stats"),
+    'qc --check=spatial_filter --rpt_list=%s --filename_root=%s --qc_out=%s --qc_in=%s',
+    qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", $archive_dir),
     "spatial filter check command for lane $p, lane not indexed");
   }
 
@@ -167,8 +167,8 @@ subtest 'spatial_filter' => sub {
   foreach my $de (@{$da}) {
     my $p = $de->composition->get_component(0)->position;
     my @t = (map { $_->tag_index } ($de->composition->components_list()));
-    is ($de->command, sprintf('qc --check=spatial_filter --rpt_list=%s --filename_root=%s --qc_out=%s %s',
-                                 qq["8747:${p}"], "8747_${p}", "$archive_dir/lane${p}/qc", join q{ }, map { "--input_files=$archive_dir/lane${p}/plex$_/8747_${p}#$_.spatial_filter.stats" } @{$expected_tags{${p}}},  ),
+    is ($de->command, sprintf('qc --check=spatial_filter --rpt_list=%s --filename_root=%s --qc_out=%s --qc_in=%s',
+                                 qq["8747:${p}"], "8747_${p}", "$archive_dir/lane${p}/qc", $archive_dir),
     "spatial filter check command for lane $p, lane is indexed");
   }   
 };
@@ -184,6 +184,7 @@ subtest 'qX_yield' => sub {
     qc_to_run         => q{qX_yield},
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
+    is_paired_read    => 1,
   );
   my $da = $aqc->create();
   ok ($da && (@{$da} == 8), 'eight definitions returned');
@@ -213,6 +214,7 @@ subtest 'qX_yield' => sub {
     lanes             => [4],
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
+    is_paired_read    => 1,
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
@@ -228,6 +230,7 @@ subtest 'qX_yield' => sub {
     qc_to_run         => q{qX_yield},
     timestamp         => q{20090709-123456},
     is_indexed        => 1,
+    is_paired_read    => 1,
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned - lane is not a pool');
@@ -244,6 +247,7 @@ subtest 'qX_yield' => sub {
     qc_to_run         => q{qX_yield},
     timestamp         => q{20090709-123456},
     is_indexed        => 1,
+    is_paired_read    => 0,
   );
 
   $da = $aqc->create();
@@ -253,9 +257,9 @@ subtest 'qX_yield' => sub {
   foreach my $d (@plexes) {
     my $t = $d->composition->get_component(0)->tag_index;
     is ($d->command, sprintf(
-    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s --input_files=%s',
-    qq["1234:8:${t}"], "1234_8#${t}", "$archive_dir/lane8/plex${t}/qc", "$archive_dir/lane8/plex${t}/1234_8#${t}_1.fastqcheck", "$archive_dir/lane8/plex${t}/1234_8#${t}_2.fastqcheck"),
-    "qX_yield command for lane 8 tag $t");
+    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s',
+    qq["1234:8:${t}"], "1234_8#${t}", "$archive_dir/lane8/plex${t}/qc", "$archive_dir/lane8/plex${t}/1234_8#${t}_1.fastqcheck"),
+    "qX_yield command for lane 8 tag $t (s/e)");
   }
 
   fcopy('t/data/run_params/runParameters.hiseq.xml', "$rf_path/runParameters.xml")
@@ -275,6 +279,7 @@ subtest 'ref_match' => sub {
     timestamp         => q{20090709-123456},
     repository        => 't/data/sequence',
     is_indexed        => 1,
+    is_paired_read    => 1,
   );
   my $da = $aqc->create();
   ok ($da && (@{$da} == 3), 'three definitions returned - lane is a pool');

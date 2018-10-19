@@ -14,13 +14,15 @@ use JSON;
 use Cwd;
 use List::Util qw/first/;
 
+use Moose::Util qw(apply_all_roles);
 
 use st::api::lims;
 
 use_ok('npg_pipeline::function::seq_alignment');
 
 my $odir    = abs_path cwd;
-my $dir     = tempdir( CLEANUP => 0);
+my $dir     = tempdir( CLEANUP => 1);
+
 my $logfile = join q[/], $dir, 'logfile';
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
@@ -182,7 +184,11 @@ subtest 'test 1' => sub {
   my $qc_in  = $dir . q[/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/plex3];
   my $qc_out = join q[/], $qc_in, q[qc];
 
+  apply_all_roles($rna_gen, 'npg_pipeline::runfolder_scaffold');
+  $rna_gen->create_product_level();
+
   my $da = $rna_gen->generate();
+
   ok ($da && @{$da} == 8, 'array of 8 definitions is returned');
 
   my $unique_string = $rna_gen->_job_id();
@@ -192,7 +198,7 @@ subtest 'test 1' => sub {
     qq{ && qc --check bam_flagstats --filename_root 12597_4#3 --qc_in $qc_in --qc_out $qc_out --rpt_list "12597:4:3" --input_files $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/plex3/12597_4#3.bam} .
     qq{ && qc --check bam_flagstats --filename_root 12597_4#3_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "12597:4:3" --subset phix --input_files $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/plex3/12597_4#3.bam} .
      q{ && qc --check alignment_filter_metrics --filename_root 12597_4#3 --qc_in $PWD --qc_out }.$qc_out.q{ --rpt_list "12597:4:3" --input_files 12597_4#3_bam_alignment_filter_metrics.json} .
-    qq{ && qc --check rna_seqc --id_run 12597 --position 4 --qc_in $qc_in --qc_out } . $qc_out . q{ --tag_index 3}.
+    qq{ && qc --check rna_seqc --filename_root 12597_4#3 --qc_in $qc_in --qc_out } . $qc_out . qq{ --rpt_list "12597:4:3" --input_files $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/plex3/12597_4#3.bam}.
      q{ '};
 
   my $mem = 32000;
@@ -309,6 +315,9 @@ subtest 'test 2' => sub {
   } 'no error creating an object';
   is ($rna_gen->id_run, 13066, 'id_run inferred correctly');
 
+  apply_all_roles($rna_gen, 'npg_pipeline::runfolder_scaffold');
+  $rna_gen->create_product_level();
+
   my $da = $rna_gen->generate();
   ok ($da && @{$da} == 2, 'array of two definitions is returned');
   my $d = _find($da, 8);
@@ -320,13 +329,14 @@ subtest 'test 2' => sub {
     qq{ && qc --check bam_flagstats --filename_root 13066_8 --qc_in $qc_in --qc_out $qc_out --rpt_list "13066:8" --input_files $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive/lane8/13066_8.bam} .
     qq{ && qc --check bam_flagstats --filename_root 13066_8_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "13066:8" --subset phix --input_files $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive/lane8/13066_8.bam} .
      q{ && qc --check alignment_filter_metrics --filename_root 13066_8 --qc_in $PWD --qc_out } . $qc_out . qq{ --rpt_list "13066:8" --input_files 13066_8_bam_alignment_filter_metrics.json} .
-    qq{ && qc --check rna_seqc --id_run 13066 --position 8 --qc_in $qc_in --qc_out } . $qc_out . q{ '};
+    qq{ && qc --check rna_seqc --filename_root 13066_8 --qc_in $qc_in --qc_out } . $qc_out . qq{ --rpt_list "13066:8" --input_files $dir/140529_HS18_13066_A_C3C3KACXX/Data/Intensities/BAM_basecalls_20140606-133530/no_cal/archive/lane8/13066_8.bam '};
 
   is ($d->command, $command, 'correct command for lane 8');
   is ($d->memory, 32000, 'memory');
 
   my $l = st::api::lims->new(id_run => 13066, position => 8);
-  is ($rna_gen->_do_rna_analysis($l), 1, 'do RNA analysis on pair end RNA library with transcriptome index');
+  my $dp = npg_pipeline::product->new(lims => $l, rpt_list => q[13066:8],);
+  is ($rna_gen->_do_rna_analysis($dp), 1, 'do RNA analysis on pair end RNA library with transcriptome index');
 
   # lane 7 to be aligned with STAR and thus requires more memory
   $d = _find($da, 7);
@@ -361,6 +371,9 @@ subtest 'test 2' => sub {
   } 'no error creating an object';
   is ($rna_gen->id_run, 17550, 'id_run inferred correctly');
 
+  apply_all_roles($rna_gen, 'npg_pipeline::runfolder_scaffold');
+  $rna_gen->create_product_level();
+
   $da = $rna_gen->generate();
   $d = _find($da, 3, 1);
   is ($d->memory, 38000, 'more memory');
@@ -376,16 +389,19 @@ subtest 'test 2' => sub {
   # Library type is RNA, but no transcriptome version has been defined in
   # reference: Homo_sapiens (GRCh38_15)
   $l = st::api::lims->new(id_run => 17550, position => 6, tag_index => 2);
-  is ($rna_gen->_do_rna_analysis($l), 0,
+  $dp = npg_pipeline::product->new(lims => $l, rpt_list => q[17550:6:2],);
+  is ($rna_gen->_do_rna_analysis($dp), 0,
     'no transcriptome version in reference, so no RNA analysis');
  
   #Library type is not RNA: ChIP-Seq Auto
   $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 1);
-  is ($rna_gen->_do_rna_analysis($l), 0, 'not an RNA library, so no RNA analysis');
+  $dp = npg_pipeline::product->new(lims => $l, rpt_list => q[17550:8:1],);
+  is ($rna_gen->_do_rna_analysis($dp), 0, 'not an RNA library, so no RNA analysis');
 
   #Library type is not RNA: ChIP-Seq Auto but RNA aligner defined
   $l = st::api::lims->new(id_run => 17550, position => 8, tag_index => 2);
-  is ($rna_gen->_do_rna_analysis($l), 1, 'not an RNA library but RNA aligner, so RNA analysis');
+  $dp = npg_pipeline::product->new(lims => $l, rpt_list => q[17550:8:2],);
+  is ($rna_gen->_do_rna_analysis($dp), 1, 'not an RNA library but RNA aligner, so RNA analysis');
 
   ##HiSeq, run 25269, single end RNA libraries suitable for RNA analysis
   $runfolder = q{180228_HS35_25269_B_H7WJ3BCX2};
@@ -416,7 +432,8 @@ subtest 'test 2' => sub {
 
   # Single end RNA library: suitable for RNA analysis
   $l = st::api::lims->new(id_run => 25269, position => 1, tag_index => 1);
-  is ($rna_gen->_do_rna_analysis($l), 1, 'do RNA analysis on single end RNA library');
+  $dp = npg_pipeline::product->new(lims => $l, rpt_list => q[25269:1:1],);
+  is ($rna_gen->_do_rna_analysis($dp), 1, 'do RNA analysis on single end RNA library');
 };
 
 subtest 'test 3' => sub {
@@ -458,6 +475,9 @@ subtest 'test 3' => sub {
      q{ && qc --check alignment_filter_metrics --filename_root 18472_2#1 --qc_in $PWD --qc_out } .$qc_out.q{ --rpt_list "18472:2:1" --input_files 18472_2#1_bam_alignment_filter_metrics.json}.
      q{ '};
 
+  apply_all_roles($se_gen, 'npg_pipeline::runfolder_scaffold');
+  $se_gen->create_product_level();
+
   my $da = $se_gen->generate();
   my $d = _find($da, 2, 1);
   is ($d->command, $command, 'correct command for lane 2 plex 1');
@@ -498,10 +518,12 @@ subtest 'test 4' => sub {
   is ($hsx_gen->id_run, 16839, 'id_run inferred correctly');
 
   my $l = st::api::lims->new(id_run => 16839, position => 1, tag_index => 0);
-  is ($hsx_gen->_ref($l, 'fasta'), $fasta_ref, 'reference for tag zero');
-  is ($hsx_gen->_ref($l, 'target'), $target_file, 'target for tag zero');
+  my $dp = npg_pipeline::product->new(lims => $l, rpt_list => q[16839:1:0],);
+  is ($hsx_gen->_ref($dp, 'fasta'), $fasta_ref, 'reference for tag zero');
+  is ($hsx_gen->_ref($dp, 'target'), $target_file, 'target for tag zero');
   my $k = st::api::lims->new(id_run => 16839, position => 1, tag_index => 1);
-  is ($hsx_gen->_ref($k, 'target'), $target_file, 'target file for tag 1');
+  my $kdp = npg_pipeline::product->new(lims => $k, rpt_list => q[16839:1:1],);
+  is ($hsx_gen->_ref($kdp, 'target'), $target_file, 'target file for tag 1');
 
   my $old_ss = $ENV{'NPG_CACHED_SAMPLESHEET_FILE'};
   my $ss = slurp $old_ss;
@@ -514,9 +536,11 @@ subtest 'test 4' => sub {
   # new samplesheet has miltiple references in lane 1
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = $new_ss;
   $l = st::api::lims->new(id_run => 16839, position => 1, tag_index => 0);
+  $dp = npg_pipeline::product->new(lims => $l, rpt_list => q[16839:1:0],);
+
   my $other_ref;
-  warnings_exist { $other_ref = $hsx_gen->_ref($l, 'fasta') }
-    qr/Multiple references for st::api::lims object, driver - samplesheet/,
+  warnings_exist { $other_ref = $hsx_gen->_ref($dp, 'fasta') }
+    qr/Multiple references for 16839:1:0/,
     'warning about multiple references';
   is ($other_ref, undef, 'multiple references in a lane - no reference for tag zero returned');
 
@@ -533,6 +557,9 @@ subtest 'test 4' => sub {
     qq{ && qc --check bam_flagstats --filename_root 16839_7#7_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "16839:7:7" --subset phix --input_files $dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane7/plex7/16839_7#7.bam} .
      q{ && qc --check alignment_filter_metrics --filename_root 16839_7#7 --qc_in $PWD --qc_out } .$qc_out.q{ --rpt_list "16839:7:7" --input_files 16839_7#7_bam_alignment_filter_metrics.json}.
      q{ '};
+
+  apply_all_roles($hsx_gen, 'npg_pipeline::runfolder_scaffold');
+  $hsx_gen->create_product_level();
 
   my $da = $hsx_gen->generate();
   my $d = _find($da, 7, 7);
@@ -591,6 +618,10 @@ subtest 'test 5' => sub {
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16807, 'id_run inferred correctly');
+
+  apply_all_roles($hs_gen, 'npg_pipeline::runfolder_scaffold');
+  $hs_gen->create_product_level();
+
   my $da = $hs_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane6/plex1};
@@ -669,6 +700,9 @@ subtest 'test 6' => sub {
 
   is ($bait_gen->id_run, 20268, 'id_run inferred correctly');
 
+  apply_all_roles($bait_gen, 'npg_pipeline::runfolder_scaffold');
+  $bait_gen->create_product_level();
+
   my $da = $bait_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
@@ -737,6 +771,10 @@ subtest 'test 7' => sub {
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16850, 'id_run inferred correctly');
+
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
   my $da = $ms_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
@@ -806,6 +844,10 @@ subtest 'test 8' => sub {
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16756, 'id_run inferred correctly');
+
+  apply_all_roles($hs_gen, 'npg_pipeline::runfolder_scaffold');
+  $hs_gen->create_product_level();
+
   my $da = $hs_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
@@ -878,6 +920,10 @@ subtest 'test 9' => sub {
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16866, 'id_run inferred correctly');
+
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
   my $da = $ms_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
@@ -950,6 +996,10 @@ subtest 'test 10' => sub {
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 20990, 'id_run (20990) inferred correctly');
+
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
   my $da = $ms_gen->generate();
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
@@ -1020,6 +1070,10 @@ subtest 'test 11' => sub {
     )
   } 'no error creating an object';
   is ($chromium_gen->id_run, 16839, 'id_run inferred correctly');
+
+  apply_all_roles($chromium_gen, 'npg_pipeline::runfolder_scaffold');
+  $chromium_gen->create_product_level();
+
   my $da = $chromium_gen->generate();
 
   my $qc_in  = qq{$dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane1/plex1};
@@ -1089,6 +1143,10 @@ subtest 'test 12' => sub {
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 24135, 'id_run inferred correctly');
+
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
   my $da = $ms_gen->generate();
 
   my $unique_string = $ms_gen->_job_id();
@@ -1097,7 +1155,7 @@ subtest 'test 12' => sub {
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
   my $qc_out = qq{$qc_in/qc};
   my $tmp_plex_dir = $tmp_dir . '/24135_1#1';
-  my $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/24135_1#1_p4s2_pv_in.json -export_param_vals 24135_1#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#1.json && viv.pl -s -x -v 3 -o viv_24135_1#1.log run_24135_1#1.json  && qc --check bam_flagstats --filename_root 24135_1#1 --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:1" --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex1/24135_1#1.bam --skip_markdups_metrics && qc --check bam_flagstats --filename_root 24135_1#1_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:1" --subset phix --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex1/24135_1#1.bam && qc --check alignment_filter_metrics --filename_root 24135_1#1 --qc_in \$PWD --qc_out $qc_out --rpt_list "24135:1:1" --input_files 24135_1#1_bam_alignment_filter_metrics.json && qc --check genotype_call --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 1 '};
+  my $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/24135_1#1_p4s2_pv_in.json -export_param_vals 24135_1#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#1.json && viv.pl -s -x -v 3 -o viv_24135_1#1.log run_24135_1#1.json  && qc --check bam_flagstats --filename_root 24135_1#1 --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:1" --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex1/24135_1#1.bam --skip_markdups_metrics && qc --check bam_flagstats --filename_root 24135_1#1_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:1" --subset phix --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex1/24135_1#1.bam && qc --check alignment_filter_metrics --filename_root 24135_1#1 --qc_in \$PWD --qc_out $qc_out --rpt_list "24135:1:1" --input_files 24135_1#1_bam_alignment_filter_metrics.json && qc --check genotype_call --filename_root 24135_1#1 --qc_in $qc_in --qc_out $qc_out} . q{ --rpt_list "24135:1:1" '};
  
   my $d = _find($da, 1, 1);
   is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 1'); 
@@ -1105,7 +1163,7 @@ subtest 'test 12' => sub {
   $qc_in  = qq{$bc_path/archive/lane1/plex0};
   $qc_out = qq{$qc_in/qc};
   $tmp_plex_dir = $tmp_dir . '/24135_1#0'; 
-  $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/24135_1#0_p4s2_pv_in.json -export_param_vals 24135_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#0.json && viv.pl -s -x -v 3 -o viv_24135_1#0.log run_24135_1#0.json  && qc --check bam_flagstats --filename_root 24135_1#0 --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:0" --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex0/24135_1#0.bam --skip_markdups_metrics && qc --check bam_flagstats --filename_root 24135_1#0_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:0" --subset phix --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex0/24135_1#0.bam && qc --check alignment_filter_metrics --filename_root 24135_1#0 --qc_in \$PWD --qc_out $qc_out --rpt_list "24135:1:0" --input_files 24135_1#0_bam_alignment_filter_metrics.json && qc --check genotype_call --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 0 '};
+  $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/24135_1#0_p4s2_pv_in.json -export_param_vals 24135_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#0.json && viv.pl -s -x -v 3 -o viv_24135_1#0.log run_24135_1#0.json  && qc --check bam_flagstats --filename_root 24135_1#0 --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:0" --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex0/24135_1#0.bam --skip_markdups_metrics && qc --check bam_flagstats --filename_root 24135_1#0_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:0" --subset phix --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex0/24135_1#0.bam && qc --check alignment_filter_metrics --filename_root 24135_1#0 --qc_in \$PWD --qc_out $qc_out --rpt_list "24135:1:0" --input_files 24135_1#0_bam_alignment_filter_metrics.json && qc --check genotype_call --filename_root 24135_1#0 --qc_in $qc_in --qc_out $qc_out} . q{ --rpt_list "24135:1:0" '};
 
   $d = _find($da, 1, 0);
   is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 0');
@@ -1113,7 +1171,7 @@ subtest 'test 12' => sub {
   $qc_in  = qq{$bc_path/archive/lane1/plex2};
   $qc_out = qq{$qc_in/qc};
   $tmp_plex_dir = $tmp_dir . '/24135_1#2';
-  $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/24135_1#2_p4s2_pv_in.json -export_param_vals 24135_1#2_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#2.json && viv.pl -s -x -v 3 -o viv_24135_1#2.log run_24135_1#2.json  && qc --check bam_flagstats --filename_root 24135_1#2 --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:2" --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex2/24135_1#2.bam --skip_markdups_metrics && qc --check bam_flagstats --filename_root 24135_1#2_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:2" --subset phix --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex2/24135_1#2.bam && qc --check alignment_filter_metrics --filename_root 24135_1#2 --qc_in \$PWD --qc_out $qc_out --rpt_list "24135:1:2" --input_files 24135_1#2_bam_alignment_filter_metrics.json && qc --check genotype_call --id_run 24135 --position 1 --qc_in $qc_in --qc_out $qc_out --tag_index 2 '};
+  $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/24135_1#2_p4s2_pv_in.json -export_param_vals 24135_1#2_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#2.json && viv.pl -s -x -v 3 -o viv_24135_1#2.log run_24135_1#2.json  && qc --check bam_flagstats --filename_root 24135_1#2 --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:2" --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex2/24135_1#2.bam --skip_markdups_metrics && qc --check bam_flagstats --filename_root 24135_1#2_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:2" --subset phix --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex2/24135_1#2.bam && qc --check alignment_filter_metrics --filename_root 24135_1#2 --qc_in \$PWD --qc_out $qc_out --rpt_list "24135:1:2" --input_files 24135_1#2_bam_alignment_filter_metrics.json && qc --check genotype_call --filename_root 24135_1#2 --qc_in $qc_in --qc_out $qc_out} . q{ --rpt_list "24135:1:2" '};
   
   $d = _find($da, 1, 2);
   is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 2');

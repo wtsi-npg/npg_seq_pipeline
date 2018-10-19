@@ -57,11 +57,10 @@ sub generate {
 
     my $p = $lane_product->composition->{components}->[0]->{position}; # there should be only one element in components
 
-    my $l = $alims->{$p};
-#   my $l = $lane_product->lims;
+    my $l = $lane_product->lims;
     my $tag_list_file = q{};
 
-    if ($l->tags) { # adequate proxy for is_multiplexed?
+    if($l->is_pool) {
       $self->info(qq{Lane $p is indexed, generating tag list});
 
       $tag_list_file = npg_pipeline::cache::barcodes->new(
@@ -274,6 +273,7 @@ sub _generate_command_params {
                     scramble_reference_fasta => $self->_default_phix_ref(q{fasta}, $self->repository),
                     s1_se_pe => ($self->is_paired_read)? q{pe} : q{se},
                     aln_filter_value => q{0x900},
+                    s1_output_format => $self->s1_s2_intfile_format,
                   );
   my %p4_ops = ( splice => [], prune => [], );
 
@@ -413,21 +413,17 @@ sub _generate_command_params {
       $p4_params{bid_max_no_calls} = $self->general_values_conf()->{single_plex_decode_max_no_calls};
       $p4_params{bid_convert_low_quality_to_no_call_flag} = q[--convert-low-quality];
     }
-    if(not $self->adapterfind) {
-      push @{$p4_ops{splice}}, q[bamadapterfind];
-    }
-    push @{$p4_ops{prune}}, q[tee_split:unsplit_bam-];
+    push @{$p4_ops{prune}}, q[tee_split:unsplit_bam-]; # no lane-level bam/cram when plexed
   }
   else {
     $self->info(q{P4 stage1 analysis on non-plexed lane});
 
-    if(not $self->adapterfind) {
-      push @{$p4_ops{splice}}, q[tee_i2b:baf-bamcollate:];
-    }
-    else {
-      push @{$p4_ops{splice}}, q[bamadapterfind:-bamcollate:];
-    }
-    push @{$p4_ops{prune}}, q[tee_split:split_bam-];
+    push @{$p4_ops{splice}}, q[tee_i2b:baf-bamcollate:]; # skip decode when unplexed
+    push @{$p4_ops{prune}}, q[tee_split:split_bam-]; # no split output when unplexed
+  }
+
+  if(not $self->adapterfind) {
+    push @{$p4_ops{splice}}, q[bamadapterfind];
   }
 
   # cluster count (used to calculate FRAC for bam subsampling)
