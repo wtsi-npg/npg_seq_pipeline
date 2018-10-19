@@ -1,4 +1,4 @@
- use strict;
+use strict;
 use warnings;
 use Test::More tests => 5;
 use Test::Exception;
@@ -59,7 +59,7 @@ subtest 'top level scaffold' => sub {
 };
 
 subtest 'product level scaffold, NovaSeq all lanes' => sub {
-  plan tests => 87;
+  plan tests => 99;
 
   my $util = t::util->new();
   my $rfh = $util->create_runfolder();
@@ -88,6 +88,15 @@ subtest 'product level scaffold, NovaSeq all lanes' => sub {
   push @dirs, (map {join q[/], $_, 'tileviz'} @original);
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
   map { ok (-d $_, "$_ created") } map {join q[/], $apath, $_} @dirs;
+
+  for my $lane (@original) {
+    my $file = join q[/], $apath, $lane, 'tileviz.html';
+    ok (-f $file, "tileviz lane index file $file exists");
+    my $content = read_file $file;
+    my ($p) = $lane =~ /(\d)\Z/;
+    like ($content, qr/Run 999 Lane $p Tileviz Report/, 'title exists');
+    like ($content, qr/No tileviz data available for this lane/, 'info exists');
+  }
   
   @original = map {'plex' . $_} (0 .. 21, 888);
   @dirs = @original;

@@ -36,7 +36,17 @@ sub create_product_level {
   $self->_create_tileviz_index();
 
   my @errors = $self->make_dir(@dirs);
+
+  if ( !@errors ) {
+    #####
+    # Create tileviz home page for every lane. If tileviz finds an alignment it
+    # can use in lane-level data, it will produce output and will overwrite this file.
+    #
+    $self->_create_tileviz_lane_indexes();
+  }
+
   my $m = join qq[\n], 'Created the following directories:', @dirs;
+
   return {'msgs' => [$m], 'errors' => \@errors};
 }
 
@@ -157,7 +167,8 @@ sub _create_tileviz_index {
   my $self = shift;
 
   my %lanes =  map { $_->composition->get_component(0)->position,
-                     $_->tileviz_path(q[..]) } @{$self->products->{'lanes'}};
+                     $_->tileviz_path(q[..]) . q[.html] } # tileviz.html page on the
+                     @{$self->products->{'lanes'}};       # same level as tileviz directory
   my $title = join q[ ], 'Run', $self->id_run(), 'Tileviz', 'Reports';
   my @content = ();
   push @content, "<html><head><title>$title</title></head>";
@@ -168,9 +179,30 @@ sub _create_tileviz_index {
   }
   push @content, '</html>';
 
-  my $index = File::Spec->catfile($self->_tileviz_index_dir_path(),
+  my $tileviz_index_dir_path = $self->_tileviz_index_dir_path();
+  my $index = File::Spec->catfile($tileviz_index_dir_path,
                                   $TILEVIZ_INDEX_FILE_NAME);
   write_file($index, map { $_ . qq[\n] } @content);
+
+  return;
+}
+
+sub _create_tileviz_lane_indexes {
+  my $self = shift;
+
+  my %lanes =  map { $_->composition->get_component(0)->position,
+                     $_->tileviz_path($self->archive_path) . q[.html] } # tileviz.html page on the
+                     @{$self->products->{'lanes'}};                     # same level as tileviz directory
+
+  foreach my $lane (sort keys %lanes) {
+    my $title = join q[ ], 'Run', $self->id_run(), 'Lane', $lane, 'Tileviz', 'Report';
+    my @content = ();
+    push @content, "<html><head><title>$title</title></head>";
+    push @content, "<h2>$title</h2>";
+    push @content, 'No tileviz data available for this lane';
+    push @content, '</html>';
+    write_file($lanes{$lane}, map { $_ . qq[\n] } @content);
+  }
 
   return;
 }
