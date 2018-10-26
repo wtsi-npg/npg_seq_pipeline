@@ -22,7 +22,9 @@ sub run {
 
   my $submitted = 0;
   foreach my $run ($self->runs_with_status($ARCHIVAL_PENDING)) {
-    (not $submitted) or last;
+    $submitted && last; # Return after submitting one run, give
+                        # this run a chance to change status to
+                        # 'archival in progress'.
     my $id_run = $run->id_run();
     try {
       $self->info();
