@@ -64,6 +64,7 @@ sub _token_job {
     identifier    => $self->id_run(),
     job_name      => $job_name,
     command       => '/bin/true',
+    num_cpus      => [0],
     queue         =>
       $npg_pipeline::function::definition::SMALL_QUEUE,
   );

@@ -11,7 +11,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
 use_ok('npg_pipeline::function::start_stop');
 
 subtest 'start and stop functions' => sub {
-  plan tests => 14;
+  plan tests => 18;
 
   my $ss = npg_pipeline::function::start_stop->new(
     id_run         => 1234,
@@ -28,6 +28,8 @@ subtest 'start and stop functions' => sub {
     is ($d->command, '/bin/true', 'command');
     is ($d->job_name, $m . '_1234_pname', "job name for $m");
     is ($d->queue, 'small', 'small queue');
+    ok ($d->has_num_cpus, 'number of cpus is set');
+    is_deeply ($d->num_cpus, [0], 'zero cpus');
   }
 };
 
