@@ -300,6 +300,8 @@ sub _generate_command_params {
   $p4_params{qc_check_qc_out_dir} = $lane_product->qc_out_path($self->archive_path); # used by tag_metrics qc check
   $p4_params{tileviz_dir} = $lane_product->tileviz_path($self->archive_path); # used for tileviz
   $p4_params{outdatadir} = $no_cal_path; # base for all (most?) outputs
+  $p4_params{lane_archive_path} = $lp_archive_path;
+  $p4_params{rpt_list} = $lane_product->rpt_list;
   $p4_params{subsetsubpath} = $lane_product->short_files_cache_path($archive_path);
   $p4_params{seqchksum_file} = $bam_basecall_path . q[/] . $id_run . q[_] . $position . q{.post_i2b.seqchksum}; # full name for the lane-level seqchksum file
   $p4_params{filtered_bam} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam}; # full name for the spatially filtered lane-level file

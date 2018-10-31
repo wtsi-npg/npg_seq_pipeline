@@ -195,7 +195,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
   my $fqc1_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '1'));
   my $fqc2_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '2'));
-  my $seqchksum_orig_file = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => '.orig.seqchksum'));
+  my $seqchksum_orig_file = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'orig.seqchksum'));
 
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});

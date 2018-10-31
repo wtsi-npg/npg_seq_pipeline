@@ -169,6 +169,8 @@ subtest 'check_save_arguments' => sub {
           'fqc2' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1/1234_1_2.fastqcheck',
           'fqct' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1/1234_1_t.fastqcheck',
           's1_output_format' => 'cram',
+          'rpt_list' => '1234:1',
+          'lane_archive_path' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1',
         },
     ],
     'ops' => {
@@ -289,6 +291,8 @@ subtest 'check_save_arguments_minimap2' => sub {
           'fqc2' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1/1234_1_2.fastqcheck',
           'fqct' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1/1234_1_t.fastqcheck',
           's1_output_format' => 'cram',
+          'lane_archive_path' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1',
+          'rpt_list' => '1234:1',
         },
     ],
     'ops' => {
