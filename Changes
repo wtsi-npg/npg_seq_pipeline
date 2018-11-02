@@ -21,7 +21,9 @@ LIST OF CHANGES
  - minor changes for bcfstats qc check
  - executor type (lsf or wr) can be specified in the configuration file
  - for wr executor, set per-job priority, increase priority for p4 stage 1
-   job and its predecessors
+   job and its predecessors, set priority of status and start-stop jobs
+   to zero so that they are executed immediately, but still within dependencies
+   and memory constraints
  - correction of build method for rpt_list attribute in product
  - make bam_cluster_count_check pipeline job dependent on
      qc_spatial_filter (in function_list_central.json)

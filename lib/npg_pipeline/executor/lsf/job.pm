@@ -327,7 +327,7 @@ sub _dependencies {
 sub _cpu_host {
   my $self = shift;
   my $s;
-  if ($self->jnum_cpus()) {
+  if ($self->jnum_cpus() && $self->jnum_cpus()->[0] != 0) {
     $s = q[-n ] . join q[,], @{$self->jnum_cpus()};
     if ($self->jnum_hosts()) {
       $s .= sprintf q( -R 'span[hosts=%i]'), $self->jnum_hosts();
