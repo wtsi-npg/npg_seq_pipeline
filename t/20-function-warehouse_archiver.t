@@ -20,7 +20,7 @@ my @wh_methods = qw/update_warehouse update_ml_warehouse/;
 use_ok('npg_pipeline::function::warehouse_archiver');
 
 subtest 'warehouse updates' => sub {
-  plan tests => 33;
+  plan tests => 37;
 
   my $c = npg_pipeline::function::warehouse_archiver->new(
     run_folder          => q{123456_IL2_1234},
@@ -60,6 +60,7 @@ subtest 'warehouse updates' => sub {
     is ($d->command, $command, "command for $m");
     is ($d->job_name, $job_name, "job name for $m");
     is ($d->queue, 'lowload', 'queue');
+    is_deeply ($d->num_cpus, [0], 'zero CPUs required');
     if ($postqcc) {
       is ($d->command_preexec, "[ -d '${recalibrated_path_in_outgoing}' ]",
         "preexec command for $m");
