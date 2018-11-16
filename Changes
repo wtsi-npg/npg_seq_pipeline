@@ -41,6 +41,7 @@ LIST OF CHANGES
    return a list with one item when there is only one component in
    the composition (instead of an empty list)
  - tileviz index file with links to lane-level tileviz reports is created
+ - seq_alignment supports HISAT2 aligner for RNA libraries
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline
