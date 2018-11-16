@@ -8,8 +8,7 @@ use File::Slurp;
 use File::Basename;
 use File::Spec;
 use JSON;
-use List::Util qw(sum uniq);
-use List::MoreUtils qw(all none);
+use List::Util qw(sum uniq all none);
 use open q(:encoding(UTF8));
 
 use npg_tracking::data::reference::find;
@@ -890,8 +889,6 @@ objects for all entities of the run eligible for alignment and split.
 =item JSON
 
 =item List::Util
-
-=item List::MoreUtils
 
 =item open
 
