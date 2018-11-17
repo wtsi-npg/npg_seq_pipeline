@@ -108,19 +108,28 @@ sub generate {
 
   my @definitions = ();
 
-  my $ref = {};
   for my $dp (@{$self->products->{data_products}}) {
-
-    my $subsets_composition = { composition => from_json($dp->composition->freeze), subsets => [ $dp->file_name(ext => 'cram', suffix => 'phix'), ], };
-    $ref->{'memory'} = $MEMORY; # reset to default
-    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets_composition);
+    my $ref = {};
+    $ref->{'memory'} = $MEMORY;
+    my $subsets = [qw/phix/];
+    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets);
     push @definitions, $self->_create_definition($ref, $dp);
-
-    my $composition_file = File::Spec->catdir($dp->path($self->archive_path), $dp->file_name(ext => 'json', suffix => 'composition'));
-    write_file($composition_file, encode_json($subsets_composition));
+    $self->_save_compositions($dp, $subsets);
   }
 
   return \@definitions;
+}
+
+sub _save_compositions {
+  my ($self, $dp, $subsets) = @_;
+  my @products = map { $dp->subset_as_product($_) } @{$subsets};
+  push @products, $dp;
+  foreach my $p (@products) {
+    write_file(
+      $p->file_path($p->path($self->archive_path), suffix => 'composition', ext => 'json'),
+      $p->composition->freeze(with_class_names => 1));
+  }
+  return;
 }
 
 sub _create_definition {
@@ -141,7 +150,7 @@ sub _create_definition {
 }
 
 sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
-  my ( $self, $dp, $ref, $subsets_composition) = @_;
+  my ( $self, $dp, $ref, $subsets) = @_;
 
   ########################################################
   # derive base parameters from supplied data_product (dp)
@@ -480,10 +489,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   # update subsets for composition file
   if($human_split) {
-    push @{$subsets_composition->{subsets}}, $dp->file_name(ext => 'cram', suffix => $human_split);
+    push @{$subsets}, $human_split;
   }
   if($nchs) {
-    push @{$subsets_composition->{subsets}}, $dp->file_name(ext => 'cram', suffix => 'human');
+    push @{$subsets}, 'human';
   }
 
   # write p4 parameters to file
