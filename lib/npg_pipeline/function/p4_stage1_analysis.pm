@@ -211,6 +211,7 @@ sub _create_definition {
     num_hosts       => $NUM_HOSTS,
     num_cpus        => $self->_num_cpus(),
     memory          => $self->general_values_conf()->{'p4_stage1_memory'} || $MEMORY,
+    queue           => $npg_pipeline::function::definition::P4_STAGE1_QUEUE,
     command         => $command,
     command_preexec => $self->repos_pre_exec_string(),
     composition     => $self->create_composition($l)

@@ -88,7 +88,7 @@ subtest 'check_save_arguments' => sub {
   is ($d->created_on, q{20090709-123456}, 'created on');
   is ($d->identifier, 1234, 'identifier');
   ok (!$d->excluded, 'step is not excluded');
-  is ($d->queue, 'default', 'default queue');
+  is ($d->queue, 'p4stage1', 'special queue');
   is ($d->job_name, 'p4_stage1_analysis_1234_20090709-123456', 'job name');
   is ($d->fs_slots_num, 4, '4 sf slots');
   is ($d->num_hosts, 1, 'one host');
@@ -210,7 +210,7 @@ subtest 'check_save_arguments_minimap2' => sub {
   is ($d->created_on, q{20090709-123456}, 'created on');
   is ($d->identifier, 1234, 'identifier');
   ok (!$d->excluded, 'step is not excluded');
-  is ($d->queue, 'default', 'default queue');
+  is ($d->queue,  'p4stage1', 'special queue');
   is ($d->job_name, 'p4_stage1_analysis_1234_20090709-123456', 'job name');
   is ($d->fs_slots_num, 4, '4 sf slots');
   is ($d->num_hosts, 1, 'one host');
