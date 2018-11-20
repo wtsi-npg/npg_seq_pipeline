@@ -126,7 +126,7 @@ sub _save_compositions {
   push @products, $dp;
   foreach my $p (@products) {
     write_file(
-      $p->file_path($p->path($self->archive_path), suffix => 'composition', ext => 'json'),
+      $p->file_path($p->path($self->archive_path), ext => 'composition.json'),
       $p->composition->freeze(with_class_names => 1));
   }
   return;
