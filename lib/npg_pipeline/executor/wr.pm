@@ -20,6 +20,7 @@ with 'npg_pipeline::executor::options' => {
                     no_array_cpu_limit
                     array_cpu_limit/ ]
 };
+with 'npg_pipeline::base::config';
 
 our $VERSION = '0';
 
@@ -27,8 +28,11 @@ Readonly::Scalar my $VERTEX_GROUP_DEP_ID_ATTR_NAME => q[wr_group_id];
 Readonly::Scalar my $DEFAULT_MEMORY                => 2000;
 Readonly::Scalar my $VERTEX_JOB_PRIORITY_ATTR_NAME => q[job_priority];
 Readonly::Scalar my $WR_ENV_LIST_DELIM             => q[,];
-Readonly::Array  my @ENV_VARS_TO_PROPAGATE         =>
-              qw/PATH PERL5LIB CLASSPATH NPG_CACHED_SAMPLESHEET_FILE/;
+Readonly::Array  my @ENV_VARS_TO_PROPAGATE => qw/ PATH
+                                                  PERL5LIB
+                                                  CLASSPATH
+                                                  NPG_CACHED_SAMPLESHEET_FILE
+                                                  NPG_REPOSITORY_ROOT /;
 
 =head1 NAME
 
@@ -50,6 +54,20 @@ L<wr workflow runner|https://github.com/VertebrateResequencing/wr>.
 ##################################################################
 ############## Public methods ####################################
 ##################################################################
+
+=head2 wr_conf
+
+=cut
+
+has 'wr_conf' => (
+  isa        => 'HashRef',
+  is         => 'ro',
+  lazy_build => 1,
+);
+sub _build_wr_conf {
+  my $self = shift;
+  return $self->read_config($self->conf_file_path('wr.json'));
+}
 
 =head2 execute
 
@@ -148,13 +166,23 @@ sub _definition4job {
   $def->{'memory'} = $d->has_memory() ? $d->memory() : $DEFAULT_MEMORY;
   $def->{'memory'} .= q[M];
 
-  # priority needs to be a number, rather than string, in JSON for wr,hence the addition
+  # priority needs to be a number, rather than string, in JSON for wr,
+  # hence the addition
   $def->{'priority'} = 0 + $self->function_graph4jobs->get_vertex_attribute(
                            $function_name, $VERTEX_JOB_PRIORITY_ATTR_NAME);
 
   if ($d->has_num_cpus()) {
     use warnings FATAL => qw(numeric);
     $def->{'cpus'} = int $d->num_cpus()->[0];
+  }
+
+  if ($d->queue) {
+    my $options = $self->wr_conf()->{$d->queue . '_queue'};
+    if ($options) {
+      while (my ($key, $value) = each %{$options}) {
+        $def->{$key} = $value;
+      }
+    }
   }
 
   my $log_file = sub {
