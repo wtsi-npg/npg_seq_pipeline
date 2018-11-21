@@ -20,10 +20,14 @@ LIST OF CHANGES
    npg_pipeline::runfolder_scaffold role
  - minor changes for bcfstats qc check
  - executor type (lsf or wr) can be specified in the configuration file
- - for wr executor, set per-job priority, increase priority for p4 stage 1
-   job and its predecessors, set priority of status and start-stop jobs
-   to zero so that they are executed immediately, but still within dependencies
-   and memory constraints
+ - wr executor:
+     set per-job priority;
+     increase priority for p4 stage 1 job and its predecessors;
+     set priority of status and start-stop jobs to zero so that
+     they are executed immediately, but still within dependencies
+     and memory constraints;
+     map queues to arbitrary wr options, in particular, a special queue
+     for p4_stage1 maps to a specific cloud host flavour
  - correction of build method for rpt_list attribute in product
  - make bam_cluster_count_check pipeline job dependent on
      qc_spatial_filter (in function_list_central.json)

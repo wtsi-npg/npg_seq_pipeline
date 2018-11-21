@@ -12,9 +12,10 @@ our $VERSION = '0';
 
 with Storage('format' => 'JSON');
 
-Readonly::Scalar our $LOWLOAD_QUEUE => q[lowload];
-Readonly::Scalar our $SMALL_QUEUE   => q[small];
-Readonly::Scalar my  $DEFAULT_QUEUE => q[default];
+Readonly::Scalar our $LOWLOAD_QUEUE   => q[lowload];
+Readonly::Scalar our $SMALL_QUEUE     => q[small];
+Readonly::Scalar our $P4_STAGE1_QUEUE => q[p4stage1];
+Readonly::Scalar my  $DEFAULT_QUEUE   => q[default];
 
 Readonly::Array  my @MUST_HAVE_ATTRS => qw/
                                 job_name
@@ -306,7 +307,7 @@ sub BUILD {
     if (!$self->has_queue) {
       $self->_set_queue($DEFAULT_QUEUE);
     } else {
-      if ($self->queue() !~ /\A $DEFAULT_QUEUE | $SMALL_QUEUE | $LOWLOAD_QUEUE \Z/smx) {
+      if ($self->queue() !~ /\A $DEFAULT_QUEUE | $SMALL_QUEUE | $LOWLOAD_QUEUE | $P4_STAGE1_QUEUE \Z/smx) {
         croak sprintf q(Unrecognised queue '%s'), $self->queue();
       }
     }

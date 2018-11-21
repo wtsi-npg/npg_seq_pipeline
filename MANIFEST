@@ -18,6 +18,7 @@ data/config_files/function_list_central_qc_run.json
 data/config_files/function_list_post_qc_review.json
 data/config_files/general_values.ini
 data/config_files/lsf.ini
+data/config_files/wr.json
 lib/npg_pipeline/base.pm
 lib/npg_pipeline/base/config.pm
 lib/npg_pipeline/base/options.pm
