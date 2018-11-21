@@ -1116,7 +1116,7 @@ subtest 'test 11' => sub {
 };
 
 subtest 'test 12' => sub {
-  plan tests => 5;
+  plan tests => 11;
 
   my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
@@ -1148,6 +1148,17 @@ subtest 'test 12' => sub {
   $ms_gen->create_product_level();
 
   my $da = $ms_gen->generate();
+
+  my $base = "$bc_path/archive/lane1";
+  my @files = ('plex1/24135_1#1_phix.composition.json',
+               'plex1/24135_1#1.composition.json',
+               'plex2/24135_1#2_phix.composition.json',
+               'plex2/24135_1#2.composition.json',
+               'plex0/24135_1#0_phix.composition.json',
+               'plex0/24135_1#0.composition.json');
+  for my $f (@files) {
+    ok (-f "$base/$f", "file $f exists");
+  }
 
   my $unique_string = $ms_gen->_job_id();
   my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
