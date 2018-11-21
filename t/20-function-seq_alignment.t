@@ -150,7 +150,7 @@ sub _find {
 }
 
 subtest 'test 1' => sub {
-  plan tests => 31;
+  plan tests => 33;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/rna_seq/samplesheet_12597.csv];
   my $runfolder = q{140409_HS34_12597_A_C333TACXX};
@@ -255,6 +255,12 @@ subtest 'test 1' => sub {
   } 'no error creating an object (forcing on phix split)';
 
   $da = $rna_gen->generate();
+
+  my $base = "$bc_path/archive/lane5";
+  ok (-f "$base/plex168/12597_5#168.composition.json",
+    'composition JSON file exists for spiked phix tag');
+  ok (!-e "$base/plex168/12597_5#168_phix.composition.json",
+    'composition JSON file does not exist for split out phix');
 
   #####  phiX control libraries
   $qc_in =~ s{lane4/plex0}{lane5/plex168}smg;

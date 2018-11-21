@@ -111,7 +111,7 @@ sub generate {
   for my $dp (@{$self->products->{data_products}}) {
     my $ref = {};
     $ref->{'memory'} = $MEMORY;
-    my $subsets = [qw/phix/];
+    my $subsets = [];
     $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets);
     push @definitions, $self->_create_definition($ref, $dp);
     $self->_save_compositions($dp, $subsets);
@@ -172,6 +172,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   my $qc_out_path = $dp->qc_out_path($archive_path);
   my $cache10k_path = $dp->short_files_cache_path($archive_path);
+
+  if (!$spike_tag) {
+    push @{$subsets}, 'phix';
+  }
 
   my (@incrams, @spatial_filter_rg_value);
   for my $rpt_elem (map { $_->rpt_list } ($dp->components_as_products)) {
