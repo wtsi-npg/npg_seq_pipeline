@@ -249,17 +249,16 @@ sub runfolder_path4run {
 
   my $class =  Moose::Meta::Class->create_anon_class(
     roles => [ qw/npg_tracking::illumina::run::folder::location
+                  npg_tracking::illumina::run::folder
                   npg_tracking::illumina::run::short_info/ ]
   );
   $class->add_attribute(q(npg_tracking_schema),
                         {isa => 'npg_tracking::Schema', is => q(ro)});
-
-  my $path = $class->new_object(
+  my $obj = $class->new_object(
     npg_tracking_schema => $self->npg_tracking_schema,
     id_run              => $id_run,
-  )->runfolder_path;
-
-  return abs_path($path);
+  );
+  return (abs_path( $obj->runfolder_path), $obj);
 }
 
 sub run {

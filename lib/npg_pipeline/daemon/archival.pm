@@ -12,6 +12,7 @@ Readonly::Scalar our $POST_QC_REVIEW_SCRIPT => q{npg_pipeline_post_qc_review};
 Readonly::Scalar our $ARCHIVAL_PENDING      => q{archival pending};
 Readonly::Scalar  my $ARCHIVAL_IN_PROGRESS  => q{archival in progress};
 Readonly::Scalar  my $MAX_NUMBER_NV_RUNS_IN_ARCHIVAL => 4;
+Readonly::Scalar  my $OLD_DATED_DIR_NAME    => q[20180717];
 
 sub build_pipeline_script_name {
   return $POST_QC_REVIEW_SCRIPT;
@@ -34,11 +35,18 @@ sub run {
       } else {
         if ( $self->staging_host_match($run->folder_path_glob) &&
              (!$self->_instrument_model_is_novaseq($run) || $self->_can_start_nv_archival()) ) {
-          $self->check_lims_link($run);
-          $self->run_command($id_run, $self->_generate_command($id_run));
-          $self->info();
-          $self->info(qq{Submitted run $id_run for archival});
-          $submitted += 1;
+          my ($rf_path, $rf_obj) = $self->runfolder_path4run($id_run);
+          if (-e $rf_path) {
+            # No qc directory in archive directory in the new run folder structure.
+            my $old_style_rf = -e $rf_obj->qc_path;
+            $self->check_lims_link($run);
+            $self->run_command($id_run, $self->_generate_command($rf_path, $old_style_rf));
+            $self->info();
+            $self->info(qq{Submitted run $id_run for archival});
+            $submitted += 1;
+	  } else {
+            $self->info(qq{Runfolder $rf_path for run $id_run does not exist on this host, skipping...});
+	  }
         }
       }
     } catch {
@@ -50,14 +58,33 @@ sub run {
 }
 
 sub _generate_command {
-  my ($self, $id_run) = @_;
+  my ($self, $rf_path, $old_style_rf) = @_;
 
   my $cmd = $self->pipeline_script_name();
-  $cmd = $cmd . q{ --verbose --runfolder_path } . $self->runfolder_path4run($id_run);
-  my $path = join q[:], $self->local_path(), $ENV{PATH};
+  $cmd = $cmd . qq{ --verbose --runfolder_path $rf_path};
+  my $local_path = $self->local_bin(); # This script's bin as
+                                       # an absolute path.
+  my $saved_local_path = $local_path;
+  if ($old_style_rf) {
+    $self->info(q{Old style run folder});
+    $local_path =~ s{/201[89]\d\d\d\d/bin\Z}{/$OLD_DATED_DIR_NAME/bin}xms;
+    if ($local_path eq $saved_local_path) {
+       $self->logwarn(q{Failed to change path}); # Cannot exit here since
+                                                 # all tests will fail.
+       $old_style_rf = 0;
+    } else {
+      $self->info(qq{Will prepend old dated directory $local_path to PATH});
+    }
+  }
+
+  my $path = join q[:], $local_path, $ENV{PATH};
   my $prefix = $self->daemon_conf()->{'command_prefix'};
   if (not defined $prefix) { $prefix=q(); }
   $cmd = qq{export PATH=$path; $prefix$cmd};
+  if ($old_style_rf) { # The pipeline scripts should be able to locate
+                       # lib/perl5 directory parallel to their bin.
+    $cmd = qq{unset PERL5LIB; $cmd};
+  }
 
   return $cmd;
 }

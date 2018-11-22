@@ -1,7 +1,8 @@
 use strict;
 use warnings;
-use Test::More tests => 21;
+use Test::More tests => 30;
 use Test::Exception;
+use Test::Warn;
 use Cwd;
 use List::MoreUtils qw{any};
 use Log::Log4perl qw(:levels);
@@ -40,6 +41,11 @@ extends 'npg_pipeline::daemon::archival';
 sub runfolder_path4run { return '/some/path' }
 sub check_lims_link { return {}; } #to prevent access to ml_warehouse
 
+package test_archival_runner2;
+use Moose;
+extends 'npg_pipeline::daemon::archival';
+sub check_lims_link { return {}; } #to prevent access to ml_warehouse
+
 ########test class definition end########
 
 package main;
@@ -57,11 +63,15 @@ package main;
   lives_ok { $runner->run(); } q{no croak on $runner->run()};
   my $prefix = $runner->daemon_conf()->{command_prefix};
   $prefix ||= q[];
-  like($runner->_generate_command(1234), qr/;\s*\Q$prefix\Enpg_pipeline_/,
+  like($runner->_generate_command('/some/path'), qr/;\s*\Q$prefix\Enpg_pipeline_/,
     q{generated command is correct});
-  like($runner->_generate_command(1234),
+  like($runner->_generate_command('/some/path'),
     qr/npg_pipeline_post_qc_review --verbose --runfolder_path \/some\/path/,
     q{generated command is correct});
+  
+  warning_like { $runner->_generate_command('/some/path', 1)}
+    qr/Failed to change path/, 'failed to change path';
+
   ok(!$runner->green_host, 'host is not in green datacentre');
 
   $schema->resultset(q[Run])->find(2)->update_run_status('archival pending', 'pipeline');
@@ -81,7 +91,7 @@ package main;
     'run 2 updated to be in red room');
   is($schema->resultset(q[Run])->find(3)->folder_path_glob(), undef,
     'run 3 folder path glob undefined, will never match any host');
-  my $runner = test_archival_runner->new(
+  my $runner = test_archival_runner2->new(
     pipeline_script_name    => '/bin/true',
     npg_tracking_schema     => $schema
   );
@@ -93,23 +103,80 @@ package main;
     sleep 1;
     $s2 = $runner->run();
   } q{no croak running through twice - potentially as a daemon process};
-  is (join(q[ ],sort {$a <=> $b} keys %{$runner->seen}), '2 1234', 'correct list of seen runs');
-  is ($s1, 1, 'one run submittted on the first attempt');
-  is ($s2, 1, 'one run submittted on the second attempt');
+
+  is (scalar keys %{$runner->seen}, 0, 'no runs attempted');
+  is ($s1, 0, 'no runs submitted on the first attempt');
+  is ($s2, 0, 'no runs submitted on the second attempt');
+
+  my $dir = "$temp_directory/sf26";
+  my $rf_name = 'rf1';
+  my $rf_info1 = $util->create_runfolder($dir,
+    {'runfolder_name' => $rf_name, 'analysis_path' => 'BAM_basecalls_20181117'});
+  my $run = $schema->resultset(q[Run])->find(1234);
+  $run->update({folder_path_glob => $dir, folder_name => $rf_name});
+  $run->set_tag('pipeline','staging');
+
+  $dir = "$temp_directory/somesf";
+  $rf_name = 'rf2'; 
+  my $rf_info2 = $util->create_runfolder($dir,
+    {'runfolder_name' => $rf_name, 'analysis_path' => 'BAM_basecalls_20181116'});
+  $run = $schema->resultset(q[Run])->find(2);
+  $run->update({folder_path_glob => $dir,folder_name => $rf_name});
+  $run->set_tag('pipeline','staging');
+
+  lives_ok {
+    $s1 = $runner->run();
+    sleep 1;
+    $s2 = $runner->run();
+  } q{no croak running through twice - potentially as a daemon process};
+
+  is (join(q[ ],sort {$a <=> $b} keys %{$runner->seen}), '2 1234',
+    'correct list of seen runs');
+  is ($s1, 1, 'one run submitted on the first attempt');
+  is ($s2, 1, 'one run submitted on the second attempt');
+
+  $runner = test_archival_runner2->new(
+    pipeline_script_name    => '/bin/true',
+    npg_tracking_schema     => $schema
+  );
+
+  mkdir join(q[/], $rf_info1->{'archive_path'}, 'qc');
+   warning_like {$s1 = $runner->run()}
+    qr/Failed to change path/, 'failed to change path';
+  sleep 1;
+  $s2 = $runner->run();
+  is (join(q[ ],sort {$a <=> $b} keys %{$runner->seen}), '2 1234',
+    'correct list of seen runs');
+  is ($s1, 1, 'one run submitted on the first attempt');
+  is ($s2, 1, 'one run submitted on the second attempt');    
 }
 
 subtest 'limiting number of NovaSeq runs being archived' => sub {
   plan tests => 8;
 
-  my $runner = test_archival_runner->new(
+  $schema->resultset('RunStatus')->search({id_run => [2,3,1234]})->delete();
+
+  my @id_runs_nv = sort { $a <=> $b } qw/26487 26486 25806 25751 25723 26671/;
+  my @runs = $schema->resultset('Run')->search(
+    {id_run => \@id_runs_nv}, {order_by => 'id_run'});
+  is (scalar @runs, scalar @id_runs_nv, 'correct runs in test db');
+
+  foreach my $run ( @runs ) {
+    my $id_run = $run->id_run;
+    $run->update_run_status('archival pending', 'pipeline');
+    $run->set_tag('pipeline','staging');
+    my $dir = "$temp_directory/nvs";
+    my $rf_name = "rf_$id_run";
+    $util->create_runfolder($dir,
+      {'runfolder_name' => $rf_name, 'analysis_path' => "BAM_basecalls_$id_run"});
+    $run->update({folder_path_glob => $dir, folder_name => $rf_name});
+    sleep 1;
+  }
+
+  my $runner = test_archival_runner2->new(
     pipeline_script_name    => '/bin/true',
     npg_tracking_schema     => $schema
   );
-
-  my @id_runs_nv = sort { $a <=> $b } qw/26487 26486 25806 25751 25723 26671/;
-  my @runs = $schema->resultset('Run')->search({id_run => \@id_runs_nv}, {order_by => 'id_run'});
-  is (scalar @runs, scalar @id_runs_nv, 'correct runs in test db');
-  map { sleep 1; $_->update_run_status('archival pending', 'pipeline') } @runs;
 
   my $s = $runner->run();
   is ($s, 1, 'one run submitted');

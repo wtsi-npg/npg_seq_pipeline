@@ -31,7 +31,9 @@ LIST OF CHANGES
  - correction of build method for rpt_list attribute in product
  - make bam_cluster_count_check pipeline job dependent on
      qc_spatial_filter (in function_list_central.json)
- - archival daemon - limit number of simultaneously archived NovaSeq runs
+ - archival daemon:
+     limit number of simultaneously archived NovaSeq runs;
+     use preset dated directory for archival of old-style run folders
  - wr executor - explicitly propagate pipeline's environment to jobs
  - illumina archiver job:
      exclude discontinued verbose attribute and paths that are not needed

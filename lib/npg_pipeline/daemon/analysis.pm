@@ -80,7 +80,8 @@ sub _process_one_run {
   if ($inherited_priority > 0) { #not sure we curate what we get from LIMs
     $arg_refs->{'job_priority'} += $inherited_priority;
   }
-  $arg_refs->{'rf_path'}  = $self->runfolder_path4run($id_run);
+  my ($p) = $self->runfolder_path4run($id_run);
+  $arg_refs->{'rf_path'}  = $p;
   $arg_refs->{'software'} = $self->_software_bundle($arg_refs->{'studies'});
 
   $self->run_command( $id_run, $self->_generate_command( $arg_refs ));

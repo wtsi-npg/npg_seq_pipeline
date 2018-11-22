@@ -373,7 +373,8 @@ subtest 'compute runfolder path' => sub {
                npg_tracking_schema => $schema,
                iseq_flowcell       => $wh_schema->resultset('IseqFlowcell')
              );
-  is( $runner->runfolder_path4run(1234), $rf, 'runfolder path is correct');
+  my ($p) = $runner->runfolder_path4run(1234);
+  is( $p, $rf, 'runfolder path is correct');
 };
 
 1;
