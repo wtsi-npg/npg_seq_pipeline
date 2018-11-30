@@ -48,6 +48,8 @@ LIST OF CHANGES
  - explicit iRODS destination collection is set for iRODS loaders,
    /seq/illumina/runs/RUN_ID for NovaSeq runs and /seq/RUN_ID
    for the rest
+ - explicitly use iRODS loader from an 'old' dated directory for
+   old style runfolders
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline
