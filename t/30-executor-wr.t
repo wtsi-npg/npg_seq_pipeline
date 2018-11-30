@@ -68,7 +68,7 @@ subtest 'wr add command' => sub {
     function_graph          => Graph::Directed->new(),
     commands4jobs_file_path => $file);
   is ($e->_wr_add_command(),
-    "wr add --cwd /tmp --disk 0 --override 2 --retries 0 --env $env_string -f $file",
+    "wr add --cwd /tmp --disk 0 --override 2 --retries 1 --env $env_string -f $file",
     'wr command');
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_1234.csv';
@@ -76,13 +76,13 @@ subtest 'wr add command' => sub {
   like  ($env_string, qr/NPG_CACHED_SAMPLESHEET_FILE/,
     'env contains samplesheet');
   is ($e->_wr_add_command(),
-    "wr add --cwd /tmp --disk 0 --override 2 --retries 0 --env $env_string -f $file",
+    "wr add --cwd /tmp --disk 0 --override 2 --retries 1 --env $env_string -f $file",
     'wr command');
   local $ENV{NPG_REPOSITORY_ROOT} = 't/data';
   $env_string = $get_env->();
   like  ($env_string, qr/NPG_REPOSITORY_ROOT/, 'env contains ref repository');
   is ($e->_wr_add_command(),
-    "wr add --cwd /tmp --disk 0 --override 2 --retries 0 --env $env_string -f $file",
+    "wr add --cwd /tmp --disk 0 --override 2 --retries 1 --env $env_string -f $file",
     'wr command');
 }; 
 
