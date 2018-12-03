@@ -15,11 +15,18 @@ with q{npg_pipeline::function::util};
 our $VERSION = '0';
 
 Readonly::Scalar my $QC_SCRIPT_NAME           => q{qc};
-Readonly::Scalar my $MEMORY_REQ               => 6000;
-Readonly::Scalar my $MEMORY_REQ_BWA           => 8000;
-Readonly::Scalar my $MEMORY_REQ_ADAPTER       => 1500;
-Readonly::Scalar my $MEMORY_REQ_BCFSTATS      => 4000;
 Readonly::Scalar my $REFMATCH_ARRAY_CPU_LIMIT => 8;
+
+# Memory requirements, MB
+Readonly::Scalar my $MEMORY_REQ_DEFAULT       => 2000;
+Readonly::Hash   my %MEMORY_REQUIREMENTS      => (
+                        insert_size      => 8000,
+                        sequence_error   => 8000,
+                        ref_match        => 6000,
+                        pulldown_metrics => 6000,
+                        bcfstats         => 4000,
+                        adapter          => 1500,
+                                                 );
 
 has q{qc_to_run}       => (isa      => q{Str},
                            is       => q{ro},
@@ -157,7 +164,7 @@ sub _create_definition_object {
   $ref->{'job_name'}        = join q{_}, $QC_SCRIPT_NAME, $qc_to_run,
                                          $self->id_run(), $self->timestamp();
   $ref->{'fs_slots_num'}    = 1;
-  $ref->{'composition'}     = $product->{composition};
+  $ref->{'composition'}     = $product->composition;
   $ref->{'command'}         = $command;
 
   if ($qc_to_run eq q[adapter]) {
@@ -184,17 +191,8 @@ sub _create_definition_object {
     $ref->{'command_preexec'} = $self->repos_pre_exec_string();
   }
 
-  ##no critic (ControlStructures::ProhibitCascadingIfElse)
-  if ($qc_to_run =~ /insert_size|sequence_error/smx ) {
-    $ref->{'memory'} = $MEMORY_REQ_BWA;
-  } elsif ($qc_to_run  =~ /ref_match|pulldown_metrics/smx) {
-    $ref->{'memory'} = $MEMORY_REQ;
-  } elsif ($qc_to_run eq q[adapter]) {
-    $ref->{'memory'} = $MEMORY_REQ_ADAPTER;
-  } elsif ($qc_to_run eq q[bcfstats]) {
-    $ref->{'memory'} = $MEMORY_REQ_BCFSTATS;
-  }
-  ##use critic
+  $ref->{'memory'} = $MEMORY_REQUIREMENTS{$qc_to_run} || $MEMORY_REQ_DEFAULT;
+
   return npg_pipeline::function::definition->new($ref);
 }
 
