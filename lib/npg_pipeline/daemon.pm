@@ -234,7 +234,7 @@ sub run_command {
     $self->info(qq{COMMAND OUTPUT: $output});
   }
 
-  return;
+  return $error ? 0 : 1;
 }
 
 sub local_path {
@@ -344,6 +344,9 @@ Method inherited from npg_pipeline::base::config.
 =head2 iseq_flowcell
 
 =head2 run_command
+
+Runs the pipeline script. Returns 1 if successful, 0 in
+case of error.
 
 =head2 runs_with_status
 
