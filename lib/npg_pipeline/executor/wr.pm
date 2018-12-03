@@ -217,7 +217,7 @@ sub _wr_add_command {
           '--cwd'        => '/tmp',
           '--disk'       => 0,
           '--override'   => 2,
-          '--retries'    => 0,
+          '--retries'    => 1,
           '--env'        => q['] . $stack . q['],
                        );
 
