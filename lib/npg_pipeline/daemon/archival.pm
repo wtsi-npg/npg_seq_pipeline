@@ -35,10 +35,11 @@ sub run {
         if ( $self->staging_host_match($run->folder_path_glob) &&
              (!$self->_instrument_model_is_novaseq($run) || $self->_can_start_nv_archival()) ) {
           $self->check_lims_link($run);
-          $self->run_command($id_run, $self->_generate_command($id_run));
-          $self->info();
-          $self->info(qq{Submitted run $id_run for archival});
-          $submitted += 1;
+          if ($self->run_command($id_run, $self->_generate_command($id_run))) {
+            $self->info();
+            $self->info(qq{Submitted run $id_run for archival});
+            $submitted += 1;
+          }
         }
       }
     } catch {
