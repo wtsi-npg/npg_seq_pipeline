@@ -185,7 +185,7 @@ sub _create_definition_object {
 
   if ($qc_to_run =~ /insert_size|sequence_error/smx ) {
     $ref->{'memory'} = $MEMORY_REQ_BWA;
-  } elsif ($qc_to_run  =~ /ref_match|pulldown_metrics/smx) {
+  } elsif ($qc_to_run  =~ /ref_match|pulldown_metrics|bcfstats/smx) {
     $ref->{'memory'} = $MEMORY_REQ;
   } elsif ($qc_to_run eq q[adapter]) {
     $ref->{'memory'} = $MEMORY_REQ_ADAPTER;
