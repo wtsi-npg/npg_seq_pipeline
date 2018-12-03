@@ -280,6 +280,21 @@ has 'apply_array_cpu_limit' => (
   predicate  => 'has_apply_array_cpu_limit',
 );
 
+=head2 req_group_hint
+
+A hint for the name of the requirements group.
+Can be used by a jobs scheduler to form sets of jobs with
+similar requirements (memory, number of CPUs, disk, duration).
+
+=cut
+
+has 'req_group_hint' => (
+  isa        => 'Str',
+  is         => 'ro',
+  required   => 0,
+  predicate  => 'has_req_group_hint',
+);
+
 =head2 BUILD
 
 Called by Moose at the end of object instantiation.

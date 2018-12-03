@@ -185,6 +185,11 @@ sub _definition4job {
     }
   }
 
+  $def->{'req_grp'}  = $function_name;
+  if ($d->has_req_group_hint()) {
+    $def->{'req_grp'} .= q[-] . $d->req_group_hint();
+  }
+
   my $log_file = sub {
     my $log_name = join q[-], $function_name, $d->created_on(),
       $d->has_composition() ? $d->composition()->freeze2rpt () : $d->identifier();
