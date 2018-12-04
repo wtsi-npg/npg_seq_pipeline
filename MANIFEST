@@ -205,6 +205,7 @@ t/data/hiseq/samplesheet_20268.csv
 t/data/hiseqx/16839_RunInfo.xml
 t/data/hiseqx/samplesheet_16839.csv
 t/data/miseq/16850_RunInfo.xml
+t/data/miseq/16850_runParameters.xml
 t/data/miseq/16866_RunInfo.xml
 t/data/miseq/20990_RunInfo.xml
 t/data/miseq/24135_RunInfo.xml

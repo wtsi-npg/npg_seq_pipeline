@@ -7,13 +7,13 @@ use Readonly;
 use npg_pipeline::function::definition;
 use npg_pipeline::runfolder_scaffold;
 
-extends qw{npg_pipeline::base};
+extends qw{npg_pipeline::function::seq_to_irods_archiver};
 
 our $VERSION = '0';
 
 Readonly::Scalar my $SCRIPT_NAME => 'npg_publish_illumina_logs.pl';
 
-sub create {
+override 'create' => sub {
   my $self = shift;
 
   my $ref = {
@@ -29,8 +29,11 @@ sub create {
     my $future_path = npg_pipeline::runfolder_scaffold
                       ->path_in_outgoing($self->runfolder_path());
     $ref->{'job_name'} = join q{_}, q{publish_illumina_logs}, $self->id_run(), $self->timestamp();
-    $ref->{'command'} = join q[ ], $SCRIPT_NAME, q{--runfolder_path}, $future_path,
-                                                 q{--id_run}, $self->id_run();
+    $ref->{'command'} = join q[ ],
+      $SCRIPT_NAME,
+      q{--collection},     $self->irods_destination_collection(),
+      q{--runfolder_path}, $future_path,
+      q{--id_run},         $self->id_run();
     $ref->{'fs_slots_num'} = 1;
     $ref->{'reserve_irods_slots'} = 1;
     $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
@@ -38,7 +41,11 @@ sub create {
   }
 
   return [npg_pipeline::function::definition->new($ref)];
-}
+};
+
+override 'irods_destination_collection' => sub {
+  return join q[/], super(), q[log];
+};
 
 __PACKAGE__->meta->make_immutable;
 
@@ -68,6 +75,10 @@ type object.
 
   my @job_ids = $fsa->create();
 
+=head2 irods_destination_collection
+
+Returns iRODS destination collection for log files belonging
+to this run.
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT
