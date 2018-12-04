@@ -165,7 +165,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $tags_vec = [ uniq (map { $_->{tag_index} } @{$dp->composition->{components}}) ];
   my $tag_index = $tags_vec->[0]; # assume unique for the moment
   my $is_plex = defined $tag_index;
-
   my $archive_path = $self->archive_path;
   my $dp_archive_path = $dp->path($archive_path);
   my $recal_path= $self->recalibrated_path; #?
@@ -411,6 +410,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
        push @{$p4_ops->{splice}}, 'foptgt_bamsort_coord:-foptgt_bmd_multiway:';
      }
      $skip_target_markdup_metrics = 1;
+     $ref->{'req_group_hint'} = q[gbs_plex];
   }
   elsif($do_rna) {
     my $rna_analysis = $self->_analysis($l->reference_genome, $rpt_list) // $DEFAULT_RNA_ANALYSIS;
@@ -418,6 +418,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
         $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
         $rna_analysis = $DEFAULT_RNA_ANALYSIS;
     }
+    $ref->{'req_group_hint'} = join q[_], q[rna], $rna_analysis;
     my $p4_reference_genome_index;
     if($rna_analysis eq q[star]) {
       # most common read length used for RNA-Seq is 75 bp so indices were generated using sjdbOverhang=74
@@ -467,6 +468,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
       $aligner = $methods_to_aligners{$aligner};
     }
+    $ref->{'req_group_hint'} = join q[_], 'gen', $aligner;
 
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $aligner); }
     if(exists $ref_suffix{$aligner}) {

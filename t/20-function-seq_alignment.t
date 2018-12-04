@@ -150,7 +150,7 @@ sub _find {
 }
 
 subtest 'test 1' => sub {
-  plan tests => 33;
+  plan tests => 35;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/rna_seq/samplesheet_12597.csv];
   my $runfolder = q{140409_HS34_12597_A_C333TACXX};
@@ -220,6 +220,7 @@ subtest 'test 1' => sub {
   is_deeply ($d->num_cpus, [12,16], 'range of cpu numbers');
   is ($d->num_hosts, 1, 'one host');
   is ($d->fs_slots_num, 4, 'four sf slots');
+  is ($d->req_group_hint, 'rna_tophat2', 'rna_tophat2 hint');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
   $qc_in  = $dir . q[/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane4/plex0];
@@ -274,6 +275,7 @@ subtest 'test 1' => sub {
 
   $d = _find($da, 5, 168);
   is ($d->command, $command, 'correct command for position 5, tag 168 (spiked in phix)');
+  is ($d->req_group_hint, 'gen_bwa0_6', 'reg group hint');
 
   #### monoplex (non-RNA Seq)
   $qc_in  =~ s{/lane\d+/plex\d+}{/lane1}; 
@@ -289,7 +291,7 @@ subtest 'test 1' => sub {
 };
 
 subtest 'test 2' => sub {
-  plan tests => 17;
+  plan tests => 19;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
 
@@ -339,6 +341,7 @@ subtest 'test 2' => sub {
 
   is ($d->command, $command, 'correct command for lane 8');
   is ($d->memory, 32000, 'memory');
+  is ($d->req_group_hint, 'rna_tophat2', 'reg group hint');
 
   my $l = st::api::lims->new(id_run => 13066, position => 8);
   my $dp = npg_pipeline::product->new(lims => $l, rpt_list => q[13066:8],);
@@ -385,6 +388,7 @@ subtest 'test 2' => sub {
   is ($d->memory, 38000, 'more memory');
   $d = _find($da, 3, 3);
   is ($d->memory, 38000, 'more memory');
+  is ($d->req_group_hint, 'rna_star', 'reg group hint');
 
   #test: reference genome selected has an unsupported 'analysis' defined
   $l = st::api::lims->new(id_run => 17550, position => 4, tag_index => 1);
@@ -443,7 +447,7 @@ subtest 'test 2' => sub {
 };
 
 subtest 'test 3' => sub {
-  plan tests => 3;
+  plan tests => 4;
   ## single ended v. short , old flowcell, CRIPSR
 
   my $runfolder = q{151215_HS38_18472_A_H55HVADXX};
@@ -487,10 +491,11 @@ subtest 'test 3' => sub {
   my $da = $se_gen->generate();
   my $d = _find($da, 2, 1);
   is ($d->command, $command, 'correct command for lane 2 plex 1');
+  is ($d->req_group_hint, 'gen_bwa0_6', 'reg group hint');
 };
 
 subtest 'test 4' => sub {
-  plan tests => 10;
+  plan tests => 12;
   ##HiSeqX, run 16839_7
 
   my $runfolder = q{150709_HX4_16839_A_H7MHWCCXX};
@@ -570,6 +575,7 @@ subtest 'test 4' => sub {
   my $da = $hsx_gen->generate();
   my $d = _find($da, 7, 7);
   is ($d->command, $command, 'command for HiSeqX run 16839 lane 7 tag 7');
+  is ($d->req_group_hint, 'gen_bwa0_6', 'reg group hint');
 
   $qc_in =~ s{/plex7}{/plex15};
   $qc_out = qq{$qc_in/qc};
@@ -594,6 +600,7 @@ subtest 'test 4' => sub {
 
   $d = _find($da, 7, 0);
   is ($d->command, $command, 'command for HiSeqX run 16839 lane 7 tag 0');
+  is ($d->req_group_hint, 'gen_bwa0_6', 'reg group hint');
 };
 
 subtest 'test 5' => sub {
