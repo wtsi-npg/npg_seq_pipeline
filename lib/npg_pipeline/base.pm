@@ -110,7 +110,7 @@ has q{merge_lanes} => (
 );
 sub _build_merge_lanes {
   my $self = shift;
-  return $self->all_lanes_mergeable;
+  return $self->all_lanes_mergeable && !$self->is_rapid_run();
 }
 
 =head2 lims

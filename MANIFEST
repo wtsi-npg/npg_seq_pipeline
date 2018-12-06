@@ -246,6 +246,7 @@ t/data/runfolder/Data/Intensities/demo_cif.cif
 t/data/runfolder/Data/Intensities/indexed_76cycle_config.xml
 t/data/runfolder/Data/Intensities/single_end_3cycle_1tile_config.xml
 t/data/runfolder/Data/RunInfo.xml
+t/data/run_params/RunInfo.hiseq.rr.xml
 t/data/run_params/runParameters.hiseq.xml
 t/data/run_params/runParameters.hiseqx.upgraded.xml
 t/data/run_params/runParameters.hiseq.rr.xml
