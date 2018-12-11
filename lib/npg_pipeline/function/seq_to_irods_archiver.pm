@@ -99,14 +99,14 @@ sub _find_old_dated_dir {
 
     my $local_bin = $self->local_bin(); # This pipeline script's bin as
                                         # an absolute path.
-    my $saved_local_bin = $local_bin;
-    $local_bin =~ s{/201[89]\d\d\d\d/bin\Z}{/$OLD_DATED_DIR_NAME}xms;
-    if ($local_bin ne $saved_local_bin) {
-      if (-e $local_bin) {
-        $old_dated_dir = $local_bin;
+    my ($dated_directory_root) = $local_bin =~ /(.+)201[89]\d\d\d\d\/bin\Z/xms;
+    if ($dated_directory_root) {
+      $old_dated_dir = $dated_directory_root . $OLD_DATED_DIR_NAME;
+      if (-e $old_dated_dir) {
         $self->info(qq{Found old dated directory $old_dated_dir});
       } else {
-        $self->logwarn(qq{Old dated directory $local_bin does not exist});
+        undef $old_dated_dir;
+        $self->logwarn(qq{Old dated directory $old_dated_dir does not exist});
       }
     } else {
       $self->logwarn(q{Failed to find old dated directory});
