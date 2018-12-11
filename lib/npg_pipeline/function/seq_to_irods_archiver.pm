@@ -15,6 +15,7 @@ Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
 Readonly::Scalar my $NUM_MAX_ERRORS      => 20;
 Readonly::Scalar my $IRODS_ROOT_NON_NOVASEQ_RUNS => q[/seq];
 Readonly::Scalar my $IRODS_ROOT_NOVASEQ_RUNS     => q[/seq/illumina/runs];
+Readonly::Scalar my $OLD_DATED_DIR_NAME  => q[20180717];
 
 sub create {
   my $self = shift;
@@ -66,6 +67,16 @@ sub create {
       $command .= q{ --driver-type } . $self->lims_driver_type;
     }
 
+    my $old_dated_dir = $self->_find_old_dated_dir();
+    if ($old_dated_dir) {
+      # Relying on PATH being the same on the host where we run the
+      # pipeline script and on the host where the job is going to be
+      # executed.
+      $command = join q[;], "export PATH=$old_dated_dir/bin:".$ENV{PATH},
+                            "export PERL5LIB=$old_dated_dir/lib/perl5",
+                            $command;
+    }
+    $self->info(qq[iRODS loader command "$command"]);
     $ref->{'command'} = $command;
   }
 
@@ -77,6 +88,32 @@ sub irods_destination_collection {
   return join q[/],
     $self->platform_NovaSeq() ? $IRODS_ROOT_NOVASEQ_RUNS : $IRODS_ROOT_NON_NOVASEQ_RUNS,
     $self->id_run;
+}
+
+sub _find_old_dated_dir {
+  my $self = shift;
+
+  my $old_dated_dir;
+  if (-e $self->qc_path()) {
+    $self->info('Old style runfolder - have to use old iRODS loader');
+
+    my $local_bin = $self->local_bin(); # This pipeline script's bin as
+                                        # an absolute path.
+    my ($dated_directory_root) = $local_bin =~ /(.+)201[89]\d\d\d\d\/bin\Z/xms;
+    if ($dated_directory_root) {
+      $old_dated_dir = $dated_directory_root . $OLD_DATED_DIR_NAME;
+      if (-e $old_dated_dir) {
+        $self->info(qq{Found old dated directory $old_dated_dir});
+      } else {
+        undef $old_dated_dir;
+        $self->logwarn(qq{Old dated directory $old_dated_dir does not exist});
+      }
+    } else {
+      $self->logwarn(q{Failed to find old dated directory});
+    }
+  }
+
+  return $old_dated_dir;
 }
 
 __PACKAGE__->meta->make_immutable;
