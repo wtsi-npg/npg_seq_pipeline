@@ -13,6 +13,8 @@ our $VERSION = '0';
 
 Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
 Readonly::Scalar my $NUM_MAX_ERRORS      => 20;
+Readonly::Scalar my $IRODS_ROOT_NON_NOVASEQ_RUNS => q[/seq];
+Readonly::Scalar my $IRODS_ROOT_NOVASEQ_RUNS     => q[/seq/illumina/runs];
 
 sub create {
   my $self = shift;
@@ -39,11 +41,13 @@ sub create {
     $publish_log_name .= q{.restart_file.json};
 
     my $max_errors = $self->general_values_conf()->{'publish2irods_max_errors'} || $NUM_MAX_ERRORS;
-    my $command = $PUBLISH_SCRIPT_NAME
-    . q{ --archive_path }   . $self->archive_path()
-    . q{ --runfolder_path } . $self->runfolder_path()
-    . q{ --restart_file }   . (join q[/], $self->archive_path(), $publish_log_name)
-    . q{ --max_errors }     . $max_errors;
+    my $command = join q[ ],
+      $PUBLISH_SCRIPT_NAME,
+      q{--collection},     $self->irods_destination_collection(),
+      q{--archive_path},   $self->archive_path(),
+      q{--runfolder_path}, $self->runfolder_path(),
+      q{--restart_file},   (join q[/], $self->archive_path(), $publish_log_name),
+      q{--max_errors},     $max_errors;
 
     if ($self->qc_run) {
       $command .= q{ --alt_process qc_run};
@@ -66,6 +70,13 @@ sub create {
   }
 
   return [npg_pipeline::function::definition->new($ref)];
+}
+
+sub irods_destination_collection {
+  my $self = shift;
+  return join q[/],
+    $self->platform_NovaSeq() ? $IRODS_ROOT_NOVASEQ_RUNS : $IRODS_ROOT_NON_NOVASEQ_RUNS,
+    $self->id_run;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -95,6 +106,10 @@ Function definition is created as a npg_pipeline::function::definition
 type object.
 
   my @job_ids = $fsa->submit_to_lsf();
+
+=head2 irods_destination_collection
+
+Returns iRODS destination collection for this run.
 
 =head1 DIAGNOSTICS
 

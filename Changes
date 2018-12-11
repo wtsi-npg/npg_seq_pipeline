@@ -45,6 +45,9 @@ LIST OF CHANGES
    return a list with one item when there is only one component in
    the composition (instead of an empty list)
  - tileviz index file with links to lane-level tileviz reports is created
+ - explicit iRODS destination collection is set for iRODS loaders,
+   /seq/illumina/runs/RUN_ID for NovaSeq runs and /seq/RUN_ID
+   for the rest
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline

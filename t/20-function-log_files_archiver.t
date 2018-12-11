@@ -1,7 +1,8 @@
 use strict;
 use warnings;
-use Test::More tests => 32;
+use Test::More tests => 3;
 use Test::Exception;
+use File::Copy;
 use Log::Log4perl qw(:levels);
 use t::util;
 
@@ -14,17 +15,31 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 
 use_ok('npg_pipeline::function::log_files_archiver');
 
-my $rfpath = $util->analysis_runfolder_path();
-my $orfpath = $rfpath;
-$orfpath =~ s/analysis/outgoing/xms;
+subtest 'MiSeq run' => sub {
+  plan tests => 33;
 
-{
+  my $id_run  = 16850;
+  my $rf_name = '150710_MS2_16850_A_MS3014507-500V2';
+  my $paths = $util->create_runfolder(
+    join(q[/], $tmp_dir, 'analysis'),
+    {runfolder_name => $rf_name,
+     analysis_path  => 'BAM_basecalls_20181130'}
+  );
+  my $rfpath  = $paths->{'runfolder_path'};
+  for my $name (qw/RunInfo runParameters/) {
+    my $copied = copy qq(t/data/miseq/${id_run}_${name}.xml),
+                      qq($rfpath/${name}.xml);
+    ok($copied, "$name copied");
+  }
+
+  my $orfpath = $rfpath;
+  $orfpath    =~ s/analysis/outgoing/xms;
+
   my $a  = npg_pipeline::function::log_files_archiver->new(
-    run_folder        => q{123456_IL2_1234},
-    runfolder_path    => $rfpath,
-    recalibrated_path => $rfpath,
-    id_run            => 1234,
-    timestamp         => q{20090709-123456},
+    run_folder        => $rf_name,
+    runfolder_path    => $rfpath,  
+    id_run            => $id_run,
+    timestamp         => q{20181204},
   );
   isa_ok ($a , q{npg_pipeline::function::log_files_archiver});
 
@@ -36,11 +51,12 @@ $orfpath =~ s/analysis/outgoing/xms;
   is ($d->created_by, q{npg_pipeline::function::log_files_archiver},
     'created_by is correct');
   is ($d->created_on, $a->timestamp, 'created_on is correct');
-  is ($d->identifier, 1234, 'identifier is set correctly');
-  is ($d->job_name, q{publish_illumina_logs_1234_20090709-123456},
+  is ($d->identifier, $id_run, 'identifier is set correctly');
+  is ($d->job_name, qq{publish_illumina_logs_${id_run}_20181204},
     'job_name is correct');
-  is ($d->command,
-    qq{npg_publish_illumina_logs.pl --runfolder_path $orfpath --id_run 1234},
+  is ($d->command, join(q[ ], 'npg_publish_illumina_logs.pl',
+    qq{--collection \/seq\/$id_run/log},
+    qq{--runfolder_path $orfpath --id_run $id_run}),
     'command is correct');
   is ($d->command_preexec, qq{[ -d '$orfpath' ]}, 'preexec command');
   ok (!$d->has_composition, 'composition not set');
@@ -53,12 +69,13 @@ $orfpath =~ s/analysis/outgoing/xms;
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
   $a  = npg_pipeline::function::log_files_archiver->new(
-    run_folder        => q{123456_IL2_1234},
-    runfolder_path    => $rfpath,
-    recalibrated_path => $rfpath,
-    id_run            => 1234,
-    no_irods_archival => 1,
+    run_folder        => $rf_name,
+    runfolder_path    => $rfpath,  
+    id_run            => $id_run,
+    timestamp         => q{20181204},
+    no_irods_archival => 1
   );
+
   ok ($a->no_irods_archival, q{archival switched off});
   $da = $a->create();
   ok ($da && @{$da} == 1, 'an array with one definition is returned');
@@ -67,15 +84,15 @@ $orfpath =~ s/analysis/outgoing/xms;
   is ($d->created_by, q{npg_pipeline::function::log_files_archiver},
     'created_by is correct');
   is ($d->created_on, $a->timestamp, 'created_on is correct');
-  is ($d->identifier, 1234, 'identifier is set correctly');
+  is ($d->identifier, $id_run, 'identifier is set correctly');
   ok ($d->excluded, 'step is excluded');
 
   $a  = npg_pipeline::function::log_files_archiver->new(
-    run_folder        => q{123456_IL2_1234},
-    runfolder_path    => $rfpath,
-    recalibrated_path => $rfpath,
-    id_run            => 1234,
-    local             => 1,
+    run_folder        => $rf_name,
+    runfolder_path    => $rfpath,  
+    id_run            => $id_run,
+    timestamp         => q{20181204},
+    local             => 1
   );
   ok ($a->no_irods_archival, q{archival switched off});
   $da = $a->create();
@@ -85,8 +102,31 @@ $orfpath =~ s/analysis/outgoing/xms;
   is ($d->created_by, q{npg_pipeline::function::log_files_archiver},
     'created_by is correct');
   is ($d->created_on, $a->timestamp, 'created_on is correct');
-  is ($d->identifier, 1234, 'identifier is set correctly');
+  is ($d->identifier, $id_run, 'identifier is set correctly');
   ok ($d->excluded, 'step is excluded');
-}
+};
+
+subtest 'NovaSeq run' => sub {
+  plan tests => 3;
+
+  my $id_run  = 26291;
+  my $rf_name = '180709_A00538_0010_BH3FCMDRXX';
+  my $rfpath  = qq{t/data/novaseq/$rf_name};
+
+  my $a  = npg_pipeline::function::log_files_archiver->new(
+    run_folder        => $rf_name,
+    runfolder_path    => $rfpath,  
+    id_run            => $id_run,
+  );
+
+  my $da = $a->create();
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
+  my $d = $da->[0];
+  isa_ok($d, q{npg_pipeline::function::definition});
+  is ($d->command, join(q[ ], 'npg_publish_illumina_logs.pl',
+    qq{--collection \/seq\/illumina\/runs\/$id_run\/log},
+    qq{--runfolder_path $rfpath --id_run $id_run}),
+    'command is correct');
+};
 
 1;
