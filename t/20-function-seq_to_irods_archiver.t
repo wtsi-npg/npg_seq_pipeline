@@ -32,7 +32,7 @@ subtest 'MiSeq run' => sub {
   }
   my $archive_path = $paths->{'archive_path'};
   my $col = qq{/seq/$id_run};
-  my $restart_file = qr/${archive_path}\/publish_illumina_run_${id_run}_20181204-\d+\.restart_file\.json/;
+  my $restart_file = qr/${archive_path}\/publish_seq_data2irods_${id_run}_20181204-\d+\.restart_file\.json/;
 
   my $a = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder        => $rf_name,
@@ -52,13 +52,13 @@ subtest 'MiSeq run' => sub {
     'created_by is correct');
   is ($d->created_on, $a->timestamp, 'created_on is correct');
   is ($d->identifier, $id_run, 'identifier is set correctly');
-  is ($d->job_name, qq{publish_illumina_run_${id_run}_20181204},
+  is ($d->job_name, qq{publish_seq_data2irods_${id_run}_20181204},
     'job_name is correct');
   like ($d->command,
-    qr/$script --collection $col --archive_path $archive_path --runfolder_path $rfpath --restart_file $restart_file --max_errors 10/,
+    qr/$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $archive_path/,
     'command is correct');
   is ($d->command_preexec,
-    'npg_pipeline_script_must_be_unique_runner -job_name="publish_illumina_run_16850"',
+    'npg_pipeline_script_must_be_unique_runner -job_name="publish_seq_data2irods_16850"',
     'preexec command is correct');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
@@ -107,7 +107,7 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 1, 'an array with one definition is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/$script --collection $col --archive_path $archive_path --runfolder_path $rfpath --restart_file $restart_file --max_errors 10/,
+    qr/$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $archive_path/,
     'command is correct');
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -121,7 +121,7 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 1, 'an array with one definition is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/$script --collection $col --archive_path $archive_path --runfolder_path $rfpath --restart_file $restart_file --max_errors 10 --alt_process qc_run/,
+    qr/$script --restart_file $restart_file --max_errors 10 --alt_process qc_run --collection $col --source_directory $archive_path/,
     'command is correct');
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -135,7 +135,7 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 1, 'an array with one definition is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/ --collection $col --archive_path $archive_path --runfolder_path $rfpath --restart_file $restart_file --max_errors 10 --driver-type samplesheet/,
+    qr/$script --restart_file $restart_file --max_errors 10 --driver-type samplesheet --collection $col --source_directory $archive_path/,
     'command is correct');
 };
 
@@ -148,7 +148,7 @@ subtest 'NovaSeq run' => sub {
   my $bbc_path = qq{$rfpath/Data/Intensities/BAM_basecalls_20180805-013153};
   my $archive_path = qq{$bbc_path/no_cal/archive};
   my $col = qq{/seq/illumina/runs/$id_run};
-  my $restart_file = qr/${archive_path}\/publish_illumina_run_${id_run}_20181204-\d+\.restart_file\.json/;
+  my $restart_file = qr/${archive_path}\/publish_seq_data2irods_${id_run}_20181204-\d+\.restart_file\.json/;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
     qq{$bbc_path/metadata_cache_26291/samplesheet_26291.csv};
@@ -164,7 +164,7 @@ subtest 'NovaSeq run' => sub {
   my $d = $da->[0];
   isa_ok($d, q{npg_pipeline::function::definition});
   like ($d->command,
-    qr/$script --collection $col --archive_path $archive_path --runfolder_path $rfpath --restart_file $restart_file --max_errors 10/,
+    qr/$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $archive_path/,
     'command is correct');
 
   $a  = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -179,7 +179,7 @@ subtest 'NovaSeq run' => sub {
   ok ($da && @{$da} == 1, 'an array with one definition is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/$script --collection $col --archive_path $archive_path --runfolder_path $rfpath --restart_file $restart_file --max_errors 10 --positions 2/,
+    qr/$script --restart_file $restart_file --max_errors 10 --positions 2 --collection $col --source_directory $archive_path/,
     'command is correct');
 };
 
