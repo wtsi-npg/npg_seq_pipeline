@@ -16,28 +16,22 @@ Readonly::Scalar my $SCRIPT_NAME => 'npg_publish_illumina_logs.pl';
 override 'create' => sub {
   my $self = shift;
 
-  my $ref = {
-    'created_by' => __PACKAGE__,
-    'created_on' => $self->timestamp(),
-    'identifier' => $self->id_run(),
-  };
+  my $ref = $self->basic_definition_init_hash();
 
-  if ($self->no_irods_archival) {
-    $self->warn(q{Archival to iRODS is switched off.});
-    $ref->{'excluded'} = 1;
-  } else {
+  if (!$ref->{'excluded'}) {
+
+    $self->assign_common_definition_attrs(
+      $ref, (join q{_}, q{publish_logs}, $self->id_run()));
+
     my $future_path = npg_pipeline::runfolder_scaffold
                       ->path_in_outgoing($self->runfolder_path());
-    $ref->{'job_name'} = join q{_}, q{publish_illumina_logs}, $self->id_run(), $self->timestamp();
+    $ref->{'command_preexec'} = qq{[ -d '$future_path' ]};
+
     $ref->{'command'} = join q[ ],
       $SCRIPT_NAME,
       q{--collection},     $self->irods_destination_collection(),
       q{--runfolder_path}, $future_path,
       q{--id_run},         $self->id_run();
-    $ref->{'fs_slots_num'} = 1;
-    $ref->{'reserve_irods_slots'} = 1;
-    $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
-    $ref->{'command_preexec'} = qq{[ -d '$future_path' ]};
   }
 
   return [npg_pipeline::function::definition->new($ref)];
@@ -79,6 +73,7 @@ type object.
 
 Returns iRODS destination collection for log files belonging
 to this run.
+
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT

@@ -52,7 +52,7 @@ subtest 'MiSeq run' => sub {
     'created_by is correct');
   is ($d->created_on, $a->timestamp, 'created_on is correct');
   is ($d->identifier, $id_run, 'identifier is set correctly');
-  is ($d->job_name, qq{publish_illumina_logs_${id_run}_20181204},
+  is ($d->job_name, qq{publish_logs_${id_run}_20181204},
     'job_name is correct');
   is ($d->command, join(q[ ], 'npg_publish_illumina_logs.pl',
     qq{--collection \/seq\/$id_run/log},
