@@ -50,6 +50,7 @@ LIST OF CHANGES
    for the rest
  - explicitly use iRODS loader from an 'old' dated directory for
    old style runfolders
+ - a new function, archive_run_data_to_irods, to publish run-level non-product data to iRODS
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline

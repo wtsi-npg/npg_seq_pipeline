@@ -45,6 +45,7 @@ Readonly::Hash my %REGISTRY => (
   'upload_illumina_analysis_to_qc_database' => {'illumina_qc_archiver' => 'create'},
   'upload_fastqcheck_to_qc_database'        => {'fastqcheck_archiver' => 'create'},
   'upload_auto_qc_to_qc_database'           => {'autoqc_archiver' => 'create'},
+  'archive_run_data_to_irods'               => {'run_data_to_irods_archiver' => 'create'},
 
   'bam_cluster_counter_check'=> {'cluster_count' => 'create'},
   'seqchksum_comparator'     => {'seqchksum_comparator' => 'create'},
