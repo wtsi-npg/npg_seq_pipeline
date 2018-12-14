@@ -8,8 +8,7 @@ use File::Slurp;
 use File::Basename;
 use File::Spec;
 use JSON;
-use List::Util qw(sum uniq);
-use List::MoreUtils qw(all none);
+use List::Util qw(sum uniq all none);
 use open q(:encoding(UTF8));
 
 use npg_tracking::data::reference::find;
@@ -37,7 +36,7 @@ Readonly::Scalar my $DEFAULT_SJDB_OVERHANG        => q{74};
 Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
-Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star salmon};
+Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
 
 =head2 phix_reference
 
@@ -418,18 +417,27 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
         $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
         $rna_analysis = $DEFAULT_RNA_ANALYSIS;
     }
-    my $p4_reference_genome_index;
+    my $p4_reference_genome_index = $rna_analysis eq q[tophat2] ?
+                                    $self->_ref($dp, q(bowtie2)) : $self->_ref($dp, $rna_analysis);
     if($rna_analysis eq q[star]) {
       # most common read length used for RNA-Seq is 75 bp so indices were generated using sjdbOverhang=74
       $p4_param_vals->{sjdb_overhang_val} = $DEFAULT_SJDB_OVERHANG;
       $p4_param_vals->{star_executable} = q[star];
-      $p4_reference_genome_index = dirname($self->_ref($dp, q(star)));
-      # star jobs require more memory
+      # STAR uses the name of the directory where the index resides only
+      $p4_reference_genome_index = dirname($p4_reference_genome_index);
+      # STAR jobs require more memory
       $ref->{'memory'} = $MEMORY_FOR_STAR;
     } elsif ($rna_analysis eq q[tophat2]) {
       $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
       $p4_param_vals->{transcriptome_val} = $self->_transcriptome($rpt_list, q(tophat2))->transcriptome_index_name();
-      $p4_reference_genome_index = $self->_ref($dp, q(bowtie2));
+    } elsif ($rna_analysis eq q[hisat2]) {
+      $p4_param_vals->{hisat2_executable} = q[hisat2];
+      # akin to TopHat2's library_type but HISAT2 also considers
+      # if the reads are se or pe to determine value of this parameter
+      $p4_param_vals->{rna_strandness} = q[R];
+      if($self->is_paired_read) {
+        $p4_param_vals->{rna_strandness} .= q[F];
+      }
     }
     $p4_param_vals->{alignment_method} = $rna_analysis;
     $p4_param_vals->{annotation_val} = $self->_transcriptome($rpt_list)->gtf_file();
@@ -894,8 +902,6 @@ objects for all entities of the run eligible for alignment and split.
 =item JSON
 
 =item List::Util
-
-=item List::MoreUtils
 
 =item open
 
