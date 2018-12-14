@@ -204,8 +204,9 @@ subtest 'qX_yield' => sub {
   foreach my $de (@{$da}) {
     my $p = $de->composition->get_component(0)->position;
     is ($de->command, sprintf(
-    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --platform_is_hiseq --input_files=%s --input_files=%s',
-     qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}_1.fastqcheck", "$archive_dir/lane${p}/1234_${p}_2.fastqcheck"),
+    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --is_paired_read --qc_in=%s --suffix=F0x000 --platform_is_hiseq',
+      qq["1234:$p"], qq[1234_${p}], qq[$archive_dir/lane${p}/qc], qq[$archive_dir/lane${p}]
+    ),
     "qX_yield check command for lane $p");
   }
 
@@ -216,13 +217,13 @@ subtest 'qX_yield' => sub {
     lanes             => [4],
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
-    is_paired_read    => 1,
+    is_paired_read    => 0,
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
   is ($da->[0]->command, sprintf(
-    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --platform_is_hiseq --input_files=%s --input_files=%s',
-    qq["1234:4"], "1234_4", "$archive_dir/lane4/qc", "$archive_dir/lane4/1234_4_1.fastqcheck", "$archive_dir/lane4/1234_4_2.fastqcheck"),
+    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --no-is_paired_read --qc_in=%s --suffix=F0x000 --platform_is_hiseq',
+    qq["1234:4"], "1234_4", "$archive_dir/lane4/qc", "$archive_dir/lane4"),
     "qX_yield check command for lane 4");
 
   $aqc = npg_pipeline::function::autoqc->new(
@@ -259,8 +260,8 @@ subtest 'qX_yield' => sub {
   foreach my $d (@plexes) {
     my $t = $d->composition->get_component(0)->tag_index;
     is ($d->command, sprintf(
-    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s',
-    qq["1234:8:${t}"], "1234_8#${t}", "$archive_dir/lane8/plex${t}/qc", "$archive_dir/lane8/plex${t}/1234_8#${t}_1.fastqcheck"),
+    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --no-is_paired_read --qc_in=%s --suffix=F0xB00',
+    qq["1234:8:${t}"], "1234_8#${t}", "$archive_dir/lane8/plex${t}/qc", "$archive_dir/lane8/plex${t}"),
     "qX_yield command for lane 8 tag $t (s/e)");
   }
 
