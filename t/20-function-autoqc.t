@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 12;
+use Test::More tests => 14;
 use Test::Exception;
 use File::Path qw/make_path/;
 use File::Copy::Recursive qw/fcopy dircopy/;
@@ -12,6 +12,7 @@ use_ok('npg_pipeline::function::autoqc');
 use_ok('st::api::lims');
 use_ok('npg_tracking::glossary::composition');
 use_ok('npg_tracking::glossary::rpt');
+use_ok('npg_pipeline::product');
 
 my $util = t::util->new();
 my $tmp = $util->temp_directory();
@@ -174,7 +175,7 @@ subtest 'spatial_filter' => sub {
 };
 
 subtest 'qX_yield' => sub {
-  plan tests => 25;
+  plan tests => 26;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_1234.csv';
 
@@ -191,7 +192,8 @@ subtest 'qX_yield' => sub {
   my $d = $da->[0];
   is ($d->queue, 'default', 'default queue');
   is ($d->job_name, 'qc_qX_yield_1234_20090709-123456', 'job name');
-  ok (!$d->has_memory, 'memory is not set');
+  ok ($d->has_memory, 'memory is set');
+  is ($d->memory, 2000, 'memory is set to 2000');
   ok ($d->apply_array_cpu_limit, 'array_cpu_limit should be applied');
   ok (!$d->has_array_cpu_limit, 'array_cpu_limit not set');
   is ($d->fs_slots_num, 1, 'one sf slots');
@@ -202,8 +204,9 @@ subtest 'qX_yield' => sub {
   foreach my $de (@{$da}) {
     my $p = $de->composition->get_component(0)->position;
     is ($de->command, sprintf(
-    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --platform_is_hiseq --input_files=%s --input_files=%s',
-     qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}_1.fastqcheck", "$archive_dir/lane${p}/1234_${p}_2.fastqcheck"),
+    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --is_paired_read --qc_in=%s --suffix=F0x000 --platform_is_hiseq',
+      qq["1234:$p"], qq[1234_${p}], qq[$archive_dir/lane${p}/qc], qq[$archive_dir/lane${p}]
+    ),
     "qX_yield check command for lane $p");
   }
 
@@ -214,13 +217,13 @@ subtest 'qX_yield' => sub {
     lanes             => [4],
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
-    is_paired_read    => 1,
+    is_paired_read    => 0,
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
   is ($da->[0]->command, sprintf(
-    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --platform_is_hiseq --input_files=%s --input_files=%s',
-    qq["1234:4"], "1234_4", "$archive_dir/lane4/qc", "$archive_dir/lane4/1234_4_1.fastqcheck", "$archive_dir/lane4/1234_4_2.fastqcheck"),
+    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --no-is_paired_read --qc_in=%s --suffix=F0x000 --platform_is_hiseq',
+    qq["1234:4"], "1234_4", "$archive_dir/lane4/qc", "$archive_dir/lane4"),
     "qX_yield check command for lane 4");
 
   $aqc = npg_pipeline::function::autoqc->new(
@@ -257,8 +260,8 @@ subtest 'qX_yield' => sub {
   foreach my $d (@plexes) {
     my $t = $d->composition->get_component(0)->tag_index;
     is ($d->command, sprintf(
-    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s',
-    qq["1234:8:${t}"], "1234_8#${t}", "$archive_dir/lane8/plex${t}/qc", "$archive_dir/lane8/plex${t}/1234_8#${t}_1.fastqcheck"),
+    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --no-is_paired_read --qc_in=%s --suffix=F0xB00',
+    qq["1234:8:${t}"], "1234_8#${t}", "$archive_dir/lane8/plex${t}/qc", "$archive_dir/lane8/plex${t}"),
     "qX_yield command for lane 8 tag $t (s/e)");
   }
 
@@ -484,6 +487,28 @@ subtest 'genotype and gc_fraction' => sub {
     'gc_fraction check can run');
   ok ($qc->_should_run(1, $plex_product_alt),
    'gc_fraction check can run');
+};
+
+subtest 'memory_requirements' => sub {
+  plan tests => 14;
+
+  my %checks2mem = ( insert_size      => 8000,
+                     sequence_error   => 8000,
+                     ref_match        => 6000,
+                     pulldown_metrics => 6000,
+                     bcfstats         => 4000,
+                     adapter          => 1500,
+                     samtools_stats   => 2000 );
+  my $p = npg_pipeline::product->new(rpt_list => '44:1');
+  while (my ($name, $mem_req) = each %checks2mem) {
+    my $d = npg_pipeline::function::autoqc->new(
+      id_run            => 1234,
+      runfolder_path    => $rf_path,
+      qc_to_run         => $name,
+    )->_create_definition_object($p, 'qc');
+    ok ($d->has_memory, "memory is set for $name");
+    is ($d->memory, $mem_req, "memory is set correctly for $name"); 
+  }
 };
 
 1;

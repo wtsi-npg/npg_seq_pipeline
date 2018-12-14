@@ -152,7 +152,7 @@ sub _find {
 }
 
 subtest 'test 1' => sub {
-  plan tests => 31;
+  plan tests => 33;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/rna_seq/samplesheet_12597.csv];
   my $runfolder = q{140409_HS34_12597_A_C333TACXX};
@@ -257,6 +257,12 @@ subtest 'test 1' => sub {
   } 'no error creating an object (forcing on phix split)';
 
   $da = $rna_gen->generate();
+
+  my $base = "$bc_path/archive/lane5";
+  ok (-f "$base/plex168/12597_5#168.composition.json",
+    'composition JSON file exists for spiked phix tag');
+  ok (!-e "$base/plex168/12597_5#168_phix.composition.json",
+    'composition JSON file does not exist for split out phix');
 
   #####  phiX control libraries
   $qc_in =~ s{lane4/plex0}{lane5/plex168}smg;
@@ -1143,7 +1149,7 @@ subtest 'test 11' => sub {
 };
 
 subtest 'test 12' => sub {
-  plan tests => 5;
+  plan tests => 11;
 
   my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
@@ -1175,6 +1181,17 @@ subtest 'test 12' => sub {
   $ms_gen->create_product_level();
 
   my $da = $ms_gen->generate();
+
+  my $base = "$bc_path/archive/lane1";
+  my @files = ('plex1/24135_1#1_phix.composition.json',
+               'plex1/24135_1#1.composition.json',
+               'plex2/24135_1#2_phix.composition.json',
+               'plex2/24135_1#2.composition.json',
+               'plex0/24135_1#0_phix.composition.json',
+               'plex0/24135_1#0.composition.json');
+  for my $f (@files) {
+    ok (-f "$base/$f", "file $f exists");
+  }
 
   my $unique_string = $ms_gen->_job_id();
   my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;

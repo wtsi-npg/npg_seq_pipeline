@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 21;
+use Test::More tests => 22;
 use Test::Exception;
 use Cwd;
 use List::MoreUtils qw{any};
@@ -131,6 +131,20 @@ subtest 'limiting number of NovaSeq runs being archived' => sub {
   $runs[4]->update_run_status('archival in progress', 'pipeline');
   $s = $runner->run();
   is ($s, 0, 'no runs submitted since four NovaSeq runs in archiva in progress');
+};
+
+subtest 'propagate failure of the command to run to the caller' => sub {
+  plan tests => 4;
+
+  my $runner = test_archival_runner->new(npg_tracking_schema => $schema);
+  my $id_run = 22;
+  my $command = '/bin/true';
+  is ($runner->run_command($id_run, $command), 1, 'command succeeded');
+  ok ($runner->seen->{$id_run}, 'run cached');
+  $command = '/bin/false';
+  $id_run = 33;
+  is ($runner->run_command($id_run, $command), 0, 'command failed');
+  ok (!$runner->seen->{$id_run}, 'run not cached');
 };
 
 1;

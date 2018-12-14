@@ -13,6 +13,9 @@ our $VERSION = '0';
 
 Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
 Readonly::Scalar my $NUM_MAX_ERRORS      => 20;
+Readonly::Scalar my $IRODS_ROOT_NON_NOVASEQ_RUNS => q[/seq];
+Readonly::Scalar my $IRODS_ROOT_NOVASEQ_RUNS     => q[/seq/illumina/runs];
+Readonly::Scalar my $OLD_DATED_DIR_NAME  => q[20180717];
 
 sub create {
   my $self = shift;
@@ -27,7 +30,7 @@ sub create {
     $self->info(q{Archival to iRODS is switched off.});
     $ref->{'excluded'} = 1;
   } else {
-    my $job_name_prefix = join q{_}, q{publish_illumina_run}, $self->id_run();
+    my $job_name_prefix = join q{_}, q{publish_seq_data2irods}, $self->id_run();
     $ref->{'job_name'}  = join q{_}, $job_name_prefix, $self->timestamp();
     $ref->{'fs_slots_num'} = 1;
     $ref->{'reserve_irods_slots'} = 1;
@@ -39,11 +42,10 @@ sub create {
     $publish_log_name .= q{.restart_file.json};
 
     my $max_errors = $self->general_values_conf()->{'publish2irods_max_errors'} || $NUM_MAX_ERRORS;
-    my $command = $PUBLISH_SCRIPT_NAME
-    . q{ --archive_path }   . $self->archive_path()
-    . q{ --runfolder_path } . $self->runfolder_path()
-    . q{ --restart_file }   . (join q[/], $self->archive_path(), $publish_log_name)
-    . q{ --max_errors }     . $max_errors;
+    my $command = join q[ ],
+      $PUBLISH_SCRIPT_NAME,
+      q{--restart_file},   (join q[/], $self->archive_path(), $publish_log_name),
+      q{--max_errors},     $max_errors;
 
     if ($self->qc_run) {
       $command .= q{ --alt_process qc_run};
@@ -55,17 +57,68 @@ sub create {
       foreach my $p  (@positions){
         $position_list .= qq{ --positions $p};
       }
-      $command .=  $position_list;
+      $command .= $position_list;
     }
 
     if($self->has_lims_driver_type) {
       $command .= q{ --driver-type } . $self->lims_driver_type;
     }
 
+    my $old_dated_dir = $self->_find_old_dated_dir();
+    if ($old_dated_dir) {
+      $command .= join q[ ], q[],
+        q{--archive_path},   $self->archive_path(),
+        q{--runfolder_path}, $self->runfolder_path();
+      # Relying on PATH being the same on the host where we run the
+      # pipeline script and on the host where the job is going to be
+      # executed.
+      $command = join q[;], "export PATH=$old_dated_dir/bin:".$ENV{PATH},
+                            "export PERL5LIB=$old_dated_dir/lib/perl5",
+                            $command;
+    } else {
+      $command .= join q[ ], q[],
+        q{--collection},       $self->irods_destination_collection(),
+        q{--source_directory}, $self->archive_path();
+    }
+
+    $self->info(qq[iRODS loader command "$command"]);
     $ref->{'command'} = $command;
   }
 
   return [npg_pipeline::function::definition->new($ref)];
+}
+
+sub irods_destination_collection {
+  my $self = shift;
+  return join q[/],
+    $self->platform_NovaSeq() ? $IRODS_ROOT_NOVASEQ_RUNS : $IRODS_ROOT_NON_NOVASEQ_RUNS,
+    $self->id_run;
+}
+
+sub _find_old_dated_dir {
+  my $self = shift;
+
+  my $old_dated_dir;
+  if (-e $self->qc_path()) {
+    $self->info('Old style runfolder - have to use old iRODS loader');
+
+    my $local_bin = $self->local_bin(); # This pipeline script's bin as
+                                        # an absolute path.
+    my ($dated_directory_root) = $local_bin =~ /(.+)201[89]\d\d\d\d\/bin\Z/xms;
+    if ($dated_directory_root) {
+      $old_dated_dir = $dated_directory_root . $OLD_DATED_DIR_NAME;
+      if (-e $old_dated_dir) {
+        $self->info(qq{Found old dated directory $old_dated_dir});
+      } else {
+        undef $old_dated_dir;
+        $self->logwarn(qq{Old dated directory $old_dated_dir does not exist});
+      }
+    } else {
+      $self->logwarn(q{Failed to find old dated directory});
+    }
+  }
+
+  return $old_dated_dir;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -80,11 +133,17 @@ npg_pipeline::function::seq_to_irods_archiver
 
 =head1 SYNOPSIS
 
-  my $fsa = npg_pipeline::function::seq_to_irods_archiver->new(
-    run_folder => 'run_folder'
-  );
+  my $archiver = npg_pipeline::function::seq_to_irods_archiver
+                 ->new(runfolder_path => '/some/path'
+                       id_run         => 22);
+  my $definitions = $archiver->create();
+  my $idest = $archiver->irods_destination_collection();
 
 =head1 DESCRIPTION
+
+Defines a job for publishing sequencing data to iRODS. For new style
+run folders only product data and their accompanyig files will be
+published by this job.
 
 =head1 SUBROUTINES/METHODS
 
@@ -94,7 +153,9 @@ Creates and returns a single function definition as an array.
 Function definition is created as a npg_pipeline::function::definition
 type object.
 
-  my @job_ids = $fsa->submit_to_lsf();
+=head2 irods_destination_collection
+
+Returns iRODS destination collection for this run.
 
 =head1 DIAGNOSTICS
 
@@ -107,6 +168,8 @@ type object.
 =item Moose
 
 =item Readonly
+
+=item namespace::autoclean
 
 =back
 

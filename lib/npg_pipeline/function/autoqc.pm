@@ -8,6 +8,10 @@ use File::Spec;
 use Class::Load qw{load_class};
 
 use npg_pipeline::function::definition;
+use npg_qc::autoqc::constants qw/
+         $SAMTOOLS_NO_FILTER
+         $SAMTOOLS_SEC_QCFAIL_SUPPL_FILTER
+                                /;
 
 extends q{npg_pipeline::base};
 with q{npg_pipeline::function::util};
@@ -15,10 +19,23 @@ with q{npg_pipeline::function::util};
 our $VERSION = '0';
 
 Readonly::Scalar my $QC_SCRIPT_NAME           => q{qc};
-Readonly::Scalar my $MEMORY_REQ               => 6000;
-Readonly::Scalar my $MEMORY_REQ_BWA           => 8000;
-Readonly::Scalar my $MEMORY_REQ_ADAPTER       => 1500;
 Readonly::Scalar my $REFMATCH_ARRAY_CPU_LIMIT => 8;
+Readonly::Array  my @CHECKS_NEED_PAIREDNESS_INFO => qw/
+                                                 insert_size
+                                                 gc_fraction
+                                                 qX_yield
+                                                      /;
+
+# Memory requirements, MB
+Readonly::Scalar my $MEMORY_REQ_DEFAULT       => 2000;
+Readonly::Hash   my %MEMORY_REQUIREMENTS      => (
+                        insert_size      => 8000,
+                        sequence_error   => 8000,
+                        ref_match        => 6000,
+                        pulldown_metrics => 6000,
+                        bcfstats         => 4000,
+                        adapter          => 1500,
+                                                 );
 
 has q{qc_to_run}       => (isa      => q{Str},
                            is       => q{ro},
@@ -156,7 +173,7 @@ sub _create_definition_object {
   $ref->{'job_name'}        = join q{_}, $QC_SCRIPT_NAME, $qc_to_run,
                                          $self->id_run(), $self->timestamp();
   $ref->{'fs_slots_num'}    = 1;
-  $ref->{'composition'}     = $product->{composition};
+  $ref->{'composition'}     = $product->composition;
   $ref->{'command'}         = $command;
 
   if ($qc_to_run eq q[adapter]) {
@@ -183,13 +200,7 @@ sub _create_definition_object {
     $ref->{'command_preexec'} = $self->repos_pre_exec_string();
   }
 
-  if ($qc_to_run =~ /insert_size|sequence_error/smx ) {
-    $ref->{'memory'} = $MEMORY_REQ_BWA;
-  } elsif ($qc_to_run  =~ /ref_match|pulldown_metrics/smx) {
-    $ref->{'memory'} = $MEMORY_REQ;
-  } elsif ($qc_to_run eq q[adapter]) {
-    $ref->{'memory'} = $MEMORY_REQ_ADAPTER;
-  }
+  $ref->{'memory'} = $MEMORY_REQUIREMENTS{$qc_to_run} || $MEMORY_REQ_DEFAULT;
 
   return npg_pipeline::function::definition->new($ref);
 }
@@ -211,28 +222,27 @@ sub _generate_command {
   $tagzerobamfile_path =~ s/_#0/#0/;
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
-  my $fqt_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => 't'));
-  my $fqc1_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '1'));
-  my $fqc2_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '2'));
 
   my $c = sprintf '%s --check=%s --rpt_list="%s" --filename_root=%s --qc_out=%s',
                   $QC_SCRIPT_NAME, $check, $dp->{rpt_list}, $dp->file_name_root, $qc_out_path;
 
-  if ($check eq q[insert_size]) {
-    $c .= $self->is_paired_read() ? q[ --is_paired_read] : q[ --no-is_paired_read];
-  } elsif ($check eq q[qX_yield] && $self->platform_HiSeq) {
-    $c .= q[ --platform_is_hiseq];
+  if(any { $check eq $_ } @CHECKS_NEED_PAIREDNESS_INFO) {
+    $c .= q[ --] . ($self->is_paired_read() ? q[] : q[no-]) . q[is_paired_read];
   }
 
-  #################
-  # set input_files
-  #################
+  ####################################
+  # set input_files or input directory
+  ####################################
   ##no critic (RegularExpressions::RequireExtendedFormatting)
   ##no critic (ControlStructures::ProhibitCascadingIfElse)
+
   if(any { /$check/sm } qw( gc_fraction qX_yield )) {
-    $c .= qq[ --input_files=$fqc1_filepath];
-    if($self->is_paired_read) {
-      $c .= qq[ --input_files=$fqc2_filepath];
+    my $suffix = ($dp->composition->num_components == 1 &&
+                   !defined $dp->composition->get_component(0)->tag_index) # true for a lane
+                 ? $SAMTOOLS_NO_FILTER : $SAMTOOLS_SEC_QCFAIL_SUPPL_FILTER;
+    $c .= qq[ --qc_in=$dp_archive_path --suffix=$suffix];
+    if ($check eq q[qX_yield] && $self->platform_HiSeq) {
+      $c .= q[ --platform_is_hiseq];
     }
   }
   elsif(any { /$check/sm } qw( insert_size ref_match sequence_error )) {
@@ -241,7 +251,6 @@ sub _generate_command {
       $c .= qq[ --input_files=$fq2_filepath];
     }
   }
-
   elsif(any { /$check/sm } qw( adapter bcfstats genotype verify_bam_id pulldown_metrics )) {
     $c .= qq{ --input_files=$bamfile_path}; # note: single bam file 
   }
