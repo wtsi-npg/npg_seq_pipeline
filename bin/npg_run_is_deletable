@@ -32,11 +32,10 @@ our $VERSION = '0';
 Readonly::Array  my @NPG_DELETABLE_UNCOND => ('run cancelled', 'data discarded');
 Readonly::Array  my @NPG_DELETABLE_STATES => (@NPG_DELETABLE_UNCOND,'qc complete');
 Readonly::Scalar my $FS_DELETABLE_DAYS    => 14;
-Readonly::Scalar my $PROD_USER_NAME       => 'srpipe';
-Readonly::Scalar my $PROD_USER_DB_NAME    => 'pipeline';
 Readonly::Scalar my $CRAM_FILE_EXTENSION  => q[cram];
 Readonly::Scalar my $BAM_FILE_EXTENSION   => q[bam];
 Readonly::Scalar my $DEFAULT_IRODS_ROOT   => q[/seq];
+Readonly::Scalar my $STAGING_TAG          => q[staging];
 
 Readonly::Array  my @SCRIPT_OPTIONS       => qw(
                                             help 
@@ -169,7 +168,8 @@ my $exit_status = 0;
 if ($deletable) {
   $logger->warn("Run $id_run is deletable");
   if ($opts->{'remove-staging-tag'}) {
-    remove_staging_tag();
+    $run_obj->unset_tag($STAGING_TAG);
+    $logger->warn("Staging tag is removed for run $id_run");
   }
 } else {
   $logger->warn("Run $id_run is NOT deletable");
@@ -252,19 +252,6 @@ sub autoqc_deletable {
   }
 
   $logger->warn(qq[Autoqc: run $id_run is NOT deletable]);
-  return;
-}
-
-sub remove_staging_tag {
-
-  my $user = $ENV{'USER'};
-  $user = (!$user || ($user eq $PROD_USER_NAME)) ? $PROD_USER_DB_NAME : $user;
-  try {
-    $run_obj->unset_tag($user, 'staging');
-    $logger->warn("Staging tag is removed for run $id_run");
-  } catch {
-    $logger->error("Failed to remove staging tag: $_");
-  };
   return;
 }
 
