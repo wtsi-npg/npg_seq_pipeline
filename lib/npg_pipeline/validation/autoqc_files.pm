@@ -1,29 +1,22 @@
 package npg_pipeline::validation::autoqc_files;
 
-#########
-# Copied from 
-# svn+ssh://svn.internal.sanger.ac.uk/repos/svn/new-pipeline-dev/data_handling/trunk/lib/npg_validation/runfolder/deletable/autoqc.pm
-# on the 5th of January 2018
-#
-
 use Moose;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
 use Readonly;
 use Try::Tiny;
-use List::MoreUtils qw/none/;
-use File::Basename;
+use List::MoreUtils qw/none uniq/;
+#use File::Basename;
 
+use npg_tracking::glossary::rpt;
+use npg_tracking::glossary::composition;
 use npg_qc::Schema;
 use npg_qc::autoqc::role::result;
+use npg_pipeline::product;
 
-with qw / npg_tracking::glossary::run
-          npg_pipeline::validation::common /;
+with 'npg_pipeline::validation::common';
 
 our $VERSION = '0';
-
-Readonly::Scalar my $NO_TAG         => -1;
-Readonly::Scalar my $DEFAULT_VALUE  => 'default_value';
 
 Readonly::Array  my @COMMON_CHECKS         => qw/ qX_yield
                                                   adapter
@@ -31,7 +24,6 @@ Readonly::Array  my @COMMON_CHECKS         => qw/ qX_yield
                                                   insert_size
                                                   ref_match
                                                   sequence_error
-                                                  fastqcheck
                                                 /;
 
 Readonly::Array  my @LANE_LEVELCHECKS      => qw/ spatial_filter
@@ -46,137 +38,111 @@ Readonly::Array  my @WITH_SUBSET_CHECKS    => qw/ bam_flagstats
                                                   sequence_summary
                                                 /;
 
-has 'skip_checks'    => ( isa           => 'ArrayRef',
-                          is            => 'ro',
-                          required      => 0,
-                          default       => sub { [] },
-                        );
+has 'skip_checks'    => (
+  isa      => 'ArrayRef',
+  is       => 'ro',
+  required => 0,
+  default  => sub { [] },
+);
 
-has 'is_paired_read' => ( isa           => 'Bool',
-                          is            => 'ro',
-                          required      => 0,
-                          lazy_build    => 1,
-                        );
-sub _build_is_paired_read {
-  my $self = shift;
-  my $attr_name = 'is_paired_read';
-  my $meta = $self->get_metadata(
-             $self->collection_files->{($self->irods_files())[0]}, ($attr_name));
-  return $meta->{$attr_name};
-}
+has 'is_paired_read' => (
+  isa      => 'Bool',
+  is       => 'ro',
+  required => 1,
+);
 
 sub fully_archived {
   my $self = shift;
 
+  my $compositions = {};
+  my $compositions_with_subsets = {};
+  my @positions = ();
+  my @non_pools = ();
+
+  foreach my $f (@{$self->staging_files->{'composition_files'}}) {
+
+    my $composition = npg_tracking::glossary::composition->thaw(slurp($f));
+    my $digest = $composition->digest;
+    my $component = $composition->get_component(0);
+
+    if ($component->subset) {
+      $compositions->{$digest} = $composition;
+    } else {
+      $compositions_with_subsets->{$digest} = $composition;
+    }
+
+    @positions = map {$_->position} $composition->components_list;
+
+    if ($composition->num_components == 1 && !defined $component->tag_index) {
+      push  @non_pools, $component->position;
+    }
+  }
+
+  @positions = uniq @positions;
+  @non_pools = uniq @non_pools;
+
+  my @common = grep {($_ ne 'insert_size') || $self->is_paired_read} @COMMON_CHECKS;
+
+  my @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} }
+               (@common, @WITH_SUBSET_CHECKS);
+  my @flags = $self->_results_exist($compositions, @checks);
+
+  my $per_check_map = $self->_prune_by_subset($compositions_with_subsets);
+  foreach my $check_name (keys  %{$per_check_map}) {
+    push @flags, $self->_results_exist($per_check_map->{$check_name}, $check_name);
+  }
+
   try {
-    $self->_qc_schema;
+    push @flags, $self->_results_exist(
+      $self->_compositions4compositions_with_subsets($compositions, $compositions_with_subsets),
+      'alignment_filter_metrics');
   } catch {
-    $self->logger->warn(qq[Cannot connect to qc database: $_]);
-    return 0;
+    $self->logwarn($_);
+    push @flags, 0;
   };
 
-  my $count = scalar @{$self->_queries};
-  if ($count == 0) {
-    $self->logger->warn('No queries to run for autoqc');
-    return 0;
+  # Lane-level checks
+
+  my $compositions4lanes = $self->_compositions4lanes($compositions);
+
+  @checks = grep {$_ ne 'adapter'} @common;
+  push @checks, @LANE_LEVELCHECKS;
+  @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} } @checks;
+  push @flags, $self->_results_exist($compositions4lanes, @checks);
+
+  if (@non_pools != @positions) {
+    my $pools = {};
+    while (my ($d, $c) = each %{$compositions4lanes}) {
+      my $p = $c->get_component(0)->position;
+      if (none { $p == $_ } @non_pools) {
+        $pools->{$d} = $c;
+      }
+    }
+    @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} } @LANE_LEVELCHECKS4POOL;
+    push @flags, $self->_results_exist($pools, @checks);
   }
 
-  my $skip_checks = $self->_parse_excluded_checks();
-
-  foreach my $query (@{$self->_queries}) {
-    my $skip = $self->_query_to_be_skipped($query, $skip_checks);
-    $self->logger->info(sprintf '%s "%s"',
-                        $skip ? 'Skipping' : 'Executing query for ',
-                        $self->_query2string($query));
-    $count = $count - ( $skip || $self->_result_exists($query) );
-  }
-  return !$count; #if all results exist, $count should be zero at the end
+  return none { $_ == 0 } @flags;
 }
 
-has '_qc_schema' => ( isa        => 'npg_qc::Schema',
-                      is         => 'ro',
-                      required   => 0,
-                      lazy_build => 1,
-                    );
+has '_qc_schema' => (
+  isa        => 'npg_qc::Schema',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
+);
 sub _build__qc_schema {
   return npg_qc::Schema->connect();
 }
 
-has '_catalogue' => ( isa        => 'HashRef',
-                      is         => 'ro',
-                      required   => 0,
-                      lazy_build => 1,
-                    );
-sub _build__catalogue {
+has '_skip_checks_wsubsets' => (
+  isa        => 'HashRef',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
+);
+sub _build__skip_checks_wsubsets {
   my $self = shift;
-
-  my $c = {};
-  foreach my $file ( $self->irods_files ) {
-    my $ids = $self->parse_file_name($file);
-    my $lane = $ids->{'position'};
-    my $tag_index = defined $ids->{'tag_index'} ? $ids->{'tag_index'} : $DEFAULT_VALUE;
-    my $split = $ids->{'split'} || $DEFAULT_VALUE;
-    $c->{$lane}->{$tag_index}->{$split} = 1;
-  }
-  return $c;
-}
-
-has '_queries'  => ( isa        => 'ArrayRef',
-                     is         => 'ro',
-                     required   => 0,
-                     lazy_build => 1,
-                   );
-sub _build__queries {
-  my $self = shift;
-
-  my @queries = ();
-
-  foreach my $position ( keys %{$self->_catalogue} ) {
-
-    my $lane_is_plexed = !exists $self->_catalogue->{$position}->{$DEFAULT_VALUE};
-    my $query = {'position' => $position};
-    $query->{'tag_index'} =  _value4query($DEFAULT_VALUE);
-
-    ## no critic (BuiltinFunctions::ProhibitComplexMappings)
-    ## no critic (ValuesAndExpressions::ProhibitCommaSeparatedStatements)
-    push @queries,
-      map { my %q; %q = %{$query}, $q{'check'} = $_; \%q; }
-      (@LANE_LEVELCHECKS);
-
-    if ( $lane_is_plexed ) {
-      push @queries,
-        map { my %q; %q = %{$query}, $q{'check'} = $_; \%q; }
-        (@LANE_LEVELCHECKS4POOL, grep {$_ ne 'adapter'} @COMMON_CHECKS);
-    }
-
-    $query->{'subset'}    =  _value4query($DEFAULT_VALUE);
-    foreach my $tag_index (keys %{$self->_catalogue->{$position}}) {
-      foreach my $split ( keys %{$self->_catalogue->{$position}->{$tag_index}} ) {
-        my @checks = @WITH_SUBSET_CHECKS;
-        if ($split eq $DEFAULT_VALUE) {
-          push @checks, @COMMON_CHECKS;
-	} elsif ($split eq 'phix' ||
-            ($split =~ /human/smx && !$self->_catalogue->{$position}->{$tag_index}->{'phix'})) {
-          push @checks, 'alignment_filter_metrics';
-        }
-        ## no critic (BuiltinFunctions::ProhibitComplexMappings)
-        ## no critic (ValuesAndExpressions::ProhibitCommaSeparatedStatements)
-        push @queries,
-          map { my %q; %q = %{$query},
-                $q{'check'}     = $_;
-                _values2query(\%q, $tag_index, $split);
-                \%q;
-              }
-          @checks;
-      }
-    }
-  }
-  return \@queries;
-}
-
-sub _parse_excluded_checks {
-  my $self = shift;
-
   my $skip_checks = {};
 
   foreach my $check ( @{$self->skip_checks} ) {
@@ -188,96 +154,97 @@ sub _parse_excluded_checks {
   return $skip_checks;
 }
 
-sub _query_to_be_skipped {
-  my ($self, $query, $skip_checks) = @_;
+sub _results_exists {
+  my ($self, $compositions, @checks) = @_;
 
-  my $check_name = $query->{'check'};
-  my $skip = exists $skip_checks->{$check_name} ? 1 : 0;
-  my $skip_subset = $skip_checks->{$check_name};
-  if ( $skip_subset && @{$skip_subset} &&
-    ( !$query->{'subset'} || none { $query->{'subset'} eq $_ } @{$skip_subset}) ) {
-    $skip = 0;
-  }
-
-  return $skip;
-}
-
-sub _value4query {
-  my $value = shift;
-  return $value eq $DEFAULT_VALUE ? undef : $value;
-}
-
-sub _values2query {
-  my ($q, $tag_index, $subset) = @_;
-
-  my $check_name = $q->{'check'};
-  $q->{'tag_index'} = _value4query($tag_index);
-
-  if ( none { $_ eq $check_name } @WITH_SUBSET_CHECKS ) {
-    delete $q->{'subset'};
-  } else {
-    $q->{'subset'} = _value4query($subset);
-  }
-
-  return;
-}
-
-sub _result_exists {
-  my ($self, $query) = @_;
-
-  my $desc = $self->_query2string($query);
-  my $check_name = delete $query->{'check'};
-  my ($name, $class_name) = npg_qc::autoqc::role::result->class_names($check_name);
-
-  $query->{'id_run'} = $self->id_run;
-
-  if ($check_name eq 'fastqcheck') {
-    $query->{'tag_index'} = $query->{'tag_index'} // $NO_TAG;
-    my $count = $self->_qc_schema->resultset($class_name)->search($query)->count;
-    my $pool = !exists $self->_catalogue->{$query->{'position'}}->{$DEFAULT_VALUE};
-    my $expected = 1;
-    ## no critic (ControlStructures::ProhibitPostfixControls)
-    $expected++ if ($pool && ($query->{'tag_index'} == $NO_TAG));
-    $expected++ if $self->is_paired_read;
-    ## use critic
-    if ($count != $expected) {
-      $self->logger->info(qq[Expected $expected results got $count for "$desc"]);
-      return 0;
+  my $exists = 1;
+  my $expected = scalar keys %{$compositions};
+  if ($expected) {
+    foreach my $check_name (@checks) {
+      my ($name, $class_name) = npg_qc::autoqc::role::result->class_names($check_name);
+      my $count = $self->_qc_schema->resultset($class_name)
+                       ->search_via_composition([values %{$compositions}])->count;
+      if ($count != $expected) {
+        $self->info(qq[Expected $expected results got $count for $check_name]);
+        $exists = 0;
+      }
     }
-    return 1;
-  }
-  my $count = $self->_qc_schema->resultset($class_name)->search_autoqc($query, 1)->count;
-  if ($check_name eq 'insert_size') {
-    my $expected = $self->is_paired_read ? 1 : 0;
-    if ($count != $expected) {
-      $self->logger->info(qq[Expected $expected results got $count for "$desc"]);
-      return 0;
-    }
-    return 1;
   }
 
-  if ($count == 0) {
-    $self->logger->info(qq[Result not found for "$desc"\n]);
-    return 0;
-  }
-
-  return 1;
+  return $exists;
 }
 
-sub _query2string {
-  my ($self, $query) = @_;
-  return sprintf 'check %s, id_run=%i and position=%i and tag index=%s, split %s',
-    $query->{'check'},
-    $self->id_run,
-    $query->{'position'},
-    $query->{'tag_index'} // 'undef',
-    $query->{'subset'} || $query->{'human_split'} || q[none];
+sub _compositions4compositions_with_subsets {
+  my ($self, $compositions, $compositions_with_subsets) = @_;
+
+  my $map = {};
+
+  if (keys %{$compositions_with_subsets}) {
+
+    my %rpt2composition_map = map { $_->freeze2rpt => $_} values %{$compositions};
+
+    foreach my $composition (values %{$compositions_with_subsets}) {
+      my $rpt_list = $composition->freeze2rpt;
+      next if exists $map->{$rpt_list};
+      exists $rpt2composition_map{$rpt_list}
+        or $self->logcroak('No target entity for ' . $composition->freeze);
+      $map->{$rpt_list} = $rpt2composition_map{$rpt_list};
+    }
+  }
+
+  return $map;
+}
+
+sub _compositions4lanes {
+  my ($self, $compositions) = @_;
+
+  my $map = {};
+
+  foreach my $composition (values %{$compositions}) {
+    ##no critic (BuiltinFunctions::ProhibitComplexMappings)
+    my @rpt_lists =
+      map { delete $_->{'tag_index'}; $_ }
+      map { npg_tracking::glossary::rpt->inflate_rpt($_) }
+      map { $_->freeze2rpt() }
+      $self->composition->components_list();
+    ##use critic
+    foreach my $rptl (@rpt_lists) {
+      next if exists $map->{$rptl};
+      $map->{$rptl} = npg_pipeline::product->new(rpt_list =>  $rptl)->composition();
+    }
+  }
+
+  return $map;
+}
+
+sub _prune_by_subset {
+  my ($self, $compositions) = @_;
+
+  my $map = {};
+
+  for my $check_name (@WITH_SUBSET_CHECKS) {
+    if (!exists $self->_skip_checks_wsubsets->{$check_name}) {
+      $map->{$check_name} = $compositions;
+    } else {
+      my @subsets = @{$self->_skip_checks_wsubsets->{$check_name}};
+      # If no subsets are defined, we skip the check
+      next if !@subsets;
+      while (my ($key, $c) = each %{$compositions}) {
+        my $entity_subset = $c->get_component(0)->subset;
+        if ( none { $_ eq $entity_subset} ) {
+          $map->{$check_name}->{$key} = $c;
+	}
+      }
+    }
+  }
+
+  return $map;
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
 
 1;
+
 __END__
 
 =head1 NAME
@@ -286,17 +253,9 @@ npg_pipeline::validation::autoqc_files
 
 =head1 SYNOPSIS
 
-  my $rf = npg_pipeline::validation::autoqc_files
-           ->new(irods          => $irods,
-                 logger         => $logger,
-                 id_run         => 1234,
-                 collection     => '/irods/1234',
-                 file_extension => 'cram');
-  my $is_archived = $rf->fully_archived;
-
 =head1 DESCRIPTION
 
-  Compares a set of archived bam files againsts a set of autoqc results for
+  Compares a set of archived bam files against a set of autoqc results for
   a run and decides whether all relevant autoqc results have been archived.
   Autoqc results that can easily be produced again from bam files are omitted.
   Presence of fastqcheck files in the archive is checked.
@@ -315,8 +274,7 @@ npg_pipeline::validation::autoqc_files
 
 =head2 skip_checks
 
-  An optional array of autoqc check names to disregard. If a subset is concatenated
-  (use -) with the check name, only this subset will be disregarded for this check.
+  An optional array of autoqc check names to disregard..
 
   Setting this array to [qw/adaptor samtools_stats-phix/] ensure that absence of
   all adaptor results and absence of samtools_stats results for phix subsets will be
@@ -348,11 +306,15 @@ npg_pipeline::validation::autoqc_files
 
 =item File::Basename
 
+=item npg_tracking::glossary::rpt
+
+=item npg_tracking::glossary::composition
+
 =item npg_qc::Schema
 
 =item npg_qc::autoqc::role::result
 
-=item npg_tracking::glossary::run
+=item npg_pipeline::product
 
 =back
 
@@ -366,7 +328,7 @@ Marina Gourtovaia E<lt>mg8@sanger.ac.ukE<gt>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 GRL
+Copyright (C) 2019 GRL
 
 This file is part of NPG.
 
