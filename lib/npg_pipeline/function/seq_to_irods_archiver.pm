@@ -20,32 +20,17 @@ Readonly::Scalar my $OLD_DATED_DIR_NAME  => q[20180717];
 sub create {
   my $self = shift;
 
-  my $ref = {
-    'created_by' => __PACKAGE__,
-    'created_on' => $self->timestamp(),
-    'identifier' => $self->id_run(),
-  };
+  my $ref = $self->basic_definition_init_hash();
 
-  if ($self->no_irods_archival) {
-    $self->info(q{Archival to iRODS is switched off.});
-    $ref->{'excluded'} = 1;
-  } else {
+  if (!$ref->{'excluded'}) {
+
     my $job_name_prefix = join q{_}, q{publish_seq_data2irods}, $self->id_run();
-    $ref->{'job_name'}  = join q{_}, $job_name_prefix, $self->timestamp();
-    $ref->{'fs_slots_num'} = 1;
-    $ref->{'reserve_irods_slots'} = 1;
-    $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
-    $ref->{'command_preexec'} =
-      qq{npg_pipeline_script_must_be_unique_runner -job_name="$job_name_prefix"};
+    $self->assign_common_definition_attrs($ref, $job_name_prefix);
 
-    my $publish_log_name = join q[_], $job_name_prefix, $self->random_string();
-    $publish_log_name .= q{.restart_file.json};
-
-    my $max_errors = $self->general_values_conf()->{'publish2irods_max_errors'} || $NUM_MAX_ERRORS;
     my $command = join q[ ],
       $PUBLISH_SCRIPT_NAME,
-      q{--restart_file},   (join q[/], $self->archive_path(), $publish_log_name),
-      q{--max_errors},     $max_errors;
+      q{--restart_file},   $self->restart_file_path($job_name_prefix),
+      q{--max_errors},     $self->num_max_errors();
 
     if ($self->qc_run) {
       $command .= q{ --alt_process qc_run};
@@ -93,6 +78,48 @@ sub irods_destination_collection {
   return join q[/],
     $self->platform_NovaSeq() ? $IRODS_ROOT_NOVASEQ_RUNS : $IRODS_ROOT_NON_NOVASEQ_RUNS,
     $self->id_run;
+}
+
+sub basic_definition_init_hash {
+  my $self = shift;
+
+  my $ref = {
+    'created_by' => ref $self,
+    'created_on' => $self->timestamp(),
+    'identifier' => $self->id_run(),
+  };
+
+  if ($self->no_irods_archival) {
+    $self->info(q{Archival to iRODS is switched off.});
+    $ref->{'excluded'} = 1;
+  }
+
+  return $ref;
+}
+
+sub assign_common_definition_attrs {
+  my ($self, $ref, $job_name_prefix) = @_;
+
+  $ref->{'job_name'}  = join q{_}, $job_name_prefix, $self->timestamp();
+  $ref->{'fs_slots_num'} = 1;
+  $ref->{'reserve_irods_slots'} = 1;
+  $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
+  $ref->{'command_preexec'} =
+    qq{npg_pipeline_script_must_be_unique_runner -job_name="$job_name_prefix"};
+
+  return;
+}
+
+sub num_max_errors {
+  my $self = shift;
+  return $self->general_values_conf()->{'publish2irods_max_errors'} || $NUM_MAX_ERRORS;
+}
+
+sub restart_file_path {
+  my ($self, $job_name_prefix) = @_;
+  my $file_name = join q[_], $job_name_prefix, $self->random_string();
+  $file_name .= q{.restart_file.json};
+  return join q[/], $self->archive_path(), $file_name;
 }
 
 sub _find_old_dated_dir {
@@ -153,9 +180,32 @@ Creates and returns a single function definition as an array.
 Function definition is created as a npg_pipeline::function::definition
 type object.
 
+=head2 basic_definition_init_hash
+
+Creates and returns a hash reference suitable for initialising a basic
+npg_pipeline::function::definition object. created_by, created_on and
+identifier attributes are assigned. If no_irods_archival flag is set,
+thw excluded attribute is set to true.
+
+=head2 assign_common_definition_attrs
+
+Given a hash reference as an argument, adds job_name, fs_slots_num,
+reserve_irods_slots, queue and command_preexec key-value pairs
+to the hash.
+
 =head2 irods_destination_collection
 
 Returns iRODS destination collection for this run.
+
+=head2 num_max_errors
+
+Returns the maximum number of errors aftre wich the iRODs publisher
+should exit.
+
+=head2 restart_file_path
+
+Given a job name prefix, returns a full path of the iRODS publisher
+restart file.
 
 =head1 DIAGNOSTICS
 

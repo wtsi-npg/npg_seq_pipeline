@@ -1,17 +1,16 @@
-package npg_pipeline::function::log_files_archiver;
+package npg_pipeline::function::run_data_to_irods_archiver;
 
 use Moose;
 use namespace::autoclean;
 use Readonly;
 
 use npg_pipeline::function::definition;
-use npg_pipeline::runfolder_scaffold;
 
 extends qw{npg_pipeline::function::seq_to_irods_archiver};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $SCRIPT_NAME => 'npg_publish_illumina_logs.pl';
+Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
 
 override 'create' => sub {
   my $self = shift;
@@ -20,25 +19,25 @@ override 'create' => sub {
 
   if (!$ref->{'excluded'}) {
 
-    $self->assign_common_definition_attrs(
-      $ref, (join q{_}, q{publish_logs}, $self->id_run()));
+    my $job_name_prefix = join q{_}, q{publish_run_data2irods}, $self->id_run();
+    $self->assign_common_definition_attrs($ref, $job_name_prefix);
 
-    my $future_path = npg_pipeline::runfolder_scaffold
-                      ->path_in_outgoing($self->runfolder_path());
-    $ref->{'command_preexec'} = qq{[ -d '$future_path' ]};
+    my $command = join q[ ],
+      $PUBLISH_SCRIPT_NAME,
+      q{--restart_file},     $self->restart_file_path($job_name_prefix),
+      q{--max_errors},       $self->num_max_errors(),
+      q{--collection},       $self->irods_destination_collection(),
+      q{--source_directory}, $self->runfolder_path(),
+      q{--include},          q['RunInfo.xml'],
+      q{--include},          q['[Rr]unParameters.xml'],
+      q{--include},          q[InterOp],
+      q{--id_run},           $self->id_run;
 
-    $ref->{'command'} = join q[ ],
-      $SCRIPT_NAME,
-      q{--collection},     $self->irods_destination_collection(),
-      q{--runfolder_path}, $future_path,
-      q{--id_run},         $self->id_run();
+    $self->info(qq[iRODS loader command "$command"]);
+    $ref->{'command'} = $command;
   }
 
   return [npg_pipeline::function::definition->new($ref)];
-};
-
-override 'irods_destination_collection' => sub {
-  return join q[/], super(), q[log];
 };
 
 __PACKAGE__->meta->make_immutable;
@@ -49,15 +48,18 @@ __END__
 
 =head1 NAME
 
-npg_pipeline::function::log_files_archiver
+npg_pipeline::function::run_data_to_irods_archiver
 
 =head1 SYNOPSIS
 
-  my $fsa = npg_pipeline::function::log_files_archiver->new(
-    run_folder => 'run_folder'
-  );
+  my $archiver = npg_pipeline::function::run_data_to_irods_archiver
+                 ->new(runfolder_path => '/some/path'
+                       id_run         => 22);
+  my $definitions = $archiver->create();
 
 =head1 DESCRIPTION
+
+Defines a job for publishing Illumina run data to iRODS.
 
 =head1 SUBROUTINES/METHODS
 
@@ -66,13 +68,6 @@ npg_pipeline::function::log_files_archiver
 Creates and returns a single function definition as an array.
 Function definition is created as a npg_pipeline::function::definition
 type object.
-
-  my @job_ids = $fsa->create();
-
-=head2 irods_destination_collection
-
-Returns iRODS destination collection for log files belonging
-to this run.
 
 =head1 DIAGNOSTICS
 
@@ -84,9 +79,9 @@ to this run.
 
 =item Moose
 
-=item namespace::autoclean
-
 =item Readonly
+
+=item namespace::autoclean
 
 =back
 
@@ -96,8 +91,7 @@ to this run.
 
 =head1 AUTHOR
 
-Jennifer Liddle
-Marinan Gourtovaia
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 

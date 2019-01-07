@@ -18,6 +18,11 @@
          },
          {
             "relation" : "dependsOn",
+            "target" : "archive_run_data_to_irods",
+            "source" : "archive_to_irods_ml_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
             "target" : "upload_fastqcheck_to_qc_database",
             "source" : "archive_to_irods_ml_warehouse"
          },
@@ -40,6 +45,11 @@
             "relation" : "dependsOn",
             "target" : "run_run_archived",
             "source" : "upload_illumina_analysis_to_qc_database"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "run_run_archived",
+            "source" : "archive_run_data_to_irods"
          },
          {
             "relation" : "dependsOn",
@@ -93,6 +103,10 @@
          {
             "id" : "archive_to_irods_ml_warehouse",
             "label" : "archive_to_irods_ml_warehouse"
+         },
+         {
+            "id" : "archive_run_data_to_irods",
+            "label" : "archive_run_data_to_irods"
          },
          {
             "id" : "upload_fastqcheck_to_qc_database",
