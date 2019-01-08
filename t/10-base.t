@@ -155,14 +155,15 @@ subtest 'products' => sub {
   is (scalar @{$products->{'data_products'}}, 23, '23 data products'); 
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_rapidrun_nopool.csv';
-  cp 't/data/run_params/runParameters.hiseq.rr.xml',  "$rf_path/runParameters.xml"; 
+  cp 't/data/run_params/runParameters.hiseq.rr.xml',  "$rf_path/runParameters.xml";
+  cp 't/data/run_params/RunInfo.hiseq.rr.xml',  "$rf_path/RunInfo.xml"; 
   $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
-  ok ($b->merge_lanes, 'merge_lanes flag is set');
+  ok (!$b->merge_lanes, 'merge_lanes flag is not set');
   lives_ok {$products = $b->products} 'products hash created for rapid run';
   ok (exists $products->{'lanes'}, 'products lanes key exists');
   is (scalar @{$products->{'lanes'}}, 2, 'two lane products');
   ok (exists $products->{'data_products'}, 'products data_products key exists');
-  is (scalar @{$products->{'data_products'}}, 1, 'one data products');
+  is (scalar @{$products->{'data_products'}}, 2, 'two data products');
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/miseq/samplesheet_16850.csv';
   cp 't/data/run_params/runParameters.miseq.xml',  "$rf_path/runParameters.xml";
