@@ -6,7 +6,6 @@ use namespace::autoclean;
 use Readonly;
 use Try::Tiny;
 use List::MoreUtils qw/none uniq/;
-#use File::Basename;
 
 use npg_tracking::glossary::rpt;
 use npg_tracking::glossary::composition;
@@ -14,7 +13,8 @@ use npg_qc::Schema;
 use npg_qc::autoqc::role::result;
 use npg_pipeline::product;
 
-with 'npg_pipeline::validation::common';
+with qw/ npg_pipeline::validation::common
+         WTSI::DNAP::Utilities::Loggable /;
 
 our $VERSION = '0';
 
@@ -315,6 +315,8 @@ npg_pipeline::validation::autoqc_files
 =item npg_qc::autoqc::role::result
 
 =item npg_pipeline::product
+
+=item WTSI::DNAP::Utilities::Loggable
 
 =back
 

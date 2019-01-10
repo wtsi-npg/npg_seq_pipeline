@@ -25,6 +25,28 @@ Readonly::Scalar my $BAM_FILE_EXTENSION   => q[bam];
 Readonly::Scalar my $DEFAULT_IRODS_ROOT   => q[/seq];
 Readonly::Scalar my $STAGING_TAG          => q[staging];
 
+Readonly::Array  my @NO_SCRIPT_ARG_ATTRS  => qw/
+                                                p4s1_phix_alignment_method
+                                                p4s2_aligner_intfile 
+                                                adapterfind
+                                                s1_s2_intfile_format
+                                                intensity_path
+                                                no_summary_link
+                                                no_warehouse_update
+                                                no_irods_archival 
+                                                recalibrated_path
+                                                basecall_path
+                                                align_tag0
+                                                local
+                                                qc_run
+                                                repository
+                                                index_length
+                                                index_file_extension
+                                                lanes
+                                                id_flowcell_lims
+                                                conf_path
+                                               /;
+
 =head1 NAME
 
 npg_pipeline::validation
@@ -122,6 +144,14 @@ has q{remove_staging_tag} => (
 );
 
 ############## Other public attributes #####################################
+
+
+#####
+# Amend inherited attributes which we do not want to show up as scripts' arguments.
+# This is in addition to what is done in the parent class.
+#
+has [map {q[+] . $_ }  @NO_SCRIPT_ARG_ATTRS] => (metaclass => 'NoGetopt',);
+
 
 =head2 file_extension
 

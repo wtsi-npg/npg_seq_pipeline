@@ -2,47 +2,27 @@ package npg_pipeline::validation::common;
 
 use Moose::Role;
 
-with 'WTSI::DNAP::Utilities::Loggable';
-
 our $VERSION = '0';
 
-=head1 NAME
+has 'staging_files'  => (
+  isa      => 'HashRef',
+  is       => 'ro',
+  required => 1,
+);
 
-npg_pipeline::validation::common
+has 'file_extension' => (
+  isa      => 'Str',
+  is       => 'ro',
+  required => 0,
+  documentation => 'File extension for the sequence file format',
+);
 
-=head2 logger
-
-=head2 staging_files
-
-=cut
-
-has 'staging_files'  => (isa      => 'HashRef',
-                         is       => 'ro',
-                         required => 1,
-                        );
-
-=head2 file_extension
-
-File extension for the sequence file format, required.
-
-=cut
-
-has 'file_extension' => (isa      => 'Str',
-                         is       => 'ro',
-                         required => 0,
-                        );
-
-=head2 index_file_extension
-
-File extension for the sequence file index, cannot be set, inferred.
-
-=cut
-
-has 'index_file_extension' => (isa        => 'Str',
-                               is         => 'ro',
-                               required   => 0,
-                               lazy_build => 1,
-                              );
+has 'index_file_extension' => (
+  isa        => 'Str',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
+);
 sub _build_index_file_extension {
   my $self = shift;
   my $e = $self->file_extension;
@@ -50,17 +30,13 @@ sub _build_index_file_extension {
   return $e;
 }
 
-=head2 composition_file_extension
-
-File extension for the sequence file format, required.
-
-=cut
-
-has 'composition_file_extension' => (isa      => 'Str',
-                                     is       => 'ro',
-                                     required => 0,
-                                     default  => 'composition.json',
-                                    );
+has 'composition_file_extension' => (
+  isa           => 'Str',
+  is            => 'ro',
+  required      => 0,
+  default       => 'composition.json',
+  documentation => 'File extension for composition JSON files',
+);
 
 no Moose::Role;
 
@@ -79,6 +55,20 @@ npg_pipeline::validation::common
 Moose role. Common functionality for modules of run_is_deletable script.
 
 =head1 SUBROUTINES/METHODS
+
+=head2 staging_files
+
+=head2 file_extension
+
+File extension for the sequence file format, required.
+
+=head2 index_file_extension
+
+File extension for the sequence file index, inferred.
+
+=head2 composition_file_extension
+
+File extension for composition JSON files, defaults to composition.json .
 
 =head1 DIAGNOSTICS
 
