@@ -10,7 +10,8 @@ use Try::Tiny;
 use WTSI::NPG::iRODS;
 use WTSI::NPG::iRODS::Collection;
 
-with 'npg_pipeline::validation::common';
+with qw/ npg_pipeline::validation::common
+         WTSI::DNAP::Utilities::Loggable /;
 
 our $VERSION = '0';
 
@@ -286,6 +287,8 @@ __END__
 =item Perl6::Slurp
 
 =item Try::Tiny
+
+=item WTSI::DNAP::Utilities::Loggable
 
 =back
 
