@@ -5,6 +5,7 @@ use MooseX::StrictConstructor;
 use namespace::autoclean;
 use Readonly;
 use Try::Tiny;
+use Perl6::Slurp;
 use List::MoreUtils qw/none uniq/;
 
 use npg_tracking::glossary::rpt;
@@ -65,7 +66,7 @@ sub fully_archived {
     my $digest = $composition->digest;
     my $component = $composition->get_component(0);
 
-    if ($component->subset) {
+    if (!$component->subset) {
       $compositions->{$digest} = $composition;
     } else {
       $compositions_with_subsets->{$digest} = $composition;
@@ -85,14 +86,18 @@ sub fully_archived {
 
   my @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} }
                (@common, @WITH_SUBSET_CHECKS);
+  $self->debug('Expected product level checks: ' . join q[, ], @checks);
   my @flags = $self->_results_exist($compositions, @checks);
 
   my $per_check_map = $self->_prune_by_subset($compositions_with_subsets);
-  foreach my $check_name (keys  %{$per_check_map}) {
+  @checks = keys  %{$per_check_map};
+  $self->debug('Expected checks for products with subsets: ' . join q[, ], @checks);
+  foreach my $check_name (@checks) {
     push @flags, $self->_results_exist($per_check_map->{$check_name}, $check_name);
   }
 
   try {
+    $self->debug('Checking alignment_filter results');
     push @flags, $self->_results_exist(
       $self->_compositions4compositions_with_subsets($compositions, $compositions_with_subsets),
       'alignment_filter_metrics');
@@ -108,6 +113,7 @@ sub fully_archived {
   @checks = grep {$_ ne 'adapter'} @common;
   push @checks, @LANE_LEVELCHECKS;
   @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} } @checks;
+  $self->debug('Expected lane level checks: ' . join q[, ], @checks);
   push @flags, $self->_results_exist($compositions4lanes, @checks);
 
   if (@non_pools != @positions) {
@@ -119,6 +125,7 @@ sub fully_archived {
       }
     }
     @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} } @LANE_LEVELCHECKS4POOL;
+    $self->debug('Expected lane level checks for a pool: ' . join q[, ], @checks);
     push @flags, $self->_results_exist($pools, @checks);
   }
 
@@ -154,7 +161,7 @@ sub _build__skip_checks_wsubsets {
   return $skip_checks;
 }
 
-sub _results_exists {
+sub _results_exist {
   my ($self, $compositions, @checks) = @_;
 
   my $exists = 1;
@@ -164,9 +171,24 @@ sub _results_exists {
       my ($name, $class_name) = npg_qc::autoqc::role::result->class_names($check_name);
       my $count = $self->_qc_schema->resultset($class_name)
                        ->search_via_composition([values %{$compositions}])->count;
-      if ($count != $expected) {
-        $self->info(qq[Expected $expected results got $count for $check_name]);
+      my $failed = 0;
+      if ($check_name ne 'samtools_stats') {
+        if ($count != $expected) {
+          $self->warn(qq[Expected $expected results got $count for $check_name]);
+          $failed = 1;
+        }
+      } else {
+        my $e = $expected * 2;
+        if ($count < $e) {
+          $self->warn(qq[Expected at least $expected results got $count for $check_name]);
+          $failed = 1;
+	}
+      }
+      if ($failed) {
         $exists = 0;
+        for my $c (values %{$compositions}) {
+          $self->debug(qq[Failed to find $check_name data for ] . $c->freeze());
+        }
       }
     }
   }
@@ -203,10 +225,12 @@ sub _compositions4lanes {
   foreach my $composition (values %{$compositions}) {
     ##no critic (BuiltinFunctions::ProhibitComplexMappings)
     my @rpt_lists =
+      map { npg_tracking::glossary::rpt->deflate_rpt($_) }
       map { delete $_->{'tag_index'}; $_ }
       map { npg_tracking::glossary::rpt->inflate_rpt($_) }
       map { $_->freeze2rpt() }
-      $self->composition->components_list();
+      map { $_->components_list() }
+      values %{$compositions};
     ##use critic
     foreach my $rptl (@rpt_lists) {
       next if exists $map->{$rptl};
@@ -305,6 +329,8 @@ npg_pipeline::validation::autoqc_files
 =item List::MoreUtils
 
 =item File::Basename
+
+=item Perl6::Slurp
 
 =item npg_tracking::glossary::rpt
 

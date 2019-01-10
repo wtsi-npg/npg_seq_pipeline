@@ -8,9 +8,12 @@ use Try::Tiny;
 use Readonly;
 use File::Find;
 use Perl6::Slurp;
+use List::MoreUtils qw/any none/;
 
 use npg_tracking::glossary::composition;
 use npg_pipeline::cache;
+use npg_pipeline::validation::sequence_files;
+use npg_pipeline::validation::autoqc_files;
 
 extends q{npg_pipeline::base};
 with    q{npg_pipeline::validation::common};
@@ -209,6 +212,7 @@ has q{+staging_files}  => (
 );
 sub _build_staging_files {
   my $self = shift;
+  $self->debug('Building a list of staging files');
 
   my $files = {'sequence_files' => [], 'composition_files' => []};
   my $ext   = $self->file_extension;
@@ -220,7 +224,9 @@ sub _build_staging_files {
       push @{$files->{'sequence_files'}}, $File::Find::name;
     }
   };
-  find($wanted, no_chdir => 1, follow => 1, $self->archive_path);
+
+  find($wanted, $self->archive_path);
+
   if (!@{$files->{'composition_files'}}) {
     $self->logcroak('No composition files found in ' . $self->archive_path);
   }
@@ -244,17 +250,22 @@ sub run {
   my $vars_set  = 0;
 
   if (!$deletable) {
-    $vars_set = $self->_vars_from_samplesheet();
+    $vars_set = $self->_set_vars_from_samplesheet();
   }
 
-  $deletable = $deletable || (
+  try {
+    $deletable = $deletable || (
               $self->_npg_tracking_deletable() &&
               $self->_time_limit_deletable()   &&
               $self->_lims_deletable()         &&
               $self->_staging_seq_deletable()  &&
               $self->_irods_seq_deletable()    &&
               $self->_autoqc_deletable()
-                             );
+                               );
+  } catch {
+    my $e = $_;
+    $self->error(sprintf 'Error assessing run %i: %s', $self->id_run, $e);
+  };
 
   #########
   # unset env variables
@@ -268,7 +279,7 @@ sub run {
 
   if ($deletable && $self->remove_staging_tag) {
     $self->tracking_run->unset_tag($STAGING_TAG);
-    $self->warn('Staging tag is removed for run ' . $self->id_run);
+    $self->info('Staging tag is removed for run ' . $self->id_run);
   }
 
   return $deletable;
@@ -315,30 +326,33 @@ sub _build__run_status_obj {
 
 sub _time_limit_deletable {
   my $self = shift;
+  $self->debug('Assessing time limit...');
 
   if ($self->ignore_time_limit) {
+    $self->info('Time limit ignored.');
     return 1;
   }
 
-  my $id_run = $self->id_run;
   my $delta_days = DateTime->now()->delta_days($self->_run_status_obj->date())->in_units('days');
   my $deletable = $delta_days >= $self->min_keep_days;
-  my $m = qq[time_limit: $id_run last status change was $delta_days days ago. ] .
-          $deletable ? q[Deletable] : q[NOT deletable];
-  $self->warn($m);
+  my $m = sprintf 'Time limit: %i last status change was %i days ago, %sdeletable.',
+          $self->id_run, $delta_days, $deletable ? q[] : q[NOT ];
+  $self->info($m);
 
   return $deletable;
 }
 
 sub _npg_tracking_deletable {
   my ($self, $unconditional) = @_;
+  $self->debug('Assessing run status...');
 
-  if ($self->ignore_npg_status) {
+  if (!$unconditional && $self->ignore_npg_status) {
+    $self->info('NPG tracking run status ignored.');
     return 1;
   }
 
   my $crsd = $self->_run_status_obj->run_status_dict->description();
-  my $message = sprintf q[npg_tracking: status of run %i is '%s',],
+  my $message = sprintf q[NPG tracking: status of run %i is '%s', ],
                 $self->id_run, $crsd;
   my $deletable;
 
@@ -346,22 +360,24 @@ sub _npg_tracking_deletable {
     $deletable = ( any { $_ eq $crsd } @NPG_DELETABLE_UNCOND ) &&
                  ( $self->ignore_time_limit || $self->time_limit_deletable() );
     if ($deletable) {
-      $self->warn(qq[$message unconditionally deletable]);
+      $self->info(qq[$message unconditionally deletable.]);
     }
     return $deletable;
   }
 
   $deletable = any { $_ eq $crsd } @NPG_DELETABLE_STATES;
-  $message .= ($deletable ? q[] : q[NOT ]) . q[deletable];
-  $self->warn($message);
+  $message .= ($deletable ? q[] : q[NOT ]) . q[deletable.];
+  $self->info($message);
 
   return $deletable;
 }
 
 sub _irods_seq_deletable {
   my $self = shift;
+  $self->debug('Assessing sequencing data files in iRODS...');
 
   if ($self->ignore_irods) {
+    $self->info('iRODS check ignored');
     return 1;
   }
 
@@ -372,17 +388,19 @@ sub _irods_seq_deletable {
              staging_files       => $self->staging_files
            )->archived_for_deletion();
 
-  my $m = q[iRODS: run ] . $self->id_run . $deletable ?
-          q[ sequence files archived. Deletable] : q[ NOT deletable];
-  $self->warn($m);
+  my $m = sprintf 'Presence of seq. files in iRODS: run %i %sdeletable',
+          $self->id_run , $deletable ? q[] : q[NOT ];
+  $self->info($m);
 
   return $deletable;
 }
 
 sub _autoqc_deletable {
   my $self = shift;
+  $self->debug('Assessing autoqc results in the database...');
 
   if ($self->ignore_autoqc) {
+    $self->info('Autoqc results check ignored');
     return 1;
   }
 
@@ -392,53 +410,56 @@ sub _autoqc_deletable {
              is_paired_read => $self->is_paired_read ? 1 : 0,
              staging_files  => $self->staging_files )->fully_archived();
 
-  my $m = q[Autoqc: run] . $self->id_run . $deletable ?
-          q[ autoqc results fully archived. Deletable] : q[ is NOT deletable];
-  $self->warn($m);
+  my $m = sprintf 'Presence of autoqc results in the database: run %i %sdeletable',
+          $self->id_run , $deletable ? q[] : q[NOT ];
+  $self->info($m);
 
   return $deletable;
 }
 
 sub _staging_seq_deletable {
   my $self = shift;
+  $self->debug('Assessing staging files...');
 
   my $checked_ok = 1;
   my $ext   = $self->file_extension;
   my $c_ext = $self->composition_file_extension;
 
-  ##no critic (RegularExpressions::ProhibitUnusedCapture)
-  my $re = /(.+[.])$c_ext\Z/smx;
-  ##use critic
+  my $re = qr/(.+[.])$c_ext\Z/smx;
   foreach my $f (@{$self->staging_files->{'composition_files'}}) {
     my ($root) = $f =~ $re;
     $root or $self->logcroak("Failed to get file name root from $f");
     my $seq_file = $root . $ext;
-    if (!exists $self->staging_files->{'sequence_files'}->{$seq_file}) {
+    if (none {$_ eq $seq_file} @{$self->staging_files->{'sequence_files'}}) {
       $self->logwarn("File $seq_file does not exists for composition file $f");
       $checked_ok = 0;
     }
   }
 
-  ##no critic (RegularExpressions::ProhibitUnusedCapture)
-  $re = /(.+[.])$ext\Z/smx;
-  ##use critic
+  $re = qr/(.+[.])$ext\Z/smx;
   foreach my $f (@{$self->staging_files->{'sequence_files'}}) {
     my ($root) = $f =~ $re;
     $root or $self->logcroak("Failed to get file name root from $f");
     my $comp_file = $root . $c_ext;
-    if (!exists $self->staging_files->{'composition_files'}->{$comp_file}) {
+    if (none {$_ eq $comp_file} @{$self->staging_files->{'composition_files'}}) {
       $self->logwarn("File $comp_file does not exists for seq data file $f");
       $checked_ok = 0;
     }
   }
+
+  my $m = sprintf 'Consistency of staging files: run %i %sdeletable',
+          $self->id_run , $checked_ok ? q[] : q[NOT ];
+  $self->info($m);
 
   return $checked_ok;
 }
 
 sub _lims_deletable {
   my $self = shift;
+  $self->debug('Assessing LIMs data and products...');
 
   if ($self->ignore_lims) {
+    $self->info('LIMs data ignored');
     return 1;
   }
 
@@ -482,6 +503,10 @@ sub _lims_deletable {
     }
   }
 
+  my $m = sprintf 'Consistency of products listing with LIMs: run %i %sdeletable',
+          $self->id_run , $deletable ? q[] : q[NOT ];
+  $self->info($m);
+
   return $deletable;
 }
 
@@ -490,7 +515,7 @@ sub _composition_file_exists {
 
   my $exists = 1;
   my $file_path = $product->file_path(
-    $product->path($self->archive_dir), ext => $self->composition_file_extension);
+    $product->path($self->archive_path), ext => $self->composition_file_extension);
   if (any { $_ eq $file_path } @{$self->staging_files->{'composition_files'}}) {
     my $composition = npg_tracking::glossary::composition->thaw(slurp($file_path));
     if ($composition->digest ne $product->composition->digest) {
@@ -532,6 +557,8 @@ __END__
 =item File::Find
 
 =item Perl6::Slurp
+
+=item List::MoreUtils
 
 =item npg_tracking::glossary::composition
 

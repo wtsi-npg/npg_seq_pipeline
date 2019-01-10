@@ -14,13 +14,13 @@ my $v = npg_pipeline::validation->new_with_options();
 Log::Log4perl->easy_init({layout => '%d %-5p %c %M - %m%n',
                           level  => $v->verbose() ? $DEBUG : $INFO,
                           utf8   => 1});
-$v->warn(sprintf 'Running %s for run %i, runfolder %s',
+$v->info(sprintf 'Running %s for run %i, runfolder %s',
                  __FILE__, $v->id_run, $v->runfolder_path);
 
 my $deletable = $v->run();
 
-my $m = sprintf 'Run %i is %sdeletable', $v->id_run, $deletable ? q[] : q[NOT ];
-$v->warn($m);
+my $m = sprintf 'Run %i is %sdeletable.', $v->id_run, $deletable ? q[] : q[NOT ];
+$v->info($m);
 
 exit $deletable ? 0 : 1;
 

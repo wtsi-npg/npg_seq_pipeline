@@ -73,7 +73,7 @@ has '_staging_seq_files' => (isa        => 'ArrayRef',
 sub _build__staging_seq_files {
   my $self = shift;
   my @files = sort @{$self->staging_files->{'sequence_files'}};
-  $self->info(join qq{\n}, q{Staging files list}, @files);
+  $self->debug(join qq{\n}, q{Staging files list}, @files);
   return \@files;
 }
 
@@ -120,7 +120,7 @@ sub _build__irods_files {
   if (!@seq_list) {
     $self->logcroak('Empty list of iRODS seq files');
   }
-  $self->info(join qq{\n}, q{iRODS seq files list}, @seq_list);
+  $self->debug(join qq{\n}, q{iRODS seq files list}, @seq_list);
   return [sort @seq_list];
 }
 
@@ -133,7 +133,7 @@ sub _build__irods_index_files {
   my $i_re = $self->index_file_extension;
   $i_re = qr/[.]$i_re\Z/xms;
   my @i_list   = grep { $_ =~ $i_re } keys %{$self->_collection_files};
-  $self->info(join qq{\n}, q{iRODS index files list}, @i_list);
+  $self->debug(join qq{\n}, q{iRODS index files list}, @i_list);
   return {map {$_ => 1} @i_list};
 }
 
