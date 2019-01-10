@@ -6,6 +6,7 @@ use POSIX qw(strftime);
 use Math::Random::Secure qw{irand};
 use List::MoreUtils qw{any};
 use File::Basename;
+use Readonly;
 
 use npg_tracking::glossary::rpt;
 use npg_tracking::glossary::composition::factory::rpt_list;
@@ -24,6 +25,27 @@ with qw{
         npg_pipeline::base::irods
        };
 
+Readonly::Array my @NO_SCRIPT_ARG_ATTRS  => qw/
+                                               slot
+                                               instrument_string
+                                               bustard_path
+                                               reports_path
+                                               subpath
+                                               tilelayout_rows
+                                               tile_count
+                                               lane_tilecount
+                                               tilelayout_columns
+                                               npg_tracking_schema
+                                               flowcell_id
+                                               name
+                                               tracking_run
+                                               experiment_name
+                                               logger
+                                               lane_count
+                                               expected_cycle_count
+                                               run_flowcell
+                                              /;
+
 =head1 NAME
 
 npg_pipeline::base
@@ -37,16 +59,32 @@ within npg_pipeline package
 
 =head1 SUBROUTINES/METHODS
 
+=head2 npg_tracking_schema
+
+=head2 flowcell_id
+
+=head2 tracking_run
+
+=head2 logger
+
+Logger instance.
+Also all direct (ie invoked directly on $self) logging methods inherited from
+WTSI::DNAP::Utilities::Loggable.
+
 =cut
 
-has [qw/ +npg_tracking_schema
-         +slot
-         +flowcell_id
-         +instrument_string
-         +reports_path
-         +name
-         +tracking_run /] => (metaclass => 'NoGetopt',);
+#####
+# Amend inherited attributes which we do not want to show up as scripts' arguments.
+#
+has [map {q[+] . $_ }  @NO_SCRIPT_ARG_ATTRS] => (metaclass => 'NoGetopt',);
 
+=head2 id_run
+
+=cut
+
+#####
+# Amend inherited id_run attribute to make it optional.
+#
 has q{+id_run} => (required => 0,);
 
 =head2 timestamp
@@ -271,7 +309,7 @@ sub _build_products {
            'lanes'         => [map { $lims2product->($_) } @lanes] };
 }
 
-__PACKAGE__->meta->make_immutable;
+ __PACKAGE__->meta->make_immutable;
 
 1;
 
@@ -299,6 +337,8 @@ __END__
 
 =item File::Basename
 
+=item Readonly
+
 =item npg_tracking::glossary::rpt
 
 =item npg_tracking::glossary::composition::factory::rpt_list
@@ -322,7 +362,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
