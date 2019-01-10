@@ -3,17 +3,22 @@ package npg_pipeline::validation;
 use Moose;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
-use Carp;
 use Try::Tiny;
 use Readonly;
 use File::Find;
-use Perl6::Slurp;
+use List::MoreUtils qw/any none/;
 
 use npg_tracking::glossary::composition;
 use npg_pipeline::cache;
+use npg_pipeline::validation::entity;
+use npg_pipeline::validation::irods;
+use npg_pipeline::validation::autoqc;
+use WTSI::NPG::iRODS;
+use npg_qc::Schema;
 
-extends q{npg_pipeline::base};
-with    q{npg_pipeline::validation::common};
+extends  q{npg_pipeline::base};
+with    qw{npg_pipeline::validation::common
+           npg_pipeline::product::release::irods};
 
 our $VERSION = '0';
 
@@ -67,6 +72,9 @@ npg_pipeline::validation
 
 =head2 ignore_lims
 
+Boolean attribute, toggles ignoring products list derived from
+LIMs data, false by default.
+
 =cut
 
 has q{ignore_lims} => (
@@ -77,6 +85,8 @@ has q{ignore_lims} => (
 );
 
 =head2 ignore_npg_status
+
+Boolean attribute, toggles ignoring npg run status, false by default.
 
 =cut
 
@@ -89,6 +99,8 @@ has q{ignore_npg_status} => (
 
 =head2 ignore_time_limit
 
+Boolean attribute, toggles ignoring time limit, false by default,
+
 =cut
 
 has q{ignore_time_limit} => (
@@ -99,6 +111,9 @@ has q{ignore_time_limit} => (
 );
 
 =head2 ignore_autoqc
+
+Boolean attribute, toggles ignoring mismatch in number/attribution
+of autoqc results, false by default.
 
 =cut
 
@@ -111,6 +126,9 @@ has q{ignore_autoqc} => (
 
 =head2 ignore_irods
 
+Boolean attribute, toggles skipping a check of files in iRODS,
+false by default.
+
 =cut
 
 has q{ignore_irods} => (
@@ -122,6 +140,9 @@ has q{ignore_irods} => (
 
 =head2 use_cram
 
+Boolean attribute, toggles between using cram and bam files,
+true by default,
+
 =cut
 
 has q{use_cram} => (
@@ -132,7 +153,31 @@ has q{use_cram} => (
   q{Toggles between using cram and bam files, true by default},
 );
 
+=head2 per_product_archive
+
+A boolean attribute indicating whether a per-product staging archive
+is being used. True if a qc directory is not present in the archive
+directory for the analysis.
+
+=cut
+
+has 'per_product_archive' => (
+  isa        => 'Bool',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
+  documentation =>
+  q{Toggles between per-product and flat staging archive},
+);
+sub _build_per_product_archive {
+  my $self = shift;
+  return not -e $self->qc_path;
+}
+
 =head2 remove_staging_tag
+
+Boolean attribute, ttoggles an option to remove run's staging tag,
+false by default.
 
 =cut
 
@@ -140,7 +185,7 @@ has q{remove_staging_tag} => (
   isa           => q{Bool},
   is            => q{ro},
   documentation =>
-  q{toggles an option to remive run's staging tag, false by default},
+  q{Toggles an option to remove run's staging tag, false by default},
 );
 
 ############## Other public attributes #####################################
@@ -155,6 +200,10 @@ has [map {q[+] . $_ }  @NO_SCRIPT_ARG_ATTRS] => (metaclass => 'NoGetopt',);
 
 =head2 file_extension
 
+String attribute.
+Value set to 'cram if use_cram flag is true.
+Example: 'cram'. 
+
 =cut
 
 has q{+file_extension} => ( lazy_build => 1, );
@@ -164,6 +213,8 @@ sub _build_file_extension {
 }
 
 =head2 min_keep_days
+
+Integer attribute, minimum number of days not to keep the run.
 
 =cut
 
@@ -175,6 +226,8 @@ has q{min_keep_days} => (
 );
 
 =head2 skip_autoqc_check
+
+A list of autoqc check names to exclude from checking.
 
 =cut
 
@@ -189,6 +242,8 @@ has q{skip_autoqc_check} => (
 
 =head2 lims_driver_type
 
+st::api::lims driver type, defaults to samplesheet.
+
 =cut
 
 has q{lims_driver_type} => (
@@ -198,37 +253,82 @@ has q{lims_driver_type} => (
   documentation => q{st::api::lims driver type, defaults to samplesheet},
 );
 
-=head2 staging_files
+=head2 product_entities
+
+An array of npg_pipeline::validation::entity objects.
 
 =cut
 
-has q{+staging_files}  => (
+has q{+product_entities}  => (
   required   => 0,
   lazy_build => 1,
   metaclass  => 'NoGetopt',
 );
-sub _build_staging_files {
+sub _build_product_entities {
   my $self = shift;
 
-  my $files = {'sequence_files' => [], 'composition_files' => []};
-  my $ext   = $self->file_extension;
-  my $c_ext = $self->composition_file_extension;
-  my $wanted = sub {
-    if ($File::Find::name =~ /[.]$c_ext\Z/xms) {
-      push @{$files->{'composition_files'}}, $File::Find::name;
-    } elsif ($File::Find::name =~ /[.]$ext\Z/xms) {
-      push @{$files->{'sequence_files'}}, $File::Find::name;
+  my @e = ();
+  my $per_product_archive = $self->per_product_archive ? 1 : 0;
+
+  foreach my $product (@{$self->products->{'data_products'}}) {
+
+    # File for a phix split should always exist.
+    my @subsets = qw/phix/;
+    if (!$product->lims->gbs_plex_name) {
+      if ($product->lims->contains_nonconsented_human) {
+        push @subsets, 'human';
+      } elsif ($product->lims->contains_nonconsented_xahuman) {
+        push @subsets, 'xahuman';
+      } elsif ($product->lims->separate_y_chromosome_data) {
+        push @subsets, 'yhuman';
+      }
     }
-  };
-  find($wanted, no_chdir => 1, follow => 1, $self->archive_path);
-  if (!@{$files->{'composition_files'}}) {
-    $self->logcroak('No composition files found in ' . $self->archive_path);
-  }
-  if (!@{$files->{'sequence_files'}}) {
-    $self->logcroak("No .$ext files found in " . $self->archive_path);
+
+    push @e, npg_pipeline::validation::entity->new(
+                   target_product       => $product,
+                   subsets              => \@subsets,
+                   per_product_archive  => $per_product_archive,
+                   staging_archive_root => $self->archive_path);
   }
 
-  return $files;
+  @e or $self->logcroak('No data products found');
+
+  return \@e;
+}
+
+=head2 irods
+
+Instance of WTSI::NPG::iRODS class.
+
+=cut
+
+has 'irods' => (
+  isa        => 'WTSI::NPG::iRODS',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
+  metaclass  => 'NoGetopt',
+);
+sub _build_irods {
+  my $self = shift;
+  return WTSI::NPG::iRODS->new(logger => $self->logger);
+}
+
+=head2 qc_schema
+
+npg_qc::Schema database connection.
+
+=cut
+
+has 'qc_schema' => (
+  isa        => 'npg_qc::Schema',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
+  metaclass  => 'NoGetopt',
+);
+sub _build_qc_schema {
+  return npg_qc::Schema->connect();
 }
 
 ############## Public methods ###################################################
@@ -244,17 +344,22 @@ sub run {
   my $vars_set  = 0;
 
   if (!$deletable) {
-    $vars_set = $self->_vars_from_samplesheet();
+    $vars_set = $self->_set_vars_from_samplesheet();
   }
 
-  $deletable = $deletable || (
+  try {
+    $deletable = $deletable || (
               $self->_npg_tracking_deletable() &&
               $self->_time_limit_deletable()   &&
               $self->_lims_deletable()         &&
-              $self->_staging_seq_deletable()  &&
+              $self->_staging_deletable()      &&
               $self->_irods_seq_deletable()    &&
               $self->_autoqc_deletable()
-                             );
+                               );
+  } catch {
+    my $e = $_;
+    $self->error(sprintf 'Error assessing run %i: %s', $self->id_run, $e);
+  };
 
   #########
   # unset env variables
@@ -268,13 +373,23 @@ sub run {
 
   if ($deletable && $self->remove_staging_tag) {
     $self->tracking_run->unset_tag($STAGING_TAG);
-    $self->warn('Staging tag is removed for run ' . $self->id_run);
+    $self->info('Staging tag is removed for run ' . $self->id_run);
   }
 
   return $deletable;
 }
 
 ############## Private attributes and methods #########################################
+
+has q{_run_status_obj} => (
+  isa           => q{npg_tracking::Schema::Result::RunStatus},
+  is            => q{ro},
+  lazy_build    => 1,
+);
+sub _build__run_status_obj {
+  my $self = shift;
+  return $self->tracking_run->current_run_status;
+}
 
 sub _set_vars_from_samplesheet {
   my $self = shift;
@@ -303,42 +418,36 @@ sub _set_vars_from_samplesheet {
   return $vars_set;
 }
 
-has q{_run_status_obj} => (
-  isa           => q{npg_tracking::Schema::Result::RunStatus},
-  is            => q{ro},
-  lazy_build    => 1,
-);
-sub _build__run_status_obj {
-  my $self = shift;
-  return $self->tracking_run->current_run_status;
-}
-
 sub _time_limit_deletable {
   my $self = shift;
+  $self->debug('Assessing time limit...');
 
   if ($self->ignore_time_limit) {
+    $self->info('Time limit ignored.');
     return 1;
   }
 
-  my $id_run = $self->id_run;
-  my $delta_days = DateTime->now()->delta_days($self->_run_status_obj->date())->in_units('days');
+  my $delta_days = DateTime->now()->delta_days(
+                   $self->_run_status_obj->date())->in_units('days');
   my $deletable = $delta_days >= $self->min_keep_days;
-  my $m = qq[time_limit: $id_run last status change was $delta_days days ago. ] .
-          $deletable ? q[Deletable] : q[NOT deletable];
-  $self->warn($m);
+  my $m = sprintf 'Time limit: %i last status change was %i days ago, %sdeletable.',
+          $self->id_run, $delta_days, $deletable ? q[] : q[NOT ];
+  $self->info($m);
 
   return $deletable;
 }
 
 sub _npg_tracking_deletable {
   my ($self, $unconditional) = @_;
+  $self->debug('Assessing run status...');
 
-  if ($self->ignore_npg_status) {
+  if (!$unconditional && $self->ignore_npg_status) {
+    $self->info('NPG tracking run status ignored.');
     return 1;
   }
 
   my $crsd = $self->_run_status_obj->run_status_dict->description();
-  my $message = sprintf q[npg_tracking: status of run %i is '%s',],
+  my $message = sprintf q[NPG tracking: status of run %i is '%s', ],
                 $self->id_run, $crsd;
   my $deletable;
 
@@ -346,163 +455,123 @@ sub _npg_tracking_deletable {
     $deletable = ( any { $_ eq $crsd } @NPG_DELETABLE_UNCOND ) &&
                  ( $self->ignore_time_limit || $self->time_limit_deletable() );
     if ($deletable) {
-      $self->warn(qq[$message unconditionally deletable]);
+      $self->info(qq[$message unconditionally deletable.]);
     }
     return $deletable;
   }
 
   $deletable = any { $_ eq $crsd } @NPG_DELETABLE_STATES;
-  $message .= ($deletable ? q[] : q[NOT ]) . q[deletable];
-  $self->warn($message);
+  $message .= ($deletable ? q[] : q[NOT ]) . q[deletable.];
+  $self->info($message);
 
   return $deletable;
 }
 
 sub _irods_seq_deletable {
   my $self = shift;
+  $self->debug('Assessing sequencing data files in iRODS...');
 
   if ($self->ignore_irods) {
+    $self->info('iRODS check ignored');
     return 1;
   }
 
-  my $deletable = npg_pipeline::validation::sequence_files
-      ->new( logger              => $self->logger,
-             collection          => $self->irods_destination_collection,
-             file_extension      => $self->file_extension,
-             staging_files       => $self->staging_files
+  my $deletable = npg_pipeline::validation::irods
+      ->new( logger           => $self->logger,
+             collection       => $self->irods_destination_collection,
+             file_extension   => $self->file_extension,
+             product_entities => $self->product_entities,
+             irods            => $self->irods,
            )->archived_for_deletion();
 
-  my $m = q[iRODS: run ] . $self->id_run . $deletable ?
-          q[ sequence files archived. Deletable] : q[ NOT deletable];
-  $self->warn($m);
+  my $m = sprintf 'Presence of seq. files in iRODS: run %i %sdeletable',
+          $self->id_run , $deletable ? q[] : q[NOT ];
+  $self->info($m);
 
   return $deletable;
 }
 
 sub _autoqc_deletable {
   my $self = shift;
+  $self->debug('Assessing autoqc results in the database...');
 
   if ($self->ignore_autoqc) {
+    $self->info('Autoqc results check ignored');
     return 1;
   }
 
-  my $deletable = npg_pipeline::validation::autoqc_files
-      ->new( logger         => $self->logger,
-             skip_checks    => $self->skip_autoqc_check,
-             is_paired_read => $self->is_paired_read ? 1 : 0,
-             staging_files  => $self->staging_files )->fully_archived();
+  my $deletable = npg_pipeline::validation::autoqc
+      ->new( qc_schema        => $self->qc_schema,
+             logger           => $self->logger,
+             skip_checks      => $self->skip_autoqc_check,
+             is_paired_read   => $self->is_paired_read ? 1 : 0,
+             product_entities => $self->product_entities )->fully_archived();
 
-  my $m = q[Autoqc: run] . $self->id_run . $deletable ?
-          q[ autoqc results fully archived. Deletable] : q[ is NOT deletable];
-  $self->warn($m);
+  my $m = sprintf 'Presence of autoqc results in the database: run %i %sdeletable',
+          $self->id_run , $deletable ? q[] : q[NOT ];
+  $self->info($m);
 
   return $deletable;
-}
-
-sub _staging_seq_deletable {
-  my $self = shift;
-
-  my $checked_ok = 1;
-  my $ext   = $self->file_extension;
-  my $c_ext = $self->composition_file_extension;
-
-  ##no critic (RegularExpressions::ProhibitUnusedCapture)
-  my $re = /(.+[.])$c_ext\Z/smx;
-  ##use critic
-  foreach my $f (@{$self->staging_files->{'composition_files'}}) {
-    my ($root) = $f =~ $re;
-    $root or $self->logcroak("Failed to get file name root from $f");
-    my $seq_file = $root . $ext;
-    if (!exists $self->staging_files->{'sequence_files'}->{$seq_file}) {
-      $self->logwarn("File $seq_file does not exists for composition file $f");
-      $checked_ok = 0;
-    }
-  }
-
-  ##no critic (RegularExpressions::ProhibitUnusedCapture)
-  $re = /(.+[.])$ext\Z/smx;
-  ##use critic
-  foreach my $f (@{$self->staging_files->{'sequence_files'}}) {
-    my ($root) = $f =~ $re;
-    $root or $self->logcroak("Failed to get file name root from $f");
-    my $comp_file = $root . $c_ext;
-    if (!exists $self->staging_files->{'composition_files'}->{$comp_file}) {
-      $self->logwarn("File $comp_file does not exists for seq data file $f");
-      $checked_ok = 0;
-    }
-  }
-
-  return $checked_ok;
 }
 
 sub _lims_deletable {
   my $self = shift;
+  $self->debug('Assessing LIMs data and products...');
 
   if ($self->ignore_lims) {
+    $self->info('LIMs data ignored');
     return 1;
   }
 
-  my @flags = ();
-  my $count = 0;
-
-  # For each product, compute composition JSON file and check that it exists
-  # in the run folder. Then consider possible subsets.
-  foreach my $product (@{$self->products->{'data_products'}}) {
-
-    push @flags, $self->_composition_file_exists($product);
-    $count++;
-
-    # File for a phix split should always exist.
-    push @flags, $self->_composition_file_exists($product->subset_as_product('phix'));
-    $count++;
-
-    my $hsplit = q[];
-    if (!$product->lims->gbs_plex_name) {
-      if ($product->lims->contains_nonconsented_human) {
-        $hsplit = 'human';
-      } elsif ($product->lims->contains_nonconsented_xahuman) {
-        $hsplit = 'xahuman';
-      } elsif ($product->lims->separate_y_chromosome_data) {
-        $hsplit = 'yhuman';
+  my $deletable = 1;
+  foreach my $entity (@{$self->product_entities}) {
+    foreach my $file ($entity->staging_files($self->file_extension)) {
+      if (!-e $file) {
+        $self->logwarn("File $file is missing for entity " . $entity->description());
+        $deletable = 0;
       }
     }
-
-    if ($hsplit) {
-      push @flags, $self->_composition_file_exists($product->subset_as_product($hsplit));
-      $count++;
-    }
   }
 
-  my $deletable = none { $_ == 0 } @flags;
-  if ($deletable) {
-    my $found_count = scalar @{$self->staging_files->{'composition_files'}};
-    if ($found_count != $count) {
-      $deletable = 0;
-      $self->logwarn("Expected $count composition files, found $found_count");
-    }
-  }
+   my $m = sprintf 'Consistency of staging sequence files listing with LIMs: run %i %sdeletable',
+          $self->id_run , $deletable ? q[] : q[NOT ];
+  $self->info($m);
 
   return $deletable;
 }
 
-sub _composition_file_exists {
-  my ($self, $product) = @_;
+sub _staging_deletable {
+  my $self = shift;
 
-  my $exists = 1;
-  my $file_path = $product->file_path(
-    $product->path($self->archive_dir), ext => $self->composition_file_extension);
-  if (any { $_ eq $file_path } @{$self->staging_files->{'composition_files'}}) {
-    my $composition = npg_tracking::glossary::composition->thaw(slurp($file_path));
-    if ($composition->digest ne $product->composition->digest) {
-      $exists = 0;
-      $self->logwarn("Wrong composition in $file_path");
+  my @files_found = ();
+  my $ext   = $self->file_extension;
+  my $wanted = sub {
+    if ($File::Find::name =~ /[.]$ext\Z/xms) {
+      push @files_found, $File::Find::name;
     }
-  } else {
-    $exists = 0;
-    $self->logwarn("File $file_path is missing for entity " . $product->composition->freeze());
+  };
+  find($wanted, $self->archive_path);
+
+  my %files_expected =
+    map { $_ => 1 }
+    map { $_->staging_files($self->file_extension) }
+    @{$self->product_entities};
+
+  $self->debug(join qq{\n}, q{Expected staging files list}, (sort keys %files_expected));
+
+  my $deletable = 1;
+  foreach my $file (@files_found) {
+    if (!$files_expected{$file}) {
+      $self->logwarn("Staging file $file is not expected");
+      $deletable = 0;
+    }
   }
 
-  return $exists;
+  my $m = sprintf 'Check for unexpected files on staging: run %i %sdeletable',
+          $self->id_run , $deletable ? q[] : q[NOT ];
+  $self->info($m);
+
+  return $deletable;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -531,9 +600,17 @@ __END__
 
 =item File::Find
 
-=item Perl6::Slurp
+=item List::MoreUtils
+
+=item Try::Tiny
+
+=item WTSI::NPG::iRODS
+
+=item npg_qc::Schema
 
 =item npg_tracking::glossary::composition
+
+=item npg_pipeline::base
 
 =back
 

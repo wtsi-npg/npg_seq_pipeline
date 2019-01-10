@@ -1,4 +1,4 @@
-package npg_pipeline::validation::sequence_files;
+package npg_pipeline::validation::irods;
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -7,17 +7,17 @@ use File::Basename;
 use Perl6::Slurp;
 use Try::Tiny;
 
-use WTSI::NPG::iRODS;
 use WTSI::NPG::iRODS::Collection;
 
 with qw/ npg_pipeline::validation::common
+         npg_pipeline::product::release::irods
          WTSI::DNAP::Utilities::Loggable /;
 
 our $VERSION = '0';
 
 =head1 NAME
 
-npg_pipeline::validation::sequence_files
+npg_pipeline::validation::irods
 
 =head1 SYNOPSIS
 
@@ -41,10 +41,28 @@ Full iRODS collection path, required.
 
 =cut
 
-has 'collection' => (isa      => 'Str',
-                     is       => 'ro',
-                     required => 1,
-                    );
+has 'collection' => (
+  isa      => 'Str',
+  is       => 'ro',
+  required => 1,
+);
+
+has 'irods' => (
+  isa        => 'WTSI::NPG::iRODS',
+  is         => 'ro',
+  required   => 1,
+);
+
+=head2 BUILD
+
+=cut
+
+sub BUILD {
+  my $self = shift;
+  @{$self->product_entities}
+    or $self->logcroak('product_entities array cannot be empty');
+  return;
+}
 
 =head2 archived_for_deletion
 
@@ -55,25 +73,41 @@ If any problems are encounted, returns false.
 
 sub archived_for_deletion {
   my $self = shift;
-  return $self->_check_num_files()   &&
-         $self->_check_index_files() &&
-         $self->_check_md5();
+  my $all_archived = 1;
+  if (@{$self->_eligible_product_entities}) {
+    $all_archived = $self->_check_num_files()   &&
+                    $self->_check_index_files() &&
+                    $self->_check_md5();
+  } else {
+    $self->logwarn(
+      'No entity is eligible for archival to iRODS, not checking');
+    # Do we need to check that no files have been archived?
+  }
+  return $all_archived;
 }
 
-has '_staging_seq_files' => (isa        => 'ArrayRef',
-                             is         => 'ro',
-                             traits     => ['Array'],
-                             lazy_build => 1,
-                             trigger    => \&_list_not_empty,
-                             handles    => {
-                               staging_seq_files => 'elements',
-                               num_staging_files => 'count',
-                             },
-                            );
-sub _build__staging_seq_files {
+has '_eligible_product_entities' => (
+  isa        => 'ArrayRef',
+  is         => 'ro',
+  lazy_build => 1,
+);
+sub _build__eligible_product_entities {
   my $self = shift;
-  my @files = sort @{$self->staging_files->{'sequence_files'}};
-  $self->info(join qq{\n}, q{Staging files list}, @files);
+  my @p =
+    grep { $self->is_for_irods_release($_->target_product) }
+    @{$self->product_entities};
+  return \@p;
+}
+
+has '_staging_files' => (
+  isa        => 'ArrayRef',
+  is         => 'ro',
+  lazy_build => 1,
+);
+sub _build__staging_files {
+  my $self = shift;
+  my @files = map {$_->staging_files($self->file_extension)}
+              @{$self->_eligible_product_entities};
   return \@files;
 }
 
@@ -85,7 +119,7 @@ has '_collection_files'  => (isa        => 'HashRef',
 sub _build__collection_files {
   my $self = shift;
 
-  my $coll = WTSI::NPG::iRODS::Collection->new($self->_irods, $self->collection);
+  my $coll = WTSI::NPG::iRODS::Collection->new($self->irods, $self->collection);
   my ($objs, $colls) = $coll->get_contents;
   my %file_list = ();
   foreach my $obj (@{$objs}) {
@@ -93,7 +127,6 @@ sub _build__collection_files {
     my ($filename_root, $directories, $suffix) =
       fileparse($obj->str, $self->file_extension, $self->index_file_extension);
     $suffix || next;
-
     my $filename = $filename_root . $suffix;
     if (exists $file_list{$filename}) {
       $self->logcroak("File $filename is already cached in collection_files builder");
@@ -120,7 +153,7 @@ sub _build__irods_files {
   if (!@seq_list) {
     $self->logcroak('Empty list of iRODS seq files');
   }
-  $self->info(join qq{\n}, q{iRODS seq files list}, @seq_list);
+  $self->debug(join qq{\n}, q{iRODS seq files list}, @seq_list);
   return [sort @seq_list];
 }
 
@@ -133,39 +166,20 @@ sub _build__irods_index_files {
   my $i_re = $self->index_file_extension;
   $i_re = qr/[.]$i_re\Z/xms;
   my @i_list   = grep { $_ =~ $i_re } keys %{$self->_collection_files};
-  $self->info(join qq{\n}, q{iRODS index files list}, @i_list);
+  $self->debug(join qq{\n}, q{iRODS index files list}, @i_list);
   return {map {$_ => 1} @i_list};
-}
-
-sub _list_not_empty {
-  my ($self, $array) = @_;
-  my @list = ref $array eq 'ARRAY' ? @{$array} : keys %{$array};
-  if (scalar @list == 0) {
-    $self->logcroak('List cannot be empty');
-  }
-  return;
-}
-
-has '_irods' => (isa        => 'WTSI::NPG::iRODS',
-                is         => 'ro',
-                required   => 0,
-                lazy_build => 1,
-               );
-sub _build__irods {
-  my $self = shift;
-  return WTSI::NPG::iRODS->new(logger => $self->logger);
 }
 
 sub _check_num_files {
   my $self = shift;
-  my $num_irods_files = scalar @{$self->_irods_files};
-  if ( $num_irods_files != $self->num_staging_files() ) {
-    $self->logwarn(sprintf
-           'Number of sequence files is different:%s%siRODs: %i, staging: %i',
-           qq[\n], qq[\t], $num_irods_files, $self->num_staging_files());
+  my $num_irods_files   = scalar @{$self->_irods_files};
+  my $num_staging_files = scalar @{$self->_staging_files};
+  if ( $num_irods_files != $num_staging_files ) {
+    $self->logwarn("Number of files in iRODS $num_irods_files " .
+      "is different from number of staging files $num_staging_files");
     return 0;
   }
-  return 1
+  return 1;
 }
 
 sub _check_md5 {
@@ -205,7 +219,7 @@ sub _irods_md5s {
 sub _staging_md5s {
   my $self = shift;
   my $md5_list = {};
-  foreach my $f ( $self->staging_seq_files() ) {
+  foreach my $f ( @{$self->_staging_files} ) {
     my $md5f = $f . q{.md5};
     $md5_list->{basename($f)} = slurp $md5f, { chomp => 1 } || q();
   }
@@ -282,13 +296,13 @@ __END__
 
 =item File::Basename
 
-=item File::Spec
-
 =item Perl6::Slurp
 
 =item Try::Tiny
 
 =item WTSI::DNAP::Utilities::Loggable
+
+=item npg_pipeline::product::release::irods
 
 =back
 

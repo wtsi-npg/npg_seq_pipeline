@@ -1,15 +1,13 @@
-package npg_pipeline::validation::autoqc_files;
+package npg_pipeline::validation::autoqc;
 
 use Moose;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
 use Readonly;
-use Try::Tiny;
-use List::MoreUtils qw/none uniq/;
+use List::MoreUtils qw/any none uniq/;
 
-use npg_tracking::glossary::rpt;
 use npg_tracking::glossary::composition;
-use npg_qc::Schema;
+use npg_tracking::glossary::composition::component::illumina;
 use npg_qc::autoqc::role::result;
 use npg_pipeline::product;
 
@@ -51,88 +49,98 @@ has 'is_paired_read' => (
   required => 1,
 );
 
+has 'qc_schema' => (
+  isa        => 'npg_qc::Schema',
+  is         => 'ro',
+  required   => 1,
+);
+
+=head2 BUILD
+
+=cut
+
+sub BUILD {
+  my $self = shift;
+  @{$self->product_entities}
+    or $self->logcroak('product_entities array cannot be empty');
+  return;
+}
+
 sub fully_archived {
   my $self = shift;
 
-  my $compositions = {};
-  my $compositions_with_subsets = {};
+  my @compositions = ();
+  my @compositions_with_subsets = ();
+  my @compositions_with_available_subsets = ();
   my @positions = ();
   my @non_pools = ();
 
-  foreach my $f (@{$self->staging_files->{'composition_files'}}) {
-
-    my $composition = npg_tracking::glossary::composition->thaw(slurp($f));
-    my $digest = $composition->digest;
-    my $component = $composition->get_component(0);
-
-    if ($component->subset) {
-      $compositions->{$digest} = $composition;
-    } else {
-      $compositions_with_subsets->{$digest} = $composition;
+  foreach my $entity (@{$self->product_entities}) {
+    my $composition = $entity->target_product->composition;
+    push @compositions, $composition;
+    if (@{$entity->related_products}) {
+      push @compositions_with_available_subsets, $entity->target_product->composition;
+      push @compositions_with_subsets,
+           (map { $_->composition } @{$entity->related_products});
     }
 
-    @positions = map {$_->position} $composition->components_list;
+    push @positions, map {$_->position} $composition->components_list;
 
-    if ($composition->num_components == 1 && !defined $component->tag_index) {
-      push  @non_pools, $component->position;
+    if ($composition->num_components == 1) {
+      my $component = $composition->get_component(0);
+      if (!defined  $component->tag_index) {
+        push  @non_pools, $component->position;
+      }
     }
   }
 
-  @positions = uniq @positions;
-  @non_pools = uniq @non_pools;
+  @positions = sort {$a <=> $b} uniq @positions;
+  @non_pools = sort {$a <=> $b} uniq @non_pools;
+  $self->debug('All lanes: ' . join q[, ], @positions);
+  $self->debug(@non_pools ? 'Non-indexed ' . join q[, ], @non_pools :
+                            'All lanes processed as indexed');
 
   my @common = grep {($_ ne 'insert_size') || $self->is_paired_read} @COMMON_CHECKS;
 
   my @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} }
                (@common, @WITH_SUBSET_CHECKS);
-  my @flags = $self->_results_exist($compositions, @checks);
+  $self->debug('Expected product level checks: ' . join q[, ], @checks);
+  my @flags = $self->_results_exist(\@compositions, @checks);
 
-  my $per_check_map = $self->_prune_by_subset($compositions_with_subsets);
-  foreach my $check_name (keys  %{$per_check_map}) {
+  my $per_check_map = $self->_prune_by_subset(\@compositions_with_subsets);
+  @checks = keys  %{$per_check_map};
+  $self->debug('Expected checks for products with subsets: ' . join q[, ], @checks);
+  foreach my $check_name (@checks) {
     push @flags, $self->_results_exist($per_check_map->{$check_name}, $check_name);
   }
 
-  try {
-    push @flags, $self->_results_exist(
-      $self->_compositions4compositions_with_subsets($compositions, $compositions_with_subsets),
-      'alignment_filter_metrics');
-  } catch {
-    $self->logwarn($_);
-    push @flags, 0;
-  };
+  $self->debug('Checking alignment_filter results');
+  push @flags, $self->_results_exist(
+    \@compositions_with_available_subsets, 'alignment_filter_metrics');
 
   # Lane-level checks
 
-  my $compositions4lanes = $self->_compositions4lanes($compositions);
+  my $compositions4lanes = $self->_compositions4lanes(\@compositions);
 
   @checks = grep {$_ ne 'adapter'} @common;
   push @checks, @LANE_LEVELCHECKS;
   @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} } @checks;
+  $self->debug('Expected lane level checks: ' . join q[, ], @checks);
   push @flags, $self->_results_exist($compositions4lanes, @checks);
 
   if (@non_pools != @positions) {
-    my $pools = {};
-    while (my ($d, $c) = each %{$compositions4lanes}) {
+    my @pools = ();
+    foreach my $c (@{$compositions4lanes}) {
       my $p = $c->get_component(0)->position;
-      if (none { $p == $_ } @non_pools) {
-        $pools->{$d} = $c;
-      }
+      next if any { $p == $_ } @non_pools;
+      push @pools, $c;
     }
     @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} } @LANE_LEVELCHECKS4POOL;
-    push @flags, $self->_results_exist($pools, @checks);
+    $self->debug('Expected lane level checks for a pool: ' . join q[, ], @checks);
+    push @flags, $self->_results_exist(\@pools, @checks);
   }
 
   return none { $_ == 0 } @flags;
-}
-
-has '_qc_schema' => (
-  isa        => 'npg_qc::Schema',
-  is         => 'ro',
-  required   => 0,
-  lazy_build => 1,
-);
-sub _build__qc_schema {
-  return npg_qc::Schema->connect();
 }
 
 has '_skip_checks_wsubsets' => (
@@ -154,19 +162,34 @@ sub _build__skip_checks_wsubsets {
   return $skip_checks;
 }
 
-sub _results_exists {
+sub _results_exist {
   my ($self, $compositions, @checks) = @_;
 
   my $exists = 1;
-  my $expected = scalar keys %{$compositions};
+  my $expected = scalar @{$compositions};
   if ($expected) {
     foreach my $check_name (@checks) {
       my ($name, $class_name) = npg_qc::autoqc::role::result->class_names($check_name);
-      my $count = $self->_qc_schema->resultset($class_name)
-                       ->search_via_composition([values %{$compositions}])->count;
-      if ($count != $expected) {
-        $self->info(qq[Expected $expected results got $count for $check_name]);
+      my $count = $self->qc_schema->resultset($class_name)
+                       ->search_via_composition($compositions)->count;
+      my $failed = 0;
+      if ($check_name ne 'samtools_stats') {
+        if ($count != $expected) {
+          $self->warn(qq[Expected $expected results got $count for $check_name]);
+          $failed = 1;
+        }
+      } else {
+        my $e = $expected * 2;
+        if ($count < $e) {
+          $self->warn(qq[Expected at least $expected results got $count for $check_name]);
+          $failed = 1;
+	}
+      }
+      if ($failed) {
         $exists = 0;
+        for my $c (@{$compositions}) {
+          $self->debug(qq[Failed to find $check_name data for ] . $c->freeze());
+        }
       }
     }
   }
@@ -174,47 +197,16 @@ sub _results_exists {
   return $exists;
 }
 
-sub _compositions4compositions_with_subsets {
-  my ($self, $compositions, $compositions_with_subsets) = @_;
-
-  my $map = {};
-
-  if (keys %{$compositions_with_subsets}) {
-
-    my %rpt2composition_map = map { $_->freeze2rpt => $_} values %{$compositions};
-
-    foreach my $composition (values %{$compositions_with_subsets}) {
-      my $rpt_list = $composition->freeze2rpt;
-      next if exists $map->{$rpt_list};
-      exists $rpt2composition_map{$rpt_list}
-        or $self->logcroak('No target entity for ' . $composition->freeze);
-      $map->{$rpt_list} = $rpt2composition_map{$rpt_list};
-    }
-  }
-
-  return $map;
-}
-
 sub _compositions4lanes {
-  my ($self, $compositions) = @_;
+  my ($self, $id_run, @positions) = @_;
 
-  my $map = {};
+  my @compositions =
+    map { npg_tracking::glossary::composition->new(components => [$_]) }
+    map { npg_tracking::glossary::composition::component::illumina
+          ->new(id_run => $id_run, position => $_) }
+    @positions;
 
-  foreach my $composition (values %{$compositions}) {
-    ##no critic (BuiltinFunctions::ProhibitComplexMappings)
-    my @rpt_lists =
-      map { delete $_->{'tag_index'}; $_ }
-      map { npg_tracking::glossary::rpt->inflate_rpt($_) }
-      map { $_->freeze2rpt() }
-      $self->composition->components_list();
-    ##use critic
-    foreach my $rptl (@rpt_lists) {
-      next if exists $map->{$rptl};
-      $map->{$rptl} = npg_pipeline::product->new(rpt_list =>  $rptl)->composition();
-    }
-  }
-
-  return $map;
+  return \@compositions;
 }
 
 sub _prune_by_subset {
@@ -227,13 +219,14 @@ sub _prune_by_subset {
       $map->{$check_name} = $compositions;
     } else {
       my @subsets = @{$self->_skip_checks_wsubsets->{$check_name}};
-      # If no subsets are defined, we skip the check
+      # If no subsets are defined for the check, we skip the check.
       next if !@subsets;
-      while (my ($key, $c) = each %{$compositions}) {
-        my $entity_subset = $c->get_component(0)->subset;
-        if ( none { $_ eq $entity_subset} ) {
-          $map->{$check_name}->{$key} = $c;
-	}
+      foreach my $c (@{$compositions}) {
+        my $subset = $c->get_component(0)->subset;
+        # If this subset for this check is defined,
+        # we skip this autoqc check for this composition.
+        next if any { $_ eq $subset} @subsets;
+        push @{$map->{$check_name}}, $c;
       }
     }
   }
@@ -249,22 +242,11 @@ __END__
 
 =head1 NAME
 
-npg_pipeline::validation::autoqc_files
+npg_pipeline::validation::autoqc
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
-
-  Compares a set of archived bam files against a set of autoqc results for
-  a run and decides whether all relevant autoqc results have been archived.
-  Autoqc results that can easily be produced again from bam files are omitted.
-  Presence of fastqcheck files in the archive is checked.
-  
-  A full comparison is performed. If at least one autoqc result is missing,
-  the outcome is false, otherwise true is returned. If the verbose attribute
-  is set, a path to each considered bam file is printed to STDERR and a
-  representation of each query to find the autoqc result is printed to STDERR.
-  In non-verbose mode (default) only the queries for missing results are printed.
 
 =head1 SUBROUTINES/METHODS
 
@@ -300,17 +282,11 @@ npg_pipeline::validation::autoqc_files
 
 =item Readonly
 
-=item Try::Tiny
-
 =item List::MoreUtils
 
-=item File::Basename
-
-=item npg_tracking::glossary::rpt
+=item npg_tracking::glossary::composition::component::illumina
 
 =item npg_tracking::glossary::composition
-
-=item npg_qc::Schema
 
 =item npg_qc::autoqc::role::result
 
