@@ -48,9 +48,8 @@ has q{job_name_prefix} => (
 
 =head2 job_priority
 
-A priority value to be used for all jobs to LSF.
-Not setting this will use the LSF queue default.
-Will be used on all LSF jobs, regardless of the queue used.
+A priority value to be used for all jobs.
+For LSF executor, not setting this will use the LSF queue default.
 
 =cut
 

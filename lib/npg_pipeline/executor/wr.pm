@@ -20,11 +20,19 @@ with 'npg_pipeline::executor::options' => {
                     no_array_cpu_limit
                     array_cpu_limit/ ]
 };
+with 'npg_pipeline::base::config';
 
 our $VERSION = '0';
 
 Readonly::Scalar my $VERTEX_GROUP_DEP_ID_ATTR_NAME => q[wr_group_id];
 Readonly::Scalar my $DEFAULT_MEMORY                => 2000;
+Readonly::Scalar my $VERTEX_JOB_PRIORITY_ATTR_NAME => q[job_priority];
+Readonly::Scalar my $WR_ENV_LIST_DELIM             => q[,];
+Readonly::Array  my @ENV_VARS_TO_PROPAGATE => qw/ PATH
+                                                  PERL5LIB
+                                                  CLASSPATH
+                                                  NPG_CACHED_SAMPLESHEET_FILE
+                                                  NPG_REPOSITORY_ROOT /;
 
 =head1 NAME
 
@@ -46,6 +54,20 @@ L<wr workflow runner|https://github.com/VertebrateResequencing/wr>.
 ##################################################################
 ############## Public methods ####################################
 ##################################################################
+
+=head2 wr_conf
+
+=cut
+
+has 'wr_conf' => (
+  isa        => 'HashRef',
+  is         => 'ro',
+  lazy_build => 1,
+);
+sub _build_wr_conf {
+  my $self = shift;
+  return $self->read_config($self->conf_file_path('wr.json'));
+}
 
 =head2 execute
 
@@ -144,9 +166,23 @@ sub _definition4job {
   $def->{'memory'} = $d->has_memory() ? $d->memory() : $DEFAULT_MEMORY;
   $def->{'memory'} .= q[M];
 
+  # priority needs to be a number, rather than string, in JSON for wr,
+  # hence the addition
+  $def->{'priority'} = 0 + $self->function_graph4jobs->get_vertex_attribute(
+                           $function_name, $VERTEX_JOB_PRIORITY_ATTR_NAME);
+
   if ($d->has_num_cpus()) {
     use warnings FATAL => qw(numeric);
     $def->{'cpus'} = int $d->num_cpus()->[0];
+  }
+
+  if ($d->queue) {
+    my $options = $self->wr_conf()->{$d->queue . '_queue'};
+    if ($options) {
+      while (my ($key, $value) = each %{$options}) {
+        $def->{$key} = $value;
+      }
+    }
   }
 
   my $log_file = sub {
@@ -156,7 +192,7 @@ sub _definition4job {
     return join q[/], $log_dir, $log_name;
   };
 
-  $def->{'cmd'} = join q[ ], q[(], $d->command(), q[)], q[2>&1], q[|], q[tee], $log_file->();
+  $def->{'cmd'} = join q[ ], q[(], $d->command(), q[)], q[2>&1], q[|], q[tee], q["]. $log_file->() . q["];
 
   return $def;
 }
@@ -164,16 +200,25 @@ sub _definition4job {
 sub _wr_add_command {
   my $self = shift;
 
-  my $priority = $self->has_job_priority ? $self->job_priority : 0;
-
   # If needed, in future, these options can be passed from the command line
-  # or read fron a conf. file.
+  # or read from a conf. file.
+
+  # Explicitly pass the pipeline's environment to jobs
+  my @env_list = ();
+  foreach my $var_name (sort @ENV_VARS_TO_PROPAGATE) {
+    my $value = $ENV{$var_name};
+    if (defined $value && $value ne q[]) {
+      push @env_list, "${var_name}=${value}";
+    }
+  }
+  my $stack = join $WR_ENV_LIST_DELIM, @env_list;
+
   my @common_options = (
           '--cwd'        => '/tmp',
           '--disk'       => 0,
           '--override'   => 2,
-          '--priority'   => $priority,
-          '--retries'    => 0,
+          '--retries'    => 1,
+          '--env'        => q['] . $stack . q['],
                        );
 
   return join q[ ], qw/wr add/,

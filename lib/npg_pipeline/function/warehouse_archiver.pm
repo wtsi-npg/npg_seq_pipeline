@@ -106,6 +106,7 @@ sub _update_warehouse_command {
       created_on   => $self->timestamp(),
       identifier   => $id_run,
       command      => $command,
+      num_cpus     => [0],
       queue        =>
         $npg_pipeline::function::definition::LOWLOAD_QUEUE
     };

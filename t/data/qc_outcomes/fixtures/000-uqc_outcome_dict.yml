@@ -1,0 +1,16 @@
+---
+- id_uqc_outcome : 1
+  short_desc : 'Accepted'
+  long_desc : 'End user would like to utilise the product'
+  iscurrent : 1
+  isvisible : 1
+- id_uqc_outcome : 2
+  short_desc : 'Rejected'
+  long_desc : 'End user will not utilise the product'
+  iscurrent : 1
+  isvisible : 1
+- id_uqc_outcome : 3
+  short_desc : 'Undecided'
+  long_desc : 'No decision, follow mqc outcome when determining utility'
+  iscurrent : 1
+  isvisible : 1

@@ -17,29 +17,20 @@ sub create {
 
   my $job_name = join q[_], qw/autoqc loader/,
                             $self->id_run(), $self->timestamp();
-
-  my @qc_paths = ($self->qc_path());
-  if ($self->is_indexed) {
-    foreach my $position ( $self->positions() ) {
-      my $path = $self->lane_qc_path($position);
-      if (-e $path) {
-  	push @qc_paths, $path;
-      }
-    }
-  }
-
-  my $command = $SCRIPT_NAME;
-  $command .=  q{ --id_run=} . $self->id_run();
-  for my $path (@qc_paths) {
-    $command .=  qq{ --path=$path};
-  }
+  my @command = ($SCRIPT_NAME);
+  push @command, q{--id_run}, $self->id_run();
+  push @command, q{--archive_path}, $self->archive_path;
+  push @command, map {  "--lane $_" }
+                 map { $_->composition->get_component(0)->position}
+                 @{$self->products->{'lanes'}};
+  my $command_string = join q{ }, @command;
 
   my $d = npg_pipeline::function::definition->new(
     created_by    => __PACKAGE__,
     created_on    => $self->timestamp(),
     identifier    => $self->id_run(),
     job_name      => $job_name,
-    command       => $command,
+    command       => $command_string,
     fs_slots_num  => 1,
     queue         =>
       $npg_pipeline::function::definition::LOWLOAD_QUEUE,

@@ -173,6 +173,11 @@
          },
          {
             "relation" : "dependsOn",
+            "target" : "archive_run_data_to_irods",
+            "source" : "archive_to_irods_samplesheet"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "archive_to_irods_samplesheet",
             "target" : "upload_fastqcheck_to_qc_database"
          },
@@ -185,6 +190,11 @@
             "relation" : "dependsOn",
             "source" : "archive_to_irods_samplesheet",
             "target" : "upload_auto_qc_to_qc_database"
+         },
+         {
+            "relation" : "dependsOn",
+            "target" : "run_run_archived",
+            "source" : "archive_run_data_to_irods"
          },
          {
             "relation" : "dependsOn",
@@ -320,6 +330,10 @@
          {
             "id" : "archive_to_irods_samplesheet",
             "label" : "archive_to_irods_samplesheet"
+         },
+         {
+            "id" : "archive_run_data_to_irods",
+            "label" : "archive_run_data_to_irods"
          },
          {
             "id" : "run_run_archived",

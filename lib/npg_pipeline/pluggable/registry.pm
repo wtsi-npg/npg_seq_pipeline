@@ -45,10 +45,13 @@ Readonly::Hash my %REGISTRY => (
   'upload_illumina_analysis_to_qc_database' => {'illumina_qc_archiver' => 'create'},
   'upload_fastqcheck_to_qc_database'        => {'fastqcheck_archiver' => 'create'},
   'upload_auto_qc_to_qc_database'           => {'autoqc_archiver' => 'create'},
+  'archive_run_data_to_irods'               => {'run_data_to_irods_archiver' => 'create'},
 
   'bam_cluster_counter_check'=> {'cluster_count' => 'create'},
   'seqchksum_comparator'     => {'seqchksum_comparator' => 'create'},
-                               );
+  'archive_to_s3'            => {'s3_archiver' => 'create'},
+  'notify_product_delivery'  => {'product_delivery_notifier' => 'create'},
+);
 
 Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>
   qw/
@@ -66,6 +69,7 @@ Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>
 Readonly::Array my @AUTOQC_FUNCTIONS =>
   qw/
       qc_adapter
+      qc_bcfstats
       qc_gc_fraction
       qc_genotype
       qc_insert_size

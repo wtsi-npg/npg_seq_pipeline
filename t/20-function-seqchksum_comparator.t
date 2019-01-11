@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 26;
+use Test::More tests => 19;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
@@ -23,6 +23,7 @@ $util->set_rta_staging_analysis_area();
 
 my $timestamp = q{20100907-142417};
 my $analysis_runfolder_path = $util->analysis_runfolder_path();
+#$util->create_analysis();
 my $bam_basecall_path = $analysis_runfolder_path . "/Data/Intensities/BAM_basecalls_$timestamp/";
 my $recalibrated_path = $analysis_runfolder_path. "/Data/Intensities/BAM_basecalls_$timestamp/no_cal";
 my $archive_path = $recalibrated_path . q{/archive};
@@ -37,31 +38,28 @@ my $archive_path = $recalibrated_path . q{/archive};
       bam_basecall_path => $bam_basecall_path,
       id_run            => 1234,
       timestamp         => $timestamp,
-      lanes             => [1,2]
+      lanes             => [1,2],
+      is_indexed        => 0,
     );
   } q{object ok};
 
   isa_ok( $object, q{npg_pipeline::function::seqchksum_comparator});
   my $da = $object->create();
-  ok ($da && @{$da} == 2, 'an array with two definitions is returned');
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
   my $d = $da->[0];
   isa_ok($d, q{npg_pipeline::function::definition});
   is ($d->created_by, q{npg_pipeline::function::seqchksum_comparator},
     'created_by is correct');
   is ($d->created_on, $object->timestamp, 'created_on is correct');
   is ($d->identifier, 1234, 'identifier is set correctly');
-  ok ($d->has_composition, 'composition is set');
-  is ($d->composition->num_components, 1, 'one componet in a composition');
-  is ($d->composition->get_component(0)->position, 1, 'correct position');
-  ok (!defined $d->composition->get_component(0)->tag_index,
-    'tag index is not defined');
-  ok (!defined $d->composition->get_component(0)->subset,
-    'subset is not defined');
+  ok (!$d->has_composition, 'no composition is not set');
   is ($d->job_name, q{seqchksum_comparator_1234_20100907-142417},
     'job_name is correct');
+  my $rp = $object->recalibrated_path;
   is ($d->command,
-    q{npg_pipeline_seqchksum_comparator --id_run=1234 --archive_path=} .
-    qq{$archive_path --bam_basecall_path=$bam_basecall_path --lanes=1},
+    q{npg_pipeline_seqchksum_comparator --id_run=1234 --lanes=1 --lanes=2} .
+    qq{ --archive_path=$archive_path --bam_basecall_path=$bam_basecall_path} .
+    qq{ --input_fofg_name=$rp/1234_input_fofn.txt},
     'command is correct');
   ok (!$d->excluded, 'step not excluded');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
@@ -69,14 +67,7 @@ my $archive_path = $recalibrated_path . q{/archive};
   is ($d->queue, 'default', 'default queue');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
-  $d = $da->[1];
-  is ($d->composition->get_component(0)->position, 2, 'position');
-  is ($d->command,
-    q{npg_pipeline_seqchksum_comparator --id_run=1234 --archive_path=} .
-    qq{$archive_path --bam_basecall_path=$bam_basecall_path --lanes=2},
-    'command is correct');
-
-  throws_ok{$object->do_comparison()} qr/Cannot find/,
+  throws_ok{$object->do_comparison()} qr/Failed to change directory/,
     q{Doing a comparison with no files throws an exception}; 
 
 #############
@@ -132,7 +123,8 @@ my $archive_path = $recalibrated_path . q{/archive};
     bam_basecall_path => $bam_basecall_path,
     archive_path      => $archive_path,
     id_run            => 1234,
-    lanes             => [1]
+    lanes             => [1],
+    is_indexed        => 0,
   );
   my $da = $object->create();
   ok ($da && @{$da} == 1, 'an array with one definitions is returned');
@@ -142,14 +134,12 @@ my $archive_path = $recalibrated_path . q{/archive};
     runfolder_path    => $analysis_runfolder_path,
     bam_basecall_path => $bam_basecall_path,
     archive_path      => $archive_path,
-    id_run            => 1234
+    id_run            => 1234,
+    is_indexed        => 0,
   );
   $da = $object->create();
-  ok ($da && @{$da} == 8, 'an array with eight definitions is returned');
-
-  throws_ok{ $object->do_comparison() }
-    qr/Lanes have to be given explicitly/,
-    q{lanes attribute is needed to run the comparison};
+  # seqchksum_comparator is now a run-level function, so only one definition returned
+  ok ($da && @{$da} == 1, 'an array with one definition is returned for eight lanes');
 }
 
 1;

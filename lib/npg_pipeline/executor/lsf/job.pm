@@ -327,7 +327,7 @@ sub _dependencies {
 sub _cpu_host {
   my $self = shift;
   my $s;
-  if ($self->jnum_cpus()) {
+  if ($self->jnum_cpus() && $self->jnum_cpus()->[0] != 0) {
     $s = q[-n ] . join q[,], @{$self->jnum_cpus()};
     if ($self->jnum_hosts()) {
       $s .= sprintf q( -R 'span[hosts=%i]'), $self->jnum_hosts();
@@ -435,12 +435,16 @@ sub _array_index {
   if ($d->has_composition) {
     my $c = $d->composition();
     if ($c->num_components != 1) {
-      croak 'Cannot deal with multi-component composition';
+#     croak 'Cannot deal with multi-component composition';
+      if(uniq (map { $_->{id_run}} @{$c->{components}}) > 1 or uniq (map { defined $_->{tag_index} and $_->{tag_index}} @{$c->{components}}) > 1) {
+        croak 'id_run and tag_index must be unique within a multi-component composition';
+      }
     }
     my $component = $c->get_component(0);
+    my $position = (map { $_->{position} } @{$c->{components}})[0]; # arbitrarily use the first element for now
     $index = defined $component->tag_index()
-      ? $component->position() * $POSITION_MULTIPLIER + $component->tag_index()
-      : $component->position();
+      ? $position * $POSITION_MULTIPLIER + $component->tag_index()
+      : $position;
   }
   return $index;
 }
