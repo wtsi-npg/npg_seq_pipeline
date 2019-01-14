@@ -1,4 +1,4 @@
-package npg_pipeline::base::irods;
+package npg_pipeline::product::release::irods;
 
 use Moose::Role;
 use Readonly;
@@ -32,19 +32,19 @@ __END__
 
 =head1 NAME
 
-npg_pipeline::base::irods
+npg_pipeline::product::release::irods
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
 
-Moose role providing utility methods for function modules.
+Moose role providing utility methods for iRODS context
 
 =head1 SUBROUTINES/METHODS
 
 =head2 irods_destination_collection
 
-Returns iRODS destination collection for this run.
+Returns iRODS destination collection for the run.
 
 =head1 DIAGNOSTICS
 

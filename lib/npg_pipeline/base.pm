@@ -22,7 +22,6 @@ with qw{
         WTSI::DNAP::Utilities::Loggable
         npg_pipeline::base::config
         npg_pipeline::base::options
-        npg_pipeline::base::irods
        };
 
 Readonly::Array my @NO_SCRIPT_ARG_ATTRS  => qw/

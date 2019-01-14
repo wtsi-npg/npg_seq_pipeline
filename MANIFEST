@@ -21,7 +21,6 @@ data/config_files/lsf.ini
 data/config_files/wr.json
 lib/npg_pipeline/base.pm
 lib/npg_pipeline/base/config.pm
-lib/npg_pipeline/base/irods.pm
 lib/npg_pipeline/base/options.pm
 lib/npg_pipeline/cache.pm
 lib/npg_pipeline/cache/barcodes.pm
@@ -54,6 +53,7 @@ lib/npg_pipeline/pluggable.pm
 lib/npg_pipeline/pluggable/central.pm
 lib/npg_pipeline/pluggable/registry.pm
 lib/npg_pipeline/product.pm
+lib/npg_pipeline/product/release/irods.pm
 lib/npg_pipeline/runfolder_scaffold.pm
 lib/npg_pipeline/validation.pm
 lib/npg_pipeline/validation/autoqc_files.pm

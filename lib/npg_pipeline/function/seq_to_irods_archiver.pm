@@ -7,7 +7,8 @@ use Readonly;
 use npg_pipeline::function::definition;
 
 extends qw{npg_pipeline::base};
-with    qw{npg_pipeline::function::util};
+with    qw{npg_pipeline::function::util
+           npg_pipeline::product::release::irods};
 
 our $VERSION = '0';
 

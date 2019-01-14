@@ -15,8 +15,9 @@ use npg_pipeline::cache;
 use npg_pipeline::validation::sequence_files;
 use npg_pipeline::validation::autoqc_files;
 
-extends q{npg_pipeline::base};
-with    q{npg_pipeline::validation::common};
+extends 'npg_pipeline::base';
+with    qw/npg_pipeline::validation::common
+           npg_pipeline::product::release::irods/;
 
 our $VERSION = '0';
 
