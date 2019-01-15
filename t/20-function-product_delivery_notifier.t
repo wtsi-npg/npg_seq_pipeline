@@ -6,6 +6,7 @@ use File::Copy;
 use File::Path qw[make_path remove_tree];
 use File::Temp;
 use Cwd;
+use npg_tracking::util::abs_path qw(abs_path);
 use Log::Log4perl qw[:easy];
 use Test::More tests => 5;
 use Test::Exception;
@@ -81,7 +82,7 @@ subtest 'message_dir' => sub {
      timestamp           => $timestamp,
      qc_schema           => $qc);
 
-  my $expected_default_dir = join q[/], getcwd, $runfolder_path,
+  my $expected_default_dir = join q[/], abs_path(getcwd()), $runfolder_path,
     'Data/Intensities/BAM_basecalls_20180805-013153/messages';
   my $observed_default_dir = $notifier->message_dir();
   is($observed_default_dir, $expected_default_dir,
