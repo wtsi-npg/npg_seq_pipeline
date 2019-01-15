@@ -6,8 +6,9 @@ use Readonly;
 
 use npg_pipeline::function::definition;
 
-extends qw{npg_pipeline::base};
+extends 'npg_pipeline::base';
 with    qw{npg_pipeline::function::util
+           npg_pipeline::product::release
            npg_pipeline::product::release::irods};
 
 our $VERSION = '0';
@@ -26,7 +27,6 @@ sub create {
   if (!$ref->{'excluded'}) {
 
     my $job_name_prefix = join q{_}, q{publish_seq_data2irods}, $self->id_run();
-    $self->assign_common_definition_attrs($ref, $job_name_prefix);
 
     my $command = join q[ ],
       $PUBLISH_SCRIPT_NAME,
@@ -37,21 +37,20 @@ sub create {
       $command .= q{ --alt_process qc_run};
     }
 
-    my @positions = $self->positions();
-    my $position_list = q{};
-    if (scalar @positions < scalar $self->lims->children) {
-      foreach my $p  (@positions){
-        $position_list .= qq{ --positions $p};
-      }
-      $command .= $position_list;
-    }
-
     if($self->has_lims_driver_type) {
       $command .= q{ --driver-type } . $self->lims_driver_type;
     }
 
     my $old_dated_dir = $self->_find_old_dated_dir();
     if ($old_dated_dir) {
+      my @positions = $self->positions();
+      my $position_list = q{};
+      if (scalar @positions < scalar $self->lims->children) {
+        foreach my $p  (@positions){
+          $position_list .= qq{ --positions $p};
+        }
+        $command .= $position_list;
+      }
       $command .= join q[ ], q[],
         q{--archive_path},   $self->archive_path(),
         q{--runfolder_path}, $self->runfolder_path();
@@ -62,13 +61,34 @@ sub create {
                             "export PERL5LIB=$old_dated_dir/lib/perl5",
                             $command;
     } else {
-      $command .= join q[ ], q[],
-        q{--collection},       $self->irods_destination_collection(),
-        q{--source_directory}, $self->archive_path();
+      my @commands = ();
+      my $run_collection = $self->irods_destination_collection();
+      foreach my $product (@{$self->products->{'data_products'}}) {
+        if ($self->is_for_irods_release($product)) {
+          push @commands, sprintf
+            '%s --collection %s --source_directory %s',
+            $command,
+            $self->irods_product_destination_collection($run_collection, $product),
+	    $product->path($self->archive_path());
+	}
+      }
+
+      $command = q[];
+      if (@commands) {
+        @commands = sort @commands;
+        $command = join q[;], @commands;
+        $command = qq[bash -c 'set -e; ${command}'];
+      }
     }
 
-    $self->info(qq[iRODS loader command "$command"]);
-    $ref->{'command'} = $command;
+    if ($command) {
+      $self->info(qq[iRODS loader command "$command"]);
+      $ref->{'command'} = $command;
+      $self->assign_common_definition_attrs($ref, $job_name_prefix);
+    } else {
+      $self->info(q{No products to archive to iRODS});
+      $ref->{'excluded'} = 1;
+    }
   }
 
   return [npg_pipeline::function::definition->new($ref)];
@@ -235,7 +255,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
