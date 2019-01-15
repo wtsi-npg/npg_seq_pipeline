@@ -3,6 +3,10 @@ LIST OF CHANGES
 
  - run_is_deletable feature reimplementation for new-style data directory
    and merged products
+ - publishing of seq data to iRODS:
+     make product destination aware;
+     IRODS directories hierarchy for NovaSeq runs to mirror product
+     archive directories hierarchy
 
 release 53.0
  - a wrapper object npg_pipeline::product to represent a product

@@ -3,32 +3,26 @@ package npg_pipeline::product::release::irods;
 use Moose::Role;
 use Readonly;
 
-requires qw/id_run platform_NovaSeq/;
+with 'npg_pipeline::product::release' => {
+       -alias    => { is_for_release => '_is_for_release' },
+       -excludes => [ qw/qc_schema
+                         customer_name
+                         is_for_s3_release
+                         s3_url
+                         s3_profile
+                         is_for_s3_release_notification
+                         is_for_X_release/ ]
+     };
+
+requires qw/ 
+            id_run
+            platform_NovaSeq    
+           /;
 
 our $VERSION = '0';
 
 Readonly::Scalar my $IRODS_ROOT_NON_NOVASEQ_RUNS => q[/seq];
 Readonly::Scalar my $IRODS_ROOT_NOVASEQ_RUNS     => q[/seq/illumina/runs];
-
-has 'irods_destination_collection' => (
-  isa           => 'Str',
-  is            => 'ro',
-  required      => 0,
-  lazy_build    => 1,
-  documentation => 'iRODS destination collection for run product data',
-);
-sub _build_irods_destination_collection {
-  my $self = shift;
-  return join q[/],
-    $self->platform_NovaSeq() ? $IRODS_ROOT_NOVASEQ_RUNS : $IRODS_ROOT_NON_NOVASEQ_RUNS,
-    $self->id_run;
-}
-
-no Moose::Role;
-
-1;
-
-__END__
 
 =head1 NAME
 
@@ -45,6 +39,68 @@ Moose role providing utility methods for iRODS context
 =head2 irods_destination_collection
 
 Returns iRODS destination collection for the run.
+This attribute will be built if not supplied by the caller.
+
+=cut
+
+has 'irods_destination_collection' => (
+  isa           => 'Str',
+  is            => 'ro',
+  required      => 0,
+  lazy_build    => 1,
+  documentation => 'iRODS destination collection for run product data',
+);
+sub _build_irods_destination_collection {
+  my $self = shift;
+  return join q[/],
+    $self->platform_NovaSeq() ? $IRODS_ROOT_NOVASEQ_RUNS : $IRODS_ROOT_NON_NOVASEQ_RUNS,
+    $self->id_run;
+}
+
+=head2 irods_product_destination_collection
+
+Returns iRODS destination collection for the argument product.
+
+  my $pc = $obj->irods_product_destination_collection(
+                 $run_collection, $product_obj);
+
+=cut
+
+sub irods_product_destination_collection {
+  my ($self, $run_collection, $product) = @_;
+  $run_collection or $self->logcroak('Run collection required');
+  return $self->platform_NovaSeq()
+         ? join q[/], $run_collection, $product->dir_path()
+         : $run_collection;
+}
+
+=head2 is_for_irods_release
+
+Return true if the product is to be released via iRODS, false otherwise.
+
+  $obj->is_for_irods_release($product)
+
+=cut
+
+sub is_for_irods_release {
+  my ($self, $product) = @_;
+
+  my $enable = !$self->is_release_data($product) ? 1 :
+                $self->_is_for_release($product, 'irods');
+
+  $self->info(sprintf 'Product %s, %s is %sfor iRODS release',
+                      $product->file_name_root(),
+                      $product->composition->freeze(),
+                      $enable ? q[] : q[NOT ]);
+
+  return $enable;
+}
+
+no Moose::Role;
+
+1;
+
+__END__
 
 =head1 DIAGNOSTICS
 
