@@ -72,7 +72,7 @@ sub fully_archived {
       $compositions_with_subsets->{$digest} = $composition;
     }
 
-    @positions = map {$_->position} $composition->components_list;
+    push @positions, (map {$_->position} $composition->components_list);
 
     if ($composition->num_components == 1 && !defined $component->tag_index) {
       push  @non_pools, $component->position;
