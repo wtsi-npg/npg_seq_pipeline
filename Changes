@@ -4,7 +4,7 @@ LIST OF CHANGES
 release 53.0
  - a wrapper object npg_pipeline::product to represent a product
  - use products attribute to drive p4_stage1, seq_alignment and autoqc
- - create composisiotn.json files to guide archiving
+ - create composition.json files to guide archiving
  - p4 params files for seq_alignment moved from no_cal/laneN to no_cal
      (changes run folder structure when merging lanes)
  - cluster_count and seqchksum_comparator checks now done at run level instead
@@ -59,6 +59,8 @@ release 53.0
  - explicitly use iRODS loader from an 'old' dated directory for
    old style runfolders
  - a new function, archive_run_data_to_irods, to publish run-level non-product data to iRODS
+ - modify run_data_to_irods_archiver module to ensure the interop files go to a dedicated directory
+ - additional tags for NovaSeq in dbic_fixtures
 
 release 52.1
  - bug fix in jobs names where jobs name should include the pipeline
