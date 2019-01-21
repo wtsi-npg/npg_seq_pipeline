@@ -44,4 +44,8 @@
   tag: fc_slotA
 - id_tag: 23
   tag: fc_slotB
+- id_tag: 50
+  tag: workflow_NovaSeqStandard
+- id_tag: 51
+  tag: workflow_NovaSeqXp
 
