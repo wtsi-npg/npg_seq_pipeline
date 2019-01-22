@@ -298,12 +298,21 @@ sub _build_release_config {
 sub _find_study_config {
   my ($self, $product) = @_;
 
-  my $rpt      = $product->rpt_list();
-  my $name     = $product->file_name_root();
-  my $study_id = $product->lims->study_id();
+  my $with_spiked_control = 0;
+  my $rpt       = $product->rpt_list();
+  my $name      = $product->file_name_root();
+  #####
+  # If we were to process a pool as a single library, and all
+  # libraries in a pool belonged to the same study, passing
+  # false with_spiked_control flag will allow for retrieving
+  # a correct single study identifier. 
+  my @study_ids = $product->lims->study_ids($with_spiked_control);
 
-  $study_id or
+  @study_ids or
     $self->logconfess("Failed to get a study_id for product $name, $rpt");
+  (@study_ids == 1) or
+    $self->logconfess("Multiple study ids for product $name, $rpt");
+  my $study_id = $study_ids[0];
 
   my ($study_config) = grep { $_->{study_id} eq $study_id }
     @{$self->release_config->{study}};
