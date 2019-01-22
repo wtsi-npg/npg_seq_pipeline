@@ -23,6 +23,7 @@ sub create {
   my $self = shift;
 
   my $ref = $self->basic_definition_init_hash();
+  my @definitions = ();
 
   if (!$ref->{'excluded'}) {
 
@@ -60,38 +61,35 @@ sub create {
       $command = join q[;], "export PATH=$old_dated_dir/bin:".$ENV{PATH},
                             "export PERL5LIB=$old_dated_dir/lib/perl5",
                             $command;
-    } else {
-      my @commands = ();
-      my $run_collection = $self->irods_destination_collection();
-      foreach my $product (@{$self->products->{'data_products'}}) {
-        if ($self->is_for_irods_release($product)) {
-          push @commands, sprintf
-            '%s --collection %s --source_directory %s',
-            $command,
-            $self->irods_product_destination_collection($run_collection, $product),
-	    $product->path($self->archive_path());
-	}
-      }
-
-      $command = q[];
-      if (@commands) {
-        @commands = sort @commands;
-        $command = join q[;], @commands;
-        $command = qq[bash -c 'set -e; ${command}'];
-      }
-    }
-
-    if ($command) {
       $self->info(qq[iRODS loader command "$command"]);
       $ref->{'command'} = $command;
       $self->assign_common_definition_attrs($ref, $job_name_prefix);
+      push @definitions, npg_pipeline::function::definition->new($ref);
     } else {
-      $self->info(q{No products to archive to iRODS});
-      $ref->{'excluded'} = 1;
+      my $run_collection = $self->irods_destination_collection();
+      foreach my $product (@{$self->products->{'data_products'}}) {
+        if ($self->is_for_irods_release($product)) {
+          my %dref = %{$ref};
+          $dref{'array_cpu_limit'}       = 1; # One job at a time
+          $dref{'apply_array_cpu_limit'} = 1;
+          $dref{'composition'}           = $product->composition;
+          $dref{'command'} = sprintf '%s --collection %s --source_directory %s',
+            $command,
+            $self->irods_product_destination_collection($run_collection, $product),
+	    $product->path($self->archive_path());
+          $self->assign_common_definition_attrs(\%dref, $job_name_prefix);
+          push @definitions, npg_pipeline::function::definition->new(\%dref);
+	}
+      }
+
+      if (!@definitions) {
+        $self->info(q{No products to archive to iRODS});
+        $ref->{'excluded'} = 1;
+      }
     }
   }
 
-  return [npg_pipeline::function::definition->new($ref)];
+  return @definitions ? \@definitions : [npg_pipeline::function::definition->new($ref)];
 }
 
 sub irods_destination_collection {
