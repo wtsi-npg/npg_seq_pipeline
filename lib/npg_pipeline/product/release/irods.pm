@@ -5,13 +5,6 @@ use Readonly;
 
 with 'npg_pipeline::product::release' => {
        -alias    => { is_for_release => '_is_for_release' },
-       -excludes => [ qw/qc_schema
-                         customer_name
-                         is_for_s3_release
-                         s3_url
-                         s3_profile
-                         is_for_s3_release_notification
-                         is_for_X_release/ ]
      };
 
 requires qw/ 
