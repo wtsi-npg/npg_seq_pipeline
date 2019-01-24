@@ -7,11 +7,6 @@ with 'npg_pipeline::product::release' => {
        -alias    => { is_for_release => '_is_for_release' },
      };
 
-requires qw/ 
-            id_run
-            platform_NovaSeq    
-           /;
-
 our $VERSION = '0';
 
 Readonly::Scalar my $IRODS_ROOT_NON_NOVASEQ_RUNS => q[/seq];
