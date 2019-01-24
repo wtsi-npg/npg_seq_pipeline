@@ -6,12 +6,15 @@ use File::Copy;
 use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:levels];
+use File::Temp qw[tempdir];
 use Test::More tests => 4;
 use Test::Exception;
 use t::util;
 
+my $temp_dir = tempdir(CLEANUP => 1);
 Log::Log4perl->easy_init({level  => $INFO,
-                          layout => '%d %p %m %n'});
+                          layout => '%d %p %m %n',
+                          file   => join(q[/], $temp_dir, 'logfile')});
 
 {
   package TestDB;

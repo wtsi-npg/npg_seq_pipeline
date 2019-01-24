@@ -53,6 +53,7 @@ lib/npg_pipeline/pluggable.pm
 lib/npg_pipeline/pluggable/central.pm
 lib/npg_pipeline/pluggable/registry.pm
 lib/npg_pipeline/product.pm
+lib/npg_pipeline/product/release/irods.pm
 lib/npg_pipeline/runfolder_scaffold.pm
 lib/npg_pipeline/validation/autoqc_files.pm
 lib/npg_pipeline/validation/common.pm

@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+ - publishing of seq data to iRODS:
+     make product destination aware;
+     iRODS directories hierarchy for NovaSeq runs to mirror product
+     archive directories hierarchy
+
 release 53.0
  - a wrapper object npg_pipeline::product to represent a product
  - use products attribute to drive p4_stage1, seq_alignment and autoqc
