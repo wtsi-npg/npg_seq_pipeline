@@ -22,7 +22,7 @@ my $deletable = $v->run();
 my $m = sprintf 'Run %i is %sdeletable.', $v->id_run, $deletable ? q[] : q[NOT ];
 $v->info($m);
 
-exit $deletable ? 0 : 1;
+exit not $deletable;
 
 __END__
 
