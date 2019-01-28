@@ -102,7 +102,8 @@ sub fully_archived {
 
   my @common = grep {($_ ne 'insert_size') || $self->is_paired_read} @COMMON_CHECKS;
 
-  my @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} }
+  my @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} ||
+                      scalar @{$self->_skip_checks_wsubsets->{$_}} }
                (@common, @WITH_SUBSET_CHECKS);
   my $context = 'Expected product level checks';
   $self->debug($context . q[: ] . join q[, ], @checks);
@@ -178,23 +179,26 @@ sub _results_exist {
       my $rs = $self->qc_schema->resultset($class_name)
 	            ->search_via_composition($compositions);
       my $count = $rs->count;
-      my $failed = 0;
-      if ($check_name ne 'samtools_stats') {
-        if ($count != $expected) {
-          $self->warn($context . qq[Expected $expected results got $count for $check_name]);
-          $failed = 1;
-        }
-      } else {
+      if ($check_name eq 'samtools_stats') {
+        # We expect at least two types of these files per composition
         my $e = $expected * 2;
         if ($count < $e) {
-          $self->warn(qq[Expected at least $expected results got $count for $check_name]);
-          $failed = 1;
+          $self->warn($context . qq[Expected at least $expected results got $count for $check_name]);
+          $exists = 0;
 	}
-      }
-      if ($failed) {
-        $exists = 0;
-        for my $c (@{$compositions}) {
-          $self->debug(qq[Failed to find $check_name data for ] . $c->freeze());
+      } elsif ($check_name eq 'sequence_summary') {
+        $rs = $rs->search({'me.iscurrent' => 1});
+        $count = $rs->count;
+        # Unfortunately, iscurrent filter is not set correctly, so we cannot
+        # yet check for equality.
+        if ($count < $expected) {
+          $self->warn($context . qq[Expected at least $expected results got $count for $check_name]);
+          $exists = 0;
+	}
+      } else {
+        if ($count != $expected) {
+          $self->warn($context . qq[Expected $expected results got $count for $check_name]);
+          $exists = 0;
         }
       }
     }
