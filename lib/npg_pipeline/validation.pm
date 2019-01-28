@@ -272,8 +272,12 @@ sub _build_product_entities {
 
   foreach my $product (@{$self->products->{'data_products'}}) {
 
-    # File for a phix split should always exist.
-    my @subsets = qw/phix/;
+    # File for a phix split should always exist, unless
+    # the tag is for spiked PhiX.
+    my @subsets = ();
+    if (!$product->lims->is_control) {
+      push @subsets, 'phix';
+    }
     if (!$product->lims->gbs_plex_name) {
       if ($product->lims->contains_nonconsented_human) {
         push @subsets, 'human';
