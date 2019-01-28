@@ -310,8 +310,7 @@ has 'irods' => (
   metaclass  => 'NoGetopt',
 );
 sub _build_irods {
-  my $self = shift;
-  return WTSI::NPG::iRODS->new(logger => $self->logger);
+  return WTSI::NPG::iRODS->new();
 }
 
 =head2 qc_schema
@@ -477,8 +476,7 @@ sub _irods_seq_deletable {
   }
 
   my $deletable = npg_pipeline::validation::irods
-      ->new( logger           => $self->logger,
-             collection       => $self->irods_destination_collection,
+      ->new( collection       => $self->irods_destination_collection,
              file_extension   => $self->file_extension,
              product_entities => $self->product_entities,
              irods            => $self->irods,
@@ -502,7 +500,6 @@ sub _autoqc_deletable {
 
   my $deletable = npg_pipeline::validation::autoqc
       ->new( qc_schema        => $self->qc_schema,
-             logger           => $self->logger,
              skip_checks      => $self->skip_autoqc_check,
              is_paired_read   => $self->is_paired_read ? 1 : 0,
              product_entities => $self->product_entities )->fully_archived();

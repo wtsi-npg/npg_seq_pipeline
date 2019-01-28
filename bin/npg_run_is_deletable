@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use FindBin qw($Bin);
+use FindBin qw($Bin $Script);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Log::Log4perl qw{:levels};
 
@@ -10,12 +10,32 @@ use npg_pipeline::validation;
 
 our $VERSION = '0';
 
+my $verbose = npg_pipeline::validation->process_argv()
+                                      ->cli_params()->{'verbose'};
+
+my $my_log_level    = $verbose ? 'DEBUG' : 'INFO';
+my $their_log_level = $verbose ? 'DEBUG' : 'WARN';
+
+##no critic (ValuesAndExpressions::ProhibitImplicitNewlines)
+my $log4perl_config = qq(
+  log4perl.logger                                  = $my_log_level, A1
+  log4perl.category.npg_pipeline.validation.irods  = $their_log_level, A1
+  log4perl.category.npg_pipeline.validation.autoqc = $their_log_level, A1
+  log4perl.logger.WTSI.NPG.iRODS                   = OFF, A1
+  log4perl.appender.A1        = Log::Log4perl::Appender::Screen
+  log4perl.appender.A1.layout = Log::Log4perl::Layout::PatternLayout
+  log4perl.appender.A1.layout.ConversionPattern = %d %-5p %c - %m%n
+  log4perl.appender.A1.utf8   = 1
+  # Prevent duplicate messages with a non-Log4j-compliant Log4perl option
+  log4perl.oneMessagePerAppender = 1
+);
+##use critic
+
+Log::Log4perl::init(\$log4perl_config);
+
 my $v = npg_pipeline::validation->new_with_options();
-Log::Log4perl->easy_init({layout => '%d %-5p %c %M - %m%n',
-                          level  => $v->verbose() ? $DEBUG : $INFO,
-                          utf8   => 1});
 $v->info(sprintf 'Running %s for run %i, runfolder %s',
-                 __FILE__, $v->id_run, $v->runfolder_path);
+                 $Bin . q[/] . $Script, $v->id_run, $v->runfolder_path);
 
 my $deletable = $v->run();
 
