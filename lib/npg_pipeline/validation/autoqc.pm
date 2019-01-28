@@ -104,19 +104,21 @@ sub fully_archived {
 
   my @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} }
                (@common, @WITH_SUBSET_CHECKS);
-  $self->debug('Expected product level checks: ' . join q[, ], @checks);
-  my @flags = $self->_results_exist(\@compositions, @checks);
+  my $context = 'Expected product level checks';
+  $self->debug($context . q[: ] . join q[, ], @checks);
+  my @flags = $self->_results_exist(\@compositions, \@checks, $context);
 
   my $per_check_map = $self->_prune_by_subset(\@compositions_with_subsets);
   @checks = keys  %{$per_check_map};
-  $self->debug('Expected checks for products with subsets: ' . join q[, ], @checks);
+  $context = 'Expected checks for products with subsets';
+  $self->debug($context . q[: ] . join q[, ], @checks);
   foreach my $check_name (@checks) {
-    push @flags, $self->_results_exist($per_check_map->{$check_name}, $check_name);
+    push @flags, $self->_results_exist($per_check_map->{$check_name}, [$check_name], $context);
   }
 
   $self->debug('Checking alignment_filter results');
   push @flags, $self->_results_exist(
-    \@compositions_with_available_subsets, 'alignment_filter_metrics');
+    \@compositions_with_available_subsets, ['alignment_filter_metrics']);
 
   # Lane-level checks
 
@@ -125,8 +127,9 @@ sub fully_archived {
   @checks = grep {$_ ne 'adapter'} @common;
   push @checks, @LANE_LEVELCHECKS;
   @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} } @checks;
-  $self->debug('Expected lane level checks: ' . join q[, ], @checks);
-  push @flags, $self->_results_exist($compositions4lanes, @checks);
+  $context = 'Expected lane level checks';
+  $self->debug($context . q[: ] . join q[, ], @checks);
+  push @flags, $self->_results_exist($compositions4lanes, \@checks, $context);
 
   if (@non_pools != @positions) {
     my @pools = ();
@@ -136,8 +139,9 @@ sub fully_archived {
       push @pools, $c;
     }
     @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} } @LANE_LEVELCHECKS4POOL;
-    $self->debug('Expected lane level checks for a pool: ' . join q[, ], @checks);
-    push @flags, $self->_results_exist(\@pools, @checks);
+    $context = 'Expected lane level checks for a pool';
+    $self->debug($context . q[: ] . join q[, ], @checks);
+    push @flags, $self->_results_exist(\@pools, \@checks, $context);
   }
 
   return none { $_ == 0 } @flags;
@@ -163,19 +167,21 @@ sub _build__skip_checks_wsubsets {
 }
 
 sub _results_exist {
-  my ($self, $compositions, @checks) = @_;
+  my ($self, $compositions, $checks, $context) = @_;
 
   my $exists = 1;
   my $expected = scalar @{$compositions};
   if ($expected) {
-    foreach my $check_name (@checks) {
+    $context = $context ? $context . q[. ] : q[];
+    foreach my $check_name (@{$checks}) {
       my ($name, $class_name) = npg_qc::autoqc::role::result->class_names($check_name);
-      my $count = $self->qc_schema->resultset($class_name)
-                       ->search_via_composition($compositions)->count;
+      my $rs = $self->qc_schema->resultset($class_name)
+	            ->search_via_composition($compositions);
+      my $count = $rs->count;
       my $failed = 0;
       if ($check_name ne 'samtools_stats') {
         if ($count != $expected) {
-          $self->warn(qq[Expected $expected results got $count for $check_name]);
+          $self->warn($context . qq[Expected $expected results got $count for $check_name]);
           $failed = 1;
         }
       } else {
