@@ -179,6 +179,7 @@ sub _results_exist {
       my $rs = $self->qc_schema->resultset($class_name)
 	            ->search_via_composition($compositions);
       my $count = $rs->count;
+
       if ($check_name eq 'samtools_stats') {
         # We expect at least two types of these files per composition
         my $e = $expected * 2;
@@ -196,8 +197,24 @@ sub _results_exist {
           $exists = 0;
 	}
       } else {
-        if ($count != $expected) {
-          $self->warn($context . qq[Expected $expected results got $count for $check_name]);
+
+        my $local_expected = $expected;
+        my $local_count    = $count;
+
+        if ($check_name eq 'adapter') {
+          # Adapter check for tag zero might or might not be present.
+          # We will not check for it.
+          my @non_tag_zero_compositions = grep
+            { (!defined $_->get_component(0)->tag_index()) || $_->get_component(0)->tag_index() }
+            @{$compositions};
+          @non_tag_zero_compositions or next;
+          if (@non_tag_zero_compositions != @{$compositions}) {
+            $local_expected = scalar @non_tag_zero_compositions;
+            $local_count = $rs->search_via_composition(\@non_tag_zero_compositions)->count;
+	  }
+	}
+        if ($local_count != $local_expected) {
+          $self->warn($context . qq[Expected $local_expected results got $local_count for $check_name]);
           $exists = 0;
         }
       }
