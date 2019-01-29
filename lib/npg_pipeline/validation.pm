@@ -520,22 +520,14 @@ sub _lims_deletable {
     return 1;
   }
 
+  my $vars_set = $self->_set_vars_from_samplesheet();
   my $deletable = 1;
-  my $vars_set = 0;
-  try {
-    $vars_set = $self->_set_vars_from_samplesheet();
-  } catch {
-    $self->error($_);
-    $deletable = 0;
-  };
 
-  if ($deletable) {
-    foreach my $entity (@{$self->product_entities}) {
-      foreach my $file ($entity->staging_files($self->file_extension)) {
-        if (!-e $file) {
-          $self->logwarn("File $file is missing for entity " . $entity->description());
-          $deletable = 0;
-        }
+  foreach my $entity (@{$self->product_entities}) {
+    foreach my $file ($entity->staging_files($self->file_extension)) {
+      if (!-e $file) {
+        $self->logwarn("File $file is missing for entity " . $entity->description());
+        $deletable = 0;
       }
     }
   }
