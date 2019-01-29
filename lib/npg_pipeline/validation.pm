@@ -346,10 +346,6 @@ sub run {
   my $deletable = $self->_npg_tracking_deletable('unconditional');
   my $vars_set  = 0;
 
-  if (!$deletable) {
-    $vars_set = $self->_set_vars_from_samplesheet();
-  }
-
   try {
     $deletable = $deletable || (
               $self->_npg_tracking_deletable() &&
@@ -363,16 +359,6 @@ sub run {
     my $e = $_;
     $self->error(sprintf 'Error assessing run %i: %s', $self->id_run, $e);
   };
-
-  #########
-  # unset env variables
-  #
-  if ($vars_set) {
-    for my $var ( npg_pipeline::cache->env_vars() ) {
-      ##no critic (RequireLocalizedPunctuationVars)    
-      $ENV{$var} = q[];
-    }
-  }
 
   if ($deletable && $self->remove_staging_tag) {
     $self->tracking_run->unset_tag($STAGING_TAG);
@@ -525,16 +511,36 @@ sub _lims_deletable {
   }
 
   my $deletable = 1;
-  foreach my $entity (@{$self->product_entities}) {
-    foreach my $file ($entity->staging_files($self->file_extension)) {
-      if (!-e $file) {
-        $self->logwarn("File $file is missing for entity " . $entity->description());
-        $deletable = 0;
+  my $vars_set = 0;
+  try {
+    $vars_set = $self->_set_vars_from_samplesheet();
+  } catch {
+    $self->error($_);
+    $deletable = 0;
+  };
+
+  if ($deletable) {
+    foreach my $entity (@{$self->product_entities}) {
+      foreach my $file ($entity->staging_files($self->file_extension)) {
+        if (!-e $file) {
+          $self->logwarn("File $file is missing for entity " . $entity->description());
+          $deletable = 0;
+        }
       }
     }
   }
 
-   my $m = sprintf 'Consistency of staging sequence files listing with LIMs: run %i %sdeletable',
+  #########
+  # unset env variables
+  #
+  if ($vars_set) {
+    for my $var ( npg_pipeline::cache->env_vars() ) {
+      ##no critic (RequireLocalizedPunctuationVars)    
+      $ENV{$var} = q[];
+    }
+  }
+
+  my $m = sprintf 'Consistency of staging sequence files listing with LIMs: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
