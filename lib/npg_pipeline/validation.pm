@@ -450,6 +450,16 @@ sub _npg_tracking_deletable {
   }
 
   $deletable = any { $_ eq $crsd } @NPG_DELETABLE_STATES;
+
+  if ($deletable) {
+    my $staging_rf = $self->run_folder;
+    my $db_rf      = $self->tracking_run->folder_name;
+    if ($staging_rf ne $db_rf) {
+      $self->logcroak("Runfolder name on staging $staging_rf " .
+                      "does not match database runfolder name $db_rf");
+    }
+  }
+
   $message .= ($deletable ? q[] : q[NOT ]) . q[deletable.];
   $self->info($message);
 
