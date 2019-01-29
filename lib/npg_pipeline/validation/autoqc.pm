@@ -198,8 +198,9 @@ sub _results_exist {
 	}
       } else {
 
-        my $local_expected = $expected;
-        my $local_count    = $count;
+        my $local_expected     = $expected;
+        my $local_count        = $count;
+        my $local_compositions = $compositions;
 
         if ($check_name eq 'adapter') {
           # Adapter check for tag zero might or might not be present.
@@ -209,19 +210,34 @@ sub _results_exist {
             @{$compositions};
           @non_tag_zero_compositions or next;
           if (@non_tag_zero_compositions != @{$compositions}) {
+            $local_compositions = \@non_tag_zero_compositions;
             $local_expected = scalar @non_tag_zero_compositions;
             $local_count = $rs->search_via_composition(\@non_tag_zero_compositions)->count;
 	  }
 	}
+
         if ($local_count != $local_expected) {
           $self->warn($context . qq[Expected $local_expected results got $local_count for $check_name]);
           $exists = 0;
+          $self->_report_missing_results($local_compositions, $class_name, $check_name);
         }
       }
     }
   }
 
   return $exists;
+}
+
+sub _report_missing_results {
+  my ($self, $compositions, $class_name, $check) = @_;
+
+  my $rs = $self->qc_schema->resultset($class_name);
+  foreach my $c (@{$compositions}) {
+    if ($rs->search_via_composition([$c])->count == 0) {
+      $self->debug("$check result is missing for " . $c->freeze);
+    }
+  }
+  return;
 }
 
 sub _compositions4lanes {
