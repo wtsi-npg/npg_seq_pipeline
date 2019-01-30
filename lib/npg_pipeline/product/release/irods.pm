@@ -9,6 +9,7 @@ with 'npg_pipeline::product::release' => {
 
 our $VERSION = '0';
 
+Readonly::Scalar my $THOUSAND                    => 1000;
 Readonly::Scalar my $IRODS_ROOT_NON_NOVASEQ_RUNS => q[/seq];
 Readonly::Scalar my $IRODS_ROOT_NOVASEQ_RUNS     => q[/seq/illumina/runs];
 
@@ -36,12 +37,11 @@ has 'irods_destination_collection' => (
   is            => 'ro',
   required      => 0,
   lazy_build    => 1,
-  documentation => 'iRODS destination collection for run product data',
 );
 sub _build_irods_destination_collection {
   my $self = shift;
-  return join q[/],
-    $self->platform_NovaSeq() ? $IRODS_ROOT_NOVASEQ_RUNS : $IRODS_ROOT_NON_NOVASEQ_RUNS,
+  return join q[/], $self->platform_NovaSeq() ?
+    ($IRODS_ROOT_NOVASEQ_RUNS, int $self->id_run/$THOUSAND) : ($IRODS_ROOT_NON_NOVASEQ_RUNS),
     $self->id_run;
 }
 
