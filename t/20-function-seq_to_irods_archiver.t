@@ -212,7 +212,7 @@ subtest 'NovaSeq run' => sub {
   my $rfpath  = qq{t/data/novaseq/$rf_name};
   my $bbc_path = qq{$rfpath/Data/Intensities/BAM_basecalls_20180805-013153};
   my $archive_path = qq{$bbc_path/no_cal/archive};
-  my $col = qq{/seq/illumina/runs/$id_run};
+  my $col = qq{/seq/illumina/runs/26/$id_run};
   my $restart_file = qr/${archive_path}\/publish_seq_data2irods_${id_run}_20181204-\d+\.restart_file\.json/;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
