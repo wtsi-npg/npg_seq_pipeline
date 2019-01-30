@@ -26,7 +26,7 @@ override 'create' => sub {
       $PUBLISH_SCRIPT_NAME,
       q{--restart_file},     $self->restart_file_path($job_name_prefix),
       q{--max_errors},       $self->num_max_errors(),
-      q{--collection},       $self->irods_destination_collection() . '/InterOp',
+      q{--collection},       $self->irods_destination_collection(),
       q{--source_directory}, $self->runfolder_path(),
       q{--include},          q['RunInfo.xml'],
       q{--include},          q['[Rr]unParameters.xml'],
