@@ -124,7 +124,7 @@ subtest 'NovaSeq run' => sub {
   my $d = $da->[0];
   isa_ok($d, q{npg_pipeline::function::definition});
   is ($d->command, join(q[ ], 'npg_publish_illumina_logs.pl',
-    qq{--collection \/seq\/illumina\/runs\/$id_run\/log},
+    qq{--collection \/seq\/illumina\/runs\/26\/$id_run\/log},
     qq{--runfolder_path $rfpath --id_run $id_run}),
     'command is correct');
 };

@@ -6,26 +6,26 @@ use Readonly;
 
 use npg_pipeline::function::definition;
 
-extends qw{npg_pipeline::base};
-with    qw{npg_pipeline::function::util};
+extends 'npg_pipeline::base';
+with    qw{npg_pipeline::function::util
+           npg_pipeline::product::release
+           npg_pipeline::product::release::irods};
 
 our $VERSION = '0';
 
 Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
 Readonly::Scalar my $NUM_MAX_ERRORS      => 20;
-Readonly::Scalar my $IRODS_ROOT_NON_NOVASEQ_RUNS => q[/seq];
-Readonly::Scalar my $IRODS_ROOT_NOVASEQ_RUNS     => q[/seq/illumina/runs];
 Readonly::Scalar my $OLD_DATED_DIR_NAME  => q[20180717];
 
 sub create {
   my $self = shift;
 
   my $ref = $self->basic_definition_init_hash();
+  my @definitions = ();
 
   if (!$ref->{'excluded'}) {
 
     my $job_name_prefix = join q{_}, q{publish_seq_data2irods}, $self->id_run();
-    $self->assign_common_definition_attrs($ref, $job_name_prefix);
 
     my $command = join q[ ],
       $PUBLISH_SCRIPT_NAME,
@@ -36,21 +36,20 @@ sub create {
       $command .= q{ --alt_process qc_run};
     }
 
-    my @positions = $self->positions();
-    my $position_list = q{};
-    if (scalar @positions < scalar $self->lims->children) {
-      foreach my $p  (@positions){
-        $position_list .= qq{ --positions $p};
-      }
-      $command .= $position_list;
-    }
-
     if($self->has_lims_driver_type) {
       $command .= q{ --driver-type } . $self->lims_driver_type;
     }
 
     my $old_dated_dir = $self->_find_old_dated_dir();
     if ($old_dated_dir) {
+      my @positions = $self->positions();
+      my $position_list = q{};
+      if (scalar @positions < scalar $self->lims->children) {
+        foreach my $p  (@positions){
+          $position_list .= qq{ --positions $p};
+        }
+        $command .= $position_list;
+      }
       $command .= join q[ ], q[],
         q{--archive_path},   $self->archive_path(),
         q{--runfolder_path}, $self->runfolder_path();
@@ -60,24 +59,35 @@ sub create {
       $command = join q[;], "export PATH=$old_dated_dir/bin:".$ENV{PATH},
                             "export PERL5LIB=$old_dated_dir/lib/perl5",
                             $command;
+      $self->info(qq[iRODS loader command "$command"]);
+      $ref->{'command'} = $command;
+      $self->assign_common_definition_attrs($ref, $job_name_prefix);
+      push @definitions, npg_pipeline::function::definition->new($ref);
     } else {
-      $command .= join q[ ], q[],
-        q{--collection},       $self->irods_destination_collection(),
-        q{--source_directory}, $self->archive_path();
-    }
+      my $run_collection = $self->irods_destination_collection();
+      foreach my $product (@{$self->products->{'data_products'}}) {
+        if ($self->is_for_irods_release($product)) {
+          my %dref = %{$ref};
+          $dref{'array_cpu_limit'}       = 1; # One job at a time
+          $dref{'apply_array_cpu_limit'} = 1;
+          $dref{'composition'}           = $product->composition;
+          $dref{'command'} = sprintf '%s --collection %s --source_directory %s',
+            $command,
+            $self->irods_product_destination_collection($run_collection, $product),
+	    $product->path($self->archive_path());
+          $self->assign_common_definition_attrs(\%dref, $job_name_prefix);
+          push @definitions, npg_pipeline::function::definition->new(\%dref);
+	}
+      }
 
-    $self->info(qq[iRODS loader command "$command"]);
-    $ref->{'command'} = $command;
+      if (!@definitions) {
+        $self->info(q{No products to archive to iRODS});
+        $ref->{'excluded'} = 1;
+      }
+    }
   }
 
-  return [npg_pipeline::function::definition->new($ref)];
-}
-
-sub irods_destination_collection {
-  my $self = shift;
-  return join q[/],
-    $self->platform_NovaSeq() ? $IRODS_ROOT_NOVASEQ_RUNS : $IRODS_ROOT_NON_NOVASEQ_RUNS,
-    $self->id_run;
+  return @definitions ? \@definitions : [npg_pipeline::function::definition->new($ref)];
 }
 
 sub basic_definition_init_hash {
@@ -193,10 +203,6 @@ Given a hash reference as an argument, adds job_name, fs_slots_num,
 reserve_irods_slots, queue and command_preexec key-value pairs
 to the hash.
 
-=head2 irods_destination_collection
-
-Returns iRODS destination collection for this run.
-
 =head2 num_max_errors
 
 Returns the maximum number of errors aftre wich the iRODs publisher
@@ -234,7 +240,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

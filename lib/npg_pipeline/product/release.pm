@@ -26,26 +26,8 @@ has 'release_config' =>
   (isa        => 'HashRef',
    is         => 'rw',
    required   => 1,
-   default    => sub { return {} },);
-
-=head2 BUILD
-
-Method called by Moose before returning newly constructed object having loaded
-product release config.
-
-=cut
-
-sub BUILD {
-  my ($self) = @_;
-
-  my $file = $self->conf_file_path($RELEASE_CONFIG_FILE);
-
-  $self->info("Reading product release configuration from '$file'");
-  $self->release_config($self->read_config($file));
-  $self->debug('Loaded product release configuration: ',
-               pp($self->release_config));
-  return;
-}
+   builder    => '_build_release_config',
+   lazy       => 1,);
 
 =head2 is_release_data
 
@@ -152,6 +134,26 @@ sub customer_name {
   return $customer_name;
 }
 
+=head2 is_for_release
+
+  Arg [1]    : npg_pipeline::product
+  Arg [2]    : Str, type of release
+
+  Example    : $obj->is_for_release($product, 'irods');
+               $obj->is_for_release($product, 's3');
+  Description: Return true if the product is to be released via the
+               mechanism defined by the second argument.
+
+  Returntype : Bool
+
+=cut
+
+sub is_for_release {
+  my ($self, $product, $type_of_release) = @_;
+  my $study_config = $self->_find_study_config($product);
+  return ($study_config and $study_config->{$type_of_release}->{enable});
+}
+
 =head2 is_for_s3_release
 
   Arg [1]    : npg_pipeline::product
@@ -167,24 +169,20 @@ sub customer_name {
 sub is_for_s3_release {
   my ($self, $product) = @_;
 
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
+  my $name        = $product->file_name_root();
+  my $description = $product->composition->freeze();
 
-  if ($study_config and $study_config->{s3}->{enable}) {
-    $self->info("Product $name, $rpt is for S3 release");
+  my $enable = $self->is_for_release($product, 's3');
 
-    if (not $self->s3_url($product)) {
-      $self->logconfess("Configuration error for product $name, $rpt: " ,
-                        'S3 release is enabled but no URL was provided');
-    }
-
-    return 1;
+  if ($enable and not $self->s3_url($product)) {
+    $self->logconfess("Configuration error for product $name, $description: " ,
+                      'S3 release is enabled but no URL was provided');
   }
 
-  $self->info("Product $name, $rpt is NOT for S3 release");
+  $self->info(sprintf 'Product %s, %s is %sfor S3 release',
+                      $name, $description, $enable ? q[] : q[NOT ]);
 
-  return 0;
+  return $enable;
 }
 
 =head2 s3_url
@@ -286,15 +284,35 @@ sub _build_qc_schema {
   return npg_qc::Schema->connect();
 }
 
+sub _build_release_config {
+  my ($self) = @_;
+
+  my $file = $self->conf_file_path($RELEASE_CONFIG_FILE);
+  $self->info("Reading product release configuration from '$file'");
+  my $config = $self->read_config($file);
+  $self->debug('Loaded product release configuration: ', pp($config));
+
+  return $config;
+}
+
 sub _find_study_config {
   my ($self, $product) = @_;
 
-  my $rpt      = $product->rpt_list();
-  my $name     = $product->file_name_root();
-  my $study_id = $product->lims->study_id();
+  my $with_spiked_control = 0;
+  my $rpt       = $product->rpt_list();
+  my $name      = $product->file_name_root();
+  #####
+  # If we were to process a pool as a single library, and all
+  # libraries in a pool belonged to the same study, passing
+  # false with_spiked_control flag will allow for retrieving
+  # a correct single study identifier. 
+  my @study_ids = $product->lims->study_ids($with_spiked_control);
 
-  $study_id or
+  @study_ids or
     $self->logconfess("Failed to get a study_id for product $name, $rpt");
+  (@study_ids == 1) or
+    $self->logconfess("Multiple study ids for product $name, $rpt");
+  my $study_id = $study_ids[0];
 
   my ($study_config) = grep { $_->{study_id} eq $study_id }
     @{$self->release_config->{study}};
