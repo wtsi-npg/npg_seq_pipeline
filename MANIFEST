@@ -55,9 +55,11 @@ lib/npg_pipeline/pluggable/registry.pm
 lib/npg_pipeline/product.pm
 lib/npg_pipeline/product/release/irods.pm
 lib/npg_pipeline/runfolder_scaffold.pm
-lib/npg_pipeline/validation/autoqc_files.pm
+lib/npg_pipeline/validation.pm
+lib/npg_pipeline/validation/autoqc.pm
 lib/npg_pipeline/validation/common.pm
-lib/npg_pipeline/validation/sequence_files.pm
+lib/npg_pipeline/validation/entity.pm
+lib/npg_pipeline/validation/irods.pm
 lib/npg_tracking/daemon/analysis.pm
 lib/npg_tracking/daemon/archival.pm
 MANIFEST			This list of files
@@ -81,8 +83,10 @@ t/10-pluggable.t
 t/10-product.t
 t/10-runfolder_scaffold.t
 t/10-script-job_env_to_threads.t
-t/10-validation-autoqc_files.t
-t/10-validation-sequence_files.t
+t/10-validation.t
+t/10-validation-autoqc.t
+t/10-validation-entity.t
+t/10-validation-irods.t
 t/15-pipeline_launcher_scripts.t
 t/20-function-autoqc.t
 t/20-function-autoqc_archiver.t
@@ -283,8 +287,6 @@ t/data/summary_files/after_v7_mp_hack_Summary.htm
 t/data/summary_files/after_v7_mp_hack_Summary.xml
 t/data/summary_files/BustardSummary_mp.xml
 t/data/summary_files/Summary.xsl
-t/data/validation/20405/file_list
-t/data/validation/20405/samplesheet_20405.csv
 t/dbic_util.pm
 t/log4perl_test.conf
 t/perlcriticrc

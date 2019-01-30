@@ -15,8 +15,6 @@ our $VERSION = '0';
 
 Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
 Readonly::Scalar my $NUM_MAX_ERRORS      => 20;
-Readonly::Scalar my $IRODS_ROOT_NON_NOVASEQ_RUNS => q[/seq];
-Readonly::Scalar my $IRODS_ROOT_NOVASEQ_RUNS     => q[/seq/illumina/runs];
 Readonly::Scalar my $OLD_DATED_DIR_NAME  => q[20180717];
 
 sub create {
@@ -90,13 +88,6 @@ sub create {
   }
 
   return @definitions ? \@definitions : [npg_pipeline::function::definition->new($ref)];
-}
-
-sub irods_destination_collection {
-  my $self = shift;
-  return join q[/],
-    $self->platform_NovaSeq() ? $IRODS_ROOT_NOVASEQ_RUNS : $IRODS_ROOT_NON_NOVASEQ_RUNS,
-    $self->id_run;
 }
 
 sub basic_definition_init_hash {
@@ -211,10 +202,6 @@ thw excluded attribute is set to true.
 Given a hash reference as an argument, adds job_name, fs_slots_num,
 reserve_irods_slots, queue and command_preexec key-value pairs
 to the hash.
-
-=head2 irods_destination_collection
-
-Returns iRODS destination collection for this run.
 
 =head2 num_max_errors
 
