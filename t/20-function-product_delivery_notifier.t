@@ -4,7 +4,7 @@ use warnings;
 use Digest::MD5;
 use File::Copy;
 use File::Path qw[make_path remove_tree];
-use File::Temp;
+use File::Temp qw[tempdir];
 use Cwd;
 use npg_tracking::util::abs_path qw(abs_path);
 use Log::Log4perl qw[:easy];
@@ -12,8 +12,10 @@ use Test::More tests => 5;
 use Test::Exception;
 use t::util;
 
+my $temp_dir = tempdir(CLEANUP => 1);
 Log::Log4perl->easy_init({level  => $INFO,
-                          layout => '%d %p %m %n'});
+                          layout => '%d %p %m %n',
+                          file   => join(q[/], $temp_dir, 'logfile')});
 
 {
   package TestDB;

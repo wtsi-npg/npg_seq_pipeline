@@ -249,6 +249,26 @@ sub s3_profile {
   return $profile;
 }
 
+=head2 is_s3_releasable
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->is_for_s3_release($product)
+  Description: Return true if the product is to be released via S3
+               and has QC outcome compatible with being released.
+
+  Returntype : Bool
+
+=cut
+
+sub is_s3_releasable {
+  my ($self, $product) = @_;
+
+  return $self->is_release_data($product)   &&
+         $self->is_for_s3_release($product) &&
+         $self->has_qc_for_release($product);
+}
+
 =head2 is_for_s3_release_notification
 
   Arg [1]    : npg_pipeline::product
@@ -429,7 +449,7 @@ Keith James
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2018, 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
