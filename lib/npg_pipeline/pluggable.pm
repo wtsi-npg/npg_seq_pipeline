@@ -593,7 +593,7 @@ sub _save_function_definitions {
 
   my $file = $self->_definitions_file_path();
   $self->info( q[]);
-  $self->info(qq[***** Writing finction definitions to ${file}]);
+  $self->info(qq[***** Writing function definitions to ${file}]);
   $self->info( q[]);
   my $json = JSON->new->convert_blessed->canonical;
   return write_file($file,
