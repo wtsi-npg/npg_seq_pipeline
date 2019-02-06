@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use File::Temp qw(tempdir);
 use Graph::Directed;
@@ -84,6 +84,47 @@ subtest 'wr add command' => sub {
   is ($e->_wr_add_command(),
     "wr add --cwd /tmp --disk 0 --override 2 --retries 1 --env $env_string -f $file",
     'wr command');
+};
+
+subtest 'definition for a job' => sub {
+  plan tests => 2;
+
+  my $ref = {
+    created_by    => __PACKAGE__,
+    created_on    => 'today',
+    identifier    => 1234,
+    job_name      => 'job_name',
+    command       => '/bin/true',
+    num_cpus      => [1],
+    queue         => 'small'
+  };
+  my $fd = npg_pipeline::function::definition->new($ref);
+
+  my $g = Graph::Directed->new();
+  $g->add_edge('pipeline_wait4path', 'pipeline_start');
+  my $e = npg_pipeline::executor::wr->new(
+    function_definitions => {
+      'pipeline_wait4path' => [$fd], 'pipeline_start' => [$fd]},
+    function_graph       => $g
+  );
+
+  my $job_def = $e->_definition4job('pipeline_wait4path', 'some_dir', $fd);
+  my $expected = { 'cmd' => '( /bin/true ) 2>&1',
+                   'cpus' => 1,
+                   'priority' => 0,
+                   'memory' => '2000M' };
+  is_deeply ($job_def, $expected, 'job definition without tee-ing to a log file');
+
+  $ref->{'num_cpus'} = [0];
+  $ref->{'memory'}   = 100;
+  $fd = npg_pipeline::function::definition->new($ref);
+  $expected = {
+    'cmd' => '( /bin/true ) 2>&1 | tee -a "some_dir/pipeline_start-today-1234.out"',
+    'cpus' => 0,
+    'priority' => 0,
+    'memory'   => '100M' };
+  $job_def = $e->_definition4job('pipeline_start', 'some_dir', $fd);
+  is_deeply ($job_def, $expected, 'job definition with tee-ing to a log file');
 }; 
 
 1;
