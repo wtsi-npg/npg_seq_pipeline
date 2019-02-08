@@ -1,0 +1,171 @@
+{
+   "graph" : {
+      "edges" : [
+         {
+            "relation" : "dependsOn",
+            "source" : "pipeline_start",
+            "target" : "run_archival_in_progress"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_archival_in_progress",
+            "target" : "upload_illumina_analysis_to_qc_database"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "upload_illumina_analysis_to_qc_database",
+            "target" : "update_ml_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_archival_in_progress",
+            "target" : "upload_auto_qc_to_qc_database"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "upload_auto_qc_to_qc_database",
+            "target" : "update_ml_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "update_ml_warehouse",
+            "target" : "archive_run_data_to_irods"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "update_ml_warehouse",
+            "target" : "archive_to_s3"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "archive_run_data_to_irods",
+            "target" : "archive_to_irods_ml_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "archive_to_s3",
+            "target" : "notify_product_delivery"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "archive_to_irods_ml_warehouse",
+            "target" : "upload_fastqcheck_to_qc_database"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "upload_fastqcheck_to_qc_database",
+            "target" : "run_run_archived"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "notify_product_delivery",
+            "target" : "run_run_archived"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_run_archived",
+            "target" : "run_qc_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_qc_complete",
+            "target" : "pipeline_wait4path"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "pipeline_wait4path",
+            "target" : "update_ml_warehouse_post_qc_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "pipeline_wait4path",
+            "target" : "update_warehouse_post_qc_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "update_warehouse_post_qc_complete",
+            "target" : "archive_logs"
+         },        
+         {
+            "relation" : "dependsOn",
+            "source" : "update_ml_warehouse_post_qc_complete",
+            "target" : "archive_logs"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "archive_logs",
+            "target" : "pipeline_end"
+         }       
+      ],
+      "nodes" : [
+         {
+            "id" : "pipeline_start",
+            "label" : "pipeline_start"
+         },
+         {
+            "id" : "run_archival_in_progress",
+            "label" : "run_archival_in_progress"
+         },
+         {
+            "id" : "update_ml_warehouse",
+            "label" : "update_ml_warehouse"
+         },
+         {
+            "id" : "archive_to_irods_ml_warehouse",
+            "label" : "archive_to_irods_ml_warehouse"
+         },
+         {
+            "id" : "archive_run_data_to_irods",
+            "label" : "archive_run_data_to_irods"
+         },
+         {
+            "id" : "archive_to_s3",
+            "label" : "archive_to_s3"
+         },
+         {
+            "id" : "notify_product_delivery",
+            "label" : "notify_product_delivery"
+         },
+         {
+            "id" : "upload_fastqcheck_to_qc_database",
+            "label" : "upload_fastqcheck_to_qc_database"
+         },
+         {
+            "id" : "upload_illumina_analysis_to_qc_database",
+            "label" : "upload_illumina_analysis_to_qc_database"
+         },
+         {
+            "id" : "upload_auto_qc_to_qc_database",
+            "label" : "upload_auto_qc_to_qc_database"
+         },
+         {
+            "id" : "run_run_archived",
+            "label" : "run_run_archived"
+         },
+         {
+            "id" : "run_qc_complete",
+            "label" : "run_qc_complete"
+         },
+         {
+            "id" : "pipeline_wait4path",
+            "label" : "pipeline_wait4path"
+         },
+         {
+            "id" : "update_ml_warehouse_post_qc_complete",
+            "label" : "update_ml_warehouse_post_qc_complete"
+         },
+         {
+            "id" : "update_warehouse_post_qc_complete",
+            "label" : "update_warehouse_post_qc_complete"
+         },
+         {
+            "id" : "archive_logs",
+            "label" : "archive_logs"
+         },
+         {
+            "id" : "pipeline_end",
+            "label" : "pipeline_end"
+         }
+      ]
+   }
+}
