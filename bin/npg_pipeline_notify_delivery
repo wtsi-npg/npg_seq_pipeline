@@ -132,10 +132,13 @@ if (not $mq->is_connected()) {
 }
 $mq->channel_open($channel);
 
+# 'mandatory' ensures the message reached at least one queue
 my $options = {exchange  => $exchange,
                mandatory => 1};
+
+# delivery mode '2' sets the message as persistent
 my $props   = {content_type  => 'application/json',
-               delivery_mode => 1};
+               delivery_mode => 2};
 
 my @localtime = localtime;
 my $timestamp = strftime('%Y-%m-%d %T', @localtime);
