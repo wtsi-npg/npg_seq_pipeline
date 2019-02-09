@@ -46,7 +46,7 @@ subtest 'wr add command' => sub {
 
   my $get_env = sub {
     my @env = ();
-    for my $name (sort qw/PATH PERL5LIB
+    for my $name (sort qw/PATH PERL5LIB IRODS_ENVIRONMENT_FILE
                           CLASSPATH NPG_CACHED_SAMPLESHEET_FILE
                           NPG_REPOSITORY_ROOT/) {
       my $v = $ENV{$name};
