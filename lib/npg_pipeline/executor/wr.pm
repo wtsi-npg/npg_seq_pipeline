@@ -32,7 +32,8 @@ Readonly::Array  my @ENV_VARS_TO_PROPAGATE => qw/ PATH
                                                   PERL5LIB
                                                   CLASSPATH
                                                   NPG_CACHED_SAMPLESHEET_FILE
-                                                  NPG_REPOSITORY_ROOT /;
+                                                  NPG_REPOSITORY_ROOT
+                                                  IRODS_ENVIRONMENT_FILE /;
 
 =head1 NAME
 
@@ -186,13 +187,30 @@ sub _definition4job {
   }
 
   my $log_file = sub {
-    my $log_name = join q[-], $function_name, $d->created_on(),
-      $d->has_composition() ? $d->composition()->freeze2rpt () : $d->identifier();
-    $log_name   .= q[.out];
-    return join q[/], $log_dir, $log_name;
+    #####
+    # Explicit exclusion for now. In future, if we end up using this function,
+    # we might extend function definition to handle jobs without logs.
+    # No log is safer for pipeline_wait4path function since the run folder
+    # might be moved to outgoing while the function is being executed.
+    if ($function_name ne 'pipeline_wait4path') {
+      my $log_name = join q[-], $function_name, $d->created_on(),
+        $d->has_composition() ? $d->composition()->freeze2rpt () : $d->identifier();
+      $log_name   .= q[.out];
+      return join q[/], $log_dir, $log_name;
+    }
+    return;
   };
 
-  $def->{'cmd'} = join q[ ], q[(], $d->command(), q[)], q[2>&1], q[|], q[tee], q["]. $log_file->() . q["];
+  my $command = join q[ ], q[(], $d->command(), q[)], q[2>&1];
+  my $lf = $log_file->();
+  if ($lf) {
+    #####
+    # Ask tee command to append to the log rather than start over.
+    # This would replicate behaviour under LSF. If the job is retried,
+    # will keep the original log in place.
+    $command = join q[ ], $command, q[|], q[tee -a], q["]. $log_file->() . q["];
+  }
+  $def->{'cmd'} = $command;
 
   return $def;
 }
