@@ -23,33 +23,33 @@
          },
          {
             "relation" : "dependsOn",
-            "target" : "pipeline_wait4path",
-            "source" : "run_qc_complete"
+            "source" : "run_qc_complete",
+            "target" : "pipeline_wait4path"
          },
          {
             "relation" : "dependsOn",
-            "target" : "update_ml_warehouse_post_qc_complete",
-            "source" : "pipeline_wait4path"
+            "source" : "pipeline_wait4path",
+            "target" : "update_ml_warehouse_post_qc_complete"
          },
          {
             "relation" : "dependsOn",
-            "target" : "update_warehouse_post_qc_complete",
-            "source" : "pipeline_wait4path"
+            "source" : "pipeline_wait4path",
+            "target" : "update_warehouse_post_qc_complete"
          },
          {
             "relation" : "dependsOn",
-            "target" : "archive_logs",
-            "source" : "update_warehouse_post_qc_complete"
+            "source" : "update_warehouse_post_qc_complete",
+            "target" : "archive_logs"
          },        
          {
             "relation" : "dependsOn",
-            "target" : "archive_logs",
-            "source" : "update_ml_warehouse_post_qc_complete"
+            "source" : "update_ml_warehouse_post_qc_complete",
+            "target" : "archive_logs"
          },
          {
             "relation" : "dependsOn",
-            "target" : "pipeline_end",
-            "source" : "archive_logs"
+            "source" : "archive_logs",
+            "target" : "pipeline_end"
          }       
       ],
       "nodes" : [
