@@ -8,6 +8,7 @@ use npg_pipeline::function::definition;
 
 extends 'npg_pipeline::base';
 with    qw{npg_pipeline::function::util
+           npg_pipeline::runfolder_scaffold
            npg_pipeline::product::release
            npg_pipeline::product::release::irods};
 
@@ -29,7 +30,6 @@ sub create {
 
     my $command = join q[ ],
       $PUBLISH_SCRIPT_NAME,
-      q{--restart_file},   $self->restart_file_path($job_name_prefix),
       q{--max_errors},     $self->num_max_errors();
 
     if ($self->qc_run) {
@@ -42,6 +42,7 @@ sub create {
 
     my $old_dated_dir = $self->_find_old_dated_dir();
     if ($old_dated_dir) {
+      $command .= q{--restart_file } . $self->restart_file_path($job_name_prefix);
       my @positions = $self->positions();
       my $position_list = q{};
       if (scalar @positions < scalar $self->lims->children) {
@@ -71,8 +72,9 @@ sub create {
           $dref{'array_cpu_limit'}       = 1; # One job at a time
           $dref{'apply_array_cpu_limit'} = 1;
           $dref{'composition'}           = $product->composition;
-          $dref{'command'} = sprintf '%s --collection %s --source_directory %s',
+          $dref{'command'} = sprintf '%s --restart_file %s --collection %s --source_directory %s',
             $command,
+            $self->restart_file_path($job_name_prefix, $product),
             $self->irods_product_destination_collection($run_collection, $product),
 	    $product->path($self->archive_path());
           $self->assign_common_definition_attrs(\%dref, $job_name_prefix);
@@ -126,10 +128,13 @@ sub num_max_errors {
 }
 
 sub restart_file_path {
-  my ($self, $job_name_prefix) = @_;
+  my ($self, $job_name_prefix, $product_obj) = @_;
   my $file_name = join q[_], $job_name_prefix, $self->random_string();
+  if ($product_obj) {
+    $file_name .= q[_] . $product_obj->composition->digest();
+  }
   $file_name .= q{.restart_file.json};
-  return join q[/], $self->archive_path(), $file_name;
+  return join q[/], $self->irods_publisher_rstart_dir_path(), $file_name;
 }
 
 sub _find_old_dated_dir {
