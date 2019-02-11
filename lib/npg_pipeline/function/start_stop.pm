@@ -115,7 +115,8 @@ sub pipeline_wait4path {
     job_name      => $job_name,
     command       => $command,
     num_cpus      => [0],
-    queue         =>
+    command_preexec => "[ -d '$path' ]",
+    queue           =>
       $npg_pipeline::function::definition::SMALL_QUEUE,
   );
 

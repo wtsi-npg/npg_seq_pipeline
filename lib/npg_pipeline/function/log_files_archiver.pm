@@ -23,14 +23,11 @@ override 'create' => sub {
     $self->assign_common_definition_attrs(
       $ref, (join q{_}, q{publish_logs}, $self->id_run()));
 
-    my $future_path = npg_pipeline::runfolder_scaffold
-                      ->path_in_outgoing($self->runfolder_path());
-    $ref->{'command_preexec'} = qq{[ -d '$future_path' ]};
-
     $ref->{'command'} = join q[ ],
       $SCRIPT_NAME,
       q{--collection},     $self->irods_destination_collection(),
-      q{--runfolder_path}, $future_path,
+      q{--runfolder_path}, npg_pipeline::runfolder_scaffold
+                             ->path_in_outgoing($self->runfolder_path()),
       q{--id_run},         $self->id_run();
   }
 

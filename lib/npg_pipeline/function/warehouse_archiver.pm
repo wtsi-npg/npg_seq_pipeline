@@ -100,26 +100,20 @@ sub _update_warehouse_command {
     }
     $pipeline_name ||= q[];
     my $job_name = join q{_}, $loader_name, $id_run, $pipeline_name;
-
-    my $ref = {
-      created_by   => __PACKAGE__,
-      created_on   => $self->timestamp(),
-      identifier   => $id_run,
-      command      => $command,
-      num_cpus     => [0],
-      queue        =>
-        $npg_pipeline::function::definition::LOWLOAD_QUEUE
-    };
-
     if ($post_qc_complete) {
-      my $path = npg_pipeline::runfolder_scaffold
-                 ->path_in_outgoing($self->recalibrated_path());
       $job_name .= '_postqccomplete';
-      $ref->{'command_preexec'} = "[ -d '$path' ]";
     }
-    $ref->{'job_name'}     = $job_name;
 
-    $d = npg_pipeline::function::definition->new($ref);
+    $d = npg_pipeline::function::definition->new(
+      created_by => __PACKAGE__,
+      created_on => $self->timestamp(),
+      identifier => $id_run,
+      command    => $command,
+      num_cpus   => [0],
+      job_name   => $job_name,
+      queue      =>
+        $npg_pipeline::function::definition::LOWLOAD_QUEUE
+    );
   }
 
   return [$d];
