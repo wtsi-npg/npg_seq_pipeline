@@ -3,6 +3,7 @@ use warnings;
 use English qw{-no_match_vars};
 use Test::More tests => 10;
 use Test::Exception;
+use File::Copy;
 use Cwd;
 
 use t::util;
@@ -49,9 +50,16 @@ my $bbp = "$rf/bam_basecall_path";
 
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_1234.csv};
-
+  my $config_dir = join q[/], $tmp_dir, 'config';
+  mkdir $config_dir;
+  my @files = glob 'data/config_files/*.{json,ini}';
+  push @files, 't/data/release/config/archive_on/product_release.yml';
+  for (@files) {
+    copy $_, $config_dir;
+  }
+  
   lives_ok { qx{
-    $bin/npg_pipeline_post_qc_review --no_bsub --no_sf_resource --runfolder_path $rf --bam_basecall_path $bbp};}
+    $bin/npg_pipeline_post_qc_review --no_bsub --no_sf_resource --runfolder_path $rf --bam_basecall_path $bbp --conf_path $config_dir};}
     q{ran bin/npg_pipeline_post_qc_review};
   ok(!$CHILD_ERROR, qq{Return code of $CHILD_ERROR});
 
