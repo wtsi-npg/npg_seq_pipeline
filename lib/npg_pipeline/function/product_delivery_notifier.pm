@@ -155,12 +155,14 @@ sub create {
 
   my $id_run = $self->id_run();
   my $job_name = sprintf q{%s_%d}, $SEND_MESSAGE_SCRIPT, $id_run;
-  my @definitions;
 
-  foreach my $product (@{$self->products->{data_products}}) {
+  my @products = $self->no_s3_archival ? () :
+                 grep { $self->is_for_s3_release_notification($_) }
+                 grep { $self->is_s3_releasable($_) }
+                 @{$self->products->{data_products}};
+  my @definitions = ();
 
-    next if not $self->is_s3_releasable($product);
-    next if not $self->is_for_s3_release_notification($product);
+  foreach my $product (@products) {
 
     my $msg_file = $product->file_path($self->message_dir, ext => 'msg.json');
     my $msg_body = $self->make_message($product);

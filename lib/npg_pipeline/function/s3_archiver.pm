@@ -79,11 +79,13 @@ sub create {
 
   my $id_run = $self->id_run();
   my $job_name = sprintf q{%s_%d}, $ARCHIVE_EXECUTABLE, $id_run;
-  my @definitions;
 
-  foreach my $product (@{$self->products->{data_products}}) {
+  my @products = $self->no_s3_archival ? () :
+                 grep { $self->is_s3_releasable($_) }
+                 @{$self->products->{data_products}};
+  my @definitions = ();
 
-    next if not $self->is_s3_releasable($product);
+  foreach my $product (@products) {
 
     # This is required for our initial customer, but we should arrange
     # an alternative for when supplier_name is not provided
