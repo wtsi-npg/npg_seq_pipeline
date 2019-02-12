@@ -7,7 +7,7 @@ use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Exception;
 use t::util;
 
@@ -39,6 +39,35 @@ use_ok($pkg);
 
 my $runfolder_path = 't/data/novaseq/180709_A00538_0010_BH3FCMDRXX';
 my $timestamp      = '20180701-123456';
+
+subtest 'local and no_s3_archival flag' => sub {
+  plan tests => 7;
+
+  my $archiver = $pkg->new
+    (conf_path      => "t/data/release/config/archive_on",
+     runfolder_path => $runfolder_path,
+     id_run         => 26291,
+     timestamp      => $timestamp,
+     qc_schema      => $qc,
+     local          => 1);
+  ok($archiver->no_s3_archival, 'no_s3_archival flag is set to true');
+  my $ds = $archiver->create;
+  is(scalar @{$ds}, 1, 'one definition is returned');
+  isa_ok($ds->[0], 'npg_pipeline::function::definition');
+  is($ds->[0]->excluded, 1, 'function is excluded');
+
+  $archiver = $pkg->new
+    (conf_path      => "t/data/release/config/archive_on",
+     runfolder_path => $runfolder_path,
+     id_run         => 26291,
+     timestamp      => $timestamp,
+     qc_schema      => $qc,
+     no_s3_archival => 1);
+  ok(!$archiver->local, 'local flag is false');
+  $ds = $archiver->create;
+  is(scalar @{$ds}, 1, 'one definition is returned');
+  is($ds->[0]->excluded, 1, 'function is excluded');
+};
 
 subtest 'expected_files' => sub {
   plan tests => 1;

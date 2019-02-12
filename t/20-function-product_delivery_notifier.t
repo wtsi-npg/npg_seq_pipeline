@@ -8,7 +8,7 @@ use File::Temp qw[tempdir];
 use Cwd;
 use npg_tracking::util::abs_path qw(abs_path);
 use Log::Log4perl qw[:easy];
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use t::util;
 
@@ -55,6 +55,35 @@ my $msg_routing_key = 'test_msg_routing_key';
 
 my $config_path    = 't/data/release/config/notify_on';
 my $message_config = "$config_path/npg_message_queue.conf";
+
+subtest 'local and no_s3_archival flag' => sub {
+  plan tests => 7;
+
+  my $archiver = $pkg->new
+    (conf_path      => "t/data/release/config/notify_on",
+     runfolder_path => $runfolder_path,
+     id_run         => $id_run,
+     timestamp      => $timestamp,
+     qc_schema      => $qc,
+     local          => 1);
+  ok($archiver->no_s3_archival, 'no_s3_archival flag is set to true');
+  my $ds = $archiver->create;
+  is(scalar @{$ds}, 1, 'one definition is returned');
+  isa_ok($ds->[0], 'npg_pipeline::function::definition');
+  is($ds->[0]->excluded, 1, 'function is excluded');
+
+  $archiver = $pkg->new
+    (conf_path      => "t/data/release/config/notify_on",
+     runfolder_path => $runfolder_path,
+     id_run         => $id_run,
+     timestamp      => $timestamp,
+     qc_schema      => $qc,
+     no_s3_archival => 1);
+  ok(!$archiver->local, 'local flag is false');
+  $ds = $archiver->create;
+  is(scalar @{$ds}, 1, 'one definition is returned');
+  is($ds->[0]->excluded, 1, 'function is excluded');
+};
 
 subtest 'message_config' => sub {
   plan tests => 1;
