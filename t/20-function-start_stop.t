@@ -37,7 +37,7 @@ subtest 'start and stop functions' => sub {
 };
 
 subtest 'wait4path function' => sub {
-  plan tests => 11;
+  plan tests => 13;
 
   my $f = npg_pipeline::function::start_stop->new(
     id_run         => 1234,
@@ -57,6 +57,7 @@ subtest 'wait4path function' => sub {
   is ($d->job_name, 'wait4path_in_outgoing_1234', 'job name');
   is ($d->queue, 'small', 'small queue');
   ok ($d->has_num_cpus, 'number of cpus is set');
+  is ($d->command_preexec, qq{[ -d '$path' ]}, 'preexec command');
   is_deeply ($d->num_cpus, [0], 'zero cpus');
   my $command = q{bash -c '}
     . qq{COUNTER=0; NUM_ITERATIONS=20; DIR=$path; STIME=60; }
@@ -71,7 +72,8 @@ subtest 'wait4path function' => sub {
     runfolder_path => $path,
   );
   $ds = $f->pipeline_wait4path();
-  is ($ds->[0]->command, $command, 'command is correct'); 
+  is ($ds->[0]->command, $command, 'command is correct');
+  is ($d->command_preexec, qq{[ -d '$path' ]}, 'preexec command');
 };
 
 1;

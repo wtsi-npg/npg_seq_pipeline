@@ -16,7 +16,7 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 use_ok('npg_pipeline::function::log_files_archiver');
 
 subtest 'MiSeq run' => sub {
-  plan tests => 33;
+  plan tests => 32;
 
   my $id_run  = 16850;
   my $rf_name = '150710_MS2_16850_A_MS3014507-500V2';
@@ -58,7 +58,6 @@ subtest 'MiSeq run' => sub {
     qq{--collection \/seq\/$id_run/log},
     qq{--runfolder_path $orfpath --id_run $id_run}),
     'command is correct');
-  is ($d->command_preexec, qq{[ -d '$orfpath' ]}, 'preexec command');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
