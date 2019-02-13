@@ -26,6 +26,7 @@ sub create {
 
   if (!$ref->{'excluded'}) {
 
+    $self->ensure_restart_dir_exists();
     my $job_name_prefix = join q{_}, q{publish_seq_data2irods}, $self->id_run();
 
     my $command = join q[ ],
@@ -137,6 +138,17 @@ sub restart_file_path {
   return join q[/], $self->irods_publisher_rstart_dir_path(), $file_name;
 }
 
+sub ensure_restart_dir_exists {
+  my $self = shift;
+  ####
+  # Create a directory for publisher's restart files.
+  # The directory is normally created by the analysis runfolder
+  # scaffold, but might be absent for run folders with older
+  # analysis results.
+  $self->make_dir($self->irods_publisher_rstart_dir_path());
+  return;
+}
+
 sub _find_old_dated_dir {
   my $self = shift;
 
@@ -217,6 +229,8 @@ should exit.
 
 Given a job name prefix, returns a full path of the iRODS publisher
 restart file.
+
+=head2 ensure_restart_dir_exists
 
 =head1 DIAGNOSTICS
 
