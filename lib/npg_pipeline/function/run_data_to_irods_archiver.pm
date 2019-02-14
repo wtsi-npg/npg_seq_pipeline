@@ -18,7 +18,7 @@ override 'create' => sub {
   my $ref = $self->basic_definition_init_hash();
 
   if (!$ref->{'excluded'}) {
-
+    $self->ensure_restart_dir_exists();
     my $job_name_prefix = join q{_}, q{publish_run_data2irods}, $self->id_run();
     $self->assign_common_definition_attrs($ref, $job_name_prefix);
 
@@ -95,7 +95,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

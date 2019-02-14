@@ -5,6 +5,9 @@ use Test::Exception;
 use File::Copy;
 use Log::Log4perl qw[:levels];
 use File::Slurp;
+use Cwd;
+
+use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
 
 use_ok('npg_pipeline::function::seq_to_irods_archiver');
@@ -210,7 +213,7 @@ subtest 'NovaSeq run' => sub {
 
   my $id_run  = 26291;
   my $rf_name = '180709_A00538_0010_BH3FCMDRXX';
-  my $rfpath  = qq{t/data/novaseq/$rf_name};
+  my $rfpath  = abs_path(getcwd) . qq{/t/data/novaseq/$rf_name};
   my $bbc_path = qq{$rfpath/Data/Intensities/BAM_basecalls_20180805-013153};
   my $archive_path = qq{$bbc_path/no_cal/archive};
   my $col = qq{/seq/illumina/runs/26/$id_run};
@@ -222,6 +225,7 @@ subtest 'NovaSeq run' => sub {
   my $a  = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder     => $rf_name,
     runfolder_path => $rfpath,
+    analysis_path  => $bbc_path,
     conf_path      => $config_dir,  
     id_run         => $id_run,
     timestamp      => q{20181204}
