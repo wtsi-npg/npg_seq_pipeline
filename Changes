@@ -1,6 +1,19 @@
 LIST OF CHANGES
 ---------------
 
+release 54.0
+ - archival function graph includes publishing both to s3 and iRODS
+ - a function graph for post 'run archived' small pipeline
+ - no_s3_archival flag to switch off archival to s3 and notification by
+   a message, false by default, is automatically sey to true if the 
+   local flag is set to true
+ - per-product restart file for iRODS publisher
+ - function definition for a job to wait to move from the analysis
+   to the outgoing directory
+ - wr job log file to be appended to if the job is retried
+ - propagation of the iRODS settings to wr jobs
+ - persistent mode for RabbitMQ message delivery
+
 release 53.1
  - publishing of seq data to iRODS:
      make product destination aware;
