@@ -61,12 +61,7 @@ subtest 'warehouse updates' => sub {
     is ($d->job_name, $job_name, "job name for $m");
     is ($d->queue, 'lowload', 'queue');
     is_deeply ($d->num_cpus, [0], 'zero CPUs required');
-    if ($postqcc) {
-      is ($d->command_preexec, "[ -d '${recalibrated_path_in_outgoing}' ]",
-        "preexec command for $m");
-    } else {
-      ok (!$d->has_command_preexec, "preexec command not defined for $m");
-    }
+    ok (!$d->has_command_preexec, "preexec command not defined for $m");
   }
 };
 

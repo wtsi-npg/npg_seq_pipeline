@@ -79,12 +79,13 @@ sub create {
 
   my $id_run = $self->id_run();
   my $job_name = sprintf q{%s_%d}, $ARCHIVE_EXECUTABLE, $id_run;
-  my @definitions;
 
-  foreach my $product (@{$self->products->{data_products}}) {
-    next if not $self->is_release_data($product);
-    next if not $self->has_qc_for_release($product);
-    next if not $self->is_for_s3_release($product);
+  my @products = $self->no_s3_archival ? () :
+                 grep { $self->is_s3_releasable($_) }
+                 @{$self->products->{data_products}};
+  my @definitions = ();
+
+  foreach my $product (@products) {
 
     # This is required for our initial customer, but we should arrange
     # an alternative for when supplier_name is not provided
@@ -226,7 +227,7 @@ Keith James
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2018, 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

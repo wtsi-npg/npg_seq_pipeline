@@ -5,6 +5,9 @@ use Test::Exception;
 use File::Copy;
 use Log::Log4perl qw[:levels];
 use File::Slurp;
+use Cwd;
+
+use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
 
 use_ok('npg_pipeline::function::seq_to_irods_archiver');
@@ -45,13 +48,14 @@ subtest 'MiSeq run' => sub {
                       qq($rfpath/${name}.xml);
     ok($copied, "$name copied");
   }
-  my $archive_path = $paths->{'archive_path'};
+  my $archive_path  = $paths->{'archive_path'};
+  my $analysis_path = $paths->{'analysis_path'};
   my $col = qq{/seq/$id_run};
-  my $restart_file = qr/${archive_path}\/publish_seq_data2irods_${id_run}_20181204-\d+\.restart_file\.json/;
+  my $restart_file = qr/${analysis_path}\/irods_publisher_restart_files\/publish_seq_data2irods_${id_run}_20181204-\d+_\w+\.restart_file\.json/;
 
   my $a = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder     => $rf_name,
-    runfolder_path => $rfpath,
+     runfolder_path => $rfpath,
     conf_path      => $config_dir,
     id_run         => $id_run,
     timestamp      => q{20181204}
@@ -72,19 +76,19 @@ subtest 'MiSeq run' => sub {
     'job_name is correct');
   is ($d->composition->get_component(0)->tag_index, 1, 'tag index 1 job');
   like ($d->command,
-    qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
     'command for tag 1');
 
   $d = $da->[1];
   is ($d->composition->get_component(0)->tag_index, 2, 'tag index 2 job');
   like ($d->command,
-     qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $archive_path\/lane1\/plex2\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex2\Z/,
     'command for tag 2');
 
   $d = $da->[2];
   is ($d->composition->get_component(0)->tag_index, 0, 'tag index 0 job');
   like ($d->command,
-     qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $archive_path\/lane1\/plex0\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex0\Z/,
     'command for tag 0');
 
   # Make study explicitly configured to be archived to iRODS
@@ -103,15 +107,15 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
     'command for tag 1');
   $d = $da->[1];
   like ($d->command,
-     qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $archive_path\/lane1\/plex2\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex2\Z/,
     'command for tag 2');
   $d = $da->[2];
   like ($d->command,
-     qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $archive_path\/lane1\/plex0\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex0\Z/,
     'command for tag 0');
 
   is ($d->command_preexec,
@@ -141,7 +145,7 @@ subtest 'MiSeq run' => sub {
   is ($d->composition->num_components, 1, 'one component');
   is ($d->composition->get_component(0)->tag_index, undef, 'tag index is undefined');
   like ($d->command,
-    qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $archive_path\/lane1\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\Z/,
     'command for lane 1');
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -185,7 +189,7 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --restart_file $restart_file --max_errors 10 --alt_process qc_run --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
+    qr/\A$script --max_errors 10 --alt_process qc_run --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
     'command is correct for qc run');
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -200,7 +204,7 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --restart_file $restart_file --max_errors 10 --driver-type samplesheet --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
+    qr/\A$script --max_errors 10 --driver-type samplesheet --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
     'command is correct for the samplesheet driver');
 };
 
@@ -209,11 +213,11 @@ subtest 'NovaSeq run' => sub {
 
   my $id_run  = 26291;
   my $rf_name = '180709_A00538_0010_BH3FCMDRXX';
-  my $rfpath  = qq{t/data/novaseq/$rf_name};
+  my $rfpath  = abs_path(getcwd) . qq{/t/data/novaseq/$rf_name};
   my $bbc_path = qq{$rfpath/Data/Intensities/BAM_basecalls_20180805-013153};
   my $archive_path = qq{$bbc_path/no_cal/archive};
   my $col = qq{/seq/illumina/runs/26/$id_run};
-  my $restart_file = qr/${archive_path}\/publish_seq_data2irods_${id_run}_20181204-\d+\.restart_file\.json/;
+  my $restart_file = qr/${bbc_path}\/irods_publisher_restart_files\/publish_seq_data2irods_${id_run}_20181204-\d+_\w+\.restart_file\.json/;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
     qq{$bbc_path/metadata_cache_26291/samplesheet_26291.csv};
@@ -221,6 +225,7 @@ subtest 'NovaSeq run' => sub {
   my $a  = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder     => $rf_name,
     runfolder_path => $rfpath,
+    analysis_path  => $bbc_path,
     conf_path      => $config_dir,  
     id_run         => $id_run,
     timestamp      => q{20181204}
@@ -232,13 +237,13 @@ subtest 'NovaSeq run' => sub {
   isa_ok($d, q{npg_pipeline::function::definition});
   is ($d->composition->get_component(0)->tag_index, 0, 'tag index 0 job');
   like ($d->command,
-    qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col\/plex0 --source_directory $archive_path\/plex0\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col\/plex0 --source_directory $archive_path\/plex0\Z/,
     'command is correct for plex 0 merged');
 
   $d = $da->[0];
   is ($d->composition->get_component(0)->tag_index, 888, 'tag index 888 job');
   like ($d->command,
-    qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col\/plex888 --source_directory $archive_path\/plex888\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col\/plex888 --source_directory $archive_path\/plex888\Z/,
     'command is correct for plex 888 merged');
 
   $a  = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -254,12 +259,12 @@ subtest 'NovaSeq run' => sub {
 
   $d = $da->[1];
   like ($d->command,
-    qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col\/lane2\/plex0 --source_directory $archive_path\/lane2\/plex0\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col\/lane2\/plex0 --source_directory $archive_path\/lane2\/plex0\Z/,
     'command is correct for plex 0 unmerged (single lane)');
 
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col\/lane2\/plex888 --source_directory $archive_path\/lane2\/plex888\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col\/lane2\/plex888 --source_directory $archive_path\/lane2\/plex888\Z/,
     'command is correct for plex 888 unmerged (single lane)');
 
   $a  = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -278,7 +283,7 @@ subtest 'NovaSeq run' => sub {
     is ($d->composition->num_components, 1, 'one component');
     is ($d->composition->get_component(0)->tag_index, undef, 'tag index is undefined');
     like ($d->command,
-      qr/\A$script --restart_file $restart_file --max_errors 10 --collection $col\/lane2\/plex0 --source_directory $archive_path\/lane1_2/,
+      qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col\/lane2\/plex0 --source_directory $archive_path\/lane1_2/,
       'command is correct for merged lanes');
   }
 
