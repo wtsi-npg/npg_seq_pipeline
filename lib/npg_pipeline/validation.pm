@@ -298,43 +298,6 @@ sub _build_product_entities {
   return \@e;
 }
 
-=head2 staging_files
-
-A hash reference containing two entries. One, under the key 'seq', is a
-hash reference containing available sequencing files' paths as keys and
-corresponding index files' paths, if available, as values. Another, under
-the key 'ind', contains an array of paths all found index files, whether
-matching sequencing files or not.
-
-=cut
-
-has 'staging_files' => (
-  isa        => 'HashRef',
-  is         => 'ro',
-  required   => 0,
-  lazy_build => 1,
-  metaclass  => 'NoGetopt',
-);
-sub _build_staging_files {
-  my $self = shift;
-
-  my $files_found  = {};
-  my $ext  = $self->file_extension;
-  my $iext = $self->index_file_extension;
-  my $wanted = sub {
-    my $f = $File::Find::name;
-    if ($f =~ /[.]$ext\Z/xms) {
-      my $i = $self->index_file_path($f);
-      $files_found->{'seq'}->{$f} = (-f $i) ? $i : q[];
-    } elsif ($f =~ /[.]$iext\Z/xms) {
-      push @{$files_found->{'ind'}}, $f;
-    }
-  };
-  find($wanted, $self->archive_path);
-
-  return $files_found;
-}
-
 =head2 irods
 
 Instance of WTSI::NPG::iRODS class.
@@ -405,16 +368,53 @@ sub run {
 
 ############## Private attributes and methods #########################################
 
-has q{_product_entities2staging_files} => (
+#####
+# A hash reference containing two entries. One, under the key 'seq', is a
+# hash reference containing available sequencing files' paths as keys and
+# corresponding index files' paths, if available, as values. Another, under
+# the key 'ind', contains a hash reference of all found index files, whether
+# matching sequencing files or not, where index files' paths are the keys.
+
+has '_staging_files' => (
+  isa        => 'HashRef',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
+);
+sub _build__staging_files {
+  my $self = shift;
+
+  my $files_found  = {};
+  my $ext  = $self->file_extension;
+  my $iext = $self->index_file_extension;
+  my $wanted = sub {
+    my $f = $File::Find::name;
+    if ($f =~ /[.]$ext\Z/xms) {
+      my $i = $self->index_file_path($f);
+      $files_found->{'seq'}->{$f} = (-f $i) ? $i : q[];
+    } elsif ($f =~ /[.]$iext\Z/xms) {
+      $files_found->{'ind'}->{$f} = 1;
+    }
+  };
+  find($wanted, $self->archive_path);
+
+  return $files_found;
+}
+
+has q{_expected_staging_files} => (
   isa        => 'HashRef',
   is         => q{ro},
   lazy_build => 1,
 );
-sub _build__product_entities2staging_files {
+sub _build__expected_staging_files {
   my $self = shift;
-  my %h = map { $_ => [$_->staging_files($self->file_extension)] }
-          @{$self->product_entities};
-  return \%h;
+  my $h = {};
+  foreach my $p (@{$self->product_entities}) {
+    foreach my $f ($p->_staging_files($self->file_extension)) {
+      $h->{$f} = $p->target_product()->composition()->freeze2rpt;
+    }
+  }
+  return $h;
 }
 
 has q{_run_status_obj} => (
@@ -522,12 +522,19 @@ sub _irods_seq_deletable {
     return 1;
   }
 
-  my $deletable = npg_pipeline::validation::irods
-      ->new( collection       => $self->irods_destination_collection,
-             irods            => $self->irods,
-             file_extension   => $self->file_extension,
-             product_entities => $self->product_entities,
-           )->archived_for_deletion();
+  my $files = {};
+  while (my ($f, $rpt_list) = each %{$self->_expected_staging_files}) {
+    # Add the sequence file and a correspondign index file.
+    push @{$files->{$rpt_list}}, $f, $self->_staging_files->{'seq'}->{$f};
+  }
+
+  my $deletable = npg_pipeline::validation::irods->new(
+    irods_destination_collection => $self->irods_destination_collection,
+    irods            => $self->irods,
+    file_extension   => $self->file_extension,
+    product_entities => $self->product_entities,
+    staging_files    => $files
+  )->archived_for_deletion();
 
   my $m = sprintf 'Presence of seq. files in iRODS: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
@@ -570,12 +577,10 @@ sub _lims_deletable {
   my $vars_set = $self->_set_vars_from_samplesheet();
   my $deletable = 1;
 
-  foreach my $entity (@{$self->product_entities}) {
-    foreach my $file ($entity->staging_files($self->file_extension)) {
-      if (!-e $file) {
-        $self->logwarn("File $file is missing for entity " . $entity->description());
-        $deletable = 0;
-      }
+  foreach my $file (keys %{$self->_expected_staging_files}) {
+    if (!-e $file) {
+      $self->logwarn("File $file is missing");
+      $deletable = 0;
     }
   }
 
@@ -599,20 +604,16 @@ sub _lims_deletable {
 sub _staging_deletable {
   my $self = shift;
 
-  my %files_expected =
-    map { $_ => 1 }
-    map { @{$_} }
-    values %{$self->_product_entities2staging_files};
-
-  $self->debug(join qq{\n}, q{Expected staging files list}, (sort keys %files_expected));
+  $self->debug(join qq{\n}, q{Expected staging files list},
+                            (sort keys %{$self->_expected_staging_files}));
 
   my $deletable = 1;
   foreach my $file (keys %{$self->staging_files->{'seq'}}) {
-    if (!$files_expected{$file}) {
+    if (!$self->_expected_staging_files->{$file}) {
       $self->logwarn("Staging file $file is not expected");
       $deletable = 0;
     } else {
-      if (!$self->staging_files->{'seq'}->{$file}) {
+      if (!$self->staging_files->{'ind'}->{$file}) {
         $self->logwarn("Staging index file is missing for $file");
         $deletable = 0;
       }
@@ -620,8 +621,9 @@ sub _staging_deletable {
   }
 
   if ($deletable) {
-    my %i_matching = map {$_ => 1} grep {$_} values %{$self->staging_files->{'seq'}};
-    foreach my $if (@{$self->staging_files->{'ind'}}) {
+    my %i_matching = map { $_ => 1 }
+                     (values %{$self->staging_files->{'seq'}});
+    foreach my $if (keys %{$self->staging_files->{'ind'}}) {
       if (!$i_matching{$if}) {
         $self->logwarn("Staging index file $if is not expected");
         $deletable = 0;
