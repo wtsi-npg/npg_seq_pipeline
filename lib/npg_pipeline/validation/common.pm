@@ -1,8 +1,13 @@
 package npg_pipeline::validation::common;
 
 use Moose::Role;
+use Readonly;
+use Carp;
 
 our $VERSION = '0';
+
+Readonly::Scalar my $CRAM_FILE_EXTENSION => q[cram];
+Readonly::Scalar my $BAM_FILE_EXTENSION  => q[bam];
 
 has 'product_entities'  => (
   isa      => 'ArrayRef',
@@ -28,6 +33,31 @@ sub _build_index_file_extension {
   my $e = $self->file_extension;
   $e =~ s/m\Z/i/xms;
   return $e;
+}
+
+sub index_file_path {
+  my ($self, $f) = @_;
+
+  my $ext = $self->file_extension;
+  if ($f !~ /[.]$ext\Z/msx) {
+    croak("Unexpected extension in $f");
+  }
+
+  my $iext = $self->index_file_extension;
+  my $if;
+  if ($self->file_extension eq $CRAM_FILE_EXTENSION) {
+    $if = join q[.], $f, $iext;
+  } else {
+    $if = $f;
+    $if =~ s/$ext\Z/$iext/xms
+  }
+
+  return $if;
+}
+
+sub get_file_extension {
+  my ($self, $use_cram) = @_;
+  return $use_cram ? $CRAM_FILE_EXTENSION : $BAM_FILE_EXTENSION;
 }
 
 no Moose::Role;
@@ -60,6 +90,10 @@ Attribute, file extension for the sequence file format, required.
 
 Attribute, file extension for the sequence file index, inferred.
 
+=head2 index_file_path
+
+=head2 get_file_extension
+
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT
@@ -69,6 +103,10 @@ Attribute, file extension for the sequence file index, inferred.
 =over
 
 =item Moose::Role
+
+=item Readonly
+
+=item Carp
 
 =back
 
