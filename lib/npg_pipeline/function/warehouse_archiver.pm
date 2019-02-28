@@ -35,8 +35,8 @@ of the warehouse.
 =cut
 
 sub update_warehouse {
-  my ($self, $flag) = @_;
-  return $self->_update_warehouse_command('warehouse_loader', $flag);
+  my ($self, $pipeline_name, $flag) = @_;
+  return $self->_update_warehouse_command('warehouse_loader', $pipeline_name, $flag);
 }
 
 =head2 update_warehouse_post_qc_complete
@@ -48,8 +48,8 @@ outgoing directory.
 =cut
 
 sub update_warehouse_post_qc_complete {
-  my $self = shift;
-  return $self->update_warehouse('post_qc_complete');
+  my ($self, $pipeline_name) = @_;
+  return $self->update_warehouse($pipeline_name, 'post_qc_complete');
 }
 
 =head2 update_ml_warehouse
@@ -60,8 +60,8 @@ of the ml warehouse.
 =cut
 
 sub update_ml_warehouse {
-  my ($self, $flag) = @_;
-  return $self->_update_warehouse_command('npg_runs2mlwarehouse', $flag);
+  my ($self, $pipeline_name, $flag) = @_;
+  return $self->_update_warehouse_command('npg_runs2mlwarehouse', $pipeline_name, $flag);
 }
 
 =head2 update_ml_warehouse_post_qc_complete
@@ -73,12 +73,12 @@ outgoing directory.
 =cut
 
 sub update_ml_warehouse_post_qc_complete {
-  my $self = shift;
-  return $self->update_ml_warehouse('post_qc_complete');
+  my ($self, $pipeline_name) = @_;
+  return $self->update_ml_warehouse($pipeline_name, 'post_qc_complete');
 }
 
 sub _update_warehouse_command {
-  my ($self, $loader_name, $post_qc_complete) = @_;
+  my ($self, $loader_name, $pipeline_name, $post_qc_complete) = @_;
 
   my $d;
   my $id_run = $self->id_run;
@@ -98,26 +98,22 @@ sub _update_warehouse_command {
       $command .= q{ --lims_driver_type };
       $command .= $post_qc_complete ? 'ml_warehouse_fc_cache' : 'samplesheet';
     }
-    my $job_name = join q{_}, $loader_name, $id_run, $self->pipeline_name;
-
-    my $ref = {
-      created_by   => __PACKAGE__,
-      created_on   => $self->timestamp(),
-      identifier   => $id_run,
-      command      => $command,
-      queue        =>
-        $npg_pipeline::function::definition::LOWLOAD_QUEUE
-    };
-
+    $pipeline_name ||= q[];
+    my $job_name = join q{_}, $loader_name, $id_run, $pipeline_name;
     if ($post_qc_complete) {
-      my $path = npg_pipeline::runfolder_scaffold
-                 ->path_in_outgoing($self->recalibrated_path());
       $job_name .= '_postqccomplete';
-      $ref->{'command_preexec'} = "[ -d '$path' ]";
     }
-    $ref->{'job_name'}     = $job_name;
 
-    $d = npg_pipeline::function::definition->new($ref);
+    $d = npg_pipeline::function::definition->new(
+      created_by => __PACKAGE__,
+      created_on => $self->timestamp(),
+      identifier => $id_run,
+      command    => $command,
+      num_cpus   => [0],
+      job_name   => $job_name,
+      queue      =>
+        $npg_pipeline::function::definition::LOWLOAD_QUEUE
+    );
   }
 
   return [$d];

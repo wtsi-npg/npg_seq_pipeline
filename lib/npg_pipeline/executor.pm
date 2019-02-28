@@ -6,6 +6,7 @@ use namespace::autoclean;
 use Graph::Directed;
 use File::Slurp;
 use File::Basename;
+use List::MoreUtils qw/any firstidx/;
 use Readonly;
 
 use npg_tracking::util::types;
@@ -16,6 +17,10 @@ with qw{ WTSI::DNAP::Utilities::Loggable };
 our $VERSION = '0';
 
 Readonly::Scalar my $VERTEX_NUM_DEFINITIONS_ATTR_NAME => q{num_definitions};
+Readonly::Scalar my $VERTEX_JOB_PRIORITY_ATTR_NAME    => q{job_priority};
+Readonly::Scalar my $JOB_PRIORITY_INCREMENT           => 10;
+Readonly::Scalar my $P4STAGE1_FUNCTION_NAME           => q{p4_stage1_analysis};
+Readonly::Scalar my $QC_COMPLETE_FUNCTION_NAME        => q{run_qc_complete};
 
 =head1 NAME
 
@@ -225,6 +230,18 @@ sub _build_function_graph4jobs {
     $self->logcroak('New function graph is empty');
   }
 
+  if ($self->can('job_priority')) {
+    my @pre = $graph->all_predecessors($P4STAGE1_FUNCTION_NAME);
+    push @pre, $P4STAGE1_FUNCTION_NAME;
+    my $priority = $self->job_priority ? $self->job_priority : 0;
+    my $higher_priority = $priority + $JOB_PRIORITY_INCREMENT;
+    foreach my $n ($graph->vertices()) {
+      my $p = (any {$_ eq $n } @pre) ? $higher_priority : $priority;
+      $self->warn(qq{***** Assigning job priority $p to $n});
+      $graph->set_vertex_attribute($n, $VERTEX_JOB_PRIORITY_ATTR_NAME, $p);
+    }
+  }
+
   return $graph;
 }
 
@@ -273,7 +290,7 @@ sub predecessors {
 
 =head2 dependencies
 
-Returns a list of function's (jobs') dependencies that are saved
+Returns a list of function's (job's) dependencies that are saved
 in graph nodes' attributes given as the second argument;
 
   my @dependencies = $e->dependencies('qc_insert_size', 'lsf_job_ids');
@@ -345,15 +362,38 @@ sub log_dir4function {
   return $dir;
 }
 
-=head2 future_log_path
+=head2 future_path_is_in_outgoing
+
+The archival pipeline normally starts in the analysis directory. Once
+the run_qc_complete job has been run, the staging daemon moves the
+runfolder to the outgoing directory. The paths used by any job that
+runs after run_qc_complete have to be adjusted.
+
+This method returns a boolean value which, if true, means that the
+paths used by the job have to use the outgoing directory.
 
 =cut
 
-sub future_log_path {
-  my ($self, $definitions, $path) = @_;
-  return npg_pipeline::runfolder_scaffold
-         ->future_path($definitions->[0], $path);
+sub future_path_is_in_outgoing {
+  my ($self, $function_name) = @_;
+
+  $function_name or $self->logcroak('Function name is required');
+
+  my $path_is_in_outgoing = 0;
+  my @nodes = $self->function_graph4jobs->topological_sort();
+
+  my $function_index = firstidx { $_ eq $function_name } @nodes;
+  if ($function_index < 0) {
+    $self->logcroak("'$function_name' not found in the graph");
+  }
+
+  my $index = firstidx { $_ eq $QC_COMPLETE_FUNCTION_NAME } @nodes;
+  if ($index >= 0 && $function_index > $index) {
+    $path_is_in_outgoing = 1;
+  }
+  return $path_is_in_outgoing;
 }
+
 
 __PACKAGE__->meta->make_immutable;
 
@@ -380,6 +420,8 @@ __END__
 =item File::Slurp
 
 =item File::Basename
+
+=item List::MoreUtils
 
 =item Readonly
 

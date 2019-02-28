@@ -1,43 +1,103 @@
 ---
 - description: run pending
   id_run_status_dict: 1
+  iscurrent: 1
+  temporal_index: 100
 - description: run in progress
   id_run_status_dict: 2
+  iscurrent: 1
+  temporal_index: 120
 - description: run on hold
   id_run_status_dict: 3
+  iscurrent: 1
+  temporal_index: 110
 - description: run complete
   id_run_status_dict: 4
+  iscurrent: 1
+  temporal_index: 160
 - description: run cancelled
   id_run_status_dict: 5
+  iscurrent: 1
+  temporal_index: 140
 - description: analysis pending
   id_run_status_dict: 6
+  iscurrent: 1
+  temporal_index: 200
 - description: analysis in progress
   id_run_status_dict: 7
+  iscurrent: 1
+  temporal_index: 240
 - description: analysis on hold
   id_run_status_dict: 8
+  iscurrent: 1
+  temporal_index: 260
 - description: analysis complete
   id_run_status_dict: 9
+  iscurrent: 1
+  temporal_index: 280
 - description: analysis cancelled
   id_run_status_dict: 10
+  iscurrent: 1
+  temporal_index: 270
 - description: run mirrored
   id_run_status_dict: 11
+  iscurrent: 1
+  temporal_index: 170
 - description: run archived
   id_run_status_dict: 12
+  iscurrent: 1
+  temporal_index: 420
 - description: analysis prelim
   id_run_status_dict: 14
+  iscurrent: 0
+  temporal_index: 998
 - description: analysis prelim complete
   id_run_status_dict: 15
+  iscurrent: 0
+  temporal_index: 999
 - description: run quarantined
   id_run_status_dict: 16
+  iscurrent: 0
+  temporal_index: 997
 - description: archival pending
   id_run_status_dict: 17
+  iscurrent: 1
+  temporal_index: 400
 - description: archival in progress
   id_run_status_dict: 18
+  iscurrent: 1
+  temporal_index: 410
 - description: qc review pending
   id_run_status_dict: 19
+  iscurrent: 1
+  temporal_index: 300
 - description: qc complete
   id_run_status_dict: 20
+  iscurrent: 1
+  temporal_index: 500
 - description: data discarded
   id_run_status_dict: 21
+  iscurrent: 1
+  temporal_index: 220
 - description: run stopped early
   id_run_status_dict: 22
+  iscurrent: 1
+  temporal_index: 130
+- description: secondary analysis in progress
+  id_run_status_dict: 24
+  iscurrent: 1
+  temporal_index: 250
+- description: qc on hold
+  id_run_status_dict: 25
+  iscurrent: 1
+  temporal_index: 320
+- description: qc in progress
+  id_run_status_dict: 26
+  iscurrent: 1
+  temporal_index: 310
+- description: run imported
+  id_run_status_dict: 27
+  iscurrent: 1
+  temporal_index: 175
+
+

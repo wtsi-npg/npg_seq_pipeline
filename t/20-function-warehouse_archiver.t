@@ -20,7 +20,7 @@ my @wh_methods = qw/update_warehouse update_ml_warehouse/;
 use_ok('npg_pipeline::function::warehouse_archiver');
 
 subtest 'warehouse updates' => sub {
-  plan tests => 33;
+  plan tests => 37;
 
   my $c = npg_pipeline::function::warehouse_archiver->new(
     run_folder          => q{123456_IL2_1234},
@@ -39,7 +39,7 @@ subtest 'warehouse updates' => sub {
     my $postqcc  = $m =~ /$pqq_suffix/smx;
     my $ml       = $m =~ /_ml_/smx;
     my $command  = $ml ? 'npg_runs2mlwarehouse' : 'warehouse_loader';    
-    my $job_name = $command . '_1234_warehouse_archiver';
+    my $job_name = $command . '_1234_pname';
     if ($postqcc) {
       $job_name .= '_postqccomplete';
     }  
@@ -49,7 +49,7 @@ subtest 'warehouse updates' => sub {
                    'ml_warehouse_fc_cache' : 'samplesheet');
     }
 
-    my $ds = $c->$m();
+    my $ds = $c->$m('pname');
     ok ($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
       'update to warehouse is enabled');
     my $d = $ds->[0];
@@ -60,12 +60,8 @@ subtest 'warehouse updates' => sub {
     is ($d->command, $command, "command for $m");
     is ($d->job_name, $job_name, "job name for $m");
     is ($d->queue, 'lowload', 'queue');
-    if ($postqcc) {
-      is ($d->command_preexec, "[ -d '${recalibrated_path_in_outgoing}' ]",
-        "preexec command for $m");
-    } else {
-      ok (!$d->has_command_preexec, "preexec command not defined for $m");
-    }
+    is_deeply ($d->num_cpus, [0], 'zero CPUs required');
+    ok (!$d->has_command_preexec, "preexec command not defined for $m");
   }
 };
 

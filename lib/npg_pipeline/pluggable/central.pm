@@ -5,7 +5,6 @@ use MooseX::StrictConstructor;
 use namespace::autoclean;
 
 extends 'npg_pipeline::pluggable';
-with    'npg_pipeline::runfolder_scaffold';
 
 our $VERSION = '0';
 
@@ -29,17 +28,23 @@ Pipeline runner for the analysis pipeline.
 
 Inherits from parent's method. Sets all paths needed during the lifetime
 of the analysis runfolder. Creates any of the paths that do not exist.
-<<<<<<< HEAD
-=======
-Ater that calls the parent's method.
->>>>>>> logs_location_change
 
 =cut
 
 override 'prepare' => sub {
   my $self = shift;
 
-  my $output = $self->create_top_level();
+  $self->_scaffold('create_top_level');
+  super(); # Corect order
+  $self->_scaffold('create_product_level');
+
+  return;
+};
+
+sub _scaffold {
+  my ($self, $method_name) = @_;
+
+  my $output = $self->$method_name();
   my @errors = @{$output->{'errors'}};
   if ( @errors ) {
     $self->logcroak(join qq[\n], @errors);
@@ -48,20 +53,8 @@ override 'prepare' => sub {
     $self->info();
   }
 
-  super(); # Corect order
-
-  $output = $self->create_analysis_level();
-  @errors = @{$output->{'errors'}};
-  if ( @errors ) {
-    $self->logcroak(join qq[\n], @errors);
-  } else {
-    my $m = join qq[\n], map {qq[\t\t] . $_} @{$output->{'dirs'}};
-    $self->info(qq[Ensured the following directories exist:\n$m]);
-    $self->info();
-  }
-
   return;
-};
+}
 
 __PACKAGE__->meta->make_immutable;
 

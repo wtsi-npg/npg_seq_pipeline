@@ -24,9 +24,6 @@ foreach my $tool (@tools) {
 chmod 0755, @tools;
 local $ENV{'PATH'} = join q[:], $test_dir, $ENV{'PATH'};
 
-local $ENV{OWNING_GROUP} = q{staff};
-local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
                           file   => join(q[/], $test_dir, 'logfile'),
@@ -44,7 +41,7 @@ subtest 'object with no function order set - simple methods' => sub {
     runfolder_path => $test_dir
   );
   isa_ok($pluggable, q{npg_pipeline::pluggable});
-  is($pluggable->pipeline_name, 'pluggable', 'pipeline name');
+  is($pluggable->_pipeline_name, '10-pluggable.t', 'pipeline name');
   is($pluggable->interactive, 0, 'interactive false');
   ok(!$pluggable->has_function_order, 'function order is not set');
   is($pluggable->id_run(), 1234, q{id_run attribute populated});
@@ -86,7 +83,7 @@ subtest 'graph creation from explicitly given function list' => sub {
 
   my $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
-    runfolder_path => $test_dir,
+    runfolder_path => $runfolder_path,
     function_order => ['my_function', 'your_function'],
   );
   ok($obj->has_function_order(), 'function order is set');
@@ -179,7 +176,7 @@ subtest 'switching off functions' => sub {
 };
 
 subtest 'specifying functions via function_order' => sub {
-  plan tests => 3;
+  plan tests => 4;
 
   my @functions_in_order = qw(
     run_archival_in_progress
@@ -189,16 +186,18 @@ subtest 'specifying functions via function_order' => sub {
     update_warehouse_post_qc_complete
   );
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[/t/data];
   local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $p = npg_pipeline::pluggable->new(
     function_order        => \@functions_in_order,
     runfolder_path        => $runfolder_path,
     spider                => 0,
     no_sf_resource        => 1,
-    no_bsub               => 0
+    no_bsub               => 0,
+    is_indexed            => 0
   );
   is($p->id_run, 1234, 'run id set correctly');
+  is($p->is_indexed, 0, 'is not indexed');
   is(join(q[ ], @{$p->function_order()}), join(q[ ], @functions_in_order),
     q{function_order set on creation});
   lives_ok { $p->main() } q{no error running main};
@@ -227,7 +226,7 @@ subtest 'creating executor object' => sub {
     qr/Can't locate npg_pipeline\/executor\/some\.pm/,
     'error if executor modules does not exist';
 
-  for my $etype (qw/lsf wr/) { 
+  for my $etype (qw/lsf wr/) {
     $ref->{'executor_type'} = $etype;
     my $pl = npg_pipeline::pluggable->new($ref);
     is ($pl->executor_type(), $etype, "executor type is $etype as set");
@@ -251,6 +250,8 @@ subtest 'propagating options to the lsf executor' => sub {
     run_qc_complete
     update_warehouse_post_qc_complete
   );
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
 
   my $ref = {
     function_order        => \@functions_in_order,
@@ -305,20 +306,23 @@ subtest 'running the pipeline (lsf executor)' => sub {
     spider         => 0,
     execute        => 0,
     no_sf_resource => 1,
+    is_indexed     => 0,
   };
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[/t/data];
   my $p = npg_pipeline::pluggable->new($ref);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { $p->main(); } q{no error running main without execution };
-  
+
   $ref->{'execute'} = 1;
   $ref->{'no_bsub'} = 1;
   $p = npg_pipeline::pluggable->new($ref);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { $p->main(); } q{no error running main in no_bsub mode};
 
   $ref->{'no_bsub'} = 0;
   local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients
   $p = npg_pipeline::pluggable->new($ref);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { $p->main(); } q{no error running main with mock LSF client};
 
   # soft-link bresume command to /bin/false so that it fails
@@ -326,16 +330,19 @@ subtest 'running the pipeline (lsf executor)' => sub {
   mkdir $bin;
   symlink '/bin/false', "$bin/bresume";
   local $ENV{'PATH'} = join q[:], $bin, $ENV{'PATH'};
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   throws_ok { npg_pipeline::pluggable->new($ref)->main() }
     qr/Failed to submit command to LSF/, q{error running main};
 
   $ref->{'interactive'} = 1;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { npg_pipeline::pluggable->new($ref)->main() }
     'no failure in interactive mode';
 
   $ref->{'interactive'} = 0;
   # soft-link bkill command to /bin/false so that it fails
   symlink '/bin/false', "$bin/bkill";
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   throws_ok { npg_pipeline::pluggable->new($ref)->main() }
     qr/Failed to submit command to LSF/, q{error running main};
 };
@@ -357,9 +364,9 @@ subtest 'running the pipeline (wr executor)' => sub {
     spider         => 0,
     execute        => 0,
     executor_type  => 'wr',
+    is_indexed     => 0,
   };
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[/t/data];
   # soft-link wr command to /bin/false so that it fails
   my $bin = "$test_dir/bin";
   my $wr = "$bin/wr";
@@ -367,14 +374,17 @@ subtest 'running the pipeline (wr executor)' => sub {
   local $ENV{'PATH'} = join q[:], $bin, $ENV{'PATH'};
 
   my $p = npg_pipeline::pluggable->new($ref);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { $p->main(); } q{no error running main without execution };
 
-  $ref->{'execute'} = 1; 
+  $ref->{'execute'} = 1;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   throws_ok { npg_pipeline::pluggable->new($ref)->main() }
     qr/Error submitting for execution: Error submitting wr jobs/,
     q{error running main};
 
   $ref->{'interactive'} = 1;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { npg_pipeline::pluggable->new($ref)->main() }
     q{interactive mode, no error running main};
 
@@ -382,62 +392,74 @@ subtest 'running the pipeline (wr executor)' => sub {
   unlink $wr;
   symlink '/bin/true', $wr;
   $ref->{'interactive'} = 0;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { npg_pipeline::pluggable->new($ref)->main() } q{no error running main};
 
   $ref->{'job_name_prefix'} = 'test';
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   lives_ok { npg_pipeline::pluggable->new($ref)->main() }
     q{job name prefix is set, no error running main};
 };
 
 subtest 'positions and spidering' => sub {
-  plan tests => 12;
+  plan tests => 9;
 
- local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients 
+  cp 't/data/run_params/runParameters.hiseq.xml',
+    join(q[/], $runfolder_path, 'runParameters.xml')
+    or die 'Faile to copy run params file';
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+  local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $p = npg_pipeline::pluggable->new(
-      id_run         => 1234,
-      run_folder     => q{123456_IL2_1234},
-      runfolder_path => $runfolder_path,
-      spider         => 0
+      id_run           => 1234,
+      id_flowcell_lims => 2015,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      spider           => 0
   );
   ok(!$p->spider, 'spidering is off');
   is (join( q[ ], $p->positions), '1 2 3 4 5 6 7 8', 'positions array');
-  is (join( q[ ], $p->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $function = 'run_analysis_complete';
 
   $p = npg_pipeline::pluggable->new(
-      id_run         => 1234,
-      run_folder     => q{123456_IL2_1234},
-      function_order => [$function],
-      runfolder_path => $runfolder_path,
-      lanes          => [1,2],
-      spider         => 0,
-      no_sf_resource => 1,
+      id_run           => 1234,
+      id_flowcell_lims => 2015,
+      run_folder       => q{123456_IL2_1234},
+      function_order   => [$function],
+      runfolder_path   => $runfolder_path,
+      lanes            => [1,2],
+      spider           => 0,
+      no_sf_resource   => 1,
   );
   is (join( q[ ], $p->positions), '1 2', 'positions array');
-  is (join( q[ ], $p->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
   ok(!$p->interactive, 'start job will be resumed');
   lives_ok { $p->main() } "running main for $function, non-interactively";
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   $p = npg_pipeline::pluggable->new(
-      id_run         => 1234,
-      run_folder     => q{123456_IL2_1234},
-      function_order => [$function],
-      runfolder_path => $runfolder_path,
-      lanes          => [1,2],
-      interactive    => 1,
-      spider         => 0,
-      no_sf_resource => 1,
+      id_run           => 1234,
+      id_flowcell_lims => 2015,
+      run_folder       => q{123456_IL2_1234},
+      function_order   => [$function],
+      runfolder_path   => $runfolder_path,
+      lanes            => [1,2],
+      interactive      => 1,
+      spider           => 0,
+      no_sf_resource   => 1,
   );
   ok($p->interactive, 'start job will not be resumed');
   lives_ok { $p->main() } "running main for $function, interactively";
 
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   $util->set_staging_analysis_area();
+  cp 't/data/run_params/runParameters.hiseq.xml',
+    join(q[/], $runfolder_path, 'runParameters.xml')
+    or die 'Faile to copy run params file';
+
+  $util->create_run_info();
+
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
@@ -453,31 +475,30 @@ subtest 'positions and spidering' => sub {
   mkdir $p->archive_path;
   mkdir $p->qc_path;
   is (join( q[ ], $p->positions), '4', 'positions array');
-  is (join( q[ ], $p->all_positions), '1 2 3 4 5 6 7 8', 'all positions array');
   lives_ok { $p->main() } q{running main for three qc functions};
 };
 
-subtest 'script name and function list' => sub {
-  plan tests => 20;
+subtest 'script name, pipeline name and function list' => sub {
+  plan tests => 17;
 
   my $base = npg_pipeline::pluggable->new();
-  my $path = join q[/], getcwd(), $config_dir, 'function_list_pluggable.json';
   is ($base->_script_name, $PROGRAM_NAME, 'script name');
+  is ($base->_pipeline_name, '10-pluggable.t', 'pipeline name');
   throws_ok { $base->function_list }
-    qr/File $path does not exist or is not readable/,
-    'error when default function list does not exist';
+    qr/Bad function list name: 10-pluggable\.t/,
+    'error when test name is used as function list name';
 
   $base = npg_pipeline::pluggable->new(function_list => 'base');
-  $path = join q[/], getcwd(), $config_dir, 'function_list_pluggable_base.json';
+  my $path = abs_path(join q[/], getcwd(), $config_dir, 'function_list_10-pluggable.t_base.json');
   throws_ok { $base->function_list }
     qr/File $path does not exist or is not readable/,
-    'error when function list does not exist';
+    'error when file is not found';
 
-  $path = join q[/], getcwd(), $config_dir, 'function_list_central.json';
+  $path = abs_path(join q[/], getcwd(), $config_dir, 'function_list_central.json');
   $base = npg_pipeline::pluggable->new(function_list => $path);
   is( $base->function_list, $path, 'function list path as given');
   isa_ok( $base->_function_list_conf(), q{HASH}, 'function list is read into a hash');
-  
+
   $base = npg_pipeline::pluggable->new(function_list => 'data/config_files/function_list_central.json');
   is( $base->function_list, $path, 'function list absolute path from relative path');
   isa_ok( $base->_function_list_conf(), q{HASH}, 'function list is read into an array');
@@ -497,7 +518,7 @@ subtest 'script name and function list' => sub {
   throws_ok { $base->function_list }
     qr/Bad function list name: $test_path/,
     'error when function list does not exist, neither it can be interpreted as a function list name';
-  
+
   cp $path, $test_dir;
   $path = $test_dir . '/function_list_post_qc_review.json';
 
@@ -510,31 +531,10 @@ subtest 'script name and function list' => sub {
     function_list => 'post_qc_review');
   is( $base->function_list, $path, 'function list absolute path from list name');
 
-  $path =~ s/function_list_post_qc_review/function_list_pluggable/;
-  $base = npg_pipeline::pluggable->new(conf_path => $test_dir);
-  throws_ok { $base->function_list }
-    qr/File $path does not exist or is not readable/,
-    'error when default function list does not exist';
-
   $base = npg_pipeline::pluggable->new(function_list => 'some+other:');
   throws_ok { $base->function_list }
     qr/Bad function list name: some\+other:/,
     'error when function list name contains illegal characters';
-  
-  $base = npg_pipeline::pluggable->new(qc_run => 1);
-  $path = join q[/], getcwd(), $config_dir, 'function_list_pluggable_qc_run.json';
-  throws_ok { $base->function_list }
-    qr/File $path does not exist or is not readable/,
-    'error when default function list does not exist';
-
-  package mytest::central;
-  use base 'npg_pipeline::pluggable';
-  package main;
-
-  my $c = mytest::central->new(qc_run => 1);
-  is ($base->_script_name, $PROGRAM_NAME, 'script name');
-  my $fl = join q[/], getcwd(), $config_dir, 'function_list_central_qc_run.json';
-  is( $c->function_list, $fl, 'qc function list');
 };
 
 1;

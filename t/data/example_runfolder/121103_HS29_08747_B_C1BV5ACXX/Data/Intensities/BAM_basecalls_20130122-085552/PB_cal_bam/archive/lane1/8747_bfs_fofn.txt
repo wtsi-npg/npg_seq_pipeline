@@ -1,0 +1,1 @@
+t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/PB_cal_bam/archive/lane1/qc

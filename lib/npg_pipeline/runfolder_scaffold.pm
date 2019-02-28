@@ -3,43 +3,52 @@ package npg_pipeline::runfolder_scaffold;
 use Moose::Role;
 use File::Path qw/make_path/;
 use File::Spec;
+use File::Slurp;
 use Readonly;
 use Carp;
 
 our $VERSION = '0';
 
-Readonly::Scalar my $OUTGOING_PATH_COMPONENT => q[/outgoing/];
+Readonly::Scalar my $OUTGOING_PATH_COMPONENT    => q[/outgoing/];
 Readonly::Scalar my $ANALYSIS_PATH_COMPONENT    => q[/analysis/];
 Readonly::Scalar my $LOG_DIR_NAME               => q[log];
-Readonly::Scalar my $TILEVIZ_DIR_NAME           => q[tileviz];
 Readonly::Scalar my $STATUS_FILES_DIR_NAME      => q[status];
-Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
+Readonly::Scalar my $METADATA_CACHE_DIR_NAME    => q[metadata_cache_];
+Readonly::Scalar my $TILEVIZ_INDEX_DIR_NAME     => q[tileviz];
+Readonly::Scalar my $TILEVIZ_INDEX_FILE_NAME    => q[index.html];
+Readonly::Scalar my $IRODS_PUBLISHER_RSART_DIR_NAME => q[irods_publisher_restart_files];
 
-sub create_analysis_level {
+sub create_product_level {
   my $self = shift;
 
-  my @dirs = (
-               $self->archive_path(),
-               File::Spec->catdir($self->archive_path(), $SHORT_FILES_CACHE_DIR_NAME),
-               $self->status_files_path(),
-               $self->qc_path(),
-               File::Spec->catdir($self->qc_path(), $TILEVIZ_DIR_NAME),
-             );
-
-  if ($self->is_indexed()) {
-    foreach my $position ($self->positions()) {
-      if ($self->is_multiplexed_lane($position)) {
-        push @dirs, File::Spec->catdir($self->recalibrated_path(), q{lane} . $position);
-        my $lane_dir = $self->lane_archive_path($position);
-        push @dirs, $lane_dir;
-        push @dirs, File::Spec->catdir($lane_dir, $SHORT_FILES_CACHE_DIR_NAME);
-        push @dirs, $self->lane_qc_path($position);
-      }
-    }
+  if (!$self->can('products')) {
+    croak 'products attribute should be implemented';
   }
 
+  my @dirs = ();
+  # Create cache dir for short files and qc out directory for every product
+  foreach my $p ( (map { @{$_} } values %{$self->products}) ) {
+    push @dirs, ( map { $p->$_($self->archive_path()) }
+                  qw/path qc_out_path short_files_cache_path/ );
+  }
+  # Create tileviz directory for lane products only
+  push @dirs, ( map { $_->tileviz_path($self->archive_path()) }
+                @{$self->products->{'lanes'}} );
+  $self->_create_tileviz_index();
+
   my @errors = $self->make_dir(@dirs);
-  return {'dirs' => \@dirs, 'errors' => \@errors};
+
+  if ( !@errors ) {
+    #####
+    # Create tileviz home page for every lane. If tileviz finds an alignment it
+    # can use in lane-level data, it will produce output and will overwrite this file.
+    #
+    $self->_create_tileviz_lane_indexes();
+  }
+
+  my $m = join qq[\n], 'Created the following directories:', @dirs;
+
+  return {'msgs' => [$m], 'errors' => \@errors};
 }
 
 sub create_top_level {
@@ -87,6 +96,14 @@ sub create_top_level {
   push @dirs, $self->recalibrated_path();
   push @info, 'no_cal path: ' . $self->recalibrated_path();
 
+  my $metadata_cache_dir = $self->metadata_cache_dir_path();
+  push @dirs, $metadata_cache_dir;
+  push @info, "metadata cache path: $metadata_cache_dir";
+
+  push @dirs, $self->archive_path(), $self->status_files_path();
+  push @dirs, $self->_tileviz_index_dir_path();
+  push @dirs, $self->irods_publisher_rstart_dir_path();
+
   my @errors = $self->make_dir(@dirs);
 
   return {'msgs' => \@info, 'errors' => \@errors};
@@ -99,6 +116,24 @@ sub status_files_path {
     croak 'Failed to retrieve analysis_path';
   }
   return File::Spec->catdir($apath, $STATUS_FILES_DIR_NAME);
+}
+
+sub metadata_cache_dir_path {
+  my $self = shift;
+  my $apath = $self->analysis_path;
+  if (!$apath) {
+    croak 'Failed to retrieve analysis_path';
+  }
+  return File::Spec->catdir($apath, $METADATA_CACHE_DIR_NAME . $self->id_run());
+}
+
+sub irods_publisher_rstart_dir_path {
+  my $self = shift;
+  my $apath = $self->analysis_path;
+  if (!$apath) {
+    croak 'Failed to retrieve analysis_path';
+  }
+  return File::Spec->catdir($apath, $IRODS_PUBLISHER_RSART_DIR_NAME);
 }
 
 sub make_log_dir4names {
@@ -129,30 +164,58 @@ sub make_dir {
 
 sub path_in_outgoing {
   my ($pkg, $path) = @_;
+  $path or croak 'Path required';
   $path =~ s{$ANALYSIS_PATH_COMPONENT}{$OUTGOING_PATH_COMPONENT}xms;
   return $path;
 }
 
-sub future_path {
-  my ($pkg, $d, $path) = @_;
+sub _tileviz_index_dir_path {
+  my $self = shift;
+  return File::Spec->catdir($self->archive_path, $TILEVIZ_INDEX_DIR_NAME);
+}
 
-  ($d && $path) or croak 'Definition and path arguments required' ;
-  (ref($d) eq 'npg_pipeline::function::definition')
-      or croak 'First argument should be a definition object';
+sub _create_tileviz_index {
+  my $self = shift;
 
-  #####
-  # The jobs that should be executed after the run folder is moved to
-  # the outgoing directory have a preexec expression that check that
-  # the path has changed to the outgoing directory. This fact is used
-  # here to flag cases where the log directory pathe should change
-  # from analysis to outgoing.
-  #
-  if ($d->has_command_preexec() &&
-      $d->command_preexec() =~ /$OUTGOING_PATH_COMPONENT/smx) {
-    $path = __PACKAGE__->path_in_outgoing($path);
+  my %lanes =  map { $_->composition->get_component(0)->position,
+                     $_->tileviz_path(q[..]) . q[.html] } # tileviz.html page on the
+                     @{$self->products->{'lanes'}};       # same level as tileviz directory
+  my $title = join q[ ], 'Run', $self->id_run(), 'Tileviz', 'Reports';
+  my @content = ();
+  push @content, "<html><head><title>$title</title></head>";
+  push @content, "<h2>$title</h2>";
+  foreach my $lane (sort keys %lanes) {
+    my $ref = $lanes{$lane};
+    push @content, qq[<div><a href="$ref">Lane $lane</a></div>];
+  }
+  push @content, '</html>';
+
+  my $tileviz_index_dir_path = $self->_tileviz_index_dir_path();
+  my $index = File::Spec->catfile($tileviz_index_dir_path,
+                                  $TILEVIZ_INDEX_FILE_NAME);
+  write_file($index, map { $_ . qq[\n] } @content);
+
+  return;
+}
+
+sub _create_tileviz_lane_indexes {
+  my $self = shift;
+
+  my %lanes =  map { $_->composition->get_component(0)->position,
+                     $_->tileviz_path($self->archive_path) . q[.html] } # tileviz.html page on the
+                     @{$self->products->{'lanes'}};                     # same level as tileviz directory
+
+  foreach my $lane (sort keys %lanes) {
+    my $title = join q[ ], 'Run', $self->id_run(), 'Lane', $lane, 'Tileviz', 'Report';
+    my @content = ();
+    push @content, "<html><head><title>$title</title></head>";
+    push @content, "<h2>$title</h2>";
+    push @content, 'No tileviz data available for this lane';
+    push @content, '</html>';
+    write_file($lanes{$lane}, map { $_ . qq[\n] } @content);
   }
 
-  return $path;
+  return;
 }
 
 sub _log_path {
@@ -179,20 +242,24 @@ Analysis run folder scaffolding.
 
 =head1 SUBROUTINES/METHODS
 
-=head2 create_analysis_level
+=head2 create_product_level
 
-Scaffolds the analysis directory.
+Creates product-level directories for all expected products, together with
+short file cache directories, qc output and tileviz direcgtories if appropriate.
 
 =head2 create_top_level
 
-Sets all paths needed during the lifetime of the analysis runfolder.
-Creates any of the paths that do not exist.
+Sets all top level paths needed during the lifetime of the analysis runfolder,
+starting from bam basecalls directory. Creates directories if they do not
+exist.
+
+Does not create product-level directories. Does not create top-level qc directory,
+which was created by earlier versions of the pipeline. Presence of the top-level
+qc directory will be used to distinguish between different directory structures.
 
 =head2 status_files_path
 
 A directory path to save status files to.
-
-=cut
 
 =head2 make_dir
 
@@ -202,16 +269,15 @@ is empty. Can be called both as an instance and a class method.
 
   my @errors = $scaffold->make_dir(qw/first second/);
 
+=head2 metadata_cache_dir_path
+
+=head2 irods_publisher_rstart_dir_path
+
 =head2 make_log_dir4names
 
 =head2 path_in_outgoing
 
 Given a path in analysis directory changes it to outgoing directory.
-
-=head2 future_path
-
-If the job will run in the outgoing directory, a path in analysis directory
-is changed to a path in outgoing directory.
 
 =head1 DIAGNOSTICS
 
@@ -228,6 +294,8 @@ is changed to a path in outgoing directory.
 =item File::Path
 
 =item File::Spec
+
+=item File::Slurp
 
 =item Readonly
 
@@ -251,7 +319,7 @@ is changed to a path in outgoing directory.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018, 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

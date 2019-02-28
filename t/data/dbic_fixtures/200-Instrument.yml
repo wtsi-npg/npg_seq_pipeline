@@ -1,4 +1,20 @@
 ---
+- id_instrument: 1
+  name: NV1
+  id_instrument_format: 1
+  external_name: 'A006'
+  serial: ''
+  iscurrent: 1
+  ipaddr: 
+  instrument_comp: nv1
+- id_instrument: 2
+  name: NV2
+  id_instrument_format: 1
+  external_name: 'A005'
+  serial: ''
+  iscurrent: 1
+  ipaddr: 
+  instrument_comp: nv2
 - external_name: cBot2
   id_instrument: 49
   id_instrument_format: 7

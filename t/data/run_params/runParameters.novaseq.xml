@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+<RunParameters xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Surface>Both</Surface>
+  <ReadType>PairedEnd</ReadType>
+  <Side>A</Side>
+  <Read1NumberOfCycles>151</Read1NumberOfCycles>
+  <Read2NumberOfCycles>151</Read2NumberOfCycles>
+  <IndexRead1NumberOfCycles>8</IndexRead1NumberOfCycles>
+  <IndexRead2NumberOfCycles>8</IndexRead2NumberOfCycles>
+  <PlannedRead1Cycles>151</PlannedRead1Cycles>
+  <PlannedRead2Cycles>151</PlannedRead2Cycles>
+  <PlannedIndex1ReadCycles>8</PlannedIndex1ReadCycles>
+  <PlannedIndex2ReadCycles>8</PlannedIndex2ReadCycles>
+  <RunNumber>7</RunNumber>
+  <RtaVersion>v3.3.3</RtaVersion>
+  <RecipeVersion>1.4.0</RecipeVersion>
+  <ExperimentName>Coriell_24PF_TruseqReagents_TruseqAdap_manual_500pM_NV8A</ExperimentName>
+  <RfidsInfo>
+    <FlowCellSerialBarcode>H3WCWDSXX</FlowCellSerialBarcode>
+    <FlowCellPartNumber>A</FlowCellPartNumber>
+    <FlowCellLotNumber>20244405</FlowCellLotNumber>
+    <FlowCellExpirationdate>02/27/2019 00:00:00</FlowCellExpirationdate>
+    <FlowCellStartDate>05/17/2018 16:00:00</FlowCellStartDate>
+    <FlowCellNumberOfReuseRemaining>1</FlowCellNumberOfReuseRemaining>
+    <FlowCellSupportedModes>HTWashOnly;S4</FlowCellSupportedModes>
+    <FlowCellMode>S4</FlowCellMode>
+    <FlowCellRssi>2</FlowCellRssi>
+    <LibraryTubeSerialBarcode>NV0022102-LIB</LibraryTubeSerialBarcode>
+    <LibraryTubeSupportedModes>Universal</LibraryTubeSupportedModes>
+    <LibraryTubePartNumber />
+    <LibraryTubeLotNumber>171011</LibraryTubeLotNumber>
+    <LibraryTubeExpirationdate>12/31/2169 00:00:00</LibraryTubeExpirationdate>
+    <LibraryTubeStartDate>05/17/2018 16:00:00</LibraryTubeStartDate>
+    <LibraryTubeRssi>4</LibraryTubeRssi>
+    <SbsSerialBarcode>NV2111381-RGSBS</SbsSerialBarcode>
+    <SbsSupportedModes>S4</SbsSupportedModes>
+    <SbsPartNumber>C</SbsPartNumber>
+    <SbsLotNumber>20241188</SbsLotNumber>
+    <SbsExpirationdate>02/17/2019 00:00:00</SbsExpirationdate>
+    <SbsStartDate>05/17/2018 16:00:00</SbsStartDate>
+    <SbsCycleKit>330</SbsCycleKit>
+    <SbsNumberOfCyclesRemaining>12</SbsNumberOfCyclesRemaining>
+    <SbsNumberOfCyclesSupported>330</SbsNumberOfCyclesSupported>
+    <SbsRssi>4</SbsRssi>
+    <ClusterSerialBarcode>NV2119253-RGCPE</ClusterSerialBarcode>
+    <ClusterSupportedModes>S4</ClusterSupportedModes>
+    <ClusterPartNumber>C</ClusterPartNumber>
+    <ClusterLotNumber>20244865</ClusterLotNumber>
+    <ClusterExpirationdate>03/07/2019 00:00:00</ClusterExpirationdate>
+    <ClusterStartDate>05/17/2018 16:00:00</ClusterStartDate>
+    <ClusterCycleKit>330</ClusterCycleKit>
+    <ClusterNumberOfCyclesRemaining>12</ClusterNumberOfCyclesRemaining>
+    <ClusterRssi>5</ClusterRssi>
+    <BufferSerialBarcode>NV2110862-BUFFR</BufferSerialBarcode>
+    <BufferSupportedModes>S4</BufferSupportedModes>
+    <BufferPartNumber>1</BufferPartNumber>
+    <BufferLotNumber>20239139</BufferLotNumber>
+    <BufferExpirationdate>02/14/2019 00:00:00</BufferExpirationdate>
+    <BufferNumberOfCyclesRemaining>12</BufferNumberOfCyclesRemaining>
+    <BufferStartDate>05/17/2018 16:00:00</BufferStartDate>
+    <BufferRssi>4</BufferRssi>
+  </RfidsInfo>
+  <RecipeFilePath>C:\Illumina\NovaSeq Control Software\Recipe</RecipeFilePath>
+  <SamplesheetFile>C:\Users\sbsuser\Desktop\24hWGS_PCRfree_autoE_SampleSheet_V1.0.csv</SamplesheetFile>
+  <UsedLimsSetup>false</UsedLimsSetup>
+  <CeLinuxRunFolder>/ilmn/outputfolder/180517_A00510_0007_AH3WCWDSXX/</CeLinuxRunFolder>
+  <RtaRawRunFolder>/ilmn/outputfolder</RtaRawRunFolder>
+  <CeMountRunFolder>Z:\outputfolder\180517_A00510_0007_AH3WCWDSXX\</CeMountRunFolder>
+  <OutputRunFolder>\\nv8-esa.dnapipelines.sanger.ac.uk\staging\IL_seq_data\incoming\180517_A00510_0007_AH3WCWDSXX\</OutputRunFolder>
+  <SbcRunFolder>C:\Illumina\NovaSeqTemp\180517_A00510_0007_AH3WCWDSXX\</SbcRunFolder>
+  <PreRunFolder>C:\Illumina\NovaSeqTemp\RunSetupLogs\A00510_2018-05-17__16_01_49_SideA</PreRunFolder>
+  <RunStartDate>180517</RunStartDate>
+  <RunId>180517_A00510_0007_AH3WCWDSXX</RunId>
+  <UseBaseSpace>true</UseBaseSpace>
+  <UseBaseSpaceMonitoringAndStorage>true</UseBaseSpaceMonitoringAndStorage>
+  <BaseSpaceRunId>1387386</BaseSpaceRunId>
+  <BaseSpaceEnvironment>euc1-prod</BaseSpaceEnvironment>
+  <BaseSpaceDomain>EMEACS</BaseSpaceDomain>
+  <Autocenter>true</Autocenter>
+  <BiDirectionalScanning>true</BiDirectionalScanning>
+  <UseCustomRecipe>false</UseCustomRecipe>
+  <UseCustomRead1Primer>false</UseCustomRead1Primer>
+  <UseCustomRead2Primer>false</UseCustomRead2Primer>
+  <UseCustomIndexRead1Primer>false</UseCustomIndexRead1Primer>
+  <IsRehyb>false</IsRehyb>
+  <InstrumentName>A00510</InstrumentName>
+  <PlatformType>HighThroughput</PlatformType>
+  <Application>NovaSeq Control Software</Application>
+  <ApplicationVersion>1.4.0</ApplicationVersion>
+  <Build>61</Build>
+  <FirmwareVersions>
+    <FirmwareVersion>
+      <Board>Fluidics Board</Board>
+      <Version>novaseq_flu@NovaSeq_1.22.1</Version>
+    </FirmwareVersion>
+    <FirmwareVersion>
+      <Board>Left Buffer Interface Board</Board>
+      <Version>novaseq_bim@NovaSeq_1.22.1</Version>
+    </FirmwareVersion>
+    <FirmwareVersion>
+      <Board>Right Buffer Interface Board</Board>
+      <Version>novaseq_bim@NovaSeq_1.22.1</Version>
+    </FirmwareVersion>
+    <FirmwareVersion>
+      <Board>Chassis Module Board</Board>
+      <Version>novaseq_chm@NovaSeq_1.22.1</Version>
+    </FirmwareVersion>
+    <FirmwareVersion>
+      <Board>Camera Interface Board</Board>
+      <Version>novaseq_cib_2@NovaSeq_1.22.1</Version>
+    </FirmwareVersion>
+    <FirmwareVersion>
+      <Board>Focus Interface Board</Board>
+      <Version>novaseq_fib_2@NovaSeq_1.22.1</Version>
+    </FirmwareVersion>
+    <FirmwareVersion>
+      <Board>Flow Cell Holder Board</Board>
+      <Version>novaseq_fch_2@NovaSeq_1.22.1</Version>
+    </FirmwareVersion>
+    <FirmwareVersion>
+      <Board>Left Reagent Chiller Board</Board>
+      <Version>novaseq_rca@NovaSeq_1.22.1</Version>
+    </FirmwareVersion>
+    <FirmwareVersion>
+      <Board>Right Reagent Chiller Board</Board>
+      <Version>novaseq_rca@NovaSeq_1.22.1</Version>
+    </FirmwareVersion>
+    <FirmwareVersion>
+      <Board>System Thermal Board</Board>
+      <Version>novaseq_syst@NovaSeq_1.22.1</Version>
+    </FirmwareVersion>
+  </FirmwareVersions>
+  <SendIlluminaHealthData>false</SendIlluminaHealthData>
+  <UcsRunId>149A0568A8407A2E</UcsRunId>
+  <UcsVersion>1.4.2.927</UcsVersion>
+  <WorkflowType>NovaSeqStandard</WorkflowType>
+</RunParameters>

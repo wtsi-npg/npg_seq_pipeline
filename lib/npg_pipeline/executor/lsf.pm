@@ -13,11 +13,12 @@ use English qw(-no_match_vars);
 
 use npg_tracking::util::abs_path qw(abs_path network_abs_path);
 use npg_pipeline::executor::lsf::job;
+use npg_pipeline::runfolder_scaffold;
 
 extends 'npg_pipeline::executor';
 with qw( 
          npg_pipeline::executor::options
-         npg_pipeline::roles::accessor
+         npg_pipeline::base::config
          MooseX::AttributeCloner
        );
 
@@ -254,8 +255,12 @@ sub _submit_function {
     push @{$definitions->{$key}}, $d;
   }
 
-  my $log_dir = $self->future_log_path(
-                  $definitions_all, $self->log_dir4function($function_name));
+  my $outgoing_flag = $self->future_path_is_in_outgoing($function_name);
+
+  my $log_dir = $self->log_dir4function($function_name);
+  if ($outgoing_flag) {
+    $log_dir = npg_pipeline::runfolder_scaffold->path_in_outgoing($log_dir);
+  }
 
   my @lsf_ids = ();
   foreach my $da (values %{$definitions}) {
@@ -267,10 +272,15 @@ sub _submit_function {
     $args{'log_dir'}          = $log_dir;
     my $job = npg_pipeline::executor::lsf::job->new(\%args);
 
+    my $file_path = $self->commands4jobs_file_path();
+    if ($outgoing_flag) {
+      $file_path = npg_pipeline::runfolder_scaffold->path_in_outgoing($file_path);
+    }
+
     my $bsub_cmd =  sprintf q(bsub %s%s '%s'),
       !@depends_on ? q[-H ] : q[],
       $job->params(),
-      (join q[ ], $SCRIPT4SAVED_COMMANDS, '--path', $self->commands4jobs_file_path(),
+      (join q[ ], $SCRIPT4SAVED_COMMANDS, '--path', $file_path,
                                           '--function_name', $function_name);
 
     my $lsf_job_id = $self->_execute_lsf_command($bsub_cmd);

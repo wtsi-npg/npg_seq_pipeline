@@ -10,6 +10,8 @@ use English qw(-no_match_vars);
 use Math::Random::Secure qw(irand);
 use Try::Tiny;
 
+use npg_pipeline::runfolder_scaffold;
+
 extends 'npg_pipeline::executor';
 
 with 'npg_pipeline::executor::options' => {
@@ -18,11 +20,20 @@ with 'npg_pipeline::executor::options' => {
                     no_array_cpu_limit
                     array_cpu_limit/ ]
 };
+with 'npg_pipeline::base::config';
 
 our $VERSION = '0';
 
 Readonly::Scalar my $VERTEX_GROUP_DEP_ID_ATTR_NAME => q[wr_group_id];
 Readonly::Scalar my $DEFAULT_MEMORY                => 2000;
+Readonly::Scalar my $VERTEX_JOB_PRIORITY_ATTR_NAME => q[job_priority];
+Readonly::Scalar my $WR_ENV_LIST_DELIM             => q[,];
+Readonly::Array  my @ENV_VARS_TO_PROPAGATE => qw/ PATH
+                                                  PERL5LIB
+                                                  CLASSPATH
+                                                  NPG_CACHED_SAMPLESHEET_FILE
+                                                  NPG_REPOSITORY_ROOT
+                                                  IRODS_ENVIRONMENT_FILE /;
 
 =head1 NAME
 
@@ -44,6 +55,20 @@ L<wr workflow runner|https://github.com/VertebrateResequencing/wr>.
 ##################################################################
 ############## Public methods ####################################
 ##################################################################
+
+=head2 wr_conf
+
+=cut
+
+has 'wr_conf' => (
+  isa        => 'HashRef',
+  is         => 'ro',
+  lazy_build => 1,
+);
+sub _build_wr_conf {
+  my $self = shift;
+  return $self->read_config($self->conf_file_path('wr.json'));
+}
 
 =head2 execute
 
@@ -111,8 +136,11 @@ sub _definitions4function {
 
   my $definitions = $self->function_definitions()->{$function_name};
   my $group_id = join q[-], $function_name, $definitions->[0]->identifier(), irand();
-  my $log_dir = $self->future_log_path(
-                  $definitions, $self->log_dir4function($function_name));
+  my $outgoing_flag = $self->future_path_is_in_outgoing($function_name);
+  my $log_dir = $self->log_dir4function($function_name);
+  if ($outgoing_flag) {
+    $log_dir = npg_pipeline::runfolder_scaffold->path_in_outgoing($log_dir);
+  }
 
   foreach my $d (@{$definitions}) {
     my $wr_def = $self->_definition4job($function_name, $log_dir, $d);
@@ -139,19 +167,50 @@ sub _definition4job {
   $def->{'memory'} = $d->has_memory() ? $d->memory() : $DEFAULT_MEMORY;
   $def->{'memory'} .= q[M];
 
+  # priority needs to be a number, rather than string, in JSON for wr,
+  # hence the addition
+  $def->{'priority'} = 0 + $self->function_graph4jobs->get_vertex_attribute(
+                           $function_name, $VERTEX_JOB_PRIORITY_ATTR_NAME);
+
   if ($d->has_num_cpus()) {
     use warnings FATAL => qw(numeric);
     $def->{'cpus'} = int $d->num_cpus()->[0];
   }
 
+  if ($d->queue) {
+    my $options = $self->wr_conf()->{$d->queue . '_queue'};
+    if ($options) {
+      while (my ($key, $value) = each %{$options}) {
+        $def->{$key} = $value;
+      }
+    }
+  }
+
   my $log_file = sub {
-    my $log_name = join q[-], $function_name, $d->created_on(),
-      $d->has_composition() ? $d->composition()->freeze2rpt () : $d->identifier();
-    $log_name   .= q[.out];
-    return join q[/], $log_dir, $log_name;
+    #####
+    # Explicit exclusion for now. In future, if we end up using this function,
+    # we might extend function definition to handle jobs without logs.
+    # No log is safer for pipeline_wait4path function since the run folder
+    # might be moved to outgoing while the function is being executed.
+    if ($function_name ne 'pipeline_wait4path') {
+      my $log_name = join q[-], $function_name, $d->created_on(),
+        $d->has_composition() ? $d->composition()->freeze2rpt () : $d->identifier();
+      $log_name   .= q[.out];
+      return join q[/], $log_dir, $log_name;
+    }
+    return;
   };
 
-  $def->{'cmd'} = join q[ ], q[(], $d->command(), q[)], q[2>&1], q[|], q[tee], $log_file->();
+  my $command = join q[ ], q[(], $d->command(), q[)], q[2>&1];
+  my $lf = $log_file->();
+  if ($lf) {
+    #####
+    # Ask tee command to append to the log rather than start over.
+    # This would replicate behaviour under LSF. If the job is retried,
+    # will keep the original log in place.
+    $command = join q[ ], $command, q[|], q[tee -a], q["]. $log_file->() . q["];
+  }
+  $def->{'cmd'} = $command;
 
   return $def;
 }
@@ -159,16 +218,25 @@ sub _definition4job {
 sub _wr_add_command {
   my $self = shift;
 
-  my $priority = $self->has_job_priority ? $self->job_priority : 0;
-
   # If needed, in future, these options can be passed from the command line
-  # or read fron a conf. file.
+  # or read from a conf. file.
+
+  # Explicitly pass the pipeline's environment to jobs
+  my @env_list = ();
+  foreach my $var_name (sort @ENV_VARS_TO_PROPAGATE) {
+    my $value = $ENV{$var_name};
+    if (defined $value && $value ne q[]) {
+      push @env_list, "${var_name}=${value}";
+    }
+  }
+  my $stack = join $WR_ENV_LIST_DELIM, @env_list;
+
   my @common_options = (
           '--cwd'        => '/tmp',
           '--disk'       => 0,
           '--override'   => 2,
-          '--priority'   => $priority,
-          '--retries'    => 0,
+          '--retries'    => 1,
+          '--env'        => q['] . $stack . q['],
                        );
 
   return join q[ ], qw/wr add/,

@@ -40,6 +40,7 @@ sub create {
     identifier    => $self->id_run(),
     job_name      => $job_name,
     command       => $self->_command($status_files_path),
+    num_cpus      => [0],
     queue         =>
       $npg_pipeline::function::definition::SMALL_QUEUE,
   );

@@ -3,19 +3,39 @@ package npg_pipeline::function::autoqc;
 use Moose;
 use namespace::autoclean;
 use Readonly;
+use List::MoreUtils qw{any};
 use File::Spec;
 use Class::Load qw{load_class};
 
 use npg_pipeline::function::definition;
+use npg_qc::autoqc::constants qw/
+         $SAMTOOLS_NO_FILTER
+         $SAMTOOLS_SEC_QCFAIL_SUPPL_FILTER
+                                /;
 
 extends q{npg_pipeline::base};
+with q{npg_pipeline::function::util};
 
 our $VERSION = '0';
 
 Readonly::Scalar my $QC_SCRIPT_NAME           => q{qc};
-Readonly::Scalar my $MEMORY_REQ               => 6000;
-Readonly::Scalar my $MEMORY_REQ_ADAPTER       => 1500;
 Readonly::Scalar my $REFMATCH_ARRAY_CPU_LIMIT => 8;
+Readonly::Array  my @CHECKS_NEED_PAIREDNESS_INFO => qw/
+                                                 insert_size
+                                                 gc_fraction
+                                                 qX_yield
+                                                      /;
+
+# Memory requirements, MB
+Readonly::Scalar my $MEMORY_REQ_DEFAULT       => 2000;
+Readonly::Hash   my %MEMORY_REQUIREMENTS      => (
+                        insert_size      => 8000,
+                        sequence_error   => 8000,
+                        ref_match        => 6000,
+                        pulldown_metrics => 6000,
+                        bcfstats         => 4000,
+                        adapter          => 1500,
+                                                 );
 
 has q{qc_to_run}       => (isa      => q{Str},
                            is       => q{ro},
@@ -38,7 +58,6 @@ has q{_check_uses_refrepos} => (isa        => q{Bool},
                                 lazy_build => 1,);
 sub _build__check_uses_refrepos {
   my $self = shift;
-  load_class($self->_qc_module_name);
   return $self->_qc_module_name()->meta()
     ->find_attribute_by_name('repository') ? 1 : 0;
 }
@@ -74,9 +93,17 @@ has q{_is_check4target_file} => (
 sub _build__is_check4target_file {
   my $self = shift;
   ##no critic (RegularExpressions::RequireBracesForMultiline)
-  return $self->qc_to_run() =~ /^ verify_bam_id |
+  return $self->qc_to_run() =~ /^ adapter |
+                                  bcfstats |
+                                  verify_bam_id |
                                   genotype |
                                   pulldown_metrics $/smx;
+}
+
+sub BUILD {
+  my $self = shift;
+  load_class($self->_qc_module_name);
+  return;
 }
 
 sub create {
@@ -86,19 +113,28 @@ sub create {
                       $self->qc_to_run(), $self->id_run());
 
   my @definitions = ();
-  foreach my $p ( $self->positions() ) {
-    my $is_multiplexed_lane = $self->is_multiplexed_lane($p);
 
-    my $h = {'id_run' => $self->id_run, 'position' => $p};
-    push @definitions, $self->_create_definition($h, $is_multiplexed_lane);
+  my %done_as_lane = ();
+  for my $lp (@{$self->products->{lanes}}) {
 
-    if ( $self->is_indexed && $is_multiplexed_lane) {
-      foreach my $tag_index (@{$self->get_tag_index_list($p)}) {
-        my %th = %{$h};
-        $th{'tag_index'} = $tag_index;
-        push @definitions, $self->_create_definition(\%th, $is_multiplexed_lane);
-      }
-    }
+    $self->debug(sprintf '  autoqc check %s for lane, rpt_list: %s, is_pool: %s',
+                            $self->qc_to_run(), $lp->rpt_list, ($lp->lims->is_pool? q[True]: q[False]));
+
+    $done_as_lane{$lp->rpt_list} = 1;
+    push @definitions, $self->_create_definition($lp, 0); # is_plex is always 0 here
+  }
+
+  for my $dp (@{$self->products->{data_products}}) {
+    if($done_as_lane{$dp->{rpt_list}}) { next; } # skip data_products that have already been processed as lanes (i.e. libraries or single-sample pools)
+
+    my $tag_index = $dp->composition->get_component(0)->tag_index;
+    my $is_plex = (defined $tag_index);
+
+    $self->debug(sprintf '  autoqc check %s for data_product, rpt_list: %s, is_plex: %s, is_pool: %s, tag_index: %s',
+                             $self->qc_to_run(), $dp->{rpt_list}, ($is_plex? q[True]: q[False]),
+                             ($dp->lims->is_pool? q[True]: q[False]), ($is_plex? $tag_index: q[NONE]));
+
+    push @definitions, $self->_create_definition($dp, $is_plex);
   }
 
   if (!@definitions) {
@@ -111,11 +147,13 @@ sub create {
 }
 
 sub _create_definition {
-  my ($self, $h, $is_multiplexed_lane) = @_;
-  if ($self->_should_run($h, $is_multiplexed_lane)) {
-    my $command = $self->_generate_command($h);
-    return $self->_create_definition_object($h, $command);
+  my ($self, $product, $is_plex) = @_;
+
+  if ($self->_should_run($is_plex, $product)) {
+    my $command = $self->_generate_command($product);
+    return $self->_create_definition_object($product, $command);
   }
+
   return;
 }
 
@@ -127,15 +165,15 @@ sub _basic_attrs {
 }
 
 sub _create_definition_object {
-  my ($self, $h, $command) = @_;
+  my ($self, $product, $command) = @_;
 
   my $ref = $self->_basic_attrs();
   my $qc_to_run = $self->qc_to_run;
 
   $ref->{'job_name'}        = join q{_}, $QC_SCRIPT_NAME, $qc_to_run,
-                                         $h->{'id_run'}, $self->timestamp();
+                                         $self->id_run(), $self->timestamp();
   $ref->{'fs_slots_num'}    = 1;
-  $ref->{'composition'}     = $self->create_composition($h);
+  $ref->{'composition'}     = $product->composition;
   $ref->{'command'}         = $command;
 
   if ($qc_to_run eq q[adapter]) {
@@ -159,81 +197,121 @@ sub _create_definition_object {
   }
 
   if ( ($qc_to_run eq 'adapter') || $self->_check_uses_refrepos() ) {
-    $ref->{'command_preexec'} = $self->ref_adapter_pre_exec_string();
+    $ref->{'command_preexec'} = $self->repos_pre_exec_string();
   }
 
-  if ($qc_to_run =~ /insert_size|sequence_error|ref_match|pulldown_metrics/smx ) {
-    $ref->{'memory'} = $MEMORY_REQ;
-  } elsif ($qc_to_run eq q[adapter]) {
-    $ref->{'memory'} = $MEMORY_REQ_ADAPTER;
-  }
+  $ref->{'memory'} = $MEMORY_REQUIREMENTS{$qc_to_run} || $MEMORY_REQ_DEFAULT;
 
   return npg_pipeline::function::definition->new($ref);
 }
 
 sub _generate_command {
-  my ($self, $h) = @_;
+  my ($self, $dp) = @_;
 
   my $check     = $self->qc_to_run();
-  my $position  = $h->{'position'};
-  my $tag_index = $h->{'tag_index'};
-  my $c = sprintf '%s --check=%s --id_run=%i --position=%i',
-                  $QC_SCRIPT_NAME, $check, $h->{'id_run'}, $position;
+  my $archive_path = $self->archive_path;
+  my $recal_path= $self->recalibrated_path;
+  my $dp_archive_path = $dp->path($self->archive_path);
+  my $cache10k_path = $dp->short_files_cache_path($archive_path);
+  my $qc_out_path = $dp->qc_out_path($archive_path);
+  my $bamfile_path = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'bam'));
+  my $tagzerobamfile_path = File::Spec->catdir($recal_path, $dp->file_name(ext => $self->s1_s2_intfile_format, suffix => '#0'));
+  ## no critic (RegularExpressions::RequireDotMatchAnything)
+  ## no critic (RegularExpressions::RequireExtendedFormatting)
+  ## no critic (RegularExpressions::RequireLineBoundaryMatching)
+  $tagzerobamfile_path =~ s/_#0/#0/;
+  my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
+  my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
 
-  if (defined $tag_index) {
-    $c .= q[ --tag_index=] . $tag_index;
-  }
-  if ( $check eq q[adapter] ) {
-    $c .= q[ --file_type=bam];
+  my $c = sprintf '%s --check=%s --rpt_list="%s" --filename_root=%s --qc_out=%s',
+                  $QC_SCRIPT_NAME, $check, $dp->{rpt_list}, $dp->file_name_root, $qc_out_path;
+
+  if(any { $check eq $_ } @CHECKS_NEED_PAIREDNESS_INFO) {
+    $c .= q[ --] . ($self->is_paired_read() ? q[] : q[no-]) . q[is_paired_read];
   }
 
-  my $qc_out = (defined $tag_index and $check ne q[spatial_filter])? $self->lane_qc_path($position) : $self->qc_path();
-  $qc_out or $self->logcroak('Failed to get qc_out directory');
-  my $qc_in  = defined $tag_index ? $self->lane_archive_path($position) : $self->archive_path();
+  ####################################
+  # set input_files or input directory
+  ####################################
+  ##no critic (RegularExpressions::RequireExtendedFormatting)
   ##no critic (ControlStructures::ProhibitCascadingIfElse)
-  if ($check eq q[adapter]) {
-    $qc_in  = defined $tag_index
-              ? File::Spec->catfile($self->recalibrated_path(), q[lane] . $position)
-              : $self->recalibrated_path();
-  } elsif ($check eq q[spatial_filter]) {
-    $qc_in .= (q[/lane] . $position);
-  } elsif ($check eq q[tag_metrics]) {
-    $qc_in = $self->bam_basecall_path();
-  } elsif ($check eq q[sequence_error] or $check eq q[ref_match] or $check eq q[insert_size]) {
-    $qc_in .= q[/.npg_cache_10000]
+
+  if(any { /$check/sm } qw( gc_fraction qX_yield )) {
+    my $suffix = ($dp->composition->num_components == 1 &&
+                   !defined $dp->composition->get_component(0)->tag_index) # true for a lane
+                 ? $SAMTOOLS_NO_FILTER : $SAMTOOLS_SEC_QCFAIL_SUPPL_FILTER;
+    $c .= qq[ --qc_in=$dp_archive_path --suffix=$suffix];
+    if ($check eq q[qX_yield] && $self->platform_HiSeq) {
+      $c .= q[ --platform_is_hiseq];
+    }
   }
-  $qc_in or $self->logcroak('Failed to get qc_in directory');
-  $c .= qq[ --qc_in=$qc_in --qc_out=$qc_out];
+  elsif(any { /$check/sm } qw( insert_size ref_match sequence_error )) {
+    $c .= qq[ --input_files=$fq1_filepath];
+    if($self->is_paired_read) {
+      $c .= qq[ --input_files=$fq2_filepath];
+    }
+  }
+  elsif(any { /$check/sm } qw( adapter bcfstats genotype verify_bam_id pulldown_metrics )) {
+    $c .= qq{ --input_files=$bamfile_path}; # note: single bam file 
+  }
+  elsif($check eq q/upstream_tags/) {
+    $c .= qq{ --tag0_bam_file=$tagzerobamfile_path}; # note: single bam file
+    $c .= qq{ --archive_qc_path=$qc_out_path}; # find locally produced tag metrics results
+    $c .= qq{ --cal_path=$recal_path};
+  }
+  elsif($check eq q/spatial_filter/) {
+
+    my $position = $dp->composition->get_component(0)->position; # lane-level check, so position is unique
+
+    my %qc_in_roots = ();
+    for my $redp (@{$self->products->{data_products}}) {
+      # find any merged products with components from this position (lane)
+      if(any { $_->{position} == $position } @{$redp->composition->{components}}) {
+        $qc_in_roots{$self->archive_path} = 1;
+      }
+    }
+    $c .= q[ ] . join q[ ], (map {"--qc_in=$_"} (keys %qc_in_roots));
+  }
+  else {
+    ## default input_files [none?]
+  }
 
   return $c;
 }
 
 sub _should_run {
-  my ($self, $h, $is_multiplexed_lane) = @_;
+  my ($self, $is_plex, $product) = @_;
 
-  my $tag_index = $h->{'tag_index'};
   my $can_run = 1;
 
+  my $is_lane = !$is_plex; # if it's not a plex, it's a lane
+  my $rpt_list = $product->rpt_list;
+  my $is_pool = $product->lims->is_pool;
+  my $is_tag_zero = $product->is_tag_zero_product;
+
   if ($self->_is_lane_level_check()) {
-    return !defined $tag_index;
+    return !$is_plex;
   }
 
   if ($self->_is_lane_level_check4indexed_lane()) {
-    return $is_multiplexed_lane && !defined $tag_index;
+    return $is_lane && $is_pool;
   }
 
   if ($self->_is_check4target_file()) {
-    $can_run = ((!defined $tag_index) && !$is_multiplexed_lane) ||
-	       ((defined $tag_index)  && $is_multiplexed_lane);
+    $can_run = (($is_lane && !$is_pool) ||
+	       ($is_plex && !$is_tag_zero));
   }
 
   if ($can_run) {
-    my %init_hash = %{$h};
+    my %init_hash = ( rpt_list => $rpt_list );
+
     if ($self->has_repository && $self->_check_uses_refrepos()) {
       $init_hash{'repository'} = $self->repository;
     }
+    if ($self->qc_to_run() eq 'insert_size') {
+      $init_hash{'is_paired_read'} = $self->is_paired_read() ? 1 : 0;
+    }
 
-    load_class($self->_qc_module_name);
     $can_run = $self->_qc_module_name()->new(\%init_hash)->can_run();
   }
 
@@ -267,6 +345,12 @@ Autoqc checks jobs definition.
 =head2 qc_to_run
 
 Name of the QC check to run, required attribute.
+
+=head2 BUILD
+
+Method called by Moose before returning a new object instance to the
+caller. Loads the auto qc check class defined by the qc_to_run attribute
+into memory, errors if this fails.
 
 =head2 create
 

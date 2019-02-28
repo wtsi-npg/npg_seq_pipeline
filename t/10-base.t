@@ -5,13 +5,17 @@ use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use Cwd;
 use Log::Log4perl qw(:levels);
+use Moose::Util qw(apply_all_roles);
+use File::Copy qw(cp);
 
 use t::util;
 use npg_tracking::util::abs_path qw(abs_path);
 
+my $util = t::util->new();
+
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
-                          file   => join(q[/], t::util->new()->temp_directory(), 'logfile'),
+                          file   => join(q[/], $util->temp_directory(), 'logfile'),
                           utf8   => 1});
 
 my $cwd = abs_path(getcwd());
@@ -29,7 +33,7 @@ subtest 'local flag' => sub {
   is($base->local, 1, 'local flag is 1 as set');
 };
 
-subtest 'timestamp andrandom string' => sub {
+subtest 'timestamp and random string' => sub {
   plan tests => 3;
 
   my $base = npg_pipeline::base->new();
@@ -68,50 +72,6 @@ subtest 'flowcell id and barcode' => sub {
   is ($base->id_run, 15441, 'id run derived correctly from runfolder_path');
   is ($base->id_flowcell_lims, 45, 'lims flowcell id returned correctly');
   is ($base->flowcell_id, 'MS2806735-300V2', 'MiSeq reagent kit id derived from runfolder path');
-};
-
-subtest 'HiSeq flag' => sub {
-  plan tests => 2;
-
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data/hiseqx];
-  my $base = npg_pipeline::base->new(id_run => 13219);
-  ok($base->is_hiseqx_run, 'is a HiSeqX instrument run');
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t/data];
-  $base = npg_pipeline::base->new(id_run => 1234);
-  ok(!$base->is_hiseqx_run, 'is not a HiSeqX instrument run');
-};
-
-subtest 'metadata cache directory' => sub {
-  plan tests => 8;
-
-  my $dir = tempdir( CLEANUP => 1 );
-  my ($fh, $file) = tempfile( 'tmpfileXXXX', DIR => $dir);
-  
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = $dir;
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[];
-  is (npg_pipeline::base->metadata_cache_dir(), $dir, 'cache dir from webservice cache dir');
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $file;
-  is (npg_pipeline::base->metadata_cache_dir(), $dir, 'cache dir from two consistent caches');
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
-  is (npg_pipeline::base->metadata_cache_dir(), $dir, 'cache dir from samplesheet path');
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[t];
-  throws_ok {npg_pipeline::base->metadata_cache_dir()}
-    qr/Multiple possible locations for metadata cache directory/,
-    'inconsistent locations give an error';
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[some];
-  is (npg_pipeline::base->metadata_cache_dir(), $dir, 'one valid and one invalid path is OK');
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[other];
-  throws_ok {npg_pipeline::base->metadata_cache_dir()}
-    qr/Cannot infer location of cache directory/,
-    'error with two invalid paths';
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[];
-  throws_ok {npg_pipeline::base->metadata_cache_dir()}
-    qr/Cannot infer location of cache directory/,
-    'error with one path that is invalid';
-  local $ENV{NPG_WEBSERVICE_CACHE_DIR} = q[];
-  throws_ok {npg_pipeline::base->metadata_cache_dir()}
-    qr/Cannot infer location of cache directory/,
-    'error when no env vars are set';
 };
 
 subtest 'qc run flag' => sub {
@@ -165,6 +125,56 @@ subtest 'lims driver type' => sub {
                                   qc_run=>1,
                                   id_flowcell_lims => 12345678);
   is($base->lims_driver_type, 'ml_warehouse');
+};
+
+subtest 'repository preexec' => sub {
+  plan tests => 1;
+
+  my $ref_adapt = npg_pipeline::base->new(repository => q{t/data/sequence});
+  apply_all_roles( $ref_adapt, 'npg_pipeline::function::util' );
+  is( $ref_adapt->repos_pre_exec_string(),
+    q{npg_pipeline_preexec_references --repository t/data/sequence},
+    q{correct ref_adapter_pre_exec_string} );
+};
+
+subtest 'products' => sub {
+  plan tests => 18;
+
+  my $rf_info = $util->create_runfolder();
+  my $rf_path = $rf_info->{'runfolder_path'};
+  my $products;
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_novaseq4lanes.csv';
+  cp 't/data/run_params/runParameters.novaseq.xml',  "$rf_path/runParameters.xml";
+  my $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
+  ok ($b->merge_lanes, 'merge_lanes flag is set');
+  lives_ok {$products = $b->products} 'products hash created for NovaSeq run';
+  ok (exists $products->{'lanes'}, 'products lanes key exists');
+  is (scalar @{$products->{'lanes'}}, 4, 'four lane product');
+  ok (exists $products->{'data_products'}, 'products data_products key exists');
+  is (scalar @{$products->{'data_products'}}, 23, '23 data products'); 
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_rapidrun_nopool.csv';
+  cp 't/data/run_params/runParameters.hiseq.rr.xml',  "$rf_path/runParameters.xml";
+  cp 't/data/run_params/RunInfo.hiseq.rr.xml',  "$rf_path/RunInfo.xml"; 
+  $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
+  ok (!$b->merge_lanes, 'merge_lanes flag is not set');
+  lives_ok {$products = $b->products} 'products hash created for rapid run';
+  ok (exists $products->{'lanes'}, 'products lanes key exists');
+  is (scalar @{$products->{'lanes'}}, 2, 'two lane products');
+  ok (exists $products->{'data_products'}, 'products data_products key exists');
+  is (scalar @{$products->{'data_products'}}, 2, 'two data products');
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/miseq/samplesheet_16850.csv';
+  cp 't/data/run_params/runParameters.miseq.xml',  "$rf_path/runParameters.xml";
+  cp 't/data/miseq/16850_RunInfo.xml',  "$rf_path/RunInfo.xml";
+  $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
+  ok (!$b->merge_lanes, 'merge_lanes flag is not set');
+  lives_ok {$products = $b->products} 'products hash created for rapid run';
+  ok (exists $products->{'lanes'}, 'products lanes key exists');
+  is (scalar @{$products->{'lanes'}}, 1, 'one lane product');
+  ok (exists $products->{'data_products'}, 'products data_products key exists');
+  is (scalar @{$products->{'data_products'}}, 3, 'three data products');
 };
 
 1;

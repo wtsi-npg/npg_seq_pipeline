@@ -2,12 +2,16 @@ package npg_pipeline::function::start_stop;
 
 use Moose;
 use namespace::autoclean;
+use Readonly;
 
 use npg_pipeline::function::definition;
+use npg_pipeline::runfolder_scaffold;
 
 extends q{npg_pipeline::base};
 
 our $VERSION = '0';
+
+Readonly::Scalar my $NUM_MINS2WAIT => 20;
 
 =head1 NAME
 
@@ -15,14 +19,19 @@ npg_pipeline::function::start_stop
 
 =head1 SYNOPSIS
 
-  my $c = npg_pipeline::function::start_stop->new(
+  my $f = npg_pipeline::function::start_stop->new(
     id_run => 1234,
     run_folder => q{123456_IL2_1234},
   );
+  my $definitions;
+  $definitions = $f->pipeline_start();
+  $definitions = $f->pipeline_stop();
+  $definitions = $f->wait4path();
 
 =head1 DESCRIPTION
 
-Definitions for token start and end pipeline steps
+Definitions for token start and end pipeline steps and also for
+other simple steps that do not change the data or the state.
 
 =head1 SUBROUTINES/METHODS
 
@@ -34,8 +43,8 @@ Creates and returns a token job definition.
 =cut
 
 sub pipeline_start {
-  my $self = shift;
-  return $self->_token_job();
+  my ($self, $pipeline_name) = @_;
+  return $self->_token_job($pipeline_name);
 }
 
 =head2 pipeline_end
@@ -46,16 +55,17 @@ Creates and returns a token job definition.
 =cut
 
 sub pipeline_end {
-  my $self = shift;
-  return $self->_token_job();
+  my ($self, $pipeline_name) = @_;
+  return $self->_token_job($pipeline_name);
 }
 
 sub _token_job {
-  my $self = shift;
+  my ($self, $pipeline_name) = @_;
 
   my ($package, $filename, $line, $subroutine_name) = caller 1;
   ($subroutine_name) = $subroutine_name =~ /(\w+)\Z/xms;
-  my $job_name = join q{_}, $subroutine_name, $self->id_run(), $self->pipeline_name();
+  $pipeline_name ||= q[];
+  my $job_name = join q{_}, $subroutine_name, $self->id_run(), $pipeline_name;
 
   my $d = npg_pipeline::function::definition->new(
     created_by    => __PACKAGE__,
@@ -63,7 +73,50 @@ sub _token_job {
     identifier    => $self->id_run(),
     job_name      => $job_name,
     command       => '/bin/true',
+    num_cpus      => [0],
     queue         =>
+      $npg_pipeline::function::definition::SMALL_QUEUE,
+  );
+
+  return [$d];
+}
+
+=head2 pipeline_wait4path
+
+This function creates a single job which will wait for up to 20 mins for
+the run folder to appear in the outgoing directory. If the run folder does
+not appear in the outgoing directory within this time, the job will exit with
+error code 1. If the original run folder path is not in the analysis directory,
+this job should find the expected path in place and finish successfully
+immediately.
+
+=cut
+
+sub pipeline_wait4path {
+  my $self = shift;
+
+  my $path = npg_pipeline::runfolder_scaffold
+             ->path_in_outgoing($self->runfolder_path());
+
+  my $command = q{bash -c '}
+  ##no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+    . qq{COUNTER=0; NUM_ITERATIONS=$NUM_MINS2WAIT; DIR=$path; STIME=60; }
+    .  q{while [ $COUNTER -lt $NUM_ITERATIONS ] && ! [ -d $DIR ] ; }
+    .  q{do echo $DIR not available; COUNTER=$(($COUNTER+1)); sleep $STIME; done; }
+    .  q{EXIT_CODE=0; if [ $COUNTER == $NUM_ITERATIONS ] ; then EXIT_CODE=1; fi; exit $EXIT_CODE;}
+  ##use critic
+    .  q{'};
+
+  my $job_name = join q{_}, 'wait4path_in_outgoing', $self->id_run();
+  my $d = npg_pipeline::function::definition->new(
+    created_by    => __PACKAGE__,
+    created_on    => $self->timestamp(),
+    identifier    => $self->id_run(),
+    job_name      => $job_name,
+    command       => $command,
+    num_cpus      => [0],
+    command_preexec => "[ -d '$path' ]",
+    queue           =>
       $npg_pipeline::function::definition::SMALL_QUEUE,
   );
 
@@ -100,7 +153,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018, 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

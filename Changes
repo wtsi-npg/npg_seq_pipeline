@@ -1,6 +1,134 @@
 LIST OF CHANGES
 ---------------
 
+release 54.0
+ - archival function graph includes publishing both to s3 and iRODS
+ - a function graph for post 'run archived' small pipeline
+ - no_s3_archival flag to switch off archival to s3 and notification by
+   a message, false by default, is automatically sey to true if the 
+   local flag is set to true
+ - per-product restart file for iRODS publisher
+ - function definition for a job to wait to move from the analysis
+   to the outgoing directory
+ - wr job log file to be appended to if the job is retried
+ - propagation of the iRODS settings to wr jobs
+ - persistent mode for RabbitMQ message delivery
+
+release 53.1
+ - publishing of seq data to iRODS:
+     make product destination aware;
+     iRODS directories hierarchy for NovaSeq runs to mirror product
+     archive directories hierarchy
+ - run data validation (npg_run_id_deletable acript) reimplemented to provide
+   support for new style of run dolder and merged entities.
+
+release 53.0
+ - a wrapper object npg_pipeline::product to represent a product
+ - use products attribute to drive p4_stage1, seq_alignment and autoqc
+ - create composition.json files to guide archiving
+ - p4 params files for seq_alignment moved from no_cal/laneN to no_cal
+     (changes run folder structure when merging lanes)
+ - cluster_count and seqchksum_comparator checks now done at run level instead
+     of lane level
+ - upfront definition of all products
+ - generic runfolder scaffolding for any products
+ - since the top-level qc directory is no longer required, the tileviz
+   directory is moved to the analysis directory
+ - reshuffle of roles in npg_pipeline::roles:
+     npg_pipeline::roles::business::base merged into npg_pipeline::base;
+     npg_pipeline::roles::business::flag_options moved to
+     npg_pipeline::base::options, a number of pipeline options from other
+     modules moved to this role;
+     npg_pipeline::roles::accessors moved to npg_pipeline::base::config;
+     helper functions moved to a new role - npg_pipeline::function::util
+ - ref_adapter_pre_exec_string method renamed to repos_pre_exec_string
+ - metadata_cache_dir method, formerly in npg_pipeline::roles::business::base,
+   removed; npg_pipeline::function::p4_stage1_analysis module, the only user
+   of this function, switched to use the relevant accessor from the
+   npg_pipeline::runfolder_scaffold role
+ - minor changes for bcfstats qc check
+ - executor type (lsf or wr) can be specified in the configuration file
+ - wr executor:
+     set per-job priority;
+     increase priority for p4 stage 1 job and its predecessors;
+     set priority of status and start-stop jobs to zero so that
+     they are executed immediately, but still within dependencies
+     and memory constraints;
+     map queues to arbitrary wr options, in particular, a special queue
+     for p4_stage1 maps to a specific cloud host flavour
+ - correction of build method for rpt_list attribute in product
+ - make bam_cluster_count_check pipeline job dependent on
+     qc_spatial_filter (in function_list_central.json)
+ - archival daemon - limit number of simultaneously archived NovaSeq runs
+ - wr executor - explicitly propagate pipeline's environment to jobs
+ - illumina archiver job:
+     exclude discontinued verbose attribute and paths that are not needed
+     for the minimal work this loader is doing now;
+     remove LSF preexec requesting that the job is a unique runner since
+     db queries are much simpler now
+ - change signature of the autoqc archival job in line with extended
+   functionality of the autoqc db loader (ability to find JSON files
+   in the run folder)
+ - change components_as_products method of npg_pipeline::product to
+   return a list with one item when there is only one component in
+   the composition (instead of an empty list)
+ - tileviz index file with links to lane-level tileviz reports is created
+ - seq_alignment supports HISAT2 aligner for RNA libraries
+ - explicit iRODS destination collection is set for iRODS loaders,
+   /seq/illumina/runs/RUN_ID for NovaSeq runs and /seq/RUN_ID
+   for the rest
+ - explicitly use iRODS loader from an 'old' dated directory for
+   old style runfolders
+ - a new function, archive_run_data_to_irods, to publish run-level non-product data to iRODS
+ - modify run_data_to_irods_archiver module to ensure the interop files go to a dedicated directory
+ - additional tags for NovaSeq in dbic_fixtures
+
+release 52.1
+ - bug fix in jobs names where jobs name should include the pipeline
+   name: pipeline name is now propagated from the pluggable module
+   to the function module; bug manifestation - job names contained
+   function module name instead of the pipeline name, ie, for
+   example prod_pipeline_end_26263_start_stop instead of
+   prod_lsf_start_26263_central
+ - pipeline name attribute is derived from the script name that
+   invoked the pipeline, making it unnecessary to explicitly pass
+   the function list name in the archival pipeline script
+ - fix for seq_alignment so specified rna aligners do rna analysis
+ - added (samtools) target stats to stage2 analysis
+ - correct p4 prunes for samtools stats (target/baits)
+
+release 52.0.5
+ - bug fix in npg_run_is_deletable: stop using unsupported options
+   for npg_pipeline::cache
+ - npg_run_is_deletable should not expect adapter qc results for a
+   pool, the source files do not exist since release 52.0
+ - add log archiver to the end of the archival pipeline
+ - use outgoing paths for jobs which are run after the run_qc_complete
+   function; this patch also fixes the log file path for lsf_end job of
+   the archival pipeline, which previously was always in outgoing
+
+release 52.0.4
+ - bug fix: change path for a file with LSF commands to a path in
+   outgoing for jobs that run after the run was moved to the outgoing
+   directory
+
+release 52.0.3
+ - bug fix: use analysis_path instaed of bam_basecall_path in a method
+   that is used by both analysis and archival pipelines; the value of
+   bam_basecall_path is available only when explicitly set, ie only
+   in the analysis pipeline
+
+release 52.0.2
+ - allocate more memory to sequence_error and insert_size autoqc
+   checks since they now use newer bwa, which creates twice larger
+   reference index
+
+release 52.0.1
+ - alignment of tag#0 not done by default (align_tag0 flag added)
+
+release 52.0
+ - remove dependency of tests of LIMs XML, use samplesheet instead
+ - remove dependency on tracking XML feeds
  - update p4 stage1 default values in general_values.ini
      restored p4_stage1_split_threads_count=4
  - removed illumina_basecall_stats function and associated code
@@ -15,6 +143,7 @@ LIST OF CHANGES
  - stopped forcing ownership and permissions when creating
    new directories
  - single log directory for all jobs with per-function subdirectories
+ - added LSF-independent for number of threads
  - added wr executor
  - new modules to execute submission of definitions to LSF
  - captured dependencies between pipeline steps in a directed acyclic graph
@@ -35,6 +164,16 @@ LIST OF CHANGES
  - removed unused implementation for function copy_interop_files_to_irods
  - removed unused spatial_filter, fix_broken_files and force_phix_split flags
  - removed a number of unused methods in npg_pipeline::base
+ - no lane-lavel bam files are produced by p4 stage1 for pools - do not run
+   the adapter check in these cases
+ - adapterfind flag added to switch adapterfind on/off (default: on)
+ - scaffolding of runfolder includes .npg_cache_10000 directory creation (lane and plex)
+ - stage1 analysis: parse interop data for cluster count calculation (used for 10K subsampling)
+ - seq_alignment reads tag_metrics files to calculate fraction for 10K subsampling
+ - seqchksum_comparator function now uses seqchksum files from analyses (no regeneration)
+ - QC spatial_filter now run as standard QC check
+ - add p4s2_aligner_intfile flag to force temporary file production in stage2 alignment
+ - p4 stage1 splice/prune directives moved from vtfp command line to params file
 
 release 51.12.2
  - fixed lane taglist files for TraDIS libraries

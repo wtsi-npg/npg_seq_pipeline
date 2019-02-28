@@ -1,0 +1,269 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use FindBin qw{$Bin};
+use lib (-d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib");
+
+use Config::Any;
+use Data::Dump qw{pp};
+use Date::Format;
+use File::Slurp;
+use Getopt::Long;
+use JSON;
+use Log::Log4perl qw{:easy};
+use Pod::Usage;
+use Try::Tiny;
+use UUID;
+
+use Net::AMQP::RabbitMQ;
+
+our $VERSION = '0';
+
+## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
+my $channel     = 1;
+my $config_file;
+my $debug;
+my $exchange;
+my $host;
+my $port;
+my $password;
+my $retries     = 3;
+my $retry_boff  = 10;
+my $routing_key = q{};
+my $rv_timeout  = 600;
+my $timeout     = 30;
+my $user;
+my $verbose;
+my $vhost       = q{/};
+## use critic
+
+GetOptions('config=s'      => \$config_file,
+           'debug'         => \$debug,
+           'exchange=s'    => \$exchange,
+           'help'          => sub {
+             pod2usage(-verbose => 2,
+                       -exitval => 0)
+           },
+           'host=s'        => \$host,
+           'password=s'    => \$password,
+           'port=i'        => \$port,
+           'retries=i'     => \$retries,
+           'routing-key=s' => \$routing_key,
+           'timeout=i'     => \$timeout,
+           'user=s'        => \$user,
+           'verbose'       => \$verbose,
+           'vhost=s'       => \$vhost,);
+
+my $level = $debug ? $DEBUG : $verbose ? $INFO : $ERROR;
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $level,
+                          utf8   => 1});
+
+my $log = Log::Log4perl->get_logger('main');
+
+if ($config_file) {
+  -e $config_file or
+    $log->logcroak("Config file '$config_file' does not exist");
+
+  my $config = Config::Any->load_files({files   => [$config_file],
+                                        use_ext => 1})->[0];
+  $config or $log->logcroak("Failed to read config file '$config_file'");
+  $config = $config->{$config_file};
+
+  $config->{host}        and $host        = $config->{host};
+  $config->{port}        and $port        = $config->{port};
+  $config->{user}        and $user        = $config->{user};
+  $config->{password}    and $password    = $config->{password};
+
+  $config->{vhost}       and $vhost       = $config->{vhost};
+  $config->{routing_key} and $routing_key = $config->{routing_key};
+
+  $config->{timeout}     and $timeout     = $config->{timeout};
+  $config->{retries}     and $retries     = $config->{retries};
+
+  defined $config->{exchange} and $exchange = $config->{exchange};
+}
+
+$host     or pod2usage(-msg     => 'A --host argument is required',
+                       -exitval => 2);
+$port     or pod2usage(-msg     => 'A --port argument is required',
+                       -exitval => 2);
+$user     or pod2usage(-msg     => 'A --user argument is required',
+                       -exitval => 2);
+defined $exchange or
+  pod2usage(-msg     => 'An --exchange argument is required',
+            -exitval => 2);
+
+$password ||= $ENV{RABBITMQ_PASSWORD};
+
+$password or pod2usage(-msg     => 'No password was provided. ' .
+                                   'Please set RABBITMQ_PASSWORD ' .
+                                   'in the environment',
+                       -exitval => 2);
+
+$log->info("Connecting to $host:$port, vhost: $vhost, exchange: '$exchange' ",
+           "as user: $user (timeout: $timeout, retries: $retries)");
+
+my $mq = Net::AMQP::RabbitMQ->new();
+my $retry = 0;
+while ($retry < $retries) {
+  $mq->connect($host, {port     => $port,
+                       user     => $user,
+                       password => $password,
+                       vhost    => $vhost,
+                       timeout  => $timeout,});
+
+  if ($mq->is_connected()) {
+    $log->info("Connected to $host:$port");
+    last;
+  } else {
+    $log->warn("Failed to connect to $host:$port ... ",
+               "retrying in $retry_boff seconds [$retry / $retries]");
+    $retry++;
+    sleep $retry_boff;
+    $retry_boff *= 2;
+  }
+}
+
+if (not $mq->is_connected()) {
+  $log->logcroak("Failed to connect to $host:$port");
+}
+$mq->channel_open($channel);
+
+# 'mandatory' ensures the message reached at least one queue
+my $options = {exchange  => $exchange,
+               mandatory => 1};
+
+# delivery mode '2' sets the message as persistent
+my $props   = {content_type  => 'application/json',
+               delivery_mode => 2};
+
+my @localtime = localtime;
+my $timestamp = strftime('%Y-%m-%d %T', @localtime);
+
+my $num_errors = 0;
+foreach my $file (@ARGV) {
+  try {
+    my $json = read_file($file, binmode => ':utf8');
+    my $msg  = decode_json($json);
+
+    $msg->{event}->{occurred_at} = $timestamp;
+
+    my $body = encode_json($msg);
+    $log->debug('Sending message body: ', $body);
+    $mq->publish($channel, $routing_key, $body, $options, $props);
+    $mq->recv($rv_timeout);
+  } catch {
+    $num_errors++;
+    $log->error($_);
+  };
+}
+
+$mq->disconnect();
+
+if ($num_errors > 0) {
+  $log->logcroak("Sending messages failed with $num_errors errors");
+}
+
+## no critic (Documentation::RequirePodSections)
+
+__END__
+
+=head1 NAME
+
+npg_pipeline_notify_delivery
+
+=head1 SYNOPSIS
+
+npg_pipeline_notify_delivery --host <host> --port <port> --user <user>
+  [--vhost <vhost>] --exchange <exchange> [message_file [message_file ...]]
+
+ Options:
+   --config          The path to a configuration file specifying the
+                     values to use for command line options --host, --port,
+                     --user, --password, --vhost, --exchange, --routing-key,
+                     --timeout and --retries. If a config file is used, those
+                     options that are documented as "Required" become
+                     "Optional" on the command line. If these options are
+                     provided in addition to a config file, the values given
+                     on the command line take precedence.
+                     The format of the config file is .ini style:
+
+                       host=
+                       port=
+                       ...
+
+   --debug           Enable debug level logging. Optional, defaults to
+                     false.
+   --exchange        The RabbitMQ exchange name. Required.
+   --help            Display help.
+   --host            The RabbitMQ host. Required.
+   --password        The RabbitMQ password. Optional. It is preferable
+                     not to use this option to avoid the password appearing
+                     in the command line. The preferred method is to set
+                     RABBITMQ_PASSWORD in the environment.
+   --port            The RabbitMQ port. Required.
+   --retries         A number of connetion retries that may be made.
+                     Optional, defaults to 3.
+   --routing-key     The RabbitMQ routing key. Optional, defaults to an
+                     empty string.
+   --timeout         The RabbitMQ connection timeout. Optional, defaults
+                     to 30 seconds.
+   --user            The RabbitMW user. Required.
+   --verbose         Print messages while processing. Optional.
+   --vhost           THe RabbitMQ virtual host. Optional, defaults to '/'.
+
+=head1 DESCRIPTION
+
+Sends messages to a RabbitMQ exchange whose bodies are contained in
+JSON files supplied as positional arguments on the comamnd line. The
+message body is expected to be of the form:
+
+{
+  "lims": "<string>",
+  "event": {
+    "uuid": "<uuid string>",
+    "event_type": "<string>",
+    "metadata": {
+      "key1": "value1",
+      "key2": "value2",
+      ...
+    },
+    "roles": [
+      {
+        "role_type": "sample",
+        "uuid": "<uuid string>",
+        "subject_type": "data",
+        "friendly_name": "<string>"
+      }
+    ],
+    "user_identifier": "<string>",
+    "occurred_at": null
+  }
+}
+
+The "occurred_at" null value is replaced at the time of sending with
+the current time. The time will be the same for all messages sent
+together.
+
+=head1 AUTHOR
+
+Keith James <kdj@sanger.ac.uk>
+
+=head1 COPYRIGHT AND DISCLAIMER
+
+Copyright (C) 2018 Genome Research Limited. All Rights Reserved.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the Perl Artistic License or the GNU General
+Public License as published by the Free Software Foundation, either
+version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+=cut

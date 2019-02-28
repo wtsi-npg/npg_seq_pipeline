@@ -6,7 +6,7 @@ use namespace::autoclean;
 use Carp;
 use Try::Tiny;
 use Graph::Directed;
-use File::Spec::Functions;
+use File::Spec::Functions qw{catfile splitpath};
 use Class::Load qw{load_class};
 use File::Slurp;
 use JSON qw{from_json};
@@ -20,7 +20,8 @@ use npg_pipeline::pluggable::registry;
 extends q{npg_pipeline::base};
 
 with qw{ MooseX::AttributeCloner
-         npg_pipeline::executor::options };
+         npg_pipeline::executor::options
+         npg_pipeline::runfolder_scaffold };
 
 our $VERSION = '0';
 
@@ -61,16 +62,22 @@ has q{spider} => (
 
 =head2 executor_type
 
-Executor type. By default comands will be submitted to LSF.
+Executor type. By default commands will be submitted to LSF.
+Can be specified in the general configuration file.
 
 =cut
 
 has q{executor_type} => (
   isa           => q{Str},
   is            => q{ro},
-  default       => $DEFAULT_EXECUTOR_TYPE,
+  lazy_build    => 1,
   documentation => q{Executor type, defaults to lsf},
 );
+sub _build_executor_type {
+  my $self = shift;
+  my $et = $self->general_values_conf()->{'executor_type'};
+  return $et ? $et : $DEFAULT_EXECUTOR_TYPE;
+}
 
 =head2 execute
 
@@ -134,7 +141,7 @@ sub _build_function_list {
       $suffix .= "_$flag";
     }
   }
-  return $self->pipeline_name . $suffix;
+  return $self->_pipeline_name . $suffix;
 }
 around q{function_list} => sub {
   my $orig = shift;
@@ -150,10 +157,10 @@ around q{function_list} => sub {
     try {
       $file = $self->conf_file_path((join q[_],'function_list',$v) . $FUNCTION_DAG_FILE_TYPE);
     } catch {
-      my $pipeline_name = $self->pipeline_name;
+      my $pipeline_name = $self->_pipeline_name;
       if ($v !~ /^$pipeline_name/smx) {
         $file = $self->conf_file_path(
-          (join q[_],'function_list',$self->pipeline_name,$v) . $FUNCTION_DAG_FILE_TYPE);
+          (join q[_],'function_list',$self->_pipeline_name,$v) . $FUNCTION_DAG_FILE_TYPE);
       } else {
         $self->logcroak($_);
       }
@@ -193,7 +200,7 @@ sub _build_function_graph {
     push @functions, $END_FUNCTION;
     $self->info(q{Function order to be executed: } .
                 join q[, ], @functions);
-    ###$self->function_definitions->{'function_order'} = \@functions;
+
     my $current = 0;
     my $previous = 0;
     my $total = scalar @functions;
@@ -208,7 +215,6 @@ sub _build_function_graph {
     @nodes = map { {'id' => $_, 'label' => $_} } @functions;
   } else {
     my $jgraph = $self->_function_list_conf();
-    ###$self->function_definitions->{'function_graph'} = $jgraph;
     foreach my $e (@{$jgraph->{'graph'}->{'edges'}}) {
       ($e->{'source'} and $e->{'target'}) or
 	$self->logcroak(q{Both source and target should be defined for an edge});
@@ -411,6 +417,20 @@ has q{_script_name} => (
   init_arg => undef,
 );
 
+has q{_pipeline_name} => (
+  isa        => q{Str},
+  is         => q{ro},
+  lazy_build => 1,
+  init_arg   => undef,
+  metaclass  => q{NoGetopt},
+);
+sub _build__pipeline_name {
+  my $self = shift;
+  my ($volume, $directories, $name) = splitpath($self->_script_name);
+  $name =~ s/\Anpg_pipeline_//xms;
+  return $name;
+}
+
 has q{_output_file_name_root} => (
   isa        => q{Str},
   is         => q{ro},
@@ -528,7 +548,7 @@ sub _run_function {
   # method whose name we received from the registry, return
   # the result.
   #    
-  return $module->new($attrs)->$method_name();
+  return $module->new($attrs)->$method_name($self->_pipeline_name);
 }
 
 sub _schedule_functions {
@@ -565,8 +585,6 @@ sub _schedule_functions {
     $self->function_definitions->{$function} = $definitions;
   }
 
-  ###$self->function_definitions->{'topological_function_order'} = \@functions;
-
   return;
 }
 
@@ -575,7 +593,7 @@ sub _save_function_definitions {
 
   my $file = $self->_definitions_file_path();
   $self->info( q[]);
-  $self->info(qq[***** Writing finction definitions to ${file}]);
+  $self->info(qq[***** Writing function definitions to ${file}]);
   $self->info( q[]);
   my $json = JSON->new->convert_blessed->canonical;
   return write_file($file,
@@ -591,11 +609,12 @@ sub _save_function_definitions {
 #
 sub _run_spider {
   my $self = shift;
+
   try {
     my $cache = npg_pipeline::cache->new(
       'id_run'           => $self->id_run,
       'set_env_vars'     => 1,
-      'cache_location'   => $self->analysis_path,
+      'cache_dir_path'   => $self->metadata_cache_dir_path(),
       'lims_driver_type' => $self->lims_driver_type,
       'id_flowcell_lims' => $self->id_flowcell_lims,
       'flowcell_barcode' => $self->flowcell_id

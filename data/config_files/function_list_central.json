@@ -23,12 +23,12 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "run_analysis_in_progress",
+            "source" : "p4_stage1_analysis",
             "target" : "update_warehouse"
          },
          {
             "relation" : "dependsOn",
-            "source" : "run_analysis_in_progress",
+            "source" : "p4_stage1_analysis",
             "target" : "update_ml_warehouse_1"
          },
          {
@@ -63,7 +63,7 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
+            "source" : "seq_alignment",
             "target" : "qc_adapter"
          },
          {
@@ -128,7 +128,7 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "seq_alignment",
+            "source" : "qc_spatial_filter",
             "target" : "bam_cluster_counter_check"
          },
          {
@@ -136,6 +136,12 @@
             "source" : "seq_alignment",
             "target" : "seqchksum_comparator"
          },
+         {
+            "relation" : "dependsOn",
+            "source" : "seq_alignment",
+            "target" : "qc_bcfstats"
+         },
+
          {
             "relation" : "dependsOn",
             "source" : "seq_alignment",
@@ -203,17 +209,17 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "qc_bcfstats",
+            "target" : "run_analysis_complete"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "qc_pulldown_metrics",
             "target" : "run_analysis_complete"
          },
          {
             "relation" : "dependsOn",
             "source" : "qc_genotype",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_spatial_filter",
             "target" : "run_analysis_complete"
          },
          {
@@ -329,6 +335,10 @@
          {
             "id" : "seqchksum_comparator",
             "label" : "seqchksum_comparator"
+         },
+         {
+            "id" : "qc_bcfstats",
+            "label" : "qc_bcfstats"
          },
          {
             "id" : "qc_pulldown_metrics",
