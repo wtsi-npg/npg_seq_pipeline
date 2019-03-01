@@ -68,7 +68,7 @@ END {
 }
 
 subtest 'object construction, file extensions, file names' => sub {
-  plan tests => 6;
+  plan tests => 8;
 
   my $ref = {
     irods_destination_collection => "${IRODS_TEST_AREA1}",
@@ -93,12 +93,16 @@ subtest 'object construction, file extensions, file names' => sub {
   is( $v->index_file_extension, 'crai', 'index file extension is crai');
   is( $v->index_file_path('5174_1#0.cram'), '5174_1#0.cram.crai',
     'index file name for a cram file');
+  is($v->index_path2seq_path('/tmp/5174_1#0.cram.crai'), '/tmp/5174_1#0.cram',
+   'sequence file path from index file path');
 
   $ref->{file_extension} = 'bam';
   $v = npg_pipeline::validation::irods->new($ref);
   is( $v->index_file_extension, 'bai', 'index file extension is bai');
   is( $v->index_file_path('5174_1#0.bam'), '5174_1#0.bai',
     'index file name for a bam file');
+  is($v->index_path2seq_path('/tmp/5174_1#0.bai'), '/tmp/5174_1#0.bam',
+   'sequence file path from index file path');
 };
 
 subtest 'eligible product entities' => sub {
@@ -169,7 +173,7 @@ subtest 'eligible product entities' => sub {
 };
 
 subtest 'deletable or not' => sub {
-  my $num_tests = 16;
+  my $num_tests = 19;
   plan tests => $num_tests;
 
   my $archive               = join q[/], $dir, '20405';
@@ -271,19 +275,15 @@ subtest 'deletable or not' => sub {
     # Restore previously removed file
     $irods->add_object($trpath, $ito_remove);
 
-    # Remove an index iRODS file
-    $to_remove = '20405_6#4.cram.crai';
-    $ito_remove = join q[/], $IRODS_TEST_AREA1, $to_remove;
-    $irods->remove_object($ito_remove);
-    $trpath = $file_map->{$to_remove};
     $v = npg_pipeline::validation::irods->new($ref);
-    warning_like { $result = $v->archived_for_deletion() }
-      qr/$trpath is not in iRODS/, 'warning - index file is missing';
-    ok(!$result, 'not deletable - index file is missing');
-    # Put it back
-    $irods->add_object($trpath, $ito_remove);
+    is($v->archived_for_deletion(), 1, 'deletable');
 
-    # Remove one of the staging md5 files
+    # Remove one of the staging md5 files for an index file
+    unlink $file_map->{'20405_1#12.cram.crai'} . q[.md5] or
+      die 'Failed to delete a file';
+    ok ($v->archived_for_deletion(), 'deletable with missing md5 for an index file');
+
+    # Remove one of the staging md5 files for a cram file
     my $sfile = '20405_1#12.cram';
     my $md5path = $file_map->{$sfile} . q[.md5];
     my $moved = $md5path . '_moved';
@@ -291,7 +291,7 @@ subtest 'deletable or not' => sub {
     $v = npg_pipeline::validation::irods->new($ref);
     warning_like { $result = $v->archived_for_deletion() }
       qr/$md5path is absent/, 'warning - md5 missing on staging';
-    ok(!$result, 'not deletable - md5 missing on staging');
+    ok(!$result, 'not deletable - cram md5 missing on staging');
 
     # Create md5 file with wrong md5 value
     write_file($md5path, q[aaaa]);
@@ -315,6 +315,23 @@ subtest 'deletable or not' => sub {
     $irods->add_object_avu($extra, 'alt_process', 'some');
     $v = npg_pipeline::validation::irods->new($ref);
     is($v->archived_for_deletion(), 1, 'deletable');
+
+    # Remove an index iRODS file
+    $to_remove = '20405_6#4.cram.crai';
+    $ito_remove = join q[/], $IRODS_TEST_AREA1, $to_remove;
+    $irods->remove_object($ito_remove);
+    $trpath = $file_map->{$to_remove};
+    $v = npg_pipeline::validation::irods->new($ref);
+    warning_like { $result = $v->archived_for_deletion() }
+      qr/$trpath is not in iRODS/, 'warning - index file is missing';
+    ok(!$result, 'not deletable - index file is missing');
+    
+    # Make the parent sequence file to have zero reads
+    $trpath = $file_map->{'20405_6#4.cram'};
+    open my $fh, q[>], $trpath or die "Failed to open file handle to $trpath";
+    close $fh or warn "Failed to close file handle to $trpath\n";
+    $v = npg_pipeline::validation::irods->new($ref);
+    ok($v->archived_for_deletion(), 'deletable');
   };
 };
 

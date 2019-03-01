@@ -5,6 +5,9 @@ use MooseX::StrictConstructor;
 use namespace::autoclean;
 use File::Basename;
 use Perl6::Slurp;
+use Try::Tiny;
+use English qw/-no_match_vars/;
+use Readonly;
 
 use WTSI::NPG::iRODS::Collection;
 
@@ -13,6 +16,8 @@ with qw/ npg_pipeline::validation::common
          WTSI::DNAP::Utilities::Loggable /;
 
 our $VERSION = '0';
+
+Readonly::Scalar my $SHIFT_EIGHT => 8;
 
 =head1 NAME
 
@@ -229,8 +234,15 @@ sub _check_files_exist {
   my $exist = 1;
   foreach my $name (keys %{$self->_eligible_staging_files}) {
     if (!$self->_collection_files->{$name}) {
-      $self->logwarn($self->_eligible_staging_files->{$name} . ' is not in iRODS');
-      $exist = 0;
+      my $missing = 1;
+      my $iext = $self->index_file_extension;
+      if ($name =~ /[.]$iext\Z/xms) {
+        $missing = $self->_sequence_file_has_reads($self->_eligible_staging_files->{$name});
+      }
+      if ($missing) {
+        $self->logwarn($self->_eligible_staging_files->{$name} . ' is not in iRODS');
+        $exist = 0;
+      }
     }
   }
 
@@ -249,6 +261,7 @@ sub _check_checksums {
   my $self = shift;
 
   my $match = 1;
+  my $ext = $self->file_extension;
 
   foreach my $name (keys %{$self->_collection_files}) {
     my $imd5 = $self->_collection_files->{$name}->{'checksum'} || q();
@@ -260,8 +273,10 @@ sub _check_checksums {
 
     my $file = $self->_eligible_staging_files->{$name} . '.md5';
     if (!-e $file) {
-      $self->logwarn($file . ' is absent');
-      $match = 0;
+      if ($name =~ /$ext\Z/xms) { # Not all index files have an md5 file
+        $self->logwarn($file . ' is absent');
+        $match = 0;
+      }
     } else {
       my $smd5 = slurp($file, { chomp => 1 });
       if (!$smd5) {
@@ -289,6 +304,44 @@ sub _belongs2main_process {
   return !@mdata;
 }
 
+sub _sequence_file_has_reads {
+  my ($self, $ipath) = @_;
+
+  my $command = 'samtools view ' . $self->index_path2seq_path($ipath);
+  my $s;
+  my $err;
+  my $fh;
+  try {
+    ##no critic (InputOutput::RequireBriefOpen)
+    open $fh, q[-|], $command or $self->logcroak(
+      "Failed to open a file handle for reading from command '$command'");
+    $s = readline $fh;
+    if(defined $s) {
+      $s .= readline $fh;
+    };
+  } catch {
+    $err = $_;
+  } finally {
+    if (defined $fh) {
+      close $fh or $self->warn("Fail to close file handle for command '$command'");
+      if ($CHILD_ERROR >> $SHIFT_EIGHT) {
+        $err = "Error executing command '$command'";
+      }
+    }
+  };
+
+  #####
+  # Whatever was the reason we could not run the command, we will return true
+  # since we cannot confidently return false.
+  #
+  if ($err) {
+    $self->error($err);
+    return 1;
+  }
+
+  return (defined $s && length $s);
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -312,6 +365,12 @@ __END__
 =item File::Basename
 
 =item Perl6::Slurp
+
+=item Try::Tiny
+
+=item English
+
+=item Readonly
 
 =item WTSI::DNAP::Utilities::Loggable
 

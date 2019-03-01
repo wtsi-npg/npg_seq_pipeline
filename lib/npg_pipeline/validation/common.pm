@@ -60,6 +60,18 @@ sub get_file_extension {
   return $use_cram ? $CRAM_FILE_EXTENSION : $BAM_FILE_EXTENSION;
 }
 
+sub index_path2seq_path {
+  my ($self, $path) = @_;
+  my $iext = $self->index_file_extension;
+  my $ext  = $self->file_extension;
+  if ($ext eq $CRAM_FILE_EXTENSION) {
+    $path =~ s/[.]$iext\Z//xms;
+  } else {
+    $path =~ s/$iext\Z/$ext/xms;
+  }
+  return $path;
+}
+
 no Moose::Role;
 
 1;
@@ -93,6 +105,8 @@ Attribute, file extension for the sequence file index, inferred.
 =head2 index_file_path
 
 =head2 get_file_extension
+
+=head2 index_path2seq_path
 
 =head1 DIAGNOSTICS
 
