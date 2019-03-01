@@ -410,7 +410,7 @@ sub _build__expected_staging_files {
   my $self = shift;
   my $h = {};
   foreach my $p (@{$self->product_entities}) {
-    foreach my $f ($p->_staging_files($self->file_extension)) {
+    foreach my $f ($p->staging_files($self->file_extension)) {
       $h->{$f} = $p->target_product()->composition()->freeze2rpt;
     }
   }
@@ -608,12 +608,12 @@ sub _staging_deletable {
                             (sort keys %{$self->_expected_staging_files}));
 
   my $deletable = 1;
-  foreach my $file (keys %{$self->staging_files->{'seq'}}) {
+  foreach my $file (keys %{$self->_staging_files->{'seq'}}) {
     if (!$self->_expected_staging_files->{$file}) {
       $self->logwarn("Staging file $file is not expected");
       $deletable = 0;
     } else {
-      if (!$self->staging_files->{'ind'}->{$file}) {
+      if (!$self->_staging_files->{'seq'}->{$file}) {
         $self->logwarn("Staging index file is missing for $file");
         $deletable = 0;
       }
@@ -622,8 +622,8 @@ sub _staging_deletable {
 
   if ($deletable) {
     my %i_matching = map { $_ => 1 }
-                     (values %{$self->staging_files->{'seq'}});
-    foreach my $if (keys %{$self->staging_files->{'ind'}}) {
+                     (values %{$self->_staging_files->{'seq'}});
+    foreach my $if (keys %{$self->_staging_files->{'ind'}}) {
       if (!$i_matching{$if}) {
         $self->logwarn("Staging index file $if is not expected");
         $deletable = 0;
