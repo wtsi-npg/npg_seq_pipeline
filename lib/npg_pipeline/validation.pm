@@ -442,7 +442,7 @@ sub _npg_tracking_deletable {
 
   if ( $unconditional ) {
     $deletable = ( any { $_ eq $crsd } @NPG_DELETABLE_UNCOND ) &&
-                 ( $self->ignore_time_limit || $self->time_limit_deletable() );
+                 ( $self->ignore_time_limit || $self->_time_limit_deletable() );
     if ($deletable) {
       $self->info(qq[$message unconditionally deletable.]);
     }
