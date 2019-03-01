@@ -12,6 +12,7 @@ use npg_tracking::glossary::composition;
 use npg_pipeline::cache;
 use npg_pipeline::validation::entity;
 use npg_pipeline::validation::irods;
+use npg_pipeline::validation::s3;
 use npg_pipeline::validation::autoqc;
 use WTSI::NPG::iRODS;
 use npg_qc::Schema;
@@ -351,6 +352,7 @@ sub run {
               $self->_lims_deletable()         &&
               $self->_staging_deletable()      &&
               $self->_irods_seq_deletable()    &&
+              $self->_s3_deletable()           &&
               $self->_autoqc_deletable()
                                );
   } catch {
@@ -635,6 +637,17 @@ sub _staging_deletable {
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
+  return $deletable;
+}
+
+sub _s3_deletable {
+  my $self = shift;
+  my $deletable = npg_pipeline::validation::s3->new(
+    product_entities => $self->product_entities,
+  )->fully_archived();
+  my $m = sprintf 'Check for files in s3: run %i %sdeletable',
+          $self->id_run , $deletable ? q[] : q[NOT ];
+  $self->info($m);
   return $deletable;
 }
 
