@@ -32,7 +32,7 @@ WTSI_NPG_BUILD_BRANCH=${WTSI_NPG_BUILD_BRANCH:=$TRAVIS_BRANCH}
 # CPAN
 cpanm --quiet --notest Alien::Tidyp # For npg_tracking
 cpanm --quiet --notest Module::Build
-cpanm --quiet --notest LWP::Protocol::https
+cpanm --quiet --notest Net::SSLeay
 cpanm --quiet --notest https://github.com/chapmanb/vcftools-cpan/archive/v0.953.tar.gz # for npg_qc
 
 # WTSI NPG Perl repo dependencies
