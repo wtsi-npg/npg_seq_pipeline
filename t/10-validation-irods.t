@@ -9,6 +9,7 @@ use File::Slurp qw/ write_file read_file/;
 use File::Path qw/ make_path /;
 use File::Basename;
 use File::Copy;
+use File::Which qw(which);
 use Digest::MD5 qw/ md5_hex /;
 
 use WTSI::NPG::iRODS;
@@ -325,13 +326,17 @@ subtest 'deletable or not' => sub {
     warning_like { $result = $v->archived_for_deletion() }
       qr/$trpath is not in iRODS/, 'warning - index file is missing';
     ok(!$result, 'not deletable - index file is missing');
+
+    SKIP: {
+      skip 'samtools executable not available', 1 unless which('samtools');
     
-    # Make the parent sequence file to have zero reads
-    $trpath = $file_map->{'20405_6#4.cram'};
-    open my $fh, q[>], $trpath or die "Failed to open file handle to $trpath";
-    close $fh or warn "Failed to close file handle to $trpath\n";
-    $v = npg_pipeline::validation::irods->new($ref);
-    ok($v->archived_for_deletion(), 'deletable');
+      # Make the parent sequence file to have zero reads
+      $trpath = $file_map->{'20405_6#4.cram'};
+      open my $fh, q[>], $trpath or die "Failed to open file handle to $trpath";
+      close $fh or warn "Failed to close file handle to $trpath\n";
+      $v = npg_pipeline::validation::irods->new($ref);
+      ok($v->archived_for_deletion(), 'deletable');
+    }
   };
 };
 

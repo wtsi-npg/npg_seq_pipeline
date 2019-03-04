@@ -32,6 +32,7 @@ env:
     - IRODS_VERSION="4.1.10"
     - PG_PLUGIN_VERSION="1.10"
     - IRODS_RIP_DIR=/usr/local/irods
+    - WTSI_NPG_CONDA_REPO=https://dnap.cog.sanger.ac.uk/npg/conda/test/Ubuntu/12.04
 
 before_install:
   - sleep 100
