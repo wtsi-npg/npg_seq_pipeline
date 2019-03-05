@@ -356,8 +356,7 @@ sub run {
               $self->_autoqc_deletable()
                                );
   } catch {
-    my $e = $_;
-    $self->error(sprintf 'Error assessing run %i: %s', $self->id_run, $e);
+    $self->error($_);
   };
 
   if ($deletable && $self->remove_staging_tag) {
@@ -517,7 +516,7 @@ sub _npg_tracking_deletable {
 
 sub _irods_seq_deletable {
   my $self = shift;
-  $self->debug('Assessing sequencing data files in iRODS...');
+  $self->debug('Assessing files in iRODS...');
 
   if ($self->ignore_irods) {
     $self->info('iRODS check ignored');
@@ -538,7 +537,7 @@ sub _irods_seq_deletable {
     staging_files    => $files
   )->archived_for_deletion();
 
-  my $m = sprintf 'Presence of seq. files in iRODS: run %i %sdeletable',
+  my $m = sprintf 'Files in iRODS: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
@@ -560,7 +559,7 @@ sub _autoqc_deletable {
              is_paired_read   => $self->is_paired_read ? 1 : 0,
              product_entities => $self->product_entities )->fully_archived();
 
-  my $m = sprintf 'Presence of autoqc results in the database: run %i %sdeletable',
+  my $m = sprintf 'Autoqc database results: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
@@ -596,7 +595,7 @@ sub _lims_deletable {
     }
   }
 
-  my $m = sprintf 'Consistency of staging sequence files listing with LIMs: run %i %sdeletable',
+  my $m = sprintf 'Files on staging vs LIMs: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
@@ -605,6 +604,7 @@ sub _lims_deletable {
 
 sub _staging_deletable {
   my $self = shift;
+  $self->debug('Examining files on staging');
 
   $self->debug(join qq{\n}, q{Expected staging files list},
                             (sort keys %{$self->_expected_staging_files}));
@@ -633,7 +633,7 @@ sub _staging_deletable {
     }
   }
 
-  my $m = sprintf 'Check for files on staging: run %i %sdeletable',
+  my $m = sprintf 'Files on staging: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
@@ -642,10 +642,11 @@ sub _staging_deletable {
 
 sub _s3_deletable {
   my $self = shift;
+  $self->debug('Examining files reported to be in s3');
   my $deletable = npg_pipeline::validation::s3->new(
     product_entities => $self->product_entities,
   )->fully_archived();
-  my $m = sprintf 'Check for files in s3: run %i %sdeletable',
+  my $m = sprintf 'Files in s3: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
   return $deletable;

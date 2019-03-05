@@ -19,9 +19,11 @@ my $their_log_level = $verbose ? 'DEBUG' : 'WARN';
 ##no critic (ValuesAndExpressions::ProhibitImplicitNewlines)
 my $log4perl_config = qq(
   log4perl.logger                                  = $my_log_level, A1
+  log4perl.category.npg_pipeline.validation.s3     = $their_log_level, A1
   log4perl.category.npg_pipeline.validation.irods  = $their_log_level, A1
   log4perl.category.npg_pipeline.validation.autoqc = $their_log_level, A1
   log4perl.logger.WTSI.NPG.iRODS                   = OFF, A1
+  log4perl.logger.WTSI.DNAP.Utilities.Runnable     = OFF, A1
   log4perl.appender.A1        = Log::Log4perl::Appender::Screen
   log4perl.appender.A1.layout = Log::Log4perl::Layout::PatternLayout
   log4perl.appender.A1.layout.ConversionPattern = %d %-5p %c - %m%n
@@ -34,13 +36,12 @@ my $log4perl_config = qq(
 Log::Log4perl::init(\$log4perl_config);
 
 my $v = npg_pipeline::validation->new_with_options();
-$v->info(sprintf 'Running %s for run %i, runfolder %s',
-                 $Bin . q[/] . $Script, $v->id_run, $v->runfolder_path);
+$v->info(sprintf '%s Running %s for run %i, runfolder %s',
+                 '*****', $Bin . q[/] . $Script, $v->id_run, $v->runfolder_path);
 
 my $deletable = $v->run();
 
-my $m = sprintf 'Run %i is %sdeletable.', $v->id_run, $deletable ? q[] : q[NOT ];
-$v->info($m);
+$v->info(sprintf 'Run %i is %sdeletable.', $v->id_run, $deletable ? q[] : q[NOT ]);
 
 exit not $deletable;
 
