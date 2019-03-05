@@ -39,13 +39,14 @@ sub _create_test_runfolder {
 }
 
 subtest 'create object' => sub {
-  plan tests => 14;
+  plan tests => 15;
 
   my $v = npg_pipeline::validation->new();
   isa_ok ($v, 'npg_pipeline::validation');
 
   for my $flag (qw/ignore_lims ignore_npg_status ignore_time_limit
-                   ignore_autoqc ignore_irods remove_staging_tag/) {
+                   ignore_autoqc ignore_irods remove_staging_tag
+                   no_s3_archival/) {
     ok (!$v->$flag, "$flag is false by default");
   }
   ok ($v->use_cram, 'cram files are used by default');

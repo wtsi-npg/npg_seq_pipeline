@@ -40,15 +40,20 @@ Readonly::Array  my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                 no_irods_archival 
                                                 recalibrated_path
                                                 basecall_path
+                                                qc_path
                                                 align_tag0
                                                 local
                                                 qc_run
                                                 repository
                                                 index_length
                                                 index_file_extension
+                                                file_extension
                                                 lanes
                                                 id_flowcell_lims
                                                 conf_path
+                                                logger
+                                                workflow_type
+                                                release_config
                                                /;
 
 =head1 NAME
@@ -175,7 +180,7 @@ sub _build_per_product_archive {
 
 =head2 remove_staging_tag
 
-Boolean attribute, ttoggles an option to remove run's staging tag,
+Boolean attribute, toggles an option to remove run's staging tag,
 false by default.
 
 =cut
@@ -187,6 +192,17 @@ has q{remove_staging_tag} => (
   q{Toggles an option to remove run's staging tag, false by default},
 );
 
+=head2 no_s3_archival
+
+Boolean attribute, toggles s3 check, false by default.
+
+=cut
+
+has q{+no_s3_archival} => (
+  documentation =>
+  q{Toggles an option to check for data in s3, false by default},
+);
+
 ############## Other public attributes #####################################
 
 
@@ -196,6 +212,14 @@ has q{remove_staging_tag} => (
 #
 has [map {q[+] . $_ }  @NO_SCRIPT_ARG_ATTRS] => (metaclass => 'NoGetopt',);
 
+=head2 irods_destination_collection
+
+=cut
+
+has '+irods_destination_collection' => (
+  documentation =>
+  q{iRODS destination collection, including run identifier},
+);
 
 =head2 file_extension
 
@@ -643,6 +667,12 @@ sub _staging_deletable {
 sub _s3_deletable {
   my $self = shift;
   $self->debug('Examining files reported to be in s3');
+
+  if ($self->no_s3_archival) {
+    $self->info('s3 check ignored');
+    return 1;
+  }
+
   my $deletable = npg_pipeline::validation::s3->new(
     product_entities => $self->product_entities,
   )->fully_archived();
