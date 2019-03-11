@@ -205,8 +205,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $af_input_file = $dp->file_name(ext => 'json', suffix => 'bam_alignment_filter_metrics');
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
-  my $fqc1_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '1'));
-  my $fqc2_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '2'));
   my $seqchksum_orig_file = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'orig.seqchksum'));
 
   $self->debug(qq{  rpt_list: $rpt_list});
@@ -255,8 +253,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     s2_se_pe => ($self->is_paired_read)? q{pe} : q{se},
     run_lane_ss_fq1 => $fq1_filepath,
     run_lane_ss_fq2 => $fq2_filepath,
-    fqc1 => $fqc1_filepath,
-    fqc2 => $fqc2_filepath,
     seqchksum_orig_file => $seqchksum_orig_file,
     s2_input_format => $self->s1_s2_intfile_format,
   };
@@ -274,7 +270,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   if(not $is_plex) {
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:subsample-';
-    push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:fqc-';
   }
 
   my $do_rna = $self->_do_rna_analysis($dp);
