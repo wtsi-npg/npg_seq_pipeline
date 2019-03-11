@@ -6,6 +6,8 @@ use namespace::autoclean;
 use File::Basename;
 use Perl6::Slurp;
 use Try::Tiny;
+use English qw/-no_match_vars/;
+use Readonly;
 
 use WTSI::NPG::iRODS::Collection;
 
@@ -15,6 +17,8 @@ with qw/ npg_pipeline::validation::common
 
 our $VERSION = '0';
 
+Readonly::Scalar my $SHIFT_EIGHT => 8;
+
 =head1 NAME
 
 npg_pipeline::validation::irods
@@ -22,6 +26,20 @@ npg_pipeline::validation::irods
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
+
+Validation of files present in iRODS in a given collection
+against files present on staging. Only files that belong
+to products that should have been arcived to iRODS are
+considered. Validaion is successful if all relevant files
+from the staging_files attribute are present in IRODS and
+have correct checksums.
+
+Presence of unexpected sequence and index files in iRODS
+causes validation to fail.
+
+Files that were arcived with the alt_process option are
+excluded from validation; their presence does not cause
+the validation to fail.
 
 =head1 SUBROUTINES/METHODS
 
@@ -35,17 +53,25 @@ has '+file_extension' => (required => 1,);
 
 =head2 index_file_extension
 
-=head2 collection
+=head2 irods_destination_collection
 
 Full iRODS collection path, required.
 
 =cut
 
-has 'collection' => (
-  isa      => 'Str',
-  is       => 'ro',
-  required => 1,
+has '+irods_destination_collection' => (
+  isa        => 'Str',
+  is         => 'ro',
+  required   => 1,
+  lazy_build => 0,
 );
+
+=head2 irods
+
+iRODS connection handle, WTSI::NPG::iRODS type object,
+required.
+
+=cut
 
 has 'irods' => (
   isa        => 'WTSI::NPG::iRODS',
@@ -53,7 +79,24 @@ has 'irods' => (
   required   => 1,
 );
 
+=head2 staging_files
+
+Per product entity lists of staging files' paths (both bam
+or cram files and corresponding index files). Target product's
+rpt list is used as a key.
+
+=cut
+
+has 'staging_files' => (
+  isa      => 'HashRef',
+  is       => 'ro',
+  required => 1,
+);
+
 =head2 BUILD
+
+Post-constructor hook. Performs simple checks of required
+attributes. Error if any of the checks fail.
 
 =cut
 
@@ -61,31 +104,44 @@ sub BUILD {
   my $self = shift;
   @{$self->product_entities}
     or $self->logcroak('product_entities array cannot be empty');
+  (keys %{$self->staging_files}) or
+    $self->logcroak('staging_files hash cannot be empty');
   return;
 }
 
 =head2 archived_for_deletion
 
-Returns true if the sequence files in the staging folder are correctly archived to iRODS.
-If any problems are encounted, returns false.
+Returns true if the sequence files in the staging folder are
+correctly archived to iRODS. If any problems are encounted,
+returns false.
 
 =cut
 
 sub archived_for_deletion {
   my $self = shift;
-  my $all_archived = 1;
+
+  my $archived = 1;
+
   if (@{$self->_eligible_product_entities}) {
-    $all_archived = $self->_check_num_files()   &&
-                    $self->_check_index_files() &&
-                    $self->_check_md5();
+    $archived = $self->_check_files_exist() &&
+                $self->_check_checksums();
   } else {
     $self->logwarn(
-      'No entity is eligible for archival to iRODS, not checking');
-    # Do we need to check that no files have been archived?
+      'No entity is eligible for archival to iRODS');
+    if (scalar keys %{$self->_collection_files} != 0) {
+      $self->logwarn(
+        'Found product files in iRODS where there should be none');
+      $archived = 0;
+    }
   }
-  return $all_archived;
+
+  return $archived;
 }
 
+#####
+# A list of product entities which have to be archived
+# to iRODS. This list might be empty.
+#
 has '_eligible_product_entities' => (
   isa        => 'ArrayRef',
   is         => 'ro',
@@ -99,18 +155,39 @@ sub _build__eligible_product_entities {
   return \@p;
 }
 
-has '_staging_files' => (
-  isa        => 'ArrayRef',
+#####
+# Staging files belonging to product entities in
+# _eligible_product_entities .
+#
+has '_eligible_staging_files' => (
+  isa        => 'HashRef',
   is         => 'ro',
   lazy_build => 1,
 );
-sub _build__staging_files {
+sub _build__eligible_staging_files {
   my $self = shift;
-  my @files = map {$_->staging_files($self->file_extension)}
-              @{$self->_eligible_product_entities};
-  return \@files;
+  my $h;
+  foreach my $e (@{$self->_eligible_product_entities}) {
+    my $rpt_list = $e->target_product()->composition->freeze2rpt();
+    foreach my $path (@{$self->staging_files->{$rpt_list}}) {
+      my $name = basename $path;
+      if (exists $h->{$name}) {
+        $self->logcroak("File name in $path is not unique");
+      }
+      $h->{$name} = $path;
+    }
+  }
+  return $h;
 }
 
+#####
+# All sequence and index files in the collection,
+# regardless of their location, apart from files
+# archived with alt_process metadata attribute set.
+#
+# Error if the file names in the collection are not
+# unique.
+#
 has '_collection_files'  => (isa        => 'HashRef',
                              is         => 'ro',
                              required   => 0,
@@ -119,159 +196,150 @@ has '_collection_files'  => (isa        => 'HashRef',
 sub _build__collection_files {
   my $self = shift;
 
-  my $coll = WTSI::NPG::iRODS::Collection->new($self->irods, $self->collection);
-  my ($objs, $colls) = $coll->get_contents;
-  my %file_list = ();
+  my $coll = WTSI::NPG::iRODS::Collection->new(
+               $self->irods,
+               $self->irods_destination_collection
+             );
+  $coll->is_present or $self->logcroak(
+    'iRODS collection ' . $self->irods_destination_collection . ' does not exist');
+
+  my $recursive = 1;
+  my ($objs, $colls) = $coll->get_contents($recursive);
+
+  my $files = {};
   foreach my $obj (@{$objs}) {
 
+    my $path = $obj->str;
     my ($filename_root, $directories, $suffix) =
-      fileparse($obj->str, $self->file_extension, $self->index_file_extension);
-    $suffix || next;
+      fileparse($path, $self->file_extension, $self->index_file_extension);
+    ($suffix && $self->_belongs2main_process($obj)) || next;
+
     my $filename = $filename_root . $suffix;
-    if (exists $file_list{$filename}) {
-      $self->logcroak("File $filename is already cached in collection_files builder");
+    if (exists $files->{$filename}) {
+      $self->logcroak("File name in $path is not unique");
     }
-    $file_list{$filename} = $obj;
-  }
-  if (scalar keys %file_list == 0) {
-    $self->logcroak('No files retrieved from ' . $self->collection);
+    $files->{$filename} = {checksum => $obj->checksum(), path => $path};
   }
 
-  return \%file_list;
-}
-
-has '_irods_files'  => (isa        => 'ArrayRef',
-                        is         => 'ro',
-                        traits     => ['Array'],
-                        lazy_build => 1,
-                       );
-sub _build__irods_files {
-  my $self = shift;
-  my $seq_re = $self->file_extension;
-  $seq_re = qr/[.]$seq_re\Z/xms;
-  my @seq_list = grep { $_ =~ $seq_re } keys %{$self->_collection_files};
-  if (!@seq_list) {
-    $self->logcroak('Empty list of iRODS seq files');
+  if (! (keys %{$files})) {
+    $self->logwarn('Empty list of iRODS files');
   }
-  $self->debug(join qq{\n}, q{iRODS seq files list}, @seq_list);
-  return [sort @seq_list];
+
+  return $files;
 }
 
-has '_irods_index_files'  => (isa        => 'HashRef',
-                              is         => 'ro',
-                              lazy_build => 1,
-                             );
-sub _build__irods_index_files {
-  my $self = shift;
-  my $i_re = $self->index_file_extension;
-  $i_re = qr/[.]$i_re\Z/xms;
-  my @i_list   = grep { $_ =~ $i_re } keys %{$self->_collection_files};
-  $self->debug(join qq{\n}, q{iRODS index files list}, @i_list);
-  return {map {$_ => 1} @i_list};
-}
-
-sub _check_num_files {
-  my $self = shift;
-  my $num_irods_files   = scalar @{$self->_irods_files};
-  my $num_staging_files = scalar @{$self->_staging_files};
-  if ( $num_irods_files != $num_staging_files ) {
-    $self->logwarn("Number of files in iRODS $num_irods_files " .
-      "is different from number of staging files $num_staging_files");
-    return 0;
-  }
-  return 1;
-}
-
-sub _check_md5 {
+sub _check_files_exist {
   my $self = shift;
 
-  my $md5_list_irods   = $self->_irods_md5s();
-  my $md5_list_staging = $self->_staging_md5s();
-  my $md5_correct = 1;
-
-  try {
-    foreach my $f ( sort keys %{$md5_list_irods} ) {
-      my $md5_irods   = $md5_list_irods->{$f};
-      my $md5_staging = $md5_list_staging->{$f};
-      if ( !$md5_irods || !$md5_list_irods ) {
-       $self->logcroak("One of md5 values for $f is not defined");
+  my $exist = 1;
+  foreach my $name (keys %{$self->_eligible_staging_files}) {
+    if (!$self->_collection_files->{$name}) {
+      my $missing = 1;
+      my $iext = $self->index_file_extension;
+      if ($name =~ /[.]$iext\Z/xms) {
+        $missing = $self->_sequence_file_has_reads($self->_eligible_staging_files->{$name});
       }
-      if( $md5_irods ne $md5_staging ) {
-        $self->logcroak("md5 wrong for ${f}: '$md5_irods' not match '$md5_staging'");
-      }
-    }
-  } catch {
-    $self->logwarn($_);
-    $md5_correct = 0;
-  };
-  return $md5_correct;
-}
-
-sub _irods_md5s {
-  my $self = shift;
-  my $md5_list = {};
-  foreach my $f ( @{$self->_irods_files()} ) {
-    $md5_list->{$f} = $self->_collection_files()->{$f}->checksum() || q();
-  }
-  return $md5_list;
-}
-
-sub _staging_md5s {
-  my $self = shift;
-  my $md5_list = {};
-  foreach my $f ( @{$self->_staging_files} ) {
-    my $md5f = $f . q{.md5};
-    $md5_list->{basename($f)} = slurp $md5f, { chomp => 1 } || q();
-  }
-  return $md5_list;
-}
-
-sub _check_index_files {
-  my $self = shift;
-
-  my $all_found = 1;
-  foreach my $f ( @{$self->_irods_files()} ) {
-    if ($self->_index_should_exist($f)) {
-      my $i = $self->_index_file_name($f);
-      if(!exists $self->_irods_index_files->{$i}) {
-        $self->logwarn("Index file $i for $f does not exist in iRODS");
-        $all_found = 0;
+      if ($missing) {
+        $self->logwarn($self->_eligible_staging_files->{$name} . ' is not in iRODS');
+        $exist = 0;
       }
     }
   }
 
-  return $all_found;
-}
-
-sub _index_should_exist {
-  my ($self, $file_name) = @_;
-
-  my $obj = $self->_collection_files()->{$file_name};
-  $obj or $self->logcroak("Object not cached for $file_name");
-  my @mdata = @{$obj->get_metadata()};
-  my @values = ();
-  for my $a (qw/alignment total_reads/) {
-    my @m = grep { $_->{'attribute'} eq $a } @mdata;
-    if (scalar @m != 1) {
-      $self->logcroak(qq[No or too many '$a' meta data for ] . $obj->str());
+  foreach my $name (keys %{$self->_collection_files}) {
+    if (!$self->_eligible_staging_files->{$name}) {
+      $self->logwarn($self->_collection_files->{$name}->{'path'} .
+                     ' is in iRODS, but not on staging');
+      $exist = 0;
     }
-    my $value = $m[0]->{'value'};
-    if (!defined $value || $value eq q[]) {
-      $self->logcroak(qq[Undefined or empty '$a' value for ] . $obj->str());
-    }
-    $value or return 0;
   }
 
-  return 1;
+  return $exist;
 }
 
-sub _index_file_name {
-  my ($self, $f) = @_;
+sub _check_checksums {
+  my $self = shift;
+
+  my $match = 1;
   my $ext = $self->file_extension;
-  if ($f !~ /.$ext$/msx) {
-    $self->logcroak("Unexpected extension in $f");
+
+  foreach my $name (keys %{$self->_collection_files}) {
+    my $imd5 = $self->_collection_files->{$name}->{'checksum'} || q();
+    if (!$imd5) {
+      $self->logwarn(
+        'Checksum is absent for ' . $self->_collection_files->{$name}->{'path'});
+      $match = 0;
+    }
+
+    my $file = $self->_eligible_staging_files->{$name} . '.md5';
+    if (!-e $file) {
+      if ($name =~ /$ext\Z/xms) { # Not all index files have an md5 file
+        $self->logwarn($file . ' is absent');
+        $match = 0;
+      }
+    } else {
+      my $smd5 = slurp($file, { chomp => 1 });
+      if (!$smd5) {
+        $self->logwarn('Checksum value is absent in ' . $file);
+        $match = 0;
+      } else {
+        if ($imd5 ne $smd5) {
+          $self->logwarn('Checksums do not match for ' . join q[ and ],
+                         $self->_eligible_staging_files->{$name},
+                         $self->_collection_files->{$name}->{'path'});
+          $match = 0;
+	}
+      }
+    }
   }
-  return join q[.], $f, $self->index_file_extension;
+
+  return $match;
+}
+
+sub _belongs2main_process {
+  my ($self, $obj) = @_;
+  my @mdata = grep { $_->{'value'} }
+              grep { $_->{'attribute'} eq 'alt_process' }
+              @{$obj->get_metadata()};
+  return !@mdata;
+}
+
+sub _sequence_file_has_reads {
+  my ($self, $ipath) = @_;
+
+  my $command = 'samtools view ' . $self->index_path2seq_path($ipath);
+  my $s;
+  my $err;
+  my $fh;
+  try {
+    ##no critic (InputOutput::RequireBriefOpen)
+    open $fh, q[-|], $command or $self->logcroak(
+      "Failed to open a file handle for reading from command '$command'");
+    $s = readline $fh;
+    if(defined $s) {
+      $s .= readline $fh;
+    };
+  } catch {
+    $err = $_;
+  } finally {
+    if (defined $fh) {
+      close $fh or $self->warn("Fail to close file handle for command '$command'");
+      if ($CHILD_ERROR >> $SHIFT_EIGHT) {
+        $err = "Error executing command '$command'";
+      }
+    }
+  };
+
+  #####
+  # Whatever was the reason we could not run the command, we will return true
+  # since we cannot confidently return false.
+  #
+  if ($err) {
+    $self->error($err);
+    return 1;
+  }
+
+  return (defined $s && length $s);
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -300,7 +368,13 @@ __END__
 
 =item Try::Tiny
 
+=item English
+
+=item Readonly
+
 =item WTSI::DNAP::Utilities::Loggable
+
+=item WTSI::NPG::iRODS::Collection
 
 =item npg_pipeline::product::release::irods
 
@@ -312,7 +386,6 @@ __END__
 
 =head1 AUTHOR
 
-Guoying Qi
 Steven Leonard
 Marina Gourtovaia
 

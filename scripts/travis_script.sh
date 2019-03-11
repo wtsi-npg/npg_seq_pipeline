@@ -2,6 +2,7 @@
 
 set -e -x
 
+export PATH=/home/travis/miniconda/samtools/bin:$PATH
 export WTSI_NPG_iRODS_Test_IRODS_ENVIRONMENT_FILE=$HOME/.irods/irods_environment.json
 export TEST_AUTHOR=1
 # Perl environment has been already cached for this package.

@@ -25,6 +25,10 @@ cd /tmp/baton-${BATON_VERSION}
 ./configure --with-irods; make; sudo make install
 sudo ldconfig
 
+# samtools
+export PATH=/home/travis/miniconda/bin:$PATH;
+conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --override-channels --mkdir --prefix /home/travis/miniconda/samtools samtools;
+
 # The default build branch for all repositories. This defaults to
 # TRAVIS_BRANCH unless set in the Travis build environment.
 WTSI_NPG_BUILD_BRANCH=${WTSI_NPG_BUILD_BRANCH:=$TRAVIS_BRANCH}

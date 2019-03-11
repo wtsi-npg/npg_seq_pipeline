@@ -12,6 +12,7 @@ use npg_tracking::glossary::composition;
 use npg_pipeline::cache;
 use npg_pipeline::validation::entity;
 use npg_pipeline::validation::irods;
+use npg_pipeline::validation::s3;
 use npg_pipeline::validation::autoqc;
 use WTSI::NPG::iRODS;
 use npg_qc::Schema;
@@ -25,8 +26,6 @@ our $VERSION = '0';
 Readonly::Array  my @NPG_DELETABLE_UNCOND => ('run cancelled', 'data discarded');
 Readonly::Array  my @NPG_DELETABLE_STATES => (@NPG_DELETABLE_UNCOND,'qc complete');
 Readonly::Scalar my $MIN_KEEP_DAYS        => 14;
-Readonly::Scalar my $CRAM_FILE_EXTENSION  => q[cram];
-Readonly::Scalar my $BAM_FILE_EXTENSION   => q[bam];
 Readonly::Scalar my $DEFAULT_IRODS_ROOT   => q[/seq];
 Readonly::Scalar my $STAGING_TAG          => q[staging];
 
@@ -41,15 +40,20 @@ Readonly::Array  my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                 no_irods_archival 
                                                 recalibrated_path
                                                 basecall_path
+                                                qc_path
                                                 align_tag0
                                                 local
                                                 qc_run
                                                 repository
                                                 index_length
                                                 index_file_extension
+                                                file_extension
                                                 lanes
                                                 id_flowcell_lims
                                                 conf_path
+                                                logger
+                                                workflow_type
+                                                release_config
                                                /;
 
 =head1 NAME
@@ -176,7 +180,7 @@ sub _build_per_product_archive {
 
 =head2 remove_staging_tag
 
-Boolean attribute, ttoggles an option to remove run's staging tag,
+Boolean attribute, toggles an option to remove run's staging tag,
 false by default.
 
 =cut
@@ -188,6 +192,17 @@ has q{remove_staging_tag} => (
   q{Toggles an option to remove run's staging tag, false by default},
 );
 
+=head2 no_s3_archival
+
+Boolean attribute, toggles s3 check, false by default.
+
+=cut
+
+has q{+no_s3_archival} => (
+  documentation =>
+  q{Toggles an option to check for data in s3, false by default},
+);
+
 ############## Other public attributes #####################################
 
 
@@ -197,6 +212,14 @@ has q{remove_staging_tag} => (
 #
 has [map {q[+] . $_ }  @NO_SCRIPT_ARG_ATTRS] => (metaclass => 'NoGetopt',);
 
+=head2 irods_destination_collection
+
+=cut
+
+has '+irods_destination_collection' => (
+  documentation =>
+  q{iRODS destination collection, including run identifier},
+);
 
 =head2 file_extension
 
@@ -209,7 +232,7 @@ Example: 'cram'.
 has q{+file_extension} => ( lazy_build => 1, );
 sub _build_file_extension {
   my $self = shift;
-  return $self->use_cram ? $CRAM_FILE_EXTENSION : $BAM_FILE_EXTENSION;
+  return $self->get_file_extension($self->use_cram);
 }
 
 =head2 min_keep_days
@@ -353,11 +376,11 @@ sub run {
               $self->_lims_deletable()         &&
               $self->_staging_deletable()      &&
               $self->_irods_seq_deletable()    &&
+              $self->_s3_deletable()           &&
               $self->_autoqc_deletable()
                                );
   } catch {
-    my $e = $_;
-    $self->error(sprintf 'Error assessing run %i: %s', $self->id_run, $e);
+    $self->error($_);
   };
 
   if ($deletable && $self->remove_staging_tag) {
@@ -370,10 +393,59 @@ sub run {
 
 ############## Private attributes and methods #########################################
 
+#####
+# A hash reference containing two entries. One, under the key 'seq', is a
+# hash reference containing available sequencing files' paths as keys and
+# corresponding index files' paths, if available, as values. Another, under
+# the key 'ind', contains a hash reference of all found index files, whether
+# matching sequencing files or not, where index files' paths are the keys.
+
+has '_staging_files' => (
+  isa        => 'HashRef',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
+);
+sub _build__staging_files {
+  my $self = shift;
+
+  my $files_found  = {};
+  my $ext  = $self->file_extension;
+  my $iext = $self->index_file_extension;
+  my $wanted = sub {
+    my $f = $File::Find::name;
+    if ($f =~ /[.]$ext\Z/xms) {
+      my $i = $self->index_file_path($f);
+      $files_found->{'seq'}->{$f} = (-f $i) ? $i : q[];
+    } elsif ($f =~ /[.]$iext\Z/xms) {
+      $files_found->{'ind'}->{$f} = 1;
+    }
+  };
+  find($wanted, $self->archive_path);
+
+  return $files_found;
+}
+
+has q{_expected_staging_files} => (
+  isa        => 'HashRef',
+  is         => q{ro},
+  lazy_build => 1,
+);
+sub _build__expected_staging_files {
+  my $self = shift;
+  my $h = {};
+  foreach my $p (@{$self->product_entities}) {
+    foreach my $f ($p->staging_files($self->file_extension)) {
+      $h->{$f} = $p->target_product()->composition()->freeze2rpt;
+    }
+  }
+  return $h;
+}
+
 has q{_run_status_obj} => (
-  isa           => q{npg_tracking::Schema::Result::RunStatus},
-  is            => q{ro},
-  lazy_build    => 1,
+  isa        => q{npg_tracking::Schema::Result::RunStatus},
+  is         => q{ro},
+  lazy_build => 1,
 );
 sub _build__run_status_obj {
   my $self = shift;
@@ -468,21 +540,28 @@ sub _npg_tracking_deletable {
 
 sub _irods_seq_deletable {
   my $self = shift;
-  $self->debug('Assessing sequencing data files in iRODS...');
+  $self->debug('Assessing files in iRODS...');
 
   if ($self->ignore_irods) {
     $self->info('iRODS check ignored');
     return 1;
   }
 
-  my $deletable = npg_pipeline::validation::irods
-      ->new( collection       => $self->irods_destination_collection,
-             file_extension   => $self->file_extension,
-             product_entities => $self->product_entities,
-             irods            => $self->irods,
-           )->archived_for_deletion();
+  my $files = {};
+  while (my ($f, $rpt_list) = each %{$self->_expected_staging_files}) {
+    # Add the sequence file and a correspondign index file.
+    push @{$files->{$rpt_list}}, $f, $self->_staging_files->{'seq'}->{$f};
+  }
 
-  my $m = sprintf 'Presence of seq. files in iRODS: run %i %sdeletable',
+  my $deletable = npg_pipeline::validation::irods->new(
+    irods_destination_collection => $self->irods_destination_collection,
+    irods            => $self->irods,
+    file_extension   => $self->file_extension,
+    product_entities => $self->product_entities,
+    staging_files    => $files
+  )->archived_for_deletion();
+
+  my $m = sprintf 'Files in iRODS: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
@@ -504,7 +583,7 @@ sub _autoqc_deletable {
              is_paired_read   => $self->is_paired_read ? 1 : 0,
              product_entities => $self->product_entities )->fully_archived();
 
-  my $m = sprintf 'Presence of autoqc results in the database: run %i %sdeletable',
+  my $m = sprintf 'Autoqc database results: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
@@ -523,12 +602,10 @@ sub _lims_deletable {
   my $vars_set = $self->_set_vars_from_samplesheet();
   my $deletable = 1;
 
-  foreach my $entity (@{$self->product_entities}) {
-    foreach my $file ($entity->staging_files($self->file_extension)) {
-      if (!-e $file) {
-        $self->logwarn("File $file is missing for entity " . $entity->description());
-        $deletable = 0;
-      }
+  foreach my $file (keys %{$self->_expected_staging_files}) {
+    if (!-e $file) {
+      $self->logwarn("File $file is missing");
+      $deletable = 0;
     }
   }
 
@@ -542,7 +619,7 @@ sub _lims_deletable {
     }
   }
 
-  my $m = sprintf 'Consistency of staging sequence files listing with LIMs: run %i %sdeletable',
+  my $m = sprintf 'Files on staging vs LIMs: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
@@ -551,35 +628,57 @@ sub _lims_deletable {
 
 sub _staging_deletable {
   my $self = shift;
+  $self->debug('Examining files on staging');
 
-  my @files_found = ();
-  my $ext   = $self->file_extension;
-  my $wanted = sub {
-    if ($File::Find::name =~ /[.]$ext\Z/xms) {
-      push @files_found, $File::Find::name;
-    }
-  };
-  find($wanted, $self->archive_path);
-
-  my %files_expected =
-    map { $_ => 1 }
-    map { $_->staging_files($self->file_extension) }
-    @{$self->product_entities};
-
-  $self->debug(join qq{\n}, q{Expected staging files list}, (sort keys %files_expected));
+  $self->debug(join qq{\n}, q{Expected staging files list},
+                            (sort keys %{$self->_expected_staging_files}));
 
   my $deletable = 1;
-  foreach my $file (@files_found) {
-    if (!$files_expected{$file}) {
+  foreach my $file (keys %{$self->_staging_files->{'seq'}}) {
+    if (!$self->_expected_staging_files->{$file}) {
       $self->logwarn("Staging file $file is not expected");
       $deletable = 0;
+    } else {
+      if (!$self->_staging_files->{'seq'}->{$file}) {
+        $self->logwarn("Staging index file is missing for $file");
+        $deletable = 0;
+      }
     }
   }
 
-  my $m = sprintf 'Check for unexpected files on staging: run %i %sdeletable',
+  if ($deletable) {
+    my %i_matching = map { $_ => 1 }
+                     (values %{$self->_staging_files->{'seq'}});
+    foreach my $if (keys %{$self->_staging_files->{'ind'}}) {
+      if (!$i_matching{$if}) {
+        $self->logwarn("Staging index file $if is not expected");
+        $deletable = 0;
+      }
+    }
+  }
+
+  my $m = sprintf 'Files on staging: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
+  return $deletable;
+}
+
+sub _s3_deletable {
+  my $self = shift;
+  $self->debug('Examining files reported to be in s3');
+
+  if ($self->no_s3_archival) {
+    $self->info('s3 check ignored');
+    return 1;
+  }
+
+  my $deletable = npg_pipeline::validation::s3->new(
+    product_entities => $self->product_entities,
+  )->fully_archived();
+  my $m = sprintf 'Files in s3: run %i %sdeletable',
+          $self->id_run , $deletable ? q[] : q[NOT ];
+  $self->info($m);
   return $deletable;
 }
 

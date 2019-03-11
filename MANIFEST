@@ -60,6 +60,7 @@ lib/npg_pipeline/validation/autoqc.pm
 lib/npg_pipeline/validation/common.pm
 lib/npg_pipeline/validation/entity.pm
 lib/npg_pipeline/validation/irods.pm
+lib/npg_pipeline/validation/s3.pm
 lib/npg_tracking/daemon/analysis.pm
 lib/npg_tracking/daemon/archival.pm
 MANIFEST			This list of files
@@ -87,6 +88,7 @@ t/10-validation.t
 t/10-validation-autoqc.t
 t/10-validation-entity.t
 t/10-validation-irods.t
+t/10-validation-s3.t
 t/15-pipeline_launcher_scripts.t
 t/20-function-autoqc.t
 t/20-function-autoqc_archiver.t
