@@ -4,6 +4,7 @@ use namespace::autoclean;
 
 use Data::Dump qw[pp];
 use Moose::Role;
+use List::MoreUtils qw(uniq);
 
 use npg_qc::Schema;
 use npg_qc::mqc::outcomes;
@@ -14,6 +15,8 @@ with qw{WTSI::DNAP::Utilities::Loggable
 our $VERSION = '0';
 
 Readonly::Scalar my $RELEASE_CONFIG_FILE => 'product_release.yml';
+Readonly::Scalar my $ACCEPTED_FINAL  => 'Accepted final';
+Readonly::Scalar my $REJECTED_FINAL  => 'Rejected final';
 
 has 'qc_schema' =>
   (isa        => 'npg_qc::Schema',
@@ -268,6 +271,87 @@ sub is_for_s3_release_notification {
 
   $self->info("Product $name, $rpt is NOT for S3 release notification");
 
+  return 0;
+}
+
+=head2 merge_component_study_cache_dir
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->merge_component_cache_dir($product)
+  Description: Returns a directory in which to cache data products
+               ready for a merge with top-up data.
+
+  Returntype : Str
+
+=cut
+
+sub merge_component_study_cache_dir {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+  my $study_config = $self->_find_study_config($product);
+
+  my $dir;
+
+  if ($study_config) {
+    $dir = $study_config->{merge}->{component_cache_dir};
+    if (ref $dir) {
+      $self->logconfess('Invalid directory in configuration file: ', pp($dir));
+    }
+  }
+
+  return $dir;
+}
+
+=head2 is_cacheable
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->is_cacheable($product)
+  Description: Return true if the product should be cached for a later
+               top-up or merge - seq QC Pass, lib QC undecided
+
+  Returntype : Bool
+
+=cut
+
+sub is_cacheable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if( $self->merge_component_study_cache_dir( $product ) ) {
+##warn $rpt;
+    my $outcomes = npg_qc::mqc::outcomes->new(qc_schema => $self->qc_schema)->get([$rpt]);
+##use Data::Dumper;
+##warn Dumper [$outcomes];
+#    my @seqqc = uniq map{$_->{mqc_outcome}} values %{$outcomes->{seq}||{}};
+#    if(1 != @seqqc) {
+#      $self->info("Product $name, $rpt has no, or different, seq QC value(s) and so is NOT eligible for caching");
+#      return 0;
+#    }
+#    if($ACCEPTED_FINAL ne $seqqc[0]) {
+#      $self->info("Product $name, $rpt are not Accepted Final seq QC value and so is NOT eligible for caching");
+#      return 0;
+#    }
+    my @libqc = uniq map{$_->{mqc_outcome}} values %{$outcomes->{lib}||{}};
+    if(1 != @libqc) {
+      $self->info("Product $name, $rpt has no, or different, lib QC value(s) and so is NOT eligible for caching");
+      return 0;
+    }
+    if( ($ACCEPTED_FINAL eq $libqc[0]) or ($REJECTED_FINAL eq $libqc[0]) ) {
+      $self->info("Product $name, $rpt has Accepted Final or Rejected Final lib QC value and so is NOT eligible for caching");
+      return 0;
+    }
+
+    $self->info("Product $name, $rpt is eligible for caching");
+    return 1;
+  }
+
+  $self->info("Study for product $name, $rpt is NOT configured for caching");
   return 0;
 }
 

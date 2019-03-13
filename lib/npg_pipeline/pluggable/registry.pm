@@ -51,6 +51,7 @@ Readonly::Hash my %REGISTRY => (
   'seqchksum_comparator'     => {'seqchksum_comparator' => 'create'},
   'archive_to_s3'            => {'s3_archiver' => 'create'},
   'notify_product_delivery'  => {'product_delivery_notifier' => 'create'},
+  'cache_merge_component'    => {'cache_merge_component' => 'create'},
 );
 
 Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>
@@ -198,7 +199,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018, 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
