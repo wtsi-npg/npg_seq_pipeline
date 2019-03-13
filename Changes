@@ -1,6 +1,16 @@
 LIST OF CHANGES
 ---------------
 
+release 54.1
+ - minor speed-up in seq_alignment function due to caching of
+   unseccessfully retrieved references
+ - npg_run_is_deletable understands per-product iRODS collections and
+   make runs that have products archivable to s3 not deletable
+ - function for saving fastqcheck files is removed from the archival
+   pipeline function graph, implementation of this function is deleted
+ - changes of p4_stage1 and seq_alignment functions to accommodate
+   removal of fastqcheck files generation in respective p4 templates
+
 release 54.0
  - archival function graph includes publishing both to s3 and iRODS
  - a function graph for post 'run archived' small pipeline
