@@ -2,6 +2,7 @@ package npg_pipeline::function::seq_alignment;
 
 use Moose;
 use Moose::Meta::Class;
+use Class::Load qw{load_class};
 use namespace::autoclean;
 use Readonly;
 use File::Slurp;
@@ -10,12 +11,12 @@ use File::Spec;
 use JSON;
 use List::Util qw(sum uniq all none);
 use open q(:encoding(UTF8));
+use Try::Tiny;
 
-use npg_tracking::data::reference::find;
+use npg_tracking::data::reference;
 use npg_tracking::data::transcriptome;
 use npg_tracking::data::bait;
 use npg_tracking::data::gbs_plex;
-use st::api::lims;
 use npg_pipeline::function::definition;
 
 use Data::Dumper;
@@ -37,6 +38,8 @@ Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
+Readonly::Scalar my $TARGET_REGIONS_DIR_NAME      => q{target};
+Readonly::Scalar my $REFERENCE_ABSENT             => q{REFERENCE_NOT_AVAILABLE};
 
 =head2 phix_reference
 
@@ -45,22 +48,17 @@ A path to Phix reference fasta file to split phiX spike-in reads
 =cut
 
 has 'phix_reference' => (isa        => 'Str',
-                         is         => 'rw',
+                         is         => 'ro',
                          required   => 0,
                          lazy_build => 1,
                         );
 sub _build_phix_reference {
   my $self = shift;
-
-  my $ruser = Moose::Meta::Class->create_anon_class(
-    roles => [qw/npg_tracking::data::reference::find/]
-  )->new_object({
+  return npg_tracking::data::reference->new({
     species => q{PhiX},
     aligner => q{fasta},
     ($self->repository ? (q(repository)=>$self->repository) : ())
-		});
-
-  return $ruser->refs->[0];
+  })->refs->[0];
 }
 
 has 'input_path'      => ( isa        => 'Str',
@@ -322,9 +320,12 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
        $p4_param_vals->{target_regions_file} = $self->_bait($rpt_list)->target_intervals_path();
        $do_target_regions_stats = 1;
     }
-    elsif($self->_target_regions_file_path($dp, q[target])) {
-       $p4_param_vals->{target_regions_file} = $self->_ref($dp, q[target]) .q(.interval_list);
-       $do_target_regions_stats = 1;
+    else {
+      my $target_path = $self->_ref($dp, $TARGET_REGIONS_DIR_NAME);
+      if ( $target_path) {
+        $p4_param_vals->{target_regions_file} = $target_path.q(.interval_list);
+        $do_target_regions_stats = 1;
+      }
     }
   }
   if($spike_tag) {
@@ -748,19 +749,6 @@ sub _gbs_plex{
                 });
 }
 
-sub _target_regions_file_path {
-  my ($self, $dp, $aligner) = @_;
-
-  if (!$aligner) {
-    $self->logcroak('Aligner missing');
-  }
-
-  my $path = 1;
-  eval  { $self->_ref($dp, $aligner) ; 1; }
-  or do { $path = 0; };
-  return $path;
-}
-
 sub _ref {
   my ($self, $dp, $aligner) = @_;
 
@@ -774,33 +762,49 @@ sub _ref {
   my $ref_name = $self->_do_gbs_plex_analysis ? $dplims->gbs_plex_name : $dplims->reference_genome();
 
   my $ref = $ref_name ? $self->_ref_cache->{$ref_name}->{$aligner} : undef;
-  if (!$ref) {
+  if ($ref) {
+    if ($ref eq $REFERENCE_ABSENT) {
+      $ref = undef;
+    }
+  } else {
+
     my $href = { 'aligner' => $aligner, 'lims' => $dplims, };
     if ($self->repository) {
       $href->{'repository'} = $self->repository;
     }
-    my $role  = $self->_do_gbs_plex_analysis ? 'gbs_plex' : 'reference';
-    my $ruser = Moose::Meta::Class->create_anon_class(
-            roles => ["npg_tracking::data::${role}::find"])->new_object($href);
-    my @refs = @{$ruser->refs};
+
+    my $class = q[npg_tracking::data::] . ($self->_do_gbs_plex_analysis ? 'gbs_plex' : 'reference');
+    load_class($class);
+    my $ruser = $class->new($href);
+    my @refs = ();
+    try {
+      @refs = @{$ruser->refs};
+    } catch {
+      my $e = $_;
+      # Either exist with an error or just log an error and carry on
+      # with reference undefined.
+      $aligner eq $TARGET_REGIONS_DIR_NAME ? $self->error($e) : $self->logcroak($e);
+    };
+
     if (!@refs) {
-      $self->warn(qq[No reference genome set for $rpt_list]);
+      $self->warn(qq[No reference genome retrieved for $rpt_list]);
+    } elsif (scalar @refs > 1) {
+      my $m = qq{Multiple references for $rpt_list};
+      # Either exist with an error or log it and carry on with
+      # reference undefined.
+      $is_tag_zero_product ? $self->logwarn($m) : $self->logcroak($m);
     } else {
-      if (scalar @refs > 1) {
-        my $m = qq{Multiple references for $rpt_list};
-        ($is_tag_zero_product)
-          ? $self->logwarn($m)
-          : $self->logcroak($m);
-      } else {
-        $ref = $refs[0];
-        if ($ref_name) {
-          $self->_ref_cache->{$ref_name}->{$aligner} = $ref;
-        }
-      }
+      $ref = $refs[0];
+    }
+
+    # Cache the reference or the fact that it's not available.
+    if ($ref_name) {
+      $self->_ref_cache->{$ref_name}->{$aligner} = $ref ? $ref : $REFERENCE_ABSENT;
     }
   }
+
   if ($ref) {
-    $self->info(qq{Reference set for $rpt_list: $ref});
+    $self->info(qq{Reference found for $rpt_list: $ref});
   }
   return $ref;
 }
@@ -900,7 +904,11 @@ objects for all entities of the run eligible for alignment and split.
 
 =item open
 
-=item st::api::lims
+=item Try::Tiny
+
+=item Class::Load
+
+=item npg_tracking::data::reference
 
 =item npg_tracking::data::reference::find
 
@@ -922,7 +930,7 @@ David K. Jackson (david.jackson@sanger.ac.uk)
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018, 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
