@@ -132,7 +132,7 @@ subtest 'create' => sub {
             'Only "26291:1:3;26291:2:3" and "26291:1:9;26291:2:9" archived')
     or diag explain \@archived_rpts;
 
-  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control --quiet --profile s3_profile_name $runfolder_path/.*/archive/plex\d+/.* s3://|;
+  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control --quiet --profile s3_profile_name $runfolder_path/.*/archive/plex\d+/.* s3://\S+$|;
 
   foreach my $def (@defs) {
     is($def->created_by, $pkg, "created_by is $pkg");
@@ -141,7 +141,7 @@ subtest 'create' => sub {
     my $cmd = $def->command;
     my @parts = split / && /, $cmd; # Deconstruct the command
     foreach my $part (@parts) {
-      like($cmd, $cmd_patt, "$cmd matches $cmd_patt");
+      like($part, $cmd_patt, "$cmd matches $cmd_patt");
     }
   }
 };
