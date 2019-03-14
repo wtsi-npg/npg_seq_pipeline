@@ -49,11 +49,6 @@
          {
             "relation" : "dependsOn",
             "source" : "archive_to_irods_ml_warehouse",
-            "target" : "upload_fastqcheck_to_qc_database"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "upload_fastqcheck_to_qc_database",
             "target" : "run_run_archived"
          },
          {
@@ -125,10 +120,6 @@
          {
             "id" : "notify_product_delivery",
             "label" : "notify_product_delivery"
-         },
-         {
-            "id" : "upload_fastqcheck_to_qc_database",
-            "label" : "upload_fastqcheck_to_qc_database"
          },
          {
             "id" : "upload_illumina_analysis_to_qc_database",

@@ -25,6 +25,10 @@ cd /tmp/baton-${BATON_VERSION}
 ./configure --with-irods; make; sudo make install
 sudo ldconfig
 
+# samtools
+export PATH=/home/travis/miniconda/bin:$PATH;
+conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --override-channels --mkdir --prefix /home/travis/miniconda/samtools samtools;
+
 # The default build branch for all repositories. This defaults to
 # TRAVIS_BRANCH unless set in the Travis build environment.
 WTSI_NPG_BUILD_BRANCH=${WTSI_NPG_BUILD_BRANCH:=$TRAVIS_BRANCH}
@@ -32,7 +36,7 @@ WTSI_NPG_BUILD_BRANCH=${WTSI_NPG_BUILD_BRANCH:=$TRAVIS_BRANCH}
 # CPAN
 cpanm --quiet --notest Alien::Tidyp # For npg_tracking
 cpanm --quiet --notest Module::Build
-cpanm --quiet --notest LWP::Protocol::https
+cpanm --quiet --notest Net::SSLeay
 cpanm --quiet --notest https://github.com/chapmanb/vcftools-cpan/archive/v0.953.tar.gz # for npg_qc
 
 # WTSI NPG Perl repo dependencies

@@ -6,7 +6,8 @@ my $class = npg_tracking::util::build->subclass(code => <<'EOF');
 
   sub process_data_files {
     my $self = shift;
-    `find data/config_files -type f | cpio -pdv --quiet blib`;
+    # Do not copy PNG images
+    `find data/config_files -type f -not -name '*.png' | cpio -pdv --quiet blib`;
     return;
   }
 EOF
@@ -103,6 +104,7 @@ my $builder = $class->new(
           'Digest::MD5'                 => 0,
           'File::Copy::Recursive'       => 0,
           'File::Temp'                  => 0,
+          'File::Which'                 => 0,
           'Moose::Util'                 => 0,
           'Sys::Hostname'               => 0,
           'Test::Deep'                  => 0,

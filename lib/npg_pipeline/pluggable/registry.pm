@@ -44,7 +44,6 @@ Readonly::Hash my %REGISTRY => (
 
   'archive_logs'                            => {'log_files_archiver' => 'create'},
   'upload_illumina_analysis_to_qc_database' => {'illumina_qc_archiver' => 'create'},
-  'upload_fastqcheck_to_qc_database'        => {'fastqcheck_archiver' => 'create'},
   'upload_auto_qc_to_qc_database'           => {'autoqc_archiver' => 'create'},
   'archive_run_data_to_irods'               => {'run_data_to_irods_archiver' => 'create'},
 
