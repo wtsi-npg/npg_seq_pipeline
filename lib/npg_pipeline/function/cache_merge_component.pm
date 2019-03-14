@@ -86,6 +86,9 @@ sub create {
   my @definitions = ();
 
   foreach my $product (@products) {
+    my $digest = $product->composition()->digest();
+    my $destdir = catdir($self->merge_component_study_cache_dir($product),
+      substr($digest,0,2), substr($digest,2,2), $digest );
 
     my @file_paths = sort _cram_last $self->expected_files($product);
     $self->_check_files(@file_paths);;
@@ -95,11 +98,10 @@ sub create {
       my $filename   = basename($file_path);
 
       push @commands, sprintf q{%s %s %s},
-        $LINK_EXECUTABLE, $file_path,
-        $self->merge_component_study_cache_dir($product);
+        $LINK_EXECUTABLE, $file_path, $destdir;
     }
 
-    my $command = join q{ && }, reverse @commands;
+    my $command = join q{ && }, qq(mkdir -p $destdir), reverse @commands;
     $self->debug("Adding command '$command'");
 
     push @definitions,

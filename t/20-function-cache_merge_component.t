@@ -101,7 +101,7 @@ subtest 'expected_files' => sub {
 };
 
 subtest 'create' => sub {
-  plan tests => 3 + 12 * 8;
+  plan tests => 3 + (1 + 12) * 8;
 
   my $cacher;
   lives_ok {
@@ -140,7 +140,7 @@ subtest 'create' => sub {
             '9 non-final accepted or rejected cached')
     or diag explain \@archived_rpts;
 
-  my $cmd_patt = qr|^ln $runfolder_path/.*/archive/plex\d+/.* /tmp/npg_seq_pipeline/cache_merge_component_test/|;
+  my $cmd_patt = qr|^ln $runfolder_path/.*/archive/plex\d+/.* /tmp/npg_seq_pipeline/cache_merge_component_test/\w{2}/\w{2}/\w{64}$|;
 
   foreach my $def (@defs) {
     is($def->created_by, $pkg, "created_by is $pkg");
@@ -148,8 +148,9 @@ subtest 'create' => sub {
 
     my $cmd = $def->command;
     my @parts = split / && /, $cmd; # Deconstruct the command
+    like(shift @parts, qr|^mkdir -p /tmp/npg_seq_pipeline/cache_merge_component_test/\w{2}/\w{2}/\w{64}$|);
     foreach my $part (@parts) {
-      like($cmd, $cmd_patt, "$cmd matches $cmd_patt");
+      like($part, $cmd_patt, "$cmd matches $cmd_patt");
     }
   }
 };
