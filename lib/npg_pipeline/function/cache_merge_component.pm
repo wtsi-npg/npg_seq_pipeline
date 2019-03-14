@@ -21,48 +21,6 @@ Readonly::Scalar my $LINK_EXECUTABLE => 'ln';
 
 our $VERSION = '0';
 
-=head2 expected_files
-
-  Arg [1]    : Data product whose files to list, npg_pipeline::product.
-
-  Example    : my @files = $obj->expected_files($product)
-  Description: Return a list of the files expected to to present for
-               archiving in the runfolder.
-
-  Returntype : Array
-
-=cut
-
-sub expected_files {
-  my ($self, $product) = @_;
-
-  $product or $self->logconfess('A product argument is required');
-
-  my @expected_files;
-
-  my $dir_path = catdir($self->archive_path(), $product->dir_path());
-  my @extensions = qw{cram cram.md5 cram.crai
-                      seqchksum sha512primesums512.seqchksum
-                      bcfstats};
-  push @expected_files,
-    map { $product->file_path($dir_path, ext => $_) } @extensions;
-
-  my @suffixes = qw{F0x900 F0xB00 F0xF04_target};
-  push @expected_files,
-    map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
-    @suffixes;
-
-  my $qc_path = $product->qc_out_path($self->archive_path());
-
-  my @qc_extensions = qw{verify_bam_id.json};
-  push @expected_files,
-    map { $product->file_path($qc_path, ext => $_) } @qc_extensions;
-
-  @expected_files = sort @expected_files;
-
-  return @expected_files;
-}
-
 =head2 create
 
   Arg [1]    : None

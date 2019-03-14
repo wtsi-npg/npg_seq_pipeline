@@ -7,7 +7,7 @@ use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 5;
+use Test::More tests => 4;
 use Test::Exception;
 use t::util;
 
@@ -67,37 +67,6 @@ subtest 'local and no_cache_merge_component' => sub {
   $ds = $cacher->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
   is($ds->[0]->excluded, 1, 'function is excluded');
-};
-
-subtest 'expected_files' => sub {
-  plan tests => 1;
-
-  my $cacher = $pkg->new
-    (conf_path      => "t/data/release/config/archive_on",
-     runfolder_path => $runfolder_path,
-     id_run         => 26291,
-     timestamp      => $timestamp,
-     qc_schema      => $qc);
-
-  my $product = shift @{$cacher->products->{data_products}};
-
-  my $path = "$runfolder_path/Data/Intensities/" .
-             'BAM_basecalls_20180805-013153/no_cal/archive/plex1';
-  my @expected = sort map { "$path/$_" }
-    ('26291#1_F0x900.stats',
-     '26291#1_F0xB00.stats',
-     '26291#1_F0xF04_target.stats',
-     '26291#1.bcfstats',
-     '26291#1.cram',
-     '26291#1.cram.crai',
-     '26291#1.cram.md5',
-     '26291#1.seqchksum',
-     '26291#1.sha512primesums512.seqchksum',
-     'qc/26291#1.verify_bam_id.json');
-
-  my @observed = $cacher->expected_files($product);
-  is_deeply(\@observed, \@expected, 'Expected files listed') or
-    diag explain \@observed;
 };
 
 subtest 'create' => sub {
