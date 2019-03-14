@@ -48,7 +48,7 @@ sub create {
     my $destdir = catdir($self->merge_component_study_cache_dir($product),
       substr($digest,0,2), substr($digest,2,2), $digest );
 
-    my @file_paths = sort _cram_last $self->expected_files($product);
+    my @file_paths = sort $self->expected_files($product);
     $self->_check_files(@file_paths);;
 
     my @commands;
@@ -100,12 +100,6 @@ sub _check_files {
 
   return;
 }
-
-## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
-sub _cram_last {
-  return $a =~ /[.]cram$/msx ? 1 : -1;
-}
-## use critic
 
 __PACKAGE__->meta->make_immutable;
 
