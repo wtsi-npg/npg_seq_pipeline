@@ -43,7 +43,7 @@ sub create {
 
     my $old_dated_dir = $self->_find_old_dated_dir();
     if ($old_dated_dir) {
-      $command .= q{--restart_file } . $self->restart_file_path($job_name_prefix);
+      $command .= q{ --restart_file } . $self->restart_file_path($job_name_prefix);
       my @positions = $self->positions();
       my $position_list = q{};
       if (scalar @positions < scalar $self->lims->children) {

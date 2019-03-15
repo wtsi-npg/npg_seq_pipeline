@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 54.1.1
+ - bug fix in command generation for iRODS data archival from old-style
+   run folders
+
 release 54.1
  - minor speed-up in seq_alignment function due to caching of
    unseccessfully retrieved references
