@@ -2,15 +2,12 @@ package npg_pipeline::function::s3_archiver;
 
 use namespace::autoclean;
 
-use Data::Dump qw{pp};
 use File::Basename;
 use Moose;
 use MooseX::StrictConstructor;
 use Readonly;
-use Try::Tiny;
 
 use npg_pipeline::function::definition;
-use npg_qc::mqc::outcomes;
 
 extends 'npg_pipeline::base';
 
@@ -166,15 +163,11 @@ product_release.yml, see npg_pipeline::product::release.
 
 =over
 
-=item Data::Dump
-
 =item JSON
 
 =item Moose
 
 =item Readonly
-
-=item Try::Tiny
 
 =back
 
