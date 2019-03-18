@@ -7,7 +7,7 @@ use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use t::util;
 
@@ -165,4 +165,30 @@ subtest 'no_archive_study' => sub {
 
   is($defs[0]->composition, undef, 'definition has no composition') or
     diag explain \@defs;
+};
+
+subtest 'multiple or no study configs' => sub {
+  plan tests => 2;
+
+  my $archiver = $pkg->new
+    (conf_path      => 't/data/release/config/multiple_configs',
+     runfolder_path => $runfolder_path,
+     id_run         => 26291,
+     timestamp      => $timestamp,
+     qc_schema      => $qc);
+
+  throws_ok {$archiver->create}
+    qr/Multiple configurations for study 5290/,
+    'error if multiple study configs are found';
+
+  $archiver = $pkg->new
+    (conf_path      => 't/data/release/config/no_config',
+     runfolder_path => $runfolder_path,
+     id_run         => 26291,
+     timestamp      => $timestamp,
+     qc_schema      => $qc);
+
+  throws_ok {$archiver->create}
+    qr/No release configuration was defined for study 5290/,
+    'error if neither study no default config is found';
 };

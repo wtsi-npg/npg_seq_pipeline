@@ -230,6 +230,12 @@ t/data/qc/references/PhiX/default/all/fasta/PhiX.fasta
 t/data/qc/samplesheet_14043.csv
 t/data/qc/samplesheet_14353.csv
 t/data/Recipes/TileLayout.xml
+t/data/release/config/archive_off/product_release.yml
+t/data/release/config/archive_on/product_release.yml
+t/data/release/config/multiple_configs/product_release.yml
+t/data/release/config/no_config/product_release.yml
+t/data/release/config/notify_off/product_release.yml
+t/data/release/config/notify_on/product_release.yml
 t/data/rna_seq/12597_RunInfo.xml
 t/data/rna_seq/13066_RunInfo.xml
 t/data/rna_seq/17550_RunInfo.xml

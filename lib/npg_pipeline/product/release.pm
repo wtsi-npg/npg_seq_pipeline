@@ -111,24 +111,15 @@ sub has_qc_for_release {
 sub customer_name {
   my ($self, $product) = @_;
 
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
+  my $customer_name = $self->_find_study_config($product)->{s3}->{customer_name};
+  $customer_name or
+    $self->logcroak(
+      q{Missing s3 archival customer name in configuration file for product } .
+      $product->composition->freeze());
 
-  my $customer_name;
-
-  if ($study_config) {
-    $customer_name = $study_config->{s3}->{customer_name};
-    $customer_name or
-      $self->logconfess(sprintf q{Missing customer name in } .
-                                q{configuration file: %s for study %s'},
-                        $self->conf_file_path($RELEASE_CONFIG_FILE),
-                        $study_config->{study_id});
-
-    if (ref $customer_name) {
-      $self->logconfess('Invalid customer name in configuration file: ',
-                        pp($customer_name));
-    }
+  if (ref $customer_name) {
+    $self->logconfess('Invalid customer name in configuration file: ',
+                      pp($customer_name));
   }
 
   return $customer_name;
@@ -150,8 +141,7 @@ sub customer_name {
 
 sub is_for_release {
   my ($self, $product, $type_of_release) = @_;
-  my $study_config = $self->_find_study_config($product);
-  return ($study_config and $study_config->{$type_of_release}->{enable});
+  return $self->_find_study_config($product)->{$type_of_release}->{enable};
 }
 
 =head2 is_for_s3_release
@@ -200,17 +190,9 @@ sub is_for_s3_release {
 sub s3_url {
   my ($self, $product) = @_;
 
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
-
-  my $url;
-
-  if ($study_config) {
-    $url = $study_config->{s3}->{url};
-    if (ref $url) {
-      $self->logconfess('Invalid S3 URL in configuration file: ', pp($url));
-    }
+  my $url = $self->_find_study_config($product)->{s3}->{url};
+  if (ref $url) {
+    $self->logconfess('Invalid S3 URL in configuration file: ', pp($url));
   }
 
   return $url;
@@ -232,18 +214,10 @@ sub s3_url {
 sub s3_profile {
   my ($self, $product) = @_;
 
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
-
-  my $profile;
-
-  if ($study_config) {
-    $profile = $study_config->{s3}->{profile};
-    if (ref $profile) {
-      $self->logconfess('Invalid S3 profile in configuration file: ',
-                        pp($profile));
-    }
+  my $profile = $self->_find_study_config($product)->{s3}->{profile};
+  if (ref $profile) {
+    $self->logconfess('Invalid S3 profile in configuration file: ',
+                      pp($profile));
   }
 
   return $profile;
@@ -286,9 +260,8 @@ sub is_for_s3_release_notification {
 
   my $rpt          = $product->rpt_list();
   my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
 
-  if ($study_config and $study_config->{s3}->{notify}) {
+  if ($self->_find_study_config($product)->{s3}->{notify}) {
     $self->info("Product $name, $rpt is for S3 release notification");
     return 1;
   }
@@ -315,6 +288,12 @@ sub _build_release_config {
   return $config;
 }
 
+#####
+# Returns a study-specific config or a default config. Therefore,
+# one cannot rely on study_id key being defined in the returned
+# data structure. Error if neither study nor default config is
+# available.
+#
 sub _find_study_config {
   my ($self, $product) = @_;
 
@@ -329,26 +308,26 @@ sub _find_study_config {
   my @study_ids = $product->lims->study_ids($with_spiked_control);
 
   @study_ids or
-    $self->logconfess("Failed to get a study_id for product $name, $rpt");
+    $self->logcroak("Failed to get a study_id for product $name, $rpt");
   (@study_ids == 1) or
-    $self->logconfess("Multiple study ids for product $name, $rpt");
+    $self->logcroak("Multiple study ids for product $name, $rpt");
   my $study_id = $study_ids[0];
 
-  my ($study_config) = grep { $_->{study_id} eq $study_id }
+  my @study_configs = grep { $_->{study_id} eq $study_id }
     @{$self->release_config->{study}};
+  my $study_config;
 
-  if (not defined $study_config) {
-    my $default_config = $self->release_config->{default};
-    if (not defined $default_config) {
-      $self->logcroak(sprintf q{No release configuration was defined } .
-                              q{for study %s and no default was defined in %s},
-                      $study_id, $self->conf_file_path($RELEASE_CONFIG_FILE));
+  if (@study_configs) {
+    if (@study_configs > 1) {
+      $self->logcroak("Multiple configurations for study $study_id");
     }
-
-    $self->info(sprintf q{Using the default release configuration for } .
-                        q{study %s defined in %s},
-                $study_id, $self->conf_file_path($RELEASE_CONFIG_FILE));
-    $study_config = $default_config;
+    $study_config = $study_configs[0];
+  } else {
+    $study_config = $self->release_config->{default};
+    (defined $study_config) or
+      $self->logcroak("No release configuration was defined for study $study_id" .
+                      ' and no default was defined');
+    $self->info("Using the default release configuration for study $study_id");
   }
 
   return $study_config;
