@@ -369,6 +369,7 @@ sub is_cacheable {
   if( $self->merge_component_study_cache_dir( $product ) ) {
 ##warn $rpt;
     my $outcomes = npg_qc::mqc::outcomes->new(qc_schema => $self->qc_schema)->get([$rpt]);
+    ### TODO: add filtering on "seq" qc
 ##use Data::Dumper;
 ##warn Dumper [$outcomes];
 #    my @seqqc = uniq map{$_->{mqc_outcome}} values %{$outcomes->{seq}||{}};

@@ -84,7 +84,7 @@ subtest 'create' => sub {
 
   my @defs = @{$cacher->create};
   my $num_defs_observed = scalar @defs;
-  my $num_defs_expected = 8; #  12 total - 2 final accepted - 2 final rejected = 9 to cache
+  my $num_defs_expected = 8; #  12 total - 2 final accepted - 2 final rejected = 8 to cache
   cmp_ok($num_defs_observed, '==', $num_defs_expected,
          "create returns $num_defs_expected definitions when caching");
 
@@ -92,7 +92,7 @@ subtest 'create' => sub {
   foreach my $def (@defs) {
     push @archived_rpts,
       [map { [$_->id_run, $_->position, $_->tag_index] }
-       $def->composition->components_list];
+         map {$_->components_list} grep {defined} $def->composition];
   }
 
   is_deeply(\@archived_rpts,
