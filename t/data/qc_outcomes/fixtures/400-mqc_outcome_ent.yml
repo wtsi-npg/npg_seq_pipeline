@@ -1,20 +1,20 @@
 ---
 - id_mqc_outcome: 3
   id_mqc_outcome_ent: 1
-  id_run: ~
+  id_run: 26291
   id_seq_composition: 13
   last_modified: 2019-03-18 15:54:32
   modified_by: ~
-  position: ~
+  position: 1
   reported: ~
   username: ~
 - id_mqc_outcome: 3
   id_mqc_outcome_ent: 2
-  id_run: ~
+  id_run: 26291
   id_seq_composition: 14
   last_modified: 2019-03-18 15:54:32
   modified_by: ~
-  position: ~
+  position: 2
   reported: ~
   username: ~
 
