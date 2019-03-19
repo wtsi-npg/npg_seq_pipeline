@@ -16,8 +16,6 @@ with qw{WTSI::DNAP::Utilities::Loggable
 our $VERSION = '0';
 
 Readonly::Scalar my $RELEASE_CONFIG_FILE => 'product_release.yml';
-Readonly::Scalar my $ACCEPTED_FINAL  => 'Accepted final';
-Readonly::Scalar my $REJECTED_FINAL  => 'Rejected final';
 
 has 'qc_schema' =>
   (isa        => 'npg_qc::Schema',
@@ -368,7 +366,7 @@ sub is_cacheable {
 
   if( $self->merge_component_study_cache_dir( $product ) ) {
 ##warn $rpt;
-    my $outcomes = npg_qc::mqc::outcomes->new(qc_schema => $self->qc_schema)->get([$rpt]);
+#lanes_as_products 
     ### TODO: add filtering on "seq" qc
 ##use Data::Dumper;
 ##warn Dumper [$outcomes];
@@ -381,13 +379,13 @@ sub is_cacheable {
 #      $self->info("Product $name, $rpt are not Accepted Final seq QC value and so is NOT eligible for caching");
 #      return 0;
 #    }
-    my @libqc = uniq map{$_->{mqc_outcome}} values %{$outcomes->{lib}||{}};
+    my @libqc = $self->qc_schema->resultset('MqcLibraryOutcomeEnt')->search_via_composition([$product->composition])->all;
     if(1 != @libqc) {
       $self->info("Product $name, $rpt has no, or different, lib QC value(s) and so is NOT eligible for caching");
       return 0;
     }
-    if( ($ACCEPTED_FINAL eq $libqc[0]) or ($REJECTED_FINAL eq $libqc[0]) ) {
-      $self->info("Product $name, $rpt has Accepted Final or Rejected Final lib QC value and so is NOT eligible for caching");
+    if( $libqc[0]->has_final_outcome and not $libqc[0]->is_undecided) {
+      $self->info("Product $name, $rpt has Final lib QC value which is not undecided and so is NOT eligible for caching");
       return 0;
     }
 
