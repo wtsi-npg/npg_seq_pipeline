@@ -7,6 +7,7 @@ use File::Spec::Functions qw{catdir catfile};
 use Moose;
 use MooseX::StrictConstructor;
 use Readonly;
+use List::Util qw(all);
 
 use npg_pipeline::function::definition;
 
@@ -96,6 +97,83 @@ sub _check_files {
   }
 
   return;
+}
+
+=head2 merge_component_study_cache_dir
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->merge_component_cache_dir($product)
+  Description: Returns a directory in which to cache data products
+               ready for a merge with top-up data.
+
+  Returntype : Str
+
+=cut
+
+sub merge_component_study_cache_dir {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+  my $study_config = $self->_find_study_config($product);
+
+  my $dir;
+
+  if ($study_config) {
+    $dir = $study_config->{merge}->{component_cache_dir};
+    if (ref $dir) {
+      $self->logconfess('Invalid directory in configuration file: ', pp($dir));
+    }
+  }
+
+  return $dir;
+}
+
+=head2 is_cacheable
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->is_cacheable($product)
+  Description: Return true if the product should be cached for a later
+               top-up or merge - seq QC Pass, lib QC undecided
+
+  Returntype : Bool
+
+=cut
+
+sub is_cacheable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if( $self->merge_component_study_cache_dir( $product ) ) {
+    my @seqqc = $self->qc_schema->resultset('MqcOutcomeEnt')->search_via_composition([map{$_->composition}$product->lanes_as_products])->all;
+    if(not @seqqc) {
+      $self->info("Product $name, $rpt has no seq QC value(s) and so is NOT eligible for caching");
+      return 0;
+    }
+    if(not all { $_->has_final_outcome and $_->is_accepted }  @seqqc) {
+      $self->info("Product $name, $rpt are not all Accepted Final seq QC values and so is NOT eligible for caching");
+      return 0;
+    }
+    my @libqc = $self->qc_schema->resultset('MqcLibraryOutcomeEnt')->search_via_composition([$product->composition])->all;
+    if(1 != @libqc) {
+      $self->info("Product $name, $rpt has no, or different, lib QC value(s) and so is NOT eligible for caching");
+      return 0;
+    }
+    if( $libqc[0]->has_final_outcome and not $libqc[0]->is_undecided) {
+      $self->info("Product $name, $rpt has Final lib QC value which is not undecided and so is NOT eligible for caching");
+      return 0;
+    }
+
+    $self->info("Product $name, $rpt is eligible for caching");
+    return 1;
+  }
+
+  $self->info("Study for product $name, $rpt is NOT configured for caching");
+  return 0;
 }
 
 __PACKAGE__->meta->make_immutable;
