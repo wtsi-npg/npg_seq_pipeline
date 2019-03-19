@@ -153,7 +153,7 @@ sub has_qc_for_release {
 sub customer_name {
   my ($self, $product) = @_;
 
-  my $customer_name = $self->_find_study_config($product)->{s3}->{customer_name};
+  my $customer_name = $self->find_study_config($product)->{s3}->{customer_name};
   $customer_name or
     $self->logcroak(
       q{Missing s3 archival customer name in configuration file for product } .
@@ -183,7 +183,7 @@ sub customer_name {
 
 sub is_for_release {
   my ($self, $product, $type_of_release) = @_;
-  return $self->_find_study_config($product)->{$type_of_release}->{enable};
+  return $self->find_study_config($product)->{$type_of_release}->{enable};
 }
 
 =head2 is_for_s3_release
@@ -232,7 +232,7 @@ sub is_for_s3_release {
 sub s3_url {
   my ($self, $product) = @_;
 
-  my $url = $self->_find_study_config($product)->{s3}->{url};
+  my $url = $self->find_study_config($product)->{s3}->{url};
   if (ref $url) {
     $self->logconfess('Invalid S3 URL in configuration file: ', pp($url));
   }
@@ -256,7 +256,7 @@ sub s3_url {
 sub s3_profile {
   my ($self, $product) = @_;
 
-  my $profile = $self->_find_study_config($product)->{s3}->{profile};
+  my $profile = $self->find_study_config($product)->{s3}->{profile};
   if (ref $profile) {
     $self->logconfess('Invalid S3 profile in configuration file: ',
                       pp($profile));
@@ -303,7 +303,7 @@ sub is_for_s3_release_notification {
   my $rpt          = $product->rpt_list();
   my $name         = $product->file_name_root();
 
-  if ($self->_find_study_config($product)->{s3}->{notify}) {
+  if ($self->find_study_config($product)->{s3}->{notify}) {
     $self->info("Product $name, $rpt is for S3 release notification");
     return 1;
   }
@@ -331,12 +331,22 @@ sub _build_release_config {
 }
 
 #####
-# Returns a study-specific config or a default config. Therefore,
-# one cannot rely on study_id key being defined in the returned
-# data structure. Error if neither study nor default config is
-# available.
-#
-sub _find_study_config {
+
+=head2 find_study_config
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->find_study_config($product)
+  Description: Returns a study-specific config or a default config. Therefore,
+               one cannot rely on study_id key being defined in the obtained
+               data structure. Error if neither study nor default config is
+               available.
+
+  Returntype : Hash
+
+=cut
+
+sub find_study_config {
   my ($self, $product) = @_;
 
   my $with_spiked_control = 0;

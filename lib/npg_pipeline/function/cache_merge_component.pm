@@ -116,7 +116,7 @@ sub merge_component_study_cache_dir {
 
   my $rpt          = $product->rpt_list();
   my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
+  my $study_config = $self->find_study_config($product);
 
   my $dir;
 
