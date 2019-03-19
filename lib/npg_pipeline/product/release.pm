@@ -4,6 +4,7 @@ use namespace::autoclean;
 
 use Data::Dump qw[pp];
 use Moose::Role;
+use List::Util qw(all);
 use List::MoreUtils qw(uniq);
 use File::Spec::Functions qw{catdir catfile};
 
@@ -365,20 +366,15 @@ sub is_cacheable {
   my $name         = $product->file_name_root();
 
   if( $self->merge_component_study_cache_dir( $product ) ) {
-##warn $rpt;
-#lanes_as_products 
-    ### TODO: add filtering on "seq" qc
-##use Data::Dumper;
-##warn Dumper [$outcomes];
-#    my @seqqc = uniq map{$_->{mqc_outcome}} values %{$outcomes->{seq}||{}};
-#    if(1 != @seqqc) {
-#      $self->info("Product $name, $rpt has no, or different, seq QC value(s) and so is NOT eligible for caching");
-#      return 0;
-#    }
-#    if($ACCEPTED_FINAL ne $seqqc[0]) {
-#      $self->info("Product $name, $rpt are not Accepted Final seq QC value and so is NOT eligible for caching");
-#      return 0;
-#    }
+    my @seqqc = $self->qc_schema->resultset('MqcOutcomeEnt')->search_via_composition([map{$_->composition}$product->lanes_as_products])->all;
+    if(not @seqqc) {
+      $self->info("Product $name, $rpt has no seq QC value(s) and so is NOT eligible for caching");
+      return 0;
+    }
+    if(not all { $_->has_final_outcome and $_->is_accepted }  @seqqc) {
+      $self->info("Product $name, $rpt are not all Accepted Final seq QC values and so is NOT eligible for caching");
+      return 0;
+    }
     my @libqc = $self->qc_schema->resultset('MqcLibraryOutcomeEnt')->search_via_composition([$product->composition])->all;
     if(1 != @libqc) {
       $self->info("Product $name, $rpt has no, or different, lib QC value(s) and so is NOT eligible for caching");
