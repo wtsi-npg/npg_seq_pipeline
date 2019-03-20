@@ -24,7 +24,8 @@ our $VERSION = '0';
   Arg [1]    : None
 
   Example    : my $defs = $obj->create
-  Description: Create per-product data file function definitions.
+  Description: Create per-product data file function definitions
+               for caching files eligible as top-up candidates.
 
   Returntype : ArrayRef[npg_pipeline::function::definition]
 
@@ -149,10 +150,10 @@ sub is_cacheable {
   my $name         = $product->file_name_root();
 
   if( $self->merge_component_study_cache_dir( $product ) ) {
-    my @seqqc = $self->qc_schema->resultset('MqcOutcomeEnt')->search_via_composition([map{$_->composition}$product->lanes_as_products])->all;
-    if(not @seqqc) {
-      $self->info("Product $name, $rpt has no seq QC value(s) and so is NOT eligible for caching");
-      return 0;
+    my @lp = $product->lanes_as_products;
+    my @seqqc = $self->qc_schema->resultset('MqcOutcomeEnt')->search_via_composition([map{$_->composition}@lp])->all;
+    if(@lp != @seqqc) {
+      $self->logcroak("Product $name, $rpt has differing number of seq QC value(s) to constituent lanes so don't know what to do");
     }
     if(not all { $_->has_final_outcome and $_->is_accepted }  @seqqc) {
       $self->info("Product $name, $rpt are not all Accepted Final seq QC values and so is NOT eligible for caching");

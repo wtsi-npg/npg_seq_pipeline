@@ -7,7 +7,7 @@ use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use t::util;
 
@@ -165,4 +165,23 @@ subtest 'create_with_failed_lane' => sub {
   cmp_ok($num_defs_observed, '==', $num_defs_expected,
          "create returns $num_defs_expected definitions when caching");
   ok($defs[0] && $defs[0]->excluded, "excluded") 
+};
+
+subtest 'abort_on_missing_seq_qc' => sub {
+  plan tests => 2;
+
+  $qc->resultset(q(MqcOutcomeEnt))->search({id_run=>26291, position=>1})->first->delete;
+  my $cacher;
+  lives_ok {
+    $cacher = $pkg->new
+      (conf_path      => "t/data/release/config/archive_on",
+       runfolder_path => $runfolder_path,
+       id_run         => 26291,
+       timestamp      => $timestamp,
+       qc_schema      => $qc);
+  } 'cacher created ok';
+
+  dies_ok {
+    $cacher->create;
+  } 'aborts okay';
 };
