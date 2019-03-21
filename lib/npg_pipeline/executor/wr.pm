@@ -201,7 +201,7 @@ sub _definition4job {
     return;
   };
 
-  my $command = join q[ ], q[(], $d->command(), q[)], q[2>&1];
+  my $command = join q[ ], q[(umask 0002 &&], $d->command(), q[)], q[2>&1];
   my $lf = $log_file->();
   if ($lf) {
     #####

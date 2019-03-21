@@ -109,7 +109,7 @@ subtest 'definition for a job' => sub {
   );
 
   my $job_def = $e->_definition4job('pipeline_wait4path', 'some_dir', $fd);
-  my $expected = { 'cmd' => '( /bin/true ) 2>&1',
+  my $expected = { 'cmd' => '(umask 0002 && /bin/true ) 2>&1',
                    'cpus' => 1,
                    'priority' => 0,
                    'memory' => '2000M' };
@@ -119,7 +119,7 @@ subtest 'definition for a job' => sub {
   $ref->{'memory'}   = 100;
   $fd = npg_pipeline::function::definition->new($ref);
   $expected = {
-    'cmd' => '( /bin/true ) 2>&1 | tee -a "some_dir/pipeline_start-today-1234.out"',
+    'cmd' => '(umask 0002 && /bin/true ) 2>&1 | tee -a "some_dir/pipeline_start-today-1234.out"',
     'cpus' => 0,
     'priority' => 0,
     'memory'   => '100M' };
