@@ -1,14 +1,12 @@
 use strict;
 use warnings;
 
-use Digest::MD5;
-use File::Copy;
-use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 6;
+use Test::More tests => 8;
 use Test::Exception;
+use File::Copy::Recursive qw[dircopy];
 use t::util;
 
 my $temp_dir = tempdir(CLEANUP => 1);
@@ -38,6 +36,10 @@ my $pkg = 'npg_pipeline::function::cache_merge_component';
 use_ok($pkg);
 
 my $runfolder_path = 't/data/novaseq/180709_A00538_0010_BH3FCMDRXX';
+my $copy = join q[/], $temp_dir, '180709_A00538_0010_BH3FCMDRXX';
+dircopy $runfolder_path, $copy or die 'Failed to copy run folder';
+$runfolder_path = $copy;
+
 my $timestamp      = '20180701-123456';
 
 subtest 'local and no_cache_merge_component' => sub {
@@ -70,7 +72,9 @@ subtest 'local and no_cache_merge_component' => sub {
 };
 
 subtest 'create' => sub {
-  plan tests => 3 + (1 + 12) * 8;
+  plan tests => 4 + (1 + 12) * 4;
+
+  #Tags 7, 8, 1, 11, 2, 5 - preliminary results
 
   my $cacher;
   lives_ok {
@@ -82,9 +86,22 @@ subtest 'create' => sub {
        qc_schema      => $qc);
   } 'cacher created ok';
 
+  throws_ok {$cacher->create}
+    qr/Product 26291\#1, 26291:1:1;26291:2:1 is not Final lib QC value/,
+    'error since some results are preliminary';
+
+  my $rs = $qc->resultset('MqcLibraryOutcomeEnt');
+  # Make all outcomes final
+  while (my $row = $rs->next) {
+    if (!$row->has_final_outcome) {
+      my $shift = $row->is_undecided ? 1 : 2;
+      $row->update({id_mqc_outcome => $row->id_mqc_outcome + $shift});
+    }
+  }  
+
   my @defs = @{$cacher->create};
   my $num_defs_observed = scalar @defs;
-  my $num_defs_expected = 8; #  12 total - 2 final accepted - 2 final rejected = 8 to cache
+  my $num_defs_expected = 4;
   cmp_ok($num_defs_observed, '==', $num_defs_expected,
          "create returns $num_defs_expected definitions when caching");
 
@@ -97,16 +114,12 @@ subtest 'create' => sub {
 
   is_deeply(\@archived_rpts,
             [
-             [[26291, 1, 1], [26291, 2, 1]],
-             [[26291, 1, 2], [26291, 2, 2]],
              [[26291, 1, 5], [26291, 2, 5]],
              [[26291, 1, 6], [26291, 2, 6]],
-             [[26291, 1, 7], [26291, 2, 7]],
-             [[26291, 1, 8], [26291, 2, 8]],
              [[26291, 1,11], [26291, 2,11]],
              [[26291, 1,12], [26291, 2,12]]
                                            ],
-            '9 non-final accepted or rejected cached')
+            'four undecided final cached')
     or diag explain \@archived_rpts;
 
   my $cmd_patt = qr|^ln $runfolder_path/.*/archive/plex\d+/.* /tmp/npg_seq_pipeline/cache_merge_component_test/\w{2}/\w{2}/\w{64}$|;
@@ -122,6 +135,49 @@ subtest 'create' => sub {
       like($part, $cmd_patt, "$cmd matches $cmd_patt");
     }
   }
+};
+
+subtest 'abort_on_missing_files' => sub {
+  plan tests => 2;
+
+  my $cacher;
+  lives_ok {
+    $cacher = $pkg->new
+      (conf_path      => "t/data/release/config/archive_on",
+       runfolder_path => $runfolder_path,
+       id_run         => 26291,
+       timestamp      => $timestamp,
+       qc_schema      => $qc);
+  } 'cacher created ok';
+
+  my $to_move = "$runfolder_path/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12.cram";
+  my $moved = $to_move . '_moved';
+  rename $to_move, $moved or die 'failed to move test file';
+
+  dies_ok {
+    $cacher->create;
+  } 'aborts okay';
+
+  rename $moved, $to_move or die 'failed to move test file';
+};
+
+subtest 'abort_on_missing_lib_qc' => sub {
+  plan tests => 2;
+
+  $qc->resultset(q(MqcLibraryOutcomeEnt))->search({})->first->delete;
+  my $cacher;
+  lives_ok {
+    $cacher = $pkg->new
+      (conf_path      => "t/data/release/config/archive_on",
+       runfolder_path => $runfolder_path,
+       id_run         => 26291,
+       timestamp      => $timestamp,
+       qc_schema      => $qc);
+  } 'cacher created ok';
+
+  dies_ok {
+    $cacher->create;
+  } 'aborts okay';
 };
 
 subtest 'no_cache_study' => sub {
@@ -185,3 +241,4 @@ subtest 'abort_on_missing_seq_qc' => sub {
     $cacher->create;
   } 'aborts okay';
 };
+

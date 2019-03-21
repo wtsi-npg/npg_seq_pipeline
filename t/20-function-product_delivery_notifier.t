@@ -122,7 +122,7 @@ subtest 'message_dir' => sub {
 };
 
 subtest 'create' => sub {
-  plan tests => 12;
+  plan tests => 13;
 
   my $message_dir = File::Temp->newdir("/tmp/$pkg.XXXXXXXX")->dirname;
 
@@ -137,6 +137,17 @@ subtest 'create' => sub {
        timestamp           => $timestamp,
        qc_schema           => $qc);
   } 'notifier created ok';
+
+  dies_ok {$notifier->create} 'preliminary results present - error';
+
+  my $rs = $qc->resultset('MqcLibraryOutcomeEnt');
+  # Make all outcomes either a rejected or undecided final result
+  while (my $row = $rs->next) {
+    if (!$row->has_final_outcome) {
+      my $shift = $row->is_undecided ? 1 : ($row->is_accepted ? 3 : 2);
+      $row->update({id_mqc_outcome => $row->id_mqc_outcome + $shift});
+    }
+  }  
 
   my @defs = @{$notifier->create};
   my @notified_rpts = _get_rpts(@defs);
