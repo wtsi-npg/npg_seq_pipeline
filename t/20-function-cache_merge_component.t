@@ -7,7 +7,7 @@ use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use t::util;
 
@@ -34,74 +34,82 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
   'Data/Intensities/BAM_basecalls_20180805-013153/' .
   'metadata_cache_26291/samplesheet_26291.csv';
 
-my $pkg = 'npg_pipeline::function::s3_archiver';
+my $pkg = 'npg_pipeline::function::cache_merge_component';
 use_ok($pkg);
 
 my $runfolder_path = 't/data/novaseq/180709_A00538_0010_BH3FCMDRXX';
 my $timestamp      = '20180701-123456';
 
-subtest 'local and no_s3_archival flag' => sub {
+subtest 'local and no_cache_merge_component' => sub {
   plan tests => 7;
 
-  my $archiver = $pkg->new
+  my $cacher = $pkg->new
     (conf_path      => "t/data/release/config/archive_on",
      runfolder_path => $runfolder_path,
      id_run         => 26291,
      timestamp      => $timestamp,
      qc_schema      => $qc,
      local          => 1);
-  ok($archiver->no_s3_archival, 'no_s3_archival flag is set to true');
-  my $ds = $archiver->create;
+  ok($cacher->no_cache_merge_component, 'no_cache_merge_component flag is set to true');
+  my $ds = $cacher->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
   isa_ok($ds->[0], 'npg_pipeline::function::definition');
   is($ds->[0]->excluded, 1, 'function is excluded');
 
-  $archiver = $pkg->new
+  $cacher = $pkg->new
     (conf_path      => "t/data/release/config/archive_on",
      runfolder_path => $runfolder_path,
      id_run         => 26291,
      timestamp      => $timestamp,
      qc_schema      => $qc,
-     no_s3_archival => 1);
-  ok(!$archiver->local, 'local flag is false');
-  $ds = $archiver->create;
+     no_cache_merge_component => 1);
+  ok(!$cacher->local, 'local flag is false');
+  $ds = $cacher->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
   is($ds->[0]->excluded, 1, 'function is excluded');
 };
 
 subtest 'create' => sub {
-  plan tests => 27;
+  plan tests => 3 + (1 + 12) * 8;
 
-  my $archiver;
+  my $cacher;
   lives_ok {
-    $archiver = $pkg->new
+    $cacher = $pkg->new
       (conf_path      => "t/data/release/config/archive_on",
        runfolder_path => $runfolder_path,
        id_run         => 26291,
        timestamp      => $timestamp,
        qc_schema      => $qc);
-  } 'archiver created ok';
+  } 'cacher created ok';
 
-  my @defs = @{$archiver->create};
+  my @defs = @{$cacher->create};
   my $num_defs_observed = scalar @defs;
-  my $num_defs_expected = 2; # Only 2 pass manual QC, tag index 3 and 9
+  my $num_defs_expected = 8; #  12 total - 2 final accepted - 2 final rejected = 8 to cache
   cmp_ok($num_defs_observed, '==', $num_defs_expected,
-         "create returns $num_defs_expected definitions when archiving");
+         "create returns $num_defs_expected definitions when caching");
 
   my @archived_rpts;
   foreach my $def (@defs) {
     push @archived_rpts,
       [map { [$_->id_run, $_->position, $_->tag_index] }
-       $def->composition->components_list];
+         map {$_->components_list} grep {defined} $def->composition];
   }
 
   is_deeply(\@archived_rpts,
-            [[[26291, 1, 3], [26291, 2, 3]],
-             [[26291, 1, 9], [26291, 2, 9]]],
-            'Only "26291:1:3;26291:2:3" and "26291:1:9;26291:2:9" archived')
+            [
+             [[26291, 1, 1], [26291, 2, 1]],
+             [[26291, 1, 2], [26291, 2, 2]],
+             [[26291, 1, 5], [26291, 2, 5]],
+             [[26291, 1, 6], [26291, 2, 6]],
+             [[26291, 1, 7], [26291, 2, 7]],
+             [[26291, 1, 8], [26291, 2, 8]],
+             [[26291, 1,11], [26291, 2,11]],
+             [[26291, 1,12], [26291, 2,12]]
+                                           ],
+            '9 non-final accepted or rejected cached')
     or diag explain \@archived_rpts;
 
-  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control --quiet --profile s3_profile_name $runfolder_path/.*/archive/plex\d+/.* s3://\S+$|;
+  my $cmd_patt = qr|^ln $runfolder_path/.*/archive/plex\d+/.* /tmp/npg_seq_pipeline/cache_merge_component_test/\w{2}/\w{2}/\w{64}$|;
 
   foreach my $def (@defs) {
     is($def->created_by, $pkg, "created_by is $pkg");
@@ -109,23 +117,24 @@ subtest 'create' => sub {
 
     my $cmd = $def->command;
     my @parts = split / && /, $cmd; # Deconstruct the command
+    like(shift @parts, qr|^mkdir -p /tmp/npg_seq_pipeline/cache_merge_component_test/\w{2}/\w{2}/\w{64}$|);
     foreach my $part (@parts) {
       like($part, $cmd_patt, "$cmd matches $cmd_patt");
     }
   }
 };
 
-subtest 'no_archive_study' => sub {
+subtest 'no_cache_study' => sub {
   plan tests => 2;
 
-  my $archiver = $pkg->new
+  my $cacher = $pkg->new
     (conf_path      => "t/data/release/config/archive_off",
      runfolder_path => $runfolder_path,
      id_run         => 26291,
      timestamp      => $timestamp,
      qc_schema      => $qc);
 
-  my @defs = @{$archiver->create};
+  my @defs = @{$cacher->create};
   my $num_defs_observed = scalar @defs;
   my $num_defs_expected = 1;
   cmp_ok($num_defs_observed, '==', $num_defs_expected,
@@ -136,28 +145,43 @@ subtest 'no_archive_study' => sub {
     diag explain \@defs;
 };
 
-subtest 'multiple or no study configs' => sub {
+subtest 'create_with_failed_lane' => sub {
+  plan tests => 3;
+
+  $qc->resultset(q(MqcOutcomeEnt))->search({id_run=>26291, position=>1})->first->toggle_final_outcome(q(fakeuser));
+  my $cacher;
+  lives_ok {
+    $cacher = $pkg->new
+      (conf_path      => "t/data/release/config/archive_on",
+       runfolder_path => $runfolder_path,
+       id_run         => 26291,
+       timestamp      => $timestamp,
+       qc_schema      => $qc);
+  } 'cacher created ok';
+
+  my @defs = @{$cacher->create};
+  my $num_defs_observed = scalar @defs;
+  my $num_defs_expected = 1; # single "excluded"
+  cmp_ok($num_defs_observed, '==', $num_defs_expected,
+         "create returns $num_defs_expected definitions when caching");
+  ok($defs[0] && $defs[0]->excluded, "excluded") 
+};
+
+subtest 'abort_on_missing_seq_qc' => sub {
   plan tests => 2;
 
-  my $archiver = $pkg->new
-    (conf_path      => 't/data/release/config/multiple_configs',
-     runfolder_path => $runfolder_path,
-     id_run         => 26291,
-     timestamp      => $timestamp,
-     qc_schema      => $qc);
+  $qc->resultset(q(MqcOutcomeEnt))->search({id_run=>26291, position=>1})->first->delete;
+  my $cacher;
+  lives_ok {
+    $cacher = $pkg->new
+      (conf_path      => "t/data/release/config/archive_on",
+       runfolder_path => $runfolder_path,
+       id_run         => 26291,
+       timestamp      => $timestamp,
+       qc_schema      => $qc);
+  } 'cacher created ok';
 
-  throws_ok {$archiver->create}
-    qr/Multiple configurations for study 5290/,
-    'error if multiple study configs are found';
-
-  $archiver = $pkg->new
-    (conf_path      => 't/data/release/config/no_config',
-     runfolder_path => $runfolder_path,
-     id_run         => 26291,
-     timestamp      => $timestamp,
-     qc_schema      => $qc);
-
-  throws_ok {$archiver->create}
-    qr/No release configuration was defined for study 5290/,
-    'error if neither study no default config is found';
+  dies_ok {
+    $cacher->create;
+  } 'aborts okay';
 };

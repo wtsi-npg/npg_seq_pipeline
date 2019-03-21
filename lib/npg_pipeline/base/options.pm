@@ -63,6 +63,20 @@ sub _default_to_local {
   return $self->local;
 }
 
+=head2 no_cache_merge_component
+
+Switches off caching of data products suitable for later merging
+
+=cut
+
+has q{no_cache_merge_component} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  lazy          => 1,
+  builder       => '_default_to_local',
+  documentation => q{Switches off caching of data products suitable for later merging.},
+);
+
 =head2 no_s3_archival
 
 Switches off archival to s3.
@@ -306,11 +320,11 @@ __END__
 
 =head1 AUTHOR
 
-Andy Brown
+Marina Gourtovaia, Kevin Lewis, David K. Jackson
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018,2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

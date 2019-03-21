@@ -4,8 +4,8 @@ use namespace::autoclean;
 
 use Data::Dump qw[pp];
 use Moose::Role;
+use File::Spec::Functions qw{catdir catfile};
 
-use npg_qc::Schema;
 use npg_qc::mqc::outcomes;
 
 with qw{WTSI::DNAP::Utilities::Loggable
@@ -28,6 +28,48 @@ has 'release_config' =>
    required   => 1,
    builder    => '_build_release_config',
    lazy       => 1,);
+
+=head2 expected_files
+
+  Arg [1]    : Data product whose files to list, npg_pipeline::product.
+
+  Example    : my @files = $obj->expected_files($product)
+  Description: Return a list of the files expected to to present for
+               archiving in the runfolder.
+
+  Returntype : Array
+
+=cut
+
+sub expected_files {
+  my ($self, $product) = @_;
+
+  $product or $self->logconfess('A product argument is required');
+
+  my @expected_files;
+
+  my $dir_path = catdir($self->archive_path(), $product->dir_path());
+  my @extensions = qw{cram cram.md5 cram.crai
+                      seqchksum sha512primesums512.seqchksum
+                      bcfstats};
+  push @expected_files,
+    map { $product->file_path($dir_path, ext => $_) } @extensions;
+
+  my @suffixes = qw{F0x900 F0xB00 F0xF04_target};
+  push @expected_files,
+    map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
+    @suffixes;
+
+  my $qc_path = $product->qc_out_path($self->archive_path());
+
+  my @qc_extensions = qw{verify_bam_id.json};
+  push @expected_files,
+    map { $product->file_path($qc_path, ext => $_) } @qc_extensions;
+
+  @expected_files = sort @expected_files;
+
+  return @expected_files;
+}
 
 =head2 is_release_data
 
@@ -111,7 +153,7 @@ sub has_qc_for_release {
 sub customer_name {
   my ($self, $product) = @_;
 
-  my $customer_name = $self->_find_study_config($product)->{s3}->{customer_name};
+  my $customer_name = $self->find_study_config($product)->{s3}->{customer_name};
   $customer_name or
     $self->logcroak(
       q{Missing s3 archival customer name in configuration file for product } .
@@ -141,7 +183,7 @@ sub customer_name {
 
 sub is_for_release {
   my ($self, $product, $type_of_release) = @_;
-  return $self->_find_study_config($product)->{$type_of_release}->{enable};
+  return $self->find_study_config($product)->{$type_of_release}->{enable};
 }
 
 =head2 is_for_s3_release
@@ -190,7 +232,7 @@ sub is_for_s3_release {
 sub s3_url {
   my ($self, $product) = @_;
 
-  my $url = $self->_find_study_config($product)->{s3}->{url};
+  my $url = $self->find_study_config($product)->{s3}->{url};
   if (ref $url) {
     $self->logconfess('Invalid S3 URL in configuration file: ', pp($url));
   }
@@ -214,7 +256,7 @@ sub s3_url {
 sub s3_profile {
   my ($self, $product) = @_;
 
-  my $profile = $self->_find_study_config($product)->{s3}->{profile};
+  my $profile = $self->find_study_config($product)->{s3}->{profile};
   if (ref $profile) {
     $self->logconfess('Invalid S3 profile in configuration file: ',
                       pp($profile));
@@ -261,7 +303,7 @@ sub is_for_s3_release_notification {
   my $rpt          = $product->rpt_list();
   my $name         = $product->file_name_root();
 
-  if ($self->_find_study_config($product)->{s3}->{notify}) {
+  if ($self->find_study_config($product)->{s3}->{notify}) {
     $self->info("Product $name, $rpt is for S3 release notification");
     return 1;
   }
@@ -289,12 +331,22 @@ sub _build_release_config {
 }
 
 #####
-# Returns a study-specific config or a default config. Therefore,
-# one cannot rely on study_id key being defined in the returned
-# data structure. Error if neither study nor default config is
-# available.
-#
-sub _find_study_config {
+
+=head2 find_study_config
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->find_study_config($product)
+  Description: Returns a study-specific config or a default config. Therefore,
+               one cannot rely on study_id key being defined in the obtained
+               data structure. Error if neither study nor default config is
+               available.
+
+  Returntype : Hash
+
+=cut
+
+sub find_study_config {
   my ($self, $product) = @_;
 
   my $with_spiked_control = 0;
