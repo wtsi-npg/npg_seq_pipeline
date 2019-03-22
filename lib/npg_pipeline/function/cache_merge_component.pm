@@ -99,7 +99,7 @@ sub _check_files {
 
   Example    : $obj->is_cacheable($product)
   Description: Return true if the product should be cached for a later
-               top-up or merge - chache is configures, seq QC Pass,
+               top-up or merge - cache is configured, seq QC Pass,
                lib QC undecided
 
   Returntype : Bool

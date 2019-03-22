@@ -201,7 +201,7 @@ sub customer_name {
 
 sub receipts_location {
   my ($self, $product) = @_;
-  return $self->_find_study_config($product)->{s3}->{receipts};
+  return $self->find_study_config($product)->{s3}->{receipts};
 }
 
 =head2 is_for_release

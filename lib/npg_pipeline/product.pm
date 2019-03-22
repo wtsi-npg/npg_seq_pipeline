@@ -431,7 +431,7 @@ sub subset_as_product {
   for component lanes of this product. If not all lanes have a final outcome,
   an empty list is returned.
 
-  npg_qc::Schema onject argument is required.
+  npg_qc::Schema object argument is required.
 
     use List::MoreUtils qw/all any/;
     my @seq_qc_objs = $p->final_seqqc_objs($schema);
@@ -461,7 +461,7 @@ sub final_seqqc_objs {
   Returns an undefined value if the the final library QC outcome is
   not available for this product.
 
-  npg_qc::Schema onject argument is required.
+  npg_qc::Schema object argument is required.
 
     my $lib_qc_obj = $p->final_libqc_obj($schema);
     print $lib_qc_obj->is_accepted;
