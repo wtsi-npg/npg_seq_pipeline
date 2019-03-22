@@ -400,7 +400,8 @@ sub run {
               $self->_staging_deletable()      &&
               $self->_irods_seq_deletable()    &&
               $self->_s3_deletable()           &&
-              $self->_autoqc_deletable()
+              $self->_autoqc_deletable()       &&
+              $self->_file_archive_deletable
                                );
   } catch {
     $self->error($_);
@@ -709,6 +710,35 @@ sub _s3_deletable {
   my $m = sprintf 'Files in s3: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
+  return $deletable;
+}
+
+sub _file_archive_deletable {
+  my $self = shift;
+  $self->debug('Checking that each product is archived in at least ' .
+               'one file archive');
+
+  my %product_digests =
+    map { $_->target_product->composition->digest => $_->target_product->composition}
+    @{$self->product_entities};
+  my %archived_product_digest =
+    map { $_->target_product->composition->digest => 1}
+    @{$self->eligible_product_entities};
+
+  my $deletable = 1;
+  for my $original (keys %product_digests) {
+    if (!exists $archived_product_digest{$original}) {
+      $self->logwarn('Product not available in any of file archives: ' .
+                      $product_digests{$original}->freeze());
+      $deletable = 0;
+    }
+  }
+
+  my $m = sprintf
+    'Each product is in at least one file archive: run %i %sdeletable',
+    $self->id_run , $deletable ? q[] : q[NOT ];
+  $self->info($m);
+
   return $deletable;
 }
 
