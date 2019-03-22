@@ -425,6 +425,63 @@ sub subset_as_product {
     composition => npg_tracking::glossary::composition->new(components => \@components));
 }
 
+=head2 final_seqqc_objs
+
+  Returns a list of  DBIx row objects representing a sequencing QC outcomes
+  for component lanes of this product. If not all lanes have a final outcome,
+  an empty list is returned.
+
+  npg_qc::Schema object argument is required.
+
+    use List::MoreUtils qw/all any/;
+    my @seq_qc_objs = $p->final_seqqc_objs($schema);
+    my $passed = @seq_qc_objs && (all { $_->is_accepted } @seq_qc_objs);
+    my $failed = !@seq_qc_objs || (any { $_->is_rejected } @seq_qc_objs);
+=cut
+
+sub final_seqqc_objs {
+  my ($self, $schema) = @_;
+
+  $schema or croak 'qc schema argument is required';
+
+  my @lp = $self->lanes_as_products;
+  my @seqqc = grep { $_->has_final_outcome }
+              $schema->resultset('MqcOutcomeEnt')
+              ->search_via_composition([map{$_->composition}@lp])->all;
+  if (@lp != @seqqc) {
+    return;
+  }
+
+  return @seqqc;
+}
+
+=head2 final_libqc_obj
+
+  Returns a DBIx row object representing a final library QC outcome.
+  Returns an undefined value if the the final library QC outcome is
+  not available for this product.
+
+  npg_qc::Schema object argument is required.
+
+    my $lib_qc_obj = $p->final_libqc_obj($schema);
+    print $lib_qc_obj->is_accepted;
+
+=cut
+
+sub final_libqc_obj {
+  my ($self, $schema) = @_;
+
+  $schema or croak 'qc schema argument is required';
+
+  my $libqc = $schema->resultset('MqcLibraryOutcomeEnt')
+                     ->search_via_composition([$self->composition])->next;
+  if ($libqc && $libqc->has_final_outcome) {
+    return $libqc;
+  }
+
+  return;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -471,7 +528,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018, 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

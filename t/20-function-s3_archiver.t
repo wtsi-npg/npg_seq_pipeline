@@ -70,7 +70,7 @@ subtest 'local and no_s3_archival flag' => sub {
 };
 
 subtest 'create' => sub {
-  plan tests => 27;
+  plan tests => 28;
 
   my $archiver;
   lives_ok {
@@ -81,6 +81,17 @@ subtest 'create' => sub {
        timestamp      => $timestamp,
        qc_schema      => $qc);
   } 'archiver created ok';
+
+  dies_ok {$archiver->create} 'preliminary results present - error';
+
+  my $rs = $qc->resultset('MqcLibraryOutcomeEnt');
+  # Make all outcomes either a rejected or undecided final result
+  while (my $row = $rs->next) {
+    if (!$row->has_final_outcome) {
+      my $shift = $row->is_undecided ? 1 : ($row->is_accepted ? 3 : 2);
+      $row->update({id_mqc_outcome => $row->id_mqc_outcome + $shift});
+    }
+  }
 
   my @defs = @{$archiver->create};
   my $num_defs_observed = scalar @defs;

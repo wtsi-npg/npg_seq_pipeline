@@ -13,7 +13,7 @@ use npg_pipeline::function::definition;
 
 extends 'npg_pipeline::base';
 
-with qw{npg_pipeline::product::release};
+with qw{npg_pipeline::product::cache_merge};
 
 Readonly::Scalar my $LINK_EXECUTABLE => 'ln';
 
@@ -43,12 +43,10 @@ sub create {
   my @definitions = ();
 
   foreach my $product (@products) {
-    my $digest = $product->composition()->digest();
-    my $destdir = catdir($self->merge_component_study_cache_dir($product),
-      substr($digest,0,2), substr($digest,2,2), $digest );
+    my $destdir = $self->merge_component_cache_dir($product);
 
-    my @file_paths = sort $self->expected_files($product);
-    $self->_check_files(@file_paths);;
+    my @file_paths = $self->expected_files($product);
+    $self->_check_files(@file_paths);
 
     my @commands;
     foreach my $file_path (@file_paths) {
@@ -85,12 +83,7 @@ sub create {
 sub _check_files {
   my ($self, @file_paths) = @_;
 
-  my @missing;
-  foreach my $file_path (@file_paths) {
-    if (not -e $file_path) {
-      push @missing, $file_path;
-    }
-  }
+  my @missing = grep { not -e } @file_paths;
 
   if (@missing) {
     $self->logcroak('Failed to cache files; the following files ',
@@ -100,44 +93,14 @@ sub _check_files {
   return;
 }
 
-=head2 merge_component_study_cache_dir
-
-  Arg [1]    : npg_pipeline::product
-
-  Example    : $obj->merge_component_cache_dir($product)
-  Description: Returns a directory in which to cache data products
-               ready for a merge with top-up data.
-
-  Returntype : Str
-
-=cut
-
-sub merge_component_study_cache_dir {
-  my ($self, $product) = @_;
-
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $study_config = $self->find_study_config($product);
-
-  my $dir;
-
-  if ($study_config) {
-    $dir = $study_config->{merge}->{component_cache_dir};
-    if (ref $dir) {
-      $self->logconfess('Invalid directory in configuration file: ', pp($dir));
-    }
-  }
-
-  return $dir;
-}
-
 =head2 is_cacheable
 
   Arg [1]    : npg_pipeline::product
 
   Example    : $obj->is_cacheable($product)
   Description: Return true if the product should be cached for a later
-               top-up or merge - seq QC Pass, lib QC undecided
+               top-up or merge - cache is configured, seq QC Pass,
+               lib QC undecided
 
   Returntype : Bool
 
@@ -149,27 +112,26 @@ sub is_cacheable {
   my $rpt          = $product->rpt_list();
   my $name         = $product->file_name_root();
 
-  if( $self->merge_component_study_cache_dir( $product ) ) {
-    my @lp = $product->lanes_as_products;
-    my @seqqc = $self->qc_schema->resultset('MqcOutcomeEnt')->search_via_composition([map{$_->composition}@lp])->all;
-    if(@lp != @seqqc) {
-      $self->logcroak("Product $name, $rpt has differing number of seq QC value(s) to constituent lanes so don't know what to do");
-    }
-    if(not all { $_->has_final_outcome and $_->is_accepted }  @seqqc) {
-      $self->info("Product $name, $rpt are not all Accepted Final seq QC values and so is NOT eligible for caching");
-      return 0;
-    }
-    my @libqc = $self->qc_schema->resultset('MqcLibraryOutcomeEnt')->search_via_composition([$product->composition])->all;
-    if(1 != @libqc) {
-      $self->info("Product $name, $rpt has no, or different, lib QC value(s) and so is NOT eligible for caching");
-      return 0;
-    }
-    if( $libqc[0]->has_final_outcome and not $libqc[0]->is_undecided) {
-      $self->info("Product $name, $rpt has Final lib QC value which is not undecided and so is NOT eligible for caching");
+  if ($self->is_release_data($product) and
+      $self->merge_component_study_cache_dir($product)) {
+
+    my @seqqc = $product->final_seqqc_objs($self->qc_schema);
+    @seqqc or $self->logcroak("Product $name, $rpt are not all Final seq QC values");
+
+    if(not all { $_->is_accepted }  @seqqc) {
+      $self->info("Product $name, $rpt are not all Final Accepted seq QC values");
       return 0;
     }
 
-    $self->info("Product $name, $rpt is eligible for caching");
+    my $libqc_obj = $product->final_libqc_obj($self->qc_schema);
+    # Lib outcomes are not available for full lane libraries, so the code below
+    # might give an error when absence of QC outcome is legitimate.
+    $libqc_obj or $self->logcroak("Product $name, $rpt is not Final lib QC value");
+    if (not $libqc_obj->is_undecided) {
+       $self->info("Product $name, $rpt has Final lib QC value which is not undecided and so is NOT eligible for caching");
+       return 0;
+    }
+
     return 1;
   }
 
@@ -214,9 +176,9 @@ product_release.yml, see npg_pipeline::product::release.
 
 =over
 
-=item JSON
-
 =item Moose
+
+=item MooseX::StrictConstructor
 
 =item Readonly
 

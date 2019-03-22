@@ -5,8 +5,7 @@ use namespace::autoclean;
 use Data::Dump qw[pp];
 use Moose::Role;
 use File::Spec::Functions qw{catdir catfile};
-
-use npg_qc::mqc::outcomes;
+use List::Util qw{all};
 
 with qw{WTSI::DNAP::Utilities::Loggable
         npg_pipeline::base::config};
@@ -15,12 +14,22 @@ our $VERSION = '0';
 
 Readonly::Scalar my $RELEASE_CONFIG_FILE => 'product_release.yml';
 
+=head1 SUBROUTINES/METHODS
+
+=head2 qc_schema
+
+=cut
+
 has 'qc_schema' =>
   (isa        => 'npg_qc::Schema',
    is         => 'ro',
    required   => 1,
    builder    => '_build_qc_schema',
    lazy       => 1,);
+
+=head2 release_config
+
+=cut
 
 has 'release_config' =>
   (isa        => 'HashRef',
@@ -34,7 +43,7 @@ has 'release_config' =>
   Arg [1]    : Data product whose files to list, npg_pipeline::product.
 
   Example    : my @files = $obj->expected_files($product)
-  Description: Return a list of the files expected to to present for
+  Description: Return a sorted list of the files expected to be present for
                archiving in the runfolder.
 
   Returntype : Array
@@ -127,13 +136,24 @@ sub has_qc_for_release {
 
   my $rpt  = $product->rpt_list();
   my $name = $product->file_name_root();
-  my $outcomes = npg_qc::mqc::outcomes->new(qc_schema => $self->qc_schema);
-  if ($outcomes->get_library_outcome($rpt)) {
+
+  my @seqqc = $product->final_seqqc_objs($self->qc_schema);
+  @seqqc or $self->logcroak("Product $name, $rpt are not all Final seq QC values");
+
+  if(not all { $_->is_accepted }  @seqqc) {
+    $self->info("Product $name, $rpt are not all Final Accepted seq QC values");
+    return 0;
+  }
+  my $libqc_obj = $product->final_libqc_obj($self->qc_schema);
+  # Lib outcomes are not available for full lane libraries, so the code below
+  # might give an error when absence of QC outcome is legitimate.
+  $libqc_obj or $self->logcroak("Product $name, $rpt is not Final lib QC value");
+  if ($libqc_obj->is_accepted) {
     $self->info("Product $name, $rpt is for release (passed manual QC)");
     return 1;
   }
 
-  $self->info("Product $name, $rpt is NOT for release (failed manual QC)");
+  $self->info("Product $name, $rpt is NOT for release (did not pass manual QC)");
 
   return 0;
 }
@@ -165,6 +185,23 @@ sub customer_name {
   }
 
   return $customer_name;
+}
+
+=head2 receipts_location
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->receipts_location($product);
+  Description: Return location of the receipts for s3 submission,
+               the value might be undefined.
+
+  Returntype : Str
+
+=cut
+
+sub receipts_location {
+  my ($self, $product) = @_;
+  return $self->find_study_config($product)->{s3}->{receipts};
 }
 
 =head2 is_for_release
@@ -449,10 +486,6 @@ study:
     irods:
       enable: true
       notify: false
-
-
-
-=head1 SUBROUTINES/METHODS
 
 =head1 BUGS AND LIMITATIONS
 
