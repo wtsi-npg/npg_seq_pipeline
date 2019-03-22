@@ -26,6 +26,27 @@ run should have been archived to s3.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 product_entities
+
+=head2 eligible_product_entities
+
+=head2 build_eligible_product_entities
+
+Builder method for the eligible_product_entities attribute.
+
+=cut
+
+sub build_eligible_product_entities {
+  my $self = shift;
+  @{$self->product_entities}
+    or $self->logcroak('product_entities array cannot be empty');
+  my @p =
+    grep { $self->is_release_data($_->target_product) &&
+           $self->is_for_s3_release($_->target_product) }
+    @{$self->product_entities};
+  return \@p;
+}
+
 =head2 fully_archived
 
 Currently returns false if any files for this
@@ -35,15 +56,11 @@ run should have been archived to s3.
 
 sub fully_archived {
   my $self = shift;
-  my @p =
-    grep { $self->is_release_data($_->target_product) &&
-           $self->is_for_s3_release($_->target_product) }
-    @{$self->product_entities};
   #####
   # Proper assessment is pending. For now we do not want
   # to delete any runs that have data that should have
   # gone to s3.
-  return !@p
+  return !@{$self->eligible_product_entities()};
 }
 
 __PACKAGE__->meta->make_immutable;
