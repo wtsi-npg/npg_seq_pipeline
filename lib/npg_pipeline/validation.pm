@@ -701,6 +701,7 @@ sub _s3_deletable {
 
   my $v = npg_pipeline::validation::s3->new(
     product_entities => $self->product_entities,
+    file_extension   => $self->file_extension,
     qc_schema        => $self->qc_schema
   );
   my $deletable = $v->fully_archived();

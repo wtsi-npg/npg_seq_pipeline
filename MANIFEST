@@ -1020,6 +1020,7 @@ t/data/qc_outcomes/fixtures/README
 t/data/Recipes/TileLayout.xml
 t/data/release/config/archive_off/product_release.yml
 t/data/release/config/archive_on/product_release.yml
+t/data/release/config/default_s3_archival/product_release.yml
 t/data/release/config/multiple_configs/product_release.yml
 t/data/release/config/no_config/product_release.yml
 t/data/release/config/notify_off/product_release.yml
