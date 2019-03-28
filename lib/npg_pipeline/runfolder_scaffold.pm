@@ -206,6 +206,8 @@ sub _create_tileviz_lane_indexes {
                      @{$self->products->{'lanes'}};                     # same level as tileviz directory
 
   foreach my $lane (sort keys %lanes) {
+    next if -e $lanes{$lane}; # Do not overwrite an existing file,
+                              # it might have useful data.
     my $title = join q[ ], 'Run', $self->id_run(), 'Lane', $lane, 'Tileviz', 'Report';
     my @content = ();
     push @content, "<html><head><title>$title</title></head>";
