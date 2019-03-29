@@ -47,6 +47,19 @@ product has failed QC or it is a candidate for topping up.
 If neither of the latter assumtions is true, the product
 is not consided successfully archived.
 
+The validation is implemented as a 'lazy' evaluation of
+a number of conditions, i.e. if the earlier condition
+confirms the archival, the conditions following after it
+are not evaluated. The order of evaluation is as flollows:
+received by the customer, failed QC outcome, available in
+a merged component cache.
+
+Data product sent to the customer always have 'Accepted final'
+library QC outcome. We check that all products received by the
+customer still have this outcome. If not, we disregard the
+fact that the product had been received by the customer and
+progress to the next step of validation.
+
 =head1 SUBROUTINES/METHODS
 
 =head2 qc_schema
@@ -109,10 +122,10 @@ sub fully_archived {
   my $archived = 1;
   foreach my $p (map { $_->target_product }
                  @{$self->eligible_product_entities}) {
-    $self->_received_by_customer($p) ||
-    $self->_failed_mqc($p) ||
-    $self->_saved4topup($p) ||
-    ($archived = 0);
+    ($self->_received_by_customer($p) and $self->_passed_mqc($p))
+    or $self->_failed_mqc($p)
+    or $self->_saved4topup($p)
+    or ($archived = 0);
   }
 
   return $archived;
@@ -248,6 +261,23 @@ sub _received_by_customer {
   }
 
   return $received;
+}
+
+sub _passed_mqc {
+  my ($self, $product) = @_;
+
+  #####
+  # This method will be called for products that are received
+  # by the customer. It ensures that the QC outcome has not
+  # been reset after sending the product to the customer.
+  #
+  my $desc = $product->composition->freeze();
+  my $libqc_obj = $product->final_libqc_obj($self->qc_schema);
+  $libqc_obj or $self->logcroak("Product $desc - not final lib QC outcome");
+  my $passed = $libqc_obj->is_accepted;
+  $passed or $self->logwarn("Product $desc did not pass QC");
+
+  return $passed;
 }
 
 sub _failed_mqc {

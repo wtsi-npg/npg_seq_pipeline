@@ -449,7 +449,8 @@ subtest 'product failed mqc' => sub {
 };
 
 subtest 's3 fully archived' => sub {
-  plan tests => 12;
+  plan tests => 15;
+
     SKIP: {
       skip 'bzcat executable not available', 12 unless which('bzcat');
   my $content = <<'END_CONTENT';
@@ -474,7 +475,7 @@ END_CONTENT
   $z->close();
 
   $qc_schema->resultset('MqcOutcomeEnt')->search({id_run => 26291})
-            ->update({id_mqc_outcome => 3}); # make al lanes Accepted final
+    ->update({id_mqc_outcome => 3}); # make all lanes Accepted final
 
   my $v = npg_pipeline::validation::s3->new(
     product_entities  => \@ets,
@@ -485,7 +486,28 @@ END_CONTENT
   );
   is (@{$v->product_entities} - @{$v->eligible_product_entities}, 2,
     'eligible product entities contain fewer objects');
+  throws_ok { $v->fully_archived() } qr/not final lib QC outcome/,
+    'all qc outcomes should be final';
+
+  my @compositions = map {$_->target_product->composition}
+                     @{$v->eligible_product_entities};
+  $qc_schema->resultset('MqcLibraryOutcomeEnt')
+    ->search_via_composition(\@compositions)
+    ->update({id_mqc_outcome => 3}); # make all libs Accepted final
   ok($v->fully_archived(), 'archived - all products acknowledged');
+
+  $qc_schema->resultset('MqcLibraryOutcomeEnt')
+    ->search_via_composition([$compositions[0]])
+    ->update({id_mqc_outcome => 6}); # make one lib Undecided final
+  my $archived;
+  warnings_like { $archived = $v->fully_archived() }
+    [qr/did not pass QC/, qr/did not fail QC/, qr/not found/],
+    'warning about qc not passed';
+  ok(!$archived,
+    'no archived - all received, one undecided, not in the cache');
+  $qc_schema->resultset('MqcLibraryOutcomeEnt')
+    ->search_via_composition([$compositions[0]])
+    ->update({id_mqc_outcome => 3}); # make it back Accepted final
 
   my @lines = split "\n", $content;
   pop @lines; # remove record for tag 10;
@@ -500,6 +522,10 @@ END_CONTENT
   print $fh (Dump $h) or die "Failed to write to $file";
   close $fh or warn "Failed to close file handle to $file";
 
+  $qc_schema->resultset('MqcLibraryOutcomeEnt')
+    ->search_via_composition([$compositions[9]])
+    ->update({id_mqc_outcome => 4}); # make tag 10 Rejected final
+
   $v = npg_pipeline::validation::s3->new(
     product_entities  => \@ets,
     logger            => $logger,
@@ -507,7 +533,6 @@ END_CONTENT
     conf_path         => $config_dir,
     qc_schema         => $qc_schema
   );
-  my $archived;
   warnings_like { $archived = $v->fully_archived() }
     [ qr/No receipt for file 26291\#10\.cram/, qr/failed QC/ ],
     'warning about no receipt and failed qc';
