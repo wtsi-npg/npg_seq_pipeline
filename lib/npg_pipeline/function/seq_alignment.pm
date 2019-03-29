@@ -749,7 +749,7 @@ sub _has_gbs_plex{
     $self->logcroak(qq{$rpt_list - GbS plex set but no gbs plex path found});
   }
 
-  if($library_type and $library_type !~ /^GbS/ismx){
+  if($library_type and $library_type !~ /^GbS|GnT\sMDA/ismx){
     $self->logcroak(qq{$rpt_list - GbS plex set but library type incompatible});
   }
 

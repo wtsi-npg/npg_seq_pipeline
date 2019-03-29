@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
 
 release 55.0
+ - additional 'GnT MDA' library type added to allowed types for gbs analysis
  - a new archival pipeline function, cache_merge_component, for caching merge
    candidates as a part of the archival pipeline
  - no overwriting existing tileviz files when scaffolding teh runfolder
