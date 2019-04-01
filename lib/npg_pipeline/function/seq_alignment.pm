@@ -101,7 +101,7 @@ has '_do_gbs_plex_analysis' => ( isa     => 'Bool',
                                );
 
 sub generate {
-  my ( $self ) = @_;
+  my ($self, $dry_run) = @_;
 
   my @definitions = ();
 
@@ -109,12 +109,27 @@ sub generate {
     my $ref = {};
     $ref->{'memory'} = $MEMORY;
     my $subsets = [];
-    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets);
-    push @definitions, $self->_create_definition($ref, $dp);
+    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets, $dry_run);
     $self->_save_compositions($dp, $subsets);
+    if (!$dry_run) {
+      push @definitions, $self->_create_definition($ref, $dp);
+    }
   }
 
   return \@definitions;
+}
+
+sub generate_compositions {
+  my $self = shift;
+
+  my $dry_run = 1;
+  $self->generate($dry_run);
+  return [npg_pipeline::function::definition->new(
+            created_by => __PACKAGE__,
+            created_on => $self->timestamp(),
+            identifier => $self->id_run(),
+            excluded   => 1
+          )];
 }
 
 sub _save_compositions {
@@ -147,7 +162,7 @@ sub _create_definition {
 }
 
 sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
-  my ( $self, $dp, $ref, $subsets) = @_;
+  my ( $self, $dp, $ref, $subsets, $dry_run) = @_;
 
   ########################################################
   # derive base parameters from supplied data_product (dp)
@@ -502,6 +517,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($nchs) {
     push @{$subsets}, 'human';
   }
+                      ##############################################
+  return if $dry_run; # Early return, we only need a list of subsets
+                      ##############################################
 
   # write p4 parameters to file
   my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path(q[POSITION]),
@@ -879,6 +897,16 @@ and some QC checks.
 
 Creates and returns an array of npg_pipeline::function::definition
 objects for all entities of the run eligible for alignment and split.
+
+=head2 generate_compositions
+
+Does just enough to figure out what .composition.json files have
+to be created and creates them. Returns an array consisting of a
+single npg_pipeline::function::definition object where this function
+is flagged as excluded.
+
+Can be used to generate missing or replace corrupt composition.json
+files in an existing analysis directory. 
 
 =head1 DIAGNOSTICS
 

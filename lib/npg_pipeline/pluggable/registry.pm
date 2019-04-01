@@ -41,6 +41,7 @@ Readonly::Hash my %REGISTRY => (
 
   'p4_stage1_analysis'      => {'p4_stage1_analysis' => 'generate'},
   'seq_alignment'           => {'seq_alignment' => 'generate'},
+  'generate_compositions'   => {'seq_alignment' => 'generate_compositions'},
 
   'archive_logs'                            => {'log_files_archiver' => 'create'},
   'upload_illumina_analysis_to_qc_database' => {'illumina_qc_archiver' => 'create'},
