@@ -69,27 +69,17 @@ END {
 }
 
 subtest 'object construction, file extensions, file names' => sub {
-  plan tests => 8;
+  plan tests => 6;
 
   my $ref = {
     irods_destination_collection => "${IRODS_TEST_AREA1}",
-    product_entities  => [],
+    product_entities  => [$irrelevant_entity],
     staging_files     => {'5174:1:0' => ['5174_1#0.cram', '5174_1#0.cram.crai']},
     logger            => $logger,
     irods             => $irods,
     file_extension    => 'cram'
   };
-  throws_ok { npg_pipeline::validation::irods->new($ref) }
-    qr/product_entities array cannot be empty/,
-    'object construction failed';
 
-  $ref->{product_entities} = [$irrelevant_entity];
-  $ref->{staging_files}    = {};
-  throws_ok { npg_pipeline::validation::irods->new($ref) }
-    qr/staging_files hash cannot be empty/,
-    'object construction failed';
-
-  $ref->{staging_files} = {'5174:1:0' => ['5174_1#0.bam', '5174_1#0.bai']};
   my $v = npg_pipeline::validation::irods->new($ref);
   is( $v->index_file_extension, 'crai', 'index file extension is crai');
   is( $v->index_file_path('5174_1#0.cram'), '5174_1#0.cram.crai',
@@ -107,7 +97,7 @@ subtest 'object construction, file extensions, file names' => sub {
 };
 
 subtest 'eligible product entities' => sub {
-  plan tests => 5;
+  plan tests => 6;
 
   my $config_dir = join q[/], $dir, 'config';
   mkdir $config_dir or die "Failed to create $config_dir";
@@ -121,6 +111,19 @@ subtest 'eligible product entities' => sub {
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/miseq/samplesheet_16850.csv};
 
+  my $v = npg_pipeline::validation::irods->new(
+    irods_destination_collection => "${IRODS_TEST_AREA1}",
+    product_entities  => [],
+    staging_files     => {'16850:1:0' => ['16850_1#0.cram', '16850_1#0.cram.crai']},
+    logger            => $logger,
+    irods             => $irods,
+    file_extension    => 'cram',
+    conf_path         => $config_dir,
+  );
+  throws_ok { $v->eligible_product_entities() }
+    qr/product_entities array cannot be empty/,
+    'error if product entities array is empty';
+
   my @ets = map {
     npg_pipeline::validation::entity->new(
       staging_archive_root => q[t],
@@ -131,7 +134,7 @@ subtest 'eligible product entities' => sub {
     )
   } map { qq[16850:1:$_] } (0 .. 2);
 
-  my $v = npg_pipeline::validation::irods->new(
+  $v = npg_pipeline::validation::irods->new(
     irods_destination_collection => "${IRODS_TEST_AREA1}",
     product_entities  => \@ets,
     staging_files     => {'16850:1:0' => ['16850_1#0.cram', '16850_1#0.cram.crai']},
@@ -140,7 +143,7 @@ subtest 'eligible product entities' => sub {
     file_extension    => 'cram',
     conf_path         => $config_dir,
   );
-  is (scalar @ets, scalar @{$v->_eligible_product_entities},
+  is (scalar @ets, scalar @{$v->eligible_product_entities},
     'all product entities are eligible for archival to iRODS');
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
@@ -167,14 +170,14 @@ subtest 'eligible product entities' => sub {
     conf_path         => $config_dir,
   );
 
-  my @eligible = @{$v->_eligible_product_entities};
+  my @eligible = @{$v->eligible_product_entities};
   is (scalar @eligible, 2, 'two entities to archive to iRODS');
   ok ($eligible[0]->target_product->is_tag_zero_product, 'first product is for tag zero');
   ok ($eligible[1]->target_product->lims->is_control, 'second product is for spiked phix');
 };
 
 subtest 'deletable or not' => sub {
-  my $num_tests = 19;
+  my $num_tests = 20;
   plan tests => $num_tests;
 
   my $archive               = join q[/], $dir, '20405';
@@ -187,13 +190,20 @@ subtest 'deletable or not' => sub {
    my $ref = {
       irods_destination_collection => "${IRODS_TEST_AREA1}",
       product_entities  => [$irrelevant_entity],
-      staging_files     => {'5174:1:0' => ['5174_1#0.cram', '5174_1#0.cram.crai']},
-      _eligible_product_entities => [],
+      staging_files     => {},
+      eligible_product_entities => [],
       logger            => $logger,
       irods             => $irods,
       file_extension    => 'cram'
     };
+
     my $v = npg_pipeline::validation::irods->new($ref);
+    throws_ok { $v->_eligible_staging_files() }
+      qr/staging_files hash cannot be empty/,
+      'error if no staging files are defined';
+
+    $ref->{staging_files} = {'5174:1:0' => ['5174_1#0.cram', '5174_1#0.cram.crai']};
+    $v = npg_pipeline::validation::irods->new($ref);
 
     my $result;   
       warnings_like { $result = $v->archived_for_deletion() }
@@ -245,7 +255,7 @@ subtest 'deletable or not' => sub {
       irods_destination_collection => "${IRODS_TEST_AREA1}",
       product_entities  => \@p_entities ,
       staging_files     => $staging_files,
-      _eligible_product_entities => [],
+      eligible_product_entities => [],
       logger            => $logger,
       irods             => $irods,
       file_extension    => 'cram'
@@ -258,7 +268,7 @@ subtest 'deletable or not' => sub {
       'nothing to archive warnings';
     is ($result, 0, 'not deletable - nothing should be in iRODS');
 
-    $ref->{_eligible_product_entities} = \@p_entities;
+    $ref->{eligible_product_entities} = \@p_entities;
 
     $v = npg_pipeline::validation::irods->new($ref);
     ok($v->archived_for_deletion(), 'deletable');

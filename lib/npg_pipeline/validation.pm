@@ -323,6 +323,18 @@ sub _build_product_entities {
   return \@e;
 }
 
+=head2 eligible_product_entities
+
+An array of npg_pipeline::validation::entity objects which
+were considered eligible for archival by all of product file
+archival methods.
+
+=cut
+
+has q{+eligible_product_entities}  => (
+  metaclass => 'NoGetopt',
+);
+
 =head2 irods
 
 Instance of WTSI::NPG::iRODS class.
@@ -359,6 +371,17 @@ sub _build_qc_schema {
 
 ############## Public methods ###################################################
 
+=head2 build_eligible_product_entities
+
+Builder method for the eligible_product_entities attribute.
+returns an empty array.
+
+=cut
+
+sub build_eligible_product_entities {
+  return [];
+}
+
 =head2 run
 
 =cut
@@ -377,7 +400,8 @@ sub run {
               $self->_staging_deletable()      &&
               $self->_irods_seq_deletable()    &&
               $self->_s3_deletable()           &&
-              $self->_autoqc_deletable()
+              $self->_autoqc_deletable()       &&
+              $self->_file_archive_deletable
                                );
   } catch {
     $self->error($_);
@@ -544,6 +568,7 @@ sub _irods_seq_deletable {
 
   if ($self->ignore_irods) {
     $self->info('iRODS check ignored');
+    push @{$self->eligible_product_entities}, @{$self->product_entities};
     return 1;
   }
 
@@ -553,13 +578,15 @@ sub _irods_seq_deletable {
     push @{$files->{$rpt_list}}, $f, $self->_staging_files->{'seq'}->{$f};
   }
 
-  my $deletable = npg_pipeline::validation::irods->new(
+  my $v = npg_pipeline::validation::irods->new(
     irods_destination_collection => $self->irods_destination_collection,
     irods            => $self->irods,
     file_extension   => $self->file_extension,
     product_entities => $self->product_entities,
     staging_files    => $files
-  )->archived_for_deletion();
+  );
+  my $deletable = $v->archived_for_deletion();
+  push @{$self->eligible_product_entities}, @{$v->eligible_product_entities};
 
   my $m = sprintf 'Files in iRODS: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
@@ -670,15 +697,48 @@ sub _s3_deletable {
 
   if ($self->no_s3_archival) {
     $self->info('s3 check ignored');
+    push @{$self->eligible_product_entities}, @{$self->product_entities};
     return 1;
   }
 
-  my $deletable = npg_pipeline::validation::s3->new(
+  my $v = npg_pipeline::validation::s3->new(
     product_entities => $self->product_entities,
-  )->fully_archived();
+  );
+  my $deletable = $v->fully_archived();
+  push @{$self->eligible_product_entities}, @{$v->eligible_product_entities};
+
   my $m = sprintf 'Files in s3: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
+  return $deletable;
+}
+
+sub _file_archive_deletable {
+  my $self = shift;
+  $self->debug('Checking that each product is archived in at least ' .
+               'one file archive');
+
+  my %product_digests =
+    map { $_->target_product->composition->digest => $_->target_product->composition}
+    @{$self->product_entities};
+  my %archived_product_digest =
+    map { $_->target_product->composition->digest => 1}
+    @{$self->eligible_product_entities};
+
+  my $deletable = 1;
+  for my $original (keys %product_digests) {
+    if (!exists $archived_product_digest{$original}) {
+      $self->logwarn('Product not available in any of file archives: ' .
+                      $product_digests{$original}->freeze());
+      $deletable = 0;
+    }
+  }
+
+  my $m = sprintf
+    'Each product is in at least one file archive: run %i %sdeletable',
+    $self->id_run , $deletable ? q[] : q[NOT ];
+  $self->info($m);
+
   return $deletable;
 }
 

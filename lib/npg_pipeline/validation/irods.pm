@@ -51,6 +51,10 @@ File extension for the sequence file format, required.
 
 has '+file_extension' => (required => 1,);
 
+=head2 product_entities
+
+=head2 eligible_product_entities
+
 =head2 index_file_extension
 
 =head2 irods_destination_collection
@@ -93,20 +97,20 @@ has 'staging_files' => (
   required => 1,
 );
 
-=head2 BUILD
+=head2 build_eligible_product_entities
 
-Post-constructor hook. Performs simple checks of required
-attributes. Error if any of the checks fail.
+Builder method for the eligible_product_entities attribute.
 
 =cut
 
-sub BUILD {
+sub build_eligible_product_entities {
   my $self = shift;
   @{$self->product_entities}
     or $self->logcroak('product_entities array cannot be empty');
-  (keys %{$self->staging_files}) or
-    $self->logcroak('staging_files hash cannot be empty');
-  return;
+  my @p =
+    grep { $self->is_for_irods_release($_->target_product) }
+    @{$self->product_entities};
+  return \@p;
 }
 
 =head2 archived_for_deletion
@@ -122,7 +126,7 @@ sub archived_for_deletion {
 
   my $archived = 1;
 
-  if (@{$self->_eligible_product_entities}) {
+  if (@{$self->eligible_product_entities}) {
     $archived = $self->_check_files_exist() &&
                 $self->_check_checksums();
   } else {
@@ -139,25 +143,8 @@ sub archived_for_deletion {
 }
 
 #####
-# A list of product entities which have to be archived
-# to iRODS. This list might be empty.
-#
-has '_eligible_product_entities' => (
-  isa        => 'ArrayRef',
-  is         => 'ro',
-  lazy_build => 1,
-);
-sub _build__eligible_product_entities {
-  my $self = shift;
-  my @p =
-    grep { $self->is_for_irods_release($_->target_product) }
-    @{$self->product_entities};
-  return \@p;
-}
-
-#####
 # Staging files belonging to product entities in
-# _eligible_product_entities .
+# eligible_product_entities .
 #
 has '_eligible_staging_files' => (
   isa        => 'HashRef',
@@ -166,8 +153,10 @@ has '_eligible_staging_files' => (
 );
 sub _build__eligible_staging_files {
   my $self = shift;
+  (keys %{$self->staging_files}) or
+    $self->logcroak('staging_files hash cannot be empty');
   my $h;
-  foreach my $e (@{$self->_eligible_product_entities}) {
+  foreach my $e (@{$self->eligible_product_entities}) {
     my $rpt_list = $e->target_product()->composition->freeze2rpt();
     foreach my $path (@{$self->staging_files->{$rpt_list}}) {
       my $name = basename $path;

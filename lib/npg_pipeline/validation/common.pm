@@ -15,6 +15,13 @@ has 'product_entities'  => (
   required => 1,
 );
 
+has 'eligible_product_entities' => (
+  isa     => 'ArrayRef',
+  is      => 'ro',
+  lazy    => 1,
+  builder => 'build_eligible_product_entities',
+);
+
 has 'file_extension' => (
   isa      => 'Str',
   is       => 'ro',
@@ -93,6 +100,11 @@ Moose role. Common functionality for modules of npg_run_is_deletable script.
 =head2 product_entities
 
 Attribute, required, an array of npg_pipeline::validation::entity objects.
+
+=head2 eligible_product_entities
+
+Attribute, a reference to a list of product entities which have to be
+archived to a particular file archive. This list might be empty.
 
 =head2 file_extension
 
