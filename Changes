@@ -1,6 +1,16 @@
 LIST OF CHANGES
 ---------------
 
+release 55.0
+ - a new archival pipeline function, cache_merge_component, for caching merge
+   candidates as a part of the archival pipeline
+ - no overwriting existing tileviz files when scaffolding teh runfolder
+ - a new function, generate_compositions, for generating composition JSON files
+ - npg_run_is_deletable:
+    cross-checks for all file archival destinations to ensure that each
+      product is archived in at least one destination;
+    full logic for validating correctness of s3 archival
+
 release 54.1.2
  - set explicit umask for wr jobs to guarantee that output is group-writable
 
