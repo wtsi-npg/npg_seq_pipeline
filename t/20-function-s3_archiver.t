@@ -69,39 +69,8 @@ subtest 'local and no_s3_archival flag' => sub {
   is($ds->[0]->excluded, 1, 'function is excluded');
 };
 
-subtest 'expected_files' => sub {
-  plan tests => 1;
-
-  my $archiver = $pkg->new
-    (conf_path      => "t/data/release/config/archive_on",
-     runfolder_path => $runfolder_path,
-     id_run         => 26291,
-     timestamp      => $timestamp,
-     qc_schema      => $qc);
-
-  my $product = shift @{$archiver->products->{data_products}};
-
-  my $path = "$runfolder_path/Data/Intensities/" .
-             'BAM_basecalls_20180805-013153/no_cal/archive/plex1';
-  my @expected = sort map { "$path/$_" }
-    ('26291#1_F0x900.stats',
-     '26291#1_F0xB00.stats',
-     '26291#1_F0xF04_target.stats',
-     '26291#1.bcfstats',
-     '26291#1.cram',
-     '26291#1.cram.crai',
-     '26291#1.cram.md5',
-     '26291#1.seqchksum',
-     '26291#1.sha512primesums512.seqchksum',
-     'qc/26291#1.verify_bam_id.json');
-
-  my @observed = $archiver->expected_files($product);
-  is_deeply(\@observed, \@expected, 'Expected files listed') or
-    diag explain \@observed;
-};
-
 subtest 'create' => sub {
-  plan tests => 27;
+  plan tests => 28;
 
   my $archiver;
   lives_ok {
@@ -112,6 +81,17 @@ subtest 'create' => sub {
        timestamp      => $timestamp,
        qc_schema      => $qc);
   } 'archiver created ok';
+
+  dies_ok {$archiver->create} 'preliminary results present - error';
+
+  my $rs = $qc->resultset('MqcLibraryOutcomeEnt');
+  # Make all outcomes either a rejected or undecided final result
+  while (my $row = $rs->next) {
+    if (!$row->has_final_outcome) {
+      my $shift = $row->is_undecided ? 1 : ($row->is_accepted ? 3 : 2);
+      $row->update({id_mqc_outcome => $row->id_mqc_outcome + $shift});
+    }
+  }
 
   my @defs = @{$archiver->create};
   my $num_defs_observed = scalar @defs;
@@ -132,7 +112,7 @@ subtest 'create' => sub {
             'Only "26291:1:3;26291:2:3" and "26291:1:9;26291:2:9" archived')
     or diag explain \@archived_rpts;
 
-  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control --quiet --profile s3_profile_name $runfolder_path/.*/archive/plex\d+/.* s3://|;
+  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control --quiet --profile s3_profile_name $runfolder_path/.*/archive/plex\d+/.* s3://\S+$|;
 
   foreach my $def (@defs) {
     is($def->created_by, $pkg, "created_by is $pkg");
@@ -141,7 +121,7 @@ subtest 'create' => sub {
     my $cmd = $def->command;
     my @parts = split / && /, $cmd; # Deconstruct the command
     foreach my $part (@parts) {
-      like($cmd, $cmd_patt, "$cmd matches $cmd_patt");
+      like($part, $cmd_patt, "$cmd matches $cmd_patt");
     }
   }
 };
@@ -165,4 +145,30 @@ subtest 'no_archive_study' => sub {
 
   is($defs[0]->composition, undef, 'definition has no composition') or
     diag explain \@defs;
+};
+
+subtest 'multiple or no study configs' => sub {
+  plan tests => 2;
+
+  my $archiver = $pkg->new
+    (conf_path      => 't/data/release/config/multiple_configs',
+     runfolder_path => $runfolder_path,
+     id_run         => 26291,
+     timestamp      => $timestamp,
+     qc_schema      => $qc);
+
+  throws_ok {$archiver->create}
+    qr/Multiple configurations for study 5290/,
+    'error if multiple study configs are found';
+
+  $archiver = $pkg->new
+    (conf_path      => 't/data/release/config/no_config',
+     runfolder_path => $runfolder_path,
+     id_run         => 26291,
+     timestamp      => $timestamp,
+     qc_schema      => $qc);
+
+  throws_ok {$archiver->create}
+    qr/No release configuration was defined for study 5290/,
+    'error if neither study no default config is found';
 };

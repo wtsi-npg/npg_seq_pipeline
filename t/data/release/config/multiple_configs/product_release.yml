@@ -18,8 +18,6 @@ study:
     irods:
       enable: false
       notify: false
-    merge:
-      component_cache_dir: "/tmp/npg_seq_pipeline/cache_merge_component_test/"
 
   - study_id: "1000"
     s3:
@@ -30,3 +28,10 @@ study:
       enable: true
       notify: false
 
+  - study_id: "5290"
+    s3:
+      enable: false
+      notify: false
+    irods:
+      enable: true
+      notify: false

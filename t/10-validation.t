@@ -1,12 +1,16 @@
 use strict;
 use warnings;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Exception;
 use Test::Warn;
+use Test::Trap qw/ :warn /;
 use File::Path qw/ make_path /;
 use File::Slurp qw/ write_file /;
 use File::Copy;
-use Log::Log4perl qw/ :levels /;;
+use Log::Log4perl qw/ :levels /;
+use File::Temp qw/ tempdir /;
+use Moose::Meta::Class;
+
 use t::util;
 
 use_ok ('npg_pipeline::validation');
@@ -17,7 +21,21 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $util->temp_directory(), 'logfile'),
                           utf8   => 1});
 
-sub _create_test_runfolder {
+my $qc_schema = Moose::Meta::Class->create_anon_class(
+                  roles => [qw/npg_testing::db/])->new_object()
+                ->create_test_db(q[npg_qc::Schema]);
+
+sub _create_test_runfolder_8747 {
+  my $rfh = $util->create_runfolder(
+            tempdir(CLEANUP => 1), {analysis_path => 'analysis'});
+  copy 't/data/run_params/runParameters.hiseq.xml',
+       join(q[/], $rfh->{'runfolder_path'}, 'runParameters.xml');
+  copy 't/data/hiseq/16756_RunInfo.xml', 
+       join(q[/], $rfh->{'runfolder_path'}, 'RunInfo.xml');
+  return $rfh;
+}
+
+sub _populate_test_runfolder {
   my ($archive_path, $products) = @_;
   my @letters  = (q(a)..q(z));
   foreach my $p (@{$products}) {
@@ -41,7 +59,7 @@ sub _create_test_runfolder {
 subtest 'create object' => sub {
   plan tests => 15;
 
-  my $v = npg_pipeline::validation->new();
+  my $v = npg_pipeline::validation->new(qc_schema => $qc_schema);
   isa_ok ($v, 'npg_pipeline::validation');
 
   for my $flag (qw/ignore_lims ignore_npg_status ignore_time_limit
@@ -65,24 +83,20 @@ subtest 'lims and staging deletable' => sub {
 
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = 't/data/samplesheet_8747.csv';
 
-  my $rfh = $util->create_runfolder(
-            $util->temp_directory(), {analysis_path => 'analysis'});
-  copy 't/data/run_params/runParameters.hiseq.xml',
-       join(q[/], $rfh->{'runfolder_path'}, 'runParameters.xml');
-  copy 't/data/hiseq/16756_RunInfo.xml', 
-       join(q[/], $rfh->{'runfolder_path'}, 'RunInfo.xml');
+  my $rfh = _create_test_runfolder_8747();
 
   my $archive_path = $rfh->{'archive_path'};
   my $ref = {
     id_run => 8747,
     runfolder_path => $rfh->{'runfolder_path'},
     analysis_path  => $rfh->{'analysis_path'},
-    archive_path   => $archive_path
+    archive_path   => $archive_path,
+    qc_schema      => $qc_schema
   };
 
   my $v = npg_pipeline::validation->new($ref);
 
-  _create_test_runfolder($archive_path, $v->products->{'data_products'});
+  _populate_test_runfolder($archive_path, $v->products->{'data_products'});
 
   is ($v->_lims_deletable, 1, 'deletable');
   #diag `find $archive_path`;
@@ -129,6 +143,47 @@ subtest 'lims and staging deletable' => sub {
   warning_like { $deletable = $v->_staging_deletable }
     qr/Staging index file is missing for $file/, 'warning - missing index file';
   is ($deletable, 0, 'not deletable, unexpected index file'); 
+};
+
+subtest 'xarchive validation' => sub {
+  plan tests => 9;
+
+  local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = 't/data/samplesheet_8747.csv';
+
+  my $rfh = _create_test_runfolder_8747();
+  my $ref = {
+    id_run => 8747,
+    runfolder_path => $rfh->{'runfolder_path'},
+    analysis_path  => $rfh->{'analysis_path'},
+    archive_path   => $rfh->{'archive_path'},
+    qc_schema      => $qc_schema
+  };
+
+  my $v = npg_pipeline::validation->new($ref);
+  ok (!@{$v->eligible_product_entities},
+    'no eligible products prior to running validation for file archives');
+  my $deletable = 1;
+  $deletable = trap { $v->_file_archive_deletable() };
+  like ( $trap->stderr, qr/Product not available in any of file archives/,
+    'warnings about data absent from archive'); 
+  ok (!$deletable, 'not deletable prior to running validation for file archives');
+
+  $v = npg_pipeline::validation->new(%{$ref}, no_s3_archival => 1, ignore_irods => 1);
+  ok ($v->_s3_deletable(), 'no s3 archival - s3 deletable');
+  ok ($v->_irods_seq_deletable(), 'no irods archival - irods deletable');
+  my $num_products = scalar @{$v->product_entities};
+  ok (scalar @{$v->eligible_product_entities} == (2 * $num_products),
+    'double number pf products in eligible products');
+  is ($v->_file_archive_deletable(), 1, 'is deletable');
+
+  while (scalar @{$v->eligible_product_entities} > ($num_products - 1)) {
+    pop @{$v->eligible_product_entities};
+  }
+  $deletable = 1;
+  warning_like { $deletable = $v->_file_archive_deletable() }
+    qr/Product not available in any of file archives/,
+    'warnings about one product missing from archives';
+  ok (!$deletable, 'not deletable');
 };
 
 1;

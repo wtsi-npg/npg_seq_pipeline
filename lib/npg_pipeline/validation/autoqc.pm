@@ -11,8 +11,7 @@ use npg_tracking::glossary::composition::component::illumina;
 use npg_qc::autoqc::role::result;
 use npg_pipeline::product;
 
-with qw/ npg_pipeline::validation::common
-         WTSI::DNAP::Utilities::Loggable /;
+with qw/ npg_pipeline::validation::common /;
 
 our $VERSION = '0';
 
@@ -292,6 +291,14 @@ npg_pipeline::validation::autoqc
 =head1 DESCRIPTION
 
 =head1 SUBROUTINES/METHODS
+
+=head2 qc_schema
+
+  Attribute, required, DBIx schema object for the QC database.
+
+=head2 product_entities
+
+ Attribute, required, inherited from npg_pipeline::validation::common
 
 =head2 is_paired_read
 

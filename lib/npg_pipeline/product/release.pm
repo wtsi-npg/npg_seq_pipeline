@@ -4,9 +4,9 @@ use namespace::autoclean;
 
 use Data::Dump qw[pp];
 use Moose::Role;
-
+use File::Spec::Functions qw{catdir catfile};
+use List::Util qw{all};
 use npg_qc::Schema;
-use npg_qc::mqc::outcomes;
 
 with qw{WTSI::DNAP::Utilities::Loggable
         npg_pipeline::base::config};
@@ -15,12 +15,28 @@ our $VERSION = '0';
 
 Readonly::Scalar my $RELEASE_CONFIG_FILE => 'product_release.yml';
 
+=head1 SUBROUTINES/METHODS
+
+=head2 qc_schema
+
+Lazy-build attribute. The builder method in this role returns a
+DBIx database connection object. The attribute is allowed to be
+undefined in order to prevent, if necessary, the automatic connection
+to a database in consuming classes, which can be achieved by
+supplying a custom builder method.
+
+=cut
+
 has 'qc_schema' =>
-  (isa        => 'npg_qc::Schema',
+  (isa        => 'Maybe[npg_qc::Schema]',
    is         => 'ro',
    required   => 1,
    builder    => '_build_qc_schema',
    lazy       => 1,);
+
+=head2 release_config
+
+=cut
 
 has 'release_config' =>
   (isa        => 'HashRef',
@@ -28,6 +44,48 @@ has 'release_config' =>
    required   => 1,
    builder    => '_build_release_config',
    lazy       => 1,);
+
+=head2 expected_files
+
+  Arg [1]    : Data product whose files to list, npg_pipeline::product.
+
+  Example    : my @files = $obj->expected_files($product)
+  Description: Return a sorted list of the files expected to be present for
+               archiving in the runfolder.
+
+  Returntype : Array
+
+=cut
+
+sub expected_files {
+  my ($self, $product) = @_;
+
+  $product or $self->logconfess('A product argument is required');
+
+  my @expected_files;
+
+  my $dir_path = catdir($self->archive_path(), $product->dir_path());
+  my @extensions = qw{cram cram.md5 cram.crai
+                      seqchksum sha512primesums512.seqchksum
+                      bcfstats};
+  push @expected_files,
+    map { $product->file_path($dir_path, ext => $_) } @extensions;
+
+  my @suffixes = qw{F0x900 F0xB00 F0xF04_target};
+  push @expected_files,
+    map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
+    @suffixes;
+
+  my $qc_path = $product->qc_out_path($self->archive_path());
+
+  my @qc_extensions = qw{verify_bam_id.json};
+  push @expected_files,
+    map { $product->file_path($qc_path, ext => $_) } @qc_extensions;
+
+  @expected_files = sort @expected_files;
+
+  return @expected_files;
+}
 
 =head2 is_release_data
 
@@ -85,13 +143,24 @@ sub has_qc_for_release {
 
   my $rpt  = $product->rpt_list();
   my $name = $product->file_name_root();
-  my $outcomes = npg_qc::mqc::outcomes->new(qc_schema => $self->qc_schema);
-  if ($outcomes->get_library_outcome($rpt)) {
+
+  my @seqqc = $product->final_seqqc_objs($self->qc_schema);
+  @seqqc or $self->logcroak("Product $name, $rpt are not all Final seq QC values");
+
+  if(not all { $_->is_accepted }  @seqqc) {
+    $self->info("Product $name, $rpt are not all Final Accepted seq QC values");
+    return 0;
+  }
+  my $libqc_obj = $product->final_libqc_obj($self->qc_schema);
+  # Lib outcomes are not available for full lane libraries, so the code below
+  # might give an error when absence of QC outcome is legitimate.
+  $libqc_obj or $self->logcroak("Product $name, $rpt is not Final lib QC value");
+  if ($libqc_obj->is_accepted) {
     $self->info("Product $name, $rpt is for release (passed manual QC)");
     return 1;
   }
 
-  $self->info("Product $name, $rpt is NOT for release (failed manual QC)");
+  $self->info("Product $name, $rpt is NOT for release (did not pass manual QC)");
 
   return 0;
 }
@@ -111,27 +180,35 @@ sub has_qc_for_release {
 sub customer_name {
   my ($self, $product) = @_;
 
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
+  my $customer_name = $self->find_study_config($product)->{s3}->{customer_name};
+  $customer_name or
+    $self->logcroak(
+      q{Missing s3 archival customer name in configuration file for product } .
+      $product->composition->freeze());
 
-  my $customer_name;
-
-  if ($study_config) {
-    $customer_name = $study_config->{s3}->{customer_name};
-    $customer_name or
-      $self->logconfess(sprintf q{Missing customer name in } .
-                                q{configuration file: %s for study %s'},
-                        $self->conf_file_path($RELEASE_CONFIG_FILE),
-                        $study_config->{study_id});
-
-    if (ref $customer_name) {
-      $self->logconfess('Invalid customer name in configuration file: ',
-                        pp($customer_name));
-    }
+  if (ref $customer_name) {
+    $self->logconfess('Invalid customer name in configuration file: ',
+                      pp($customer_name));
   }
 
   return $customer_name;
+}
+
+=head2 receipts_location
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->receipts_location($product);
+  Description: Return location of the receipts for s3 submission,
+               the value might be undefined.
+
+  Returntype : Str
+
+=cut
+
+sub receipts_location {
+  my ($self, $product) = @_;
+  return $self->find_study_config($product)->{s3}->{receipts};
 }
 
 =head2 is_for_release
@@ -150,8 +227,7 @@ sub customer_name {
 
 sub is_for_release {
   my ($self, $product, $type_of_release) = @_;
-  my $study_config = $self->_find_study_config($product);
-  return ($study_config and $study_config->{$type_of_release}->{enable});
+  return $self->find_study_config($product)->{$type_of_release}->{enable};
 }
 
 =head2 is_for_s3_release
@@ -200,17 +276,9 @@ sub is_for_s3_release {
 sub s3_url {
   my ($self, $product) = @_;
 
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
-
-  my $url;
-
-  if ($study_config) {
-    $url = $study_config->{s3}->{url};
-    if (ref $url) {
-      $self->logconfess('Invalid S3 URL in configuration file: ', pp($url));
-    }
+  my $url = $self->find_study_config($product)->{s3}->{url};
+  if (ref $url) {
+    $self->logconfess('Invalid S3 URL in configuration file: ', pp($url));
   }
 
   return $url;
@@ -232,18 +300,10 @@ sub s3_url {
 sub s3_profile {
   my ($self, $product) = @_;
 
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
-
-  my $profile;
-
-  if ($study_config) {
-    $profile = $study_config->{s3}->{profile};
-    if (ref $profile) {
-      $self->logconfess('Invalid S3 profile in configuration file: ',
-                        pp($profile));
-    }
+  my $profile = $self->find_study_config($product)->{s3}->{profile};
+  if (ref $profile) {
+    $self->logconfess('Invalid S3 profile in configuration file: ',
+                      pp($profile));
   }
 
   return $profile;
@@ -286,9 +346,8 @@ sub is_for_s3_release_notification {
 
   my $rpt          = $product->rpt_list();
   my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
 
-  if ($study_config and $study_config->{s3}->{notify}) {
+  if ($self->find_study_config($product)->{s3}->{notify}) {
     $self->info("Product $name, $rpt is for S3 release notification");
     return 1;
   }
@@ -315,7 +374,23 @@ sub _build_release_config {
   return $config;
 }
 
-sub _find_study_config {
+#####
+
+=head2 find_study_config
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->find_study_config($product)
+  Description: Returns a study-specific config or a default config. Therefore,
+               one cannot rely on study_id key being defined in the obtained
+               data structure. Error if neither study nor default config is
+               available.
+
+  Returntype : Hash
+
+=cut
+
+sub find_study_config {
   my ($self, $product) = @_;
 
   my $with_spiked_control = 0;
@@ -329,26 +404,26 @@ sub _find_study_config {
   my @study_ids = $product->lims->study_ids($with_spiked_control);
 
   @study_ids or
-    $self->logconfess("Failed to get a study_id for product $name, $rpt");
+    $self->logcroak("Failed to get a study_id for product $name, $rpt");
   (@study_ids == 1) or
-    $self->logconfess("Multiple study ids for product $name, $rpt");
+    $self->logcroak("Multiple study ids for product $name, $rpt");
   my $study_id = $study_ids[0];
 
-  my ($study_config) = grep { $_->{study_id} eq $study_id }
+  my @study_configs = grep { $_->{study_id} eq $study_id }
     @{$self->release_config->{study}};
+  my $study_config;
 
-  if (not defined $study_config) {
-    my $default_config = $self->release_config->{default};
-    if (not defined $default_config) {
-      $self->logcroak(sprintf q{No release configuration was defined } .
-                              q{for study %s and no default was defined in %s},
-                      $study_id, $self->conf_file_path($RELEASE_CONFIG_FILE));
+  if (@study_configs) {
+    if (@study_configs > 1) {
+      $self->logcroak("Multiple configurations for study $study_id");
     }
-
-    $self->info(sprintf q{Using the default release configuration for } .
-                        q{study %s defined in %s},
-                $study_id, $self->conf_file_path($RELEASE_CONFIG_FILE));
-    $study_config = $default_config;
+    $study_config = $study_configs[0];
+  } else {
+    $study_config = $self->release_config->{default};
+    (defined $study_config) or
+      $self->logcroak("No release configuration was defined for study $study_id" .
+                      ' and no default was defined');
+    $self->info("Using the default release configuration for study $study_id");
   }
 
   return $study_config;
@@ -419,10 +494,6 @@ study:
       enable: true
       notify: false
 
-
-
-=head1 SUBROUTINES/METHODS
-
 =head1 BUGS AND LIMITATIONS
 
 =head1 INCOMPATIBILITIES
@@ -440,6 +511,8 @@ study:
 =item Moose::Role
 
 =item Readonly
+
+=item npg_qc::Schema
 
 =back
 

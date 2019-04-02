@@ -4,6 +4,8 @@ use Moose::Role;
 use Readonly;
 use Carp;
 
+with 'WTSI::DNAP::Utilities::Loggable';
+
 our $VERSION = '0';
 
 Readonly::Scalar my $CRAM_FILE_EXTENSION => q[cram];
@@ -13,6 +15,13 @@ has 'product_entities'  => (
   isa      => 'ArrayRef',
   is       => 'ro',
   required => 1,
+);
+
+has 'eligible_product_entities' => (
+  isa     => 'ArrayRef',
+  is      => 'ro',
+  lazy    => 1,
+  builder => 'build_eligible_product_entities',
 );
 
 has 'file_extension' => (
@@ -94,6 +103,11 @@ Moose role. Common functionality for modules of npg_run_is_deletable script.
 
 Attribute, required, an array of npg_pipeline::validation::entity objects.
 
+=head2 eligible_product_entities
+
+Attribute, a reference to a list of product entities which have to be
+archived to a particular file archive. This list might be empty.
+
 =head2 file_extension
 
 Attribute, file extension for the sequence file format, required.
@@ -121,6 +135,8 @@ Attribute, file extension for the sequence file index, inferred.
 =item Readonly
 
 =item Carp
+
+=item WTSI::DNAP::Utilities::Loggable
 
 =back
 
