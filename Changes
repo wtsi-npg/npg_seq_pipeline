@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 54.1.2
+ - set explicit umask for wr jobs to guarantee that output is group-writable
+
 release 54.1.1
  - bug fix in command generation for iRODS data archival from old-style
    run folders
