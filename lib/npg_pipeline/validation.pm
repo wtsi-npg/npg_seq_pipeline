@@ -214,6 +214,8 @@ has [map {q[+] . $_ }  @NO_SCRIPT_ARG_ATTRS] => (metaclass => 'NoGetopt',);
 
 =head2 irods_destination_collection
 
+Inherited from npg_pipeline::product::release::irods
+
 =cut
 
 has '+irods_destination_collection' => (
@@ -225,6 +227,7 @@ has '+irods_destination_collection' => (
 
 String attribute.
 Value set to 'cram if use_cram flag is true.
+Inherited from npg_pipeline::validation::common
 Example: 'cram'. 
 
 =cut
@@ -279,6 +282,7 @@ has q{lims_driver_type} => (
 =head2 product_entities
 
 An array of npg_pipeline::validation::entity objects.
+Inherited from npg_pipeline::validation::common
 
 =cut
 
@@ -327,7 +331,7 @@ sub _build_product_entities {
 
 An array of npg_pipeline::validation::entity objects which
 were considered eligible for archival by all of product file
-archival methods.
+archival methods. Inherited from npg_pipeline::validation::common
 
 =cut
 
@@ -355,19 +359,13 @@ sub _build_irods {
 =head2 qc_schema
 
 npg_qc::Schema database connection.
+Inherited from npg_pipeline::product::release::irods
 
 =cut
 
-has 'qc_schema' => (
-  isa        => 'npg_qc::Schema',
-  is         => 'ro',
-  required   => 0,
-  lazy_build => 1,
+has '+qc_schema' => (
   metaclass  => 'NoGetopt',
 );
-sub _build_qc_schema {
-  return npg_qc::Schema->connect();
-}
 
 ############## Public methods ###################################################
 
@@ -703,6 +701,8 @@ sub _s3_deletable {
 
   my $v = npg_pipeline::validation::s3->new(
     product_entities => $self->product_entities,
+    file_extension   => $self->file_extension,
+    qc_schema        => $self->qc_schema
   );
   my $deletable = $v->fully_archived();
   push @{$self->eligible_product_entities}, @{$v->eligible_product_entities};

@@ -4,6 +4,8 @@ use Moose::Role;
 use Readonly;
 use Carp;
 
+with 'WTSI::DNAP::Utilities::Loggable';
+
 our $VERSION = '0';
 
 Readonly::Scalar my $CRAM_FILE_EXTENSION => q[cram];
@@ -133,6 +135,8 @@ Attribute, file extension for the sequence file index, inferred.
 =item Readonly
 
 =item Carp
+
+=item WTSI::DNAP::Utilities::Loggable
 
 =back
 

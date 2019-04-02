@@ -11,9 +11,8 @@ use Readonly;
 
 use WTSI::NPG::iRODS::Collection;
 
-with qw/ npg_pipeline::validation::common
-         npg_pipeline::product::release::irods
-         WTSI::DNAP::Utilities::Loggable /;
+with 'npg_pipeline::product::release::irods' => {-excludes => 'qc_schema'};
+with 'npg_pipeline::validation::common';
 
 our $VERSION = '0';
 
@@ -360,8 +359,6 @@ __END__
 =item English
 
 =item Readonly
-
-=item WTSI::DNAP::Utilities::Loggable
 
 =item WTSI::NPG::iRODS::Collection
 

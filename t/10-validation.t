@@ -9,6 +9,8 @@ use File::Slurp qw/ write_file /;
 use File::Copy;
 use Log::Log4perl qw/ :levels /;
 use File::Temp qw/ tempdir /;
+use Moose::Meta::Class;
+
 use t::util;
 
 use_ok ('npg_pipeline::validation');
@@ -18,6 +20,10 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $WARN,
                           file   => join(q[/], $util->temp_directory(), 'logfile'),
                           utf8   => 1});
+
+my $qc_schema = Moose::Meta::Class->create_anon_class(
+                  roles => [qw/npg_testing::db/])->new_object()
+                ->create_test_db(q[npg_qc::Schema]);
 
 sub _create_test_runfolder_8747 {
   my $rfh = $util->create_runfolder(
@@ -53,7 +59,7 @@ sub _populate_test_runfolder {
 subtest 'create object' => sub {
   plan tests => 15;
 
-  my $v = npg_pipeline::validation->new();
+  my $v = npg_pipeline::validation->new(qc_schema => $qc_schema);
   isa_ok ($v, 'npg_pipeline::validation');
 
   for my $flag (qw/ignore_lims ignore_npg_status ignore_time_limit
@@ -84,7 +90,8 @@ subtest 'lims and staging deletable' => sub {
     id_run => 8747,
     runfolder_path => $rfh->{'runfolder_path'},
     analysis_path  => $rfh->{'analysis_path'},
-    archive_path   => $archive_path
+    archive_path   => $archive_path,
+    qc_schema      => $qc_schema
   };
 
   my $v = npg_pipeline::validation->new($ref);
@@ -148,7 +155,8 @@ subtest 'xarchive validation' => sub {
     id_run => 8747,
     runfolder_path => $rfh->{'runfolder_path'},
     analysis_path  => $rfh->{'analysis_path'},
-    archive_path   => $rfh->{'archive_path'}
+    archive_path   => $rfh->{'archive_path'},
+    qc_schema      => $qc_schema
   };
 
   my $v = npg_pipeline::validation->new($ref);

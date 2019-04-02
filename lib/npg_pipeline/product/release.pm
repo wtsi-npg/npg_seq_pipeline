@@ -6,6 +6,7 @@ use Data::Dump qw[pp];
 use Moose::Role;
 use File::Spec::Functions qw{catdir catfile};
 use List::Util qw{all};
+use npg_qc::Schema;
 
 with qw{WTSI::DNAP::Utilities::Loggable
         npg_pipeline::base::config};
@@ -18,10 +19,16 @@ Readonly::Scalar my $RELEASE_CONFIG_FILE => 'product_release.yml';
 
 =head2 qc_schema
 
+Lazy-build attribute. The builder method in this role returns a
+DBIx database connection object. The attribute is allowed to be
+undefined in order to prevent, if necessary, the automatic connection
+to a database in consuming classes, which can be achieved by
+supplying a custom builder method.
+
 =cut
 
 has 'qc_schema' =>
-  (isa        => 'npg_qc::Schema',
+  (isa        => 'Maybe[npg_qc::Schema]',
    is         => 'ro',
    required   => 1,
    builder    => '_build_qc_schema',
@@ -504,6 +511,8 @@ study:
 =item Moose::Role
 
 =item Readonly
+
+=item npg_qc::Schema
 
 =back
 
