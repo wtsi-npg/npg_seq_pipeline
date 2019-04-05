@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+release 55.0.1
+ - bug fix for invocation of the generate() function in the
+   seq_alignment function module following an addition of the
+   generate_composition function
+
 release 55.0
  - additional 'GnT MDA' library type added to allowed types for gbs analysis
  - a new archival pipeline function, cache_merge_component, for caching merge
