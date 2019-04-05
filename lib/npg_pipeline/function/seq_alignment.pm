@@ -101,7 +101,7 @@ has '_do_gbs_plex_analysis' => ( isa     => 'Bool',
                                );
 
 sub generate {
-  my ($self, $dry_run) = @_;
+  my ($self, $pipeline_name, $dry_run) = @_;
 
   my @definitions = ();
 
@@ -120,10 +120,14 @@ sub generate {
 }
 
 sub generate_compositions {
-  my $self = shift;
+  my ($self, $pipeline_name)  = @_;
 
+  #####
+  # Pipeline name is always passed by the calling function.
+  # If we wasnt to use an extra flag, it should be passed
+  # as a seconf argument to generate().
   my $dry_run = 1;
-  $self->generate($dry_run);
+  $self->generate($pipeline_name, $dry_run);
   return [npg_pipeline::function::definition->new(
             created_by => __PACKAGE__,
             created_on => $self->timestamp(),

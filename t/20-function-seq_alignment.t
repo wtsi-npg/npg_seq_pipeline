@@ -326,7 +326,7 @@ subtest 'test 2' => sub {
   apply_all_roles($rna_gen, 'npg_pipeline::runfolder_scaffold');
   $rna_gen->create_product_level();
 
-  my $da = $rna_gen->generate();
+  my $da = $rna_gen->generate('analysis_pipeline');
   ok ($da && @{$da} == 2, 'array of two definitions is returned');
   my $d = _find($da, 8);
 
@@ -384,7 +384,7 @@ subtest 'test 2' => sub {
   apply_all_roles($rna_gen, 'npg_pipeline::runfolder_scaffold');
   $rna_gen->create_product_level();
 
-  $da = $rna_gen->generate();
+  $da = $rna_gen->generate('analysis_pipeline');
   $d = _find($da, 3, 1);
   is ($d->memory, 38000, 'more memory');
   $d = _find($da, 3, 3);
@@ -511,7 +511,7 @@ subtest 'test 3' => sub {
   apply_all_roles($se_gen, 'npg_pipeline::runfolder_scaffold');
   $se_gen->create_product_level();
 
-  my $da = $se_gen->generate();
+  my $da = $se_gen->generate('analysis_pipeline');
   my $d = _find($da, 2, 1);
   is ($d->command, $command, 'correct command for lane 2 plex 1');
 };
@@ -594,7 +594,7 @@ subtest 'test 4' => sub {
   apply_all_roles($hsx_gen, 'npg_pipeline::runfolder_scaffold');
   $hsx_gen->create_product_level();
 
-  my $da = $hsx_gen->generate();
+  my $da = $hsx_gen->generate('analysis_pipeline');
   my $d = _find($da, 7, 7);
   is ($d->command, $command, 'command for HiSeqX run 16839 lane 7 tag 7');
 
@@ -655,7 +655,7 @@ subtest 'test 5' => sub {
   apply_all_roles($hs_gen, 'npg_pipeline::runfolder_scaffold');
   $hs_gen->create_product_level();
 
-  my $da = $hs_gen->generate();
+  my $da = $hs_gen->generate('analysis_pipeline');
 
   my $qc_in  = qq{$bc_path/archive/lane6/plex1};
   my $qc_out = qq{$qc_in/qc};
@@ -736,7 +736,7 @@ subtest 'test 6' => sub {
   apply_all_roles($bait_gen, 'npg_pipeline::runfolder_scaffold');
   $bait_gen->create_product_level();
 
-  my $da = $bait_gen->generate();
+  my $da = $bait_gen->generate('analysis_pipeline');
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
   my $qc_out = qq{$qc_in/qc};
@@ -808,7 +808,7 @@ subtest 'test 7' => sub {
   apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
   $ms_gen->create_product_level();
 
-  my $da = $ms_gen->generate();
+  my $da = $ms_gen->generate('analysis_pipeline');
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
   my $qc_out = qq{$qc_in/qc};
@@ -881,7 +881,7 @@ subtest 'test 8' => sub {
   apply_all_roles($hs_gen, 'npg_pipeline::runfolder_scaffold');
   $hs_gen->create_product_level();
 
-  my $da = $hs_gen->generate();
+  my $da = $hs_gen->generate('analysis_pipeline');
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
   my $qc_out = qq{$qc_in/qc};
@@ -957,7 +957,7 @@ subtest 'test 9' => sub {
   apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
   $ms_gen->create_product_level();
 
-  my $da = $ms_gen->generate();
+  my $da = $ms_gen->generate('analysis_pipeline');
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
   my $qc_out = qq{$qc_in/qc};
@@ -1033,7 +1033,7 @@ subtest 'test 10' => sub {
   apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
   $ms_gen->create_product_level();
 
-  my $da = $ms_gen->generate();
+  my $da = $ms_gen->generate('analysis_pipeline');
 
   my $qc_in  = qq{$bc_path/archive/lane1/plex1};
   my $qc_out = qq{$qc_in/qc};
@@ -1107,7 +1107,7 @@ subtest 'test 11' => sub {
   apply_all_roles($chromium_gen, 'npg_pipeline::runfolder_scaffold');
   $chromium_gen->create_product_level();
 
-  my $da = $chromium_gen->generate();
+  my $da = $chromium_gen->generate('analysis_pipeline');
 
   my $qc_in  = qq{$dir/150709_HX4_16839_A_H7MHWCCXX/Data/Intensities/BAM_basecalls_20150712-121006/no_cal/archive/lane1/plex1};
   my $qc_out = qq{$qc_in/qc};
@@ -1180,7 +1180,7 @@ subtest 'test 12' => sub {
   apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
   $ms_gen->create_product_level();
 
-  my $da = $ms_gen->generate();
+  my $da = $ms_gen->generate('analysis_pipeline');
 
   my $base = "$bc_path/archive/lane1";
   my @files = ('plex1/24135_1#1_phix.composition.json',
@@ -1249,7 +1249,7 @@ subtest 'generate compositions only' => sub {
   apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
   $ms_gen->create_product_level();
   
-  my $da = $ms_gen->generate_compositions();
+  my $da = $ms_gen->generate_compositions('finishing_pipeline');
   ok (($da and (@{$da} == 1)), 'one definition returned');
   ok ($da->[0], 'function is excluded');
 
