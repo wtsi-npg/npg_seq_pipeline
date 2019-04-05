@@ -125,7 +125,7 @@ sub generate_compositions {
   #####
   # Pipeline name is always passed by the calling function.
   # If we wasnt to use an extra flag, it should be passed
-  # as a seconf argument to generate().
+  # as a second argument to generate().
   my $dry_run = 1;
   $self->generate($pipeline_name, $dry_run);
   return [npg_pipeline::function::definition->new(
