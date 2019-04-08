@@ -48,25 +48,32 @@ sub create {
       $self->logcroak(sprintf q{Missing supplier name for product %s, %s},
                       $product->file_name_root(), $product->rpt_list());
 
+    my @file_paths = sort _cram_last $self->expected_files($product);
+    $self->_check_files(@file_paths);
+
+    my @aws_args = qw{--cli-connect-timeout 300
+                      --acl bucket-owner-full-control
+                      --quiet};
+
     my $base_url = $self->s3_url($product);
     $self->info("Using base S3 URL '$base_url'");
 
     my $profile = $self->s3_profile($product);
     if ($profile) {
       $self->info("Using S3 client profile '$profile'");
+      push @aws_args, '--profile', $profile;
     }
     else {
       $self->info('Using the default S3 client profile');
     }
 
-    my @file_paths = sort _cram_last $self->expected_files($product);
-    $self->_check_files(@file_paths);;
-
-    my @aws_args = qw{--cli-connect-timeout 300
-                      --acl bucket-owner-full-control
-                      --quiet};
-    if ($profile) {
-      push @aws_args, '--profile', $profile;
+    my $endpoint = $self->s3_endpoint($product);
+    if ($endpoint) {
+      push @aws_args, '--endpoint-url', $endpoint;
+      $self->info("Using S3 client endpoint '$endpoint'");
+    }
+    else {
+      $self->info('Using the default S3 client endpoint');
     }
 
     my @commands;
