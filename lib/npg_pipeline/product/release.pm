@@ -261,6 +261,31 @@ sub is_for_s3_release {
   return $enable;
 }
 
+=head2 s3_endpoint
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->s3_endpoint($product)
+  Description: Return an S3 endpoint for release of the product or undef
+               if there is no defined endpoint. If no endpoint is defined,
+               the S3 client will fall back to its default value. For the
+               aws client, e.g. https://apigateway.eu-west-2.amazonaws.com.
+
+  Returntype : Str
+
+=cut
+
+sub s3_endpoint {
+  my ($self, $product) = @_;
+
+  my $endpoint = $self->find_study_config($product)->{s3}->{endpoint};
+  if (ref $endpoint) {
+    $self->logconfess('Invalid S3 endpoint in configuration file: ', pp($endpoint));
+  }
+
+  return $endpoint;
+}
+
 =head2 s3_url
 
   Arg [1]    : npg_pipeline::product
