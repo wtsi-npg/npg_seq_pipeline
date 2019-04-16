@@ -199,7 +199,7 @@ sub customer_name {
   Arg [1]    : npg_pipeline::product
 
   Example    : $obj->receipts_location($product);
-  Description: Return location of the receipts for s3 submission,
+  Description: Return location of the receipts for S3 submission,
                the value might be undefined.
 
   Returntype : Str
@@ -244,6 +244,8 @@ sub is_for_release {
 
 sub is_for_s3_release {
   my ($self, $product) = @_;
+
+  $product or $self->logconfess('A product argument is required');
 
   my $name        = $product->file_name_root();
   my $description = $product->composition->freeze();
@@ -334,6 +336,26 @@ sub s3_profile {
   return $profile;
 }
 
+=head2 s3_date_binning
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->s3_date_binning($product)
+  Description: Return true if a date of processing element is to be added
+               as the root of the object prefix the S3 bucket. e.g.
+
+               ./2019-01-31/...
+
+  Returntype : Bool
+
+=cut
+
+sub s3_date_binning {
+  my ($self, $product) = @_;
+
+  return $self->find_study_config($product)->{s3}->{date_binning};
+}
+
 =head2 is_s3_releasable
 
   Arg [1]    : npg_pipeline::product
@@ -418,6 +440,8 @@ sub _build_release_config {
 sub find_study_config {
   my ($self, $product) = @_;
 
+  $product or $self->logconfess('A product argument is required');
+
   my $with_spiked_control = 0;
   my $rpt       = $product->rpt_list();
   my $name      = $product->file_name_root();
@@ -486,7 +510,7 @@ used for any study without a specific configuration.
 
  irods:
     enable: <boolean> iRODS release enabled if true.
-    notify: <boolean> A notificastion message will be sent if true.
+    notify: <boolean> A notification message will be sent if true.
 
 e.g.
 
