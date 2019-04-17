@@ -7,7 +7,7 @@ use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 7;
+use Test::More tests => 6;
 use Test::Exception;
 use t::util;
 
@@ -70,7 +70,7 @@ subtest 'local and no_s3_archival flag' => sub {
 };
 
 subtest 'create' => sub {
-  plan tests => 28;
+  plan tests => 30;
 
   my $archiver;
   lives_ok {
@@ -112,7 +112,7 @@ subtest 'create' => sub {
             'Only "26291:1:3;26291:2:3" and "26291:1:9;26291:2:9" archived')
     or diag explain \@archived_rpts;
 
-  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control --quiet --profile s3_profile_name $runfolder_path/.*/archive/plex\d+/.* s3://\S+$|;
+  my $cmd_patt = qr|^gsutil cp $runfolder_path/.*/archive/plex\d+/.* gs://\S+$|;
 
   foreach my $def (@defs) {
     is($def->created_by, $pkg, "created_by is $pkg");
@@ -120,39 +120,20 @@ subtest 'create' => sub {
 
     my $cmd = $def->command;
     my @parts = split / && /, $cmd; # Deconstruct the command
-    foreach my $part (@parts) {
-      like($part, $cmd_patt, "$cmd matches $cmd_patt");
-    }
-  }
-};
 
-subtest 'configure_s3_endpoint' => sub {
-  plan tests => 21;
+    my $part1 = shift @parts;
+    my ($env, @rest) = split /;\s/mxs, $part1;
+    $part1 = join q{ }, @rest;
+    is('export BOTO_CONFIG=$HOME/.gcp/boto-s3_profile_name', $env, "ENV is $env");
 
-  my $archiver;
-  lives_ok {
-    $archiver = $pkg->new
-      (conf_path       => "t/data/release/config/alternative_s3_endpoint",
-       runfolder_path => $runfolder_path,
-       id_run         => 26291,
-       timestamp      => $timestamp,
-       qc_schema      => $qc);
-  } 'archiver created ok';
-
-  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control --quiet --profile s3_profile_name --endpoint-url https://alternative[.]endpoint[.]net $runfolder_path/.*/archive/plex\d+/.* s3://\S+$|;
-
-  my @defs = @{$archiver->create};
-  foreach my $def (@defs) {
-    my $cmd = $def->command;
-    my @parts = split / && /, $cmd; # Deconstruct the command
-    foreach my $part (@parts) {
+    foreach my $part ($part1, @parts) {
       like($part, $cmd_patt, "$cmd matches $cmd_patt");
     }
   }
 };
 
 subtest 'configure_date_binning' => sub {
-  plan tests => 21;
+  plan tests => 23;
 
   my $archiver;
   lives_ok {
@@ -164,13 +145,19 @@ subtest 'configure_date_binning' => sub {
         qc_schema      => $qc);
   } 'archiver created ok';
 
-  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control --quiet --profile s3_profile_name $runfolder_path/\S+/archive/plex\d+/\S+ s3://product_bucket/\d{8}/\S+$|;
+  my $cmd_patt = qr|^gsutil cp $runfolder_path/\S+/archive/plex\d+/\S+ gs://product_bucket/\d{8}/\S+$|;
 
   my @defs = @{$archiver->create};
   foreach my $def (@defs) {
     my $cmd = $def->command;
     my @parts = split / && /, $cmd; # Deconstruct the command
-    foreach my $part (@parts) {
+
+    my $part1 = shift @parts;
+    my ($env, @rest) = split /;\s/mxs, $part1;
+    $part1 = join q{ }, @rest;
+    is('export BOTO_CONFIG=$HOME/.gcp/boto-s3_profile_name', $env, "ENV is $env");
+
+    foreach my $part ($part1, @parts) {
       like($part, $cmd_patt, "$cmd matches $cmd_patt");
     }
   }
