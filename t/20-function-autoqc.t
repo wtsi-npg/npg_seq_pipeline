@@ -17,7 +17,7 @@ use_ok('npg_pipeline::product');
 my $util = t::util->new();
 my $tmp = $util->temp_directory();
 
-my @tools = map { "$tmp/$_" } qw/bamtofastq blat norm_fit/;
+my @tools = map { "$tmp/$_" } qw/bamtofastq blat norm_fit bcftools/;
 foreach my $tool (@tools) {
   open my $fh, '>', $tool or die 'cannot open file for writing';
   print $fh $tool or die 'cannot print';
@@ -420,8 +420,8 @@ subtest 'tag_metrics' => sub {
   ok ($da->[0]->excluded, 'step is excluded');
 };
 
-subtest 'genotype and gc_fraction' => sub {
-  plan tests => 11;
+subtest 'genotype and gc_fraction and bcfstats' => sub {
+  plan tests => 17;
 
   my $destination = "$tmp/references";
   dircopy('t/data/qc/references', $destination);
@@ -429,6 +429,18 @@ subtest 'genotype and gc_fraction' => sub {
   my $new_dir = $destination . '/Homo_sapiens/CGP_GRCh37.NCBI.allchr_MT/all/fasta';
   make_path($new_dir);
   write_file("$new_dir/Homo_sapiens.GRCh37.NCBI.allchr_MT.fa", qw/some ref/);
+  my $geno_refset = "$tmp/geno_refset";
+  foreach my $study ('2238','2897'){
+      foreach my $ref('CGP_GRCh37.NCBI.allchr_MT','1000Genomes_hs37d5'){
+          my $d1 =  $geno_refset . '/study'. $study .'/'. $ref .'/bcfdb';
+          make_path($d1);
+          write_file("$d1/study.bcf", qw/some data/);
+          write_file("$d1/study.bcf.csi", qw/some data/);
+          my $d2 =  $geno_refset . '/study'. $study .'/'. $ref .'/bcftools';
+          make_path($d2); 
+          write_file("$d2/study.annotation.vcf", qw/some data/);
+      }
+  }
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14043.csv';
 
@@ -487,6 +499,23 @@ subtest 'genotype and gc_fraction' => sub {
     'gc_fraction check can run');
   ok ($qc->_should_run(1, $plex_product_alt),
    'gc_fraction check can run');
+
+
+  $init->{'qc_to_run'} = q[bcfstats];
+  lives_ok {
+    $qc = npg_pipeline::function::autoqc->new($init);
+  } q{no croak on new, as required params provided};
+
+  ok ($qc->_should_run(0, $library_lane_product),
+    'bcfstats check can run for a non-indexed lane');
+  ok ($qc->_should_run(1, $plex_product),
+    'bcfstats check can run for tag 1 (human sample)');
+  ok (!$qc->_should_run(0, $plexed_lane_product),
+    'bcfstats check cannot run for an indexed lane');
+  ok (!$qc->_should_run(1, $plex0_product),
+    'bcfstats check cannot run for tag 0 (no alignment)');
+  ok (!$qc->_should_run(1, $plex168_product),
+    'bcfstats check cannot run for a spiked phix tag');
 };
 
 subtest 'memory_requirements' => sub {
