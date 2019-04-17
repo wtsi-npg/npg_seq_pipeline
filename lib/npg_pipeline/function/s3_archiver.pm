@@ -72,7 +72,7 @@ sub create {
     my $profile = $self->s3_profile($product);
     if ($profile) {
       $self->info(q{Using S3 client profile 'boto-}, $profile, q{'});
-      $env = 'BOTO_CONFIG=$HOME/.gcp/boto-' . $profile;
+      $env = 'export BOTO_CONFIG=$HOME/.gcp/boto-' . $profile . q{;};
     }
     else {
       $self->info('Using the default S3 client profile');

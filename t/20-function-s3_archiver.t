@@ -122,9 +122,9 @@ subtest 'create' => sub {
     my @parts = split / && /, $cmd; # Deconstruct the command
 
     my $part1 = shift @parts;
-    my ($env, @rest) = split /\s+/mxs, $part1;
+    my ($env, @rest) = split /;\s/mxs, $part1;
     $part1 = join q{ }, @rest;
-    is('BOTO_CONFIG=$HOME/.gcp/boto-s3_profile_name', $env, "ENV is $env");
+    is('export BOTO_CONFIG=$HOME/.gcp/boto-s3_profile_name', $env, "ENV is $env");
 
     foreach my $part ($part1, @parts) {
       like($part, $cmd_patt, "$cmd matches $cmd_patt");
@@ -153,9 +153,9 @@ subtest 'configure_date_binning' => sub {
     my @parts = split / && /, $cmd; # Deconstruct the command
 
     my $part1 = shift @parts;
-    my ($env, @rest) = split /\s+/mxs, $part1;
+    my ($env, @rest) = split /;\s/mxs, $part1;
     $part1 = join q{ }, @rest;
-    is('BOTO_CONFIG=$HOME/.gcp/boto-s3_profile_name', $env, "ENV is $env");
+    is('export BOTO_CONFIG=$HOME/.gcp/boto-s3_profile_name', $env, "ENV is $env");
 
     foreach my $part ($part1, @parts) {
       like($part, $cmd_patt, "$cmd matches $cmd_patt");
