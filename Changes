@@ -3,6 +3,9 @@ LIST OF CHANGES
 
  - change bcfstats qc job to use CRAM instead of BAM file as input
 
+release 55.1
+ - added configuration option to change the S3 endpoint URL
+
 release 55.0.1
  - bug fix for invocation of the generate() function in the
    seq_alignment function module following an addition of the

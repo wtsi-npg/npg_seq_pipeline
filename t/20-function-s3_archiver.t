@@ -7,7 +7,7 @@ use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 5;
+use Test::More tests => 7;
 use Test::Exception;
 use t::util;
 
@@ -118,6 +118,56 @@ subtest 'create' => sub {
     is($def->created_by, $pkg, "created_by is $pkg");
     is($def->identifier, 26291, "identifier is set correctly");
 
+    my $cmd = $def->command;
+    my @parts = split / && /, $cmd; # Deconstruct the command
+    foreach my $part (@parts) {
+      like($part, $cmd_patt, "$cmd matches $cmd_patt");
+    }
+  }
+};
+
+subtest 'configure_s3_endpoint' => sub {
+  plan tests => 21;
+
+  my $archiver;
+  lives_ok {
+    $archiver = $pkg->new
+      (conf_path       => "t/data/release/config/alternative_s3_endpoint",
+       runfolder_path => $runfolder_path,
+       id_run         => 26291,
+       timestamp      => $timestamp,
+       qc_schema      => $qc);
+  } 'archiver created ok';
+
+  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control --quiet --profile s3_profile_name --endpoint-url https://alternative[.]endpoint[.]net $runfolder_path/.*/archive/plex\d+/.* s3://\S+$|;
+
+  my @defs = @{$archiver->create};
+  foreach my $def (@defs) {
+    my $cmd = $def->command;
+    my @parts = split / && /, $cmd; # Deconstruct the command
+    foreach my $part (@parts) {
+      like($part, $cmd_patt, "$cmd matches $cmd_patt");
+    }
+  }
+};
+
+subtest 'configure_date_binning' => sub {
+  plan tests => 21;
+
+  my $archiver;
+  lives_ok {
+    $archiver = $pkg->new
+      (conf_path       => "t/data/release/config/date_binning",
+        runfolder_path => $runfolder_path,
+        id_run         => 26291,
+        timestamp      => $timestamp,
+        qc_schema      => $qc);
+  } 'archiver created ok';
+
+  my $cmd_patt = qr|^aws s3 cp --cli-connect-timeout 300 --acl bucket-owner-full-control --quiet --profile s3_profile_name $runfolder_path/\S+/archive/plex\d+/\S+ s3://product_bucket/\d{8}/\S+$|;
+
+  my @defs = @{$archiver->create};
+  foreach my $def (@defs) {
     my $cmd = $def->command;
     my @parts = split / && /, $cmd; # Deconstruct the command
     foreach my $part (@parts) {

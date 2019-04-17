@@ -12,7 +12,7 @@ use File::Spec::Functions qw/ catfile /;
 with qw/ npg_pipeline::product::cache_merge
          npg_pipeline::validation::common /;
 
-our $VERSION = '54.1.1-22-gd903ee1-dirty';
+our $VERSION = '0';
 
 Readonly::Scalar my $RECIEPT_FILE_NAME_PATTERN =>
                  qr{/returned_20[[:digit:]]{2} # year

@@ -1,0 +1,21 @@
+default:
+  s3:
+    enable: true
+    endpoint: "https://alternative.endpoint.net"
+    url: "s3://product_bucket"
+    profile: s3_profile_name
+    notify: false
+    receipts: "/tmp/receipts/does/not/exist"
+  irods:
+    enable: false
+    notify: false
+
+study:
+  - study_id: "1000"
+    s3:
+      enable: true
+      url: null
+      notify: false
+    irods:
+      enable: true
+      notify: false
