@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - add autosome target to seq_alignment
+
 release 55.2
  - switched from S3 to Google Compute Storage
  - change bcfstats qc job to use CRAM instead of BAM file as input
