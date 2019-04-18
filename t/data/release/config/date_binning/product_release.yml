@@ -1,8 +1,8 @@
 default:
   s3:
     enable: true
-    endpoint: "https://alternative.endpoint.net"
-    url: "s3://product_bucket"
+    url: "gs://product_bucket"
+    date_binning: true
     profile: s3_profile_name
     notify: false
     receipts: "/tmp/receipts/does/not/exist"

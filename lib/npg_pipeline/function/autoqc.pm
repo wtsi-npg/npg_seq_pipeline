@@ -215,6 +215,7 @@ sub _generate_command {
   my $cache10k_path = $dp->short_files_cache_path($archive_path);
   my $qc_out_path = $dp->qc_out_path($archive_path);
   my $bamfile_path = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'bam'));
+  my $cramfile_path = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'cram'));
   my $tagzerobamfile_path = File::Spec->catdir($recal_path, $dp->file_name(ext => $self->s1_s2_intfile_format, suffix => '#0'));
   ## no critic (RegularExpressions::RequireDotMatchAnything)
   ## no critic (RegularExpressions::RequireExtendedFormatting)
@@ -251,8 +252,11 @@ sub _generate_command {
       $c .= qq[ --input_files=$fq2_filepath];
     }
   }
-  elsif(any { /$check/sm } qw( adapter bcfstats genotype verify_bam_id pulldown_metrics )) {
+  elsif(any { /$check/sm } qw( adapter genotype verify_bam_id pulldown_metrics )) {
     $c .= qq{ --input_files=$bamfile_path}; # note: single bam file 
+  }
+  elsif($check eq q/bcfstats/) {
+    $c .= qq{ --input_files=$cramfile_path}; # note: single cram file 
   }
   elsif($check eq q/upstream_tags/) {
     $c .= qq{ --tag0_bam_file=$tagzerobamfile_path}; # note: single bam file

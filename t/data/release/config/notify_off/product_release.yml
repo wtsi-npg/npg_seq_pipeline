@@ -12,7 +12,7 @@ study:
   - study_id: "5290"
     s3:
       enable: true
-      url: "s3://product_bucket"
+      url: "gs://product_bucket"
       notify: false
     irods:
       enable: false

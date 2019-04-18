@@ -13,7 +13,9 @@ extends 'npg_pipeline::base';
 
 with qw{npg_pipeline::product::release};
 
-Readonly::Scalar my $ARCHIVE_EXECUTABLE => 'aws';
+# gsutil
+Readonly::Scalar my $ARCHIVE_EXECUTABLE => 'gsutil';
+# gsutil
 
 our $VERSION = '0';
 
@@ -51,41 +53,47 @@ sub create {
     my @file_paths = sort _cram_last $self->expected_files($product);
     $self->_check_files(@file_paths);
 
-    my @aws_args = qw{--cli-connect-timeout 300
-                      --acl bucket-owner-full-control
-                      --quiet};
+    # gsutil
+    #
+    # TODO: Add support for using the -h Content-MD5:<my file's MD5> argument
+    # to do checksum validation on upload
+    my @aws_args = qw{cp};
 
     my $base_url = $self->s3_url($product);
     $self->info("Using base S3 URL '$base_url'");
 
+    my $url = $base_url;
+    if ($self->s3_date_binning($product)) {
+      my ($date, $time) = split /-/msx, $self->timestamp();
+      $url = "$url/$date";
+    }
+
+    my $env = q{};
     my $profile = $self->s3_profile($product);
     if ($profile) {
-      $self->info("Using S3 client profile '$profile'");
-      push @aws_args, '--profile', $profile;
+      $self->info(q{Using S3 client profile 'boto-}, $profile, q{'});
+
+      ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+      $env = 'export BOTO_CONFIG=$HOME/.gcp/boto-' . $profile . q{;};
+      ## use critic
     }
     else {
       $self->info('Using the default S3 client profile');
     }
 
-    my $endpoint = $self->s3_endpoint($product);
-    if ($endpoint) {
-      push @aws_args, '--endpoint-url', $endpoint;
-      $self->info("Using S3 client endpoint '$endpoint'");
-    }
-    else {
-      $self->info('Using the default S3 client endpoint');
-    }
-
     my @commands;
     foreach my $file_path (@file_paths) {
       my $filename   = basename($file_path);
-      my $file_url   = "$base_url/$supplier_name/$filename";
+      my $file_url   = "$url/$supplier_name/$filename";
 
-      push @commands, sprintf q{%s s3 cp %s %s %s},
+      push @commands, sprintf q{%s %s %s %s},
         $ARCHIVE_EXECUTABLE, join(q{ }, @aws_args), $file_path, $file_url;
     }
 
     my $command = join q{ && }, reverse @commands;
+    if ($env) {
+      $command = "$env $command";
+    }
     $self->debug("Adding command '$command'");
 
     push @definitions,
