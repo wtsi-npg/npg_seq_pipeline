@@ -40,6 +40,7 @@ Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
 Readonly::Scalar my $TARGET_REGIONS_DIR_NAME      => q{target};
 Readonly::Scalar my $REFERENCE_ABSENT             => q{REFERENCE_NOT_AVAILABLE};
+Readonly::Scalar my $JS_DIR                       => q{/software/solexa/pkg/bwakit/bwakit-0.7.15/};
 
 =head2 phix_reference
 
@@ -272,6 +273,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     run_lane_ss_fq2 => $fq2_filepath,
     seqchksum_orig_file => $seqchksum_orig_file,
     s2_input_format => $self->s1_s2_intfile_format,
+    markdup_method => q[samtools],
   };
   my $p4_ops = {
     prune => [],
@@ -316,8 +318,12 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   # There will be a new exception to the use of "aln": if you specify a reference
   # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla, then we will use
-  # bwa's "mem"
-  $bwa = ($do_target_alignment and $self->_is_alt_reference($dp)) ? 'bwa_mem' : $bwa;
+  # bwa's "mem" with post-processing using the bwa-postalt.js script from bwakit
+  if($do_target_alignment and (my $alt_ref = $self->_alt_reference($dp))) {
+    $p4_param_vals->{alignment_method} = $bwa = 'bwa_mem_bwakit';
+    $p4_param_vals->{fa_alt_path} = $alt_ref;
+    $p4_param_vals->{js_dir} = $JS_DIR;
+  }
 
 
   my $skip_target_markdup_metrics = (not $spike_tag and not $do_target_alignment);
@@ -411,7 +417,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   else {
     push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
-    push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_bamsort_coord:', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk';
+    push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_fixmate:', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk'; # the fixmate node only works for mardkup_method samtools (pending p4 node id uniqueness bug fix)
   }
 
   my $p4_local_assignments = {};
@@ -480,6 +486,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       bwa_aln => q[bwa0_6],
       bwa_aln_se => q[bwa0_6],
       bwa_mem => q[bwa0_6],
+      bwa_mem_bwakit => q[bwa0_6],
     );
     my %ref_suffix = (
       picard => q{.dict},
@@ -503,6 +510,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     if(not $self->is_paired_read) {
       $p4_param_vals->{bwa_mem_p_flag} = undef;
     }
+
+    # if a ".alt" file exists in the "alignment_reference_genome" directory, set "alt_ctg_dir" to the
+    #  directory and change "alignment_method" to "bwa_mem_bwakit"
+#   if($p4_param_vals->{alignment_method} eq q[bwa0_6] and -f "$p4_param_vals->{alignment_reference_genome} . q[.alt]") {
+#     my($filename, $dirs) = fileparse($p4_param_vals->{alignment_reference_genome});
+#     $p4_param_vals->{alt_ctg_dir} = $dirs;
+#     $p4_param_vals->{alignment_method} = q[bwa_mem_bwakit];
+#   }
   }
 
   if($human_split) {
@@ -850,14 +865,14 @@ sub _default_human_split_ref {
   return $human_ref;
 }
 
-sub _is_alt_reference {
+sub _alt_reference {
   my ($self, $dp) = @_;
   my $ref = $self->_ref($dp, q{bwa0_6});
   if ($ref) {
     $ref .= q{.alt};
-    return -e $ref;
+    if(-e $ref) { return $ref; }
+    else { return; }
   }
-  return;
 }
 
 sub _p4_stage2_params_path {
