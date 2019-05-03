@@ -9,7 +9,7 @@ use File::Slurp;
 use File::Basename;
 use File::Spec;
 use JSON;
-use List::Util qw(sum uniq all none);
+use List::Util qw(sum uniq all none any);
 use open q(:encoding(UTF8));
 use Try::Tiny;
 
@@ -38,7 +38,8 @@ Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
-Readonly::Scalar my $TARGET_REGIONS_DIR_NAME      => q{target};
+Readonly::Scalar my $TARGET_REGIONS_DIR           => q{target};
+Readonly::Scalar my $TARGET_AUTOSOME_REGIONS_DIR  => q{target_autosome};
 Readonly::Scalar my $REFERENCE_ABSENT             => q{REFERENCE_NOT_AVAILABLE};
 
 =head2 phix_reference
@@ -340,10 +341,16 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
        $do_target_regions_stats = 1;
     }
     else {
-      my $target_path = $self->_ref($dp, $TARGET_REGIONS_DIR_NAME);
-      if ( $target_path) {
+      my $target_path = $self->_ref($dp, $TARGET_REGIONS_DIR);
+      my $target_autosome_path = $self->_ref($dp, $TARGET_AUTOSOME_REGIONS_DIR);
+      if ($target_path) {
         $p4_param_vals->{target_regions_file} = $target_path.q(.interval_list);
         $do_target_regions_stats = 1;
+        if ($target_autosome_path) {
+           $p4_param_vals->{target_autosome_regions_file} = $target_autosome_path.q(.interval_list);
+        } else {
+           push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
+        }
       }
     }
   }
@@ -805,7 +812,8 @@ sub _ref {
       my $e = $_;
       # Either exist with an error or just log an error and carry on
       # with reference undefined.
-      $aligner eq $TARGET_REGIONS_DIR_NAME ? $self->error($e) : $self->logcroak($e);
+      (any { /$aligner/smx } qq( $TARGET_REGIONS_DIR $TARGET_AUTOSOME_REGIONS_DIR ))
+         ? $self->error($e) : $self->logcroak($e);
     };
 
     if (!@refs) {
