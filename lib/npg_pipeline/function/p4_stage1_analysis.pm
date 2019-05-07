@@ -427,7 +427,13 @@ sub _generate_command_params {
   my $cluster_count = $self->cluster_counts->{$position}->{'cluster count pf'};
   $p4_params{cluster_count} = $cluster_count;
   ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
-  $p4_params{seed_frac} = sprintf q[%.8f], (10_000.0 / $cluster_count) + $id_run;
+  if($cluster_count > 0) {
+    $p4_params{seed_frac} = sprintf q[%.8f], (10_000.0 / $cluster_count) + $id_run;
+  }
+  else {
+    $self->logwarn("P4 stage1 analysis: cluster count $cluster_count is zero (or less) - setting subsample percentage to zero");
+    $p4_params{seed_frac} = sprintf q[%.8f], $id_run + 0.0;
+  }
 
   $p4_params{split_threads_val} = $self->general_values_conf()->{'p4_stage1_split_threads_count'} || $DEFAULT_SPLIT_THREADS_COUNT;
 
