@@ -2,6 +2,10 @@ LIST OF CHANGES
 ---------------
 
  - add autosome target to seq_alignment
+ - pipeline configuration module and product release configuration
+   accessors are moved to npg_tracking package in order for the product
+   configuration be accessible from other packages, code in this
+   package refactored to accommodate the change
 
 release 55.2
  - switched from S3 to Google Compute Storage

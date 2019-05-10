@@ -20,7 +20,7 @@ with 'npg_pipeline::executor::options' => {
                     no_array_cpu_limit
                     array_cpu_limit/ ]
 };
-with 'npg_pipeline::base::config';
+with 'npg_tracking::util::pipeline_config';
 
 our $VERSION = '0';
 
@@ -292,6 +292,8 @@ __END__
 
 =item Try::Tiny
 
+=item npg_tracking::util::pipeline_config
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -308,7 +310,7 @@ __END__
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
