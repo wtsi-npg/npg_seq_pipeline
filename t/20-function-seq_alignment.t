@@ -537,6 +537,7 @@ subtest 'test 4' => sub {
   my $target_file = "$ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/target/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa";
 
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = q[t/data/hiseqx/samplesheet_16839.csv];
+  local $ENV{'NPG_PIPELINE_JS_SCRIPTS_DIR'} = q[t/bin/];
 
   my $hsx_gen;
   lives_ok {
@@ -1091,6 +1092,7 @@ subtest 'test 11' => sub {
   close $fhss or warn "Failed to close $new_ss";
   # new samplesheet has one chromium sample in lane 1
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = $new_ss;
+  local $ENV{'NPG_PIPELINE_JS_SCRIPTS_DIR'} = q[t/bin/];
 
   my $chromium_gen;
   lives_ok {
