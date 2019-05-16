@@ -1,11 +1,7 @@
-#########
-# Author:        David K. Jackson
-# Created:       2011-11-29
-#
-
 package npg::samplesheet::auto;
 
 use Moose;
+use namespace::autoclean;
 use Try::Tiny;
 use File::Basename;
 use Readonly;
@@ -18,7 +14,7 @@ use st::api::lims::samplesheet;
 
 our $VERSION = '0';
 
-Readonly::Scalar our $DEFAULT_SLEEP => 90;
+Readonly::Scalar my $DEFAULT_SLEEP => 90;
 
 with q(MooseX::Log::Log4perl);
 
@@ -41,41 +37,47 @@ Class for creating  MiSeq samplesheets automatically for runs which are pending.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 npg_tracking_schema
+
 =cut
 
 has 'npg_tracking_schema' => (
-  'isa' => 'npg_tracking::Schema',
-  'is' => 'ro',
+  'isa'        => 'npg_tracking::Schema',
+  'is'         => 'ro',
   'lazy_build' => 1,
-  'metaclass' => 'NoGetopt',
 );
-sub _build_npg_tracking_schema { my$s=npg_tracking::Schema->connect(); return $s}
-
-has _miseq => ( q(is) => q(ro), lazy_build => 1 );
-sub _build__miseq {
-  my $self=shift;
-  return $self->npg_tracking_schema->resultset(q(InstrumentFormat))->find({q(model)=>q(MiSeq)});
-}
-has _pending => ( q(is) => q(ro), lazy_build => 1 );
-sub _build__pending {
-  my $self=shift;
-  return $self->npg_tracking_schema->resultset(q(RunStatusDict))->find({q(description)=>q(run pending)});
+sub _build_npg_tracking_schema {
+  return npg_tracking::Schema->connect();
 }
 
-has sleep_interval => ( q(is) => q(ro), q(isa) => q(Int), default => $DEFAULT_SLEEP );
+=head2 sleep_interval
+
+=cut
+
+has 'sleep_interval' => (
+  'is'      => 'ro',
+  'isa'     => 'Int',
+  'default' => $DEFAULT_SLEEP,
+);
 
 =head2 loop
 
 Repeat the process step with the intervening sleep interval.
 
 =cut
-sub loop {my $self = shift; while(1){ $self->process(); sleep $self->sleep_interval;} return;};
+
+sub loop {
+  my $self = shift;
+  while(1) { $self->process(); sleep $self->sleep_interval;}
+  return;
+};
 
 =head2 process
 
 Find all pending MiSeq runs and create a samplesheet for them if one does not already exist.
 
 =cut
+
 sub process {
   my $self = shift;
   my $rt = $self->_pending->run_statuses->search({iscurrent=>1})->related_resultset(q(run));
@@ -111,6 +113,24 @@ sub process {
   return;
 }
 
+has '_miseq' => (
+  'is'         => 'ro',
+  'lazy_build' => 1,
+);
+sub _build__miseq {
+  my $self=shift;
+  return $self->npg_tracking_schema->resultset(q(InstrumentFormat))->find({q(model)=>q(MiSeq)});
+}
+
+has '_pending' => (
+  'is'         => 'ro',
+  'lazy_build' => 1,
+);
+sub _build__pending {
+  my $self=shift;
+  return $self->npg_tracking_schema->resultset(q(RunStatusDict))->find({q(description)=>q(run pending)});
+}
+
 sub _id_run_from_samplesheet {
   my $file_path = shift;
   my $id_run;
@@ -141,8 +161,10 @@ sub _move_samplesheet {
   return;
 }
 
-no Moose;
+__PACKAGE__->meta->make_immutable;
+
 1;
+
 __END__
 
 =head1 DIAGNOSTICS
@@ -158,6 +180,8 @@ __END__
 =item File::Copy
 
 =item Moose
+
+=item namespace::autoclean
 
 =item MooseX::Log::Log4perl
 
@@ -185,7 +209,7 @@ David K. Jackson E<lt>david.jackson@sanger.ac.ukE<gt>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2011 GRL, by David K. Jackson 
+Copyright (C) 2019 GRL
 
 This file is part of NPG.
 
