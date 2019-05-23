@@ -8,6 +8,7 @@ use Readonly;
 use File::Find;
 use List::MoreUtils qw/any none/;
 
+use npg_tracking::util::abs_path qw/abs_path/;
 use npg_tracking::glossary::composition;
 use npg_pipeline::cache;
 use npg_pipeline::validation::entity;
@@ -438,12 +439,18 @@ sub _build__staging_files {
     my $f = $File::Find::name;
     if ($f =~ /[.]$ext\Z/xms) {
       my $i = $self->index_file_path($f);
-      $files_found->{'seq'}->{$f} = (-f $i) ? $i : q[];
+      # Check for existence rather than for a file in case
+      # the files are symbolic links.
+      $files_found->{'seq'}->{$f} = (-e $i) ? $i : q[];
     } elsif ($f =~ /[.]$iext\Z/xms) {
       $files_found->{'ind'}->{$f} = 1;
     }
   };
-  find($wanted, $self->archive_path);
+  # Lane directories can be sym-linked, hence the follow option.
+  # This option does not take any efect unless the LatestSummary link,
+  # which might be present in the archive path, is resolved.
+  find({wanted => $wanted, follow => 1, no_chdir => 1},
+       abs_path($self->archive_path));
 
   return $files_found;
 }
@@ -775,6 +782,8 @@ __END__
 =item WTSI::NPG::iRODS
 
 =item npg_qc::Schema
+
+=item npg_tracking::util::abs_path
 
 =item npg_tracking::glossary::composition
 
