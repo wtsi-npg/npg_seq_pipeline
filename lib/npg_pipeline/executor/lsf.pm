@@ -18,7 +18,7 @@ use npg_pipeline::runfolder_scaffold;
 extends 'npg_pipeline::executor';
 with qw( 
          npg_pipeline::executor::options
-         npg_pipeline::base::config
+         npg_tracking::util::pipeline_config
          MooseX::AttributeCloner
        );
 
@@ -406,6 +406,8 @@ __END__
 
 =item npg_tracking::util::abs_path
 
+=item npg_tracking::util::pipeline_config
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -416,15 +418,13 @@ __END__
 
 =over
 
-=item Andy Brown
-
 =item Marina Gourtovaia
 
 =back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

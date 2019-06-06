@@ -25,7 +25,7 @@ use npg_pipeline::base::options;
 with qw{ 
          MooseX::Getopt
          WTSI::DNAP::Utilities::Loggable
-         npg_pipeline::base::config
+         npg_tracking::util::pipeline_config
        };
 
 our $VERSION = '0';
@@ -414,6 +414,8 @@ captured and printed to the log.
 
 =item use npg_tracking::util::abs_path
 
+=item npg_tracking::util::pipeline_config
+
 =item npg_tracking::Schema
 
 =item WTSI::DNAP::Warehouse::Schema
@@ -432,7 +434,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

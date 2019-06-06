@@ -206,6 +206,6 @@ subtest 'multiple or no study configs' => sub {
      qc_schema      => $qc);
 
   throws_ok {$archiver->create}
-    qr/No release configuration was defined for study 5290/,
+    qr/No release configuration was defined for study for 26291:1:1;26291:2:1/,
     'error if neither study no default config is found';
 };
