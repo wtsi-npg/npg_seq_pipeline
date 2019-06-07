@@ -60,6 +60,20 @@ has 'upstream_job_ids' => (
   default  => sub {return [];},
 );
 
+=head2 upstream_job_ids_same_degree
+
+An array of booleans indicating whether the corresponding LSF job ids this job should depend on has same degree as current job.
+An attribute, defaults to an empty array.
+
+=cut
+
+has 'upstream_job_ids_same_degree' => (
+  isa      => 'ArrayRef',
+  is       => 'ro',
+  required => 1,
+  default  => sub {return [];},
+);
+
 =head2 lsf_conf
 
 A hash reference with LSF-relevant configuration.
@@ -315,10 +329,16 @@ sub _priority {
 sub _dependencies {
   my $self = shift;
   if (@{$self->upstream_job_ids()}) {
-    my @job_ids = map { qq[done($_)] }
+    my @degreed_ids = ();
+    for (my $i = 0; $i < scalar @{$self->upstream_job_ids()}; $i++) {
+      my $a = @{$self->upstream_job_ids_same_degree()}[$i] ? "done([".@{$self->upstream_job_ids()}[$i]."[*])" : "done(".@{$self->upstream_job_ids()}[$i].")";
+      push @degreed_ids, $a;
+    }
+
+    my @job_ids = map { $_ }
                   uniq
                   sort { $a <=> $b }
-                  @{$self->upstream_job_ids()};
+                  @degreed_ids;
     return q{-w'}.(join q{ && }, @job_ids).q{'};
   }
   return;
