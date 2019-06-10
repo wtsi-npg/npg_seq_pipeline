@@ -60,20 +60,6 @@ has 'upstream_job_ids' => (
   default  => sub {return [];},
 );
 
-=head2 upstream_job_ids_same_degree
-
-An array of booleans indicating whether the corresponding LSF job ids this job should depend on has same degree as current job.
-An attribute, defaults to an empty array.
-
-=cut
-
-has 'upstream_job_ids_same_degree' => (
-  isa      => 'ArrayRef',
-  is       => 'ro',
-  required => 1,
-  default  => sub {return [];},
-);
-
 =head2 lsf_conf
 
 A hash reference with LSF-relevant configuration.
@@ -328,19 +314,32 @@ sub _priority {
 
 sub _dependencies {
   my $self = shift;
-  if (@{$self->upstream_job_ids()}) {
-    my @degreed_ids = ();
-    for (my $i = 0; $i < scalar @{$self->upstream_job_ids()}; $i++) {
-      my $a = @{$self->upstream_job_ids_same_degree()}[$i] ? "done([".@{$self->upstream_job_ids()}[$i]."[*])" : "done(".@{$self->upstream_job_ids()}[$i].")";
-      push @degreed_ids, $a;
-    }
 
-    my @job_ids = map { $_ }
-                  uniq
-                  sort { $a <=> $b }
-                  @degreed_ids;
-    return q{-w'}.(join q{ && }, @job_ids).q{'};
+  my @deps = ();
+  my $seen = {};
+
+  # Sorting is done for convenience of human users.
+  # Ensuring that a job is listed only once is important mostly
+  # for tests.
+
+  foreach my $job_id ( sort { (keys %{$a})[0] <=> (keys %{$b})[0] }
+                       @{$self->upstream_job_ids()} ) {
+
+    my ($id, $is_same_degree) = each %{$job_id};
+    if (!exists $seen->{$id}) {
+      push @deps, (sprintf 'done(%i%s)',
+                   $id, $is_same_degree ? q([*]) : q());
+    } else {
+      ($seen->{$id} == $is_same_degree) or croak
+        "Inconsistent job info for job $id";
+    }
+    $seen->{$id} = $is_same_degree;
   }
+
+  if (@deps) {
+    return q{-w'}.(join q{ && }, @deps).q{'};
+  }
+
   return;
 }
 

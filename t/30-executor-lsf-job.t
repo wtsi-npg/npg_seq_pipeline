@@ -119,7 +119,7 @@ subtest 'run level job' => sub {
   my $d = npg_pipeline::function::definition->thaw($json);
   my $j = npg_pipeline::executor::lsf::job->new(
                   log_dir          => $ld, 
-                  upstream_job_ids => [40, 50],
+                  upstream_job_ids => [{40 => 1}, {50 => 0}],
                   definitions      => [$d],
                   fs_resource      => $fs_resource,
                   lsf_conf         => $conf);
@@ -127,7 +127,7 @@ subtest 'run level job' => sub {
   is_deeply ($j->commands(), {25438 => "cd /nfs/sf55 && setupBclToQseq.py"},
     'commands');
   is ($j->params,
-    q[-w'done(40) && done(50)' -q srpipeline -J 'prod_basecall_stats_25438_20180322-093445' -M 350 -R 'select[mem>350] rusage[mem=350]' -n 4 -R 'span[hosts=1]' -R 'rusage[nfs-sf44=4]' -o /log/basecall_stats_25438_20180322-093445.%J.out],
+    q[-w'done(40[*]) && done(50)' -q srpipeline -J 'prod_basecall_stats_25438_20180322-093445' -M 350 -R 'select[mem>350] rusage[mem=350]' -n 4 -R 'span[hosts=1]' -R 'rusage[nfs-sf44=4]' -o /log/basecall_stats_25438_20180322-093445.%J.out],
     'params');
 };
 
