@@ -70,6 +70,12 @@ sub _build_wr_conf {
   return $self->read_config($self->conf_file_path('wr.json'));
 }
 
+has 'all_composition_deps' => (
+  isa        => 'HashRef[HashRef]',
+  is         => 'rw',
+  default => sub { return {}; },
+);
+
 =head2 execute
 
 Creates and submits wr jobs for execution.
@@ -109,30 +115,20 @@ sub _process_function {
   my ($self, $function) = @_;
 
   my $g = $self->function_graph4jobs;
-  #####
-  # Need dependency group ids of upstream functions in order to set correctly
-  # dependencies between wr jobs
-  #
-  my @depends_on = ();
-  if (!$g->is_source_vertex($function)) {
-    @depends_on = $self->dependencies($function, $VERTEX_GROUP_DEP_ID_ATTR_NAME);
-    if (!@depends_on) {
-      $self->logcroak(qq["$function" should depend on at least one job]);
-    }
-  }
 
-  my $group_id = $self->_definitions4function($function, @depends_on);
+  my $group_id = $self->_definitions4function($function, $g);
   if (!$group_id) {
     $self->logcroak(q[Group dependency id should be returned]);
   }
 
+  # write our group_id back to
   $g->set_vertex_attribute($function, $VERTEX_GROUP_DEP_ID_ATTR_NAME, $group_id);
 
   return;
 }
 
 sub _definitions4function {
-  my ($self, $function_name, @depends_on) = @_;
+  my ($self, $function_name, $g) = @_;
 
   my $definitions = $self->function_definitions()->{$function_name};
   my $group_id = join q[-], $function_name, $definitions->[0]->identifier(), irand();
@@ -141,24 +137,59 @@ sub _definitions4function {
   if ($outgoing_flag) {
     $log_dir = npg_pipeline::runfolder_scaffold->path_in_outgoing($log_dir);
   }
+  my $i = 0;
 
+  # Translate each job definition into a WR definition
+  my %composition_deps = ();
   foreach my $d (@{$definitions}) {
+    my $per_job_group_id = join q[-], $group_id, $i++;
     my $wr_def = $self->_definition4job($function_name, $log_dir, $d);
-    if (@depends_on) {
+
+    if (!$g->is_source_vertex($function_name)) {
+      my @depends_on = ();
+      # Does this job have a composition?
+      if ($d->has_composition) {
+        #for each previous node on the graph calc dependancies
+        foreach my $prev_func ($g->predecessors($function_name)) {
+          # take that job's composition digest
+          my $composition_digest = $d->composition()->digest();
+          # take that jobs's individual depgroup if we have a matching entry in the composition hash?
+          if (exists $self->all_composition_deps->{$prev_func} && exists $self->all_composition_deps->{$prev_func}->{$composition_digest}) {
+            # yes? add the specific dependancy
+            push @depends_on, $self->all_composition_deps->{$prev_func}->{$composition_digest};
+          } else {
+            # no? add it to the genetic dependson
+            push @depends_on, $g->get_vertex_attribute($prev_func, $VERTEX_GROUP_DEP_ID_ATTR_NAME);
+          }
+        }
+        if (!@depends_on) {
+          $self->logcroak(qq["$function_name" should depend on at least one job]);
+        }
+      } else { #else we need to use standard Many to 1 dependancies
+        @depends_on = $self->dependencies($function_name, $VERTEX_GROUP_DEP_ID_ATTR_NAME);
+      }
+      # save completed dependancies for this job definition
       $wr_def->{'deps'} = \@depends_on;
     }
-    $wr_def->{'dep_grps'} = [$group_id];
+    $wr_def->{'dep_grps'} = [$group_id, $per_job_group_id];
     my @report_group = ($d->identifier(), $function_name);
     if ($self->has_job_name_prefix()) {
       unshift @report_group, $self->job_name_prefix();
     }
     $wr_def->{'rep_grp'}  = join q[-], @report_group;
     push @{$self->commands4jobs()->{'function_name'}}, $wr_def;
+    if ($d->has_composition) {
+      # save $per_job_group_id for this function definition here
+      $composition_deps{$d->composition->digest()} = $per_job_group_id;
+    }
   }
+  # need to save $composition_deps for this function here
+  $self->all_composition_deps->{$function_name} = \%composition_deps;
 
   return $group_id;
 }
 
+# Create WR definition for a single job
 sub _definition4job {
   my ($self, $function_name, $log_dir, $d) = @_;
 
