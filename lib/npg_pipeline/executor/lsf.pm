@@ -1,5 +1,6 @@
 package npg_pipeline::executor::lsf;
 
+use 5.010;
 use Moose;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
@@ -152,20 +153,52 @@ sub _execute_function {
   my ($self, $function) = @_;
 
   my $g = $self->function_graph4jobs;
-  #####
-  # Need ids of upstream LSF jobs in order to set correctly dependencies
-  # between LSF jobs
-  #
-  my @depends_on = ();
+
+  my @depends_on_with_degree = ();
+
   if (!$g->is_source_vertex($function)) {
-    @depends_on = $self->dependencies($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
-    if (!@depends_on) {
-      $self->logcroak(qq{"$function" should depend on at least one LSF job});
+    #####
+    # Need ids of upstream LSF jobs in order to set correctly dependencies
+    # between LSF jobs
+    #
+    my @depends_on = map { _string_job_ids2list($_) }
+                     $self->dependencies($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
+    @depends_on or $self->logcroak(qq{"$function" should depend on at least one LSF job});
+
+    my $map_degree = sub {
+      my ($ids,$is_same_degree, ) = @_;
+      return (map { {$_ => $is_same_degree} } @{$ids});
+    };
+
+    # Do we have a composition attribute?
+    # Either all of a function's definitions have a composition or none do  
+    my $definition = $self->function_definitions->{$function}[0];
+    if ( !$definition->has_composition ) {
+      # If not our relationship is many to one or one to one and should be controlled by done(<job_id)
+      @depends_on_with_degree = $map_degree->(\@depends_on, 0);
+    } else {
+      my @this_comp_digest = map {$_->composition()->digest()}
+                             @{$self->function_definitions->{$function}};
+      foreach my $prev_function ($g->predecessors($function)) {
+        # If we do have one and our composition is the same keys as previous node(s)
+        # then they should be controlled by "done(<job_id>[*])"  
+        my @a = map { _string_job_ids2list($_) }
+                $g->get_vertex_attribute($prev_function, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
+        if ((scalar @a > 1) || !$self->function_definitions->{$prev_function}[0]->has_composition) {
+          #mark this relationship as "done()"
+          push @depends_on_with_degree, $map_degree->(\@a, 0);
+        } else {
+          my @prev_comp_digest = map {$_->composition()->digest()}
+                                 @{$self->function_definitions->{$prev_function}};
+          # Mark as "done()" or "one(<job_id>[*])"depending on match evaluation
+          push @depends_on_with_degree, $map_degree->(
+            \@a, (@this_comp_digest ~~ @prev_comp_digest) ? 1 : 0);
+        }
+      }
     }
   }
 
-  @depends_on = map { _string_job_ids2list($_) } @depends_on;
-  my @ids = $self->_submit_function($function, @depends_on);
+  my @ids = $self->_submit_function($function, @depends_on_with_degree);
   if (!@ids) {
     $self->logcroak(q{A list of LSF job ids should be returned});
   }
