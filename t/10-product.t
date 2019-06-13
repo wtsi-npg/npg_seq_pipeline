@@ -145,7 +145,7 @@ subtest 'paths for one-component compositions' => sub {
   is ($p->qc_out_path('/tmp'), '/tmp/lane1/qc', 'qc out path');
   is ($p->short_files_cache_path('/tmp'), '/tmp/lane1/.npg_cache_10000',
     'short files cache path');
-  is ($p->tileviz_path('/tmp'), '/tmp/lane1/tileviz',
+  is ($p->tileviz_path('/tmp'), '/tmp/lane1/tileviz_lane1',
     'tileviz path');
 
   is ($p->file_path('/tmp', ext => 'bam'), '/tmp/26219_1.bam',
