@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 17;
+use Test::More tests => 19;
 use Test::Exception;
 use t::util;
 
@@ -58,6 +58,21 @@ my $arpath = $rfh->{'archive_path'};
   is ($da->[0]->command,
     qq{npg_qc_autoqc_data.pl --id_run 1234 --archive_path $arpath} .
     q{ --lane 2 --lane 3},
+    'command is correct');
+}
+
+{
+  my $aqc_archiver = npg_pipeline::function::autoqc_archiver->new(
+    label            => 'myjob',
+    lanes            => [2,3],
+    archive_path     => $arpath,
+    product_rpt_list => '1234:1',
+    timestamp        => q{20090709-123456},
+  );
+  my $da = $aqc_archiver->create();
+  ok ($da && @{$da} == 1, 'one definition returned');
+  is ($da->[0]->command,
+    qq{npg_qc_autoqc_data.pl --path $arpath/lane1/qc},
     'command is correct');
 }
 

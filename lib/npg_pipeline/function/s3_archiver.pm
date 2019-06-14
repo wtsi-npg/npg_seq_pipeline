@@ -33,8 +33,7 @@ our $VERSION = '0';
 sub create {
   my ($self) = @_;
 
-  my $id_run = $self->id_run();
-  my $job_name = sprintf q{%s_%d}, $ARCHIVE_EXECUTABLE, $id_run;
+  my $job_name = join q[_], $ARCHIVE_EXECUTABLE, $self->label;
 
   my @products = $self->no_s3_archival ? () :
                  grep { $self->is_s3_releasable($_) }
@@ -100,7 +99,7 @@ sub create {
       npg_pipeline::function::definition->new
         ('created_by'  => __PACKAGE__,
          'created_on'  => $self->timestamp(),
-         'identifier'  => $id_run,
+         'identifier'  => $self->label,
          'job_name'    => $job_name,
          'command'     => $command,
          'composition' => $product->composition());
@@ -110,7 +109,7 @@ sub create {
     push @definitions, npg_pipeline::function::definition->new
       ('created_by' => __PACKAGE__,
        'created_on' => $self->timestamp(),
-       'identifier' => $id_run,
+       'identifier' => $self->label,
        'excluded'   => 1);
   }
 

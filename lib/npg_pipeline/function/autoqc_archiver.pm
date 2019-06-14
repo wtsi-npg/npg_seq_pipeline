@@ -16,19 +16,24 @@ sub create {
   my $self = shift;
 
   my $job_name = join q[_], qw/autoqc loader/,
-                            $self->id_run(), $self->timestamp();
+                            $self->label(), $self->timestamp();
   my @command = ($SCRIPT_NAME);
-  push @command, q{--id_run}, $self->id_run();
-  push @command, q{--archive_path}, $self->archive_path;
-  push @command, map {  "--lane $_" }
-                 map { $_->composition->get_component(0)->position}
-                 @{$self->products->{'lanes'}};
+  if ($self->has_product_rpt_list) {
+    push @command, map { (q{--path}, $_->qc_out_path($self->archive_path)) }
+                   @{$self->products->{'data_products'}};
+  } else {
+    push @command, q{--id_run}, $self->id_run();
+    push @command, q{--archive_path}, $self->archive_path;
+    push @command, map {  "--lane $_" }
+                   map { $_->composition->get_component(0)->position}
+                   @{$self->products->{'lanes'}};
+  }
   my $command_string = join q{ }, @command;
 
   my $d = npg_pipeline::function::definition->new(
     created_by    => __PACKAGE__,
     created_on    => $self->timestamp(),
-    identifier    => $self->id_run(),
+    identifier    => $self->label(),
     job_name      => $job_name,
     command       => $command_string,
     fs_slots_num  => 1,
@@ -89,12 +94,11 @@ type object.
 
 =head1 AUTHOR
 
-Andy Brown
 Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

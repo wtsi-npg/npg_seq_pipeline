@@ -3,11 +3,13 @@ use warnings;
 
 use Digest::MD5;
 use File::Copy;
-use File::Path qw[make_path];
+use File::Path qw[make_path remove_tree];
 use File::Temp;
+use File::Basename;
+use Cwd;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Exception;
 use t::util;
 
@@ -69,7 +71,7 @@ subtest 'local and no_s3_archival flag' => sub {
   is($ds->[0]->excluded, 1, 'function is excluded');
 };
 
-subtest 'create' => sub {
+subtest 'create for a run' => sub {
   plan tests => 32;
 
   my $archiver;
@@ -130,6 +132,60 @@ subtest 'create' => sub {
       like($part, $cmd_patt, "$cmd matches $cmd_patt");
     }
   }
+};
+
+subtest 'create for a product' => sub {
+  plan tests => 4;
+
+  # Using a standard run folder structure.
+  my $archiver = $pkg->new
+      (conf_path           => 't/data/release/config/archive_on',
+       label               => 'my_label',
+       product_rpt_list    => '26291:1:3;26291:2:3',
+       runfolder_path      => $runfolder_path,
+       timestamp           => $timestamp,
+       qc_schema           => $qc);
+
+  my @defs = @{$archiver->create};
+  is (scalar @defs, 1, 'one definition returned');
+  is ($defs[0]->composition->freeze2rpt, '26291:1:3;26291:2:3', 'correct rpt');
+
+  # Using directory structure similar to top-up cache
+
+  my $dir = File::Temp->newdir()->dirname;
+
+  my $generic_name = $defs[0]->composition->digest;
+  my $archive = "$dir/archive";
+  my $product_archive = join q[/], $archive, $generic_name;
+  make_path "$product_archive/qc";
+  my $target_archive = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive', 'plex3';
+  my @files = glob "$target_archive/*.*";
+  my $wd = getcwd();
+  foreach my $target (@files) {
+    my ($name,$path,$suffix) = fileparse($target);
+    symlink join(q[/],$wd,$target), join(q[/],$product_archive,$name)
+      or die 'Failed to create a sym link';
+  }
+  @files = glob "$target_archive/qc/*.*";
+  foreach my $target (@files) {
+    my ($name,$path,$suffix) = fileparse($target);
+    symlink join(q[/],$wd,$target), join(q[/], $product_archive, 'qc', $name)
+      or die 'Failed to create a sym link';
+  }
+
+  $archiver = $pkg->new
+      (conf_path           => 't/data/release/config/archive_on',
+       label               => 'my_label',
+       product_rpt_list    => '26291:1:3;26291:2:3',
+       runfolder_path      => $runfolder_path,
+       archive_path        => $archive,
+       timestamp           => $timestamp,
+       qc_schema           => $qc);  
+  @defs = @{$archiver->create};
+  is (scalar @defs, 1, 'one definition returned');
+  is ($defs[0]->composition->freeze2rpt, '26291:1:3;26291:2:3', 'correct rpt');
+
+  remove_tree($dir); 
 };
 
 subtest 'configure_date_binning' => sub {

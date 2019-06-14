@@ -2,6 +2,7 @@ package npg_pipeline::function::warehouse_archiver;
 
 use Moose;
 use namespace::autoclean;
+use Readonly;
 
 use npg_pipeline::function::definition;
 use npg_pipeline::runfolder_scaffold;
@@ -9,6 +10,9 @@ use npg_pipeline::runfolder_scaffold;
 extends q{npg_pipeline::base};
 
 our $VERSION = '0';
+
+Readonly::Scalar my $OLD_WH_LOADER_NAME => q{warehouse_loader};
+Readonly::Scalar my $MLWH_LOADER_NAME   => q{npg_runs2mlwarehouse};
 
 =head1 NAME
 
@@ -36,7 +40,7 @@ of the warehouse.
 
 sub update_warehouse {
   my ($self, $pipeline_name, $flag) = @_;
-  return $self->_update_warehouse_command('warehouse_loader', $pipeline_name, $flag);
+  return $self->_update_warehouse_command($OLD_WH_LOADER_NAME, $pipeline_name, $flag);
 }
 
 =head2 update_warehouse_post_qc_complete
@@ -61,7 +65,7 @@ of the ml warehouse.
 
 sub update_ml_warehouse {
   my ($self, $pipeline_name, $flag) = @_;
-  return $self->_update_warehouse_command('npg_runs2mlwarehouse', $pipeline_name, $flag);
+  return $self->_update_warehouse_command($MLWH_LOADER_NAME, $pipeline_name, $flag);
 }
 
 =head2 update_ml_warehouse_post_qc_complete
@@ -80,34 +84,44 @@ sub update_ml_warehouse_post_qc_complete {
 sub _update_warehouse_command {
   my ($self, $loader_name, $pipeline_name, $post_qc_complete) = @_;
 
-  my $d;
-  my $id_run = $self->id_run;
-
+  my $m = q{};
   if ($self->no_warehouse_update) {
-    $self->warn(q{Update to warehouse is switched off.});
+    $m = q{Update to warehouse is switched off.};
+  } elsif ($self->has_product_rpt_list && $loader_name eq $OLD_WH_LOADER_NAME) {
+    $m = q{Update to the old warehouse for individual products is switched off.};
+  }
+
+  my $d;
+  if ($m) {
+    $self->warn($m);
     $d = npg_pipeline::function::definition->new(
       created_by   => __PACKAGE__,
       created_on   => $self->timestamp(),
-      identifier   => $id_run,
+      identifier   => $self->label,
       excluded     => 1
     );
   } else {
-
-    my $command = qq{$loader_name --verbose --id_run $id_run};
-    if ($loader_name eq 'warehouse_loader') {
-      $command .= q{ --lims_driver_type };
-      $command .= $post_qc_complete ? 'ml_warehouse_fc_cache' : 'samplesheet';
-    }
     $pipeline_name ||= q[];
-    my $job_name = join q{_}, $loader_name, $id_run, $pipeline_name;
-    if ($post_qc_complete) {
-      $job_name .= '_postqccomplete';
+    my $job_name = join q{_}, $loader_name, $self->label, $pipeline_name;
+    my $command = qq{$loader_name --verbose };
+
+    if ($self->has_product_rpt_list) {
+      $self->logcroak(q{Not implemented for individual products});
+    } else {
+      $command .= q{--id_run } . $self->id_run;
+      if ($loader_name eq $OLD_WH_LOADER_NAME) {
+        $command .= q{ --lims_driver_type };
+        $command .= $post_qc_complete ? 'ml_warehouse_fc_cache' : 'samplesheet';
+      }
+      if ($post_qc_complete) {
+        $job_name .= '_postqccomplete';
+      }
     }
 
     $d = npg_pipeline::function::definition->new(
       created_by => __PACKAGE__,
       created_on => $self->timestamp(),
-      identifier => $id_run,
+      identifier => $self->label,
       command    => $command,
       num_cpus   => [0],
       job_name   => $job_name,
@@ -122,6 +136,7 @@ sub _update_warehouse_command {
 __PACKAGE__->meta->make_immutable;
 
 1;
+
 __END__
 
 =head1 DIAGNOSTICS
@@ -136,6 +151,8 @@ __END__
 
 =item namespace::autoclean
 
+=item Readonly
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -148,7 +165,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

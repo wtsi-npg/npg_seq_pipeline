@@ -438,7 +438,7 @@ has q{_output_file_name_root} => (
 );
 sub _build__output_file_name_root {
   my $self = shift;
-  my $name = join q[_], $self->_script_name, $self->id_run(), $self->random_string();
+  my $name = join q[_], $self->_script_name, $self->label(), $self->random_string();
   # If $self->script_name includes a directory path, change / to _
   $name =~ s{/}{_}gmxs;
   return $name;
@@ -507,9 +507,10 @@ sub _common_attributes {
   #####
   # Create and return a hash ref that contains a subset of
   # attributes (with values) of this class, which can be used
-  # in constructing an instance of a class given by the argument.
+  # when constructing an instance of a class given by the argument.
   #
   my %attrs = %{$self->_cloned_attributes()};
+
   my $meta = $module->meta();
   foreach my $attr_name (keys %attrs) {
     if (!$meta->find_attribute_by_name($attr_name)) {
@@ -610,6 +611,15 @@ sub _save_function_definitions {
 sub _run_spider {
   my $self = shift;
 
+  #####
+  # We assume that the samplesheet is available. Can generate it,
+  # but difficult to decide on a standard location.
+  #
+  return if $self->has_product_rpt_list;
+
+  #####
+  # We have a standard samplesheet loation for a run.
+  #
   try {
     my $cache = npg_pipeline::cache->new(
       'id_run'           => $self->id_run,
@@ -624,6 +634,7 @@ sub _run_spider {
   } catch {
     $self->logcroak(qq[Error while spidering: $_]);
   };
+
   return;
 }
 

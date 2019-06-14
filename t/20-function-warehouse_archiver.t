@@ -25,7 +25,7 @@ subtest 'warehouse updates' => sub {
   my $c = npg_pipeline::function::warehouse_archiver->new(
     run_folder          => q{123456_IL2_1234},
     runfolder_path      => $runfolder_path,
-    recalibrated_path   => $runfolder_path,
+    recalibrated_path   => $runfolder_path
   );
   isa_ok ($c, 'npg_pipeline::function::warehouse_archiver');
   
@@ -66,7 +66,7 @@ subtest 'warehouse updates' => sub {
 };
 
 subtest 'warehouse updates disabled' => sub {
-  plan tests => 12;
+  plan tests => 14;
 
   my $test_method = sub {
     my ($f, $method, $switch) = @_;
@@ -79,26 +79,33 @@ subtest 'warehouse updates disabled' => sub {
   foreach my $m (@wh_methods) {
     my $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path      => $runfolder_path,
-      recalibrated_path   => $runfolder_path,
       no_warehouse_update => 1
     );
     $test_method->($c, $m, 'off');
 
     $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path    => $runfolder_path,
-      recalibrated_path => $runfolder_path,
       local             => 1,
     );
     $test_method->($c, $m, 'off');    
 
     $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path      => $runfolder_path,
-      recalibrated_path   => $runfolder_path,
       local               => 1,
       no_warehouse_update => 0,
     );
     $test_method->($c, $m, 'on');
   }
+
+  my $wa = npg_pipeline::function::warehouse_archiver->new(
+    runfolder_path    => $runfolder_path,
+    label             => 'my_label',
+    product_rpt_list  => '123:4:5'
+  );
+  $test_method->($wa, 'update_warehouse', 'off');
+  throws_ok { $wa->update_ml_warehouse }
+    qr/Not implemented for individual products/,
+    'functionality for individual products not implemented - error';
 };
 
 1;

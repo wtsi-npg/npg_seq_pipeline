@@ -79,12 +79,48 @@ has [map {q[+] . $_ }  @NO_SCRIPT_ARG_ATTRS] => (metaclass => 'NoGetopt',);
 
 =head2 id_run
 
+Run id, an optional attribute.
+
 =cut
 
-#####
-# Amend inherited id_run attribute to make it optional.
-#
 has q{+id_run} => (required => 0,);
+
+=head2 label
+
+A custom label associated with invoking a particular pipeline on
+particular input. It is used in log and other similar file names,
+job names, etc. If not set, defaults to the value of the id_run
+attribute.
+
+=cut
+
+has q{label} => (
+  isa        => q{Str},
+  is         => q{ro},
+  predicate  => q{has_label},
+  required   => 1,
+  lazy_build => 1,
+);
+sub _build_label {
+  my $self = shift;
+  return $self->id_run;
+}
+
+=head2 product_rpt_list
+
+An rpt list for a single product, an optional attribute.
+Should be set if the pipeline deals with products that do
+not belong to a single run or if the pipeline (most likely,
+the archival pipeline) has to deal with a single product only.
+
+=cut
+
+has q{product_rpt_list} => (
+  isa       => q{Str},
+  is        => q{ro},
+  predicate => q{has_product_rpt_list},
+  required  => 0,
+);
 
 =head2 timestamp
 
@@ -159,6 +195,7 @@ has q{merge_lanes} => (
   isa           => q{Bool},
   is            => q{ro},
   lazy          => 1,
+  predicate     => q{has_merge_lanes},
   builder       => q{_build_merge_lanes},
   documentation => q{Tells p4 stage2 (seq_alignment) to merge lanes } .
                    q{(at their plex level if plexed) and to run its } .
@@ -171,7 +208,7 @@ sub _build_merge_lanes {
 
 =head2 lims
 
-st::api::lims run-level object
+st::api::lims run-level or product-specific object
 
 =cut
 
@@ -180,8 +217,10 @@ has q{lims} => (isa        => q{st::api::lims},
                 metaclass  => q{NoGetopt},
                 lazy_build => 1,);
 sub _build_lims {
-  my ($self) = @_;
-  return st::api::lims->new(id_run => $self->id_run);
+  my $self = shift;
+  return $self->has_product_rpt_list ?
+         st::api::lims->new(rpt_list => $self->product_rpt_list) :
+         st::api::lims->new(id_run   => $self->id_run);
 }
 
 =head2 multiplexed_lanes
@@ -255,6 +294,10 @@ sub get_tag_index_list {
   return \@tags;
 }
 
+=head2 products
+
+=cut
+
 has q{products} => (
   isa        => q{HashRef},
   is         => q{ro},
@@ -264,8 +307,9 @@ has q{products} => (
 sub _build_products {
   my $self = shift;
 
-  my $selected_lanes = (join q[], $self->positions) ne
-                       (join q[], map {$_->position} $self->lims->children());
+  my $selected_lanes = $self->has_product_rpt_list ? 0 :
+                       ((join q[], $self->positions) ne
+                        (join q[], map {$_->position} $self->lims->children()));
 
   my $lims2product = sub {
     my $lims = shift;
@@ -275,20 +319,24 @@ sub _build_products {
       selected_lanes => $selected_lanes);
   };
 
-  my @lanes = map { $self->lims4lane($_) } $self->positions;
+  my @lane_lims = ();
+  if (!$self->has_product_rpt_list) {
+    @lane_lims = map { $self->lims4lane($_) } $self->positions;
+  }
 
   my @data_products;
-  if ($self->merge_lanes) {
+  if ($self->has_product_rpt_list || $self->merge_lanes) {
     @data_products =
       map {
         npg_pipeline::product->new(lims           => $_,
                                    rpt_list       => $_->rpt_list,
                                    selected_lanes => $selected_lanes)
           }
-      $self->lims->aggregate_xlanes($self->positions);
+      $self->has_product_rpt_list ? ($self->lims) :
+        $self->lims->aggregate_xlanes($self->positions);
   } else {
     my @lims = ();
-    foreach my $lane (@lanes) {
+    foreach my $lane (@lane_lims) {
       if ($self->is_indexed && $lane->is_pool) {
         push @lims, $lane->children;
         push @lims, $lane->create_tag_zero_object();
@@ -296,12 +344,11 @@ sub _build_products {
         push @lims, $lane;
       }
     }
-
     @data_products = map { $lims2product->($_) } @lims;
   }
 
   return { 'data_products' => \@data_products,
-           'lanes'         => [map { $lims2product->($_) } @lanes] };
+           'lanes'         => [map { $lims2product->($_) } @lane_lims] };
 }
 
 __PACKAGE__->meta->make_immutable;
