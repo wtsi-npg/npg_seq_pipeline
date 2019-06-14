@@ -1,11 +1,17 @@
 LIST OF CHANGES
 ---------------
 
+release 56.0.0
  - add autosome target to seq_alignment
  - pipeline configuration module and product release configuration
    accessors are moved to npg_tracking package in order for the product
    configuration be accessible from other packages, code in this
    package refactored to accommodate the change
+ - conform to bambi's v 0.12.0 file and directory naming schema for
+   tileviz data
+ - add facility to do LSF 1:1 job index dependencies on array jobs
+ - when validating run folder for deletion, ensure linked directories
+   and files are recognised
 
 release 55.2
  - switched from S3 to Google Compute Storage
