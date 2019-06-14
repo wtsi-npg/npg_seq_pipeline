@@ -296,7 +296,7 @@ sub _generate_command_params {
   $p4_params{qc_check_id_run} = $id_run; # used by tag_metrics qc check
   $p4_params{qc_check_qc_in_dir} = $bam_basecall_path; # used by tag_metrics qc check
   $p4_params{qc_check_qc_out_dir} = $lane_product->qc_out_path($self->archive_path); # used by tag_metrics qc check
-  $p4_params{tileviz_dir} = $lane_product->tileviz_path($self->archive_path); # used for tileviz
+  $p4_params{tileviz_dir} = $lane_product->tileviz_path_prefix($self->archive_path); # used for tileviz
   $p4_params{outdatadir} = $no_cal_path; # base for all (most?) outputs
   $p4_params{lane_archive_path} = $lp_archive_path;
   $p4_params{rpt_list} = $lane_product->rpt_list;

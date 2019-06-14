@@ -17,7 +17,7 @@ our $VERSION = '0';
 
 Readonly::Scalar my $QC_DIR_NAME                => q[qc];
 Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
-Readonly::Scalar my $TILEVIZ_DIR_NAME           => q[tileviz];
+Readonly::Scalar my $TILEVIZ_DIR_NAME_PREFIX    => q[tileviz];
 
 =head1 NAME
 
@@ -288,14 +288,28 @@ sub short_files_cache_path {
 
 =head2 tileviz_path
 
-Returns path for tileviz output directory for this product taking
+Returns path for tileviz output directory for this (lane) product taking
 argument directory path as a base.
  
 =cut
 
 sub tileviz_path {
   my ($self, $dir) = @_;
-  return File::Spec->catdir($self->path($dir), $TILEVIZ_DIR_NAME);
+  # Follow convention used by bambi, ie append _lane<POSITION>
+  return join q[_], $self->tileviz_path_prefix($dir),
+                    q[lane] . $self->composition->get_component(0)->position;
+}
+
+=head2 tileviz_path_prefix
+
+Returns path parefix for tileviz output directory for this (lane) product
+taking argument directory path as a base.
+ 
+=cut
+
+sub tileviz_path_prefix {
+  my ($self, $dir) = @_;
+  return File::Spec->catdir($self->path($dir), $TILEVIZ_DIR_NAME_PREFIX);
 }
 
 =head2 file_path
