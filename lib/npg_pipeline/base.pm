@@ -10,7 +10,6 @@ use File::Basename;
 use Readonly;
 
 use npg_tracking::glossary::rpt;
-use npg_tracking::glossary::composition::factory::rpt_list;
 use st::api::lims;
 use npg_pipeline::product;
 
@@ -257,28 +256,6 @@ sub get_tag_index_list {
   return \@tags;
 }
 
-=head2 create_composition
-
-Returns a one-component composition representing an input
-object or hash.
- 
-  my $l = st::api::lims->new(id_run => 1, position => 2);
-  my $composition = $base->create_composition($l);
-
-  my $h = {id_run => 1, position => 2};
-  $composition = $base->create_composition($h);
-
-This method might be removed in the next round of development.
-
-=cut
-
-sub create_composition {
-  my ($self, $l) = @_;
-  return npg_tracking::glossary::composition::factory::rpt_list
-      ->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($l))
-      ->create_composition();
-}
-
 has q{products} => (
   isa        => q{HashRef},
   is         => q{ro},
@@ -359,8 +336,6 @@ __END__
 =item Readonly
 
 =item npg_tracking::glossary::rpt
-
-=item npg_tracking::glossary::composition::factory::rpt_list
 
 =item st::api::lims
 

@@ -74,7 +74,7 @@ sub generate {
 
     my @generated = $self->_generate_command_params($l, $tag_list_file, $lane_product);
     my ($command, $p4_params, $p4_ops) = @generated;
-    push @definitions, $self->_create_definition($l, $command);
+    push @definitions, $self->_create_definition($lane_product->composition, $command);
 
     my $pfile_name = join q{/}, $self->p4_stage1_params_paths->{$p},
                                 $self->id_run.q{_}.$p.q{_p4s1_pv_in.json};
@@ -200,7 +200,7 @@ sub _build_phix_alignment_reference {
 }
 
 sub _create_definition {
-  my ($self, $l, $command) = @_;
+  my ($self, $composition, $command) = @_;
 
   return npg_pipeline::function::definition->new(
     created_by      => __PACKAGE__,
@@ -214,7 +214,7 @@ sub _create_definition {
     queue           => $npg_pipeline::function::definition::P4_STAGE1_QUEUE,
     command         => $command,
     command_preexec => $self->repos_pre_exec_string(),
-    composition     => $self->create_composition($l)
+    composition     => $composition
   );
 }
 
