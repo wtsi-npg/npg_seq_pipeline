@@ -56,8 +56,12 @@ foreach my $org (keys %builds){
         my $star_dir    = join q[/],$rel_dir,'star';
         my $hisat2_dir  = join q[/],$rel_dir,'hisat2';
         my $target_dir  = join q[/],$rel_dir,'target';
+        my $targeta_dir = join q[/],$rel_dir,'target_autosome';
         make_path($bowtie2_dir, $bwa0_6_dir, $picard_dir, $star_dir,
-                  $fasta_dir, $hisat2_dir, $target_dir, {verbose => 0});
+                  $fasta_dir, $hisat2_dir, {verbose => 0});
+        if($rel eq 'GRCh38_full_analysis_set_plus_decoy_hla'){
+          make_path($target_dir, $targeta_dir, {verbose => 0});
+        } 
         if ($tbuilds{$rel}) {
             foreach my $tra_ver (@{ $tbuilds{$rel} }){
                 my $tra_ver_dir = join q[/],$tra_dir,$org,$tra_ver,$rel;
@@ -108,6 +112,7 @@ sub symlink_default {
 `touch $ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/picard/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.dict`;
 `touch $ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/bwa0_6/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.alt`;
 `touch $ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/target/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.interval_list`;
+`touch $ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/target_autosome/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.interval_list`;
 `touch $ref_dir/Homo_sapiens/GRCh38X/all/fasta/Homo_sapiens.GRCh38X.fa`;
 `touch $ref_dir/Strongyloides_ratti/20100601/all/fasta/rat.fa`;
 `touch $ref_dir/Strongyloides_ratti/20100601/all/picard/rat.fa`;
