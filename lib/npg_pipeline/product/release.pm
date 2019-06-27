@@ -71,7 +71,7 @@ sub expected_files {
   push @expected_files,
     map { $product->file_path($dir_path, ext => $_) } @extensions;
 
-  my @suffixes = qw{F0x900 F0xB00 F0xF04_target};
+  my @suffixes = qw{F0x900 F0xB00 F0xF04_target F0xF04_target_autosome};
   push @expected_files,
     map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
     @suffixes;
