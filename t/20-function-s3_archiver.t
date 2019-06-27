@@ -70,7 +70,7 @@ subtest 'local and no_s3_archival flag' => sub {
 };
 
 subtest 'create' => sub {
-  plan tests => 30;
+  plan tests => 32;
 
   my $archiver;
   lives_ok {
@@ -133,7 +133,7 @@ subtest 'create' => sub {
 };
 
 subtest 'configure_date_binning' => sub {
-  plan tests => 23;
+  plan tests => 25;
 
   my $archiver;
   lives_ok {

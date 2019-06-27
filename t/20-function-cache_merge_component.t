@@ -72,7 +72,7 @@ subtest 'local and no_cache_merge_component' => sub {
 };
 
 subtest 'create' => sub {
-  plan tests => 4 + (1 + 12) * 4;
+  plan tests => 4 + (1 + 13) * 4;
 
   #Tags 7, 8, 1, 11, 2, 5 - preliminary results
 
