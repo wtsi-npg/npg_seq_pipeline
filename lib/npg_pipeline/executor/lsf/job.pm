@@ -314,13 +314,32 @@ sub _priority {
 
 sub _dependencies {
   my $self = shift;
-  if (@{$self->upstream_job_ids()}) {
-    my @job_ids = map { qq[done($_)] }
-                  uniq
-                  sort { $a <=> $b }
-                  @{$self->upstream_job_ids()};
-    return q{-w'}.(join q{ && }, @job_ids).q{'};
+
+  my @deps = ();
+  my $seen = {};
+
+  # Sorting is done for convenience of human users.
+  # Ensuring that a job is listed only once is important mostly
+  # for tests.
+
+  foreach my $job_id ( sort { (keys %{$a})[0] <=> (keys %{$b})[0] }
+                       @{$self->upstream_job_ids()} ) {
+
+    my ($id, $is_same_degree) = each %{$job_id};
+    if (!exists $seen->{$id}) {
+      push @deps, (sprintf 'done(%i%s)',
+                   $id, $is_same_degree ? q([*]) : q());
+    } else {
+      ($seen->{$id} == $is_same_degree) or croak
+        "Inconsistent job info for job $id";
+    }
+    $seen->{$id} = $is_same_degree;
   }
+
+  if (@deps) {
+    return q{-w'}.(join q{ && }, @deps).q{'};
+  }
+
   return;
 }
 

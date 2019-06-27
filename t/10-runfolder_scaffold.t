@@ -87,12 +87,12 @@ subtest 'product level scaffold, NovaSeq all lanes' => sub {
   my @original = qw/lane1 lane2 lane3 lane4/;
   my @dirs = @original;
   push @dirs, (map {join q[/], $_, 'qc'} @original);
-  push @dirs, (map {join q[/], $_, 'tileviz'} @original);
+  push @dirs, (map {join q[/], $_, 'tileviz_'.$_} @original);
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
   map { ok (-d $_, "$_ created") } map {join q[/], $apath, $_} @dirs;
 
   for my $lane (@original) {
-    my $file = join q[/], $apath, $lane, 'tileviz.html';
+    my $file = join q[/], $apath, $lane, 'tileviz_' . $lane . '.html';
     ok (-f $file, "tileviz lane index file $file exists");
     my $content = read_file $file;
     my ($p) = $lane =~ /(\d)\Z/;
@@ -139,7 +139,7 @@ subtest 'product level scaffold, NovaSeq selected lanes' => sub {
   my @original = qw/lane2 lane3/;
   my @dirs = @original;
   push @dirs, (map {join q[/], $_, 'qc'} @original);
-  push @dirs, (map {join q[/], $_, 'tileviz'} @original);
+  push @dirs, (map {join q[/], $_, 'tileviz_'.$_} @original);
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
   map { ok (-d $_, "$_ created") } map {join q[/], $apath, $_} @dirs;
 

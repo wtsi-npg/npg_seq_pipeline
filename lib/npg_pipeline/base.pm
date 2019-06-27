@@ -2,6 +2,7 @@ package npg_pipeline::base;
 
 use Moose;
 use namespace::autoclean;
+use MooseX::Getopt::Meta::Attribute::Trait::NoGetopt;
 use POSIX qw(strftime);
 use Math::Random::Secure qw{irand};
 use List::MoreUtils qw{any};
@@ -20,7 +21,7 @@ extends 'npg_tracking::illumina::runfolder';
 with qw{
         MooseX::Getopt
         WTSI::DNAP::Utilities::Loggable
-        npg_pipeline::base::config
+        npg_tracking::util::pipeline_config
         npg_pipeline::base::options
        };
 
@@ -43,6 +44,7 @@ Readonly::Array my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                lane_count
                                                expected_cycle_count
                                                run_flowcell
+                                               local_bin
                                               /;
 
 =head1 NAME
@@ -99,7 +101,7 @@ has q{timestamp} => (
   isa        => q{Str},
   is         => q{ro},
   default    => sub {return strftime '%Y%m%d-%H%M%S', localtime time;},
-  metaclass  => 'NoGetopt',
+  metaclass  => q{NoGetopt},
 );
 
 =head2 random_string
@@ -128,6 +130,24 @@ sub positions {
   my @positions = @{$self->lanes()} ? @{$self->lanes()} :
                   map {$_->position()} $self->lims->children();
   return (sort @positions);
+}
+
+=head2 general_values_conf
+
+Returns a hashref of configuration details from the relevant configuration file
+
+=cut
+
+has q{general_values_conf} => (
+  metaclass  => q{NoGetopt},
+  isa        => q{HashRef},
+  is         => q{ro},
+  lazy_build => 1,
+  init_arg   => undef,
+);
+sub _build_general_values_conf {
+  my $self = shift;
+  return $self->read_config( $self->conf_file_path(q{general_values.ini}) );
 }
 
 =head2 merge_lanes
@@ -347,6 +367,8 @@ __END__
 =item WTSI::DNAP::Utilities::Loggable
 
 =item npg_tracking::illumina::runfolder
+
+=item npg_tracking::util::pipeline_config
 
 =back
 

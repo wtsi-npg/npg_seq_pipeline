@@ -4,16 +4,14 @@ use namespace::autoclean;
 
 use Data::Dump qw[pp];
 use Moose::Role;
-use File::Spec::Functions qw{catdir catfile};
+use File::Spec::Functions qw{catdir};
 use List::Util qw{all};
 use npg_qc::Schema;
 
 with qw{WTSI::DNAP::Utilities::Loggable
-        npg_pipeline::base::config};
+        npg_tracking::util::pipeline_config};
 
 our $VERSION = '0';
-
-Readonly::Scalar my $RELEASE_CONFIG_FILE => 'product_release.yml';
 
 =head1 SUBROUTINES/METHODS
 
@@ -32,17 +30,6 @@ has 'qc_schema' =>
    is         => 'ro',
    required   => 1,
    builder    => '_build_qc_schema',
-   lazy       => 1,);
-
-=head2 release_config
-
-=cut
-
-has 'release_config' =>
-  (isa        => 'HashRef',
-   is         => 'rw',
-   required   => 1,
-   builder    => '_build_release_config',
    lazy       => 1,);
 
 =head2 expected_files
@@ -385,74 +372,6 @@ sub _build_qc_schema {
   return npg_qc::Schema->connect();
 }
 
-sub _build_release_config {
-  my ($self) = @_;
-
-  my $file = $self->conf_file_path($RELEASE_CONFIG_FILE);
-  $self->info("Reading product release configuration from '$file'");
-  my $config = $self->read_config($file);
-  $self->debug('Loaded product release configuration: ', pp($config));
-
-  return $config;
-}
-
-#####
-
-=head2 find_study_config
-
-  Arg [1]    : npg_pipeline::product
-
-  Example    : $obj->find_study_config($product)
-  Description: Returns a study-specific config or a default config. Therefore,
-               one cannot rely on study_id key being defined in the obtained
-               data structure. Error if neither study nor default config is
-               available.
-
-  Returntype : Hash
-
-=cut
-
-sub find_study_config {
-  my ($self, $product) = @_;
-
-  $product or $self->logconfess('A product argument is required');
-
-  my $with_spiked_control = 0;
-  my $rpt       = $product->rpt_list();
-  my $name      = $product->file_name_root();
-  #####
-  # If we were to process a pool as a single library, and all
-  # libraries in a pool belonged to the same study, passing
-  # false with_spiked_control flag will allow for retrieving
-  # a correct single study identifier. 
-  my @study_ids = $product->lims->study_ids($with_spiked_control);
-
-  @study_ids or
-    $self->logcroak("Failed to get a study_id for product $name, $rpt");
-  (@study_ids == 1) or
-    $self->logcroak("Multiple study ids for product $name, $rpt");
-  my $study_id = $study_ids[0];
-
-  my @study_configs = grep { $_->{study_id} eq $study_id }
-    @{$self->release_config->{study}};
-  my $study_config;
-
-  if (@study_configs) {
-    if (@study_configs > 1) {
-      $self->logcroak("Multiple configurations for study $study_id");
-    }
-    $study_config = $study_configs[0];
-  } else {
-    $study_config = $self->release_config->{default};
-    (defined $study_config) or
-      $self->logcroak("No release configuration was defined for study $study_id" .
-                      ' and no default was defined');
-    $self->info("Using the default release configuration for study $study_id");
-  }
-
-  return $study_config;
-}
-
 1;
 
 __END__
@@ -536,6 +455,10 @@ study:
 
 =item Readonly
 
+=item WTSI::DNAP::Utilities::Loggable
+
+=item npg_tracking::util::pipeline_config
+
 =item npg_qc::Schema
 
 =back
@@ -546,7 +469,7 @@ Keith James
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018, 2019 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

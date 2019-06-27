@@ -26,7 +26,6 @@ data/config_files/general_values.ini
 data/config_files/lsf.ini
 data/config_files/wr.json
 lib/npg_pipeline/base.pm
-lib/npg_pipeline/base/config.pm
 lib/npg_pipeline/base/options.pm
 lib/npg_pipeline/cache.pm
 lib/npg_pipeline/cache/barcodes.pm
