@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - add autosome stats file to product release
+
 release 56.0.0
  - add autosome target to seq_alignment
  - pipeline configuration module and product release configuration
