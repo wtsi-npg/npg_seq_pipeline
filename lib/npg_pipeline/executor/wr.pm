@@ -24,7 +24,7 @@ with 'npg_tracking::util::pipeline_config';
 
 our $VERSION = '0';
 
-Readonly::Scalar my $VERTEX_GROUP_DEP_ID_ATTR_NAME => q[wr_group_id];
+Readonly::Scalar my $GENERIC_DEP_KEY               => q[wr_group_id];
 Readonly::Scalar my $DEFAULT_MEMORY                => 2000;
 Readonly::Scalar my $VERTEX_JOB_PRIORITY_ATTR_NAME => q[job_priority];
 Readonly::Scalar my $WR_ENV_LIST_DELIM             => q[,];
@@ -70,12 +70,6 @@ sub _build_wr_conf {
   return $self->read_config($self->conf_file_path('wr.json'));
 }
 
-has 'all_composition_deps' => (
-  isa        => 'HashRef[HashRef]',
-  is         => 'rw',
-  default => sub { return {}; },
-);
-
 =head2 execute
 
 Creates and submits wr jobs for execution.
@@ -89,10 +83,10 @@ override 'execute' => sub {
   try {
     foreach my $function ($self->function_graph4jobs()
                                ->topological_sort()) {
-      $self->_process_function($function);
+      $self->_definitions4function($function);
     }
     $action = 'saving';
-    my $json = JSON->new->canonical;
+    my $json = JSON->new->canonical; # the keys will be sorted
     $self->save_commands4jobs(
          map { $json->encode($_) } # convert every wr definition to JSON
          map { @{$_} }             # expand arrays of wr definitions        
@@ -108,28 +102,19 @@ override 'execute' => sub {
 };
 
 ##################################################################
-############## Private methods ###################################
+############## Private attributes and methods ####################
 ##################################################################
 
-sub _process_function {
-  my ($self, $function) = @_;
-
-  my $g = $self->function_graph4jobs;
-
-  my $group_id = $self->_definitions4function($function, $g);
-  if (!$group_id) {
-    $self->logcroak(q[Group dependency id should be returned]);
-  }
-
-  # write our group_id back to
-  $g->set_vertex_attribute($function, $VERTEX_GROUP_DEP_ID_ATTR_NAME, $group_id);
-
-  return;
-}
+has '_dependencies' => (
+  isa        => 'HashRef[HashRef]',
+  is         => 'ro',
+  default => sub { return {}; },
+);
 
 sub _definitions4function {
-  my ($self, $function_name, $g) = @_;
+  my ($self, $function_name) = @_;
 
+  my $g = $self->function_graph4jobs;
   my $definitions = $self->function_definitions()->{$function_name};
   my $group_id = join q[-], $function_name, $definitions->[0]->identifier(), irand();
   my $outgoing_flag = $self->future_path_is_in_outgoing($function_name);
@@ -142,49 +127,58 @@ sub _definitions4function {
   # Translate each job definition into a WR definition
   my %composition_deps = ();
   foreach my $d (@{$definitions}) {
+
     my $per_job_group_id = join q[-], $group_id, $i++;
     my $wr_def = $self->_definition4job($function_name, $log_dir, $d);
+    $wr_def->{'dep_grps'} = [$group_id, $per_job_group_id];
+    # Does this job have a composition?
+    my $composition_digest = $d->has_composition ? $d->composition()->digest() : q[];
+    if ($composition_digest) {
+      # save $per_job_group_id for this function definition here
+      $composition_deps{$composition_digest} = $per_job_group_id;
+    }
+    $composition_deps{$GENERIC_DEP_KEY} = $group_id;
 
     if (!$g->is_source_vertex($function_name)) {
       my @depends_on = ();
-      # Does this job have a composition?
-      if ($d->has_composition) {
-        #for each previous node on the graph calc dependancies
-        foreach my $prev_func ($g->predecessors($function_name)) {
-          # take that job's composition digest
-          my $composition_digest = $d->composition()->digest();
-          # take that jobs's individual depgroup if we have a matching entry in the composition hash?
-          if (exists $self->all_composition_deps->{$prev_func} && exists $self->all_composition_deps->{$prev_func}->{$composition_digest}) {
-            # yes? add the specific dependancy
-            push @depends_on, $self->all_composition_deps->{$prev_func}->{$composition_digest};
-          } else {
-            # no? add it to the genetic dependson
-            push @depends_on, $g->get_vertex_attribute($prev_func, $VERTEX_GROUP_DEP_ID_ATTR_NAME);
-          }
+
+      #for each previous node on the graph calc dependencies
+      foreach my $prev_func ($g->predecessors($function_name)) {
+        $self->_dependencies->{$prev_func} or $self->logcroak(
+          "Dependency groups not defined for function $prev_func");
+        # take that jobs's individual depgroup if we have a matching entry in the composition hash?
+        if ($composition_digest &&
+            $self->_dependencies->{$prev_func}->{$composition_digest}) {
+          # yes? add the specific dependency
+          push @depends_on, $self->_dependencies->{$prev_func}->{$composition_digest};
+        } else {
+          # no? add the generic dependency, which should be always available
+          my $id = $self->_dependencies->{$prev_func}->{$GENERIC_DEP_KEY};
+          $id or $self->logcroak("Generic dependenc group not defined for function $prev_func");
+          push @depends_on, $id;
         }
-        if (!@depends_on) {
-          $self->logcroak(qq["$function_name" should depend on at least one job]);
-        }
-      } else { #else we need to use standard Many to 1 dependancies
-        @depends_on = $self->dependencies($function_name, $VERTEX_GROUP_DEP_ID_ATTR_NAME);
       }
-      # save completed dependancies for this job definition
+
+      if (!@depends_on) {
+        $self->logcroak(qq["$function_name" should depend on at least one job]);
+      }
+
+      # save completed dependencies for this job definition
       $wr_def->{'deps'} = \@depends_on;
     }
-    $wr_def->{'dep_grps'} = [$group_id, $per_job_group_id];
+
+    # create WR report group
     my @report_group = ($d->identifier(), $function_name);
     if ($self->has_job_name_prefix()) {
       unshift @report_group, $self->job_name_prefix();
     }
     $wr_def->{'rep_grp'}  = join q[-], @report_group;
+
     push @{$self->commands4jobs()->{'function_name'}}, $wr_def;
-    if ($d->has_composition) {
-      # save $per_job_group_id for this function definition here
-      $composition_deps{$d->composition->digest()} = $per_job_group_id;
-    }
   }
+
   # need to save $composition_deps for this function here
-  $self->all_composition_deps->{$function_name} = \%composition_deps;
+  $self->_dependencies->{$function_name} = \%composition_deps;
 
   return $group_id;
 }
