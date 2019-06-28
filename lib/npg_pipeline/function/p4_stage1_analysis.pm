@@ -12,8 +12,6 @@ use List::MoreUtils qw{any};
 use JSON;
 use open q(:encoding(UTF8));
 
-use Data::Dumper;
-
 use npg_pipeline::cache::barcodes;
 use npg_pipeline::function::definition;
 

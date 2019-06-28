@@ -19,8 +19,6 @@ use npg_tracking::data::bait;
 use npg_tracking::data::gbs_plex;
 use npg_pipeline::function::definition;
 
-use Data::Dumper;
-
 extends q{npg_pipeline::base};
 with    q{npg_pipeline::function::util};
 
