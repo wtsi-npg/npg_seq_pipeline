@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - ensure that the paths serived from the archive directory in
+   different parts run_is_deletable utility are consistent.
+
 release 56.0.0
  - add autosome target to seq_alignment
  - pipeline configuration module and product release configuration
