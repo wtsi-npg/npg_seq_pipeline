@@ -2,7 +2,6 @@ package npg_pipeline::function::seq_alignment;
 
 use Moose;
 use Moose::Meta::Class;
-use Class::Load qw{load_class};
 use namespace::autoclean;
 use Readonly;
 use File::Slurp;
@@ -17,6 +16,7 @@ use npg_tracking::data::reference;
 use npg_tracking::data::transcriptome;
 use npg_tracking::data::bait;
 use npg_tracking::data::gbs_plex;
+use npg_pipeline::cache::reference;
 use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
@@ -779,62 +779,7 @@ sub _gbs_plex{
 sub _ref {
   my ($self, $dp, $aligner) = @_;
 
-  if (!$aligner) {
-    $self->logcroak('Aligner missing');
-  }
-
-  my $dplims = $dp->lims;
-  my $rpt_list = $dp->rpt_list;
-  my $is_tag_zero_product = $dp->is_tag_zero_product;
-  my $ref_name = $self->_do_gbs_plex_analysis ? $dplims->gbs_plex_name : $dplims->reference_genome();
-
-  my $ref = $ref_name ? $self->_ref_cache->{$ref_name}->{$aligner} : undef;
-  if ($ref) {
-    if ($ref eq $REFERENCE_ABSENT) {
-      $ref = undef;
-    }
-  } else {
-
-    my $href = { 'aligner' => $aligner, 'lims' => $dplims, };
-    if ($self->repository) {
-      $href->{'repository'} = $self->repository;
-    }
-
-    my $class = q[npg_tracking::data::] . ($self->_do_gbs_plex_analysis ? 'gbs_plex' : 'reference');
-    load_class($class);
-    my $ruser = $class->new($href);
-    my @refs = ();
-    try {
-      @refs = @{$ruser->refs};
-    } catch {
-      my $e = $_;
-      # Either exist with an error or just log an error and carry on
-      # with reference undefined.
-      (any { /$aligner/smx } qq( $TARGET_REGIONS_DIR $TARGET_AUTOSOME_REGIONS_DIR ))
-         ? $self->error($e) : $self->logcroak($e);
-    };
-
-    if (!@refs) {
-      $self->warn(qq[No reference genome retrieved for $rpt_list]);
-    } elsif (scalar @refs > 1) {
-      my $m = qq{Multiple references for $rpt_list};
-      # Either exist with an error or log it and carry on with
-      # reference undefined.
-      $is_tag_zero_product ? $self->logwarn($m) : $self->logcroak($m);
-    } else {
-      $ref = $refs[0];
-    }
-
-    # Cache the reference or the fact that it's not available.
-    if ($ref_name) {
-      $self->_ref_cache->{$ref_name}->{$aligner} = $ref ? $ref : $REFERENCE_ABSENT;
-    }
-  }
-
-  if ($ref) {
-    $self->info(qq{Reference found for $rpt_list: $ref});
-  }
-  return $ref;
+  return npg_pipeline::cache::reference->instance->get_path($dp, $aligner, $self->repository, $self->_do_gbs_plex_analysis);
 }
 
 sub _default_human_split_ref {
