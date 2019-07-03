@@ -1,0 +1,23 @@
+---
+default:
+  s3:
+    enable: false
+    url: null
+    notify: false
+  irods:
+    enable: true
+    notify: false
+
+study:
+  - study_id: "1713"
+    robo_qc:
+      - library_type:
+          - "Agilent Pulldown"
+        acceptance_criteria :
+          - "criteria1"
+  - study_id: "2410"
+    robo_qc:
+      - library_type:
+          - "Custom"
+        acceptance_criteria :
+          - "criteria2"
