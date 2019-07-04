@@ -210,6 +210,24 @@ has  'lims' => (
   required  => 0,
 );
 
+=head2 chunk
+ 
+An optional attribute, present if product is part of a chunked product.
+ 
+=head2 has_chunk
+ 
+Predicate method for 'chunk' attribute.
+
+=cut
+
+has  'chunk' => (
+  isa       => 'Maybe[Int]',
+  is        => 'ro',
+  predicate => 'has_chunk',
+  required  => 0,
+);
+
+
 =head2 file_name_root
  
 =cut
@@ -438,6 +456,45 @@ sub subset_as_product {
     selected_lanes => $self->selected_lanes,
     composition => npg_tracking::glossary::composition->new(components => \@components));
 }
+
+=head2 chunks_as_product
+ 
+ Interprets the argument integer (required) as the number of chunks to subset
+ each product into. Returns an object of this class for the a composition
+ identical to the composition object of this object with one exception -
+ the subset value in all components is set to the value of the argument string.
+ 
+ The lims attribute of the returned object is not set.
+ 
+ my @chunks_p = $p->chunks_as_product(24);
+ $p->file_name_root();         # 123_6#4
+ $chunks_p[0]->file_name_root();  # 123_6#4_1
+ $chunks_p[1]->file_name_root();  # 123_6#4_2
+ 
+=cut
+
+sub chunks_as_product {
+  my ($self, $chunks) = @_;
+  $chunks or croak 'Chunks argument should be given';
+  ##no critic (BuiltinFunctions::ProhibitComplexMappings)
+  my @chunk_list = ();
+  foreach my $i (1..$chunks) {
+    my @components =
+    map { npg_tracking::glossary::composition::component::illumina->new($_) }
+    map { $_->{'chunk'} = $i; $_ }
+    map { npg_tracking::glossary::rpt->inflate_rpt($_) }
+    map { $_->freeze2rpt() }
+    $self->composition->components_list();
+
+    push @chunk_list, __PACKAGE__->new(
+      selected_lanes => $self->selected_lanes,
+      composition => npg_tracking::glossary::composition->new(components => \@components),
+      chunk => $i);
+  }
+
+  return @chunk_list;
+}
+
 
 =head2 final_seqqc_objs
 
