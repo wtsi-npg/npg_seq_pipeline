@@ -336,6 +336,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if ($do_target_alignment && !$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
     if($self->_do_bait_stats_analysis($dp)){
        $p4_param_vals->{target_regions_file} = $self->_bait($rpt_list)->target_intervals_path();
+       push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
        $do_target_regions_stats = 1;
     }
     else {
