@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
 
  - add autosome stats file to product release
+ - add missing bait prune to seq_alignment
 
 release 56.0.0
  - add autosome target to seq_alignment
