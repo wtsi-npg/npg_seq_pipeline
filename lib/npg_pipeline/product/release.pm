@@ -372,6 +372,68 @@ sub _build_qc_schema {
   return npg_qc::Schema->connect();
 }
 
+=head2 haplotype_caller_enable
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->haplotype_caller_enable($product)
+ Description: Return true if HaplotypeCaller is to be run on the product.
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub haplotype_caller_enable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if ($self->find_study_config($product)->{haplotype_caller}->{enable}) {
+    $self->info("Product $name, $rpt is for HaplotypeCaller processing");
+    return 1;
+  }
+
+  $self->info("Product $name, $rpt is NOT for HaplotypeCaller processing");
+
+  return 0;
+}
+
+=head2 haplotype_caller_chunking
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->haplotype_caller_chunking($product)
+ Description: Returns base name of chunking file for product.
+
+ Returntype : Str
+ 
+=cut
+
+sub haplotype_caller_chunking {
+  my ($self, $product) = @_;
+
+  return $self->find_study_config($product)->{haplotype_caller}->{sample_chunking};
+}
+
+=head2 haplotype_caller_chunking_number
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->haplotype_caller_chunking_number($product)
+ Description: Returns number of chunks for product.
+ 
+ Returntype : Str
+ 
+=cut
+
+sub haplotype_caller_chunking_number {
+  my ($self, $product) = @_;
+
+  return $self->find_study_config($product)->{haplotype_caller}->{sample_chunking_number};
+}
+
+
 1;
 
 __END__
