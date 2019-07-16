@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - move reference cache from seq_alignment to own singleton class
  - add autosome stats file to product release
  - add missing bait prune to seq_alignment
 

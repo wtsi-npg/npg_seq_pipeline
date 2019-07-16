@@ -29,6 +29,8 @@ lib/npg_pipeline/base.pm
 lib/npg_pipeline/base/options.pm
 lib/npg_pipeline/cache.pm
 lib/npg_pipeline/cache/barcodes.pm
+lib/npg_pipeline/cache/reference.pm
+lib/npg_pipeline/cache/reference/constants.pm
 lib/npg_pipeline/daemon.pm
 lib/npg_pipeline/daemon/analysis.pm
 lib/npg_pipeline/daemon/archival.pm

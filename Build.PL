@@ -53,6 +53,7 @@ my $builder = $class->new(
           'Moose::Util::TypeConstraints' => 0,
           'MooseX::AttributeCloner'      => 0.17,
           'MooseX::Getopt'               => 0,
+          'MooseX::Singleton'            => 0,
           'MooseX::StrictConstructor'    => 0,
           'Net::AMQP::RabbitMQ'          => 0,
           'namespace::autoclean'         => 0,
