@@ -13,6 +13,7 @@ our $VERSION = '0';
 
 Readonly::Scalar my $OLD_WH_LOADER_NAME => q{warehouse_loader};
 Readonly::Scalar my $MLWH_LOADER_NAME   => q{npg_runs2mlwarehouse};
+Readonly::Scalar my $MLWH_PRODUCT_LOADER_NAME => q{npg_products2mlwarehouse};
 
 =head1 NAME
 
@@ -106,7 +107,8 @@ sub _update_warehouse_command {
     my $command = qq{$loader_name --verbose };
 
     if ($self->has_product_rpt_list) {
-      $self->logcroak(q{Not implemented for individual products});
+      $command = qq{$MLWH_PRODUCT_LOADER_NAME --verbose };
+      $command .= q{--rpt_list '} . $self->product_rpt_list . q{'};
     } else {
       $command .= q{--id_run } . $self->id_run;
       if ($loader_name eq $OLD_WH_LOADER_NAME) {

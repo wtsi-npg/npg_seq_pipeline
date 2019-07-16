@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 
@@ -66,7 +66,7 @@ subtest 'warehouse updates' => sub {
 };
 
 subtest 'warehouse updates disabled' => sub {
-  plan tests => 14;
+  plan tests => 12;
 
   my $test_method = sub {
     my ($f, $method, $switch) = @_;
@@ -96,16 +96,28 @@ subtest 'warehouse updates disabled' => sub {
     );
     $test_method->($c, $m, 'on');
   }
+};
+
+subtest 'mlwh updates for a product' => sub {
+  plan tests => 7;
 
   my $wa = npg_pipeline::function::warehouse_archiver->new(
     runfolder_path    => $runfolder_path,
     label             => 'my_label',
     product_rpt_list  => '123:4:5'
   );
-  $test_method->($wa, 'update_warehouse', 'off');
-  throws_ok { $wa->update_ml_warehouse }
-    qr/Not implemented for individual products/,
-    'functionality for individual products not implemented - error';
+
+  my $ds = $wa->update_ml_warehouse('pname');
+  ok ($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
+    'update to warehouse is enabled');
+  my $d = $ds->[0];
+  isa_ok ($d, 'npg_pipeline::function::definition');    
+  is ($d->identifier, 'my_label', 'identifier set to the label value');
+  is ($d->command,
+    "npg_products2mlwarehouse --verbose --rpt_list '123:4:5'", 'command');
+  is ($d->job_name, 'npg_runs2mlwarehouse_my_label_pname', 'job name');
+  is ($d->queue, 'lowload', 'queue');
+  is_deeply ($d->num_cpus, [0], 'zero CPUs required');
 };
 
 1;
