@@ -2,6 +2,10 @@ LIST OF CHANGES
 ---------------
 
  - move reference cache from seq_alignment to own singleton class
+
+release 56.0.1
+ - ensure that the paths serived from the archive directory in
+   different parts run_is_deletable utility are consistent.
  - add autosome stats file to product release
  - add missing bait prune to seq_alignment
 

@@ -214,6 +214,20 @@ has q{+no_s3_archival} => (
 #
 has [map {q[+] . $_ }  @NO_SCRIPT_ARG_ATTRS] => (metaclass => 'NoGetopt',);
 
+=head2 archive_path
+
+Attribute inherited from npg_pipeline::base, changed here to return an absolute
+path to the archive directory so that paths derived from the archive directory
+in different parts of this utility are consistent.
+
+=cut
+
+around 'archive_path' => sub {
+  my $orig = shift;
+  my $self = shift;
+  return abs_path($self->$orig);
+};
+
 =head2 irods_destination_collection
 
 Inherited from npg_pipeline::product::release::irods
@@ -450,8 +464,7 @@ sub _build__staging_files {
   # Lane directories can be sym-linked, hence the follow option.
   # This option does not take any efect unless the LatestSummary link,
   # which might be present in the archive path, is resolved.
-  find({wanted => $wanted, follow => 1, no_chdir => 1},
-       abs_path($self->archive_path));
+  find({wanted => $wanted, follow => 1, no_chdir => 1}, $self->archive_path);
 
   return $files_found;
 }
