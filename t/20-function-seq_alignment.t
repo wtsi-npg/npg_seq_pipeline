@@ -703,7 +703,7 @@ subtest 'test 5' => sub {
 };
 
 subtest 'test 6' => sub {
-  plan tests => 5;
+  plan tests => 7;
   ##MiSeq, run 20268_1 (newer flowcell) - WITH bait added to samplesheet for lane 1
 
   my $bait_dir = join q[/],$dir,'baits','Human_all_exon_V5','1000Genomes_hs37d5';
@@ -780,6 +780,56 @@ subtest 'test 6' => sub {
 
   $d = _find($da, 1, 0);
   is ($d->command, $command, 'command for run 20268 lane 1 tag 0');
+
+  ## check json file for tag 1
+  my $json_file = qq{$bc_path/20268_1#1_p4s2_pv_in.json};
+  ok (-e $json_file, 'json params file exists for run 20268 lane 1 tag 1');
+  my $h = from_json(slurp($json_file));
+
+  my $expected = {
+     'assign_local'=> {},
+     'assign' => [
+         {"subsetsubpath"=>  '.npg_cache_10000/',
+          "samtools_executable"=> 'samtools',
+          "reference_genome_fasta" =>$dir . '/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa',
+          "rpt"=> "20268_1#1",
+          "alignment_method"=> "bwa_mem",
+          "incrams"=> [
+              $dir ."/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/20268_1#1.cram"
+              ],
+              "tag_metrics_files"=> $dir .'/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/lane1/qc/20268_1.tag_metrics.json',
+              "run_lane_ss_fq2" => $dir ."/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/lane1/plex1/.npg_cache_10000/20268_1#1_2.fastq",
+              "outdatadir"=> $dir .'/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/lane1/plex1',
+              "s2_input_format"=> 'cram',
+              "s2_position"=> 'POSITION',
+              "target_regions_file" => $dir .'/baits/Human_all_exon_V5/1000Genomes_hs37d5/S04380110-PTR.interval_list',
+              "s2_filter_files"=> $dir .'/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/20268_1.spatial_filter',
+              "s2_id_run"=> 20268,
+              "alignment_reference_genome"=> $dir .'/references/Homo_sapiens/1000Genomes_hs37d5/all/bwa0_6/hs37d5.fa',
+              "spatial_filter_file"=> 'DUMMY',
+              "s2_se_pe"=> 'pe',
+              "s2_tag_index"=> 1,
+              "reference_dict"=> $dir .'/references/Homo_sapiens/1000Genomes_hs37d5/all/picard/hs37d5.fa.dict',
+              "spatial_filter_rg_value"=> "20268_1#1",
+              "seqchksum_orig_file"=> $dir ."/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/lane1/plex1/20268_1#1.orig.seqchksum",
+              "bwa_executable"=> "bwa0_6",
+              "phix_reference_genome_fasta"=> $dir .'/references/PhiX/Illumina/all/fasta/phix-illumina.fa',
+              "af_metrics"=> "20268_1#1_bam_alignment_filter_metrics.json",
+              "run_lane_ss_fq1"=> $dir."/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/lane1/plex1/.npg_cache_10000/20268_1#1_1.fastq",
+              "bait_regions_file"=> $dir .'/baits/Human_all_exon_V5/1000Genomes_hs37d5/S04380110-CTR.interval_list',
+              "recal_dir"=> $dir .'/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal'    
+         },],
+     'ops' => {  
+         'prune' => ['fop.*_bmd_multiway:calibration_pu-',
+                      'foptgt.*samtools_stats_F0.*_target_autosome.*-',
+                      'fop(phx|hs)_samtools_stats_F0.*_target.*-',
+                      'fop(phx|hs)_samtools_stats_F0.*00_bait.*-'],
+      'splice' => []          
+     },
+  };
+
+  is_deeply($h, $expected, 'correct json file content for run 20268 lane 1 tag 1 (with bait)');
+
 };
 
 subtest 'test 7' => sub {
