@@ -34,7 +34,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
 
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
-  $util->set_staging_analysis_area();
+  $util->create_analysis();
   my $pipeline;
   lives_ok {
     $pipeline = $central->new(
@@ -53,7 +53,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
       runfolder_path => $runfolder_path,
     );
   } q{no croak on creation};
-  $util->set_staging_analysis_area({with_latest_summary => 1});
+  $util->create_analysis();
   is(join(q[ ], @{$pb->function_order()}), 'qc_qX_yield qc_insert_size',
     'function_order set on creation');
 }
@@ -62,7 +62,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
   local $ENV{CLASSPATH} = undef;
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
   my $pb;
-  $util->set_staging_analysis_area();
+  $util->create_analysis();
   cp 't/data/run_params/runParameters.hiseq.xml',
     join(q[/], $runfolder_path, 'runParameters.xml');
 
