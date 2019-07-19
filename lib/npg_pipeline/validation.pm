@@ -162,8 +162,7 @@ has q{use_cram} => (
 =head2 per_product_archive
 
 A boolean attribute indicating whether a per-product staging archive
-is being used. True if a qc directory is not present in the archive
-directory for the analysis.
+is being used. Defaults to true.
 
 =cut
 
@@ -171,14 +170,10 @@ has 'per_product_archive' => (
   isa        => 'Bool',
   is         => 'ro',
   required   => 0,
-  lazy_build => 1,
+  default    => 1,
   documentation =>
   q{Toggles between per-product and flat staging archive},
 );
-sub _build_per_product_archive {
-  my $self = shift;
-  return not -e $self->qc_path;
-}
 
 =head2 remove_staging_tag
 
