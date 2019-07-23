@@ -28,7 +28,6 @@ Readonly::Array my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                slot
                                                instrument_string
                                                bustard_path
-                                               reports_path
                                                subpath
                                                tilelayout_rows
                                                tile_count
