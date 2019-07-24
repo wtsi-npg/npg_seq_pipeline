@@ -154,7 +154,7 @@ sub _definitions4function {
         } else {
           # no? add the generic dependency, which should be always available
           my $id = $self->_dependencies->{$prev_func}->{$GENERIC_DEP_KEY};
-          $id or $self->logcroak("Generic dependenc group not defined for function $prev_func");
+          $id or $self->logcroak("Generic dependency group not defined for function $prev_func");
           push @depends_on, $id;
         }
       }
