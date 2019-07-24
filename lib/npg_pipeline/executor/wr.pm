@@ -125,6 +125,7 @@ sub _definitions4function {
   my $i = 0;
 
   # Translate each job definition into a WR definition
+  # TODO: handle chunk->chunk dependancies better
   my %composition_deps = ();
   foreach my $d (@{$definitions}) {
 

@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 10;
+use Test::More tests => 11;
 use Test::Exception;
 use List::MoreUtils qw/all/;
 use npg_tracking::glossary::composition::component::illumina;
@@ -75,6 +75,20 @@ subtest 'file names for merged entities' => sub {
   is ($p->file_name(suffix => 'F0xB00'), '26219_1-2-4_F0xB00', 'file name with a suffix');
   is ($p->file_name(ext => 'stats', suffix => 'F0xB00'), '26219_1-2-4_F0xB00.stats',
     'file name with both extension and suffix');
+};
+
+subtest 'file names for chunked merged entities' => sub {
+  plan tests => 5;
+
+  my $p = npg_pipeline::product->new(rpt_list => '26219:1:3;26219:2:3;26219:3:3;26219:4:3');
+  my @chunked_p = $p->chunks_as_product(24);
+
+  is (scalar @chunked_p, 24, 'Number of chunks');
+  is ($chunked_p[0]->file_name_root(), '26219#3.1', 'composition of plexes name root');
+  is ($chunked_p[0]->file_name(ext => 'bam'), '26219#3.1.bam', 'file name with an extention');
+  is ($chunked_p[0]->file_name(suffix => 'F0xB00'), '26219#3.1_F0xB00', 'file name with a suffix');
+  is ($chunked_p[0]->file_name(ext => 'stats', suffix => 'F0xB00'), '26219#3.1_F0xB00.stats',
+  'file name with both extension and suffix');
 };
 
 subtest 'file names for entities with subsets' => sub {

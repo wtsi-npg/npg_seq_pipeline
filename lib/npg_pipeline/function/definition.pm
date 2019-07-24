@@ -280,6 +280,23 @@ has 'apply_array_cpu_limit' => (
   predicate  => 'has_apply_array_cpu_limit',
 );
 
+=head2 chunk
+
+An optional attribute, present if definition is from a chunked product.
+
+=head2 has_chunk
+
+Predicate method for 'chunk' attribute.
+
+=cut
+
+has  'chunk' => (
+isa       => 'Maybe[Int]',
+is        => 'ro',
+predicate => 'has_chunk',
+required  => 0,
+);
+
 =head2 BUILD
 
 Called by Moose at the end of object instantiation.

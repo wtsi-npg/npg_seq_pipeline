@@ -179,6 +179,9 @@ sub _execute_function {
     } else {
       my @this_comp_digest = map {$_->composition()->digest()}
                              @{$self->function_definitions->{$function}};
+      my @this_chunk = map {$_->chunk()}
+                       @{$self->function_definitions->{$function}};
+
       foreach my $prev_function ($g->predecessors($function)) {
         # If we do have one and our composition is the same keys as previous node(s)
         # then they should be controlled by "done(<job_id>[*])"  
@@ -190,9 +193,11 @@ sub _execute_function {
         } else {
           my @prev_comp_digest = map {$_->composition()->digest()}
                                  @{$self->function_definitions->{$prev_function}};
+          my @prev_chunk = map {$_->chunk()}
+                           @{$self->function_definitions->{$prev_function}};
           # Mark as "done()" or "one(<job_id>[*])"depending on match evaluation
           push @depends_on_with_degree, $map_degree->(
-            \@a, (@this_comp_digest ~~ @prev_comp_digest) ? 1 : 0);
+            \@a, ((@this_comp_digest ~~ @prev_comp_digest) and (@this_chunk ~~ @prev_chunk) ? 1 : 0));
         }
       }
     }
