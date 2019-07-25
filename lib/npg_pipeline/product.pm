@@ -12,6 +12,7 @@ use npg_tracking::glossary::composition::component::illumina;
 use npg_tracking::glossary::composition;
 
 extends 'npg_tracking::glossary::composition::factory::rpt_list';
+with    'npg_pipeline::product::chunk';
 
 our $VERSION = '0';
 
@@ -211,23 +212,6 @@ has  'lims' => (
   required  => 0,
 );
 
-=head2 chunk
- 
-An optional attribute, present if product is part of a chunked product.
- 
-=head2 has_chunk
- 
-Predicate method for 'chunk' attribute.
-
-=cut
-
-has  'chunk' => (
-  isa       => 'Maybe[Int]',
-  is        => 'ro',
-  predicate => 'has_chunk',
-  required  => 0,
-);
-
 =head2 file_name_root
  
 =cut
@@ -240,7 +224,7 @@ has 'file_name_root' => (
 sub _build_file_name_root {
   my $self = shift;
 
-  return sprintf '%s%s', $self->_file_name_root($self->selected_lanes), $self->_chunk_label();
+  return sprintf '%s%s', $self->_file_name_root($self->selected_lanes), $self->chunk_label();
 }
 
 =head2 file_name
@@ -461,11 +445,12 @@ sub subset_as_product {
 =head2 chunks_as_product
  
  Interprets the argument integer (required) as the number of chunks to subset
- each product into. Returns an array of objects of this class for the chunks with
- a composition identical to the composition object of this object with one exception -
- the cbunk value in the object is set to the value of the argument string.
- 
- The lims attribute of the returned object is not set.
+ each product into. Returns a list of product objects with the chunk value
+ in each set to one of the values in range 1 .. NUMBER_OF_GIVEN_CHUNKS. See
+ chunk_as_product method for details of a product object with the chunk
+ attribute defined.
+
+ The products in the list are sorted in the accending chunk value order.
  
  my @chunks_p = $p->chunks_as_product(24);
  $p->file_name_root();         # 123_6#4
@@ -475,24 +460,31 @@ sub subset_as_product {
 =cut
 
 sub chunks_as_product {
-  my ($self, $chunks) = @_;
-  $chunks or croak 'Chunks argument should be given';
-  my @chunk_list = ();
-  foreach my $i (1..$chunks) {
-    push @chunk_list, $self->product_chunk($i);
-  }
+  my ($self, $num_chunks) = @_;
+  $num_chunks or croak 'Number of chunks argument should be given';
 
-  return @chunk_list;
+  my @chunks = ();
+  # Let the chunk attribute take care of validating the $num_chunck
+  # variable and fail early and cleanly.
+  my $last_chunk = $self->chunk_as_product($num_chunks);
+  my $max_current = $num_chunks - 1;
+  if ($max_current) { # ie more than one chunk is required
+    @chunks = map { $self->chunk_as_product($_) } (1 .. $max_current);
+  }
+  push @chunks, $last_chunk;
+
+  return @chunks;
 }
 
-=head2 product_chunk
+=head2 chunk_as_product
  
- Interprets the argument integer (required) as the chunk from this product
+ Interprets the argument integer (required) as the chunk for this product
  to create a new product object for. Returns an object of this class for the chunk with
  a composition identical to the composition object of this object with one exception -
- the cbunk value in the object is set to the value of the argument string.
+ the chunk value in the object is set to the value of the argument string.
  
- The lims attribute of the returned object is not set.
+ The lims attribute of the returned object is set if the lims attribute of
+ this object is set.
  
  my @chunks_p = $p->product_chunk(2);
  $p->file_name_root();         # 123_6#4
@@ -500,19 +492,20 @@ sub chunks_as_product {
  
 =cut
 
-sub product_chunk {
+sub chunk_as_product {
   my ($self, $chunk) = @_;
-  $chunk or croak 'Chunk argument must be given.';
-  my @components =
-    map { npg_tracking::glossary::composition::component::illumina->new($_) }
-    map { npg_tracking::glossary::rpt->inflate_rpt($_) }
-    map { $_->freeze2rpt() }
-    $self->composition->components_list();
 
-  return __PACKAGE__->new(
-    selected_lanes => $self->selected_lanes,
-    composition => npg_tracking::glossary::composition->new(components => \@components),
-    chunk => $chunk);
+  $self->chunk and croak
+   'Cannot create a chunked product from a product with the chunk attribute set';
+  defined $chunk or croak 'Chunk argument must be given.';
+
+  # Note that here we allow for chuncking of products with subset defined.
+  my $ref = { selected_lanes => $self->selected_lanes,
+              composition    => $self->composition,
+              rpt_list       => $self->rpt_list,
+              chunk          => $chunk };
+  $self->has_lims() and $ref->{lims} = $self->lims();
+  return __PACKAGE__->new($ref);
 }
 
 
@@ -571,11 +564,6 @@ sub final_libqc_obj {
   }
 
   return;
-}
-
-sub _chunk_label {
-  my $self = shift;
-  return $self->has_chunk() ? $CHUNK_DELIM . $self->chunk() : q[];
 }
 
 __PACKAGE__->meta->make_immutable;

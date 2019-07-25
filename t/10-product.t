@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 11;
+use Test::More tests => 12;
 use Test::Exception;
 use List::MoreUtils qw/all/;
 use npg_tracking::glossary::composition::component::illumina;
@@ -75,6 +75,60 @@ subtest 'file names for merged entities' => sub {
   is ($p->file_name(suffix => 'F0xB00'), '26219_1-2-4_F0xB00', 'file name with a suffix');
   is ($p->file_name(ext => 'stats', suffix => 'F0xB00'), '26219_1-2-4_F0xB00.stats',
     'file name with both extension and suffix');
+};
+
+subtest 'creating chunked products' => sub {
+  plan tests => 20;
+
+  my $p = npg_pipeline::product->new(rpt_list => '26219:1:3;26219:2:3;26219:3:3;26219:4:3');
+
+  my $re = qr/Attribute \(chunk\) does not pass the type constraint/;
+
+  throws_ok { $p->chunk_as_product() }
+    qr/Chunk argument must be given/, 'error when chunk is not given';
+  throws_ok { $p->chunk_as_product('chunk') }
+    $re, 'error when chunk is given as a string';
+  throws_ok { $p->chunk_as_product(0) }
+    $re, 'error when chunk is given as zero';
+  throws_ok { $p->chunk_as_product(-3) }
+    $re, 'error when chunk is given as a negative int';
+
+  my $cp = npg_pipeline::product->new(
+    rpt_list => '26219:1:3;26219:2:3;26219:3:3;26219:4:3',
+    chunk => 4);
+  throws_ok { $cp->chunk_as_product(3) }
+    qr/from a product with the chunk attribute set/,
+    'error when method is called on a chunked product';
+
+  throws_ok { $p->chunks_as_product() }
+    qr/Number of chunks argument should be given/,
+    'error when number of chunks is not given';
+  throws_ok { $p->chunks_as_product(0) }
+    qr/Number of chunks argument should be given/,
+    'error when number of chunks is given as zero';
+  throws_ok { $p->chunks_as_product('chunk') }
+    $re, 'error when number of chunks is given as a string';
+  throws_ok { $p->chunks_as_product(-3) }
+    $re, 'error when number of chunks is given as a negative int';
+
+  my $chunked = $p->chunk_as_product(3);
+  isa_ok ($chunked, 'npg_pipeline::product');
+  is ($chunked->chunk, 3, 'chunk attribute is set correctly');
+
+  my @chunked_p = $p->chunks_as_product(1);
+  is (@chunked_p, 1, 'one product returned');
+  @chunked_p = $p->chunks_as_product(2);
+  is (@chunked_p, 2, 'two products returned');
+  @chunked_p = $p->chunks_as_product(5);
+  is (@chunked_p, 5, 'five products returned');
+  is_deeply ([map {$_->chunk} @chunked_p], [(1 .. 5)],
+    'objects are in correct order');
+  isa_ok ($chunked_p[0], 'npg_pipeline::product');
+  is ($chunked_p[0]->composition, $p->composition,
+    'composition object is copied by reference');
+  is ($chunked_p[0]->rpt_list, $p->rpt_list, 'rpt_list value is the same');
+  ok (!$chunked_p[0]->lims, 'lims attr is not set'); 
+  ok (!$chunked_p[0]->selected_lanes, 'selected lanes flag is not set');
 };
 
 subtest 'file names for chunked merged entities' => sub {
