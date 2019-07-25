@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
 
  - add function to support GATK HaplotypeCaller
+ - add function to concat and recompress gVCFs
 
 release 56.1.0
  - move reference cache from seq_alignment to own singleton class
