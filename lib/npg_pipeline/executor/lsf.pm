@@ -166,7 +166,7 @@ sub _execute_function {
     @depends_on or $self->logcroak(qq{"$function" should depend on at least one LSF job});
 
     my $map_degree = sub {
-      my ($ids,$is_same_degree, ) = @_;
+      my ($ids, $is_same_degree) = @_;
       return (map { {$_ => $is_same_degree} } @{$ids});
     };
 
@@ -179,7 +179,7 @@ sub _execute_function {
     } else {
       my @this_comp_digest = map {$_->composition()->digest()}
                              @{$self->function_definitions->{$function}};
-      my @this_chunk = map {$_->chunk()}
+      my @this_chunk = map {$_->chunk_label()}
                        @{$self->function_definitions->{$function}};
 
       foreach my $prev_function ($g->predecessors($function)) {
@@ -193,7 +193,7 @@ sub _execute_function {
         } else {
           my @prev_comp_digest = map {$_->composition()->digest()}
                                  @{$self->function_definitions->{$prev_function}};
-          my @prev_chunk = map {$_->chunk()}
+          my @prev_chunk = map {$_->chunk_label()}
                            @{$self->function_definitions->{$prev_function}};
           # Mark as "done()" or "one(<job_id>[*])"depending on match evaluation
           push @depends_on_with_degree, $map_degree->(

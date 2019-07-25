@@ -11,6 +11,7 @@ use Carp;
 our $VERSION = '0';
 
 with Storage('format' => 'JSON');
+with 'npg_pipeline::product::chunk';
 
 Readonly::Scalar our $LOWLOAD_QUEUE   => q[lowload];
 Readonly::Scalar our $SMALL_QUEUE     => q[small];
@@ -289,13 +290,6 @@ An optional attribute, present if definition is from a chunked product.
 Predicate method for 'chunk' attribute.
 
 =cut
-
-has  'chunk' => (
-isa       => 'Maybe[Int]',
-is        => 'ro',
-predicate => 'has_chunk',
-required  => 0,
-);
 
 =head2 BUILD
 
