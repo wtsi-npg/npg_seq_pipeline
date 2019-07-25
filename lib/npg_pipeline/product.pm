@@ -19,7 +19,6 @@ our $VERSION = '0';
 Readonly::Scalar my $QC_DIR_NAME                => q[qc];
 Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
 Readonly::Scalar my $TILEVIZ_DIR_NAME_PREFIX    => q[tileviz];
-Readonly::Scalar my $CHUNK_DELIM                => q[.];
 
 =head1 NAME
 
