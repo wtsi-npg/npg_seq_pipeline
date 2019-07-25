@@ -63,6 +63,7 @@ lib/npg_pipeline/pluggable/central.pm
 lib/npg_pipeline/pluggable/registry.pm
 lib/npg_pipeline/product.pm
 lib/npg_pipeline/product/cache_merge.pm
+lib/npg_pipeline/product/chunk.pm
 lib/npg_pipeline/product/release.pm
 lib/npg_pipeline/product/release/irods.pm
 lib/npg_pipeline/runfolder_scaffold.pm
