@@ -85,27 +85,6 @@ Run id, an optional attribute.
 
 has q{+id_run} => (required => 0,);
 
-=head2 label
-
-A custom label associated with invoking a particular pipeline on
-particular input. It is used in log and other similar file names,
-job names, etc. If not set, defaults to the value of the id_run
-attribute.
-
-=cut
-
-has q{label} => (
-  isa        => q{Str},
-  is         => q{ro},
-  predicate  => q{has_label},
-  required   => 1,
-  lazy_build => 1,
-);
-sub _build_label {
-  my $self = shift;
-  return $self->id_run;
-}
-
 =head2 product_rpt_list
 
 An rpt list for a single product, an optional attribute.
@@ -121,6 +100,30 @@ has q{product_rpt_list} => (
   predicate => q{has_product_rpt_list},
   required  => 0,
 );
+
+=head2 label
+
+A custom label associated with invoking a particular pipeline on
+particular input. It is used in log and other similar file names,
+job names, etc. If not set and product_rpt_list is not set,
+defaults to the value of the id_run attribute.
+
+=cut
+
+has q{label} => (
+  isa        => q{Str},
+  is         => q{ro},
+  predicate  => q{has_label},
+  required   => 1,
+  lazy_build => 1,
+);
+sub _build_label {
+  my $self = shift;
+  $self->product_rpt_list and $self->logcroak(
+    q['product_rpt_list' attribute is set, cannot build ] .
+    q['label' attribute, it should be pre-set]);
+  return $self->id_run;
+}
 
 =head2 timestamp
 
