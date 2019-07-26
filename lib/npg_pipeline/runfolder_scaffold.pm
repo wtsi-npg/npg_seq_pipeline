@@ -59,20 +59,30 @@ sub create_top_level {
 
   my $path = $self->intensity_path();
   if (!-d $path) {
-    croak qq{Intensities path $path not found};
+    push @info, qq{Intensities path $path not found};
+  } else {
+    push @info, qq{Intensities path: $path};
   }
-  push @info, qq{Intensities path: $path};
 
   $path = $self->basecall_path();
   if (!-d $path) {
-    croak qq{Basecalls path $path not found};
+    push @info, qq{Basecalls path $path not found};
+  } else {
+    push @info, qq{Basecalls path: $path};
   }
-  push @info, qq{Basecalls path: $path};
 
   if(!$self->has_bam_basecall_path()) {
-    $path = $self->set_bam_basecall_path($self->timestamp());
-    push @dirs, $path;
+    if (-d $self->intensity_path()) {
+      $path = $self->set_bam_basecall_path($self->timestamp());
+    } elsif ($self->has_analysis_path()) {
+      $path = $self->set_bam_basecall_path($self->analysis_path);
+    } else {
+      my $m = sprintf 'Intensity path %s does not exist', $self->intensity_path();
+      $m .= ', either bam_basecall_path or analysis_path should be given';
+      croak $m;
+    }
   }
+  push @dirs, $self->bam_basecall_path();
   push @info, 'BAM_basecall path: ' . $self->bam_basecall_path();
 
   push @dirs, $self->recalibrated_path();
