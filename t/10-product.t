@@ -1,9 +1,12 @@
 use strict;
 use warnings;
-use Test::More tests => 12;
+use Test::More tests => 13;
 use Test::Exception;
 use List::MoreUtils qw/all/;
 use npg_tracking::glossary::composition::component::illumina;
+use t::util;
+
+my $tmp_dir = t::util->new()->temp_directory();
 
 use_ok 'npg_pipeline::product';
 
@@ -206,7 +209,7 @@ subtest 'file names for entities with subsets' => sub {
 };
 
 subtest 'paths for one-component compositions' => sub {
-  plan tests => 16;
+  plan tests => 24;
 
   my $p = npg_pipeline::product->new(rpt_list => '26219:1');
   is ($p->path('/tmp'), '/tmp/lane1', 'path');
@@ -215,6 +218,40 @@ subtest 'paths for one-component compositions' => sub {
     'short files cache path');
   is ($p->tileviz_path('/tmp'), '/tmp/lane1/tileviz_lane1',
     'tileviz path');
+
+  my $dir = "$tmp_dir/lane2";
+  throws_ok { $p->existing_path($dir) }
+    qr/Directory argument $dir does not exist/,
+    'error if argument directory does no exist';
+  throws_ok { $p->existing_qc_out_path($dir) }
+    qr/Directory argument $dir does not exist/,
+    'error if argument directory does no exist';
+ 
+  $dir = "$tmp_dir/lane1";
+  my $digest = $p->composition->digest;
+  my $ddir = "$tmp_dir/$digest";
+  throws_ok { $p->existing_path($tmp_dir) }
+    qr/Neither $dir nor $ddir exists/,
+    'error if the product path does not exist';
+  throws_ok { $p->existing_qc_out_path($tmp_dir) }
+    qr/Neither $dir nor $ddir exists/,
+    'error if the product path does not exist';
+
+  mkdir $dir;
+  is ($p->existing_path($tmp_dir), $dir, 'existing path');
+  my $qc_dir = "$dir/qc";
+  throws_ok { $p->existing_qc_out_path($tmp_dir) }
+    qr/QC path $qc_dir does not exist/,
+    'error if the qc path does not exist';
+  mkdir $qc_dir;
+  is ($p->existing_qc_out_path($tmp_dir), $qc_dir, 'existing qc path');
+
+  rmdir $qc_dir;
+  rmdir $dir;
+  mkdir $ddir;
+  $qc_dir = "$ddir/qc";
+  mkdir $qc_dir;
+  is ($p->existing_qc_out_path($tmp_dir), $qc_dir, 'existing qc path');
 
   is ($p->file_path('/tmp', ext => 'bam'), '/tmp/26219_1.bam',
     'file path with an extention');
@@ -269,6 +306,25 @@ subtest 'paths for merged entities' => sub {
   is ($p->qc_out_path('/tmp'), '/tmp/lane1-2-4/qc', 'qc out path');
   is ($p->short_files_cache_path('/tmp'), '/tmp/lane1-2-4/.npg_cache_10000',
     'short files cache path');
+};
+
+subtest 'paths for arbitrary compositions' => sub {
+  plan tests => 4;
+
+  my $p = npg_pipeline::product->new(rpt_list => '26219:1:3;26218:2:3');
+  my $digest = $p->composition->digest;
+  my $dir = "$tmp_dir/$digest";
+
+  throws_ok { $p->existing_path($tmp_dir) } qr/$dir does not exist/,
+    'error if the product path does not exist';
+  throws_ok { $p->existing_qc_out_path($tmp_dir) } qr/$dir does not exist/,
+    'error if the product path does not exist';
+
+  mkdir $dir;
+  my $qc_dir = "$dir/qc";
+  mkdir $qc_dir;
+  is ($p->existing_path($tmp_dir), $dir, 'existing generic path');
+  is ($p->existing_qc_out_path($tmp_dir), $qc_dir, 'existing generic qc path');
 };
 
 subtest 'product subset generation' => sub {

@@ -21,7 +21,7 @@ override 'create' => sub {
   if (!$ref->{'excluded'}) {
 
     $self->assign_common_definition_attrs(
-      $ref, (join q{_}, q{publish_logs}, $self->id_run()));
+      $ref, (join q{_}, q{publish_logs}, $self->label()));
 
     $ref->{'command'} = join q[ ],
       $SCRIPT_NAME,
@@ -98,7 +98,7 @@ Marinan Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

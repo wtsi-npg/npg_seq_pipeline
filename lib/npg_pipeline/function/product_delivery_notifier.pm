@@ -42,7 +42,7 @@ Readonly::Array  my @DISTINGUISHING_LIMS_DATA => qw{
                                                      sample_id
                                                      sample_name
                                                      sample_supplier_name
-                                                 };
+                                                   };
 
 our $VERSION = '0';
 
@@ -84,7 +84,7 @@ has 'message_dir' =>
 sub make_message {
   my ($self, $product) = @_;
 
-  my $dir_path       = catdir($self->archive_path(), $product->dir_path());
+  my $dir_path       = $product->existing_path($self->archive_path());
   my $cram_file      = $product->file_path($dir_path, ext => 'cram');
   my $cram_md5_file  = $product->file_path($dir_path, ext => 'cram.md5');
   my $cram_md5       = $self->_read_md5_file($cram_md5_file);
@@ -92,7 +92,6 @@ sub make_message {
   my $customer_name = $self->customer_name($product);
   $self->info("Using customer name '$customer_name'");
 
-  my $flowcell_barcode = $product->lims->flowcell_barcode();
   my $sample_id        = $product->lims->sample_id();
   my $sample_name      = $product->lims->sample_name();
   my $supplier_name    = $product->lims->sample_supplier_name();
@@ -124,7 +123,6 @@ sub make_message {
        'sample_id'            => $sample_id,
        'sample_name'          => $sample_name,
        'sample_supplier_name' => $supplier_name,
-       # 'flowcell_barcode'     => $flowcell_barcode,
        'file_path'            => $cram_file,
        'file_md5'             => $cram_md5,
        'rpt_list'             => $product->rpt_list,
@@ -153,8 +151,7 @@ sub create {
     make_path($self->message_dir);
   }
 
-  my $id_run = $self->id_run();
-  my $job_name = sprintf q{%s_%d}, $SEND_MESSAGE_SCRIPT, $id_run;
+  my $job_name = join q[_], $SEND_MESSAGE_SCRIPT, $self->label;
 
   my @products = $self->no_s3_archival ? () :
                  grep { $self->is_for_s3_release_notification($_) }
@@ -188,7 +185,7 @@ sub create {
       npg_pipeline::function::definition->new
         ('created_by'  => __PACKAGE__,
          'created_on'  => $self->timestamp(),
-         'identifier'  => $id_run,
+         'identifier'  => $self->label,
          'job_name'    => $job_name,
          'command'     => $command,
          'composition' => $product->composition());
@@ -198,7 +195,7 @@ sub create {
     push @definitions, npg_pipeline::function::definition->new
       ('created_by' => __PACKAGE__,
        'created_on' => $self->timestamp(),
-       'identifier' => $id_run,
+       'identifier' => $self->label,
        'excluded'   => 1);
   }
 

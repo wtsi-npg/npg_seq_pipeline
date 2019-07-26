@@ -27,7 +27,7 @@ sub create {
   if (!$ref->{'excluded'}) {
 
     $self->ensure_restart_dir_exists();
-    my $job_name_prefix = join q{_}, q{publish_seq_data2irods}, $self->id_run();
+    my $job_name_prefix = join q{_}, q{publish_seq_data2irods}, $self->label();
 
     my $command = join q[ ],
       $PUBLISH_SCRIPT_NAME,
@@ -96,10 +96,14 @@ sub create {
 sub basic_definition_init_hash {
   my $self = shift;
 
+  if ($self->has_product_rpt_list) {
+    $self->logcroak(q{Not implemented for individual products});
+  }
+
   my $ref = {
     'created_by' => ref $self,
     'created_on' => $self->timestamp(),
-    'identifier' => $self->id_run(),
+    'identifier' => $self->label(),
   };
 
   if ($self->no_irods_archival) {

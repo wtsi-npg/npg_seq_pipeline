@@ -264,6 +264,33 @@ sub path {
   return File::Spec->catdir($dir, $self->dir_path($self->selected_lanes));
 }
 
+=head2 existing_path
+
+Returns an existing directory path for data files for this product
+taking argument directory path as a base. First checks if the path
+returned by the path method of this class exists. If not, assumes
+that the name of the directory is the long digest of the product's
+composition. Returns an existing path or raises an error.
+ 
+=cut
+
+sub existing_path {
+  my ($self, $dir) = @_;
+
+  $dir or croak 'Directory argument is needed';
+  (-e $dir) or croak "Directory argument $dir does not exist";
+
+  my $path = File::Spec->catdir($dir, $self->dir_path($self->selected_lanes));
+  my $orig = $path;
+  if (!-e $path) {
+    $path = File::Spec->catdir($dir, $self->generic_name());
+    ($path ne $orig) or croak "$path does not exist";
+    (-e $path) or croak "Neither $orig nor $path exists";
+  }
+
+  return $path;
+}
+
 =head2 qc_out_path
 
 Returns path for qc output directory for this product taking
@@ -274,6 +301,22 @@ argument directory path as a base.
 sub qc_out_path {
   my ($self, $dir) = @_;
   return File::Spec->catdir($self->path($dir), $QC_DIR_NAME);
+}
+
+=head2 existing_qc_out_path
+
+Returns path for qc output directory for this product taking
+argument directory path as a base. Uses existing_path method
+of this object to find the product path. If either the product
+path or the qc_path does not exist, an error is reised.
+ 
+=cut
+
+sub existing_qc_out_path {
+  my ($self, $dir) = @_;
+  my $path = File::Spec->catdir($self->existing_path($dir), $QC_DIR_NAME);
+  (-e $path) or croak "QC path $path does not exist";
+  return $path;
 }
 
 =head2 short_files_cache_path
