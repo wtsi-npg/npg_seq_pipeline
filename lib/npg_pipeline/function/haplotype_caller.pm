@@ -71,6 +71,7 @@ sub create {
 
     # TODO: Check required files
     my $dir_path = File::Spec->catdir($self->archive_path(), $super_product->dir_path());
+    my $out_dir_path = $super_product->chunk_out_path($self->archive_path());
     my $input_path = $super_product->file_path($dir_path, ext => 'cram');
 
     my $ref_name = $super_product->lims->reference_genome || $self->debug(sprintf q{Missing reference genome for product %s, %s},
@@ -92,7 +93,7 @@ sub create {
         $self->haplotype_caller_chunking($super_product),
         $self->haplotype_caller_chunking($super_product),
         $product->chunk;
-      my $output_path = $product->file_path($dir_path, ext => 'g.vcf.gz');
+      my $output_path = $product->file_path($out_dir_path, ext => 'g.vcf.gz');
       my $command = sprintf q{%s %s %s -I %s -O %s -L %s},
         $GATK_EXECUTABLE, $GATK_TOOL_NAME, $gatk_args, $input_path, $output_path, $region;
 

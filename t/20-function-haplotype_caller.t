@@ -240,7 +240,7 @@ subtest 'run hc' => sub {
 
   ok ($da && @{$da} == 288, sprintf("array of 288 definitions is returned, got %d", scalar@{$da}));
 
-  my $command = qq{gatk HaplotypeCaller --emit-ref-confidence GVCF -R $dir/references/Homo_sapiens/GRCh38_15_plus_hs38d1/all/fasta/GRCh38_15_plus_hs38d1.fa --pcr-indel-model CONSERVATIVE -I $dir/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4.cram -O $dir/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list};
+  my $command = qq{gatk HaplotypeCaller --emit-ref-confidence GVCF -R $dir/references/Homo_sapiens/GRCh38_15_plus_hs38d1/all/fasta/GRCh38_15_plus_hs38d1.fa --pcr-indel-model CONSERVATIVE -I $dir/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4.cram -O $dir/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/chunk/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list};
 
   my $mem = 3600;
   my $d = _find($da, 1, 4);

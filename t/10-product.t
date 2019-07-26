@@ -135,12 +135,14 @@ subtest 'creating chunked products' => sub {
 };
 
 subtest 'file names for chunked merged entities' => sub {
-  plan tests => 5;
+  plan tests => 6;
 
   my $p = npg_pipeline::product->new(rpt_list => '26219:1:3;26219:2:3;26219:3:3;26219:4:3');
+  is ($p->chunk_out_path('/tmp'), '/tmp/plex3/chunk', 'chunk out path');
   my @chunked_p = $p->chunks_as_product(24);
 
   is (scalar @chunked_p, 24, 'Number of chunks');
+
   is ($chunked_p[0]->file_name_root(), '26219#3.1', 'composition of plexes name root');
   is ($chunked_p[0]->file_name(ext => 'bam'), '26219#3.1.bam', 'file name with an extention');
   is ($chunked_p[0]->file_name(suffix => 'F0xB00'), '26219#3.1_F0xB00', 'file name with a suffix');
