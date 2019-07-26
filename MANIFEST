@@ -1052,6 +1052,7 @@ t/data/release/config/no_config/product_release.yml
 t/data/release/config/notify_off/product_release.yml
 t/data/release/config/notify_on/npg_message_queue.conf
 t/data/release/config/notify_on/product_release.yml
+t/data/release/config/qc_review/product_release.yml
 t/data/rna_seq/12597_RunInfo.xml
 t/data/rna_seq/13066_RunInfo.xml
 t/data/rna_seq/17550_RunInfo.xml
