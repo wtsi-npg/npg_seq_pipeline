@@ -1,7 +1,16 @@
 LIST OF CHANGES
 ---------------
 
+release 56.1.0
  - move reference cache from seq_alignment to own singleton class
+ - remove provisions for old-style run folders
+ - qc_review function added
+ - provisions for splitting a product into chunks
+ - to be forward compatible with changes in tracking, remove direct
+   dependency of the pipeline daemon on the short_info and location
+   tracking roles
+ - ability to run the pipeline for individual products; some archival
+   pipeline functions updated to enbable this ability on their level
 
 release 56.0.1
  - ensure that the paths serived from the archive directory in
