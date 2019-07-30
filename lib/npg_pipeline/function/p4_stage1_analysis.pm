@@ -283,7 +283,6 @@ sub _generate_command_params {
   my $run_folder     = $self->run_folder;
   my $intensity_path     = $self->intensity_path;
   my $archive_path            = $self->archive_path;
-  my $qc_path            = $self->qc_path; # NB: the value provided for qc_path is only valid for old-style runfolders
   my $basecall_path = $self->basecall_path;
   my $no_cal_path       = $self->recalibrated_path;
   my $bam_basecall_path  = $self->bam_basecall_path;
