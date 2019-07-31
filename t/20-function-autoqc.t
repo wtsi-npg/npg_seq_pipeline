@@ -105,7 +105,7 @@ subtest 'adapter' => sub {
     my $p = $de->composition->get_component(0)->position;
     is ($de->command, sprintf(
     'qc --check=adapter --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s',
-    qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}.bam"),
+    qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}.cram"),
     "adapter check command for lane $p");
   }
 

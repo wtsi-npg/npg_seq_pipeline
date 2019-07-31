@@ -253,10 +253,10 @@ sub _generate_command {
       $c .= qq[ --input_files=$fq2_filepath];
     }
   }
-  elsif(any { /$check/sm } qw( adapter genotype verify_bam_id pulldown_metrics )) {
+  elsif(any { /$check/sm } qw( genotype verify_bam_id pulldown_metrics )) {
     $c .= qq{ --input_files=$bamfile_path}; # note: single bam file 
   }
-  elsif($check eq q/bcfstats/) {
+  elsif(any { /$check/sm } qw(adapter bcfstats)) {
     $c .= qq{ --input_files=$cramfile_path}; # note: single cram file 
   }
   elsif($check eq q/upstream_tags/) {
