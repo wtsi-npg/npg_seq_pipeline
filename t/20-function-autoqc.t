@@ -89,7 +89,7 @@ subtest 'adapter' => sub {
   is ($d->num_hosts, 1, 'one host');
   ok ($d->apply_array_cpu_limit, 'array_cpu_limit should be applied');
   ok (!$d->has_array_cpu_limit, 'array_cpu_limit not set');
-  is_deeply ($d->num_cpus, [2], 'num cpus as an array');
+  is_deeply ($d->num_cpus, [3], 'num cpus as an array');
   is ($d->memory, 1500, 'memory');
   is ($d->command_preexec, 'npg_pipeline_preexec_references', 'preexec command');
   ok ($d->has_composition, 'composition object is set');
