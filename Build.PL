@@ -89,6 +89,7 @@ my $builder = $class->new(
           'npg_qc::Schema'                                     => 0,
           'npg_qc::autoqc::role::result'                       => 0,
           'npg_qc::autoqc::qc_store'                           => 0,
+          'npg_qc::autoqc::constants'                          => 0,
           'st::api::lims'                                      => 0,
           'st::api::lims::ml_warehouse'                        => 0,
           'npg::api::request'                                  => 0,
