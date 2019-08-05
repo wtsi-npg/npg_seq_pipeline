@@ -111,6 +111,46 @@ sub is_release_data {
   return 1;
 }
 
+=head2 release_files
+
+  Arg [1]    : Data product whose release files to list, npg_pipeline::product.
+
+  Example    : my @release_files = $obj->release_files($product)
+  Description: Return a sorted list of the files to be released via S3, for a
+               product. These are a subset of the files returned by
+               expected_files that are determined by study.
+
+  Returntype : Array
+
+=cut
+
+sub release_files {
+  my ($self, $product) = @_;
+
+  $product or $self->logconfess('A product argument is required');
+
+  my $rpt = $product->rpt_list();
+  my $name = $product->file_name_root();
+  my $select_pattern = $self->find_study_config($product)->{s3}->{select};
+
+  my @release_files;
+  if (not $select_pattern) {
+    @release_files = $self->expected_files($product);
+  } else {
+    my $regex = qr{$select_pattern}msx;
+    @release_files = grep { m{$regex}msx } $self->expected_files($product);
+    if (not @release_files) {
+      $self->logcroak("The release select pattern '$select_pattern' for " .
+                      "product $name, $rpt did not match any files. Either " .
+                      'remove the pattern or correct it');
+    }
+  }
+  $self->info("Selected files for release for product $name, $rpt: ",
+              pp(\@release_files));
+
+  return @release_files;
+}
+
 =head2 has_qc_for_release
 
   Arg [1]    : npg_pipeline::product
@@ -401,6 +441,7 @@ used for any study without a specific configuration.
     enable: <boolean> S3 release enabled if true.
     url:    <URL>     The S3 bucket URL to send to.
     notify: <boolean> A notificastion message will be sent if true.
+    select: <Str>     A regex to match a subset of files to be sent.
 
  irods:
     enable: <boolean> iRODS release enabled if true.
@@ -424,6 +465,7 @@ study:
       enable: true
       url: "s3://product_bucket"
       notify: true
+      select: "[.]cram$"
     irods:
       enable: false
       notify: false

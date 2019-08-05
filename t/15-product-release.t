@@ -7,7 +7,7 @@ use File::Path qw[make_path];
 use File::Temp;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 1;
+use Test::More tests => 2;
 use Test::Exception;
 use Moose::Meta::Class;
 use t::util;
@@ -73,4 +73,26 @@ subtest 'expected_files' => sub {
   my @observed = $archiver->expected_files($product);
   is_deeply(\@observed, \@expected, 'Expected files listed') or
     diag explain \@observed;
+};
+
+subtest 'release_files' => sub {
+  plan tests => 1;
+
+  my $archiver = $cls->new_object
+      (conf_path      => "t/data/release/config/file_select",
+       runfolder_path => $runfolder_path,
+       id_run         => 26291,
+       timestamp      => $timestamp,
+       qc_schema      => $qc);
+
+  my $product = shift @{$archiver->products->{data_products}};
+
+  my $path = "$runfolder_path/Data/Intensities/" .
+      'BAM_basecalls_20180805-013153/no_cal/archive/plex1';
+  my @expected = sort map { "$path/$_" }
+      ('26291#1.cram');
+
+  my @observed = $archiver->release_files($product);
+  is_deeply(\@observed, \@expected, 'Expected files listed') or
+      diag explain \@observed;
 };
