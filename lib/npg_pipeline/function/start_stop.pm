@@ -65,12 +65,12 @@ sub _token_job {
   my ($package, $filename, $line, $subroutine_name) = caller 1;
   ($subroutine_name) = $subroutine_name =~ /(\w+)\Z/xms;
   $pipeline_name ||= q[];
-  my $job_name = join q{_}, $subroutine_name, $self->id_run(), $pipeline_name;
+  my $job_name = join q{_}, $subroutine_name, $self->label(), $pipeline_name;
 
   my $d = npg_pipeline::function::definition->new(
     created_by    => __PACKAGE__,
     created_on    => $self->timestamp(),
-    identifier    => $self->id_run(),
+    identifier    => $self->label(),
     job_name      => $job_name,
     command       => '/bin/true',
     num_cpus      => [0],
@@ -107,11 +107,11 @@ sub pipeline_wait4path {
   ##use critic
     .  q{'};
 
-  my $job_name = join q{_}, 'wait4path_in_outgoing', $self->id_run();
+  my $job_name = join q{_}, 'wait4path_in_outgoing', $self->label();
   my $d = npg_pipeline::function::definition->new(
     created_by    => __PACKAGE__,
     created_on    => $self->timestamp(),
-    identifier    => $self->id_run(),
+    identifier    => $self->label(),
     job_name      => $job_name,
     command       => $command,
     num_cpus      => [0],

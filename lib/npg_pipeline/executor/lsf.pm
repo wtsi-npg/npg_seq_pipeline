@@ -11,6 +11,7 @@ use Try::Tiny;
 use List::MoreUtils qw(uniq);
 use Readonly;
 use English qw(-no_match_vars);
+use Math::Random::Secure qw(irand);
 
 use npg_tracking::util::abs_path qw(abs_path network_abs_path);
 use npg_pipeline::executor::lsf::job;
@@ -29,8 +30,7 @@ Readonly::Scalar my $VERTEX_LSF_JOB_IDS_ATTR_NAME => q[lsf_job_ids];
 Readonly::Scalar my $LSF_JOB_IDS_DELIM            => q[-];
 Readonly::Scalar my $DEFAULT_MAX_TRIES            => 3;
 Readonly::Scalar my $DEFAULT_MIN_SLEEP            => 1;
-Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB   => 50;
-
+Readonly::Scalar my $MAX_JOB_ID_FOR_NO_BSUB       => 1_000_000;
 Readonly::Scalar my $SCRIPT4SAVED_COMMANDS => q[npg_pipeline_execute_saved_command];
 
 =head1 NAME
@@ -166,7 +166,7 @@ sub _execute_function {
     @depends_on or $self->logcroak(qq{"$function" should depend on at least one LSF job});
 
     my $map_degree = sub {
-      my ($ids,$is_same_degree, ) = @_;
+      my ($ids, $is_same_degree) = @_;
       return (map { {$_ => $is_same_degree} } @{$ids});
     };
 
@@ -179,6 +179,9 @@ sub _execute_function {
     } else {
       my @this_comp_digest = map {$_->composition()->digest()}
                              @{$self->function_definitions->{$function}};
+      my @this_chunk = map {$_->chunk_label()}
+                       @{$self->function_definitions->{$function}};
+
       foreach my $prev_function ($g->predecessors($function)) {
         # If we do have one and our composition is the same keys as previous node(s)
         # then they should be controlled by "done(<job_id>[*])"  
@@ -190,9 +193,11 @@ sub _execute_function {
         } else {
           my @prev_comp_digest = map {$_->composition()->digest()}
                                  @{$self->function_definitions->{$prev_function}};
+          my @prev_chunk = map {$_->chunk_label()}
+                           @{$self->function_definitions->{$prev_function}};
           # Mark as "done()" or "one(<job_id>[*])"depending on match evaluation
           push @depends_on_with_degree, $map_degree->(
-            \@a, (@this_comp_digest ~~ @prev_comp_digest) ? 1 : 0);
+            \@a, ((@this_comp_digest ~~ @prev_comp_digest) and (@this_chunk ~~ @prev_chunk) ? 1 : 0));
         }
       }
     }
@@ -362,7 +367,9 @@ sub _execute_lsf_command {
   $self->info(qq{***** $cmd });
 
   if ($self->no_bsub()) {
-    $job_id =  $DEFAULT_JOB_ID_FOR_NO_BSUB;
+    $job_id = irand($MAX_JOB_ID_FOR_NO_BSUB);
+    # Try again if get zero first time.
+    $job_id ||= irand($MAX_JOB_ID_FOR_NO_BSUB);
   } else {
     my $count = 1;
     my $max_tries_plus_one =

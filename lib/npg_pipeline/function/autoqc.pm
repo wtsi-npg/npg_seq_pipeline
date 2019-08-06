@@ -97,7 +97,8 @@ sub _build__is_check4target_file {
                                   bcfstats |
                                   verify_bam_id |
                                   genotype |
-                                  pulldown_metrics $/smx;
+                                  pulldown_metrics |
+                                  review $/smx;
 }
 
 sub BUILD {
@@ -276,6 +277,10 @@ sub _generate_command {
     }
     $c .= q[ ] . join q[ ], (map {"--qc_in=$_"} (keys %qc_in_roots));
   }
+  elsif($check eq q/review/) {
+    $c .= q{ --qc_in=} . $qc_out_path;
+    $c .= q{ --conf_path=} . $self->conf_path;
+  }
   else {
     ## default input_files [none?]
   }
@@ -314,6 +319,8 @@ sub _should_run {
     }
     if ($self->qc_to_run() eq 'insert_size') {
       $init_hash{'is_paired_read'} = $self->is_paired_read() ? 1 : 0;
+    } elsif ($self->qc_to_run() eq 'review') {
+      $init_hash{'conf_path'} = $self->conf_path;
     }
 
     $can_run = $self->_qc_module_name()->new(\%init_hash)->can_run();

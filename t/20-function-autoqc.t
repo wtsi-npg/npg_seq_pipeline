@@ -1,10 +1,11 @@
 use strict;
 use warnings;
-use Test::More tests => 14;
+use Test::More tests => 15;
 use Test::Exception;
 use File::Path qw/make_path/;
 use File::Copy::Recursive qw/fcopy dircopy/;
 use File::Slurp;
+use Log::Log4perl qw/:levels/;
 
 use t::util;
 
@@ -16,6 +17,11 @@ use_ok('npg_pipeline::product');
 
 my $util = t::util->new();
 my $tmp = $util->temp_directory();
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $tmp, 'logfile'),
+                          utf8   => 1});
 
 my @tools = map { "$tmp/$_" } qw/bamtofastq blat norm_fit bcftools/;
 foreach my $tool (@tools) {
@@ -538,6 +544,56 @@ subtest 'memory_requirements' => sub {
     ok ($d->has_memory, "memory is set for $name");
     is ($d->memory, $mem_req, "memory is set correctly for $name"); 
   }
+};
+
+subtest 'review' => sub {
+  plan tests => 6;
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_8747.csv';
+
+  my $qc = npg_pipeline::function::autoqc->new(
+    qc_to_run         => 'review',
+    is_indexed        => 1,
+    id_run            => 8747,
+    runfolder_path    => $rf_path,
+    timestamp         => q{today},
+    conf_path         => q{t/data/release/config/archive_on}
+  );
+  my $da = $qc->create();
+  ok ($da && (@{$da} == 1), 'one definition returned');
+  ok ($da->[0]->excluded, 'function is excluded - no config for projects');
+
+  $qc = npg_pipeline::function::autoqc->new(
+    qc_to_run         => 'review',
+    is_indexed        => 1,
+    id_run            => 8747,
+    runfolder_path    => $rf_path,
+    timestamp         => q{today},
+    conf_path         => q{t/data/release/config/qc_review}
+  );
+
+  $da = $qc->create();
+  ok ($da && (@{$da} == 11), '11 definitions returned');
+  my %definitions = map { $_->composition->freeze2rpt => $_ } @{$da};
+  my @expected_rpt_lists = qw/ 8747:1:1  8747:1:2  8747:1:3 
+                               8747:2:4  8747:2:5  8747:2:6
+                               8747:3:7  8747:3:8  8747:3:9 
+                               8747:7
+                               8747:8 /;
+  is_deeply ([sort keys %definitions], \@expected_rpt_lists,
+    'definitions are for correct entities');
+
+  my $d = $definitions{'8747:8'};
+  my $expected_command = q{qc --check=review --rpt_list="8747:8" } .
+    qq{--filename_root=8747_8 --qc_out=$archive_dir/lane8/qc } .
+    qq{--qc_in=$archive_dir/lane8/qc --conf_path=t/data/release/config/qc_review};
+  is ($d->command, $expected_command, 'correct command for lane-level job');
+
+  $d = $definitions{'8747:1:1'};
+  $expected_command = q{qc --check=review --rpt_list="8747:1:1" } .
+    qq{--filename_root=8747_1#1 --qc_out=$archive_dir/lane1/plex1/qc } .
+    qq{--qc_in=$archive_dir/lane1/plex1/qc --conf_path=t/data/release/config/qc_review};
+  is ($d->command, $expected_command, 'correct command for plex-level job');
 };
 
 1;

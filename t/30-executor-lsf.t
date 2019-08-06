@@ -61,8 +61,8 @@ subtest 'lsf command execution' => sub {
   $ref->{'no_bsub'} = 1;
   $l = npg_pipeline::executor::lsf->new($ref);
   delete $ref->{'no_bsub'};
-  is ($l->_execute_lsf_command('bsub some'), 50,
-    'bsub command is not executed, default job id is returned');
+  like ($l->_execute_lsf_command('bsub some'), qr/\d+/,
+    'bsub command is not executed, randon job id is returned');
   is ($l->_execute_lsf_command('bkill some'), q[],
     'bkill command is not executed, empty string returned');  
   is ($l->_execute_lsf_command('bresume some'), q[],

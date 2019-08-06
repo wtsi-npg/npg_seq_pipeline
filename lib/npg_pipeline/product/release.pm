@@ -51,19 +51,19 @@ sub expected_files {
 
   my @expected_files;
 
-  my $dir_path = catdir($self->archive_path(), $product->dir_path());
+  my $dir_path = $product->existing_path($self->archive_path());
   my @extensions = qw{cram cram.md5 cram.crai
                       seqchksum sha512primesums512.seqchksum
                       bcfstats};
   push @expected_files,
     map { $product->file_path($dir_path, ext => $_) } @extensions;
 
-  my @suffixes = qw{F0x900 F0xB00 F0xF04_target};
+  my @suffixes = qw{F0x900 F0xB00 F0xF04_target F0xF04_target_autosome};
   push @expected_files,
     map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
     @suffixes;
 
-  my $qc_path = $product->qc_out_path($self->archive_path());
+  my $qc_path = $product->existing_qc_out_path($self->archive_path());
 
   my @qc_extensions = qw{verify_bam_id.json};
   push @expected_files,

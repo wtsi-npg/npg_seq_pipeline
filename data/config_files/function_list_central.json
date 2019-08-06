@@ -170,32 +170,32 @@
          {
             "relation" : "dependsOn",
             "source" : "qc_qX_yield",
-            "target" : "run_analysis_complete"
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
             "source" : "qc_adapter",
-            "target" : "run_analysis_complete"
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
             "source" : "qc_insert_size",
-            "target" : "run_analysis_complete"
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
             "source" : "qc_sequence_error",
-            "target" : "run_analysis_complete"
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
             "source" : "qc_gc_fraction",
-            "target" : "run_analysis_complete"
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
             "source" : "qc_ref_match",
-            "target" : "run_analysis_complete"
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
@@ -210,26 +210,31 @@
          {
             "relation" : "dependsOn",
             "source" : "qc_bcfstats",
-            "target" : "run_analysis_complete"
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
             "source" : "qc_pulldown_metrics",
-            "target" : "run_analysis_complete"
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
             "source" : "qc_genotype",
-            "target" : "run_analysis_complete"
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
             "source" : "qc_verify_bam_id",
-            "target" : "run_analysis_complete"
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
             "source" : "qc_upstream_tags",
+            "target" : "qc_review"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "qc_review",
             "target" : "run_analysis_complete"
          },
          {
@@ -359,6 +364,10 @@
          {
             "id" : "qc_upstream_tags",
             "label" : "qc_upstream_tags"
+         },
+         {
+            "id" : "qc_review",
+            "label" : "qc_review"
          },
          {
             "id" : "run_analysis_complete",
