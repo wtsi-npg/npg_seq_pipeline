@@ -438,6 +438,51 @@ sub haplotype_caller_chunking_number {
 }
 
 
+
+=head2 bqsr_enable
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->bqsr_enable($product)
+ Description: Return true if BQSR is to be run on the product.
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub bqsr_enable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if ($self->find_study_config($product)->{bqsr}->{enable}) {
+    $self->info("Product $name, $rpt is for BQSR processing");
+    return 1;
+  }
+
+  $self->info("Product $name, $rpt is NOT for BQSR processing");
+
+  return 0;
+}
+
+=head2 bqsr_known_sites
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->bqsr_known_sites($product)
+ Description: Returns array of known sites for product.
+ 
+ Returntype : Array[Str]
+ 
+=cut
+
+sub bqsr_known_sites {
+  my ($self, $product) = @_;
+  my @known_sites = @{$self->find_study_config($product)->{bqsr}->{'known-sites'}};
+  return @known_sites;
+}
+
 1;
 
 __END__
