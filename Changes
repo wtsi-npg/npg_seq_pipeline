@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - add function to support GATK HaplotypeCaller
+
 release 56.1.0
  - move reference cache from seq_alignment to own singleton class
  - remove provisions for old-style run folders
