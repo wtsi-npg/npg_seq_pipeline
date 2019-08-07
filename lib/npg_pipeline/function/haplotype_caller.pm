@@ -1,24 +1,23 @@
 package npg_pipeline::function::haplotype_caller;
 
 use namespace::autoclean;
-
-use File::Spec;
 use Moose;
 use MooseX::StrictConstructor;
 use Readonly;
 
+use npg_tracking::data::reference::find;
 use npg_pipeline::function::definition;
 use npg_pipeline::cache::reference;
+use npg_pipeline::runfolder_scaffold;
 
 extends 'npg_pipeline::base';
-with    q{npg_pipeline::function::util};
+with qw{ npg_pipeline::function::util
+         npg_pipeline::product::release };
 
-with qw{npg_pipeline::product::release};
-
-Readonly::Scalar my $FUNCTION_NAME => 'haplotype_caller';
+Readonly::Scalar my $FUNCTION_NAME   => 'haplotype_caller';
 
 Readonly::Scalar my $GATK_EXECUTABLE => 'gatk';
-Readonly::Scalar my $GATK_TOOL_NAME => 'HaplotypeCaller';
+Readonly::Scalar my $GATK_TOOL_NAME  => 'HaplotypeCaller';
 
 Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
 Readonly::Scalar my $MEMORY                       => q{3600}; # memory in megabytes
@@ -33,7 +32,7 @@ our $VERSION = '0';
   Arg [1]    : None
 
   Example    : my $defs = $obj->create
-  Description: Create per-product data file function definitions.
+  Description: Create per-product function definitions objects.
 
   Returntype : ArrayRef[npg_pipeline::function::definition]
 
@@ -42,8 +41,7 @@ our $VERSION = '0';
 sub create {
   my ($self) = @_;
 
-  my $id_run = $self->id_run();
-  my $job_name = sprintf q{%s_%d}, $FUNCTION_NAME, $id_run;
+  my $job_name = sprintf q{%s_%d}, $FUNCTION_NAME, $self->label();
 
   my @products = $self->no_haplotype_caller ? () :
                  grep { $self->haplotype_caller_enable($_) }
@@ -60,38 +58,38 @@ sub create {
   #FIXME: real path to this
   #my $dbsnp = "dbsnp.vcf.gz";
 
+  my @out_dirs = ();
+
   foreach my $super_product (@products) {
-    # Check required metadata
-    # This is required for our initial customer, but we should arrange
-    # an alternative for when supplier_name is not provided
-    #my $supplier_name = $product->lims->sample_supplier_name();
-    #$supplier_name or
-    #  $self->logcroak(sprintf q{Missing supplier name for product %s, %s},
-    #                  $product->file_name_root(), $product->rpt_list());
+
+    $self->is_release_data($super_product) or next;
 
     # TODO: Check required files
-    my $dir_path = File::Spec->catdir($self->archive_path(), $super_product->dir_path());
+    my $dir_path     = $super_product->path($self->archive_path());
     my $out_dir_path = $super_product->chunk_out_path($self->archive_path());
-    my $input_path = $super_product->file_path($dir_path, ext => 'cram');
+    push @out_dirs, $out_dir_path;
+    my $input_path   = $super_product->file_path($dir_path, ext => 'cram');
 
     my $ref_name = $super_product->lims->reference_genome || $self->debug(sprintf q{Missing reference genome for product %s, %s},
                   $super_product->file_name_root(), $super_product->rpt_list()) && next;
-    if ($super_product->is_tag_zero_product || $super_product->lims->is_control) { next; }
+
     my $ref_path = npg_pipeline::cache::reference->instance->get_path($super_product, q(fasta), $self->repository());
     my $indel_model = ($super_product->lims->library_type && ($super_product->lims->library_type =~ /PCR free/smx)) ? 'NONE' : 'CONSERVATIVE';
 
     my $gatk_args = "--emit-ref-confidence GVCF -R $ref_path --pcr-indel-model $indel_model"; # --dbsnp $dbsnp
-    my $lister = npg_tracking::data::reference->new(rpt_list => $super_product->rpt_list(), repository => $self->repository());
 
     my @chunk_products = $super_product->chunks_as_product($self->haplotype_caller_chunking_number($super_product));
     foreach my $product (@chunk_products) {
-      my ($species, $ref, undef, undef) = $lister->parse_reference_genome($super_product->lims->reference_genome());
+
+      my ($species, $ref, undef, undef) = npg_tracking::data::reference::find
+        ->parse_reference_genome($super_product->lims->reference_genome());
+      my $chuncking_base_name = $self->haplotype_caller_chunking($super_product);
       my $region = sprintf '%s/calling_intervals/%s/%s/%s/%s.%d.interval_list',
         $self->repository,
         $species,
         $ref,
-        $self->haplotype_caller_chunking($super_product),
-        $self->haplotype_caller_chunking($super_product),
+        $chuncking_base_name,
+        $chuncking_base_name,
         $product->chunk;
       my $output_path = $product->file_path($out_dir_path, ext => 'g.vcf.gz');
       my $command = sprintf q{%s %s %s -I %s -O %s -L %s},
@@ -103,7 +101,7 @@ sub create {
         npg_pipeline::function::definition->new
           ('created_by'   => __PACKAGE__,
            'created_on'   => $self->timestamp(),
-           'identifier'   => $id_run,
+           'identifier'   => $self->label,
            'job_name'     => $job_name,
            'command'      => $command,
            'fs_slots_num' => $FS_NUM_SLOTS,
@@ -114,11 +112,14 @@ sub create {
     }
   }
 
-  if (not @definitions) {
+  if (@definitions) {
+    my @errors = npg_pipeline::runfolder_scaffold->make_dir(@out_dirs);
+    @errors and $self->logcroak(join qq[\n], @errors);
+  } else {
     push @definitions, npg_pipeline::function::definition->new
       ('created_by' => __PACKAGE__,
        'created_on' => $self->timestamp(),
-       'identifier' => $id_run,
+       'identifier' => $self->label,
        'excluded'   => 1);
   }
 
@@ -157,11 +158,15 @@ npg_pipeline::function::haplotype_caller
 
 =over
 
-=item JSON
+=item namespace::autoclean
 
 =item Moose
 
+=item MooseX::StrictConstructor
+
 =item Readonly
+
+=item npg_tracking::data::reference::find
 
 =back
 
