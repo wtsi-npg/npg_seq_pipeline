@@ -178,8 +178,8 @@ sub _create_tileviz_index {
   my $self = shift;
 
   my %lanes =  map { $_->composition->get_component(0)->position,
-                     $_->tileviz_path(q[..]) . q[.html] } # tileviz.html page on the
-                     @{$self->products->{'lanes'}};       # same level as tileviz directory
+                     $_->tileviz_path(q[..]) . q[.html] } # tileviz_laneX.html page on the
+                     @{$self->products->{'lanes'}};       # same level as tileviz_laneX directory
   my $title = join q[ ], 'Run', $self->id_run(), 'Tileviz', 'Reports';
   my @content = ();
   push @content, "<html><head><title>$title</title></head>";

@@ -5,10 +5,11 @@ use Digest::MD5;
 use File::Copy;
 use File::Path qw[make_path remove_tree];
 use File::Temp qw[tempdir];
+use File::Basename;
 use Cwd;
 use npg_tracking::util::abs_path qw(abs_path);
 use Log::Log4perl qw[:easy];
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Exception;
 use t::util;
 
@@ -121,7 +122,7 @@ subtest 'message_dir' => sub {
        diag explain $observed_default_dir;
 };
 
-subtest 'create' => sub {
+subtest 'create for a run' => sub {
   plan tests => 13;
 
   my $message_dir = File::Temp->newdir("/tmp/$pkg.XXXXXXXX")->dirname;
@@ -217,6 +218,71 @@ subtest 'create' => sub {
   }
 
   remove_tree($message_dir);
+};
+
+subtest 'create for a product' => sub {
+  plan tests => 4;
+
+  my $dir = File::Temp->newdir()->dirname;
+
+  # Using a standard run folder structure.
+  my $notifier = $pkg->new
+      (conf_path           => $config_path,
+       label               => 'my_label',
+       product_rpt_list    => '26291:1:3;26291:2:3',
+       message_config      => $message_config,
+       message_dir         => $dir,
+       runfolder_path      => $runfolder_path,
+       timestamp           => $timestamp,
+       qc_schema           => $qc);
+
+  my @defs = @{$notifier->create};
+  is (scalar @defs, 1, 'one definition returned');
+  my @notified_rpts = _get_rpts(@defs);
+  is_deeply(\@notified_rpts,
+            [[[26291, 1, 3], [26291, 2, 3]]],
+            'Only "26291:1:3;26291:2:3" is notified');
+
+  # Using directory structure similar to top-up cache
+  my $generic_name = $defs[0]->composition->digest;
+  my $archive = "$dir/archive";
+  my $product_archive = join q[/], $archive, $generic_name;
+  make_path "$product_archive/qc";
+  my $target_archive = join q[/], $archive_path, 'plex3';
+  my @files = glob "$target_archive/*.*";
+  my $wd = getcwd();
+  foreach my $target (@files) {
+    my ($name,$path,$suffix) = fileparse($target);
+    symlink join(q[/],$wd,$target), join(q[/],$product_archive,$name)
+      or die 'Failed to create a sym link';
+  }
+  @files = glob "$target_archive/qc/*.*";
+  foreach my $target (@files) {
+    my ($name,$path,$suffix) = fileparse($target);
+    symlink join(q[/],$wd,$target), join(q[/], $product_archive, 'qc', $name)
+      or die 'Failed to create a sym link';
+  }
+
+  my $mdir = join q[/], $dir, 'messages1';
+  mkdir $mdir;
+  $notifier = $pkg->new
+      (conf_path           => $config_path,
+       label               => 'my_label',
+       product_rpt_list    => '26291:1:3;26291:2:3',
+       message_config      => $message_config,
+       message_dir         => $mdir,
+       runfolder_path      => $dir,
+       archive_path        => $archive,
+       timestamp           => $timestamp,
+       qc_schema           => $qc);  
+  @defs = @{$notifier->create};
+  is (scalar @defs, 1, 'one definition returned');
+  @notified_rpts = _get_rpts(@defs);
+  is_deeply(\@notified_rpts,
+            [[[26291, 1, 3], [26291, 2, 3]]],
+            'Only "26291:1:3;26291:2:3" is notified');  
+
+  remove_tree($dir);
 };
 
 subtest 'no_message_study' => sub {

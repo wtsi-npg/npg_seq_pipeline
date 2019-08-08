@@ -12,8 +12,6 @@ use List::MoreUtils qw{any};
 use JSON;
 use open q(:encoding(UTF8));
 
-use Data::Dumper;
-
 use npg_pipeline::cache::barcodes;
 use npg_pipeline::function::definition;
 
@@ -74,7 +72,7 @@ sub generate {
 
     my @generated = $self->_generate_command_params($l, $tag_list_file, $lane_product);
     my ($command, $p4_params, $p4_ops) = @generated;
-    push @definitions, $self->_create_definition($l, $command);
+    push @definitions, $self->_create_definition($lane_product->composition, $command);
 
     my $pfile_name = join q{/}, $self->p4_stage1_params_paths->{$p},
                                 $self->id_run.q{_}.$p.q{_p4s1_pv_in.json};
@@ -200,7 +198,7 @@ sub _build_phix_alignment_reference {
 }
 
 sub _create_definition {
-  my ($self, $l, $command) = @_;
+  my ($self, $composition, $command) = @_;
 
   return npg_pipeline::function::definition->new(
     created_by      => __PACKAGE__,
@@ -214,7 +212,7 @@ sub _create_definition {
     queue           => $npg_pipeline::function::definition::P4_STAGE1_QUEUE,
     command         => $command,
     command_preexec => $self->repos_pre_exec_string(),
-    composition     => $self->create_composition($l)
+    composition     => $composition
   );
 }
 
@@ -285,7 +283,6 @@ sub _generate_command_params {
   my $run_folder     = $self->run_folder;
   my $intensity_path     = $self->intensity_path;
   my $archive_path            = $self->archive_path;
-  my $qc_path            = $self->qc_path; # NB: the value provided for qc_path is only valid for old-style runfolders
   my $basecall_path = $self->basecall_path;
   my $no_cal_path       = $self->recalibrated_path;
   my $bam_basecall_path  = $self->bam_basecall_path;
@@ -296,7 +293,7 @@ sub _generate_command_params {
   $p4_params{qc_check_id_run} = $id_run; # used by tag_metrics qc check
   $p4_params{qc_check_qc_in_dir} = $bam_basecall_path; # used by tag_metrics qc check
   $p4_params{qc_check_qc_out_dir} = $lane_product->qc_out_path($self->archive_path); # used by tag_metrics qc check
-  $p4_params{tileviz_dir} = $lane_product->tileviz_path($self->archive_path); # used for tileviz
+  $p4_params{tileviz_dir} = $lane_product->tileviz_path_prefix($self->archive_path); # used for tileviz
   $p4_params{outdatadir} = $no_cal_path; # base for all (most?) outputs
   $p4_params{lane_archive_path} = $lp_archive_path;
   $p4_params{rpt_list} = $lane_product->rpt_list;

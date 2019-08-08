@@ -296,6 +296,19 @@ sub _build_lims_driver_type {
     ) : npg_pipeline::cache->mlwarehouse_driver_name;
 }
 
+=head2 no_haplotype_caller
+
+Switches off haplotype caller.
+
+=cut
+
+has q{no_haplotype_caller} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 0,
+  documentation => q{Switches off haplotype caller.},
+);
+
 no Moose::Role;
 
 1;

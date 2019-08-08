@@ -61,6 +61,7 @@ subtest 'expected_files' => sub {
     ('26291#1_F0x900.stats',
      '26291#1_F0xB00.stats',
      '26291#1_F0xF04_target.stats',
+     '26291#1_F0xF04_target_autosome.stats',
      '26291#1.bcfstats',
      '26291#1.cram',
      '26291#1.cram.crai',

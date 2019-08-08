@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 
@@ -25,7 +25,7 @@ subtest 'warehouse updates' => sub {
   my $c = npg_pipeline::function::warehouse_archiver->new(
     run_folder          => q{123456_IL2_1234},
     runfolder_path      => $runfolder_path,
-    recalibrated_path   => $runfolder_path,
+    recalibrated_path   => $runfolder_path
   );
   isa_ok ($c, 'npg_pipeline::function::warehouse_archiver');
   
@@ -79,26 +79,45 @@ subtest 'warehouse updates disabled' => sub {
   foreach my $m (@wh_methods) {
     my $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path      => $runfolder_path,
-      recalibrated_path   => $runfolder_path,
       no_warehouse_update => 1
     );
     $test_method->($c, $m, 'off');
 
     $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path    => $runfolder_path,
-      recalibrated_path => $runfolder_path,
       local             => 1,
     );
     $test_method->($c, $m, 'off');    
 
     $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path      => $runfolder_path,
-      recalibrated_path   => $runfolder_path,
       local               => 1,
       no_warehouse_update => 0,
     );
     $test_method->($c, $m, 'on');
   }
+};
+
+subtest 'mlwh updates for a product' => sub {
+  plan tests => 7;
+
+  my $wa = npg_pipeline::function::warehouse_archiver->new(
+    runfolder_path    => $runfolder_path,
+    label             => 'my_label',
+    product_rpt_list  => '123:4:5'
+  );
+
+  my $ds = $wa->update_ml_warehouse('pname');
+  ok ($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
+    'update to warehouse is enabled');
+  my $d = $ds->[0];
+  isa_ok ($d, 'npg_pipeline::function::definition');    
+  is ($d->identifier, 'my_label', 'identifier set to the label value');
+  is ($d->command,
+    "npg_products2mlwarehouse --verbose --rpt_list '123:4:5'", 'command');
+  is ($d->job_name, 'npg_runs2mlwarehouse_my_label_pname', 'job name');
+  is ($d->queue, 'lowload', 'queue');
+  is_deeply ($d->num_cpus, [0], 'zero CPUs required');
 };
 
 1;

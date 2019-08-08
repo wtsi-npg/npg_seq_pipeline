@@ -2,24 +2,23 @@ package npg_pipeline::function::seq_alignment;
 
 use Moose;
 use Moose::Meta::Class;
-use Class::Load qw{load_class};
 use namespace::autoclean;
 use Readonly;
 use File::Slurp;
 use File::Basename;
 use File::Spec;
 use JSON;
-use List::Util qw(sum uniq all none);
+use List::Util qw(sum uniq all none any);
 use open q(:encoding(UTF8));
 use Try::Tiny;
 
 use npg_tracking::data::reference;
+use npg_pipeline::cache::reference::constants qw( $TARGET_REGIONS_DIR $TARGET_AUTOSOME_REGIONS_DIR );
 use npg_tracking::data::transcriptome;
 use npg_tracking::data::bait;
 use npg_tracking::data::gbs_plex;
+use npg_pipeline::cache::reference;
 use npg_pipeline::function::definition;
-
-use Data::Dumper;
 
 extends q{npg_pipeline::base};
 with    q{npg_pipeline::function::util};
@@ -38,8 +37,6 @@ Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
-Readonly::Scalar my $TARGET_REGIONS_DIR_NAME      => q{target};
-Readonly::Scalar my $REFERENCE_ABSENT             => q{REFERENCE_NOT_AVAILABLE};
 
 =head2 phix_reference
 
@@ -355,13 +352,20 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if ($do_target_alignment && !$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
     if($self->_do_bait_stats_analysis($dp)){
        $p4_param_vals->{target_regions_file} = $self->_bait($rpt_list)->target_intervals_path();
+       push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
        $do_target_regions_stats = 1;
     }
     else {
-      my $target_path = $self->_ref($dp, $TARGET_REGIONS_DIR_NAME);
-      if ( $target_path) {
+      my $target_path = $self->_ref($dp, $TARGET_REGIONS_DIR);
+      my $target_autosome_path = $self->_ref($dp, $TARGET_AUTOSOME_REGIONS_DIR);
+      if ($target_path) {
         $p4_param_vals->{target_regions_file} = $target_path.q(.interval_list);
         $do_target_regions_stats = 1;
+        if ($target_autosome_path) {
+           $p4_param_vals->{target_autosome_regions_file} = $target_autosome_path.q(.interval_list);
+        } else {
+           push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
+        }
       }
     }
   }
@@ -801,61 +805,7 @@ sub _gbs_plex{
 sub _ref {
   my ($self, $dp, $aligner) = @_;
 
-  if (!$aligner) {
-    $self->logcroak('Aligner missing');
-  }
-
-  my $dplims = $dp->lims;
-  my $rpt_list = $dp->rpt_list;
-  my $is_tag_zero_product = $dp->is_tag_zero_product;
-  my $ref_name = $self->_do_gbs_plex_analysis ? $dplims->gbs_plex_name : $dplims->reference_genome();
-
-  my $ref = $ref_name ? $self->_ref_cache->{$ref_name}->{$aligner} : undef;
-  if ($ref) {
-    if ($ref eq $REFERENCE_ABSENT) {
-      $ref = undef;
-    }
-  } else {
-
-    my $href = { 'aligner' => $aligner, 'lims' => $dplims, };
-    if ($self->repository) {
-      $href->{'repository'} = $self->repository;
-    }
-
-    my $class = q[npg_tracking::data::] . ($self->_do_gbs_plex_analysis ? 'gbs_plex' : 'reference');
-    load_class($class);
-    my $ruser = $class->new($href);
-    my @refs = ();
-    try {
-      @refs = @{$ruser->refs};
-    } catch {
-      my $e = $_;
-      # Either exist with an error or just log an error and carry on
-      # with reference undefined.
-      $aligner eq $TARGET_REGIONS_DIR_NAME ? $self->error($e) : $self->logcroak($e);
-    };
-
-    if (!@refs) {
-      $self->warn(qq[No reference genome retrieved for $rpt_list]);
-    } elsif (scalar @refs > 1) {
-      my $m = qq{Multiple references for $rpt_list};
-      # Either exist with an error or log it and carry on with
-      # reference undefined.
-      $is_tag_zero_product ? $self->logwarn($m) : $self->logcroak($m);
-    } else {
-      $ref = $refs[0];
-    }
-
-    # Cache the reference or the fact that it's not available.
-    if ($ref_name) {
-      $self->_ref_cache->{$ref_name}->{$aligner} = $ref ? $ref : $REFERENCE_ABSENT;
-    }
-  }
-
-  if ($ref) {
-    $self->info(qq{Reference found for $rpt_list: $ref});
-  }
-  return $ref;
+  return npg_pipeline::cache::reference->instance->get_path($dp, $aligner, $self->repository, $self->_do_gbs_plex_analysis);
 }
 
 sub _default_human_split_ref {

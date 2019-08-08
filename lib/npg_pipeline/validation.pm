@@ -8,6 +8,7 @@ use Readonly;
 use File::Find;
 use List::MoreUtils qw/any none/;
 
+use npg_tracking::util::abs_path qw/abs_path/;
 use npg_tracking::glossary::composition;
 use npg_pipeline::cache;
 use npg_pipeline::validation::entity;
@@ -53,7 +54,8 @@ Readonly::Array  my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                 conf_path
                                                 logger
                                                 workflow_type
-                                                release_config
+                                                product_config
+                                                local_bin
                                                /;
 
 =head1 NAME
@@ -160,8 +162,7 @@ has q{use_cram} => (
 =head2 per_product_archive
 
 A boolean attribute indicating whether a per-product staging archive
-is being used. True if a qc directory is not present in the archive
-directory for the analysis.
+is being used. Defaults to true.
 
 =cut
 
@@ -169,14 +170,10 @@ has 'per_product_archive' => (
   isa        => 'Bool',
   is         => 'ro',
   required   => 0,
-  lazy_build => 1,
+  default    => 1,
   documentation =>
   q{Toggles between per-product and flat staging archive},
 );
-sub _build_per_product_archive {
-  my $self = shift;
-  return not -e $self->qc_path;
-}
 
 =head2 remove_staging_tag
 
@@ -211,6 +208,20 @@ has q{+no_s3_archival} => (
 # This is in addition to what is done in the parent class.
 #
 has [map {q[+] . $_ }  @NO_SCRIPT_ARG_ATTRS] => (metaclass => 'NoGetopt',);
+
+=head2 archive_path
+
+Attribute inherited from npg_pipeline::base, changed here to return an absolute
+path to the archive directory so that paths derived from the archive directory
+in different parts of this utility are consistent.
+
+=cut
+
+around 'archive_path' => sub {
+  my $orig = shift;
+  my $self = shift;
+  return abs_path($self->$orig);
+};
 
 =head2 irods_destination_collection
 
@@ -438,12 +449,17 @@ sub _build__staging_files {
     my $f = $File::Find::name;
     if ($f =~ /[.]$ext\Z/xms) {
       my $i = $self->index_file_path($f);
-      $files_found->{'seq'}->{$f} = (-f $i) ? $i : q[];
+      # Check for existence rather than for a file in case
+      # the files are symbolic links.
+      $files_found->{'seq'}->{$f} = (-e $i) ? $i : q[];
     } elsif ($f =~ /[.]$iext\Z/xms) {
       $files_found->{'ind'}->{$f} = 1;
     }
   };
-  find($wanted, $self->archive_path);
+  # Lane directories can be sym-linked, hence the follow option.
+  # This option does not take any efect unless the LatestSummary link,
+  # which might be present in the archive path, is resolved.
+  find({wanted => $wanted, follow => 1, no_chdir => 1}, $self->archive_path);
 
   return $files_found;
 }
@@ -775,6 +791,8 @@ __END__
 =item WTSI::NPG::iRODS
 
 =item npg_qc::Schema
+
+=item npg_tracking::util::abs_path
 
 =item npg_tracking::glossary::composition
 
