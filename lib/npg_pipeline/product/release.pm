@@ -50,19 +50,18 @@ sub expected_files {
   $product or $self->logconfess('A product argument is required');
 
   my @expected_files;
-  my $aligned = $product->lims->study_alignments_in_bam;
+  my $lims = $product->lims or
+    $self->logcroak('Product requires lims attribute to determine alignment');
+  my $aligned = $lims->study_alignments_in_bam;
 
   my $dir_path = $product->existing_path($self->archive_path());
-  my @extensions = $aligned ?
-    qw{cram cram.md5 cram.crai seqchksum sha512primesums512.seqchksum
-                      bcfstats}:
-    qw{cram cram.md5 seqchksum sha512primesums512.seqchksum};
+  my @extensions = qw{cram cram.md5 seqchksum sha512primesums512.seqchksum};
+  if ( $aligned ) { push @extensions, qw{cram.crai bcfstats}; }
   push @expected_files,
     map { $product->file_path($dir_path, ext => $_) } @extensions;
 
-  my @suffixes = $aligned ?
-    qw{F0x900 F0xB00 F0xF04_target F0xF04_target_autosome}:
-    qw{F0x900 F0xB00};
+  my @suffixes = qw{F0x900 F0xB00};
+  if  ( $aligned ) { push @suffixes, qw{F0xF04_target F0xF04_target_autosome}; }
   push @expected_files,
     map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
     @suffixes;
