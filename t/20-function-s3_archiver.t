@@ -9,7 +9,7 @@ use File::Basename;
 use Cwd;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Exception;
 use t::util;
 
@@ -180,12 +180,12 @@ subtest 'create for a product' => sub {
        runfolder_path      => $runfolder_path,
        archive_path        => $archive,
        timestamp           => $timestamp,
-       qc_schema           => $qc);  
+       qc_schema           => $qc);
   @defs = @{$archiver->create};
   is (scalar @defs, 1, 'one definition returned');
   is ($defs[0]->composition->freeze2rpt, '26291:1:3;26291:2:3', 'correct rpt');
 
-  remove_tree($dir); 
+  remove_tree($dir);
 };
 
 subtest 'configure_date_binning' => sub {
@@ -216,6 +216,37 @@ subtest 'configure_date_binning' => sub {
     foreach my $part ($part1, @parts) {
       like($part, $cmd_patt, "$cmd matches $cmd_patt");
     }
+  }
+};
+
+subtest 'configure_file_selection' => sub {
+  my $archiver;
+  lives_ok {
+    $archiver = $pkg->new
+        (conf_path       => "t/data/release/config/file_select",
+         runfolder_path => $runfolder_path,
+         id_run         => 26291,
+         timestamp      => $timestamp,
+         qc_schema      => $qc);
+  } 'archiver created ok';
+
+  my $cmd_patt = qr|^gsutil cp $runfolder_path/\S+/archive/plex\d+/\S+[.]cram gs://product_bucket/\S+$|;
+
+  my @defs = @{$archiver->create};
+  is(scalar @defs, 2, 'two definitions are returned');
+
+  foreach my $def (@defs) {
+    my $cmd = $def->command;
+    my @parts = split / && /, $cmd; # Deconstruct the command
+    is(scalar @parts, 1, 'one command is present');
+
+    my $part = shift @parts;
+    my $expected_env = 'export BOTO_CONFIG=$HOME/.gcp/boto-s3_profile_name';
+    my ($env, @rest) = split /;\s/mxs, $part;
+    is($env, $expected_env, "ENV is $expected_env");
+
+    $part = join q{ }, @rest;
+    like($part, $cmd_patt, "$cmd matches $cmd_patt");
   }
 };
 

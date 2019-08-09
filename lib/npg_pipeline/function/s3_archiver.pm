@@ -49,7 +49,7 @@ sub create {
       $self->logcroak(sprintf q{Missing supplier name for product %s, %s},
                       $product->file_name_root(), $product->rpt_list());
 
-    my @file_paths = sort _cram_last $self->expected_files($product);
+    my @file_paths = sort _cram_last $self->release_files($product);
     $self->_check_files(@file_paths);
 
     # gsutil
