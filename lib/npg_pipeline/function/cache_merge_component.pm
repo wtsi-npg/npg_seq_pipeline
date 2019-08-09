@@ -45,7 +45,7 @@ sub create {
   foreach my $product (@products) {
     my $destdir = $self->merge_component_cache_dir($product);
 
-    my @file_paths = $self->release_files($product);
+    my @file_paths = $self->expected_files($product);
     $self->_check_files(@file_paths);
 
     my @commands;

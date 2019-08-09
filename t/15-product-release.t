@@ -75,11 +75,15 @@ subtest 'expected_files' => sub {
     diag explain \@observed;
 };
 
-subtest 'release_files' => sub {
+subtest 'expected_unaligned_files' => sub {
   plan tests => 1;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    't/data/novaseq/180709_A00538_0010_BH3FCMDRXX/' .
+    'Data/Intensities/BAM_basecalls_20180805-013153/' .
+    'metadata_cache_26291/samplesheet_no_align_26291.csv';
 
   my $archiver = $cls->new_object
-      (conf_path      => "t/data/release/config/file_select",
+      (conf_path      => "t/data/release/config/archive_on",
        runfolder_path => $runfolder_path,
        id_run         => 26291,
        timestamp      => $timestamp,
@@ -90,9 +94,14 @@ subtest 'release_files' => sub {
   my $path = "$runfolder_path/Data/Intensities/" .
       'BAM_basecalls_20180805-013153/no_cal/archive/plex1';
   my @expected = sort map { "$path/$_" }
-      ('26291#1.cram');
+    ('26291#1_F0x900.stats',
+     '26291#1_F0xB00.stats',
+     '26291#1.cram',
+     '26291#1.cram.md5',
+     '26291#1.seqchksum',
+     '26291#1.sha512primesums512.seqchksum');
 
-  my @observed = $archiver->release_files($product);
+  my @observed = $archiver->expected_files($product);
   is_deeply(\@observed, \@expected, 'Expected files listed') or
       diag explain \@observed;
 };

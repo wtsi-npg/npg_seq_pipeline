@@ -50,24 +50,29 @@ sub expected_files {
   $product or $self->logconfess('A product argument is required');
 
   my @expected_files;
+  my $aligned = $product->lims->study_alignments_in_bam;
 
   my $dir_path = $product->existing_path($self->archive_path());
-  my @extensions = qw{cram cram.md5 cram.crai
-                      seqchksum sha512primesums512.seqchksum
-                      bcfstats};
+  my @extensions = $aligned ?
+    qw{cram cram.md5 cram.crai seqchksum sha512primesums512.seqchksum
+                      bcfstats}:
+    qw{cram cram.md5 seqchksum sha512primesums512.seqchksum};
   push @expected_files,
     map { $product->file_path($dir_path, ext => $_) } @extensions;
 
-  my @suffixes = qw{F0x900 F0xB00 F0xF04_target F0xF04_target_autosome};
+  my @suffixes = $aligned ?
+    qw{F0x900 F0xB00 F0xF04_target F0xF04_target_autosome}:
+    qw{F0x900 F0xB00};
   push @expected_files,
     map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
     @suffixes;
 
-  my $qc_path = $product->existing_qc_out_path($self->archive_path());
-
-  my @qc_extensions = qw{verify_bam_id.json};
-  push @expected_files,
-    map { $product->file_path($qc_path, ext => $_) } @qc_extensions;
+  if ($aligned){
+    my $qc_path = $product->existing_qc_out_path($self->archive_path());
+    my @qc_extensions = qw{verify_bam_id.json};
+    push @expected_files,
+      map { $product->file_path($qc_path, ext => $_) } @qc_extensions;
+  }
 
   @expected_files = sort @expected_files;
 
@@ -109,46 +114,6 @@ sub is_release_data {
               '(is not tag zero or control)');
 
   return 1;
-}
-
-=head2 release_files
-
-  Arg [1]    : Data product whose release files to list, npg_pipeline::product.
-
-  Example    : my @release_files = $obj->release_files($product)
-  Description: Return a sorted list of the files to be released via S3, for a
-               product. These are a subset of the files returned by
-               expected_files that are determined by study.
-
-  Returntype : Array
-
-=cut
-
-sub release_files {
-  my ($self, $product) = @_;
-
-  $product or $self->logconfess('A product argument is required');
-
-  my $rpt = $product->rpt_list();
-  my $name = $product->file_name_root();
-  my $select_pattern = $self->find_study_config($product)->{s3}->{select};
-
-  my @release_files;
-  if (not $select_pattern) {
-    @release_files = $self->expected_files($product);
-  } else {
-    my $regex = qr{$select_pattern}msx;
-    @release_files = grep { m{$regex}msx } $self->expected_files($product);
-    if (not @release_files) {
-      $self->logcroak("The release select pattern '$select_pattern' for " .
-                      "product $name, $rpt did not match any files. Either " .
-                      'remove the pattern or correct it');
-    }
-  }
-  $self->info("Selected files for release for product $name, $rpt: ",
-              pp(\@release_files));
-
-  return @release_files;
 }
 
 =head2 has_qc_for_release
@@ -503,7 +468,6 @@ used for any study without a specific configuration.
     enable: <boolean> S3 release enabled if true.
     url:    <URL>     The S3 bucket URL to send to.
     notify: <boolean> A notificastion message will be sent if true.
-    select: <Str>     A regex to match a subset of files to be sent.
 
  irods:
     enable: <boolean> iRODS release enabled if true.
@@ -527,7 +491,6 @@ study:
       enable: true
       url: "s3://product_bucket"
       notify: true
-      select: "[.]cram$"
     irods:
       enable: false
       notify: false

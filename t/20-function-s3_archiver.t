@@ -219,11 +219,15 @@ subtest 'configure_date_binning' => sub {
   }
 };
 
-subtest 'configure_file_selection' => sub {
+subtest 'no alignments in product' => sub {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    't/data/novaseq/180709_A00538_0010_BH3FCMDRXX/' .
+    'Data/Intensities/BAM_basecalls_20180805-013153/' .
+    'metadata_cache_26291/samplesheet_no_align_26291.csv';
   my $archiver;
   lives_ok {
     $archiver = $pkg->new
-        (conf_path       => "t/data/release/config/file_select",
+        (conf_path       => "t/data/release/config/archive_on",
          runfolder_path => $runfolder_path,
          id_run         => 26291,
          timestamp      => $timestamp,
@@ -238,7 +242,7 @@ subtest 'configure_file_selection' => sub {
   foreach my $def (@defs) {
     my $cmd = $def->command;
     my @parts = split / && /, $cmd; # Deconstruct the command
-    is(scalar @parts, 1, 'one command is present');
+    is(scalar @parts, 6, 'one command is present');
 
     my $part = shift @parts;
     my $expected_env = 'export BOTO_CONFIG=$HOME/.gcp/boto-s3_profile_name';
