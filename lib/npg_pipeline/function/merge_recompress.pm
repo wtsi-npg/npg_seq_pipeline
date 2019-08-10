@@ -30,7 +30,7 @@ our $VERSION = '0';
   Arg [1]    : None
 
   Example    : my $defs = $obj->create
-  Description: Create per-product data file function definitions.
+  Description: Create per-product function definitions.
 
   Returntype : ArrayRef[npg_pipeline::function::definition]
 
@@ -39,12 +39,13 @@ our $VERSION = '0';
 sub create {
   my ($self) = @_;
 
-  my $id_run = $self->id_run();
-  my $job_name = sprintf q{%s_%d}, $FUNCTION_NAME, $id_run;
+  my $label = $self->label();
+  my $job_name = sprintf q{%s_%d}, $FUNCTION_NAME, $label;
 
   # If haplotype_caller is disabled we should not run.
   my @products = $self->no_haplotype_caller ? () :
                  grep { $self->haplotype_caller_enable($_) }
+                 grep { $self->is_release_data($_) }
                  @{$self->products->{data_products}};
 
   if ($self->no_haplotype_caller) {
@@ -73,7 +74,7 @@ sub create {
       npg_pipeline::function::definition->new
         ('created_by'   => __PACKAGE__,
          'created_on'   => $self->timestamp(),
-         'identifier'   => $id_run,
+         'identifier'   => $label,
          'job_name'     => $job_name,
          'command'      => $command,
          'fs_slots_num' => $FS_NUM_SLOTS,
@@ -87,7 +88,7 @@ sub create {
     push @definitions, npg_pipeline::function::definition->new
       ('created_by' => __PACKAGE__,
        'created_on' => $self->timestamp(),
-       'identifier' => $id_run,
+       'identifier' => $label,
        'excluded'   => 1);
   }
 
