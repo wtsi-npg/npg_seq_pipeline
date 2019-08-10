@@ -50,24 +50,28 @@ sub expected_files {
   $product or $self->logconfess('A product argument is required');
 
   my @expected_files;
+  my $lims = $product->lims or
+    $self->logcroak('Product requires lims attribute to determine alignment');
+  my $aligned = $lims->study_alignments_in_bam;
 
   my $dir_path = $product->existing_path($self->archive_path());
-  my @extensions = qw{cram cram.md5 cram.crai
-                      seqchksum sha512primesums512.seqchksum
-                      bcfstats};
+  my @extensions = qw{cram cram.md5 seqchksum sha512primesums512.seqchksum};
+  if ( $aligned ) { push @extensions, qw{cram.crai bcfstats}; }
   push @expected_files,
     map { $product->file_path($dir_path, ext => $_) } @extensions;
 
-  my @suffixes = qw{F0x900 F0xB00 F0xF04_target F0xF04_target_autosome};
+  my @suffixes = qw{F0x900 F0xB00};
+  if  ( $aligned ) { push @suffixes, qw{F0xF04_target F0xF04_target_autosome}; }
   push @expected_files,
     map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
     @suffixes;
 
-  my $qc_path = $product->existing_qc_out_path($self->archive_path());
-
-  my @qc_extensions = qw{verify_bam_id.json};
-  push @expected_files,
-    map { $product->file_path($qc_path, ext => $_) } @qc_extensions;
+  if ($aligned){
+    my $qc_path = $product->existing_qc_out_path($self->archive_path());
+    my @qc_extensions = qw{verify_bam_id.json};
+    push @expected_files,
+      map { $product->file_path($qc_path, ext => $_) } @qc_extensions;
+  }
 
   @expected_files = sort @expected_files;
 
