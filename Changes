@@ -14,6 +14,7 @@ release 56.1.0
    tracking roles
  - ability to run the pipeline for individual products; some archival
    pipeline functions updated to enbable this ability on their level
+ - autoqc adapter check - give cram files as input
 
 release 56.0.1
  - ensure that the paths serived from the archive directory in
