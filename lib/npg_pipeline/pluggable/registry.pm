@@ -43,6 +43,7 @@ Readonly::Hash my %REGISTRY => (
   'seq_alignment'           => {'seq_alignment' => 'generate'},
   'generate_compositions'   => {'seq_alignment' => 'generate_compositions'},
   'haplotype_caller'        => {'haplotype_caller' => 'create'},
+  'merge_recompress'        => {'merge_recompress' => 'create'},
 
   'archive_logs'                            => {'log_files_archiver' => 'create'},
   'upload_illumina_analysis_to_qc_database' => {'illumina_qc_archiver' => 'create'},
