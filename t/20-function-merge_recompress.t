@@ -9,7 +9,15 @@ use Log::Log4perl qw/:levels/;
 
 use_ok('npg_pipeline::function::merge_recompress');
 
+
 my $dir     = tempdir( CLEANUP => 1);
+
++my $bcftools_exec = join q[/], $dir, 'bcftools';
++open my $fh, '>', $bcftools_exec or die 'failed to open file for writing';
++print $fh 'echo "GATK mock"' or warn 'failed to print';
++close $fh or warn 'failed to close file handle';
++chmod 755, $bcftools_exec;
++local $ENV{PATH} = join q[:], $dir, $ENV{PATH};
 
 # setup runfolder
 my $runfolder_path = join q[/], $dir, '180709_A00538_0010_BH3FCMDRXX';
@@ -78,7 +86,7 @@ subtest 'run merge_recompress' => sub {
   my @input_files = map { sprintf "$plex4_archive/chunk/26291#4.%s.g.vcf.gz", $_ } (1..24);
   my $input_files_str = join q{ }, @input_files;
 
-  my $command = qq{bcftools concat -O z -o $plex4_archive/26291#4.g.vcf.gz }.$input_files_str;
+  my $command = qq{$bcftools_exec concat -O z -o $plex4_archive/26291#4.g.vcf.gz }.$input_files_str;
 
   my $mem = 2000;
   my $d = $da->[3];

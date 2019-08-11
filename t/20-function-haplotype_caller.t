@@ -10,13 +10,21 @@ use Log::Log4perl qw/:levels/;
 use_ok('npg_pipeline::function::haplotype_caller');
 
 my $dir     = tempdir( CLEANUP => 1);
+
 my $repos   = join q[/], $dir, 'references';
 my $fasta_dir = join q[/], $repos, 'Homo_sapiens/GRCh38_15_plus_hs38d1/all/fasta';
 make_path $fasta_dir;
 my $ref_fasta = "$fasta_dir/GRCh38_15_plus_hs38d1.fa";
 open my $fh, '>', $ref_fasta or die 'failed to open file for writing';
-print $fh 'test reference' or die 'failed to print';
+print $fh 'test reference' or warn 'failed to print';
 close $fh or warn 'failed to close file handle';
+
+my $gatk_exec = join q[/], $dir, 'gatk';
+open my $fh1, '>', $gatk_exec or die 'failed to open file for writing';
+print $fh1 'echo "GATK mock"' or warn 'failed to print';
+close $fh1 or warn 'failed to close file handle';
+chmod 755, $gatk_exec;
+local $ENV{PATH} = join q[:], $dir, $ENV{PATH};
 
 my $logfile = join q[/], $dir, 'logfile';
 
@@ -94,7 +102,7 @@ subtest 'run hc' => sub {
 
   ok ($da && @{$da} == 288, sprintf("array of 288 definitions is returned, got %d", scalar@{$da}));
 
-  my $command = qq{gatk HaplotypeCaller --emit-ref-confidence GVCF -R $ref_fasta --pcr-indel-model CONSERVATIVE -I $archive_path/plex4/26291#4.cram -O $archive_path/plex4/chunk/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list};
+  my $command = qq{$gatk_exec HaplotypeCaller --emit-ref-confidence GVCF -R $ref_fasta --pcr-indel-model CONSERVATIVE -I $archive_path/plex4/26291#4.cram -O $archive_path/plex4/chunk/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list};
 
   ok (-d "$archive_path/plex4/chunk", 'output directory created');
 
