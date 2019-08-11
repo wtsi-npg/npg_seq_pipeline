@@ -19,11 +19,10 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 
 use_ok( q{npg_pipeline::function::seqchksum_comparator} );
 
-$util->set_rta_staging_analysis_area();
+$util->create_analysis();
 
 my $timestamp = q{20100907-142417};
 my $analysis_runfolder_path = $util->analysis_runfolder_path();
-#$util->create_analysis();
 my $bam_basecall_path = $analysis_runfolder_path . "/Data/Intensities/BAM_basecalls_$timestamp/";
 my $recalibrated_path = $analysis_runfolder_path. "/Data/Intensities/BAM_basecalls_$timestamp/no_cal";
 my $archive_path = $recalibrated_path . q{/archive};

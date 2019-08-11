@@ -127,6 +127,8 @@ subtest 'check_save_arguments' => sub {
   ok (-e $pfname, 'params file exists');
   my $h = from_json(slurp($pfname));
 
+  my $no_cal_path = $intensities_dir . '/BAM_basecalls_09-07-2009/no_cal';
+
   $expected = {
      'assign' => [
         {
@@ -135,24 +137,24 @@ subtest 'check_save_arguments' => sub {
 	  'scramble_reference_fasta' => $dir . '/srpipe_references/references/PhiX/default/all/fasta/phix_unsnipped_short_no_N.fa',
 	  'i2b_rg' => '1234_1',
 	  'i2b_pu' => '123456_IL2_1234_1',
-          'tileviz_dir' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1/tileviz',
+          'tileviz_dir' => $no_cal_path . '/archive/lane1/tileviz',
           'reference_phix' => $dir . "/srpipe_references/references/PhiX/default/all/bwa0_6/phix_unsnipped_short_no_N.fa",
-	  'unfiltered_cram_file' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/1234_1.unfiltered.cram',
-	  'qc_check_qc_out_dir' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1/qc',
+	  'unfiltered_cram_file' => $no_cal_path . '/1234_1.unfiltered.cram',
+	  'qc_check_qc_out_dir' => $no_cal_path . '/archive/lane1/qc',
 	  'i2b_lane' => '1',
 	  'bwa_executable' => 'bwa0_6',
-	  'filtered_bam' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/1234_1.bam',
+	  'filtered_bam' => $no_cal_path . '/1234_1.bam',
 	  'samtools_executable' => 'samtools',
 	  'i2b_library_name' => '51021',
-	  'outdatadir' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal',
-          'subsetsubpath' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1/.npg_cache_10000',
+	  'outdatadir' => $no_cal_path,
+          'subsetsubpath' => $no_cal_path . '/archive/lane1/.npg_cache_10000',
 	  'i2b_run_path' => $dir . q[/nfs/sf45/IL2/analysis/123456_IL2_1234],
 	  'teepot_tempdir' => '.',
-	  'split_prefix' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal',
+	  'split_prefix' => $no_cal_path,
 	  'i2b_intensity_dir' => $intensities_dir,
 	  'i2b_sample_aliases' => 'SRS000147',
 	  'phix_alignment_method' => 'bwa_aln_se',
-	  'md5filename' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/1234_1.bam.md5',
+	  'md5filename' => $no_cal_path . '/1234_1.bam.md5',
 	  'teepot_mval' => '2G',
 	  'i2b_runfolder' => '123456_IL2_1234',
 	  'i2b_study_name' => '"SRP000031: 1000Genomes Project Pilot 1"',
@@ -167,7 +169,7 @@ subtest 'check_save_arguments' => sub {
           's1_se_pe' => 'se',
           's1_output_format' => 'cram',
           'rpt_list' => '1234:1',
-          'lane_archive_path' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1',
+          'lane_archive_path' => $no_cal_path . '/archive/lane1',
         },
     ],
     'ops' => {
@@ -246,6 +248,8 @@ subtest 'check_save_arguments_minimap2' => sub {
   ok (-e $pfname, 'params file exists');
   my $h = from_json(slurp($pfname));
 
+  my $no_cal_path = $intensities_dir . '/BAM_basecalls_09-07-2009/no_cal';
+
   $expected = {
      'assign' => [
         {
@@ -254,24 +258,24 @@ subtest 'check_save_arguments_minimap2' => sub {
 	  'scramble_reference_fasta' => $dir . '/srpipe_references/references/PhiX/default/all/fasta/phix_unsnipped_short_no_N.fa',
 	  'i2b_rg' => '1234_1',
 	  'i2b_pu' => '123456_IL2_1234_1',
-          'tileviz_dir' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1/tileviz',
+          'tileviz_dir' => $no_cal_path . '/archive/lane1/tileviz',
           'reference_phix' => $dir . '/srpipe_references/references/PhiX/default/all/minimap2/phix_unsnipped_short_no_N.fa.mmi',
-	  'unfiltered_cram_file' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/1234_1.unfiltered.cram',
-	  'qc_check_qc_out_dir' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1/qc',
+	  'unfiltered_cram_file' => $no_cal_path . '/1234_1.unfiltered.cram',
+	  'qc_check_qc_out_dir' => $no_cal_path . '/archive/lane1/qc',
 	  'i2b_lane' => '1',
 	  'bwa_executable' => 'bwa0_6',
-	  'filtered_bam' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/1234_1.bam',
+	  'filtered_bam' => $no_cal_path . '/1234_1.bam',
 	  'samtools_executable' => 'samtools',
 	  'i2b_library_name' => '51021',
-	  'outdatadir' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal',
-          'subsetsubpath' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1/.npg_cache_10000',
+	  'outdatadir' => $no_cal_path,
+          'subsetsubpath' => $no_cal_path . '/archive/lane1/.npg_cache_10000',
 	  'i2b_run_path' => $dir . q[/nfs/sf45/IL2/analysis/123456_IL2_1234],
 	  'teepot_tempdir' => '.',
-	  'split_prefix' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal',
+	  'split_prefix' => $no_cal_path,
 	  'i2b_intensity_dir' => $intensities_dir,
 	  'i2b_sample_aliases' => 'SRS000147',
 	  'phix_alignment_method' => 'minimap2',
-	  'md5filename' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/1234_1.bam.md5',
+	  'md5filename' => $no_cal_path . '/1234_1.bam.md5',
 	  'teepot_mval' => '2G',
 	  'i2b_runfolder' => '123456_IL2_1234',
 	  'i2b_study_name' => '"SRP000031: 1000Genomes Project Pilot 1"',
@@ -285,7 +289,7 @@ subtest 'check_save_arguments_minimap2' => sub {
           'aln_filter_value' => '0x900',
           's1_se_pe' => 'se',
           's1_output_format' => 'cram',
-          'lane_archive_path' => $intensities_dir . '/Bustard1.3.4_09-07-2009_auto/PB_cal/archive/lane1',
+          'lane_archive_path' => $no_cal_path . '/archive/lane1',
           'rpt_list' => '1234:1',
         },
     ],
