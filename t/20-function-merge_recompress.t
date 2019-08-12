@@ -14,7 +14,7 @@ my $dir     = tempdir( CLEANUP => 1);
 
 +my $bcftools_exec = join q[/], $dir, 'bcftools';
 +open my $fh, '>', $bcftools_exec or die 'failed to open file for writing';
-+print $fh 'echo "GATK mock"' or warn 'failed to print';
++print $fh 'echo "bcftools executable  mock"' or warn 'failed to print';
 +close $fh or warn 'failed to close file handle';
 +chmod 755, $bcftools_exec;
 +local $ENV{PATH} = join q[:], $dir, $ENV{PATH};
