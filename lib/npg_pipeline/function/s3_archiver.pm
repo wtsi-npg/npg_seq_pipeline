@@ -3,6 +3,8 @@ package npg_pipeline::function::s3_archiver;
 use namespace::autoclean;
 
 use File::Basename;
+use File::Slurp;
+use MIME::Base64 qw( encode_base64 );
 use Moose;
 use MooseX::StrictConstructor;
 use Readonly;
@@ -53,9 +55,6 @@ sub create {
     $self->_check_files(@file_paths);
 
     # gsutil
-    #
-    # TODO: Add support for using the -h Content-MD5:<my file's MD5> argument
-    # to do checksum validation on upload
     my @aws_args = qw{cp};
 
     my $base_url = $self->s3_url($product);
@@ -85,8 +84,10 @@ sub create {
       my $filename   = basename($file_path);
       my $file_url   = "$url/$supplier_name/$filename";
 
-      push @commands, sprintf q{%s %s %s %s},
-        $ARCHIVE_EXECUTABLE, join(q{ }, @aws_args), $file_path, $file_url;
+      push @commands, join q{ },
+        $ARCHIVE_EXECUTABLE,
+        $self->_base64_encoded_md5_gsutil_arg($file_path),
+        @aws_args, $file_path, $file_url;
     }
 
     my $command = join q{ && }, reverse @commands;
@@ -132,6 +133,17 @@ sub _check_files {
   }
 
   return;
+}
+
+sub _base64_encoded_md5_gsutil_arg {
+# if there is a corresponding .md5 file for the given path, use its contents to
+# add an MD5 header for the data being uploaded.
+  my ($self, $path) = @_;
+  $path .= q(.md5);
+  if (not -e $path){ return; }
+  my ($md5) = read_file($path) =~ m/^(\S{32})(?!\S)/smx;
+  if (not $md5) { $self->logcroak("Found md5 file for $path without valid md5 value"); }
+  return q(-h Content-MD5:).(encode_base64((pack q(H*),$md5),q()))
 }
 
 ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)

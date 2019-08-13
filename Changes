@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - supply MD5 in bucket file upload if available in sibling md5 file
  - add function to support GATK HaplotypeCaller
  - add function to concat and recompress gVCFs
  - add function to calculate BQSR table

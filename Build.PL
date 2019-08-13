@@ -47,6 +47,7 @@ my $builder = $class->new(
           'List::Util'                   => 0,
           'Log::Log4perl'                => 0,
           'Math::Random::Secure'         => 0,
+          'MIME::Base64'                 => 0,
           'Moose'                        => 0.93,
           'Moose::Meta::Class'           => 0,
           'Moose::Role'                  => 0,
