@@ -11,10 +11,10 @@ use npg_pipeline::function::definition;
 extends 'npg_pipeline::base';
 with qw{ npg_pipeline::function::util
          npg_pipeline::product::release };
+with 'npg_common::roles::software_location' => { tools => [qw/bcftools/] };
 
 Readonly::Scalar my $FUNCTION_NAME => 'merge_recompress';
 
-Readonly::Scalar my $BCFTOOLS_EXECUTABLE => 'bcftools';
 Readonly::Scalar my $BCFTOOLS_TOOL_NAME => 'concat';
 
 Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
@@ -24,6 +24,8 @@ Readonly::Scalar my $NUM_HOSTS                    => 1;
 
 
 our $VERSION = '0';
+
+=head2 bcftools_cmd
 
 =head2 create
 
@@ -66,7 +68,7 @@ sub create {
     my $input_path = join q{ }, @chunk_products;
     my $output_path = $unchunked_product->file_path($dir_path, ext => 'g.vcf.gz');
     my $command = sprintf q{%s %s -O z -o %s %s},
-      $BCFTOOLS_EXECUTABLE, $BCFTOOLS_TOOL_NAME, $output_path, $input_path;
+      $self->bcftools_cmd, $BCFTOOLS_TOOL_NAME, $output_path, $input_path;
 
     $self->debug("Adding command '$command'");
 
@@ -134,6 +136,8 @@ npg_pipeline::function::merge_recompress
 =item MooseX::StrictConstructor
  
 =item Readonly
+
+=item npg_common::roles::software_location
 
 =back
 

@@ -13,10 +13,10 @@ use npg_pipeline::runfolder_scaffold;
 extends 'npg_pipeline::base';
 with qw{ npg_pipeline::function::util
          npg_pipeline::product::release };
+with 'npg_common::roles::software_location' => { tools => [qw/gatk/] };
 
 Readonly::Scalar my $FUNCTION_NAME   => 'haplotype_caller';
 
-Readonly::Scalar my $GATK_EXECUTABLE => 'gatk';
 Readonly::Scalar my $GATK_TOOL_NAME  => 'HaplotypeCaller';
 
 Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
@@ -26,6 +26,8 @@ Readonly::Scalar my $NUM_HOSTS                    => 1;
 
 
 our $VERSION = '0';
+
+=head2 gatk_cmd
 
 =head2 create
 
@@ -93,7 +95,7 @@ sub create {
         $product->chunk;
       my $output_path = $product->file_path($out_dir_path, ext => 'g.vcf.gz');
       my $command = sprintf q{%s %s %s -I %s -O %s -L %s},
-        $GATK_EXECUTABLE, $GATK_TOOL_NAME, $gatk_args, $input_path, $output_path, $region;
+        $self->gatk_cmd, $GATK_TOOL_NAME, $gatk_args, $input_path, $output_path, $region;
 
       $self->debug("Adding command '$command'");
 
@@ -143,7 +145,6 @@ npg_pipeline::function::haplotype_caller
 
 =head1 DESCRIPTION
 
-
 =head1 SUBROUTINES/METHODS
 
 =head1 BUGS AND LIMITATIONS
@@ -167,6 +168,8 @@ npg_pipeline::function::haplotype_caller
 =item Readonly
 
 =item npg_tracking::data::reference::find
+
+=item npg_common::roles::software_location
 
 =back
 
