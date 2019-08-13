@@ -9,7 +9,7 @@ use File::Basename;
 use Cwd;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Exception;
 use t::util;
 
@@ -249,7 +249,7 @@ subtest 'no alignments in product' => sub {
          qc_schema      => $qc);
   } 'archiver created ok';
 
-  my $cmd_patt = qr|^gsutil cp $runfolder_path/\S+/archive/plex\d+/\S+[.]cram gs://product_bucket/\S+$|;
+  my $cmd_patt = qr|^gsutil(?: -h Content-MD5:\S{24})? cp $runfolder_path/\S+/archive/plex\d+/\S+[.]cram gs://product_bucket/\S+$|;
 
   my @defs = @{$archiver->create};
   is(scalar @defs, 2, 'two definitions are returned');
