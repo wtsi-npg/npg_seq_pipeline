@@ -42,6 +42,7 @@ Readonly::Hash my %REGISTRY => (
   'p4_stage1_analysis'      => {'p4_stage1_analysis' => 'generate'},
   'seq_alignment'           => {'seq_alignment' => 'generate'},
   'generate_compositions'   => {'seq_alignment' => 'generate_compositions'},
+  'bqsr_calc'               => {'bqsr_calc' => 'create'},
   'haplotype_caller'        => {'haplotype_caller' => 'create'},
   'merge_recompress'        => {'merge_recompress' => 'create'},
 
