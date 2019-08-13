@@ -2,23 +2,20 @@ use strict;
 use warnings;
 use Test::More tests => 4;
 use Test::Exception;
-use Test::Deep;
-use Test::Warn;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path/;
-use Cwd qw/cwd abs_path/;
-use Perl6::Slurp;
 use File::Copy;
 use Log::Log4perl qw/:levels/;
-use JSON;
-use Cwd;
-use List::Util qw/first/;
-
-use Moose::Util qw(apply_all_roles);
 
 use_ok('npg_pipeline::function::bqsr_calc');
 
 my $dir     = tempdir( CLEANUP => 1);
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $INFO,
+                          file   => join(q[/], $dir, 'logfile'),
+                          utf8   => 1});
+
 my $ref_dir = join q[/],$dir,'references';
 my $res_dir = join q[/],$dir,'resources';
 
@@ -42,16 +39,13 @@ chmod 755, $gatk_exec;
 local $ENV{PATH} = join q[:], $dir, $ENV{PATH};
 
 # setup runfolder
-my $runfolder      = '180709_A00538_0010_BH3FCMDRXX';
-my $runfolder_path = join q[/], $dir, 'novaseq', $runfolder;
+my $runfolder_path = join q[/], $dir, '180709_A00538_0010_BH3FCMDRXX';
+my $archive_path = join q[/], $runfolder_path,
+  'Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive';
+make_path $archive_path;
 my $timestamp      = '20180701-123456';
 
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv];
-my $bc_path = join q[/], $runfolder_path,
-'Data/Intensities/BAM_basecalls_20180805-013153/no_cal';
-for ((4, 5)) {
-`mkdir -p $bc_path/lane$_`;
-}
 
 copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunInfo.xml', "$runfolder_path/RunInfo.xml") or die
 'Copy failed';
@@ -61,8 +55,9 @@ or die 'Copy failed';
 subtest 'no config' => sub {
   plan tests => 3;
 
-  my $hc = npg_pipeline::function::bqsr_calc->new
-    (conf_path          => 't/data/release/config/bqsr_off',
+  my $hc = npg_pipeline::function::bqsr_calc->new(
+    conf_path           => 't/data/release/config/bqsr_off',
+    archive_path        => $archive_path,
     runfolder_path      => $runfolder_path,
     id_run              => 26291,
     timestamp           => $timestamp);
@@ -75,9 +70,10 @@ subtest 'no config' => sub {
 subtest 'bqsr defaulted on' => sub {
   plan tests => 3;
 
-  my $hc = npg_pipeline::function::bqsr_calc->new
-    (conf_path          => "t/data/release/config/bqsr",
+  my $hc = npg_pipeline::function::bqsr_calc->new(
+    conf_path           => "t/data/release/config/bqsr",
     runfolder_path      => $runfolder_path,
+    archive_path        => $archive_path,
     id_run              => 26291,
     timestamp           => $timestamp,
     repository          => $dir);
@@ -87,14 +83,14 @@ subtest 'bqsr defaulted on' => sub {
   is($ds->[0]->excluded, undef, 'function is not excluded');
 };
 
-subtest 'run merge_recompress' => sub {
+subtest 'create function definitions' => sub {
   plan tests => 20;
 
-  my $rna_gen;
+  my $bqsr_gen;
   lives_ok {
-  $rna_gen = npg_pipeline::function::bqsr_calc->new(
+  $bqsr_gen = npg_pipeline::function::bqsr_calc->new(
     conf_path         => 't/data/release/config/bqsr',
-    run_folder        => $runfolder,
+    archive_path      => $archive_path,
     runfolder_path    => $runfolder_path,
     id_run            => 26291,
     timestamp         => $timestamp,
@@ -103,16 +99,11 @@ subtest 'run merge_recompress' => sub {
   )
   } 'no error creating an object';
 
-  is ($rna_gen->id_run, 26291, 'id_run inferred correctly');
-
-  apply_all_roles($rna_gen, 'npg_pipeline::runfolder_scaffold');
-  $rna_gen->create_product_level();
-
-  my $da = $rna_gen->create();
-
+  is ($bqsr_gen->id_run, 26291, 'id_run inferred correctly');
+  my $da = $bqsr_gen->create();
   ok ($da && @{$da} == 12, sprintf("array of 12 definitions is returned, got %d", scalar@{$da}));
 
-  my $command = qq{$gatk_exec BaseRecalibrator -O $dir/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4.bqsr_table -I $dir/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4.cram -R $fasta_dir/GRCh38_15_plus_hs38d1.fa --known-sites $annot_dir/dbsnp_138.hg38.vcf.gz --known-sites $annot_dir/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz};
+  my $command = qq{$gatk_exec BaseRecalibrator -O $archive_path/plex4/26291#4.bqsr_table -I $archive_path/plex4/26291#4.cram -R $fasta_dir/GRCh38_15_plus_hs38d1.fa --known-sites $annot_dir/dbsnp_138.hg38.vcf.gz --known-sites $annot_dir/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz};
 
   my $mem = 2000;
   my $d = $da->[3];
