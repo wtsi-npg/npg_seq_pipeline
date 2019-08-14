@@ -466,6 +466,35 @@ sub bqsr_enable {
   return 0;
 }
 
+
+=head2 bqsr_apply_enable
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->bqsr_enable($product)
+ Description: Return true if BQSR is to be applied to the product.
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub bqsr_apply_enable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if ($self->find_study_config($product)->{bqsr}->{apply}) {
+    $self->info("Product $name, $rpt is for BQSR application");
+    return 1;
+  }
+
+  $self->info("Product $name, $rpt is NOT for BQSR application");
+
+  return 0;
+}
+
+
 =head2 bqsr_known_sites
  
  Arg [1]    : npg_pipeline::product

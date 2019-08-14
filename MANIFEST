@@ -1050,6 +1050,7 @@ t/data/release/config/bqsr/product_release.yml
 t/data/release/config/bqsr_off/product_release.yml
 t/data/release/config/default_s3_archival/product_release.yml
 t/data/release/config/empty_default/product_release.yml
+t/data/release/config/haplotype_caller_bqsr_on/product_release.yml
 t/data/release/config/haplotype_caller_on/product_release.yml
 t/data/release/config/haplotype_caller_on_study_specific/product_release.yml
 t/data/release/config/multiple_configs/product_release.yml
