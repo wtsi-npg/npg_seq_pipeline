@@ -18,6 +18,8 @@ with 'npg_common::roles::software_location' => { tools => [qw/gatk/] };
 Readonly::Scalar my $FUNCTION_NAME   => 'haplotype_caller';
 
 Readonly::Scalar my $GATK_TOOL_NAME  => 'HaplotypeCaller';
+Readonly::Scalar my $GATK_BQSR_TOOL_NAME  => 'ApplyBQSR';
+
 
 Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
 Readonly::Scalar my $MEMORY                       => q{3600}; # memory in megabytes
@@ -94,8 +96,27 @@ sub create {
         $chuncking_base_name,
         $product->chunk;
       my $output_path = $product->file_path($out_dir_path, ext => 'g.vcf.gz');
-      my $command = sprintf q{%s %s %s -I %s -O %s -L %s},
-        $self->gatk_cmd, $GATK_TOOL_NAME, $gatk_args, $input_path, $output_path, $region;
+      my $command;
+
+      if ($self->bqsr_enable($product) && $self->bqsr_apply_enable($product)) {
+        # TODO: write proper temporary file handling support
+        my $make_temp = 'TMPDIR=`mktemp -d -t bqsr-XXXXXXXXXX`';
+        my $rm_cmd = 'trap "(rm -r $TMPDIR || :)" EXIT';
+        my $debug_cmd = 'echo "BQSR tempdir: $TMPDIR"';
+        my $bqsr_table   = $super_product->file_path($dir_path, ext => 'bqsr_table');
+        my $temp_path = $product->file_name(ext => 'cram', suffix => 'bqsr');
+
+        my $bqsr_args = "-R $ref_path --preserve-qscores-less-than 6 --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30";
+        my $bqsr_cmd = sprintf q(%s %s %s --bqsr-recal-file %s -I %s -O $TMPDIR/%s -L %s),
+          $self->gatk_cmd, $GATK_BQSR_TOOL_NAME, $bqsr_args, $bqsr_table, $input_path, $temp_path, $region;
+        my $gatk_cmd = sprintf q{%s %s %s -I $TMPDIR/%s -O %s -L %s},
+          $self->gatk_cmd, $GATK_TOOL_NAME, $gatk_args, $temp_path, $output_path, $region;
+
+        $command = join ' && ', ($make_temp, $rm_cmd, $debug_cmd, $bqsr_cmd, $gatk_cmd);
+      } else {
+        $command = sprintf q{%s %s %s -I %s -O %s -L %s},
+          $self->gatk_cmd, $GATK_TOOL_NAME, $gatk_args, $input_path, $output_path, $region;
+      }
 
       $self->debug("Adding command '$command'");
 

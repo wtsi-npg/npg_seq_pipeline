@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path/;
@@ -103,6 +103,57 @@ subtest 'run hc' => sub {
   ok ($da && @{$da} == 288, sprintf("array of 288 definitions is returned, got %d", scalar@{$da}));
 
   my $command = qq{$gatk_exec HaplotypeCaller --emit-ref-confidence GVCF -R $ref_fasta --pcr-indel-model CONSERVATIVE -I $archive_path/plex4/26291#4.cram -O $archive_path/plex4/chunk/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list};
+
+  ok (-d "$archive_path/plex4/chunk", 'output directory created');
+
+  my $mem = 3600;
+  my $d = $da->[72]; # 73rd array member
+  isa_ok ($d, 'npg_pipeline::function::definition');
+  is ($d->created_by, 'npg_pipeline::function::haplotype_caller', 'created by correct');
+  is ($d->created_on, $timestamp, 'timestamp');
+  is ($d->identifier, 26291, 'identifier is set correctly');
+  is ($d->job_name, 'haplotype_caller_26291', 'job name');
+  ok (!$d->excluded, 'step not excluded');
+  ok ($d->has_composition, 'composition is set');
+  isa_ok ($d->composition, 'npg_tracking::glossary::composition',
+    'composition object present');
+  is ($d->composition->num_components, 2, 'two components in the composition');
+  is ($d->command, $command, 'correct command for tag 4');
+  is ($d->memory, $mem, "memory $mem");
+  is ($d->command_preexec, undef);
+  is ($d->queue, 'default', 'default queue');
+  is_deeply ($d->num_cpus, [4], 'range of cpu numbers');
+  is ($d->num_hosts, 1, 'one host');
+  is ($d->fs_slots_num, 2, 'four sf slots');
+  lives_ok {$d->freeze()} 'definition can be serialized to JSON';
+};
+
+subtest 'run hc with bqsr' => sub {
+  plan tests => 20;
+
+  my $hc_gen;
+  lives_ok {
+    $hc_gen = npg_pipeline::function::haplotype_caller->new(
+      conf_path         => 't/data/release/config/haplotype_caller_bqsr_on',
+      archive_path      => $archive_path,
+      runfolder_path    => $runfolder_path,
+      id_run            => 26291,
+      timestamp         => $timestamp,
+      repository        => $dir
+    )
+  } 'no error creating an object';
+
+  my $da = $hc_gen->create();
+
+  ok ($da && @{$da} == 288, sprintf("array of 288 definitions is returned, got %d", scalar@{$da}));
+
+  my $command =
+    join q{ && },
+    (q{TMPDIR=`mktemp -d -t bqsr-XXXXXXXXXX`},
+    q{trap "(rm -r $TMPDIR || :)" EXIT},
+    q{echo "BQSR tempdir: $TMPDIR"},
+    qq{$gatk_exec ApplyBQSR -R $ref_fasta --preserve-qscores-less-than 6 --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 --bqsr-recal-file $archive_path/plex4/26291#4.bqsr_table -I $archive_path/plex4/26291#4.cram -O \$TMPDIR/26291#4.1_bqsr.cram -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list},
+    qq{$gatk_exec HaplotypeCaller --emit-ref-confidence GVCF -R $ref_fasta --pcr-indel-model CONSERVATIVE -I \$TMPDIR/26291#4.1_bqsr.cram -O $archive_path/plex4/chunk/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list});
 
   ok (-d "$archive_path/plex4/chunk", 'output directory created');
 
