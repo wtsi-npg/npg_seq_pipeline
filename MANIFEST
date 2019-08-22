@@ -82,9 +82,7 @@ MANIFEST			This list of files
 README
 README.md
 scripts/jgf2gml
-scripts/travis_before_install.sh
 scripts/travis_install.sh
-scripts/travis_script.sh
 t/00-critic.t
 t/00-distribution.t
 t/00-pod.t
