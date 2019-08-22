@@ -1,10 +1,17 @@
 LIST OF CHANGES
 ---------------
 
+release 57.0.0
  - supply MD5 in bucket file upload if available in sibling md5 file
  - add function to support GATK HaplotypeCaller and apply BQSR
  - add function to concat and recompress gVCFs
  - add function to calculate BQSR table
+ - cram files as input to the adapter autoqc check
+ - make list of files due to be archived dependent on alignment
+    confuguration of the study
+ - run folders for test data restructured to reflect new-style
+    product hierarchy and not to use outdated path component
+    names (bustard, etc)
 
 release 56.1.0
  - move reference cache from seq_alignment to own singleton class
