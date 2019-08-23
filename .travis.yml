@@ -23,4 +23,5 @@ install:
 script:
   - PATH=/home/travis/miniconda/samtools/bin:/home/travis/miniconda/baton/bin:$PATH
   - cpanm --quiet --notest --installdeps .
+  - export TEST_AUTHOR=1
   - perl Build.PL && ./Build test --verbose
