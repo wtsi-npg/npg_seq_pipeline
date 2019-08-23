@@ -254,8 +254,28 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "seq_alignment",
+            "target" : "bqsr_calc"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "bqsr_calc",
+            "target" : "haplotype_caller"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "haplotype_caller",
+            "target" : "merge_recompress"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "run_analysis_complete",
             "target" : "run_qc_review_pending"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "merge_recompress",
+            "target" : "pipeline_end"
          },
          {
             "relation" : "dependsOn",
@@ -380,6 +400,18 @@
          {
             "id" : "archive_to_irods_samplesheet",
             "label" : "archive_to_irods_samplesheet"
+         },
+         {
+            "id" : "bqsr_calc",
+            "label" : "bqsr_calc"
+         },
+         {
+            "id" : "haplotype_caller",
+            "label" : "haplotype_caller"
+         },
+         {
+            "id" : "merge_recompress",
+            "label" : "merge_recompress"
          },
          {
             "id" : "run_qc_review_pending",
