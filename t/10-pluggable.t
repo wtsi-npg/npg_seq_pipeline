@@ -31,7 +31,7 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 
 my $config_dir = 'data/config_files';
 my $runfolder_path = $util->analysis_runfolder_path;
-$util->set_staging_analysis_area({with_latest_summary => 1});
+$util->create_analysis();
 
 subtest 'object with no function order set - simple methods' => sub {
   plan tests => 7;
@@ -453,7 +453,7 @@ subtest 'positions and spidering' => sub {
   lives_ok { $p->main() } "running main for $function, interactively";
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
-  $util->set_staging_analysis_area();
+  $util->create_analysis();
   cp 't/data/run_params/runParameters.hiseq.xml',
     join(q[/], $runfolder_path, 'runParameters.xml')
     or die 'Faile to copy run params file';

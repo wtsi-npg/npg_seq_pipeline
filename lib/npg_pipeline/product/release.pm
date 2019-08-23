@@ -50,24 +50,28 @@ sub expected_files {
   $product or $self->logconfess('A product argument is required');
 
   my @expected_files;
+  my $lims = $product->lims or
+    $self->logcroak('Product requires lims attribute to determine alignment');
+  my $aligned = $lims->study_alignments_in_bam;
 
   my $dir_path = $product->existing_path($self->archive_path());
-  my @extensions = qw{cram cram.md5 cram.crai
-                      seqchksum sha512primesums512.seqchksum
-                      bcfstats};
+  my @extensions = qw{cram cram.md5 seqchksum sha512primesums512.seqchksum};
+  if ( $aligned ) { push @extensions, qw{cram.crai bcfstats}; }
   push @expected_files,
     map { $product->file_path($dir_path, ext => $_) } @extensions;
 
-  my @suffixes = qw{F0x900 F0xB00 F0xF04_target F0xF04_target_autosome};
+  my @suffixes = qw{F0x900 F0xB00};
+  if  ( $aligned ) { push @suffixes, qw{F0xF04_target F0xF04_target_autosome}; }
   push @expected_files,
     map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
     @suffixes;
 
-  my $qc_path = $product->existing_qc_out_path($self->archive_path());
-
-  my @qc_extensions = qw{verify_bam_id.json};
-  push @expected_files,
-    map { $product->file_path($qc_path, ext => $_) } @qc_extensions;
+  if ($aligned){
+    my $qc_path = $product->existing_qc_out_path($self->archive_path());
+    my @qc_extensions = qw{verify_bam_id.json};
+    push @expected_files,
+      map { $product->file_path($qc_path, ext => $_) } @qc_extensions;
+  }
 
   @expected_files = sort @expected_files;
 
@@ -370,6 +374,142 @@ sub _build_qc_schema {
   my ($self) = @_;
 
   return npg_qc::Schema->connect();
+}
+
+=head2 haplotype_caller_enable
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->haplotype_caller_enable($product)
+ Description: Return true if HaplotypeCaller is to be run on the product.
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub haplotype_caller_enable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if ($self->find_study_config($product)->{haplotype_caller}->{enable}) {
+    $self->info("Product $name, $rpt is for HaplotypeCaller processing");
+    return 1;
+  }
+
+  $self->info("Product $name, $rpt is NOT for HaplotypeCaller processing");
+
+  return 0;
+}
+
+=head2 haplotype_caller_chunking
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->haplotype_caller_chunking($product)
+ Description: Returns base name of chunking file for product.
+
+ Returntype : Str
+ 
+=cut
+
+sub haplotype_caller_chunking {
+  my ($self, $product) = @_;
+
+  return $self->find_study_config($product)->{haplotype_caller}->{sample_chunking};
+}
+
+=head2 haplotype_caller_chunking_number
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->haplotype_caller_chunking_number($product)
+ Description: Returns number of chunks for product.
+ 
+ Returntype : Str
+ 
+=cut
+
+sub haplotype_caller_chunking_number {
+  my ($self, $product) = @_;
+
+  return $self->find_study_config($product)->{haplotype_caller}->{sample_chunking_number};
+}
+
+
+
+=head2 bqsr_enable
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->bqsr_enable($product)
+ Description: Return true if BQSR is to be run on the product.
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub bqsr_enable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if ($self->find_study_config($product)->{bqsr}->{enable}) {
+    $self->info("Product $name, $rpt is for BQSR processing");
+    return 1;
+  }
+
+  $self->info("Product $name, $rpt is NOT for BQSR processing");
+
+  return 0;
+}
+
+
+=head2 bqsr_apply_enable
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->bqsr_enable($product)
+ Description: Return true if BQSR is to be applied to the product.
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub bqsr_apply_enable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if ($self->find_study_config($product)->{bqsr}->{apply}) {
+    $self->info("Product $name, $rpt is for BQSR application");
+    return 1;
+  }
+
+  $self->info("Product $name, $rpt is NOT for BQSR application");
+
+  return 0;
+}
+
+
+=head2 bqsr_known_sites
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->bqsr_known_sites($product)
+ Description: Returns array of known sites for product.
+ 
+ Returntype : Array[Str]
+ 
+=cut
+
+sub bqsr_known_sites {
+  my ($self, $product) = @_;
+  my @known_sites = @{$self->find_study_config($product)->{bqsr}->{'known-sites'}};
+  return @known_sites;
 }
 
 1;

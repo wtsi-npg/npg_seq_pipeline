@@ -4,7 +4,6 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 use List::MoreUtils qw{any};
-use File::Spec;
 use Class::Load qw{load_class};
 
 use npg_pipeline::function::definition;
@@ -209,21 +208,18 @@ sub _create_definition_object {
 sub _generate_command {
   my ($self, $dp) = @_;
 
-  my $check     = $self->qc_to_run();
-  my $archive_path = $self->archive_path;
-  my $recal_path= $self->recalibrated_path;
+  my $check           = $self->qc_to_run();
+  my $archive_path    = $self->archive_path;
+  my $recal_path      = $self->recalibrated_path;
   my $dp_archive_path = $dp->path($self->archive_path);
-  my $cache10k_path = $dp->short_files_cache_path($archive_path);
-  my $qc_out_path = $dp->qc_out_path($archive_path);
-  my $bamfile_path = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'bam'));
-  my $cramfile_path = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'cram'));
-  my $tagzerobamfile_path = File::Spec->catdir($recal_path, $dp->file_name(ext => $self->s1_s2_intfile_format, suffix => '#0'));
-  ## no critic (RegularExpressions::RequireDotMatchAnything)
-  ## no critic (RegularExpressions::RequireExtendedFormatting)
-  ## no critic (RegularExpressions::RequireLineBoundaryMatching)
-  $tagzerobamfile_path =~ s/_#0/#0/;
-  my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
-  my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
+  my $cache10k_path   = $dp->short_files_cache_path($archive_path);
+  my $qc_out_path     = $dp->qc_out_path($archive_path);
+
+  my $bamfile_path        = $dp->file_path($dp_archive_path, ext => 'bam');
+  my $cramfile_path       = $dp->file_path($dp_archive_path, ext => 'cram');
+
+  my $fq1_filepath = $dp->file_path($cache10k_path, ext => 'fastq', suffix => '1');
+  my $fq2_filepath = $dp->file_path($cache10k_path, ext => 'fastq', suffix => '2');
 
   my $c = sprintf '%s --check=%s --rpt_list="%s" --filename_root=%s --qc_out=%s',
                   $QC_SCRIPT_NAME, $check, $dp->{rpt_list}, $dp->file_name_root, $qc_out_path;
@@ -253,14 +249,16 @@ sub _generate_command {
       $c .= qq[ --input_files=$fq2_filepath];
     }
   }
-  elsif(any { /$check/sm } qw( adapter genotype verify_bam_id pulldown_metrics )) {
+  elsif(any { /$check/sm } qw( genotype verify_bam_id pulldown_metrics )) {
     $c .= qq{ --input_files=$bamfile_path}; # note: single bam file 
   }
-  elsif($check eq q/bcfstats/) {
+  elsif(any { /$check/sm } qw(adapter bcfstats)) {
     $c .= qq{ --input_files=$cramfile_path}; # note: single cram file 
   }
   elsif($check eq q/upstream_tags/) {
-    $c .= qq{ --tag0_bam_file=$tagzerobamfile_path}; # note: single bam file
+    my $tagzerobamfile_path = $dp->file_path($recal_path) .
+                              q[#0.] . $self->s1_s2_intfile_format;
+    $c .= qq{ --tag0_bam_file=$tagzerobamfile_path}; # note: single bam/cram file
     $c .= qq{ --archive_qc_path=$qc_out_path}; # find locally produced tag metrics results
     $c .= qq{ --cal_path=$recal_path};
   }
@@ -382,9 +380,11 @@ objects for all entities of the run eligible to run this autoqc check.
 
 =item Readonly
 
-=item File::Spec
+=item List::MoreUtils
 
 =item Class::Load
+
+=item npg_qc::autoqc::constants
 
 =back
 
@@ -398,7 +398,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Limited
+Copyright (C) 2019 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

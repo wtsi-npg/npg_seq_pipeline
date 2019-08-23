@@ -89,7 +89,7 @@ subtest 'adapter' => sub {
   is ($d->num_hosts, 1, 'one host');
   ok ($d->apply_array_cpu_limit, 'array_cpu_limit should be applied');
   ok (!$d->has_array_cpu_limit, 'array_cpu_limit not set');
-  is_deeply ($d->num_cpus, [2], 'num cpus as an array');
+  is_deeply ($d->num_cpus, [3], 'num cpus as an array');
   is ($d->memory, 1500, 'memory');
   is ($d->command_preexec, 'npg_pipeline_preexec_references', 'preexec command');
   ok ($d->has_composition, 'composition object is set');
@@ -105,7 +105,7 @@ subtest 'adapter' => sub {
     my $p = $de->composition->get_component(0)->position;
     is ($de->command, sprintf(
     'qc --check=adapter --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s',
-    qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}.bam"),
+    qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}.cram"),
     "adapter check command for lane $p");
   }
 

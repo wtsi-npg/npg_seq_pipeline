@@ -2,31 +2,20 @@
 
 set -e -x
 
-# iRODS
-wget -q https://github.com/wtsi-npg/disposable-irods/releases/download/${DISPOSABLE_IRODS_VERSION}/disposable-irods-${DISPOSABLE_IRODS_VERSION}.tar.gz -O /tmp/disposable-irods-${DISPOSABLE_IRODS_VERSION}.tar.gz
-tar xfz /tmp/disposable-irods-${DISPOSABLE_IRODS_VERSION}.tar.gz -C /tmp
-cd /tmp/disposable-irods-${DISPOSABLE_IRODS_VERSION}
-./scripts/download_and_verify_irods.sh
-./scripts/install_irods.sh
-./scripts/configure_irods.sh
+# iRODS test server is not set up, so tests that require it will
+# be skipped
 
-# Jansson
-wget -q https://github.com/akheron/jansson/archive/v${JANSSON_VERSION}.tar.gz -O /tmp/jansson-${JANSSON_VERSION}.tar.gz
-tar xfz /tmp/jansson-${JANSSON_VERSION}.tar.gz -C /tmp
-cd /tmp/jansson-${JANSSON_VERSION}
-autoreconf -fi
-./configure ; make ; sudo make install
-sudo ldconfig
-
-# baton
-wget -q https://github.com/wtsi-npg/baton/releases/download/${BATON_VERSION}/baton-${BATON_VERSION}.tar.gz -O /tmp/baton-${BATON_VERSION}.tar.gz
-tar xfz /tmp/baton-${BATON_VERSION}.tar.gz -C /tmp
-cd /tmp/baton-${BATON_VERSION}
-./configure --with-irods; make; sudo make install
-sudo ldconfig
-
-# samtools
+# install conda client
+wget "https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh" -O miniconda.sh;
+chmod +x miniconda.sh;
+./miniconda.sh -b  -p /home/travis/miniconda;
 export PATH=/home/travis/miniconda/bin:$PATH;
+
+# install baton from our conda channel
+conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --override-channels --mkdir --prefix /home/travis/miniconda/baton baton;
+
+# install samtools from our conda channel
+# this is needed for our basic IRODS Perl wrapper to work
 conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --override-channels --mkdir --prefix /home/travis/miniconda/samtools samtools;
 
 # The default build branch for all repositories. This defaults to
@@ -61,11 +50,6 @@ do
     export PERL5LIB=$repo/blib/lib:$PERL5LIB:$repo/lib
 done
 
-# This step is needed for a xenial built, which is performed under
-# system Perl. Installing dependencies with cpanm is not run under
-# sudo, therefore modules are deployed to ~/perl5.
-export PERL5LIB=$PERL5LIB:~/perl5/lib/perl5
-
 for repo in $repos
 do
     cd $repo
@@ -84,11 +68,7 @@ do
 done
 
 cd $TRAVIS_BUILD_DIR
-# Install dependencies of this package
-export PERL5LIB=~/perl5/lib/perl5
-cpanm --quiet --notest --installdeps .
-# Configure the build
-perl Build.PL
+
 
 
 

@@ -17,6 +17,7 @@ with    'npg_pipeline::product::chunk';
 our $VERSION = '0';
 
 Readonly::Scalar my $QC_DIR_NAME                => q[qc];
+Readonly::Scalar my $CHUNK_DIR_NAME             => q[chunk];
 Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
 Readonly::Scalar my $TILEVIZ_DIR_NAME_PREFIX    => q[tileviz];
 
@@ -301,6 +302,18 @@ argument directory path as a base.
 sub qc_out_path {
   my ($self, $dir) = @_;
   return File::Spec->catdir($self->path($dir), $QC_DIR_NAME);
+}
+
+=head2 chunk_out_path
+ 
+ Returns path for chunk output directory for this product taking
+ argument directory path as a base.
+ 
+=cut
+
+sub chunk_out_path {
+  my ($self, $dir) = @_;
+  return File::Spec->catdir($self->path($dir), $CHUNK_DIR_NAME);
 }
 
 =head2 existing_qc_out_path

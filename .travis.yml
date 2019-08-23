@@ -1,50 +1,27 @@
 sudo: required
 
-matrix:
-  include:
-    - perl: "5.22-shrplib"
-      dist: precise
-      language: perl
-    ######
-    #  Xenial build times out in the second 'sudo -E apt-get' in the
-    #  before_install section. Disable on 23.03.2018 pending investigation.
-    #
-    #- dist: xenial
-    #  # Language is not set to Perl so that the tests run under
-    #  # system's Perl, which we will try to update.
-    #  # Setting language to c gives the minimum possible
-    #  # environment. Setting langiage to something Travis does
-    #  # not recognise (bash) results in default (Ruby)
-    #  # and an unusable Postgresql database.
-    #  language: c
-    
+dist:
+  - bionic
+
 addons:
-  postgresql: "9.3"
+  apt:
+    packages:
+    - libgd2-xpm-dev
+language: perl
+
+perl:
+  - "5.26-shrplib"
 
 env:
   global:
-    - PLATFORM="ubuntu12"
-    - ARCH="x86_64"
     - WTSI_NPG_GITHUB_URL=https://github.com/wtsi-npg
-    - DISPOSABLE_IRODS_VERSION="1.3"
-    - JANSSON_VERSION="2.9"
-    - BATON_VERSION="1.1.0"
-    - IRODS_VERSION="4.1.10"
-    - PG_PLUGIN_VERSION="1.10"
-    - IRODS_RIP_DIR=/usr/local/irods
-    - WTSI_NPG_CONDA_REPO=https://dnap.cog.sanger.ac.uk/npg/conda/test/Ubuntu/12.04
-
-before_install:
-  - sleep 100
-  - sudo -E apt-get -yq update
-  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install odbc-postgresql libgd2-xpm-dev uuid-dev librabbitmq-dev
-  - ./scripts/travis_before_install.sh
+    - WTSI_NPG_CONDA_REPO=https://dnap.cog.sanger.ac.uk/npg/conda/test/Ubuntu/18.04
 
 install:
   - ./scripts/travis_install.sh
 
 script:
-  - export PATH=$IRODS_RIP_DIR/iRODS/clients/icommands/bin:$PATH
-  - ienv
-  - ils
-  - ./scripts/travis_script.sh
+  - PATH=/home/travis/miniconda/samtools/bin:/home/travis/miniconda/baton/bin:$PATH
+  - cpanm --quiet --notest --installdeps .
+  - export TEST_AUTHOR=1
+  - perl Build.PL && ./Build test --verbose

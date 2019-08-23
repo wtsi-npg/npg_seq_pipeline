@@ -9,7 +9,7 @@ use File::Basename;
 use Cwd;
 use Log::Log4perl qw[:levels];
 use File::Temp qw[tempdir];
-use Test::More tests => 7;
+use Test::More tests => 9;
 use Test::Exception;
 use t::util;
 
@@ -114,7 +114,7 @@ subtest 'create for a run' => sub {
             'Only "26291:1:3;26291:2:3" and "26291:1:9;26291:2:9" archived')
     or diag explain \@archived_rpts;
 
-  my $cmd_patt = qr|^gsutil cp $runfolder_path/.*/archive/plex\d+/.* gs://\S+$|;
+  my $cmd_patt = qr|^gsutil(?: -h Content-MD5:\S{24})? cp $runfolder_path/.*/archive/plex\d+/.* gs://\S+$|;
 
   foreach my $def (@defs) {
     is($def->created_by, $pkg, "created_by is $pkg");
@@ -132,6 +132,21 @@ subtest 'create for a run' => sub {
       like($part, $cmd_patt, "$cmd matches $cmd_patt");
     }
   }
+};
+
+subtest 'string to add, or not, MD5 to upload command' => sub {
+  plan tests => 3;
+  my $file_path = qq($runfolder_path/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/26291#3.cram);
+  my $archiver = $pkg->new
+    (conf_path      => "t/data/release/config/archive_on",
+     runfolder_path => $runfolder_path,
+     id_run         => 26291,
+     timestamp      => $timestamp,
+     qc_schema      => $qc,
+     local          => 1);
+  is($archiver->_base64_encoded_md5_gsutil_arg($file_path), q(-h Content-MD5:1B2M2Y8AsgTpgAmY7PhCfg==), 'MD5 header added when md5 available');
+  is($archiver->_base64_encoded_md5_gsutil_arg($file_path.q(.crai)), undef, 'MD5 header NOT added when md5 not available');
+  dies_ok {$archiver->_base64_encoded_md5_gsutil_arg(q(t/data/file_with_dodgy_md5))} 'dies with malformed md5';
 };
 
 subtest 'create for a product' => sub {
@@ -180,12 +195,12 @@ subtest 'create for a product' => sub {
        runfolder_path      => $runfolder_path,
        archive_path        => $archive,
        timestamp           => $timestamp,
-       qc_schema           => $qc);  
+       qc_schema           => $qc);
   @defs = @{$archiver->create};
   is (scalar @defs, 1, 'one definition returned');
   is ($defs[0]->composition->freeze2rpt, '26291:1:3;26291:2:3', 'correct rpt');
 
-  remove_tree($dir); 
+  remove_tree($dir);
 };
 
 subtest 'configure_date_binning' => sub {
@@ -201,7 +216,7 @@ subtest 'configure_date_binning' => sub {
         qc_schema      => $qc);
   } 'archiver created ok';
 
-  my $cmd_patt = qr|^gsutil cp $runfolder_path/\S+/archive/plex\d+/\S+ gs://product_bucket/\d{8}/\S+$|;
+  my $cmd_patt = qr|^gsutil(?: -h Content-MD5:\S{24})? cp $runfolder_path/\S+/archive/plex\d+/\S+ gs://product_bucket/\d{8}/\S+$|;
 
   my @defs = @{$archiver->create};
   foreach my $def (@defs) {
@@ -216,6 +231,41 @@ subtest 'configure_date_binning' => sub {
     foreach my $part ($part1, @parts) {
       like($part, $cmd_patt, "$cmd matches $cmd_patt");
     }
+  }
+};
+
+subtest 'no alignments in product' => sub {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    't/data/novaseq/180709_A00538_0010_BH3FCMDRXX/' .
+    'Data/Intensities/BAM_basecalls_20180805-013153/' .
+    'metadata_cache_26291/samplesheet_no_align_26291.csv';
+  my $archiver;
+  lives_ok {
+    $archiver = $pkg->new
+        (conf_path       => "t/data/release/config/archive_on",
+         runfolder_path => $runfolder_path,
+         id_run         => 26291,
+         timestamp      => $timestamp,
+         qc_schema      => $qc);
+  } 'archiver created ok';
+
+  my $cmd_patt = qr|^gsutil(?: -h Content-MD5:\S{24})? cp $runfolder_path/\S+/archive/plex\d+/\S+[.]cram gs://product_bucket/\S+$|;
+
+  my @defs = @{$archiver->create};
+  is(scalar @defs, 2, 'two definitions are returned');
+
+  foreach my $def (@defs) {
+    my $cmd = $def->command;
+    my @parts = split / && /, $cmd; # Deconstruct the command
+    is(scalar @parts, 6, 'one command is present');
+
+    my $part = shift @parts;
+    my $expected_env = 'export BOTO_CONFIG=$HOME/.gcp/boto-s3_profile_name';
+    my ($env, @rest) = split /;\s/mxs, $part;
+    is($env, $expected_env, "ENV is $expected_env");
+
+    $part = join q{ }, @rest;
+    like($part, $cmd_patt, "$cmd matches $cmd_patt");
   }
 };
 
