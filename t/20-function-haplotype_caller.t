@@ -1,15 +1,17 @@
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path/;
 use File::Copy;
 use Log::Log4perl qw/:levels/;
 
-use_ok('npg_pipeline::function::haplotype_caller');
+my $dir = tempdir( CLEANUP => 1);
+# set this variable before the ref cache singleton is loaded
+local $ENV{NPG_REPOSITORY_ROOT} = $dir;
 
-my $dir     = tempdir( CLEANUP => 1);
+use_ok('npg_pipeline::function::haplotype_caller');
 
 my $repos   = join q[/], $dir, 'references';
 my $fasta_dir = join q[/], $repos, 'Homo_sapiens/GRCh38_15_plus_hs38d1/all/fasta';
@@ -39,6 +41,8 @@ my $archive_path = join q[/], $runfolder_path,
   'Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive';
 make_path $archive_path;
 my $timestamp      = '20180701-123456';
+
+my $command = qq{$gatk_exec HaplotypeCaller --emit-ref-confidence GVCF -R $ref_fasta --pcr-indel-model CONSERVATIVE -I $archive_path/plex4/26291#4.cram -O $archive_path/plex4/chunk/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list};
 
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv];
 
@@ -101,8 +105,6 @@ subtest 'run hc' => sub {
   my $da = $hc_gen->create();
 
   ok ($da && @{$da} == 288, sprintf("array of 288 definitions is returned, got %d", scalar@{$da}));
-
-  my $command = qq{$gatk_exec HaplotypeCaller --emit-ref-confidence GVCF -R $ref_fasta --pcr-indel-model CONSERVATIVE -I $archive_path/plex4/26291#4.cram -O $archive_path/plex4/chunk/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list};
 
   ok (-d "$archive_path/plex4/chunk", 'output directory created');
 
@@ -177,6 +179,20 @@ subtest 'run hc with bqsr' => sub {
   is ($d->num_hosts, 1, 'one host');
   is ($d->fs_slots_num, 2, 'four sf slots');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
+};
+
+subtest 'rep repos root from env' => sub {
+  plan tests => 1;
+
+  my $hc_gen = npg_pipeline::function::haplotype_caller->new(
+    conf_path         => 't/data/release/config/haplotype_caller_on',
+    archive_path      => $archive_path,
+    runfolder_path    => $runfolder_path,
+    id_run            => 26291,
+    timestamp         => $timestamp
+  );
+  my $da = $hc_gen->create();
+  is ($da->[72]->command, $command, 'correct command for tag 4');
 };
 
 1;
