@@ -5,7 +5,6 @@ use Moose;
 use MooseX::StrictConstructor;
 use Readonly;
 
-use npg_tracking::data::reference::find;
 use npg_pipeline::function::definition;
 use npg_pipeline::cache::reference;
 use npg_pipeline::runfolder_scaffold;
@@ -63,6 +62,7 @@ sub create {
   #my $dbsnp = "dbsnp.vcf.gz";
 
   my @out_dirs = ();
+  my $ref_cache_instance = npg_pipeline::cache::reference->instance();
 
   foreach my $super_product (@products) {
 
@@ -77,21 +77,20 @@ sub create {
     my $ref_name = $super_product->lims->reference_genome || $self->debug(sprintf q{Missing reference genome for product %s, %s},
                   $super_product->file_name_root(), $super_product->rpt_list()) && next;
 
-    my $ref_path = npg_pipeline::cache::reference->instance->get_path($super_product, q(fasta), $self->repository());
+    my $ref_path = $ref_cache_instance->get_path($super_product, q(fasta), $self->repository());
     my $indel_model = ($super_product->lims->library_type && ($super_product->lims->library_type =~ /PCR free/smx)) ? 'NONE' : 'CONSERVATIVE';
 
     my $gatk_args = "--emit-ref-confidence GVCF -R $ref_path --pcr-indel-model $indel_model"; # --dbsnp $dbsnp
 
+    my $intervals_dir = $ref_cache_instance->get_interval_lists_dir(
+                        $super_product, $self->repository);
+    my $chuncking_base_name = $self->haplotype_caller_chunking($super_product);
+
     my @chunk_products = $super_product->chunks_as_product($self->haplotype_caller_chunking_number($super_product));
     foreach my $product (@chunk_products) {
 
-      my ($species, $ref, undef, undef) = npg_tracking::data::reference::find
-        ->parse_reference_genome($super_product->lims->reference_genome());
-      my $chuncking_base_name = $self->haplotype_caller_chunking($super_product);
-      my $region = sprintf '%s/calling_intervals/%s/%s/%s/%s.%d.interval_list',
-        $self->repository,
-        $species,
-        $ref,
+      my $region = sprintf '%s/%s/%s.%d.interval_list',
+        $intervals_dir,
         $chuncking_base_name,
         $chuncking_base_name,
         $product->chunk;
@@ -191,8 +190,6 @@ npg_pipeline::function::haplotype_caller
 =item MooseX::StrictConstructor
 
 =item Readonly
-
-=item npg_tracking::data::reference::find
 
 =item npg_common::roles::software_location
 

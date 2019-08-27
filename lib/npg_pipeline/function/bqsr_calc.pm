@@ -53,26 +53,22 @@ sub create {
   }
   my @definitions = ();
 
+  my $ref_cache_instance = npg_pipeline::cache::reference->instance();
 
   foreach my $product (@products) {
     my $dir_path = $product->path($self->archive_path());
 
     my $input_path = $product->file_path($dir_path, ext => 'cram');
     my $output_path = $product->file_path($dir_path, ext => 'bqsr_table');
-    my $ref_path = npg_pipeline::cache::reference->instance->get_path($product, q(fasta), $self->repository());
+    my $ref_path = $ref_cache_instance->get_path($product, q(fasta), $self->repository());
 
-    my ($species, $ref, undef, undef) = npg_tracking::data::reference::find->parse_reference_genome($product->lims->reference_genome());
-    my @known_sites_str = map { sprintf '--known-sites %s/resources/%s/%s/%s.vcf.gz',
-        $self->repository,
-        $species,
-        $ref,
-        $_;
-      }
+    my $known_sites_dir = $ref_cache_instance->get_known_sites_dir($product, $self->repository);
+    my @known_sites_str =
+      map { sprintf '--known-sites %s/%s.vcf.gz', $known_sites_dir, $_ }
       $self->bqsr_known_sites($product);
 
     my $known_sites_opt = join q{ }, @known_sites_str;
 
-    #    my $bqsr_opts = '';
     my $command = sprintf q{%s %s -O %s -I %s -R %s %s},
       $self->gatk_cmd, $GATK_TOOL_NAME, $output_path, $input_path, $ref_path, $known_sites_opt;
 
@@ -142,8 +138,6 @@ npg_pipeline::function::bqsr_calc
 =item MooseX::StrictConstructor
 
 =item Readonly
-
-=item npg_tracking::data::reference::find
 
 =item npg_common::roles::software_location
 
