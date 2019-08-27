@@ -84,15 +84,15 @@ sub create {
 
     my $intervals_dir = $ref_cache_instance->get_interval_lists_dir(
                         $super_product, $self->repository);
-    my $chuncking_base_name = $self->haplotype_caller_chunking($super_product);
+    my $chunking_base_name = $self->haplotype_caller_chunking($super_product);
 
     my @chunk_products = $super_product->chunks_as_product($self->haplotype_caller_chunking_number($super_product));
     foreach my $product (@chunk_products) {
 
       my $region = sprintf '%s/%s/%s.%d.interval_list',
         $intervals_dir,
-        $chuncking_base_name,
-        $chuncking_base_name,
+        $chunking_base_name,
+        $chunking_base_name,
         $product->chunk;
       my $output_path = $product->file_path($out_dir_path, ext => 'g.vcf.gz');
       my $command;
