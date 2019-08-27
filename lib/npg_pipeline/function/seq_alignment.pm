@@ -328,7 +328,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   # There will be a new exception to the use of "aln": if you specify a reference
   # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla, then we will use
   # bwa's "mem" with post-processing using the bwa-postalt.js script from bwakit
-  if($do_target_alignment and (my $alt_ref = $self->_alt_reference($dp))) {
+  if($do_target_alignment and $self->bwakit and (my $alt_ref = $self->_alt_reference($dp))) {
     $p4_param_vals->{alignment_method} = $bwa = 'bwa_mem_bwakit';
     $p4_param_vals->{fa_alt_path} = $alt_ref;
     $p4_param_vals->{js_dir} = $self->_js_scripts_dir;
