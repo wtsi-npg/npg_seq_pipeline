@@ -131,7 +131,7 @@ subtest 'definition for a job' => sub {
 };
 
 subtest 'dependencies' => sub {
-  plan tests => 45;
+  plan tests => 85;
 
   my $g = Graph::Directed->new();
   $g->add_edge('pipeline_start', 'function1');
@@ -139,7 +139,10 @@ subtest 'dependencies' => sub {
   $g->add_edge('function1', 'function3');
   $g->add_edge('function2', 'function3');
   $g->add_edge('function3', 'function4');
+  $g->add_edge('function2', 'function5');
+  $g->add_edge('function5', 'function6');
   $g->add_edge('function4', 'pipeline_end');
+  $g->add_edge('function6', 'pipeline_end');
 
   my $ref = {
     created_by    => 'test',
@@ -172,6 +175,19 @@ subtest 'dependencies' => sub {
       composition => npg_pipeline::product->new(rpt_list => '2345:1:3')->composition)
                                   )];
 
+  $definitions->{'function5'} = [
+    npg_pipeline::function::definition->new(%{$ref},
+      composition => npg_pipeline::product->new(rpt_list => '2345:1:1')->composition),
+    npg_pipeline::function::definition->new(%{$ref},
+      composition => npg_pipeline::product->new(rpt_list => '2345:1:1')->composition),
+    npg_pipeline::function::definition->new(%{$ref},
+      composition => npg_pipeline::product->new(rpt_list => '2345:1:2')->composition),
+    npg_pipeline::function::definition->new(%{$ref},
+      composition => npg_pipeline::product->new(rpt_list => '2345:1:2')->composition)
+                                 ];
+
+  $definitions->{'function6'} =  $definitions->{'function2'};
+
   my $file = "$tmp/wr_input.json";
   my $e = npg_pipeline::executor::wr->new(
     function_definitions => $definitions,
@@ -196,16 +212,51 @@ subtest 'dependencies' => sub {
     # {"cmd":"(umask 0002 && /bin/true ) 2>&1 | tee -a \"/tmp/jqmtVG38qF/log/pipeline_end/pipeline_end-today-my_id.out\"","dep_grps":["pipeline_end-my_id-3260187172","pipeline_end-my_id-3260187172-0"],"deps":["function4-my_id-2369338210"],"memory":"2000M","priority":0,"rep_grp":"my_id-pipeline_end"}
     #########################
 
-  my $h = from_json pop @lines; # pipeline_end
-  ok ($h->{"dep_grps"} && $h->{"deps"}, 'dependencies keys present');
-  is (scalar @{$h->{"dep_grps"}}, 2, 'two groups are defined for the job');
-  like ($h->{"dep_grps"}->[0], qr/\Apipeline_end-my_id-\d+\Z/, 'generic group');
-  is ($h->{"dep_grps"}->[1], $h->{"dep_grps"}->[0] . '-0', 'specific group');
-  is (scalar @{$h->{"deps"}}, 1, 'depends on one job');
-  like ($h->{"deps"}->[0], qr/\Afunction4-my_id-\d+\Z/, 'dependency is generic');
+  my @obj_lines = map { from_json $_ } @lines;
+  my @pipl_end_lines = grep { $_->{'rep_grp'} eq 'my_id-pipeline_end' } @obj_lines; # pipeline_end
+  is (scalar @pipl_end_lines, 1, 'pipeline_end - one job');
+  my $h = pop @pipl_end_lines;
+  ok ($h->{"dep_grps"} && $h->{"deps"}, 'pipeline_end - dependencies keys present');
+  is (scalar @{$h->{"dep_grps"}}, 2, 'pipeline_end - two groups are defined for the job');
+  like ($h->{"dep_grps"}->[0], qr/\Apipeline_end-my_id-\d+\Z/, 'pipeline_end - generic group');
+  is ($h->{"dep_grps"}->[1], $h->{"dep_grps"}->[0] . '-0', 'pipeline_end - specific group');
+  is (scalar @{$h->{"deps"}}, 2, 'depends on two jobs');
+  like ($h->{"deps"}->[0], qr/\Afunction[46]-my_id-\d+\Z/, 'pipeline_end - dependency is generic');
+  like ($h->{"deps"}->[1], qr/\Afunction[46]-my_id-\d+\Z/, 'pipeline_end - dependency is generic');
 
+  #function 6
+  my @func6_lines = grep { $_->{'rep_grp'} eq 'my_id-function6' } @obj_lines;
+  for my $id (qw/1 0/) {
+    $h = pop @func6_lines;
+    ok ($h->{"dep_grps"} && $h->{"deps"}, 'function 6 - dependencies keys present');
+    is (scalar @{$h->{"dep_grps"}}, 2, 'function 6 - two groups are defined for the job');
+    like ($h->{"dep_grps"}->[0], qr/\Afunction6-my_id-\d+\Z/, 'function 6 - generic group');
+    is ($h->{"dep_grps"}->[1], join(q[-],$h->{"dep_grps"}->[0],$id), 'function 6 - specific group');
+    is (scalar @{$h->{"deps"}}, 2, 'function 6 - depends on two jobs');
+    my $i = 0;
+    my $j = 1;
+    like ($h->{"deps"}->[$i], qr/\Afunction5-my_id-\d+-[02]\Z/, 'function 6 - dependency is specific');
+    like ($h->{"deps"}->[$j], qr/\Afunction5-my_id-\d+-[13]\Z/, 'function 6 - dependency is specific');
+  }
+
+  #function 5
+  my @func5_lines = grep { $_->{'rep_grp'} eq 'my_id-function5' } @obj_lines;
+  for my $id (qw/3 2 1 0/) {
+    $h = pop @func5_lines;
+    ok ($h->{"dep_grps"} && $h->{"deps"}, 'function 5 - dependencies keys present');
+    is (scalar @{$h->{"dep_grps"}}, 2, 'function 5 - two groups are defined for the job');
+    like ($h->{"dep_grps"}->[0], qr/\Afunction5-my_id-\d+\Z/, 'function 5 - generic group');
+    is ($h->{"dep_grps"}->[1], join(q[-],$h->{"dep_grps"}->[0],$id), 'function 5 - specific group');
+    is (scalar @{$h->{"deps"}}, 1, 'function 5 - depends on one job');
+    my $i = 0;
+    my $j = 1;
+    like ($h->{"deps"}->[0], qr/\Afunction2-my_id-\d+-[01]\Z/, 'function 5 - dependency is specific');
+  }
+
+  #function 4
+  my @func4_lines = grep { $_->{'rep_grp'} eq 'my_id-function4' } @obj_lines;
   for my $id (qw/2 1 0/) {
-    $h = from_json pop @lines;
+    $h = pop @func4_lines;
     ok ($h->{"dep_grps"} && $h->{"deps"}, 'dependencies keys present');
     is (scalar @{$h->{"dep_grps"}}, 2, 'two groups are defined for the job');
     like ($h->{"dep_grps"}->[0], qr/\Afunction4-my_id-\d+\Z/, 'generic group');
@@ -218,8 +269,10 @@ subtest 'dependencies' => sub {
     }
   }
 
+  # function 3
+  my @func3_lines = grep { $_->{'rep_grp'} eq 'my_id-function3' } @obj_lines;
   for my $id (qw/1 0/) {
-    $h = from_json pop @lines;
+    $h = pop @func3_lines;
     ok ($h->{"dep_grps"} && $h->{"deps"}, 'dependencies keys present');
     is (scalar @{$h->{"dep_grps"}}, 2, 'two groups are defined for the job');
     like ($h->{"dep_grps"}->[0], qr/\Afunction3-my_id-\d+\Z/, 'generic group');
@@ -235,8 +288,9 @@ subtest 'dependencies' => sub {
     like ($h->{"deps"}->[$j], qr/\Afunction2-my_id-\d+-$id\Z/, 'dependency is specific');
   }
 
-  is (scalar @lines, 4, 'four jobs remain');
-  $h = from_json shift @lines;
+  my @remain_lines = grep { $_->{'rep_grp'} !~ 'my_id-function[3-6]|my_id-pipeline_end' } @obj_lines;
+  is (scalar @remain_lines, 4, 'four jobs remain');
+  $h = shift @remain_lines;
   ok ($h->{"dep_grps"}, 'dependency groups are defined');
   ok (!exists $h->{"deps"}, 'the job does not depend on any other job');
   is (scalar @{$h->{"dep_grps"}}, 2, 'two groups are defined for the job');
