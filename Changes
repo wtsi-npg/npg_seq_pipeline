@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 57.0.2
+ - fix logic in WR dependancies where pipeline converges
+
 release 57.0.1
  - fix where new code was not taking NPG_REPOSITORY_ROOT and add
    duplicated code to ref cache.
