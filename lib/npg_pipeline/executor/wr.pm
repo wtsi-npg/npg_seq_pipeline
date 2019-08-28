@@ -136,9 +136,9 @@ sub _definitions4function {
     my $composition_digest = $d->has_composition ? $d->composition()->digest() : q[];
     if ($composition_digest) {
       # save $per_job_group_id for this function definition here
-      $composition_deps{$composition_digest} = $per_job_group_id;
+      push @{$composition_deps{$composition_digest}}, $per_job_group_id;
     }
-    $composition_deps{$GENERIC_DEP_KEY} = $group_id;
+    $composition_deps{$GENERIC_DEP_KEY} = [$group_id];
 
     if (!$g->is_source_vertex($function_name)) {
       my @depends_on = ();
@@ -151,12 +151,12 @@ sub _definitions4function {
         if ($composition_digest &&
             $self->_dependencies->{$prev_func}->{$composition_digest}) {
           # yes? add the specific dependency
-          push @depends_on, $self->_dependencies->{$prev_func}->{$composition_digest};
+          push @depends_on, @{$self->_dependencies->{$prev_func}->{$composition_digest}};
         } else {
           # no? add the generic dependency, which should be always available
-          my $id = $self->_dependencies->{$prev_func}->{$GENERIC_DEP_KEY};
-          $id or $self->logcroak("Generic dependency group not defined for function $prev_func");
-          push @depends_on, $id;
+          my @id = @{$self->_dependencies->{$prev_func}->{$GENERIC_DEP_KEY}};
+          @id or $self->logcroak("Generic dependency group not defined for function $prev_func");
+          push @depends_on, @id;
         }
       }
 
