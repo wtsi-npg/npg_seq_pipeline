@@ -2,3 +2,16 @@
 default:
   bqsr:
     enable: false
+  data_deletion:
+    staging_deletion_delay: 12
+
+study:
+  - study_id: "1713"
+    data_deletion:
+      staging_deletion_delay: 1
+  - study_id: "82"
+    data_deletion:
+      staging_deletion_delay: 2
+  - study_id: "2410"
+    data_deletion:
+      staging_deletion_delay: 3

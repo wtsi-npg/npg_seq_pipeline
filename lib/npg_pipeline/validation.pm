@@ -7,8 +7,10 @@ use Try::Tiny;
 use Readonly;
 use File::Find;
 use List::MoreUtils qw/any none/;
+use List::Util qw/max/;
 
 use npg_tracking::util::abs_path qw/abs_path/;
+use npg_tracking::util::types;
 use npg_tracking::glossary::composition;
 use npg_pipeline::cache;
 use npg_pipeline::validation::entity;
@@ -251,16 +253,23 @@ sub _build_file_extension {
 
 =head2 min_keep_days
 
-Integer attribute, minimum number of days not to keep the run.
+Integer attribute, minimum number of days to keep the run folder.
 
 =cut
 
 has q{min_keep_days} => (
-  isa           => q{Int},
+  isa           => q{NpgTrackingPositiveInt},
   is            => q{ro},
-  default       => $MIN_KEEP_DAYS,
-  documentation => q{Minimum number of days not to keep the run},
+  lazy_build    => 1,
+  documentation => q{Minimum number of days to keep the run folder},
 );
+sub _build_min_keep_days {
+  my $self = shift;
+  my @delays = map  { $self->staging_deletion_delay($_) || $MIN_KEEP_DAYS }
+               grep { $self->is_release_data($_) }
+               @{$self->products->{'data_products'}};
+  return @delays ? max @delays : $MIN_KEEP_DAYS;
+}
 
 =head2 skip_autoqc_check
 
@@ -786,11 +795,15 @@ __END__
 
 =item List::MoreUtils
 
+=item List::Util
+
 =item Try::Tiny
 
 =item WTSI::NPG::iRODS
 
 =item npg_qc::Schema
+
+=item npg_tracking::util::types
 
 =item npg_tracking::util::abs_path
 

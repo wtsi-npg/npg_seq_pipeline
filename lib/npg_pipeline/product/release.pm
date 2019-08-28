@@ -512,6 +512,23 @@ sub bqsr_known_sites {
   return @known_sites;
 }
 
+=head2 staging_deletion_delay
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->staging_deletion_delay($product)
+ Description: If the study has staging deletion delay configured,
+              returns this value, otherwise returns an undefined value.
+ 
+ Returntype : Int
+ 
+=cut
+
+sub staging_deletion_delay {
+  my ($self, $product) = @_;
+  return $self->find_study_config($product)->{'data_deletion'}->{'staging_deletion_delay'};
+}
+
 1;
 
 __END__

@@ -7,6 +7,8 @@ default:
   irods:
     enable: true
     notify: false
+  data_deletion:
+    staging_deletion_delay: 12
 
 study:
   - study_id: "5290"
@@ -27,4 +29,8 @@ study:
     irods:
       enable: true
       notify: false
+ 
+  - study_id: "1713"
+    data_deletion:
+      staging_deletion_delay: 15
  
