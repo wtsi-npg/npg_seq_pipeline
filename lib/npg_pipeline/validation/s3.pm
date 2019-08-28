@@ -268,14 +268,17 @@ sub _passed_mqc {
 
   #####
   # This method will be called for products that are received
-  # by the customer. It ensures that the QC outcome has not
-  # been reset after sending the product to the customer.
+  # by the customer. It ensures that when the QC outcome matters,
+  # it has not been reset after sending the product to the customer.
   #
-  my $desc = $product->composition->freeze();
-  my $libqc_obj = $product->final_libqc_obj($self->qc_schema);
-  $libqc_obj or $self->logcroak("Product $desc - not final lib QC outcome");
-  my $passed = $libqc_obj->is_accepted;
-  $passed or $self->logwarn("Product $desc did not pass QC");
+  my $passed = 1;
+  if ($self->qc_outcome_matters($product, 's3')) {
+    my $desc = $product->composition->freeze();
+    my $libqc_obj = $product->final_libqc_obj($self->qc_schema);
+    $libqc_obj or $self->logcroak("Product $desc - not final lib QC outcome");
+    $passed = $libqc_obj->is_accepted;
+    $passed or $self->logwarn("Product $desc did not pass QC");
+  }
 
   return $passed;
 }
