@@ -10,6 +10,7 @@ use Readonly;
 use Try::Tiny;
 
 use npg_tracking::util::types;
+use npg_tracking::data::reference;
 use npg_pipeline::function::util;
 use npg_pipeline::cache::reference::constants qw( $TARGET_REGIONS_DIR $TARGET_AUTOSOME_REGIONS_DIR $REFERENCE_ABSENT );
 
@@ -17,12 +18,12 @@ with 'WTSI::DNAP::Utilities::Loggable';
 
 our $VERSION = '0';
 
-has '_ref_cache' => (isa      => 'HashRef',
-                     is       => 'ro',
-                     required => 0,
-                     default  => sub {return {};},
-                    );
-
+has [qw/ _ref_cache _resources_cache _calling_intervals_cache /] => (
+  isa      => 'HashRef',
+  is       => 'ro',
+  required => 0,
+  default  => sub {return {};},
+);
 
 =head2 get_path
  
@@ -35,7 +36,6 @@ has '_ref_cache' => (isa      => 'HashRef',
  Returntype : String
  
 =cut
-
 
 sub get_path {
   my ($self, $dp, $aligner, $repository, $_do_gbs_plex_analysis) = @_;
@@ -97,6 +97,80 @@ sub get_path {
   return $ref;
 }
 
+=head2 get_known_sites_dir
+ 
+ Arg [1]    : $dp
+ Arg [2]    : $repository, optional
+ 
+ Example    : my $dir = npg_pipeline::cache::reference->instance
+                        ->get_known_sites_dir($dp);
+              my $dir = npg_pipeline::cache::reference->instance
+                        ->get_known_sites_dir($dp, $ref_repository_root);
+ Description: Get directory path for known sites for this product.
+              If the reference repository root argument is given, this
+              custom repository is used, otherwise a default reference
+              repository is used.
+ 
+ Returntype : String
+ 
+=cut
+
+sub get_known_sites_dir {
+  my ($self, $product, $repository) = @_;
+  return $self->_get_vc_dir('resources', $product, $repository);
+}
+
+=head2 get_interval_lists_dir
+ 
+ Arg [1]    : $dp
+ Arg [2]    : $repository, optional
+ 
+ Example    : my $dir = npg_pipeline::cache::reference->instance
+                        ->get_interval_lists_dir($dp);
+              my $dir = npg_pipeline::cache::reference->instance
+                        ->get_interval_lists_dir($dp, $ref_repository_root);
+ Description: Get directory path for interval lists for this product.
+              If the reference repository root argument is given, this
+              custom repository is used, otherwise a default reference
+              repository is used.
+ 
+ Returntype : String
+ 
+=cut
+
+sub get_interval_lists_dir {
+  my ($self, $product, $repository) = @_;
+  return $self->_get_vc_dir('calling_intervals', $product, $repository);
+}
+
+sub _get_vc_dir {
+  my ($self, $rep_dir_name, $product, $repository) = @_;
+
+  $product or croak 'Product argument required';
+  $product->lims or croak 'Product should have lims attribute set';
+  my $ref_genome = $product->lims->reference_genome();
+  $ref_genome or croak 'reference_genome is not defined';
+
+  my $r = npg_tracking::data::reference->new(
+            $repository ? {repository => $repository} : {}
+          );
+  $repository = $r->repository;
+
+  my $attr_name = q[_] . $rep_dir_name . q[_cache];
+
+  my $dir = $self->$attr_name()->{$repository}->{$ref_genome};
+  if (!$dir) {
+    my ($species, $ref) = $r->parse_reference_genome($ref_genome);
+    ($species && $ref) or croak "Failed to parse ref. genome $ref_genome";
+    $dir = sprintf '%s/%s/%s/%s', $repository, $rep_dir_name, $species, $ref;
+    #TODO: when this code is moved to tracking,
+    #      check that this directory exists
+    $self->$attr_name()->{$repository}->{$ref_genome} = $dir;
+  }
+
+  return $dir;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -136,6 +210,10 @@ __PACKAGE__->meta->make_immutable;
 =item Class::Load
 
 =item Try::Tiny
+
+=item npg_tracking::util::types
+
+=item npg_tracking::data::reference
 
 =back
 

@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 57.0.1
+ - fix where new code was not taking NPG_REPOSITORY_ROOT and add
+   duplicated code to ref cache.
+
 release 57.0.0
  - supply MD5 in bucket file upload if available in sibling md5 file
  - add function to support GATK HaplotypeCaller and apply BQSR
