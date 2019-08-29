@@ -538,7 +538,7 @@ sub _time_limit_deletable {
   my $delta_days = DateTime->now()->delta_days(
                    $self->_run_status_obj->date())->in_units('days');
   my $deletable = $delta_days >= $self->min_keep_days;
-  my $m = sprintf 
+  my $m = sprintf
     'Time limit (min %i): %i last status change was %i days ago, %sdeletable.',
     $self->min_keep_days, $self->id_run, $delta_days, $deletable ? q[] : q[NOT ];
   $self->info($m);
