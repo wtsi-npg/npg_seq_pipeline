@@ -1,6 +1,7 @@
 default:
   s3:
     enable: true
+    qc_outcome_matters: true
     url: "gs://product_bucket"
     date_binning: true
     profile: s3_profile_name
@@ -14,6 +15,7 @@ study:
   - study_id: "1000"
     s3:
       enable: true
+      qc_outcome_matters: true
       url: null
       notify: false
     irods:

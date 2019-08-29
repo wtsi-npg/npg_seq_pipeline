@@ -129,7 +129,7 @@ subtest 'create for a run' => sub {
     is('export BOTO_CONFIG=$HOME/.gcp/boto-s3_profile_name', $env, "ENV is $env");
 
     foreach my $part ($part1, @parts) {
-      like($part, $cmd_patt, "$cmd matches $cmd_patt");
+      like($part, $cmd_patt, "command matches");
     }
   }
 };
@@ -150,7 +150,7 @@ subtest 'string to add, or not, MD5 to upload command' => sub {
 };
 
 subtest 'create for a product' => sub {
-  plan tests => 4;
+  plan tests => 5;
 
   # Using a standard run folder structure.
   my $archiver = $pkg->new
@@ -200,6 +200,18 @@ subtest 'create for a product' => sub {
   is (scalar @defs, 1, 'one definition returned');
   is ($defs[0]->composition->freeze2rpt, '26291:1:3;26291:2:3', 'correct rpt');
 
+  $archiver = $pkg->new
+      (conf_path           => 't/data/release/config/disregard_qc_outcome',
+       label               => 'my_label',
+       product_rpt_list    => '26291:1:3;26291:2:3',
+       runfolder_path      => $runfolder_path,
+       archive_path        => $archive,
+       timestamp           => $timestamp,
+       qc_schema           => undef);
+  @defs = @{$archiver->create};
+  is (scalar @defs, 1,
+    'no access to QC db, none made since qc outcome does not matter');
+
   remove_tree($dir);
 };
 
@@ -229,7 +241,7 @@ subtest 'configure_date_binning' => sub {
     is('export BOTO_CONFIG=$HOME/.gcp/boto-s3_profile_name', $env, "ENV is $env");
 
     foreach my $part ($part1, @parts) {
-      like($part, $cmd_patt, "$cmd matches $cmd_patt");
+      like($part, $cmd_patt, "command matches");
     }
   }
 };
@@ -265,7 +277,7 @@ subtest 'no alignments in product' => sub {
     is($env, $expected_env, "ENV is $expected_env");
 
     $part = join q{ }, @rest;
-    like($part, $cmd_patt, "$cmd matches $cmd_patt");
+    like($part, $cmd_patt, "command matches");
   }
 };
 

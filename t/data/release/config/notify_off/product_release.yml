@@ -14,6 +14,7 @@ study:
   - study_id: "5290"
     s3:
       enable: true
+      qc_outcome_matters: true
       url: "gs://product_bucket"
       notify: false
     irods:
