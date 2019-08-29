@@ -5,3 +5,8 @@ default:
     known-sites:
       - dbsnp_138.hg38
       - Mills_and_1000G_gold_standard.indels.hg38
+
+study:
+  - study_id: "1713"
+    data_deletion:
+      staging_deletion_delay: 10
