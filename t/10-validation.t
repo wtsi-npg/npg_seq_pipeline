@@ -57,9 +57,10 @@ sub _populate_test_runfolder {
 }
 
 subtest 'create object' => sub {
-  plan tests => 14;
+  plan tests => 15;
 
-  my $v = npg_pipeline::validation->new(qc_schema => $qc_schema);
+  my $v = npg_pipeline::validation->new(qc_schema     => $qc_schema,
+                                        min_keep_days => 30);
   isa_ok ($v, 'npg_pipeline::validation');
 
   for my $flag (qw/ignore_lims ignore_npg_status ignore_time_limit
@@ -70,7 +71,8 @@ subtest 'create object' => sub {
   ok ($v->use_cram, 'cram files are used by default');
   is ($v->file_extension, 'cram', 'default file extension is cram');
   is ($v->index_file_extension, 'crai', 'default index file extension is crai');
-  #is ($v->min_keep_days, 14, '14 days after qc complete data to be retained');
+  is ($v->min_keep_days(), 30,
+    'min_keep_days attribute value as set in the constructor');
   is ($v->lims_driver_type, 'samplesheet', 'default driver type is samplesheet');
 
   $v = npg_pipeline::validation->new(use_cram => 0);
