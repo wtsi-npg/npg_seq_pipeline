@@ -86,7 +86,7 @@ subtest 'run merge_recompress' => sub {
   my @input_files = map { sprintf "$plex4_archive/chunk/26291#4.%s.g.vcf.gz", $_ } (1..24);
   my $input_files_str = join q{ }, @input_files;
 
-  my $command = qq{$bcftools_exec concat -O z -o $plex4_archive/26291#4.g.vcf.gz }.$input_files_str;
+  my $command = qq{$bcftools_exec concat -O z -o $plex4_archive/26291#4.g.vcf.gz }.$input_files_str.qq{ && $bcftools_exec tabix -p vcf $plex4_archive/26291#4.g.vcf.gz};
 
   my $mem = 2000;
   my $d = $da->[3];
