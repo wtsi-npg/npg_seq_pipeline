@@ -100,16 +100,16 @@ sub is_release_data {
   my $rpt = $product->rpt_list();
   my $name = $product->file_name_root();
   if ($product->is_tag_zero_product) {
-    $self->info("Product $name, $rpt is NOT for release (is tag zero)");
+    $self->debug("Product $name, $rpt is NOT for release (is tag zero)");
     return 0;
   }
 
   if ($product->lims->is_control) {
-    $self->info("Product $name, $rpt is NOT for release (is control)");
+    $self->debug("Product $name, $rpt is NOT for release (is control)");
     return 0;
   }
 
-  $self->info("Product $name, $rpt is for release ",
+  $self->debug("Product $name, $rpt is for release ",
               '(is not tag zero or control)');
 
   return 1;
