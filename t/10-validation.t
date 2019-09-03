@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Exception;
 use Test::Warn;
 use Test::Trap qw/ :warn /;
@@ -59,7 +59,8 @@ sub _populate_test_runfolder {
 subtest 'create object' => sub {
   plan tests => 15;
 
-  my $v = npg_pipeline::validation->new(qc_schema => $qc_schema);
+  my $v = npg_pipeline::validation->new(qc_schema     => $qc_schema,
+                                        min_keep_days => 30);
   isa_ok ($v, 'npg_pipeline::validation');
 
   for my $flag (qw/ignore_lims ignore_npg_status ignore_time_limit
@@ -70,12 +71,57 @@ subtest 'create object' => sub {
   ok ($v->use_cram, 'cram files are used by default');
   is ($v->file_extension, 'cram', 'default file extension is cram');
   is ($v->index_file_extension, 'crai', 'default index file extension is crai');
-  is ($v->min_keep_days, 14, '14 days after qc complete data to ve retained');
+  is ($v->min_keep_days(), 30,
+    'min_keep_days attribute value as set in the constructor');
   is ($v->lims_driver_type, 'samplesheet', 'default driver type is samplesheet');
 
   $v = npg_pipeline::validation->new(use_cram => 0);
   is ($v->file_extension, 'bam', 'file extension is bam');
   is ($v->index_file_extension, 'bai', 'index file extension is bai');
+};
+
+subtest 'deletion delay' => sub {
+  plan tests => 6;
+
+  local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = 't/data/samplesheet_8747.csv';
+  note 'Samples from three studies in the run data used in this test';
+
+  my $rfh = _create_test_runfolder_8747();
+
+  my $ref = {
+    id_run => 8747,
+    runfolder_path => $rfh->{'runfolder_path'},
+    analysis_path  => $rfh->{'analysis_path'},
+    archive_path   => $rfh->{'archive_path'},
+    qc_schema      => $qc_schema,
+    conf_path      => 't/data/release/config/archive_on',
+  };
+
+  my $v = npg_pipeline::validation->new($ref);
+  is ($v->min_keep_days, 14, 'no config - falling back on hardcoded defalt');
+
+  $ref->{conf_path} = 't/data/release/config/archive_off';
+  $v = npg_pipeline::validation->new($ref);
+  is ($v->min_keep_days, 12, 'value from default product config');
+
+  $ref->{conf_path} = 't/data/release/config/notify_on';
+  $v = npg_pipeline::validation->new($ref);
+  is ($v->min_keep_days, 15,
+    'from config for study 1713, which is longer than default config');
+
+  $ref->{conf_path} = 't/data/release/config/notify_off';
+  $v = npg_pipeline::validation->new($ref);
+  is ($v->min_keep_days, 12,
+    'from default config which is longer than in config for study 1713');
+
+  $ref->{conf_path} = 't/data/release/config/bqsr';
+  $v = npg_pipeline::validation->new($ref);
+  is ($v->min_keep_days, 14,
+    'from hardcoded default which is longer than in config for study 1713');
+
+  $ref->{conf_path} = 't/data/release/config/bqsr_off';
+  $v = npg_pipeline::validation->new($ref);
+  is ($v->min_keep_days, 3, 'largest number across all three configured studies');
 };
 
 subtest 'lims and staging deletable' => sub {
@@ -99,7 +145,6 @@ subtest 'lims and staging deletable' => sub {
   _populate_test_runfolder($archive_path, $v->products->{'data_products'});
 
   is ($v->_lims_deletable, 1, 'deletable');
-  #diag `find $archive_path`;
 
   # Remove on of the cram files
   my $file = $archive_path . '/lane6/plex0/8747_6#0_phix.cram';
