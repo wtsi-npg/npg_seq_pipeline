@@ -16,6 +16,7 @@ with 'npg_common::roles::software_location' => { tools => [qw/bcftools/] };
 Readonly::Scalar my $FUNCTION_NAME => 'merge_recompress';
 
 Readonly::Scalar my $BCFTOOLS_TOOL_NAME => 'concat';
+Readonly::Scalar my $BCFTOOLS_INDEX_NAME => 'tabix';
 
 Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
 Readonly::Scalar my $MEMORY                       => q{2000}; # memory in megabytes
@@ -67,8 +68,8 @@ sub create {
       $unchunked_product->chunks_as_product($self->haplotype_caller_chunking_number($unchunked_product));
     my $input_path = join q{ }, @chunk_products;
     my $output_path = $unchunked_product->file_path($dir_path, ext => 'g.vcf.gz');
-    my $command = sprintf q{%s %s -O z -o %s %s},
-      $self->bcftools_cmd, $BCFTOOLS_TOOL_NAME, $output_path, $input_path;
+    my $command = sprintf q{%s %s -O z -o %s %s && %s %s -p vcf %s},
+      $self->bcftools_cmd, $BCFTOOLS_TOOL_NAME, $output_path, $input_path, $self->bcftools_cmd, $BCFTOOLS_INDEX_NAME, $output_path;
 
     $self->debug("Adding command '$command'");
 

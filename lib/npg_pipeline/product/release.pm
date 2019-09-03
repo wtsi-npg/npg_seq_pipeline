@@ -100,16 +100,16 @@ sub is_release_data {
   my $rpt = $product->rpt_list();
   my $name = $product->file_name_root();
   if ($product->is_tag_zero_product) {
-    $self->info("Product $name, $rpt is NOT for release (is tag zero)");
+    $self->debug("Product $name, $rpt is NOT for release (is tag zero)");
     return 0;
   }
 
   if ($product->lims->is_control) {
-    $self->info("Product $name, $rpt is NOT for release (is control)");
+    $self->debug("Product $name, $rpt is NOT for release (is control)");
     return 0;
   }
 
-  $self->info("Product $name, $rpt is for release ",
+  $self->debug("Product $name, $rpt is for release ",
               '(is not tag zero or control)');
 
   return 1;
@@ -121,7 +121,12 @@ sub is_release_data {
 
   Example    : $obj->has_qc_for_release($product)
   Description: Return true if the product has passed all QC necessary
-               to be released.
+               to be released or if the QC outcome does not matter
+               for this product. In the later case any QC outcome or
+               its absence is equally acceptable, no attempt to inspect
+               the QC outcomes is made; this is an implicit default. To
+               activate filtering by QC outcomes, explicitly configure
+               the s3 section of the study configuration for this product.
 
   Returntype : Bool
 
@@ -134,6 +139,12 @@ sub has_qc_for_release {
 
   my $rpt  = $product->rpt_list();
   my $name = $product->file_name_root();
+
+  my $qc_outcome_matters = $self->qc_outcome_matters($product);
+  if (not $qc_outcome_matters) {
+    $self->debug("QC outcome does not matter for product $name, $rpt");
+    return 1;
+  }
 
   my @seqqc = $product->final_seqqc_objs($self->qc_schema);
   @seqqc or $self->logcroak("Product $name, $rpt are not all Final seq QC values");
@@ -154,6 +165,26 @@ sub has_qc_for_release {
   $self->info("Product $name, $rpt is NOT for release (did not pass manual QC)");
 
   return 0;
+}
+
+=head2  qc_outcome_matters
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->qc_outcome_matters($product)
+  Description: Returns a boolean value indicating whether or not QC outcome
+               matters for the product to be archived. An ptional second
+               argument is the archiver type, s3 is the default.
+
+  Returntype : Bool
+
+=cut
+
+sub qc_outcome_matters {
+  my ($self, $product, $archiver) = @_;
+  $product or $self->logconfess('A product argument is required');
+  $archiver ||= 's3';
+  return $self->find_study_config($product)->{$archiver}->{'qc_outcome_matters'};
 }
 
 =head2 customer_name
@@ -510,6 +541,23 @@ sub bqsr_known_sites {
   my ($self, $product) = @_;
   my @known_sites = @{$self->find_study_config($product)->{bqsr}->{'known-sites'}};
   return @known_sites;
+}
+
+=head2 staging_deletion_delay
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->staging_deletion_delay($product)
+ Description: If the study has staging deletion delay configured,
+              returns this value, otherwise returns an undefined value.
+ 
+ Returntype : Int
+ 
+=cut
+
+sub staging_deletion_delay {
+  my ($self, $product) = @_;
+  return $self->find_study_config($product)->{'data_deletion'}->{'staging_deletion_delay'};
 }
 
 1;

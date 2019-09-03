@@ -449,7 +449,7 @@ subtest 'product failed mqc' => sub {
 };
 
 subtest 's3 fully archived' => sub {
-  plan tests => 15;
+  plan tests => 16;
 
     SKIP: {
       skip 'bzcat executable not available', 12 unless which('bzcat');
@@ -477,7 +477,27 @@ END_CONTENT
   $qc_schema->resultset('MqcOutcomeEnt')->search({id_run => 26291})
     ->update({id_mqc_outcome => 3}); # make all lanes Accepted final
 
+  my $temp = "$config_dir/temp_product_release.yml";
+  my $cfile = "$config_dir/product_release.yml";
+  move $cfile, $temp;
+  my $ch = LoadFile($temp);
+  delete $ch->{study}->[0]->{s3}->{qc_outcome_matters};
+  open my $fhc, '>', $cfile or die "Failed to open file $cfile for writing";
+  print $fhc (Dump $ch) or die "Failed to write to $cfile";
+  close $fhc or warn "Failed to close file handle to $cfile"; 
+ 
   my $v = npg_pipeline::validation::s3->new(
+    product_entities  => \@ets,
+    logger            => $logger,
+    file_extension    => 'cram',
+    conf_path         => $config_dir,
+    qc_schema         => $qc_schema
+  );
+  ok ($v->fully_archived(), 'qc outcome disregarded, fully archived');
+
+  move $temp, $cfile;
+
+  $v = npg_pipeline::validation::s3->new(
     product_entities  => \@ets,
     logger            => $logger,
     file_extension    => 'cram',
@@ -578,7 +598,7 @@ END_CONTENT
     [ qr/No receipt for file 26291\#10\.cram/,
       qr/did not fail QC/,
       qr/cached file $product_cache\/26291\#10\.cram not found/ ],
-    'warnings about no receipt, not failin qc, not found in cache dir';
+    'warnings about no receipt, not failing qc, not found in cache dir';
   ok (!$archived, 'not archived - is not acknowledged, undecided, not in top-up');
 
   $file = join q[/], $product_cache, '26291#10.cram';
@@ -590,7 +610,7 @@ END_CONTENT
     [ qr/No receipt for file 26291\#10\.cram/,
       qr/did not fail QC/,
       qr/cached file $product_cache\/26291\#10\.cram found/ ],
-    'warnings about no receipt, not failin qc, found in cache dir';
+    'warnings about no receipt, not failing qc, found in cache dir';
   ok ($archived, 'archived - found in top-up cache');
     }
 };

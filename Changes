@@ -1,7 +1,15 @@
 LIST OF CHANGES
 ---------------
 
+
  - skip coordinate sort and markdup steps in seq_alignment for spike tag
+
+release 57.1.0
+ - configurable study-level qc criteria for archival and for minimum
+   delay for run folder deletion
+
+release 57.0.3
+ - add missing indexing step to merge_recompress
 
 release 57.0.2
  - fix logic in WR dependancies where pipeline converges
