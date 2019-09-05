@@ -179,7 +179,7 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
 
   my $common_command = sub {
     my $p = shift;
-    return sprintf q{$EXECUTABLE_NAME bin/npg_pipeline_check_cluster_count --bfs_fofp_name %s/lane%d/8747_bfs_fofn.txt --sf_fofp_name %s/lane%d/8747_sf_fofn.txt --id_run 8747 --bam_basecall_path %s --qc_path %s --lanes %d}, $archive_path, $p, $archive_path, $p, $bam_basecall_path, $qc_path, $p;
+    return sprintf q{$EXECUTABLE_NAME bin/npg_pipeline_check_cluster_count --bfs_fofp_name %s/lane%d/8747_bfs_fofn.txt --sf_fofp_name %s/lane%d/8747_sf_fofn.txt --id_run 8747 --bam_basecall_path %s --qc_path %s --lanes %d --runfolder_path %s}, $archive_path, $p, $archive_path, $p, $bam_basecall_path, $qc_path, $p, $analysis_runfolder_path;
   };
 
   my $c;

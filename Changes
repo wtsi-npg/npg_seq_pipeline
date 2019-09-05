@@ -1,8 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+ - skip markdup step in seq_alignment for spike tag
 
- - skip coordinate sort and markdup steps in seq_alignment for spike tag
+release 57.1.1
+ - all components of npg_run_is_deletable script to use samplesheet
+   as a source of LIMS data
 
 release 57.1.0
  - configurable study-level qc criteria for archival and for minimum

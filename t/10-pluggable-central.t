@@ -1,18 +1,17 @@
 use strict;
 use warnings;
-use Test::More tests => 16;
+use Test::More tests => 27;
 use Test::Exception;
-use Cwd qw(getcwd);
 use Log::Log4perl qw(:levels);
 use File::Copy qw(cp);
+use File::Path qw(make_path remove_tree);
 
 use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
 
 my $util = t::util->new();
-my $cwd = getcwd();
 my $tdir = $util->temp_directory();
-note $tdir;
+#note $tdir;
 my @tools = map { "$tdir/$_" } qw/bamtofastq blat norm_fit/;
 foreach my $tool (@tools) {
   open my $fh, '>', $tool or die 'cannot open file for writing';
@@ -99,18 +98,60 @@ my $runfolder_path = $util->analysis_runfolder_path();
       spider         => 0,
       is_indexed     => 0
   };
-  my $pb;
-  lives_ok { $pb = $central->new($init); $pb->prepare() }
-    q{no error on object creation and analysis paths set for a flattened runfolder};
-  is ($pb->intensity_path, $rf, 'intensities path is set to runfolder');
-  is ($pb->basecall_path, $rf, 'basecall path is set to runfolder');
-  is ($pb->bam_basecall_path, join(q[/],$rf,q{BAM_basecalls_22-May}), 'bam basecall path is created');
+  my $pb = $central->new($init);
+  is ($pb->intensity_path, "$rf/Data/Intensities", 'intensities path');
+  is ($pb->basecall_path, "$rf/Data/Intensities/BaseCalls", 'basecalls path');
+  throws_ok { $pb->prepare() }
+    qr/does not exist, either bam_basecall_path or analysis_path should be given/,
+    q{error scaffolding the run folder};
+
+  make_path "$rf/Data/Intensities";
+  $pb = $central->new($init);
+  is ($pb->intensity_path, "$rf/Data/Intensities", 'intensities path');
+  is ($pb->basecall_path, "$rf/Data/Intensities/BaseCalls", 'basecalls path');
+  lives_ok { $pb->prepare() } 'prepare runs fine';
+  my $expected_pb_cal = join q[/],$rf,q{Data/Intensities/BAM_basecalls_22-May};
+  is ($pb->bam_basecall_path, $expected_pb_cal, 'bam basecall path is set');
   ok (-d $pb->bam_basecall_path, 'directory exists');
-  is ($pb->recalibrated_path, join(q[/],$pb->bam_basecall_path,'no_cal'),
-    'recalibrated path is created');
+  my $expected_no_cal_path = join q[/],$pb->bam_basecall_path,'no_cal';
+  is ($pb->recalibrated_path, $expected_no_cal_path, 'recalibrated path');
   ok (-d $pb->recalibrated_path, 'directory exists');
   is ($pb->analysis_path, $pb->bam_basecall_path, 'analysis path');
-  is ($pb->recalibrated_path, join(q[/],$pb->bam_basecall_path, 'no_cal'), 'recalibrated path set');
+
+  $init->{'bam_basecall_path'} = $expected_pb_cal;
+  $pb = $central->new($init);
+  $pb->prepare();
+  is ($pb->bam_basecall_path, $expected_pb_cal, 'bam basecall path is set');
+  is ($pb->analysis_path, $expected_pb_cal, 'analysis path');
+
+  delete $init->{'bam_basecall_path'};
+  $init->{'analysis_path'} = $expected_pb_cal;
+  $pb = $central->new($init);
+  $pb->prepare();
+  is ($pb->bam_basecall_path, $expected_pb_cal, 'bam basecall path is set');
+
+  delete $init->{'analysis_path'};
+  $init->{'archive_path'} = qq{$expected_no_cal_path/archive};
+  $pb = $central->new($init);
+  $pb->prepare();
+  is ($pb->bam_basecall_path, $expected_pb_cal, 'bam basecall path is set');
+
+  delete $init->{'runfolder_path'};
+  delete $init->{'runfolder'};
+  $pb = $central->new($init);
+  throws_ok { $pb->prepare() }
+    qr/Nothing looks like a run_folder in any given subpath/,
+    'error since the given subpath does not exist';
+
+  make_path $init->{'archive_path'};
+  throws_ok { $pb->prepare() }
+    qr/Nothing looks like a run_folder in any given subpath/,
+    'error since Config does not exist';
+
+  make_path "$rf/Config";
+  lives_ok { $pb->prepare() } 'no error';
+  is ($pb->bam_basecall_path, $expected_pb_cal, 'bam basecall path is set');
+  is ($pb->runfolder_path, $rf, 'run folder path is set');
 }
 
 1;

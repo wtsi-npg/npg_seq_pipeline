@@ -402,6 +402,15 @@ sub build_eligible_product_entities {
 
 =head2 run
 
+Evaluates whether the run is deletable, return strue if it is and
+false if it is not.
+
+Needs access to LIMs data, tries to locate a samplesheet in the current
+analysis directory for the run and use it as a source of LIMS data.
+
+If the run folder is deletable and remove_staging_tag flag is set to
+true (false by default), unsets staging tag for the run.
+
 =cut
 
 sub run {
@@ -411,6 +420,7 @@ sub run {
   my $vars_set  = 0;
 
   try {
+    $vars_set = $self->_set_vars_from_samplesheet();
     $deletable = $deletable || (
               $self->_npg_tracking_deletable() &&
               $self->_time_limit_deletable()   &&
@@ -423,6 +433,16 @@ sub run {
                                );
   } catch {
     $self->error($_);
+  } finally {
+    #########
+    # unset env variables
+    #
+    if ($vars_set) {
+      for my $var ( npg_pipeline::cache->env_vars() ) {
+        ##no critic (RequireLocalizedPunctuationVars)    
+        $ENV{$var} = q[];
+      }
+    }
   };
 
   if ($deletable && $self->remove_staging_tag) {
@@ -650,23 +670,12 @@ sub _lims_deletable {
     return 1;
   }
 
-  my $vars_set = $self->_set_vars_from_samplesheet();
   my $deletable = 1;
 
   foreach my $file (keys %{$self->_expected_staging_files}) {
     if (!-e $file) {
       $self->logwarn("File $file is missing");
       $deletable = 0;
-    }
-  }
-
-  #########
-  # unset env variables
-  #
-  if ($vars_set) {
-    for my $var ( npg_pipeline::cache->env_vars() ) {
-      ##no critic (RequireLocalizedPunctuationVars)    
-      $ENV{$var} = q[];
     }
   }
 
