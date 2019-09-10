@@ -37,6 +37,9 @@ Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
+Readonly::Scalar my $PFC_MARKDUP_OPT_DIST         => q{2500};  # distance in pixels for optical duplicate detection on patterned flowcells
+Readonly::Scalar my $NON_PFC_MARKDUP_OPT_DIST     => q{100};   # distance in pixels for optical duplicate detection on non-patterned flowcells
+Readonly::Scalar my $MARKDUP_DEFAULT              => q{biobambam};
 
 =head2 phix_reference
 
@@ -195,6 +198,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $archive_path = $self->archive_path;
   my $dp_archive_path = $dp->path($archive_path);
   my $recal_path= $self->recalibrated_path; #?
+  my $uses_patterned_flowcell = $self->uses_patterned_flowcell;
 
   my $qc_out_path = $dp->qc_out_path($archive_path);
   my $cache10k_path = $dp->short_files_cache_path($archive_path);
@@ -233,12 +237,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
   my $seqchksum_orig_file = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'orig.seqchksum'));
+  my $markdup_method = $self->markdup_method($dp) or $MARKDUP_DEFAULT;
 
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});
   $self->debug(qq{  is_tag_zero_product: $is_tag_zero_product});
   $self->debug(qq{  is_pool: $is_pool});
   $self->debug(qq{  dp_archive_path: $dp_archive_path});
+  $self->debug(qq{  uses_patterned_flowcell: $uses_patterned_flowcell});
   $self->debug(qq{  cache10k_path: $cache10k_path});
   $self->debug(qq{  bfs_input_file: $bfs_input_file});
   $self->debug(qq{  af_input_file: $af_input_file});
@@ -282,7 +288,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     run_lane_ss_fq2 => $fq2_filepath,
     seqchksum_orig_file => $seqchksum_orig_file,
     s2_input_format => $self->s1_s2_intfile_format,
-    markdup_method => q[samtools],
+    markdup_method => $markdup_method,
   };
   my $p4_ops = {
     prune => [],
@@ -326,12 +332,18 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->info(qq{ do_target_alignment for $name_root is } . ($do_target_alignment?q[TRUE]:q[FALSE]));
 
   # There will be a new exception to the use of "aln": if you specify a reference
-  # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla, then we will use
-  # bwa's "mem" with post-processing using the bwa-postalt.js script from bwakit
-  if($do_target_alignment and $self->bwakit and (my $alt_ref = $self->_alt_reference($dp))) {
-    $p4_param_vals->{alignment_method} = $bwa = 'bwa_mem_bwakit';
-    $p4_param_vals->{fa_alt_path} = $alt_ref;
-    $p4_param_vals->{js_dir} = $self->_js_scripts_dir;
+  # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla and bwakit postalt
+  # processing is enabled, then we will use bwa's "mem" with post-processing using
+  # the bwa-postalt.js script from bwakit
+  if($do_target_alignment and ($self->bwakit or $self->bwakit_enable($dp))) { # two ways to specify bwakit?
+    if((my $alt_ref = $self->_alt_reference($dp))) {
+      $p4_param_vals->{alignment_method} = $bwa = 'bwa_mem_bwakit';
+      $p4_param_vals->{fa_alt_path} = $alt_ref;
+      $p4_param_vals->{js_dir} = $self->_js_scripts_dir;
+    }
+    else {
+      $self->info(q[bwakit postal processing specified, but no alternate haplotypes in reference]);
+    }
   }
 
 
@@ -433,7 +445,12 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   else {
     push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
-    push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_fixmate:', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk'; # the fixmate node only works for mardkup_method samtools (pending p4 node id uniqueness bug fix)
+    if($markdup_method eq q[samtools) {
+      push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_fixmate:', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk'; # the fixmate node only works for mardkup_method samtools (pending p4 node id uniqueness bug fix)
+    }
+    else {
+      push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_bamsort_coord:', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk';
+    }
   }
 
   my $p4_local_assignments = {};
