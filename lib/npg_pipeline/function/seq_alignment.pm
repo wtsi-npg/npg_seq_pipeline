@@ -21,7 +21,8 @@ use npg_pipeline::cache::reference;
 use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
-with    q{npg_pipeline::function::util};
+with    qw{ npg_pipeline::function::util
+            npg_pipeline::product::release };
 
 our $VERSION  = '0';
 
@@ -237,7 +238,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
   my $seqchksum_orig_file = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'orig.seqchksum'));
-  my $markdup_method = $self->markdup_method($dp) or $MARKDUP_DEFAULT;
+  my $markdup_method = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
 
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});
@@ -445,7 +446,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   else {
     push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
-    if($markdup_method eq q[samtools) {
+    if($markdup_method eq q[samtools]) {
       push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_fixmate:', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk'; # the fixmate node only works for mardkup_method samtools (pending p4 node id uniqueness bug fix)
     }
     else {

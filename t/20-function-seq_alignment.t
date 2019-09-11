@@ -183,6 +183,7 @@ subtest 'test 1' => sub {
       verbose           => 0,
       repository        => $dir,
       force_phix_split  => 0,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
 
@@ -258,6 +259,7 @@ subtest 'test 1' => sub {
       verbose           => 0,
       repository        => $dir,
       force_phix_split  => 1,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object (forcing on phix split)';
 
@@ -323,7 +325,8 @@ subtest 'test 2' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2014},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($rna_gen->id_run, 13066, 'id_run inferred correctly');
@@ -381,7 +384,8 @@ subtest 'test 2' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2017},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($rna_gen->id_run, 17550, 'id_run inferred correctly');
@@ -464,7 +468,8 @@ subtest 'test 2' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2018},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
 
@@ -497,7 +502,8 @@ subtest 'test 3' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => "$bc_path/no_cal",
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($se_gen->id_run, 18472, 'id_run inferred correctly');
@@ -551,7 +557,8 @@ subtest 'test 4' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($hsx_gen->id_run, 16839, 'id_run inferred correctly');
@@ -653,7 +660,8 @@ subtest 'test 5' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16807, 'id_run inferred correctly');
@@ -734,6 +742,7 @@ subtest 'test 6' => sub {
       timestamp         => q{2016},
       repository        => $dir,
       verbose           => 1,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
 
@@ -819,7 +828,7 @@ subtest 'test 6' => sub {
               "run_lane_ss_fq1"=> $dir."/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/lane1/plex1/.npg_cache_10000/20268_1#1_1.fastq",
               "bait_regions_file"=> $dir .'/baits/Human_all_exon_V5/1000Genomes_hs37d5/S04380110-CTR.interval_list',
               "recal_dir"=> $dir .'/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal',
-              "markdup_method" => "samtools"
+              "markdup_method" => "biobambam"
          },],
      'ops' => {  
          'prune' => ['fop.*_bmd_multiway:calibration_pu-',
@@ -857,7 +866,8 @@ subtest 'test 7' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16850, 'id_run inferred correctly');
@@ -930,7 +940,8 @@ subtest 'test 8' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16756, 'id_run inferred correctly');
@@ -1006,7 +1017,8 @@ subtest 'test 9' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16866, 'id_run inferred correctly');
@@ -1082,7 +1094,8 @@ subtest 'test 10' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2016},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 20990, 'id_run (20990) inferred correctly');
@@ -1157,7 +1170,8 @@ subtest 'test 11' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($chromium_gen->id_run, 16839, 'id_run inferred correctly');
@@ -1230,7 +1244,8 @@ subtest 'test 12' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2017},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 24135, 'id_run inferred correctly');
@@ -1302,7 +1317,8 @@ subtest 'generate compositions only' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2017},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
   );
   apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
   $ms_gen->create_product_level();
