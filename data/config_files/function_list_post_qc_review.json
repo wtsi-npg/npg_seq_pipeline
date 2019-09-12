@@ -8,43 +8,63 @@
          },
          {
             "relation" : "dependsOn",
-            "target" : "update_ml_warehouse",
-            "source" : "run_archival_in_progress"
+            "source" : "run_archival_in_progress",
+            "target" : "upload_illumina_analysis_to_qc_database"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "upload_illumina_analysis_to_qc_database",
+            "target" : "update_ml_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_archival_in_progress",
+            "target" : "upload_auto_qc_to_qc_database"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "upload_auto_qc_to_qc_database",
+            "target" : "update_ml_warehouse"
          },
          {
             "relation" : "dependsOn",
             "source" : "update_ml_warehouse",
+            "target" : "archive_run_data_to_irods"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "update_ml_warehouse",
+            "target" : "archive_to_s3"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "update_ml_warehouse",
+            "target" : "cache_merge_component"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "archive_run_data_to_irods",
             "target" : "archive_to_irods_ml_warehouse"
          },
          {
             "relation" : "dependsOn",
-            "target" : "upload_fastqcheck_to_qc_database",
-            "source" : "archive_to_irods_ml_warehouse"
+            "source" : "archive_to_s3",
+            "target" : "notify_product_delivery"
          },
          {
             "relation" : "dependsOn",
-            "target" : "upload_illumina_analysis_to_qc_database",
-            "source" : "archive_to_irods_ml_warehouse"
+            "source" : "archive_to_irods_ml_warehouse",
+            "target" : "run_run_archived"
          },
          {
             "relation" : "dependsOn",
-            "target" : "upload_auto_qc_to_qc_database",
-            "source" : "archive_to_irods_ml_warehouse"
+            "source" : "cache_merge_component",
+            "target" : "run_run_archived"
          },
          {
             "relation" : "dependsOn",
-            "target" : "run_run_archived",
-            "source" : "upload_auto_qc_to_qc_database"
-         },
-         {
-            "relation" : "dependsOn",
-            "target" : "run_run_archived",
-            "source" : "upload_illumina_analysis_to_qc_database"
-         },
-         {
-            "relation" : "dependsOn",
-            "target" : "run_run_archived",
-            "source" : "upload_fastqcheck_to_qc_database"
+            "source" : "notify_product_delivery",
+            "target" : "run_run_archived"
          },
          {
             "relation" : "dependsOn",
@@ -53,28 +73,33 @@
          },
          {
             "relation" : "dependsOn",
-            "target" : "update_ml_warehouse_post_qc_complete",
-            "source" : "run_qc_complete"
+            "source" : "run_qc_complete",
+            "target" : "pipeline_wait4path"
          },
          {
             "relation" : "dependsOn",
-            "target" : "update_warehouse_post_qc_complete",
-            "source" : "run_qc_complete"
+            "source" : "pipeline_wait4path",
+            "target" : "update_ml_warehouse_post_qc_complete"
          },
          {
             "relation" : "dependsOn",
-            "target" : "archive_logs",
-            "source" : "update_warehouse_post_qc_complete"
+            "source" : "pipeline_wait4path",
+            "target" : "update_warehouse_post_qc_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "update_warehouse_post_qc_complete",
+            "target" : "archive_logs"
          },        
          {
             "relation" : "dependsOn",
-            "target" : "archive_logs",
-            "source" : "update_ml_warehouse_post_qc_complete"
+            "source" : "update_ml_warehouse_post_qc_complete",
+            "target" : "archive_logs"
          },
          {
             "relation" : "dependsOn",
-            "target" : "pipeline_end",
-            "source" : "archive_logs"
+            "source" : "archive_logs",
+            "target" : "pipeline_end"
          }       
       ],
       "nodes" : [
@@ -95,8 +120,20 @@
             "label" : "archive_to_irods_ml_warehouse"
          },
          {
-            "id" : "upload_fastqcheck_to_qc_database",
-            "label" : "upload_fastqcheck_to_qc_database"
+            "id" : "archive_run_data_to_irods",
+            "label" : "archive_run_data_to_irods"
+         },
+         {
+            "id" : "archive_to_s3",
+            "label" : "archive_to_s3"
+         },
+         {
+            "id" : "cache_merge_component",
+            "label" : "cache_merge_component"
+         },
+         {
+            "id" : "notify_product_delivery",
+            "label" : "notify_product_delivery"
          },
          {
             "id" : "upload_illumina_analysis_to_qc_database",
@@ -113,6 +150,10 @@
          {
             "id" : "run_qc_complete",
             "label" : "run_qc_complete"
+         },
+         {
+            "id" : "pipeline_wait4path",
+            "label" : "pipeline_wait4path"
          },
          {
             "id" : "update_ml_warehouse_post_qc_complete",

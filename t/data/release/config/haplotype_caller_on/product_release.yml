@@ -1,0 +1,6 @@
+---
+default:
+  haplotype_caller:
+    enable: true
+    sample_chunking: hs38primary
+    sample_chunking_number: 24

@@ -8,18 +8,17 @@ use File::Slurp;
 use File::Basename;
 use File::Spec;
 use JSON;
-use List::Util qw(sum uniq);
-use List::MoreUtils qw(all none);
+use List::Util qw(sum uniq all none any);
 use open q(:encoding(UTF8));
+use Try::Tiny;
 
-use npg_tracking::data::reference::find;
+use npg_tracking::data::reference;
+use npg_pipeline::cache::reference::constants qw( $TARGET_REGIONS_DIR $TARGET_AUTOSOME_REGIONS_DIR );
 use npg_tracking::data::transcriptome;
 use npg_tracking::data::bait;
 use npg_tracking::data::gbs_plex;
-use st::api::lims;
+use npg_pipeline::cache::reference;
 use npg_pipeline::function::definition;
-
-use Data::Dumper;
 
 extends q{npg_pipeline::base};
 with    q{npg_pipeline::function::util};
@@ -37,7 +36,7 @@ Readonly::Scalar my $DEFAULT_SJDB_OVERHANG        => q{74};
 Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
-Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star salmon};
+Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
 
 =head2 phix_reference
 
@@ -46,22 +45,17 @@ A path to Phix reference fasta file to split phiX spike-in reads
 =cut
 
 has 'phix_reference' => (isa        => 'Str',
-                         is         => 'rw',
+                         is         => 'ro',
                          required   => 0,
                          lazy_build => 1,
                         );
 sub _build_phix_reference {
   my $self = shift;
-
-  my $ruser = Moose::Meta::Class->create_anon_class(
-    roles => [qw/npg_tracking::data::reference::find/]
-  )->new_object({
+  return npg_tracking::data::reference->new({
     species => q{PhiX},
     aligner => q{fasta},
     ($self->repository ? (q(repository)=>$self->repository) : ())
-		});
-
-  return $ruser->refs->[0];
+  })->refs->[0];
 }
 
 has 'input_path'      => ( isa        => 'Str',
@@ -104,7 +98,7 @@ has '_do_gbs_plex_analysis' => ( isa     => 'Bool',
                                );
 
 sub generate {
-  my ( $self ) = @_;
+  my ($self, $pipeline_name, $dry_run) = @_;
 
   my @definitions = ();
 
@@ -112,12 +106,31 @@ sub generate {
     my $ref = {};
     $ref->{'memory'} = $MEMORY;
     my $subsets = [];
-    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets);
-    push @definitions, $self->_create_definition($ref, $dp);
+    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets, $dry_run);
     $self->_save_compositions($dp, $subsets);
+    if (!$dry_run) {
+      push @definitions, $self->_create_definition($ref, $dp);
+    }
   }
 
   return \@definitions;
+}
+
+sub generate_compositions {
+  my ($self, $pipeline_name)  = @_;
+
+  #####
+  # Pipeline name is always passed by the calling function.
+  # If we want to use an extra flag, it should be passed
+  # as a second argument to generate().
+  my $dry_run = 1;
+  $self->generate($pipeline_name, $dry_run);
+  return [npg_pipeline::function::definition->new(
+            created_by => __PACKAGE__,
+            created_on => $self->timestamp(),
+            identifier => $self->id_run(),
+            excluded   => 1
+          )];
 }
 
 sub _save_compositions {
@@ -150,7 +163,7 @@ sub _create_definition {
 }
 
 sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
-  my ( $self, $dp, $ref, $subsets) = @_;
+  my ( $self, $dp, $ref, $subsets, $dry_run) = @_;
 
   ########################################################
   # derive base parameters from supplied data_product (dp)
@@ -203,11 +216,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                                $name_root;
 
   my $bfs_input_file = $dp_archive_path . q[/] . $dp->file_name(ext => 'bam');
+  my $cfs_input_file = $dp_archive_path . q[/] . $dp->file_name(ext => 'cram');
   my $af_input_file = $dp->file_name(ext => 'json', suffix => 'bam_alignment_filter_metrics');
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
-  my $fqc1_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '1'));
-  my $fqc2_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '2'));
   my $seqchksum_orig_file = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'orig.seqchksum'));
 
   $self->debug(qq{  rpt_list: $rpt_list});
@@ -217,6 +229,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->debug(qq{  dp_archive_path: $dp_archive_path});
   $self->debug(qq{  cache10k_path: $cache10k_path});
   $self->debug(qq{  bfs_input_file: $bfs_input_file});
+  $self->debug(qq{  cfs_input_file: $cfs_input_file});
   $self->debug(qq{  af_input_file: $af_input_file});
 
   my $l = $dp->lims;
@@ -256,8 +269,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     s2_se_pe => ($self->is_paired_read)? q{pe} : q{se},
     run_lane_ss_fq1 => $fq1_filepath,
     run_lane_ss_fq2 => $fq2_filepath,
-    fqc1 => $fqc1_filepath,
-    fqc2 => $fqc2_filepath,
     seqchksum_orig_file => $seqchksum_orig_file,
     s2_input_format => $self->s1_s2_intfile_format,
   };
@@ -275,7 +286,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   if(not $is_plex) {
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:subsample-';
-    push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:fqc-';
   }
 
   my $do_rna = $self->_do_rna_analysis($dp);
@@ -326,11 +336,21 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if ($do_target_alignment && !$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
     if($self->_do_bait_stats_analysis($dp)){
        $p4_param_vals->{target_regions_file} = $self->_bait($rpt_list)->target_intervals_path();
+       push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
        $do_target_regions_stats = 1;
     }
-    elsif($self->_target_regions_file_path($dp, q[target])) {
-       $p4_param_vals->{target_regions_file} = $self->_ref($dp, q[target]) .q(.interval_list);
-       $do_target_regions_stats = 1;
+    else {
+      my $target_path = $self->_ref($dp, $TARGET_REGIONS_DIR);
+      my $target_autosome_path = $self->_ref($dp, $TARGET_AUTOSOME_REGIONS_DIR);
+      if ($target_path) {
+        $p4_param_vals->{target_regions_file} = $target_path.q(.interval_list);
+        $do_target_regions_stats = 1;
+        if ($target_autosome_path) {
+           $p4_param_vals->{target_autosome_regions_file} = $target_autosome_path.q(.interval_list);
+        } else {
+           push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
+        }
+      }
     }
   }
   if($spike_tag) {
@@ -380,6 +400,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
   }
+  elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$do_gbs_plex) {
+      push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
+  }
+
   if($nchs) {
     $p4_param_vals->{reference_dict_hs} = $self->_default_human_split_ref(q{picard}, $self->repository);   # always human default
     $p4_param_vals->{hs_reference_genome_fasta} = $self->_default_human_split_ref(q{fasta}, $self->repository);   # always human default
@@ -418,18 +442,27 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
         $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
         $rna_analysis = $DEFAULT_RNA_ANALYSIS;
     }
-    my $p4_reference_genome_index;
+    my $p4_reference_genome_index = $rna_analysis eq q[tophat2] ?
+                                    $self->_ref($dp, q(bowtie2)) : $self->_ref($dp, $rna_analysis);
     if($rna_analysis eq q[star]) {
       # most common read length used for RNA-Seq is 75 bp so indices were generated using sjdbOverhang=74
       $p4_param_vals->{sjdb_overhang_val} = $DEFAULT_SJDB_OVERHANG;
       $p4_param_vals->{star_executable} = q[star];
-      $p4_reference_genome_index = dirname($self->_ref($dp, q(star)));
-      # star jobs require more memory
+      # STAR uses the name of the directory where the index resides only
+      $p4_reference_genome_index = dirname($p4_reference_genome_index);
+      # STAR jobs require more memory
       $ref->{'memory'} = $MEMORY_FOR_STAR;
     } elsif ($rna_analysis eq q[tophat2]) {
       $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
       $p4_param_vals->{transcriptome_val} = $self->_transcriptome($rpt_list, q(tophat2))->transcriptome_index_name();
-      $p4_reference_genome_index = $self->_ref($dp, q(bowtie2));
+    } elsif ($rna_analysis eq q[hisat2]) {
+      $p4_param_vals->{hisat2_executable} = q[hisat2];
+      # akin to TopHat2's library_type but HISAT2 also considers
+      # if the reads are se or pe to determine value of this parameter
+      $p4_param_vals->{rna_strandness} = q[R];
+      if($self->is_paired_read) {
+        $p4_param_vals->{rna_strandness} .= q[F];
+      }
     }
     $p4_param_vals->{alignment_method} = $rna_analysis;
     $p4_param_vals->{annotation_val} = $self->_transcriptome($rpt_list)->gtf_file();
@@ -498,6 +531,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($nchs) {
     push @{$subsets}, 'human';
   }
+                      ##############################################
+  return if $dry_run; # Early return, we only need a list of subsets
+                      ##############################################
 
   # write p4 parameters to file
   my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path(q[POSITION]),
@@ -550,23 +586,23 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
     q{&&},
     _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, undef,
-                $skip_target_markdup_metrics, $rpt_list, $name_root, [$bfs_input_file]),
+                $skip_target_markdup_metrics, $rpt_list, $name_root, [$cfs_input_file]),
     (grep {$_}
       ($spike_tag ? q() : (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', undef, $rpt_list, $name_root, [$cfs_input_file]),
         q{&&},
         _qc_command('alignment_filter_metrics', undef, $qc_out_path, undef, undef, $rpt_list, $name_root, [$af_input_file]),
       ),
 
       $human_split ? (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $human_split, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $human_split, undef, $rpt_list, $name_root, [$cfs_input_file]),
       ) : q()),
 
       $nchs ? (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $nchs_outfile_label, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $nchs_outfile_label, undef, $rpt_list, $name_root, [$cfs_input_file]),
       ) : q(),
 
       ($do_rna and not $is_tag_zero_product) ? (join q( ),
@@ -727,7 +763,7 @@ sub _has_gbs_plex{
     $self->logcroak(qq{$rpt_list - GbS plex set but no gbs plex path found});
   }
 
-  if($library_type and $library_type !~ /^GbS/ismx){
+  if($library_type and $library_type !~ /^GbS|GnT\sMDA/ismx){
     $self->logcroak(qq{$rpt_list - GbS plex set but library type incompatible});
   }
 
@@ -745,61 +781,10 @@ sub _gbs_plex{
                 });
 }
 
-sub _target_regions_file_path {
-  my ($self, $dp, $aligner) = @_;
-
-  if (!$aligner) {
-    $self->logcroak('Aligner missing');
-  }
-
-  my $path = 1;
-  eval  { $self->_ref($dp, $aligner) ; 1; }
-  or do { $path = 0; };
-  return $path;
-}
-
 sub _ref {
   my ($self, $dp, $aligner) = @_;
 
-  if (!$aligner) {
-    $self->logcroak('Aligner missing');
-  }
-
-  my $dplims = $dp->lims;
-  my $rpt_list = $dp->rpt_list;
-  my $is_tag_zero_product = $dp->is_tag_zero_product;
-  my $ref_name = $self->_do_gbs_plex_analysis ? $dplims->gbs_plex_name : $dplims->reference_genome();
-
-  my $ref = $ref_name ? $self->_ref_cache->{$ref_name}->{$aligner} : undef;
-  if (!$ref) {
-    my $href = { 'aligner' => $aligner, 'lims' => $dplims, };
-    if ($self->repository) {
-      $href->{'repository'} = $self->repository;
-    }
-    my $role  = $self->_do_gbs_plex_analysis ? 'gbs_plex' : 'reference';
-    my $ruser = Moose::Meta::Class->create_anon_class(
-            roles => ["npg_tracking::data::${role}::find"])->new_object($href);
-    my @refs = @{$ruser->refs};
-    if (!@refs) {
-      $self->warn(qq[No reference genome set for $rpt_list]);
-    } else {
-      if (scalar @refs > 1) {
-        my $m = qq{Multiple references for $rpt_list};
-        ($is_tag_zero_product)
-          ? $self->logwarn($m)
-          : $self->logcroak($m);
-      } else {
-        $ref = $refs[0];
-        if ($ref_name) {
-          $self->_ref_cache->{$ref_name}->{$aligner} = $ref;
-        }
-      }
-    }
-  }
-  if ($ref) {
-    $self->info(qq{Reference set for $rpt_list: $ref});
-  }
-  return $ref;
+  return npg_pipeline::cache::reference->instance->get_path($dp, $aligner, $self->repository, $self->_do_gbs_plex_analysis);
 }
 
 sub _default_human_split_ref {
@@ -873,6 +858,16 @@ and some QC checks.
 Creates and returns an array of npg_pipeline::function::definition
 objects for all entities of the run eligible for alignment and split.
 
+=head2 generate_compositions
+
+Does just enough to figure out what .composition.json files have
+to be created and creates them. Returns an array consisting of a
+single npg_pipeline::function::definition object where this function
+is flagged as excluded.
+
+Can be used to generate missing or replace corrupt composition.json
+files in an existing analysis directory. 
+
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT
@@ -895,11 +890,13 @@ objects for all entities of the run eligible for alignment and split.
 
 =item List::Util
 
-=item List::MoreUtils
-
 =item open
 
-=item st::api::lims
+=item Try::Tiny
+
+=item Class::Load
+
+=item npg_tracking::data::reference
 
 =item npg_tracking::data::reference::find
 
@@ -921,7 +918,7 @@ David K. Jackson (david.jackson@sanger.ac.uk)
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018, 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

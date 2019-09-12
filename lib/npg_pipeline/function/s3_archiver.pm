@@ -2,66 +2,24 @@ package npg_pipeline::function::s3_archiver;
 
 use namespace::autoclean;
 
-use Data::Dump qw{pp};
 use File::Basename;
-use File::Spec::Functions qw{catdir catfile};
+use File::Slurp;
+use MIME::Base64 qw( encode_base64 );
 use Moose;
 use MooseX::StrictConstructor;
 use Readonly;
-use Try::Tiny;
 
 use npg_pipeline::function::definition;
-use npg_qc::mqc::outcomes;
 
 extends 'npg_pipeline::base';
 
 with qw{npg_pipeline::product::release};
 
-Readonly::Scalar my $ARCHIVE_EXECUTABLE => 'aws';
+# gsutil
+Readonly::Scalar my $ARCHIVE_EXECUTABLE => 'gsutil';
+# gsutil
 
 our $VERSION = '0';
-
-=head2 expected_files
-
-  Arg [1]    : Data product whose files to list, npg_pipeline::product.
-
-  Example    : my @files = $obj->expected_files($product)
-  Description: Return a list of the files expected to to present for
-               archiving in the runfolder.
-
-  Returntype : Array
-
-=cut
-
-sub expected_files {
-  my ($self, $product) = @_;
-
-  $product or $self->logconfess('A product argument is required');
-
-  my @expected_files;
-
-  my $dir_path = catdir($self->archive_path(), $product->dir_path());
-  my @extensions = qw{cram cram.md5 cram.crai
-                      seqchksum sha512primesums512.seqchksum
-                      bcfstats};
-  push @expected_files,
-    map { $product->file_path($dir_path, ext => $_) } @extensions;
-
-  my @suffixes = qw{F0x900 F0xB00 F0xF04_target};
-  push @expected_files,
-    map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
-    @suffixes;
-
-  my $qc_path = $product->qc_out_path($self->archive_path());
-
-  my @qc_extensions = qw{verify_bam_id.json};
-  push @expected_files,
-    map { $product->file_path($qc_path, ext => $_) } @qc_extensions;
-
-  @expected_files = sort @expected_files;
-
-  return @expected_files;
-}
 
 =head2 create
 
@@ -77,14 +35,14 @@ sub expected_files {
 sub create {
   my ($self) = @_;
 
-  my $id_run = $self->id_run();
-  my $job_name = sprintf q{%s_%d}, $ARCHIVE_EXECUTABLE, $id_run;
-  my @definitions;
+  my $job_name = join q[_], $ARCHIVE_EXECUTABLE, $self->label;
 
-  foreach my $product (@{$self->products->{data_products}}) {
-    next if not $self->is_release_data($product);
-    next if not $self->has_qc_for_release($product);
-    next if not $self->is_for_s3_release($product);
+  my @products = $self->no_s3_archival ? () :
+                 grep { $self->is_s3_releasable($_) }
+                 @{$self->products->{data_products}};
+  my @definitions = ();
+
+  foreach my $product (@products) {
 
     # This is required for our initial customer, but we should arrange
     # an alternative for when supplier_name is not provided
@@ -93,44 +51,56 @@ sub create {
       $self->logcroak(sprintf q{Missing supplier name for product %s, %s},
                       $product->file_name_root(), $product->rpt_list());
 
+    my @file_paths = sort _cram_last $self->expected_files($product);
+    $self->_check_files(@file_paths);
+
+    # gsutil
+    my @aws_args = qw{cp};
+
     my $base_url = $self->s3_url($product);
     $self->info("Using base S3 URL '$base_url'");
 
+    my $url = $base_url;
+    if ($self->s3_date_binning($product)) {
+      my ($date, $time) = split /-/msx, $self->timestamp();
+      $url = "$url/$date";
+    }
+
+    my $env = q{};
     my $profile = $self->s3_profile($product);
     if ($profile) {
-      $self->info("Using S3 client profile '$profile'");
+      $self->info(q{Using S3 client profile 'boto-}, $profile, q{'});
+
+      ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+      $env = 'export BOTO_CONFIG=$HOME/.gcp/boto-' . $profile . q{;};
+      ## use critic
     }
     else {
       $self->info('Using the default S3 client profile');
     }
 
-    my @file_paths = sort _cram_last $self->expected_files($product);
-    $self->_check_files(@file_paths);;
-
-    my @aws_args = qw{--cli-connect-timeout 300
-                      --acl bucket-owner-full-control
-                      --quiet};
-    if ($profile) {
-      push @aws_args, '--profile', $profile;
-    }
-
     my @commands;
     foreach my $file_path (@file_paths) {
       my $filename   = basename($file_path);
-      my $file_url   = "$base_url/$supplier_name/$filename";
+      my $file_url   = "$url/$supplier_name/$filename";
 
-      push @commands, sprintf q{%s s3 cp %s %s %s},
-        $ARCHIVE_EXECUTABLE, join(q{ }, @aws_args), $file_path, $file_url;
+      push @commands, join q{ },
+        $ARCHIVE_EXECUTABLE,
+        $self->_base64_encoded_md5_gsutil_arg($file_path),
+        @aws_args, $file_path, $file_url;
     }
 
     my $command = join q{ && }, reverse @commands;
+    if ($env) {
+      $command = "$env $command";
+    }
     $self->debug("Adding command '$command'");
 
     push @definitions,
       npg_pipeline::function::definition->new
         ('created_by'  => __PACKAGE__,
          'created_on'  => $self->timestamp(),
-         'identifier'  => $id_run,
+         'identifier'  => $self->label,
          'job_name'    => $job_name,
          'command'     => $command,
          'composition' => $product->composition());
@@ -140,7 +110,7 @@ sub create {
     push @definitions, npg_pipeline::function::definition->new
       ('created_by' => __PACKAGE__,
        'created_on' => $self->timestamp(),
-       'identifier' => $id_run,
+       'identifier' => $self->label,
        'excluded'   => 1);
   }
 
@@ -163,6 +133,17 @@ sub _check_files {
   }
 
   return;
+}
+
+sub _base64_encoded_md5_gsutil_arg {
+# if there is a corresponding .md5 file for the given path, use its contents to
+# add an MD5 header for the data being uploaded.
+  my ($self, $path) = @_;
+  $path .= q(.md5);
+  if (not -e $path){ return; }
+  my ($md5) = read_file($path) =~ m/^(\S{32})(?!\S)/smx;
+  if (not $md5) { $self->logcroak("Found md5 file for $path without valid md5 value"); }
+  return q(-h Content-MD5:).(encode_base64((pack q(H*),$md5),q()))
 }
 
 ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
@@ -208,15 +189,11 @@ product_release.yml, see npg_pipeline::product::release.
 
 =over
 
-=item Data::Dump
-
 =item JSON
 
 =item Moose
 
 =item Readonly
-
-=item Try::Tiny
 
 =back
 
@@ -226,7 +203,7 @@ Keith James
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2018, 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

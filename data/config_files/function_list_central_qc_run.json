@@ -173,8 +173,8 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "archive_to_irods_samplesheet",
-            "target" : "upload_fastqcheck_to_qc_database"
+            "target" : "archive_run_data_to_irods",
+            "source" : "archive_to_irods_samplesheet"
          },
          {
             "relation" : "dependsOn",
@@ -189,7 +189,7 @@
          {
             "relation" : "dependsOn",
             "target" : "run_run_archived",
-            "source" : "upload_fastqcheck_to_qc_database"
+            "source" : "archive_run_data_to_irods"
          },
          {
             "relation" : "dependsOn",
@@ -306,10 +306,6 @@
             "label" : "run_analysis_complete"
          },
          {
-            "id" : "upload_fastqcheck_to_qc_database",
-            "label" : "upload_fastqcheck_to_qc_database"
-         },
-         {
             "id" : "upload_illumina_analysis_to_qc_database",
             "label" : "upload_illumina_analysis_to_qc_database"
          },
@@ -320,6 +316,10 @@
          {
             "id" : "archive_to_irods_samplesheet",
             "label" : "archive_to_irods_samplesheet"
+         },
+         {
+            "id" : "archive_run_data_to_irods",
+            "label" : "archive_run_data_to_irods"
          },
          {
             "id" : "run_run_archived",

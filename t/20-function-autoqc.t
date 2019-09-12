@@ -1,10 +1,11 @@
 use strict;
 use warnings;
-use Test::More tests => 14;
+use Test::More tests => 15;
 use Test::Exception;
 use File::Path qw/make_path/;
 use File::Copy::Recursive qw/fcopy dircopy/;
 use File::Slurp;
+use Log::Log4perl qw/:levels/;
 
 use t::util;
 
@@ -17,7 +18,12 @@ use_ok('npg_pipeline::product');
 my $util = t::util->new();
 my $tmp = $util->temp_directory();
 
-my @tools = map { "$tmp/$_" } qw/bamtofastq blat norm_fit/;
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $DEBUG,
+                          file   => join(q[/], $tmp, 'logfile'),
+                          utf8   => 1});
+
+my @tools = map { "$tmp/$_" } qw/bamtofastq blat norm_fit bcftools/;
 foreach my $tool (@tools) {
   open my $fh, '>', $tool or die 'cannot open file for writing';
   print $fh $tool or die 'cannot print';
@@ -83,7 +89,7 @@ subtest 'adapter' => sub {
   is ($d->num_hosts, 1, 'one host');
   ok ($d->apply_array_cpu_limit, 'array_cpu_limit should be applied');
   ok (!$d->has_array_cpu_limit, 'array_cpu_limit not set');
-  is_deeply ($d->num_cpus, [2], 'num cpus as an array');
+  is_deeply ($d->num_cpus, [3], 'num cpus as an array');
   is ($d->memory, 1500, 'memory');
   is ($d->command_preexec, 'npg_pipeline_preexec_references', 'preexec command');
   ok ($d->has_composition, 'composition object is set');
@@ -99,7 +105,7 @@ subtest 'adapter' => sub {
     my $p = $de->composition->get_component(0)->position;
     is ($de->command, sprintf(
     'qc --check=adapter --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s',
-    qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}.bam"),
+    qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}.cram"),
     "adapter check command for lane $p");
   }
 
@@ -204,8 +210,9 @@ subtest 'qX_yield' => sub {
   foreach my $de (@{$da}) {
     my $p = $de->composition->get_component(0)->position;
     is ($de->command, sprintf(
-    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --platform_is_hiseq --input_files=%s --input_files=%s',
-     qq["1234:${p}"], "1234_${p}", "$archive_dir/lane${p}/qc", "$archive_dir/lane${p}/1234_${p}_1.fastqcheck", "$archive_dir/lane${p}/1234_${p}_2.fastqcheck"),
+    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --is_paired_read --qc_in=%s --suffix=F0x000 --platform_is_hiseq',
+      qq["1234:$p"], qq[1234_${p}], qq[$archive_dir/lane${p}/qc], qq[$archive_dir/lane${p}]
+    ),
     "qX_yield check command for lane $p");
   }
 
@@ -216,13 +223,13 @@ subtest 'qX_yield' => sub {
     lanes             => [4],
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
-    is_paired_read    => 1,
+    is_paired_read    => 0,
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
   is ($da->[0]->command, sprintf(
-    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --platform_is_hiseq --input_files=%s --input_files=%s',
-    qq["1234:4"], "1234_4", "$archive_dir/lane4/qc", "$archive_dir/lane4/1234_4_1.fastqcheck", "$archive_dir/lane4/1234_4_2.fastqcheck"),
+    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --no-is_paired_read --qc_in=%s --suffix=F0x000 --platform_is_hiseq',
+    qq["1234:4"], "1234_4", "$archive_dir/lane4/qc", "$archive_dir/lane4"),
     "qX_yield check command for lane 4");
 
   $aqc = npg_pipeline::function::autoqc->new(
@@ -259,8 +266,8 @@ subtest 'qX_yield' => sub {
   foreach my $d (@plexes) {
     my $t = $d->composition->get_component(0)->tag_index;
     is ($d->command, sprintf(
-    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s',
-    qq["1234:8:${t}"], "1234_8#${t}", "$archive_dir/lane8/plex${t}/qc", "$archive_dir/lane8/plex${t}/1234_8#${t}_1.fastqcheck"),
+    'qc --check=qX_yield --rpt_list=%s --filename_root=%s --qc_out=%s --no-is_paired_read --qc_in=%s --suffix=F0xB00',
+    qq["1234:8:${t}"], "1234_8#${t}", "$archive_dir/lane8/plex${t}/qc", "$archive_dir/lane8/plex${t}"),
     "qX_yield command for lane 8 tag $t (s/e)");
   }
 
@@ -419,8 +426,8 @@ subtest 'tag_metrics' => sub {
   ok ($da->[0]->excluded, 'step is excluded');
 };
 
-subtest 'genotype and gc_fraction' => sub {
-  plan tests => 11;
+subtest 'genotype and gc_fraction and bcfstats' => sub {
+  plan tests => 17;
 
   my $destination = "$tmp/references";
   dircopy('t/data/qc/references', $destination);
@@ -428,6 +435,18 @@ subtest 'genotype and gc_fraction' => sub {
   my $new_dir = $destination . '/Homo_sapiens/CGP_GRCh37.NCBI.allchr_MT/all/fasta';
   make_path($new_dir);
   write_file("$new_dir/Homo_sapiens.GRCh37.NCBI.allchr_MT.fa", qw/some ref/);
+  my $geno_refset = "$tmp/geno_refset";
+  foreach my $study ('2238','2897'){
+      foreach my $ref('CGP_GRCh37.NCBI.allchr_MT','1000Genomes_hs37d5'){
+          my $d1 =  $geno_refset . '/study'. $study .'/'. $ref .'/bcfdb';
+          make_path($d1);
+          write_file("$d1/study.bcf", qw/some data/);
+          write_file("$d1/study.bcf.csi", qw/some data/);
+          my $d2 =  $geno_refset . '/study'. $study .'/'. $ref .'/bcftools';
+          make_path($d2); 
+          write_file("$d2/study.annotation.vcf", qw/some data/);
+      }
+  }
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14043.csv';
 
@@ -486,6 +505,23 @@ subtest 'genotype and gc_fraction' => sub {
     'gc_fraction check can run');
   ok ($qc->_should_run(1, $plex_product_alt),
    'gc_fraction check can run');
+
+
+  $init->{'qc_to_run'} = q[bcfstats];
+  lives_ok {
+    $qc = npg_pipeline::function::autoqc->new($init);
+  } q{no croak on new, as required params provided};
+
+  ok ($qc->_should_run(0, $library_lane_product),
+    'bcfstats check can run for a non-indexed lane');
+  ok ($qc->_should_run(1, $plex_product),
+    'bcfstats check can run for tag 1 (human sample)');
+  ok (!$qc->_should_run(0, $plexed_lane_product),
+    'bcfstats check cannot run for an indexed lane');
+  ok (!$qc->_should_run(1, $plex0_product),
+    'bcfstats check cannot run for tag 0 (no alignment)');
+  ok (!$qc->_should_run(1, $plex168_product),
+    'bcfstats check cannot run for a spiked phix tag');
 };
 
 subtest 'memory_requirements' => sub {
@@ -508,6 +544,56 @@ subtest 'memory_requirements' => sub {
     ok ($d->has_memory, "memory is set for $name");
     is ($d->memory, $mem_req, "memory is set correctly for $name"); 
   }
+};
+
+subtest 'review' => sub {
+  plan tests => 6;
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_8747.csv';
+
+  my $qc = npg_pipeline::function::autoqc->new(
+    qc_to_run         => 'review',
+    is_indexed        => 1,
+    id_run            => 8747,
+    runfolder_path    => $rf_path,
+    timestamp         => q{today},
+    conf_path         => q{t/data/release/config/archive_on}
+  );
+  my $da = $qc->create();
+  ok ($da && (@{$da} == 1), 'one definition returned');
+  ok ($da->[0]->excluded, 'function is excluded - no config for projects');
+
+  $qc = npg_pipeline::function::autoqc->new(
+    qc_to_run         => 'review',
+    is_indexed        => 1,
+    id_run            => 8747,
+    runfolder_path    => $rf_path,
+    timestamp         => q{today},
+    conf_path         => q{t/data/release/config/qc_review}
+  );
+
+  $da = $qc->create();
+  ok ($da && (@{$da} == 11), '11 definitions returned');
+  my %definitions = map { $_->composition->freeze2rpt => $_ } @{$da};
+  my @expected_rpt_lists = qw/ 8747:1:1  8747:1:2  8747:1:3 
+                               8747:2:4  8747:2:5  8747:2:6
+                               8747:3:7  8747:3:8  8747:3:9 
+                               8747:7
+                               8747:8 /;
+  is_deeply ([sort keys %definitions], \@expected_rpt_lists,
+    'definitions are for correct entities');
+
+  my $d = $definitions{'8747:8'};
+  my $expected_command = q{qc --check=review --rpt_list="8747:8" } .
+    qq{--filename_root=8747_8 --qc_out=$archive_dir/lane8/qc } .
+    qq{--qc_in=$archive_dir/lane8/qc --conf_path=t/data/release/config/qc_review};
+  is ($d->command, $expected_command, 'correct command for lane-level job');
+
+  $d = $definitions{'8747:1:1'};
+  $expected_command = q{qc --check=review --rpt_list="8747:1:1" } .
+    qq{--filename_root=8747_1#1 --qc_out=$archive_dir/lane1/plex1/qc } .
+    qq{--qc_in=$archive_dir/lane1/plex1/qc --conf_path=t/data/release/config/qc_review};
+  is ($d->command, $expected_command, 'correct command for plex-level job');
 };
 
 1;

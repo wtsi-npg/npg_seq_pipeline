@@ -6,7 +6,8 @@ my $class = npg_tracking::util::build->subclass(code => <<'EOF');
 
   sub process_data_files {
     my $self = shift;
-    `find data/config_files -type f | cpio -pdv --quiet blib`;
+    # Do not copy PNG images
+    `find data/config_files -type f -not -name '*.png' | cpio -pdv --quiet blib`;
     return;
   }
 EOF
@@ -46,12 +47,14 @@ my $builder = $class->new(
           'List::Util'                   => 0,
           'Log::Log4perl'                => 0,
           'Math::Random::Secure'         => 0,
+          'MIME::Base64'                 => 0,
           'Moose'                        => 0.93,
           'Moose::Meta::Class'           => 0,
           'Moose::Role'                  => 0,
           'Moose::Util::TypeConstraints' => 0,
           'MooseX::AttributeCloner'      => 0.17,
           'MooseX::Getopt'               => 0,
+          'MooseX::Singleton'            => 0,
           'MooseX::StrictConstructor'    => 0,
           'Net::AMQP::RabbitMQ'          => 0,
           'namespace::autoclean'         => 0,
@@ -69,7 +72,6 @@ my $builder = $class->new(
           'XML::LibXML'                  => 0,
 
           'npg_common::roles::software_location'               => 0,
-          'npg_qc::autoqc::qc_store'                           => 0,
           'npg_tracking::data::reference::find'                => 0,
           'npg_tracking::data::reference::list'                => 0,
           'npg_tracking::data::bait'                           => 0,
@@ -81,12 +83,14 @@ my $builder = $class->new(
           'npg_tracking::glossary::composition::factory::rpt_list' => 0,
           'npg_tracking::illumina::runfolder'                  => 0,
           'npg_tracking::illumina::run::folder::validation'    => 0,
-          'npg_tracking::illumina::run::short_info'            => 0,
           'npg_tracking::Schema'                               => 0,
           'npg_tracking::util::types'                          => 0,
           'npg_tracking::util::abs_path'                       => 0,
+          'npg_tracking::util::pipeline_config'                => 0,
           'npg_qc::Schema'                                     => 0,
           'npg_qc::autoqc::role::result'                       => 0,
+          'npg_qc::autoqc::qc_store'                           => 0,
+          'npg_qc::autoqc::constants'                          => 0,
           'st::api::lims'                                      => 0,
           'st::api::lims::ml_warehouse'                        => 0,
           'npg::api::request'                                  => 0,
@@ -103,6 +107,8 @@ my $builder = $class->new(
           'Digest::MD5'                 => 0,
           'File::Copy::Recursive'       => 0,
           'File::Temp'                  => 0,
+          'File::Which'                 => 0,
+          'IO::Compress::Bzip2'         => 0,
           'Moose::Util'                 => 0,
           'Sys::Hostname'               => 0,
           'Test::Deep'                  => 0,
@@ -110,6 +116,8 @@ my $builder = $class->new(
           'Test::Differences'           => 0,
           'Test::More'                  => '0.8',
           'Test::Perl::Critic'          => 0,
+          'Test::Trap'                  => 0,
+          'Test::Warn'                  => 0,
           'npg_testing::db'             => 0,
           'npg_tracking::util::build'   => 0,
           'npg_tracking::glossary::composition::component::illumina' => 0,

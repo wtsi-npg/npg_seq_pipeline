@@ -1,5 +1,6 @@
 package npg_pipeline::executor::lsf;
 
+use 5.010;
 use Moose;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
@@ -10,6 +11,7 @@ use Try::Tiny;
 use List::MoreUtils qw(uniq);
 use Readonly;
 use English qw(-no_match_vars);
+use Math::Random::Secure qw(irand);
 
 use npg_tracking::util::abs_path qw(abs_path network_abs_path);
 use npg_pipeline::executor::lsf::job;
@@ -18,7 +20,7 @@ use npg_pipeline::runfolder_scaffold;
 extends 'npg_pipeline::executor';
 with qw( 
          npg_pipeline::executor::options
-         npg_pipeline::base::config
+         npg_tracking::util::pipeline_config
          MooseX::AttributeCloner
        );
 
@@ -28,8 +30,7 @@ Readonly::Scalar my $VERTEX_LSF_JOB_IDS_ATTR_NAME => q[lsf_job_ids];
 Readonly::Scalar my $LSF_JOB_IDS_DELIM            => q[-];
 Readonly::Scalar my $DEFAULT_MAX_TRIES            => 3;
 Readonly::Scalar my $DEFAULT_MIN_SLEEP            => 1;
-Readonly::Scalar my $DEFAULT_JOB_ID_FOR_NO_BSUB   => 50;
-
+Readonly::Scalar my $MAX_JOB_ID_FOR_NO_BSUB       => 1_000_000;
 Readonly::Scalar my $SCRIPT4SAVED_COMMANDS => q[npg_pipeline_execute_saved_command];
 
 =head1 NAME
@@ -152,20 +153,57 @@ sub _execute_function {
   my ($self, $function) = @_;
 
   my $g = $self->function_graph4jobs;
-  #####
-  # Need ids of upstream LSF jobs in order to set correctly dependencies
-  # between LSF jobs
-  #
-  my @depends_on = ();
+
+  my @depends_on_with_degree = ();
+
   if (!$g->is_source_vertex($function)) {
-    @depends_on = $self->dependencies($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
-    if (!@depends_on) {
-      $self->logcroak(qq{"$function" should depend on at least one LSF job});
+    #####
+    # Need ids of upstream LSF jobs in order to set correctly dependencies
+    # between LSF jobs
+    #
+    my @depends_on = map { _string_job_ids2list($_) }
+                     $self->dependencies($function, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
+    @depends_on or $self->logcroak(qq{"$function" should depend on at least one LSF job});
+
+    my $map_degree = sub {
+      my ($ids, $is_same_degree) = @_;
+      return (map { {$_ => $is_same_degree} } @{$ids});
+    };
+
+    # Do we have a composition attribute?
+    # Either all of a function's definitions have a composition or none do  
+    my $definition = $self->function_definitions->{$function}[0];
+    if ( !$definition->has_composition ) {
+      # If not our relationship is many to one or one to one and should be controlled by done(<job_id)
+      @depends_on_with_degree = $map_degree->(\@depends_on, 0);
+    } else {
+      my @this_comp_digest = map {$_->composition()->digest()}
+                             @{$self->function_definitions->{$function}};
+      my @this_chunk = map {$_->chunk_label()}
+                       @{$self->function_definitions->{$function}};
+
+      foreach my $prev_function ($g->predecessors($function)) {
+        # If we do have one and our composition is the same keys as previous node(s)
+        # then they should be controlled by "done(<job_id>[*])"  
+        my @a = map { _string_job_ids2list($_) }
+                $g->get_vertex_attribute($prev_function, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
+        if ((scalar @a > 1) || !$self->function_definitions->{$prev_function}[0]->has_composition) {
+          #mark this relationship as "done()"
+          push @depends_on_with_degree, $map_degree->(\@a, 0);
+        } else {
+          my @prev_comp_digest = map {$_->composition()->digest()}
+                                 @{$self->function_definitions->{$prev_function}};
+          my @prev_chunk = map {$_->chunk_label()}
+                           @{$self->function_definitions->{$prev_function}};
+          # Mark as "done()" or "one(<job_id>[*])"depending on match evaluation
+          push @depends_on_with_degree, $map_degree->(
+            \@a, ((@this_comp_digest ~~ @prev_comp_digest) and (@this_chunk ~~ @prev_chunk) ? 1 : 0));
+        }
+      }
     }
   }
 
-  @depends_on = map { _string_job_ids2list($_) } @depends_on;
-  my @ids = $self->_submit_function($function, @depends_on);
+  my @ids = $self->_submit_function($function, @depends_on_with_degree);
   if (!@ids) {
     $self->logcroak(q{A list of LSF job ids should be returned});
   }
@@ -329,7 +367,9 @@ sub _execute_lsf_command {
   $self->info(qq{***** $cmd });
 
   if ($self->no_bsub()) {
-    $job_id =  $DEFAULT_JOB_ID_FOR_NO_BSUB;
+    $job_id = irand($MAX_JOB_ID_FOR_NO_BSUB);
+    # Try again if get zero first time.
+    $job_id ||= irand($MAX_JOB_ID_FOR_NO_BSUB);
   } else {
     my $count = 1;
     my $max_tries_plus_one =
@@ -406,6 +446,8 @@ __END__
 
 =item npg_tracking::util::abs_path
 
+=item npg_tracking::util::pipeline_config
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -416,15 +458,13 @@ __END__
 
 =over
 
-=item Andy Brown
-
 =item Marina Gourtovaia
 
 =back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

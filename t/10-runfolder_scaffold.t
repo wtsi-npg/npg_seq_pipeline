@@ -31,7 +31,7 @@ subtest 'tests for class methods' => sub {
 };
 
 subtest 'top level scaffold' => sub {
-  plan tests => 6;
+  plan tests => 7;
 
   my $util = t::util->new();
   my $rfh = $util->create_runfolder();
@@ -56,6 +56,8 @@ subtest 'top level scaffold' => sub {
   ok (-e "$dir/tileviz", 'tileviz index directory created');
   ok (-e "$bbc_path/status", 'status directory created');
   ok (-e "$bbc_path/metadata_cache_999", 'metadata cache directory created');
+  ok (-e "$bbc_path/irods_publisher_restart_files",
+    'directory for iRODS publisher restart files created');
 };
 
 subtest 'product level scaffold, NovaSeq all lanes' => sub {
@@ -85,12 +87,12 @@ subtest 'product level scaffold, NovaSeq all lanes' => sub {
   my @original = qw/lane1 lane2 lane3 lane4/;
   my @dirs = @original;
   push @dirs, (map {join q[/], $_, 'qc'} @original);
-  push @dirs, (map {join q[/], $_, 'tileviz'} @original);
+  push @dirs, (map {join q[/], $_, 'tileviz_'.$_} @original);
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
   map { ok (-d $_, "$_ created") } map {join q[/], $apath, $_} @dirs;
 
   for my $lane (@original) {
-    my $file = join q[/], $apath, $lane, 'tileviz.html';
+    my $file = join q[/], $apath, $lane, 'tileviz_' . $lane . '.html';
     ok (-f $file, "tileviz lane index file $file exists");
     my $content = read_file $file;
     my ($p) = $lane =~ /(\d)\Z/;
@@ -137,7 +139,7 @@ subtest 'product level scaffold, NovaSeq selected lanes' => sub {
   my @original = qw/lane2 lane3/;
   my @dirs = @original;
   push @dirs, (map {join q[/], $_, 'qc'} @original);
-  push @dirs, (map {join q[/], $_, 'tileviz'} @original);
+  push @dirs, (map {join q[/], $_, 'tileviz_'.$_} @original);
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
   map { ok (-d $_, "$_ created") } map {join q[/], $apath, $_} @dirs;
 

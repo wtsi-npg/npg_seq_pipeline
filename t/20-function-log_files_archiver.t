@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Exception;
 use File::Copy;
 use Log::Log4perl qw(:levels);
@@ -16,7 +16,7 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 use_ok('npg_pipeline::function::log_files_archiver');
 
 subtest 'MiSeq run' => sub {
-  plan tests => 33;
+  plan tests => 32;
 
   my $id_run  = 16850;
   my $rf_name = '150710_MS2_16850_A_MS3014507-500V2';
@@ -52,13 +52,12 @@ subtest 'MiSeq run' => sub {
     'created_by is correct');
   is ($d->created_on, $a->timestamp, 'created_on is correct');
   is ($d->identifier, $id_run, 'identifier is set correctly');
-  is ($d->job_name, qq{publish_illumina_logs_${id_run}_20181204},
+  is ($d->job_name, qq{publish_logs_${id_run}_20181204},
     'job_name is correct');
   is ($d->command, join(q[ ], 'npg_publish_illumina_logs.pl',
     qq{--collection \/seq\/$id_run/log},
     qq{--runfolder_path $orfpath --id_run $id_run}),
     'command is correct');
-  is ($d->command_preexec, qq{[ -d '$orfpath' ]}, 'preexec command');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
   ok (!$d->has_num_cpus, 'number of cpus is not set');
@@ -124,9 +123,22 @@ subtest 'NovaSeq run' => sub {
   my $d = $da->[0];
   isa_ok($d, q{npg_pipeline::function::definition});
   is ($d->command, join(q[ ], 'npg_publish_illumina_logs.pl',
-    qq{--collection \/seq\/illumina\/runs\/$id_run\/log},
+    qq{--collection \/seq\/illumina\/runs\/26\/$id_run\/log},
     qq{--runfolder_path $rfpath --id_run $id_run}),
     'command is correct');
+};
+
+subtest 'pipeline for a product' => sub {
+  plan tests => 1;
+
+  my $a  = npg_pipeline::function::log_files_archiver->new(
+    runfolder_path   => q{t/data/novaseq},
+    label            => 'my_label',
+    product_rpt_list => '123:4:5'
+  );
+  throws_ok { $a->create() }
+    qr/Not implemented for individual products/,
+    'functionality for individual products not implemented - error'; 
 };
 
 1;

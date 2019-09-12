@@ -11,6 +11,7 @@ use Carp;
 our $VERSION = '0';
 
 with Storage('format' => 'JSON');
+with 'npg_pipeline::product::chunk';
 
 Readonly::Scalar our $LOWLOAD_QUEUE   => q[lowload];
 Readonly::Scalar our $SMALL_QUEUE     => q[small];
@@ -279,6 +280,16 @@ has 'apply_array_cpu_limit' => (
   required   => 0,
   predicate  => 'has_apply_array_cpu_limit',
 );
+
+=head2 chunk
+
+An optional attribute, present if definition is from a chunked product.
+
+=head2 has_chunk
+
+Predicate method for 'chunk' attribute.
+
+=cut
 
 =head2 BUILD
 

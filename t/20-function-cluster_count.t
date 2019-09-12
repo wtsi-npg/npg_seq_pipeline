@@ -17,7 +17,7 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $dir, 'logfile'),
                           utf8   => 1});
 
-$util->create_multiplex_analysis();
+$util->create_analysis();
 my $analysis_runfolder_path = $util->analysis_runfolder_path();
 my $bam_basecall_path = $util->standard_bam_basecall_path();
 my $recalibrated_path = $util->standard_analysis_recalibrated_path();
@@ -82,7 +82,7 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_8747.csv];
   my $analysis_runfolder_path = 't/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX';
   my $bam_basecall_path = "$analysis_runfolder_path/Data/Intensities/BAM_basecalls_20130122-085552";
-  my $archive_path = "$bam_basecall_path/PB_cal_bam/archive";
+  my $archive_path = "$bam_basecall_path/no_cal/archive";
 
   my $object;
   lives_ok{
@@ -144,7 +144,7 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_8747.csv];
   my $analysis_runfolder_path = 't/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX';
   my $bam_basecall_path = "$analysis_runfolder_path/Data/Intensities/BAM_basecalls_20130122-085552";
-  my $archive_path = "$bam_basecall_path/PB_cal_bam/archive";
+  my $archive_path = "$bam_basecall_path/no_cal/archive";
 
   my $object;
   lives_ok{
@@ -173,13 +173,13 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_8747.csv];
   my $analysis_runfolder_path = 't/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX';
   my $bam_basecall_path = "$analysis_runfolder_path/Data/Intensities/BAM_basecalls_20130122-085552";
-  my $archive_path = "$bam_basecall_path/PB_cal_bam/archive";
-  my $recalibrated_path = "$bam_basecall_path/PB_cal_bam";
+  my $archive_path = "$bam_basecall_path/no_cal/archive";
+  my $recalibrated_path = "$bam_basecall_path/no_cal";
   my $qc_path = "$archive_path/qc";
 
   my $common_command = sub {
     my $p = shift;
-    return sprintf q{$EXECUTABLE_NAME bin/npg_pipeline_check_cluster_count --bfs_fofp_name %s/lane%d/8747_bfs_fofn.txt --sf_fofp_name %s/lane%d/8747_sf_fofn.txt --id_run 8747 --bam_basecall_path %s --qc_path %s --lanes %d}, $archive_path, $p, $archive_path, $p, $bam_basecall_path, $qc_path, $p;
+    return sprintf q{$EXECUTABLE_NAME bin/npg_pipeline_check_cluster_count --bfs_fofp_name %s/lane%d/8747_bfs_fofn.txt --sf_fofp_name %s/lane%d/8747_sf_fofn.txt --id_run 8747 --bam_basecall_path %s --qc_path %s --lanes %d --runfolder_path %s}, $archive_path, $p, $archive_path, $p, $bam_basecall_path, $qc_path, $p, $analysis_runfolder_path;
   };
 
   my $c;

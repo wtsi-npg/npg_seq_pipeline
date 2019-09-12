@@ -95,3 +95,12 @@
   id_seq_component: 24
   id_seq_composition: 12
   size: 2
+- id_seq_comcom: 25
+  id_seq_component: 25
+  id_seq_composition: 13
+  size: 1
+- id_seq_comcom: 26
+  id_seq_component: 26
+  id_seq_composition: 14
+  size: 1
+

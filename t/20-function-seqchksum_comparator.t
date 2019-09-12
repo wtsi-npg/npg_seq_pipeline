@@ -19,11 +19,10 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 
 use_ok( q{npg_pipeline::function::seqchksum_comparator} );
 
-$util->set_rta_staging_analysis_area();
+$util->create_analysis();
 
-my $timestamp = q{20100907-142417};
+my $timestamp = q{09-07-2009};
 my $analysis_runfolder_path = $util->analysis_runfolder_path();
-#$util->create_analysis();
 my $bam_basecall_path = $analysis_runfolder_path . "/Data/Intensities/BAM_basecalls_$timestamp/";
 my $recalibrated_path = $analysis_runfolder_path. "/Data/Intensities/BAM_basecalls_$timestamp/no_cal";
 my $archive_path = $recalibrated_path . q{/archive};
@@ -53,7 +52,7 @@ my $archive_path = $recalibrated_path . q{/archive};
   is ($d->created_on, $object->timestamp, 'created_on is correct');
   is ($d->identifier, 1234, 'identifier is set correctly');
   ok (!$d->has_composition, 'no composition is not set');
-  is ($d->job_name, q{seqchksum_comparator_1234_20100907-142417},
+  is ($d->job_name, q{seqchksum_comparator_1234_09-07-2009},
     'job_name is correct');
   my $rp = $object->recalibrated_path;
   is ($d->command,
