@@ -596,14 +596,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                nonconsented_humansplit     => $nchs,
                do_gbs_plex                 => $do_gbs_plex,
 	       do_rna                      => $do_rna,
-	       human_split                 => ($human_split ? $human_split : q[none]),
-	       markdup_method              => $markdup_method,
-	       markdup_optical_distance    => $markdup_optical_distance,
              );
   while (my ($text, $value) = each %info) {
     $self->info(qq[  $text is ] . ($value ? q[true] : q[false]));
   }
 
+  $self->info(q[  human_split is ] . ($human_split ? $human_split : q[none]));
+  $self->info(q[  markdup_method is ] . ($markdup_method ? $markdup_method : q[unspecified]));
+  $self->info(q[  markdup_optical_distance is ] . ($markdup_optical_distance ? $markdup_optical_distance : q[unspecified]));
   $self->info(q[  p4 parameters written to ] . $param_vals_fname);
   $self->info(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
