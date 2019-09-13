@@ -828,7 +828,8 @@ subtest 'test 6' => sub {
               "run_lane_ss_fq1"=> $dir."/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/lane1/plex1/.npg_cache_10000/20268_1#1_1.fastq",
               "bait_regions_file"=> $dir .'/baits/Human_all_exon_V5/1000Genomes_hs37d5/S04380110-CTR.interval_list',
               "recal_dir"=> $dir .'/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal',
-              "markdup_method" => "biobambam"
+              "markdup_method" => "biobambam",
+              "markdup_optical_distance_value" => 100,
          },],
      'ops' => {  
          'prune' => ['fop.*_bmd_multiway:calibration_pu-',

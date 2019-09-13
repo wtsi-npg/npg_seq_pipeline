@@ -239,6 +239,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
   my $seqchksum_orig_file = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'orig.seqchksum'));
   my $markdup_method = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
+  my $markdup_optical_distance = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
 
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});
@@ -290,6 +291,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     seqchksum_orig_file => $seqchksum_orig_file,
     s2_input_format => $self->s1_s2_intfile_format,
     markdup_method => $markdup_method,
+    markdup_optical_distance_value => $markdup_optical_distance,
   };
   my $p4_ops = {
     prune => [],
@@ -594,12 +596,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                nonconsented_humansplit     => $nchs,
                do_gbs_plex                 => $do_gbs_plex,
 	       do_rna                      => $do_rna,
+	       human_split                 => ($human_split ? $human_split : q[none]),
+	       markdup_method              => $markdup_method,
+	       markdup_optical_distance    => $markdup_optical_distance,
              );
   while (my ($text, $value) = each %info) {
     $self->info(qq[  $text is ] . ($value ? q[true] : q[false]));
   }
 
-  $self->info(q[  human_split is ] . ($human_split ? $human_split : q[none]));
   $self->info(q[  p4 parameters written to ] . $param_vals_fname);
   $self->info(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
