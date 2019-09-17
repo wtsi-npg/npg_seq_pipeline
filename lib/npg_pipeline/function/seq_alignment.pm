@@ -318,8 +318,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   # bwa's "mem"
   $bwa = ($do_target_alignment and $self->_is_alt_reference($dp)) ? 'bwa_mem' : $bwa;
 
-
-  my $skip_target_markdup_metrics = (not $spike_tag and not $do_target_alignment);
+  my $skip_target_markdup_metrics = ($spike_tag or not $do_target_alignment);
 
   if($human_split and not $do_target_alignment and not $spike_tag) {
     # human_split needs alignment. The final_output_prep_no_y_target parameter specifies a p4 template
@@ -421,7 +420,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   else {
     push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
-    push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_bamsort_coord:', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk';
+    push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_bamsort_coord:', 'foptgt_bammarkduplicates', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk';
   }
 
   my $p4_local_assignments = {};

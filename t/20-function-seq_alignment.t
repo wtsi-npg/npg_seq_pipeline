@@ -277,7 +277,7 @@ subtest 'test 1' => sub {
   $plex_temp_dir = $tmp_dir . q{/12597_5#168};
   $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/12597_5#168_p4s2_pv_in.json -export_param_vals 12597_5#168_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_12597_5#168.json && viv.pl -s -x -v 3 -o viv_12597_5#168.log run_12597_5#168.json } .
     qq{ && qc --check bam_flagstats --filename_root 12597_5#168 --qc_in $qc_in --qc_out $qc_out --rpt_list "12597:5:168" --input_files $dir/140409_HS34_12597_A_C333TACXX/Data/Intensities/BAM_basecalls_20140515-073611/no_cal/archive/lane5/plex168/12597_5#168.cram} .
-    q{ '};
+    q{ --skip_markdups_metrics '};
 
   $d = _find($da, 5, 168);
   is ($d->command, $command, 'correct command for position 5, tag 168 (spiked in phix)');
