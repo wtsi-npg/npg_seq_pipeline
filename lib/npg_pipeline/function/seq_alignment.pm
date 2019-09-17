@@ -546,14 +546,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     if(not $self->is_paired_read) {
       $p4_param_vals->{bwa_mem_p_flag} = undef;
     }
-
-    # if a ".alt" file exists in the "alignment_reference_genome" directory, set "alt_ctg_dir" to the
-    #  directory and change "alignment_method" to "bwa_mem_bwakit"
-#   if($p4_param_vals->{alignment_method} eq q[bwa0_6] and -f "$p4_param_vals->{alignment_reference_genome} . q[.alt]") {
-#     my($filename, $dirs) = fileparse($p4_param_vals->{alignment_reference_genome});
-#     $p4_param_vals->{alt_ctg_dir} = $dirs;
-#     $p4_param_vals->{alignment_method} = q[bwa_mem_bwakit];
-#   }
   }
 
   if($human_split) {
@@ -863,11 +855,6 @@ sub _p4_stage2_params_path {
   my ($self, $position) = @_;
 
   my $path = $self->recalibrated_path;
-
-# temporarily dump all p4s2 params files in no_cal (ignore position)
-# if($self->is_multiplexed_lane($position)) {
-#   $path .= q[/lane] . $position;
-# }
 
   return $path;
 }
