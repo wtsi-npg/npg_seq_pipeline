@@ -1,7 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+ 
+ - prune bam generation for most products with no alignment and
+   change bam_flagstats command in seq_alignment to crams
  - skip markdup step in seq_alignment for spike tag
+
 
 release 57.1.1
  - all components of npg_run_is_deletable script to use samplesheet

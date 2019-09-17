@@ -216,6 +216,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                                $name_root;
 
   my $bfs_input_file = $dp_archive_path . q[/] . $dp->file_name(ext => 'bam');
+  my $cfs_input_file = $dp_archive_path . q[/] . $dp->file_name(ext => 'cram');
   my $af_input_file = $dp->file_name(ext => 'json', suffix => 'bam_alignment_filter_metrics');
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
@@ -228,6 +229,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->debug(qq{  dp_archive_path: $dp_archive_path});
   $self->debug(qq{  cache10k_path: $cache10k_path});
   $self->debug(qq{  bfs_input_file: $bfs_input_file});
+  $self->debug(qq{  cfs_input_file: $cfs_input_file});
   $self->debug(qq{  af_input_file: $af_input_file});
 
   my $l = $dp->lims;
@@ -397,6 +399,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
   }
+  elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$do_gbs_plex) {
+      push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
+  }
+
   if($nchs) {
     $p4_param_vals->{reference_dict_hs} = $self->_default_human_split_ref(q{picard}, $self->repository);   # always human default
     $p4_param_vals->{hs_reference_genome_fasta} = $self->_default_human_split_ref(q{fasta}, $self->repository);   # always human default
@@ -579,23 +585,23 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
     q{&&},
     _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, undef,
-                $skip_target_markdup_metrics, $rpt_list, $name_root, [$bfs_input_file]),
+                $skip_target_markdup_metrics, $rpt_list, $name_root, [$cfs_input_file]),
     (grep {$_}
       ($spike_tag ? q() : (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', undef, $rpt_list, $name_root, [$cfs_input_file]),
         q{&&},
         _qc_command('alignment_filter_metrics', undef, $qc_out_path, undef, undef, $rpt_list, $name_root, [$af_input_file]),
       ),
 
       $human_split ? (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $human_split, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $human_split, undef, $rpt_list, $name_root, [$cfs_input_file]),
       ) : q()),
 
       $nchs ? (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $nchs_outfile_label, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $nchs_outfile_label, undef, $rpt_list, $name_root, [$cfs_input_file]),
       ) : q(),
 
       ($do_rna and not $is_tag_zero_product) ? (join q( ),
