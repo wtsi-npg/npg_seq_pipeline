@@ -90,7 +90,7 @@ subtest 'wr add command' => sub {
 };
 
 subtest 'definition for a job' => sub {
-  plan tests => 2;
+  plan tests => 3;
 
   my $ref = {
     created_by    => __PACKAGE__,
@@ -128,6 +128,16 @@ subtest 'definition for a job' => sub {
     'memory'   => '100M' };
   $job_def = $e->_definition4job('pipeline_start', 'some_dir', $fd);
   is_deeply ($job_def, $expected, 'job definition with tee-ing to a log file');
+
+  $ref->{'chunk'} = 1;
+  $fd = npg_pipeline::function::definition->new($ref);
+  $expected = {
+    'cmd' => '(umask 0002 && /bin/true ) 2>&1 | tee -a "some_dir/pipeline_start-today-1234.1.out"',
+    'cpus' => 0,
+    'priority' => 0,
+    'memory'   => '100M' };
+  $job_def = $e->_definition4job('pipeline_start', 'some_dir', $fd);
+  is_deeply ($job_def, $expected, 'chunked job definition with tee-ing to a log file');
 };
 
 subtest 'dependencies' => sub {
