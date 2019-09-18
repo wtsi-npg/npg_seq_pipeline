@@ -191,21 +191,20 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
 
   my (@incrams, @spatial_filter_rg_value);
-  for my $rpt_elem (map { $_->rpt_list } ($dp->components_as_products)) {
-    $self->debug(qq{  rpt_elem (component): $rpt_elem});
-    push @incrams, File::Spec->catdir($recal_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => $self->s1_s2_intfile_format));
-    push @spatial_filter_rg_value, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name_root;
+  for my $elem ($dp->components_as_products) {
+    $self->debug(q{  rpt_elem (component): }.$elem->rpt_list);
+    push @incrams, File::Spec->catdir($recal_path, $elem->file_name(ext => $self->s1_s2_intfile_format));
+    push @spatial_filter_rg_value, $elem->file_name_root;
   }
   my $spatial_filter_rg_value = join q[,], @spatial_filter_rg_value;
 
   my (@s2_filter_files,@tag_metrics_files);
   for my $ldp ($dp->lanes_as_products) {
-    my $rpt_elem = $ldp->rpt_list;
     my $ldp_archive_path = $ldp->path($archive_path);
     my $ldp_qc_path = $ldp->qc_out_path($archive_path);
-    $self->debug(qq{  rpt_elem (lane): $rpt_elem});
-    push @s2_filter_files, File::Spec->catdir($recal_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => 'spatial_filter'));
-    push @tag_metrics_files, File::Spec->catdir($ldp_qc_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => 'tag_metrics.json', ));
+    $self->debug(q{  rpt_elem (lane): }.$ldp->rpt_list);
+    push @s2_filter_files, File::Spec->catdir($recal_path, $ldp->file_name(ext => 'spatial_filter'));
+    push @tag_metrics_files, File::Spec->catdir($ldp_qc_path, $ldp->file_name(ext => 'tag_metrics.json', ));
   }
   my $s2_filter_files = join q[,], @s2_filter_files;
   my $tag_metrics_files = join q[ ], @tag_metrics_files;
