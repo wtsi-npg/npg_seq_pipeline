@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 14;
+use Test::More tests => 15;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -1250,6 +1250,7 @@ subtest 'test 12' => sub {
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 24135, 'id_run inferred correctly');
+
   make_path "$bc_path/archive/tileviz";
   apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
   $ms_gen->create_product_level();
@@ -1338,6 +1339,59 @@ subtest 'generate compositions only' => sub {
   for my $f (@files) {
     ok (-f "$base/$f", "file $f exists");
   }
+};
+
+subtest 'product_release_tests' => sub {
+  plan tests => 92;
+
+  my %test_runs = (
+    16850 => { platform => 'miseq', runfolder_name => '150710_MS2_16850_A_MS3014507-500V2', markdup_method => 'samtools', },
+    16866 => { platform => 'miseq', runfolder_name => '150713_MS8_16866_A_MS3734403-300V2', markdup_method => 'samtools', },
+    20990 => { platform => 'miseq', runfolder_name => '161010_MS5_20990_A_MS4548606-300V2', markdup_method => 'picard', },
+    24135 => { platform => 'miseq', runfolder_name => '171020_MS5_24135_A_MS5476963-300V2', markdup_method => 'samtools', },
+    16756 => { platform => 'hiseq', runfolder_name => '150701_HS36_16756_B_C711RANXX', markdup_method => 'samtools', },
+    16803 => { platform => 'hiseq', runfolder_name => '150706_HS21_16803_B_HGLFHADXX', markdup_method => 'samtools', },
+    16807 => { platform => 'hiseq', runfolder_name => '150707_HS38_16807_A_C7U2YANXX', markdup_method => 'samtools', },
+    20268 => { platform => 'hiseq', runfolder_name => '160704_MS3_20268_A_MS4000667-300V2', markdup_method => 'biobambam', },
+    16839 => { platform => 'hiseqx', runfolder_name => '150709_HX4_16839_A_H7MHWCCXX', markdup_method => 'samtools', },
+  );
+
+  for my $run (keys %test_runs) {
+    my $run_details = $test_runs{$run};
+    my $runfolder_path = join q[/], $dir, $run_details->{runfolder_name};
+    my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_17760704-123456/no_cal';
+    `mkdir -p $bc_path`;
+    my $cache_dir = join q[/], $runfolder_path, "Data/Intensities/BAM_basecalls_17760704-123456/metadata_cache_$run";
+    `mkdir -p $cache_dir`;
+ 
+    copy("t/data/$run_details->{platform}/${run}_RunInfo.xml", "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+    copy("t/data/run_params/runParameters.miseq.xml", "$runfolder_path/runParameters.xml")
+      or die "runParameters.xml copy failed";
+ 
+    local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = qq[t/data/$run_details->{platform}/samplesheet_${run}.csv];
+ 
+    my $sa_gen;
+    lives_ok {
+      $sa_gen = npg_pipeline::function::seq_alignment->new(
+        run_folder        => $run_details->{runfolder_name},
+        runfolder_path    => $runfolder_path,
+        recalibrated_path => $bc_path,
+        timestamp         => q{1776},
+        repository        => $dir,
+        conf_path         => 't/data/release/config/seq_alignment',
+      )
+    } 'no error creating an object';
+    is ($sa_gen->id_run, $run, 'id_run inferred correctly');
+
+    my $dps;
+    lives_ok { $dps = $sa_gen->products->{data_products} } "no error finding data products for run $run";
+    for my $i (0..$#{$dps}) {
+      my $markdup_method = $sa_gen->markdup_method($dps->[$i]);
+
+      is ($markdup_method, $run_details->{markdup_method}, "markdup_method for entry $i for run $run should be inferred as $markdup_method");
+    }
+  }
+
 };
 
 1;
