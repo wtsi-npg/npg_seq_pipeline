@@ -134,7 +134,8 @@ sub create {
            'num_hosts'    => $NUM_HOSTS,
            'num_cpus'     => [$CPUS],
            'memory'       => $MEMORY,
-           'composition'  => $product->composition());
+           'composition'  => $product->composition(),
+           'chunk'        => $product->chunk);
     }
   }
 

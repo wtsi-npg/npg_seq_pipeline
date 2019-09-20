@@ -221,7 +221,7 @@ sub _definition4job {
     if ($function_name ne 'pipeline_wait4path') {
       my $log_name = join q[-], $function_name, $d->created_on(),
         $d->has_composition() ? $d->composition()->freeze2rpt () : $d->identifier();
-      $log_name   .= q[.out];
+      $log_name   .= $d->chunk_label.q[.out];
       return join q[/], $log_dir, $log_name;
     }
     return;
