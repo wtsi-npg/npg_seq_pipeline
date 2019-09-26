@@ -23,7 +23,10 @@ my $dir     = tempdir( CLEANUP => 1);
 my $runfolder_path = join q[/], $dir, '180709_A00538_0010_BH3FCMDRXX';
 my $archive_path   = join q[/], $runfolder_path,
   'Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive';
+my $no_archive_path   = join q[/], $runfolder_path,
+'Data/Intensities/BAM_basecalls_20180805-013153/no_archive';
 make_path $archive_path;
+make_path $no_archive_path;
 my $timestamp = '20180701-123456';
 
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv];
@@ -83,7 +86,8 @@ subtest 'run merge_recompress' => sub {
   ok (($da && @{$da} == 12), sprintf("array of 12 definitions is returned, got %d", scalar@{$da}));
 
   my $plex4_archive = "$archive_path/plex4";
-  my @input_files = map { sprintf "$plex4_archive/chunk/26291#4.%s.g.vcf.gz", $_ } (1..24);
+  my $plex4_no_archive = "$no_archive_path/plex4";
+  my @input_files = map { sprintf "$plex4_no_archive/chunk/26291#4.%s.g.vcf.gz", $_ } (1..24);
   my $input_files_str = join q{ }, @input_files;
 
   my $command = qq{$bcftools_exec concat -O z -o $plex4_archive/26291#4.g.vcf.gz }.$input_files_str.qq{ && $bcftools_exec tabix -p vcf $plex4_archive/26291#4.g.vcf.gz};
