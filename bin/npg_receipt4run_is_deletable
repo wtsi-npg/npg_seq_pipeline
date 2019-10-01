@@ -1,0 +1,190 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use FindBin qw($Bin $Script);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use Log::Log4perl qw{:levels};
+use Getopt::Long;
+use Readonly;
+use File::Temp qw(tempfile tempdir);
+use DateTime;
+use Pod::Usage;
+use File::Slurp;
+use Carp;
+
+use WTSI::DNAP::Warehouse::Schema;
+
+our $VERSION = '0';
+
+Readonly::Scalar my $STATUS_SUCCESS => 'SUCCESS';
+Readonly::Scalar my $STATUS_PASS    => 'PASS';
+Readonly::Scalar my $RECEIPT_DELIM  => qq[\t];
+
+my $help;
+my $file_path;
+
+GetOptions (
+            'help'           => \$help,
+            'receipt_path=s' => \$file_path,
+           );
+if ($help) { pod2usage(0); }
+
+
+my $layout = '%d %-5p %c - %m%n';
+Log::Log4perl->easy_init({layout => $layout,
+                          level  => $INFO,
+                          utf8   => 1});
+my $logger = Log::Log4perl->get_logger();
+
+$file_path or
+  ($logger->error('--receipt_path argument is required') and exit 1);
+$logger->info("Receipt file to use $file_path");
+
+my $schema = WTSI::DNAP::Warehouse::Schema->connect();
+
+my $rs = $schema->resultset('IseqExternalProductMetric')->search(
+  {manifest_upload_status => $STATUS_SUCCESS,
+   format_validation      => $STATUS_PASS},
+  {column => qw(supplier_sample_name file_name md5_staging)}
+);
+
+my $count = $rs->count;
+if ($count == 0) {
+  $logger->info('No receipts available, exiting');
+  exit 0;
+} else {
+  $logger->info("Receipts for $count products are available");
+}
+
+my @lines = ();
+push @lines, join $RECEIPT_DELIM, ('Bucket key', 'WSI_MD5', 'SBG_MD5', 'Match?');
+while (my $row = $rs->next()) {
+  push @lines, join $RECEIPT_DELIM,
+              (join q[/], $row->supplier_sample_name, $row->file_name),
+              $row->md5_staging,
+              $row->md5_staging,
+              'correct';
+}
+@lines = map { $_ . qq[\n] } @lines;
+
+my ($fh, $filename) = tempfile(DIR => tempdir( CLEANUP => 1 ));
+close $fh or $logger->debug('Failed to close file handle');
+$logger->info("Writing to temp file $filename");
+write_file($filename, @lines);
+
+my $new_path;
+if (-e $file_path) {
+  if (not -f $file_path) {
+    croak "$file_path exists and is not a file";
+  }
+  $new_path = join q[.],
+    $file_path, DateTime->now()->strftime(q[%Y%m%d-%T]);
+  rename $file_path, $new_path or croak "Failed to move $file_path to $new_path";
+}
+rename $filename, $file_path or croak "Failed to move $filename to $file_path";
+$new_path && $logger->info("Moved existing $file_path to $new_path");
+$logger->info("Created new $file_path");
+
+exit 0;
+
+__END__
+
+=head1 NAME
+
+npg_receipt4run_is_deletable
+
+=head1 USAGE
+
+npg_receipt4run_is_deletable --help
+
+npg_receipt4run_is_deletable --receipt_path
+
+=head1 REQUIRED ARGUMENTS
+
+--receipt_path file path of the receipt
+
+=head1 OPTIONS
+
+--help
+--receipt_path
+
+=head1 EXIT STATUS
+
+0
+
+=head1 CONFIGURATION
+
+=head1 SYNOPSIS
+
+Uses data from ml warehouse to generate a list of externally
+acknowledged products. This list will be used by the npg_run_is_deletable
+script, see npg_pipeline::validation::s3.
+
+=head1 DESCRIPTION
+
+npg_receipt4run_is_deletable --help
+npg_receipt4run_is_deletable --file_path
+
+=head1 SUBROUTINES/METHODS
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item lib
+
+=item FindBin
+
+=item Log::Log4perl
+
+=item Getopt::Long
+
+=item Readonly
+
+=item File::Temp
+
+=item DateTime
+
+=item Pod::Usage
+
+=item File::Slurp
+
+=item Carp
+
+=item WTSI::DNAP::Warehouse::Schema
+
+=back
+
+=head1 INCOMPATIBILITIES
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 AUTHOR
+
+Marina Gourtovaia
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2019 Genome Research Limited
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
