@@ -7,11 +7,12 @@ use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Log::Log4perl qw{:levels};
 use Getopt::Long;
 use Readonly;
-use File::Temp qw(tempfile tempdir);
+use File::Temp qw(tempdir);
 use DateTime;
 use Pod::Usage;
 use File::Slurp;
 use Carp;
+use File::Copy;
 
 use WTSI::DNAP::Warehouse::Schema;
 
@@ -68,8 +69,8 @@ while (my $row = $rs->next()) {
 }
 @lines = map { $_ . qq[\n] } @lines;
 
-my ($fh, $filename) = tempfile(DIR => tempdir( CLEANUP => 1 ));
-close $fh or $logger->debug('Failed to close file handle');
+my $tdir = tempdir( CLEANUP => 1 );
+my $filename = "$tdir/receipt";
 $logger->info("Writing to temp file $filename");
 write_file($filename, @lines);
 
@@ -80,9 +81,9 @@ if (-e $file_path) {
   }
   $new_path = join q[.],
     $file_path, DateTime->now()->strftime(q[%Y%m%d-%T]);
-  rename $file_path, $new_path or croak "Failed to move $file_path to $new_path";
+  move($file_path, $new_path) or croak "Failed to move $file_path to $new_path";
 }
-rename $filename, $file_path or croak "Failed to move $filename to $file_path";
+move($filename, $file_path) or croak "Failed to move $filename to $file_path";
 $new_path && $logger->info("Moved existing $file_path to $new_path");
 $logger->info("Created new $file_path");
 
@@ -159,6 +160,8 @@ npg_receipt4run_is_deletable --file_path
 =item File::Slurp
 
 =item Carp
+
+=item File::Copy
 
 =item WTSI::DNAP::Warehouse::Schema
 
