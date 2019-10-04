@@ -70,7 +70,7 @@ sub create {
 
     # TODO: Check required files
     my $dir_path     = $super_product->path($self->archive_path());
-    my $out_dir_path = $super_product->chunk_out_path($self->archive_path());
+    my $out_dir_path = $super_product->chunk_out_path($self->no_archive_path());
     push @out_dirs, $out_dir_path;
     my $input_path   = $super_product->file_path($dir_path, ext => 'cram');
 

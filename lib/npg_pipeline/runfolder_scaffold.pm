@@ -29,7 +29,8 @@ sub create_product_level {
   # Create cache dir for short files and qc out directory for every product
   foreach my $p ( (map { @{$_} } values %{$self->products}) ) {
     push @dirs, ( map { $p->$_($self->archive_path()) }
-                  qw/path qc_out_path short_files_cache_path/ );
+                  qw/path qc_out_path short_files_cache_path/ ),
+                $p->path($self->no_archive_path());
   }
   # Create tileviz directory for lane products only
   push @dirs, ( map { $_->tileviz_path($self->archive_path()) }
@@ -92,9 +93,12 @@ sub create_top_level {
   push @dirs, $path;
   push @info, "Metadata cache path: $path";
 
-  push @dirs, $self->archive_path(), $self->status_files_path();
-  push @dirs, $self->_tileviz_index_dir_path();
-  push @dirs, $self->irods_publisher_rstart_dir_path();
+  push @dirs,
+    $self->archive_path(),
+    $self->no_archive_path(),
+    $self->status_files_path(),
+    $self->_tileviz_index_dir_path(),
+    $self->irods_publisher_rstart_dir_path();
 
   my @errors = $self->make_dir(@dirs);
 
