@@ -73,19 +73,24 @@ my $tdir = tempdir( CLEANUP => 1 );
 my $filename = "$tdir/receipt";
 $logger->info("Writing to temp file $filename");
 write_file($filename, @lines);
+0 == system "bzip2 $filename" or croak "Failed to compress $filename";
+$filename .= '.bz2';
 
 my $new_path;
-if (-e $file_path) {
-  if (not -f $file_path) {
-    croak "$file_path exists and is not a file";
+my $compressed_file_path = $file_path . '.bz2';
+if (-e $compressed_file_path) {
+  if (not -f $compressed_file_path) {
+    croak "$compressed_file_path exists and is not a file";
   }
   $new_path = join q[.],
-    $file_path, DateTime->now()->strftime(q[%Y%m%d-%T]);
-  move($file_path, $new_path) or croak "Failed to move $file_path to $new_path";
+    $file_path, DateTime->now()->strftime(q[%Y%m%d-%T]), 'bz2';
+  move($compressed_file_path, $new_path) or croak
+    "Failed to move $compressed_file_path to $new_path";
 }
-move($filename, $file_path) or croak "Failed to move $filename to $file_path";
-$new_path && $logger->info("Moved existing $file_path to $new_path");
-$logger->info("Created new $file_path");
+move($filename, $compressed_file_path) or croak
+  "Failed to move $filename to $compressed_file_path";
+$new_path && $logger->info("Moved existing $compressed_file_path to $new_path");
+$logger->info("Created new $compressed_file_path");
 
 exit 0;
 
@@ -119,7 +124,10 @@ npg_receipt4run_is_deletable --receipt_path
 =head1 SYNOPSIS
 
 Uses data from ml warehouse to generate a list of externally
-acknowledged products. This list will be used by the npg_run_is_deletable
+acknowledged products. The list is written to a compressed file. The path
+of the new file is as given by the --receipt_path plus the .bz2 extension.
+
+This file will be used by the npg_run_is_deletable
 script, see npg_pipeline::validation::s3.
 
 =head1 DESCRIPTION
