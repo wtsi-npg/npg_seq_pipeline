@@ -1,6 +1,13 @@
 LIST OF CHANGES
 ---------------
 
+release 57.3.0
+ - add chromium libs (forced no target alignment) to bam prune skip 
+   list in seq_alignment
+ - archival pipeline function for deletion of intermediate files
+ - script to generate receipts files to be used by npg_run_is_deletable
+   scrit for one of teh studies
+
 release 57.2.0
  - prune bam generation for most products with no alignment and
    change bam_flagstats command in seq_alignment to crams
