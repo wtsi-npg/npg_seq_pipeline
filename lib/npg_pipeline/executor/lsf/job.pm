@@ -3,7 +3,7 @@ package npg_pipeline::executor::lsf::job;
 use Moose;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
-use List::MoreUtils qw(uniq);
+use List::MoreUtils qw(uniq any);
 use Carp;
 use Readonly;
 
@@ -143,7 +143,7 @@ has 'commands' => (
 sub _build_commands {
   my $self = shift;
   my $commands = {};
-  if ($self->definitions->[0]->has_chunk()) {
+  if ( any { $_->has_chunk() } @{$self->definitions} ) {
     my $i = 1;
     foreach my $def (@{$self->definitions()}) {
       $commands->{$i++} = $def->command();
