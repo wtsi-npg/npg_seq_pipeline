@@ -48,6 +48,7 @@ sub create {
 
   my @products = $self->no_haplotype_caller ? () :
                  grep { $self->haplotype_caller_enable($_) }
+                 grep { $self->is_release_data($_) }
                  @{$self->products->{data_products}};
 
   if ($self->no_haplotype_caller) {
@@ -65,8 +66,6 @@ sub create {
   my $ref_cache_instance = npg_pipeline::cache::reference->instance();
 
   foreach my $super_product (@products) {
-
-    $self->is_release_data($super_product) or next;
 
     # TODO: Check required files
     my $dir_path     = $super_product->path($self->archive_path());
