@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - change genotype qc check to cram input
+
 release 57.3.0
  - add chromium libs (forced no target alignment) to bam prune skip 
    list in seq_alignment
