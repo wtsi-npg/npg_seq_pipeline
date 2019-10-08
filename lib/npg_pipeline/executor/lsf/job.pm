@@ -219,7 +219,7 @@ sub BUILD {
 
   my $deflate = sub {
     my ($d, $method) = @_;
-    my $v = $_->$method;
+    my $v = $d->$method;
     $v = defined $v ? $v : 0;
     my $type = ref $v;
     if ($type) {
