@@ -248,6 +248,7 @@ t/data/miseq/samplesheet_16850.csv
 t/data/miseq/samplesheet_16866.csv
 t/data/miseq/samplesheet_20990.csv
 t/data/miseq/samplesheet_24135.csv
+t/data/miseq/samplesheet_24135_bwa_mem2.csv
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291_updated.csv
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/26291#0_p4s2_pv_in.json
