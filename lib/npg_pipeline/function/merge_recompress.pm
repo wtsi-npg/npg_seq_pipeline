@@ -62,7 +62,7 @@ sub create {
 
   foreach my $unchunked_product (@products) {
     my $dir_path = $unchunked_product->path($self->archive_path());
-    my $in_dir_path = $unchunked_product->chunk_out_path($self->archive_path());
+    my $in_dir_path = $unchunked_product->chunk_out_path($self->no_archive_path());
 
     my @chunk_products = map { $_->file_path($in_dir_path, ext => 'g.vcf.gz') }
       $unchunked_product->chunks_as_product($self->haplotype_caller_chunking_number($unchunked_product));
