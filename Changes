@@ -1,7 +1,14 @@
 LIST OF CHANGES
 ---------------
 
+release 57.4.0
  - change genotype qc check to cram input
+ - LSF array indexes fix for jobs dealign with chunked data
+   (multiple jobs per product)
+ - esignate no_archive directory for files for chunked entities,
+   which are not end products
+ - haplotype caller function: early detection of prducts that are
+   not for release (tag zero and control)
 
 release 57.3.0
  - add chromium libs (forced no target alignment) to bam prune skip 
