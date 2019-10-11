@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - add BWA MEM2 support to sequence_align function
+
 release 57.4.0
  - change genotype qc check to cram input
  - LSF array indexes fix for jobs dealign with chunked data

@@ -479,15 +479,17 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     }
   }
   else {
+    # Parse the reference genome for the product
     my ($organism, $strain, $tversion, $analysis) = npg_tracking::data::reference->new(($self->repository ? (q(repository)=>$self->repository) : ()))->parse_reference_genome($l->reference_genome);
 
-    $p4_param_vals->{bwa_executable} = q[bwa0_6];
+    # if a non-standard aligner is specified in ref string select it
     $p4_param_vals->{alignment_method} = ($analysis || $bwa);
 
     my %methods_to_aligners = (
       bwa_aln => q[bwa0_6],
       bwa_aln_se => q[bwa0_6],
       bwa_mem => q[bwa0_6],
+      bwa_mem2 => q[bwa0_6],
     );
     my %ref_suffix = (
       picard => q{.dict},
@@ -497,6 +499,13 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     my $aligner = $p4_param_vals->{alignment_method};
     if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
       $aligner = $methods_to_aligners{$aligner};
+    }
+
+    # BWA MEM2 requires a different executable
+    if ($p4_param_vals->{alignment_method} eq q[bwa_mem2]) {
+      $p4_param_vals->{bwa_executable} = q[bwa-mem2];
+    } else {
+      $p4_param_vals->{bwa_executable} = q[bwa0_6];
     }
 
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $aligner); }
