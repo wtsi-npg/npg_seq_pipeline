@@ -1391,6 +1391,7 @@ subtest 'product_release_tests' => sub {
       is ($markdup_method, $run_details->{markdup_method}, "markdup_method for entry $i for run $run should be inferred as $markdup_method");
     }
   }
+};
 
 subtest 'BWA MEM 2 test' => sub {
   plan tests => 4;
@@ -1415,7 +1416,8 @@ subtest 'BWA MEM 2 test' => sub {
     runfolder_path    => $runfolder_path,
     recalibrated_path => $bc_path,
     timestamp         => q{2017},
-    repository        => $dir
+    repository        => $dir,
+    conf_path         => 't/data/release/config/seq_alignment',
   );
   apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
   $ms_gen->create_product_level();
