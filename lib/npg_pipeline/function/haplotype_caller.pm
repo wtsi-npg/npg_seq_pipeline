@@ -48,6 +48,7 @@ sub create {
 
   my @products = $self->no_haplotype_caller ? () :
                  grep { $self->haplotype_caller_enable($_) }
+                 grep { $self->is_release_data($_) }
                  @{$self->products->{data_products}};
 
   if ($self->no_haplotype_caller) {
@@ -66,11 +67,9 @@ sub create {
 
   foreach my $super_product (@products) {
 
-    $self->is_release_data($super_product) or next;
-
     # TODO: Check required files
     my $dir_path     = $super_product->path($self->archive_path());
-    my $out_dir_path = $super_product->chunk_out_path($self->archive_path());
+    my $out_dir_path = $super_product->chunk_out_path($self->no_archive_path());
     push @out_dirs, $out_dir_path;
     my $input_path   = $super_product->file_path($dir_path, ext => 'cram');
 
@@ -134,7 +133,8 @@ sub create {
            'num_hosts'    => $NUM_HOSTS,
            'num_cpus'     => [$CPUS],
            'memory'       => $MEMORY,
-           'composition'  => $product->composition());
+           'composition'  => $product->composition(),
+           'chunk'        => $product->chunk);
     }
   }
 

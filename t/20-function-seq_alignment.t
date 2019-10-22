@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 15;
+use Test::More tests => 16;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -156,7 +156,7 @@ sub _find {
   return $d;
 }
 
-subtest 'test 1' => sub {
+subtest 'basic functionality' => sub {
   plan tests => 33;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/rna_seq/samplesheet_12597.csv];
@@ -297,7 +297,7 @@ subtest 'test 1' => sub {
   is ($d->command, $command, 'correct non-multiplex lane args generated');
 };
 
-subtest 'test 2' => sub {
+subtest 'RNASeq analysis' => sub {
   plan tests => 22;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
@@ -636,7 +636,7 @@ subtest 'test 4' => sub {
   is ($d->command, $command, 'command for HiSeqX run 16839 lane 7 tag 0');
 };
 
-subtest 'test 5' => sub {
+subtest 'Newer flowcell' => sub {
   plan tests => 5;
   ##HiSeq, run 16807_6 (newer flowcell)
 
@@ -711,7 +711,7 @@ subtest 'test 5' => sub {
   is ($d->command, $command, 'command for HiSeq run 16807 lane 6 tag 0');
 };
 
-subtest 'test 6' => sub {
+subtest 'MiSeq WES baits' => sub {
   plan tests => 7;
   ##MiSeq, run 20268_1 (newer flowcell) - WITH bait added to samplesheet for lane 1
 
@@ -844,7 +844,7 @@ subtest 'test 6' => sub {
 
 };
 
-subtest 'test 7' => sub {
+subtest 'cycle count over threshold' => sub {
   plan tests => 5;
   ##MiSeq, run 16850_1 (cycle count over threshold (currently >= 101))
 
@@ -917,7 +917,7 @@ subtest 'test 7' => sub {
   is ($d->command, $command, 'command for MiSeq run 16850 lane 1 tag 0');
 };
 
-subtest 'test 8' => sub {
+subtest 'nonconsented human split, no target alignment' => sub {
   plan tests => 5;
   ##MiSeq, run 16756_1 (nonconsented human split, no target alignment)
 
@@ -994,7 +994,7 @@ subtest 'test 8' => sub {
   is ($d->command, $command, 'command for run 16756 lane 1 tag 0');
 };
 
-subtest 'test 9' => sub {
+subtest 'nonconsented human split, target alignment' => sub {
   plan tests => 5;
   ##MiSeq, run 16866_1 (nonconsented human split, target alignment)
 
@@ -1071,7 +1071,7 @@ subtest 'test 9' => sub {
   is ($d->command, $command, 'command for run 16866 lane 1 tag 0');
 };
 
-subtest 'test 10' => sub {
+subtest 'no target alignment, no human split' => sub {
   plan tests => 5;
   ##MiSeq, run 20990_1 (no target alignment, no human split)
 
@@ -1133,7 +1133,7 @@ subtest 'test 10' => sub {
   is ($d->command, $command, 'command for run 20990 lane 1 tag 2');
 };
 
-subtest 'test 11' => sub {
+subtest 'chromium' => sub {
   plan tests => 5;
   ##HiSeqX, run 16839_1
 
@@ -1221,7 +1221,7 @@ subtest 'test 11' => sub {
   is ($d->command, $command, 'command for run 16839 lane 1 tag 0');
 };
 
-subtest 'test 12' => sub {
+subtest 'miseq' => sub {
   plan tests => 11;
 
   my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
@@ -1392,6 +1392,43 @@ subtest 'product_release_tests' => sub {
     }
   }
 
+subtest 'BWA MEM 2 test' => sub {
+  plan tests => 4;
+
+  my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
+  my $runfolder_path = join q[/], $dir, 'compositions', $runfolder;
+  my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/no_cal';
+  make_path $bc_path;
+  my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/metadata_cache_24135';
+  make_path $cache_dir;
+  make_path "$bc_path/lane1";
+  make_path "$bc_path/archive/tileviz";
+
+  copy('t/data/miseq/24135_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135_bwa_mem2.csv];
+
+  my $ms_gen = npg_pipeline::function::seq_alignment->new(
+    run_folder        => $runfolder,
+    runfolder_path    => $runfolder_path,
+    recalibrated_path => $bc_path,
+    timestamp         => q{2017},
+    repository        => $dir
+  );
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
+  my $da = $ms_gen->generate('analysis_pipeline');
+  ok (($da and (@{$da} == 3)), 'three definitions returned');
+  my $d = _find($da, 1, 1);
+  isa_ok ($d, 'npg_pipeline::function::definition');
+  ok (!$d->excluded, 'step not excluded');
+
+  my $l = st::api::lims->new(id_run => 24135, position => 1, tag_index => 2);
+  my $analysis = $ms_gen->_analysis($l->reference_genome, '24135:1:2');
+  ok ($analysis eq "bwa_mem2", 'run 24135 lane 1 tag 2 Analysis is BWA MEM 2');
 };
 
 1;

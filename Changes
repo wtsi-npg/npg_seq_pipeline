@@ -1,11 +1,31 @@
 LIST OF CHANGES
 ---------------
 
- 
+ - add BWA MEM2 support to sequence_align function
+
+release 57.4.0
+ - change genotype qc check to cram input
+ - LSF array indexes fix for jobs dealign with chunked data
+   (multiple jobs per product)
+ - esignate no_archive directory for files for chunked entities,
+   which are not end products
+ - haplotype caller function: early detection of prducts that are
+   not for release (tag zero and control)
+
+release 57.3.0
+ - add chromium libs (forced no target alignment) to bam prune skip 
+   list in seq_alignment
+ - archival pipeline function for deletion of intermediate files
+ - script to generate receipts files to be used by npg_run_is_deletable
+   scrit for one of teh studies
+
+release 57.2.0
  - prune bam generation for most products with no alignment and
    change bam_flagstats command in seq_alignment to crams
  - skip markdup step in seq_alignment for spike tag
-
+ - add haplotypecaller to function list
+ - use only public run folder methods
+ - path logic improvements
 
 release 57.1.1
  - all components of npg_run_is_deletable script to use samplesheet

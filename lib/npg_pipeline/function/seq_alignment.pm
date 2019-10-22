@@ -209,21 +209,20 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
 
   my (@incrams, @spatial_filter_rg_value);
-  for my $rpt_elem (map { $_->rpt_list } ($dp->components_as_products)) {
-    $self->debug(qq{  rpt_elem (component): $rpt_elem});
-    push @incrams, File::Spec->catdir($recal_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => $self->s1_s2_intfile_format));
-    push @spatial_filter_rg_value, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name_root;
+  for my $elem ($dp->components_as_products) {
+    $self->debug(q{  rpt_elem (component): }.$elem->rpt_list);
+    push @incrams, File::Spec->catdir($recal_path, $elem->file_name(ext => $self->s1_s2_intfile_format));
+    push @spatial_filter_rg_value, $elem->file_name_root;
   }
   my $spatial_filter_rg_value = join q[,], @spatial_filter_rg_value;
 
   my (@s2_filter_files,@tag_metrics_files);
   for my $ldp ($dp->lanes_as_products) {
-    my $rpt_elem = $ldp->rpt_list;
     my $ldp_archive_path = $ldp->path($archive_path);
     my $ldp_qc_path = $ldp->qc_out_path($archive_path);
-    $self->debug(qq{  rpt_elem (lane): $rpt_elem});
-    push @s2_filter_files, File::Spec->catdir($recal_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => 'spatial_filter'));
-    push @tag_metrics_files, File::Spec->catdir($ldp_qc_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => 'tag_metrics.json', ));
+    $self->debug(q{  rpt_elem (lane): }.$ldp->rpt_list);
+    push @s2_filter_files, File::Spec->catdir($recal_path, $ldp->file_name(ext => 'spatial_filter'));
+    push @tag_metrics_files, File::Spec->catdir($ldp_qc_path, $ldp->file_name(ext => 'tag_metrics.json', ));
   }
   my $s2_filter_files = join q[,], @s2_filter_files;
   my $tag_metrics_files = join q[ ], @tag_metrics_files;
@@ -432,7 +431,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
   }
-  elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$do_gbs_plex) {
+  elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$do_gbs_plex && !$is_chromium_lib) {
       push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
   }
 
@@ -518,9 +517,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     }
   }
   else {
+    # Parse the reference genome for the product
     my ($organism, $strain, $tversion, $analysis) = npg_tracking::data::reference->new(($self->repository ? (q(repository)=>$self->repository) : ()))->parse_reference_genome($l->reference_genome);
 
-    $p4_param_vals->{bwa_executable} = q[bwa0_6];
+    # if a non-standard aligner is specified in ref string select it
     $p4_param_vals->{alignment_method} = ($analysis || $bwa);
 
     my %methods_to_aligners = (
@@ -528,6 +528,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       bwa_aln_se => q[bwa0_6],
       bwa_mem => q[bwa0_6],
       bwa_mem_bwakit => q[bwa0_6],
+      bwa_mem2 => q[bwa0_6],
     );
     my %ref_suffix = (
       picard => q{.dict},
@@ -537,6 +538,13 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     my $aligner = $p4_param_vals->{alignment_method};
     if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
       $aligner = $methods_to_aligners{$aligner};
+    }
+
+    # BWA MEM2 requires a different executable
+    if ($p4_param_vals->{alignment_method} eq q[bwa_mem2]) {
+      $p4_param_vals->{bwa_executable} = q[bwa-mem2];
+    } else {
+      $p4_param_vals->{bwa_executable} = q[bwa0_6];
     }
 
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $aligner); }
