@@ -346,7 +346,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $p4_param_vals->{js_dir} = $self->_js_scripts_dir;
     }
     else {
-      $self->info(q[bwakit postal processing specified, but no alternate haplotypes in reference]);
+      $self->info(q[bwakit postalt processing specified, but no alternate haplotypes in reference]);
     }
   }
 
