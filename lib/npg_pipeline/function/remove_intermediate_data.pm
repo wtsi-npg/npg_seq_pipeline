@@ -51,7 +51,7 @@ sub create {
   my $recal_path = $self->recalibrated_path;
   if(not $recal_path) { $self->logcroak('unable to determine recalibrated path for intermediate data deletion'); }
 
-  my $command = sprintf q[rm -v %s/*.cram], $recal_path;
+  my $command = sprintf q[rm -fv %s/*.cram], $recal_path;
 
   return [
       npg_pipeline::function::definition->new(
