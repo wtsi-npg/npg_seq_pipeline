@@ -205,6 +205,21 @@ has q{p4s2_aligner_intfile} => (
   documentation => q{Forces p4 stage2 to create an intermediate file when doing alignments.},
 );
 
+=head2 bwakit
+
+Tells p4 stage2 (seq_alignment) to postprocess alignments with bwakit
+script (when alignments done with bwa mem using a reference with alternate
+haplotypes)
+
+=cut
+
+has q{bwakit} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 0,
+  documentation => q{postprocess alignments with bwakit},
+);
+
 =head2 align_tag0
 
 Toggles alignment of tag#0 in secondary analysis
