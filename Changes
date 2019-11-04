@@ -1,7 +1,16 @@
 LIST OF CHANGES
 ---------------
 
- - add BWA MEM2 support to sequence_align function
+release 57.5.0
+ - add BWA MEM2 support to seq_alignment function
+ - bug fix: add -f to rm command removing intermediate files (to
+     avoid error when no intermediate files are present)
+ - allow selection of duplicate marking method (biobambam,samtools
+     or picard) in seq_alignment via product_release.yml
+ - detect flowcell type and set uses_patterned_flowcell attribute
+     to allow setting of optical duplicate region size
+ - add ability to select bwakit postalt processing (if reference has
+     alternate haplotypes) in seq_alignment via product_release.yml
 
 release 57.4.0
  - change genotype qc check to cram input
