@@ -21,7 +21,8 @@ use npg_pipeline::cache::reference;
 use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base};
-with    q{npg_pipeline::function::util};
+with    qw{ npg_pipeline::function::util
+            npg_pipeline::product::release };
 
 our $VERSION  = '0';
 
@@ -37,6 +38,9 @@ Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
+Readonly::Scalar my $PFC_MARKDUP_OPT_DIST         => q{2500};  # distance in pixels for optical duplicate detection on patterned flowcells
+Readonly::Scalar my $NON_PFC_MARKDUP_OPT_DIST     => q{100};   # distance in pixels for optical duplicate detection on non-patterned flowcells
+Readonly::Scalar my $MARKDUP_DEFAULT              => q{biobambam};
 
 =head2 phix_reference
 
@@ -90,6 +94,19 @@ sub _build__num_cpus {
   my $self = shift;
   return $self->num_cpus2array(
     $self->general_values_conf()->{'seq_alignment_slots'} || $NUM_SLOTS);
+}
+
+has '_js_scripts_dir' => ( isa        => 'Str',
+                           is         => 'ro',
+                           required   => 0,
+                           lazy_build => 1,
+                         );
+sub _build__js_scripts_dir {
+  my $self = shift;
+  return $ENV{'NPG_PIPELINE_JS_SCRIPTS_DIR'}
+         || $self->general_values_conf()->{'js_scripts_directory'}
+         || $ENV{'NPG_PIPELINE_SCRIPTS_DIR'}
+         || $self->general_values_conf()->{'scripts_directory'};
 }
 
 has '_do_gbs_plex_analysis' => ( isa     => 'Bool',
@@ -182,6 +199,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $archive_path = $self->archive_path;
   my $dp_archive_path = $dp->path($archive_path);
   my $recal_path= $self->recalibrated_path; #?
+  my $uses_patterned_flowcell = $self->uses_patterned_flowcell;
 
   my $qc_out_path = $dp->qc_out_path($archive_path);
   my $cache10k_path = $dp->short_files_cache_path($archive_path);
@@ -220,12 +238,15 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
   my $seqchksum_orig_file = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'orig.seqchksum'));
+  my $markdup_method = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
+  my $markdup_optical_distance = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
 
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});
   $self->debug(qq{  is_tag_zero_product: $is_tag_zero_product});
   $self->debug(qq{  is_pool: $is_pool});
   $self->debug(qq{  dp_archive_path: $dp_archive_path});
+  $self->debug(qq{  uses_patterned_flowcell: $uses_patterned_flowcell});
   $self->debug(qq{  cache10k_path: $cache10k_path});
   $self->debug(qq{  bfs_input_file: $bfs_input_file});
   $self->debug(qq{  cfs_input_file: $cfs_input_file});
@@ -270,6 +291,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     run_lane_ss_fq2 => $fq2_filepath,
     seqchksum_orig_file => $seqchksum_orig_file,
     s2_input_format => $self->s1_s2_intfile_format,
+    markdup_method => $markdup_method,
+    markdup_optical_distance_value => $markdup_optical_distance,
   };
   my $p4_ops = {
     prune => [],
@@ -313,9 +336,19 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->info(qq{ do_target_alignment for $name_root is } . ($do_target_alignment?q[TRUE]:q[FALSE]));
 
   # There will be a new exception to the use of "aln": if you specify a reference
-  # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla, then we will use
-  # bwa's "mem"
-  $bwa = ($do_target_alignment and $self->_is_alt_reference($dp)) ? 'bwa_mem' : $bwa;
+  # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla and bwakit postalt
+  # processing is enabled, then we will use bwa's "mem" with post-processing using
+  # the bwa-postalt.js script from bwakit
+  if($do_target_alignment and ($self->bwakit or $self->bwakit_enable($dp))) { # two ways to specify bwakit?
+    if((my $alt_ref = $self->_alt_reference($dp))) {
+      $p4_param_vals->{alignment_method} = $bwa = 'bwa_mem_bwakit';
+      $p4_param_vals->{fa_alt_path} = $alt_ref;
+      $p4_param_vals->{js_dir} = $self->_js_scripts_dir;
+    }
+    else {
+      $self->info(q[bwakit postalt processing specified, but no alternate haplotypes in reference]);
+    }
+  }
 
   my $skip_target_markdup_metrics = ($spike_tag or not $do_target_alignment);
 
@@ -419,7 +452,12 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   else {
     push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
-    push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_bamsort_coord:', 'foptgt_bammarkduplicates', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk';
+    if($markdup_method eq q[samtools] or $markdup_method eq q[picard]) {
+      push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_fixmate:', 'foptgt_000_markdup', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk'; # the fixmate node only works for mardkup_method samtools (pending p4 node id uniqueness bug fix)
+    }
+    else {
+      push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_bamsort_coord:', 'foptgt_000_bammarkduplicates', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk';
+    }
   }
 
   my $p4_local_assignments = {};
@@ -479,15 +517,18 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     }
   }
   else {
+    # Parse the reference genome for the product
     my ($organism, $strain, $tversion, $analysis) = npg_tracking::data::reference->new(($self->repository ? (q(repository)=>$self->repository) : ()))->parse_reference_genome($l->reference_genome);
 
-    $p4_param_vals->{bwa_executable} = q[bwa0_6];
+    # if a non-standard aligner is specified in ref string select it
     $p4_param_vals->{alignment_method} = ($analysis || $bwa);
 
     my %methods_to_aligners = (
       bwa_aln => q[bwa0_6],
       bwa_aln_se => q[bwa0_6],
       bwa_mem => q[bwa0_6],
+      bwa_mem_bwakit => q[bwa0_6],
+      bwa_mem2 => q[bwa0_6],
     );
     my %ref_suffix = (
       picard => q{.dict},
@@ -497,6 +538,13 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     my $aligner = $p4_param_vals->{alignment_method};
     if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
       $aligner = $methods_to_aligners{$aligner};
+    }
+
+    # BWA MEM2 requires a different executable
+    if ($p4_param_vals->{alignment_method} eq q[bwa_mem2]) {
+      $p4_param_vals->{bwa_executable} = q[bwa-mem2];
+    } else {
+      $p4_param_vals->{bwa_executable} = q[bwa0_6];
     }
 
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $aligner); }
@@ -559,6 +607,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
 
   $self->info(q[  human_split is ] . ($human_split ? $human_split : q[none]));
+  $self->info(q[  markdup_method is ] . ($markdup_method ? $markdup_method : q[unspecified]));
+  $self->info(q[  markdup_optical_distance is ] . ($markdup_optical_distance ? $markdup_optical_distance : q[unspecified]));
   $self->info(q[  p4 parameters written to ] . $param_vals_fname);
   $self->info(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
@@ -804,25 +854,20 @@ sub _default_human_split_ref {
   return $human_ref;
 }
 
-sub _is_alt_reference {
+sub _alt_reference {
   my ($self, $dp) = @_;
   my $ref = $self->_ref($dp, q{bwa0_6});
   if ($ref) {
     $ref .= q{.alt};
-    return -e $ref;
+    if(-e $ref) { return $ref; }
+    else { return; }
   }
-  return;
 }
 
 sub _p4_stage2_params_path {
   my ($self, $position) = @_;
 
   my $path = $self->recalibrated_path;
-
-# temporarily dump all p4s2 params files in no_cal (ignore position)
-# if($self->is_multiplexed_lane($position)) {
-#   $path .= q[/lane] . $position;
-# }
 
   return $path;
 }

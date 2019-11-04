@@ -543,6 +543,50 @@ sub bqsr_known_sites {
   return @known_sites;
 }
 
+=head2 bwakit_enable
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->bwakit_enable($product)
+ Description: Return true if bwakit's postalt processing is to be run on the product.
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub bwakit_enable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if ($self->find_study_config($product)->{bwakit}->{enable}) {
+    $self->info("Product $name, $rpt is for bwakit postalt processing");
+    return 1;
+  }
+
+  $self->info("Product $name, $rpt is NOT for bwakit postalt processing");
+
+  return 0;
+}
+
+=head2 markdup_method
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->markdup_method($product);
+  Description: Return mark duplicate method,
+               the value might be undefined.
+
+  Returntype : Str
+
+=cut
+
+sub markdup_method {
+  my ($self, $product) = @_;
+  return $self->find_study_config($product)->{markdup_method};
+}
+
 =head2 staging_deletion_delay
  
  Arg [1]    : npg_pipeline::product

@@ -1,0 +1,23 @@
+---
+default:
+  markdup_method: "samtools"
+
+study:
+  - study_id: "3573"
+    markdup_method: "samtools"
+  - study_id: "3710"
+    markdup_method: "samtools"
+  - study_id: "4416"
+    markdup_method: "picard"
+  - study_id: "4825"
+    markdup_method: "samtools"
+  - study_id: "3188"
+    markdup_method: "samtools"
+  - study_id: "2846"
+    markdup_method: "samtools"
+  - study_id: "3081"
+    markdup_method: "samtools"
+  - study_id: "3948"
+    markdup_method: "biobambam"
+  - study_id: "3597"
+    markdup_method: "samtools"

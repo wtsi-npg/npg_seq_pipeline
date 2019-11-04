@@ -11,7 +11,7 @@ my $o=npg_pipeline::function::remove_intermediate_data->new(
 );
 my $defs = $o->create;
 
-my $expected_command = q[rm -v /a/recalibrated/path/no_cal/*.cram];
+my $expected_command = q[rm -fv /a/recalibrated/path/no_cal/*.cram];
 
 ok ($defs && @{$defs} == 1, 'array of 1 definition is returned');
 my $def = $defs->[0];
