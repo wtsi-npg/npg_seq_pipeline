@@ -82,9 +82,10 @@ sub create_runfolder {
   $paths->{'basecall_path'}  = join q[/], $paths->{'intensity_path'}, q[BaseCalls];
  
   if ($names->{'analysis_path'}) {
-    $paths->{'analysis_path'}  = join q[/], $paths->{'intensity_path'}, $names->{'analysis_path'};
-    $paths->{'nocal_path'}     = join q[/], $paths->{'analysis_path'}, q[no_cal];
-    $paths->{'archive_path'}   = join q[/], $paths->{'nocal_path'}, q[archive];
+    $paths->{'analysis_path'}   = join q[/], $paths->{'intensity_path'}, $names->{'analysis_path'};
+    $paths->{'nocal_path'}      = join q[/], $paths->{'analysis_path'}, q[no_cal];
+    $paths->{'archive_path'}    = join q[/], $paths->{'nocal_path'}, q[archive];
+    $paths->{'no_archive_path'} = join q[/], $paths->{'analysis_path'}, q[no_archive];
   }
 
   make_path(values %{$paths});

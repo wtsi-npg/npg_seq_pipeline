@@ -285,13 +285,14 @@ sub _generate_command_params {
   my $archive_path            = $self->archive_path;
   my $basecall_path = $self->basecall_path;
   my $no_cal_path       = $self->recalibrated_path;
+  my $no_archive_path       = $self->no_archive_path;
   my $bam_basecall_path  = $self->bam_basecall_path;
   my $lp_archive_path = $lane_product->path($self->archive_path);
 
-  my $full_bam_name  = $bam_basecall_path . q{/}. $id_run . q{_} .$position. q{.bam};
+  my $full_bam_name  = $no_archive_path . q{/}. $id_run . q{_} .$position. q{.bam};
 
   $p4_params{qc_check_id_run} = $id_run; # used by tag_metrics qc check
-  $p4_params{qc_check_qc_in_dir} = $bam_basecall_path; # used by tag_metrics qc check
+  $p4_params{qc_check_qc_in_dir} = $no_archive_path; # used by tag_metrics qc check
   $p4_params{qc_check_qc_out_dir} = $lane_product->qc_out_path($self->archive_path); # used by tag_metrics qc check
   $p4_params{tileviz_dir} = $lane_product->tileviz_path_prefix($self->archive_path); # used for tileviz
   $p4_params{outdatadir} = $no_cal_path; # base for all (most?) outputs
@@ -299,10 +300,10 @@ sub _generate_command_params {
   $p4_params{rpt_list} = $lane_product->rpt_list;
   $p4_params{subsetsubpath} = $lane_product->short_files_cache_path($archive_path);
   $p4_params{seqchksum_file} = $bam_basecall_path . q[/] . $id_run . q[_] . $position . q{.post_i2b.seqchksum}; # full name for the lane-level seqchksum file
-  $p4_params{filtered_bam} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam}; # full name for the spatially filtered lane-level file
+  $p4_params{filtered_bam} = $no_archive_path . q[/] . $id_run . q[_] . $position . q{.bam}; # full name for the spatially filtered lane-level file
   $p4_params{unfiltered_cram_file} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.unfiltered.cram}; # full name for spatially unfiltered lane-level cram file
-  $p4_params{md5filename} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.md5}; # full name for the md5 for the spatially filtered lane-level file
-  $p4_params{split_prefix} = $no_cal_path; # location for split bam files
+  $p4_params{md5filename} = $no_archive_path . q[/] . $id_run . q[_] . $position . q{.bam.md5}; # full name for the md5 for the spatially filtered lane-level file
+  $p4_params{split_prefix} = $no_archive_path; # location for split bam files
 
   my $job_name = join q/_/, (q{p4_stage1}, $id_run, $position, $self->timestamp());
   $job_name = q{'} . $job_name . q{'};
