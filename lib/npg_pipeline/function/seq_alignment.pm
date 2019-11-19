@@ -468,7 +468,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
      $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, q(bwa0_6));
      $p4_local_assignments->{'final_output_prep_target'}->{'scramble_embed_reference'} = q[1];
      if($do_target_alignment) {
-       push @{$p4_ops->{splice}}, 'foptgt_bamsort_coord:-foptgt_bmd_multiway:';
+       push @{$p4_ops->{splice}}, 'foptgt_000_bamsort_coord:-foptgt_bmd_multiway:';
      }
      $skip_target_markdup_metrics = 1;
   }
