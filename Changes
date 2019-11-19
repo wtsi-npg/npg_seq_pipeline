@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 57.5.1
+- bug fix - correct node id in splice (for GbS) 
+
 release 57.5.0
  - add BWA MEM2 support to seq_alignment function
  - bug fix: add -f to rm command removing intermediate files (to
