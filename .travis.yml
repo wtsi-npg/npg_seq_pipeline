@@ -15,7 +15,7 @@ perl:
 env:
   global:
     - WTSI_NPG_GITHUB_URL=https://github.com/wtsi-npg
-    - WTSI_NPG_CONDA_REPO=https://dnap.cog.sanger.ac.uk/npg/conda/test/Ubuntu/18.04
+    - WTSI_NPG_CONDA_REPO=https://dnap.cog.sanger.ac.uk/npg/conda/prod/generic
 
 install:
   - ./scripts/travis_install.sh
