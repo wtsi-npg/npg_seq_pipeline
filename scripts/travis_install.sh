@@ -12,11 +12,11 @@ chmod +x miniconda.sh;
 export PATH=/home/travis/miniconda/bin:$PATH;
 
 # install baton from our conda channel
-conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --override-channels --mkdir --prefix /home/travis/miniconda/baton baton;
+conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --channel default --override-channels --mkdir --prefix /home/travis/miniconda/baton baton;
 
 # install samtools from our conda channel
 # this is needed for our basic IRODS Perl wrapper to work
-conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --override-channels --mkdir --prefix /home/travis/miniconda/samtools samtools;
+conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --channel default --override-channels --mkdir --prefix /home/travis/miniconda/samtools samtools;
 
 # The default build branch for all repositories. This defaults to
 # TRAVIS_BRANCH unless set in the Travis build environment.
