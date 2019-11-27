@@ -238,8 +238,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
   my $seqchksum_orig_file = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'orig.seqchksum'));
-  my $markdup_method = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
-  my $markdup_optical_distance = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
 
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});
@@ -291,8 +289,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     run_lane_ss_fq2 => $fq2_filepath,
     seqchksum_orig_file => $seqchksum_orig_file,
     s2_input_format => $self->s1_s2_intfile_format,
-    markdup_method => $markdup_method,
-    markdup_optical_distance_value => $markdup_optical_distance,
   };
   my $p4_ops = {
     prune => [],
@@ -430,6 +426,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{reference_dict} = $self->_ref($dp, q(picard)) . q(.dict);
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
+
+    $p4_param_vals->{markdup_method} = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
+    $p4_param_vals->{markdup_optical_distance_value} = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
   }
   elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$do_gbs_plex && !$is_chromium_lib) {
       push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
@@ -452,7 +451,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   else {
     push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
-    if($markdup_method eq q[samtools] or $markdup_method eq q[picard]) {
+    if($p4_param_vals->{markdup_method} and ($p4_param_vals->{markdup_method} eq q[samtools] or $p4_param_vals->{markdup_method} eq q[picard])) {
       push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_fixmate:', 'foptgt_000_markdup', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk'; # the fixmate node only works for mardkup_method samtools (pending p4 node id uniqueness bug fix)
     }
     else {
@@ -607,8 +606,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
 
   $self->info(q[  human_split is ] . ($human_split ? $human_split : q[none]));
-  $self->info(q[  markdup_method is ] . ($markdup_method ? $markdup_method : q[unspecified]));
-  $self->info(q[  markdup_optical_distance is ] . ($markdup_optical_distance ? $markdup_optical_distance : q[unspecified]));
+  $self->info(q[  markdup_method is ] . ($p4_param_vals->{markdup_method} ? $p4_param_vals->{markdup_method} : q[unspecified]));
+  $self->info(q[  markdup_optical_distance is ] . ($p4_param_vals->{markdup_optical_distance} ? $p4_param_vals->{markdup_optical_distance} : q[unspecified]));
   $self->info(q[  p4 parameters written to ] . $param_vals_fname);
   $self->info(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
