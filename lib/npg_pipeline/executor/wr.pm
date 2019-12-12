@@ -20,11 +20,11 @@ with 'npg_pipeline::executor::options' => {
                     no_array_cpu_limit
                     array_cpu_limit/ ]
 };
-with 'npg_pipeline::base::config';
+with 'npg_tracking::util::pipeline_config';
 
 our $VERSION = '0';
 
-Readonly::Scalar my $VERTEX_GROUP_DEP_ID_ATTR_NAME => q[wr_group_id];
+Readonly::Scalar my $GENERIC_DEP_KEY               => q[wr_group_id];
 Readonly::Scalar my $DEFAULT_MEMORY                => 2000;
 Readonly::Scalar my $VERTEX_JOB_PRIORITY_ATTR_NAME => q[job_priority];
 Readonly::Scalar my $WR_ENV_LIST_DELIM             => q[,];
@@ -83,10 +83,10 @@ override 'execute' => sub {
   try {
     foreach my $function ($self->function_graph4jobs()
                                ->topological_sort()) {
-      $self->_process_function($function);
+      $self->_definitions4function($function);
     }
     $action = 'saving';
-    my $json = JSON->new->canonical;
+    my $json = JSON->new->canonical; # the keys will be sorted
     $self->save_commands4jobs(
          map { $json->encode($_) } # convert every wr definition to JSON
          map { @{$_} }             # expand arrays of wr definitions        
@@ -102,38 +102,19 @@ override 'execute' => sub {
 };
 
 ##################################################################
-############## Private methods ###################################
+############## Private attributes and methods ####################
 ##################################################################
 
-sub _process_function {
-  my ($self, $function) = @_;
-
-  my $g = $self->function_graph4jobs;
-  #####
-  # Need dependency group ids of upstream functions in order to set correctly
-  # dependencies between wr jobs
-  #
-  my @depends_on = ();
-  if (!$g->is_source_vertex($function)) {
-    @depends_on = $self->dependencies($function, $VERTEX_GROUP_DEP_ID_ATTR_NAME);
-    if (!@depends_on) {
-      $self->logcroak(qq["$function" should depend on at least one job]);
-    }
-  }
-
-  my $group_id = $self->_definitions4function($function, @depends_on);
-  if (!$group_id) {
-    $self->logcroak(q[Group dependency id should be returned]);
-  }
-
-  $g->set_vertex_attribute($function, $VERTEX_GROUP_DEP_ID_ATTR_NAME, $group_id);
-
-  return;
-}
+has '_dependencies' => (
+  isa        => 'HashRef[HashRef]',
+  is         => 'ro',
+  default => sub { return {}; },
+);
 
 sub _definitions4function {
-  my ($self, $function_name, @depends_on) = @_;
+  my ($self, $function_name) = @_;
 
+  my $g = $self->function_graph4jobs;
   my $definitions = $self->function_definitions()->{$function_name};
   my $group_id = join q[-], $function_name, $definitions->[0]->identifier(), irand();
   my $outgoing_flag = $self->future_path_is_in_outgoing($function_name);
@@ -141,24 +122,69 @@ sub _definitions4function {
   if ($outgoing_flag) {
     $log_dir = npg_pipeline::runfolder_scaffold->path_in_outgoing($log_dir);
   }
+  my $i = 0;
 
+  # Translate each job definition into a WR definition
+  # TODO: handle chunk->chunk dependancies better
+  my %composition_deps = ();
   foreach my $d (@{$definitions}) {
+
+    my $per_job_group_id = join q[-], $group_id, $i++;
     my $wr_def = $self->_definition4job($function_name, $log_dir, $d);
-    if (@depends_on) {
+    $wr_def->{'dep_grps'} = [$group_id, $per_job_group_id];
+    # Does this job have a composition?
+    my $composition_digest = $d->has_composition ? $d->composition()->digest() : q[];
+    if ($composition_digest) {
+      # save $per_job_group_id for this function definition here
+      push @{$composition_deps{$composition_digest}}, $per_job_group_id;
+    }
+    $composition_deps{$GENERIC_DEP_KEY} = [$group_id];
+
+    if (!$g->is_source_vertex($function_name)) {
+      my @depends_on = ();
+
+      #for each previous node on the graph calc dependencies
+      foreach my $prev_func ($g->predecessors($function_name)) {
+        $self->_dependencies->{$prev_func} or $self->logcroak(
+          "Dependency groups not defined for function $prev_func");
+        # take that jobs's individual depgroup if we have a matching entry in the composition hash?
+        if ($composition_digest &&
+            $self->_dependencies->{$prev_func}->{$composition_digest}) {
+          # yes? add the specific dependency
+          push @depends_on, @{$self->_dependencies->{$prev_func}->{$composition_digest}};
+        } else {
+          # no? add the generic dependency, which should be always available
+          my @id = @{$self->_dependencies->{$prev_func}->{$GENERIC_DEP_KEY}};
+          @id or $self->logcroak("Generic dependency group not defined for function $prev_func");
+          push @depends_on, @id;
+        }
+      }
+
+      if (!@depends_on) {
+        $self->logcroak(qq["$function_name" should depend on at least one job]);
+      }
+
+      # save completed dependencies for this job definition
       $wr_def->{'deps'} = \@depends_on;
     }
-    $wr_def->{'dep_grps'} = [$group_id];
+
+    # create WR report group
     my @report_group = ($d->identifier(), $function_name);
     if ($self->has_job_name_prefix()) {
       unshift @report_group, $self->job_name_prefix();
     }
     $wr_def->{'rep_grp'}  = join q[-], @report_group;
+
     push @{$self->commands4jobs()->{'function_name'}}, $wr_def;
   }
+
+  # need to save $composition_deps for this function here
+  $self->_dependencies->{$function_name} = \%composition_deps;
 
   return $group_id;
 }
 
+# Create WR definition for a single job
 sub _definition4job {
   my ($self, $function_name, $log_dir, $d) = @_;
 
@@ -195,13 +221,13 @@ sub _definition4job {
     if ($function_name ne 'pipeline_wait4path') {
       my $log_name = join q[-], $function_name, $d->created_on(),
         $d->has_composition() ? $d->composition()->freeze2rpt () : $d->identifier();
-      $log_name   .= q[.out];
+      $log_name   .= $d->chunk_label.q[.out];
       return join q[/], $log_dir, $log_name;
     }
     return;
   };
 
-  my $command = join q[ ], q[(], $d->command(), q[)], q[2>&1];
+  my $command = join q[ ], q[(umask 0002 &&], $d->command(), q[)], q[2>&1];
   my $lf = $log_file->();
   if ($lf) {
     #####
@@ -292,6 +318,8 @@ __END__
 
 =item Try::Tiny
 
+=item npg_tracking::util::pipeline_config
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -308,7 +336,7 @@ __END__
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

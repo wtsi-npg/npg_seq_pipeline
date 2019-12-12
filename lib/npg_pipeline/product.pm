@@ -12,12 +12,14 @@ use npg_tracking::glossary::composition::component::illumina;
 use npg_tracking::glossary::composition;
 
 extends 'npg_tracking::glossary::composition::factory::rpt_list';
+with    'npg_pipeline::product::chunk';
 
 our $VERSION = '0';
 
 Readonly::Scalar my $QC_DIR_NAME                => q[qc];
+Readonly::Scalar my $CHUNK_DIR_NAME             => q[chunk];
 Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
-Readonly::Scalar my $TILEVIZ_DIR_NAME           => q[tileviz];
+Readonly::Scalar my $TILEVIZ_DIR_NAME_PREFIX    => q[tileviz];
 
 =head1 NAME
 
@@ -221,7 +223,8 @@ has 'file_name_root' => (
 );
 sub _build_file_name_root {
   my $self = shift;
-  return $self->_file_name_root($self->selected_lanes);
+
+  return sprintf '%s%s', $self->_file_name_root($self->selected_lanes), $self->chunk_label();
 }
 
 =head2 file_name
@@ -262,6 +265,33 @@ sub path {
   return File::Spec->catdir($dir, $self->dir_path($self->selected_lanes));
 }
 
+=head2 existing_path
+
+Returns an existing directory path for data files for this product
+taking argument directory path as a base. First checks if the path
+returned by the path method of this class exists. If not, assumes
+that the name of the directory is the long digest of the product's
+composition. Returns an existing path or raises an error.
+ 
+=cut
+
+sub existing_path {
+  my ($self, $dir) = @_;
+
+  $dir or croak 'Directory argument is needed';
+  (-e $dir) or croak "Directory argument $dir does not exist";
+
+  my $path = File::Spec->catdir($dir, $self->dir_path($self->selected_lanes));
+  my $orig = $path;
+  if (!-e $path) {
+    $path = File::Spec->catdir($dir, $self->generic_name());
+    ($path ne $orig) or croak "$path does not exist";
+    (-e $path) or croak "Neither $orig nor $path exists";
+  }
+
+  return $path;
+}
+
 =head2 qc_out_path
 
 Returns path for qc output directory for this product taking
@@ -272,6 +302,34 @@ argument directory path as a base.
 sub qc_out_path {
   my ($self, $dir) = @_;
   return File::Spec->catdir($self->path($dir), $QC_DIR_NAME);
+}
+
+=head2 chunk_out_path
+ 
+ Returns path for chunk output directory for this product taking
+ argument directory path as a base.
+ 
+=cut
+
+sub chunk_out_path {
+  my ($self, $dir) = @_;
+  return File::Spec->catdir($self->path($dir), $CHUNK_DIR_NAME);
+}
+
+=head2 existing_qc_out_path
+
+Returns path for qc output directory for this product taking
+argument directory path as a base. Uses existing_path method
+of this object to find the product path. If either the product
+path or the qc_path does not exist, an error is reised.
+ 
+=cut
+
+sub existing_qc_out_path {
+  my ($self, $dir) = @_;
+  my $path = File::Spec->catdir($self->existing_path($dir), $QC_DIR_NAME);
+  (-e $path) or croak "QC path $path does not exist";
+  return $path;
 }
 
 =head2 short_files_cache_path
@@ -288,14 +346,28 @@ sub short_files_cache_path {
 
 =head2 tileviz_path
 
-Returns path for tileviz output directory for this product taking
+Returns path for tileviz output directory for this (lane) product taking
 argument directory path as a base.
  
 =cut
 
 sub tileviz_path {
   my ($self, $dir) = @_;
-  return File::Spec->catdir($self->path($dir), $TILEVIZ_DIR_NAME);
+  # Follow convention used by bambi, ie append _lane<POSITION>
+  return join q[_], $self->tileviz_path_prefix($dir),
+                    q[lane] . $self->composition->get_component(0)->position;
+}
+
+=head2 tileviz_path_prefix
+
+Returns path parefix for tileviz output directory for this (lane) product
+taking argument directory path as a base.
+ 
+=cut
+
+sub tileviz_path_prefix {
+  my ($self, $dir) = @_;
+  return File::Spec->catdir($self->path($dir), $TILEVIZ_DIR_NAME_PREFIX);
 }
 
 =head2 file_path
@@ -425,6 +497,130 @@ sub subset_as_product {
     composition => npg_tracking::glossary::composition->new(components => \@components));
 }
 
+=head2 chunks_as_product
+ 
+ Interprets the argument integer (required) as the number of chunks to subset
+ each product into. Returns a list of product objects with the chunk value
+ in each set to one of the values in range 1 .. NUMBER_OF_GIVEN_CHUNKS. See
+ chunk_as_product method for details of a product object with the chunk
+ attribute defined.
+
+ The products in the list are sorted in the accending chunk value order.
+ 
+ my @chunks_p = $p->chunks_as_product(24);
+ $p->file_name_root();         # 123_6#4
+ $chunks_p[0]->file_name_root();  # 123_6#4.1
+ $chunks_p[1]->file_name_root();  # 123_6#4.2
+ 
+=cut
+
+sub chunks_as_product {
+  my ($self, $num_chunks) = @_;
+  $num_chunks or croak 'Number of chunks argument should be given';
+
+  my @chunks = ();
+  # Let the chunk attribute take care of validating the $num_chunck
+  # variable and fail early and cleanly.
+  my $last_chunk = $self->chunk_as_product($num_chunks);
+  my $max_current = $num_chunks - 1;
+  if ($max_current) { # ie more than one chunk is required
+    @chunks = map { $self->chunk_as_product($_) } (1 .. $max_current);
+  }
+  push @chunks, $last_chunk;
+
+  return @chunks;
+}
+
+=head2 chunk_as_product
+ 
+ Interprets the argument integer (required) as the chunk for this product
+ to create a new product object for. Returns an object of this class for the chunk with
+ a composition identical to the composition object of this object with one exception -
+ the chunk value in the object is set to the value of the argument string.
+ 
+ The lims attribute of the returned object is set if the lims attribute of
+ this object is set.
+ 
+ my @chunks_p = $p->product_chunk(2);
+ $p->file_name_root();         # 123_6#4
+ $chunk_p->file_name_root();  # 123_6#4.2
+ 
+=cut
+
+sub chunk_as_product {
+  my ($self, $chunk) = @_;
+
+  $self->chunk and croak
+   'Cannot create a chunked product from a product with the chunk attribute set';
+  defined $chunk or croak 'Chunk argument must be given.';
+
+  # Note that here we allow for chuncking of products with subset defined.
+  my $ref = { selected_lanes => $self->selected_lanes,
+              composition    => $self->composition,
+              rpt_list       => $self->rpt_list,
+              chunk          => $chunk };
+  $self->has_lims() and $ref->{lims} = $self->lims();
+  return __PACKAGE__->new($ref);
+}
+
+
+=head2 final_seqqc_objs
+
+  Returns a list of  DBIx row objects representing a sequencing QC outcomes
+  for component lanes of this product. If not all lanes have a final outcome,
+  an empty list is returned.
+
+  npg_qc::Schema object argument is required.
+
+    use List::MoreUtils qw/all any/;
+    my @seq_qc_objs = $p->final_seqqc_objs($schema);
+    my $passed = @seq_qc_objs && (all { $_->is_accepted } @seq_qc_objs);
+    my $failed = !@seq_qc_objs || (any { $_->is_rejected } @seq_qc_objs);
+=cut
+
+sub final_seqqc_objs {
+  my ($self, $schema) = @_;
+
+  $schema or croak 'qc schema argument is required';
+
+  my @lp = $self->lanes_as_products;
+  my @seqqc = grep { $_->has_final_outcome }
+              $schema->resultset('MqcOutcomeEnt')
+              ->search_via_composition([map{$_->composition}@lp])->all;
+  if (@lp != @seqqc) {
+    return;
+  }
+
+  return @seqqc;
+}
+
+=head2 final_libqc_obj
+
+  Returns a DBIx row object representing a final library QC outcome.
+  Returns an undefined value if the the final library QC outcome is
+  not available for this product.
+
+  npg_qc::Schema object argument is required.
+
+    my $lib_qc_obj = $p->final_libqc_obj($schema);
+    print $lib_qc_obj->is_accepted;
+
+=cut
+
+sub final_libqc_obj {
+  my ($self, $schema) = @_;
+
+  $schema or croak 'qc schema argument is required';
+
+  my $libqc = $schema->resultset('MqcLibraryOutcomeEnt')
+                     ->search_via_composition([$self->composition])->next;
+  if ($libqc && $libqc->has_final_outcome) {
+    return $libqc;
+  }
+
+  return;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -471,7 +667,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018, 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

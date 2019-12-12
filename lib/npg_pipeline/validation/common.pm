@@ -1,13 +1,27 @@
 package npg_pipeline::validation::common;
 
 use Moose::Role;
+use Readonly;
+use Carp;
+
+with 'WTSI::DNAP::Utilities::Loggable';
 
 our $VERSION = '0';
+
+Readonly::Scalar my $CRAM_FILE_EXTENSION => q[cram];
+Readonly::Scalar my $BAM_FILE_EXTENSION  => q[bam];
 
 has 'product_entities'  => (
   isa      => 'ArrayRef',
   is       => 'ro',
   required => 1,
+);
+
+has 'eligible_product_entities' => (
+  isa     => 'ArrayRef',
+  is      => 'ro',
+  lazy    => 1,
+  builder => 'build_eligible_product_entities',
 );
 
 has 'file_extension' => (
@@ -28,6 +42,43 @@ sub _build_index_file_extension {
   my $e = $self->file_extension;
   $e =~ s/m\Z/i/xms;
   return $e;
+}
+
+sub index_file_path {
+  my ($self, $f) = @_;
+
+  my $ext = $self->file_extension;
+  if ($f !~ /[.]$ext\Z/msx) {
+    croak("Unexpected extension in $f");
+  }
+
+  my $iext = $self->index_file_extension;
+  my $if;
+  if ($self->file_extension eq $CRAM_FILE_EXTENSION) {
+    $if = join q[.], $f, $iext;
+  } else {
+    $if = $f;
+    $if =~ s/$ext\Z/$iext/xms
+  }
+
+  return $if;
+}
+
+sub get_file_extension {
+  my ($self, $use_cram) = @_;
+  return $use_cram ? $CRAM_FILE_EXTENSION : $BAM_FILE_EXTENSION;
+}
+
+sub index_path2seq_path {
+  my ($self, $path) = @_;
+  my $iext = $self->index_file_extension;
+  my $ext  = $self->file_extension;
+  if ($ext eq $CRAM_FILE_EXTENSION) {
+    $path =~ s/[.]$iext\Z//xms;
+  } else {
+    $path =~ s/$iext\Z/$ext/xms;
+  }
+  return $path;
 }
 
 no Moose::Role;
@@ -52,6 +103,11 @@ Moose role. Common functionality for modules of npg_run_is_deletable script.
 
 Attribute, required, an array of npg_pipeline::validation::entity objects.
 
+=head2 eligible_product_entities
+
+Attribute, a reference to a list of product entities which have to be
+archived to a particular file archive. This list might be empty.
+
 =head2 file_extension
 
 Attribute, file extension for the sequence file format, required.
@@ -59,6 +115,12 @@ Attribute, file extension for the sequence file format, required.
 =head2 index_file_extension
 
 Attribute, file extension for the sequence file index, inferred.
+
+=head2 index_file_path
+
+=head2 get_file_extension
+
+=head2 index_path2seq_path
 
 =head1 DIAGNOSTICS
 
@@ -69,6 +131,12 @@ Attribute, file extension for the sequence file index, inferred.
 =over
 
 =item Moose::Role
+
+=item Readonly
+
+=item Carp
+
+=item WTSI::DNAP::Utilities::Loggable
 
 =back
 

@@ -8,20 +8,21 @@ use File::Slurp;
 use File::Basename;
 use File::Spec;
 use JSON;
-use List::Util qw(sum uniq all none);
+use List::Util qw(sum uniq all none any);
 use open q(:encoding(UTF8));
+use Try::Tiny;
 
-use npg_tracking::data::reference::find;
+use npg_tracking::data::reference;
+use npg_pipeline::cache::reference::constants qw( $TARGET_REGIONS_DIR $TARGET_AUTOSOME_REGIONS_DIR );
 use npg_tracking::data::transcriptome;
 use npg_tracking::data::bait;
 use npg_tracking::data::gbs_plex;
-use st::api::lims;
+use npg_pipeline::cache::reference;
 use npg_pipeline::function::definition;
 
-use Data::Dumper;
-
 extends q{npg_pipeline::base};
-with    q{npg_pipeline::function::util};
+with    qw{ npg_pipeline::function::util
+            npg_pipeline::product::release };
 
 our $VERSION  = '0';
 
@@ -37,6 +38,9 @@ Readonly::Scalar my $REFERENCE_ARRAY_ANALYSIS_IDX => q{3};
 Readonly::Scalar my $REFERENCE_ARRAY_TVERSION_IDX => q{2};
 Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
+Readonly::Scalar my $PFC_MARKDUP_OPT_DIST         => q{2500};  # distance in pixels for optical duplicate detection on patterned flowcells
+Readonly::Scalar my $NON_PFC_MARKDUP_OPT_DIST     => q{100};   # distance in pixels for optical duplicate detection on non-patterned flowcells
+Readonly::Scalar my $MARKDUP_DEFAULT              => q{biobambam};
 
 =head2 phix_reference
 
@@ -45,22 +49,17 @@ A path to Phix reference fasta file to split phiX spike-in reads
 =cut
 
 has 'phix_reference' => (isa        => 'Str',
-                         is         => 'rw',
+                         is         => 'ro',
                          required   => 0,
                          lazy_build => 1,
                         );
 sub _build_phix_reference {
   my $self = shift;
-
-  my $ruser = Moose::Meta::Class->create_anon_class(
-    roles => [qw/npg_tracking::data::reference::find/]
-  )->new_object({
+  return npg_tracking::data::reference->new({
     species => q{PhiX},
     aligner => q{fasta},
     ($self->repository ? (q(repository)=>$self->repository) : ())
-		});
-
-  return $ruser->refs->[0];
+  })->refs->[0];
 }
 
 has 'input_path'      => ( isa        => 'Str',
@@ -97,13 +96,26 @@ sub _build__num_cpus {
     $self->general_values_conf()->{'seq_alignment_slots'} || $NUM_SLOTS);
 }
 
+has '_js_scripts_dir' => ( isa        => 'Str',
+                           is         => 'ro',
+                           required   => 0,
+                           lazy_build => 1,
+                         );
+sub _build__js_scripts_dir {
+  my $self = shift;
+  return $ENV{'NPG_PIPELINE_JS_SCRIPTS_DIR'}
+         || $self->general_values_conf()->{'js_scripts_directory'}
+         || $ENV{'NPG_PIPELINE_SCRIPTS_DIR'}
+         || $self->general_values_conf()->{'scripts_directory'};
+}
+
 has '_do_gbs_plex_analysis' => ( isa     => 'Bool',
                                  is      => 'rw',
                                  default => 0,
                                );
 
 sub generate {
-  my ( $self ) = @_;
+  my ($self, $pipeline_name, $dry_run) = @_;
 
   my @definitions = ();
 
@@ -111,12 +123,31 @@ sub generate {
     my $ref = {};
     $ref->{'memory'} = $MEMORY;
     my $subsets = [];
-    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets);
-    push @definitions, $self->_create_definition($ref, $dp);
+    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets, $dry_run);
     $self->_save_compositions($dp, $subsets);
+    if (!$dry_run) {
+      push @definitions, $self->_create_definition($ref, $dp);
+    }
   }
 
   return \@definitions;
+}
+
+sub generate_compositions {
+  my ($self, $pipeline_name)  = @_;
+
+  #####
+  # Pipeline name is always passed by the calling function.
+  # If we want to use an extra flag, it should be passed
+  # as a second argument to generate().
+  my $dry_run = 1;
+  $self->generate($pipeline_name, $dry_run);
+  return [npg_pipeline::function::definition->new(
+            created_by => __PACKAGE__,
+            created_on => $self->timestamp(),
+            identifier => $self->id_run(),
+            excluded   => 1
+          )];
 }
 
 sub _save_compositions {
@@ -149,7 +180,7 @@ sub _create_definition {
 }
 
 sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
-  my ( $self, $dp, $ref, $subsets) = @_;
+  my ( $self, $dp, $ref, $subsets, $dry_run) = @_;
 
   ########################################################
   # derive base parameters from supplied data_product (dp)
@@ -168,6 +199,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $archive_path = $self->archive_path;
   my $dp_archive_path = $dp->path($archive_path);
   my $recal_path= $self->recalibrated_path; #?
+  my $uses_patterned_flowcell = $self->uses_patterned_flowcell;
 
   my $qc_out_path = $dp->qc_out_path($archive_path);
   my $cache10k_path = $dp->short_files_cache_path($archive_path);
@@ -177,21 +209,20 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
 
   my (@incrams, @spatial_filter_rg_value);
-  for my $rpt_elem (map { $_->rpt_list } ($dp->components_as_products)) {
-    $self->debug(qq{  rpt_elem (component): $rpt_elem});
-    push @incrams, File::Spec->catdir($recal_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => $self->s1_s2_intfile_format));
-    push @spatial_filter_rg_value, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name_root;
+  for my $elem ($dp->components_as_products) {
+    $self->debug(q{  rpt_elem (component): }.$elem->rpt_list);
+    push @incrams, File::Spec->catdir($recal_path, $elem->file_name(ext => $self->s1_s2_intfile_format));
+    push @spatial_filter_rg_value, $elem->file_name_root;
   }
   my $spatial_filter_rg_value = join q[,], @spatial_filter_rg_value;
 
   my (@s2_filter_files,@tag_metrics_files);
   for my $ldp ($dp->lanes_as_products) {
-    my $rpt_elem = $ldp->rpt_list;
     my $ldp_archive_path = $ldp->path($archive_path);
     my $ldp_qc_path = $ldp->qc_out_path($archive_path);
-    $self->debug(qq{  rpt_elem (lane): $rpt_elem});
-    push @s2_filter_files, File::Spec->catdir($recal_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => 'spatial_filter'));
-    push @tag_metrics_files, File::Spec->catdir($ldp_qc_path, npg_pipeline::product->new(rpt_list => $rpt_elem)->file_name(ext => 'tag_metrics.json', ));
+    $self->debug(q{  rpt_elem (lane): }.$ldp->rpt_list);
+    push @s2_filter_files, File::Spec->catdir($recal_path, $ldp->file_name(ext => 'spatial_filter'));
+    push @tag_metrics_files, File::Spec->catdir($ldp_qc_path, $ldp->file_name(ext => 'tag_metrics.json', ));
   }
   my $s2_filter_files = join q[,], @s2_filter_files;
   my $tag_metrics_files = join q[ ], @tag_metrics_files;
@@ -202,11 +233,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                                $name_root;
 
   my $bfs_input_file = $dp_archive_path . q[/] . $dp->file_name(ext => 'bam');
+  my $cfs_input_file = $dp_archive_path . q[/] . $dp->file_name(ext => 'cram');
   my $af_input_file = $dp->file_name(ext => 'json', suffix => 'bam_alignment_filter_metrics');
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
   my $fq2_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '2'));
-  my $fqc1_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '1'));
-  my $fqc2_filepath = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'fastqcheck', suffix => '2'));
   my $seqchksum_orig_file = File::Spec->catdir($dp_archive_path, $dp->file_name(ext => 'orig.seqchksum'));
 
   $self->debug(qq{  rpt_list: $rpt_list});
@@ -214,8 +244,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->debug(qq{  is_tag_zero_product: $is_tag_zero_product});
   $self->debug(qq{  is_pool: $is_pool});
   $self->debug(qq{  dp_archive_path: $dp_archive_path});
+  $self->debug(qq{  uses_patterned_flowcell: $uses_patterned_flowcell});
   $self->debug(qq{  cache10k_path: $cache10k_path});
   $self->debug(qq{  bfs_input_file: $bfs_input_file});
+  $self->debug(qq{  cfs_input_file: $cfs_input_file});
   $self->debug(qq{  af_input_file: $af_input_file});
 
   my $l = $dp->lims;
@@ -255,8 +287,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     s2_se_pe => ($self->is_paired_read)? q{pe} : q{se},
     run_lane_ss_fq1 => $fq1_filepath,
     run_lane_ss_fq2 => $fq2_filepath,
-    fqc1 => $fqc1_filepath,
-    fqc2 => $fqc2_filepath,
     seqchksum_orig_file => $seqchksum_orig_file,
     s2_input_format => $self->s1_s2_intfile_format,
   };
@@ -274,7 +304,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   if(not $is_plex) {
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:subsample-';
-    push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:fqc-';
   }
 
   my $do_rna = $self->_do_rna_analysis($dp);
@@ -303,12 +332,21 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->info(qq{ do_target_alignment for $name_root is } . ($do_target_alignment?q[TRUE]:q[FALSE]));
 
   # There will be a new exception to the use of "aln": if you specify a reference
-  # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla, then we will use
-  # bwa's "mem"
-  $bwa = ($do_target_alignment and $self->_is_alt_reference($dp)) ? 'bwa_mem' : $bwa;
+  # with alt alleles e.g. GRCh38_full_analysis_set_plus_decoy_hla and bwakit postalt
+  # processing is enabled, then we will use bwa's "mem" with post-processing using
+  # the bwa-postalt.js script from bwakit
+  if($do_target_alignment and ($self->bwakit or $self->bwakit_enable($dp))) { # two ways to specify bwakit?
+    if((my $alt_ref = $self->_alt_reference($dp))) {
+      $p4_param_vals->{alignment_method} = $bwa = 'bwa_mem_bwakit';
+      $p4_param_vals->{fa_alt_path} = $alt_ref;
+      $p4_param_vals->{js_dir} = $self->_js_scripts_dir;
+    }
+    else {
+      $self->info(q[bwakit postalt processing specified, but no alternate haplotypes in reference]);
+    }
+  }
 
-
-  my $skip_target_markdup_metrics = (not $spike_tag and not $do_target_alignment);
+  my $skip_target_markdup_metrics = ($spike_tag or not $do_target_alignment);
 
   if($human_split and not $do_target_alignment and not $spike_tag) {
     # human_split needs alignment. The final_output_prep_no_y_target parameter specifies a p4 template
@@ -325,11 +363,21 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if ($do_target_alignment && !$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
     if($self->_do_bait_stats_analysis($dp)){
        $p4_param_vals->{target_regions_file} = $self->_bait($rpt_list)->target_intervals_path();
+       push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
        $do_target_regions_stats = 1;
     }
-    elsif($self->_target_regions_file_path($dp, q[target])) {
-       $p4_param_vals->{target_regions_file} = $self->_ref($dp, q[target]) .q(.interval_list);
-       $do_target_regions_stats = 1;
+    else {
+      my $target_path = $self->_ref($dp, $TARGET_REGIONS_DIR);
+      my $target_autosome_path = $self->_ref($dp, $TARGET_AUTOSOME_REGIONS_DIR);
+      if ($target_path) {
+        $p4_param_vals->{target_regions_file} = $target_path.q(.interval_list);
+        $do_target_regions_stats = 1;
+        if ($target_autosome_path) {
+           $p4_param_vals->{target_autosome_regions_file} = $target_autosome_path.q(.interval_list);
+        } else {
+           push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
+        }
+      }
     }
   }
   if($spike_tag) {
@@ -378,7 +426,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{reference_dict} = $self->_ref($dp, q(picard)) . q(.dict);
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
+
+    $p4_param_vals->{markdup_method} = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
+    $p4_param_vals->{markdup_optical_distance_value} = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
   }
+  elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$do_gbs_plex && !$is_chromium_lib) {
+      push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
+  }
+
   if($nchs) {
     $p4_param_vals->{reference_dict_hs} = $self->_default_human_split_ref(q{picard}, $self->repository);   # always human default
     $p4_param_vals->{hs_reference_genome_fasta} = $self->_default_human_split_ref(q{fasta}, $self->repository);   # always human default
@@ -396,7 +451,12 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   else {
     push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
-    push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_bamsort_coord:', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk';
+    if($p4_param_vals->{markdup_method} and ($p4_param_vals->{markdup_method} eq q[samtools] or $p4_param_vals->{markdup_method} eq q[picard])) {
+      push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_fixmate:', 'foptgt_000_markdup', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk'; # the fixmate node only works for mardkup_method samtools (pending p4 node id uniqueness bug fix)
+    }
+    else {
+      push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_bamsort_coord:', 'foptgt_000_bammarkduplicates', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk';
+    }
   }
 
   my $p4_local_assignments = {};
@@ -407,7 +467,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
      $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, q(bwa0_6));
      $p4_local_assignments->{'final_output_prep_target'}->{'scramble_embed_reference'} = q[1];
      if($do_target_alignment) {
-       push @{$p4_ops->{splice}}, 'foptgt_bamsort_coord:-foptgt_bmd_multiway:';
+       push @{$p4_ops->{splice}}, 'foptgt_000_bamsort_coord:-foptgt_bmd_multiway:';
      }
      $skip_target_markdup_metrics = 1;
   }
@@ -456,15 +516,18 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     }
   }
   else {
+    # Parse the reference genome for the product
     my ($organism, $strain, $tversion, $analysis) = npg_tracking::data::reference->new(($self->repository ? (q(repository)=>$self->repository) : ()))->parse_reference_genome($l->reference_genome);
 
-    $p4_param_vals->{bwa_executable} = q[bwa0_6];
+    # if a non-standard aligner is specified in ref string select it
     $p4_param_vals->{alignment_method} = ($analysis || $bwa);
 
     my %methods_to_aligners = (
       bwa_aln => q[bwa0_6],
       bwa_aln_se => q[bwa0_6],
       bwa_mem => q[bwa0_6],
+      bwa_mem_bwakit => q[bwa0_6],
+      bwa_mem2 => q[bwa0_6],
     );
     my %ref_suffix = (
       picard => q{.dict},
@@ -474,6 +537,13 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     my $aligner = $p4_param_vals->{alignment_method};
     if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
       $aligner = $methods_to_aligners{$aligner};
+    }
+
+    # BWA MEM2 requires a different executable
+    if ($p4_param_vals->{alignment_method} eq q[bwa_mem2]) {
+      $p4_param_vals->{bwa_executable} = q[bwa-mem2];
+    } else {
+      $p4_param_vals->{bwa_executable} = q[bwa0_6];
     }
 
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $aligner); }
@@ -506,6 +576,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($nchs) {
     push @{$subsets}, 'human';
   }
+                      ##############################################
+  return if $dry_run; # Early return, we only need a list of subsets
+                      ##############################################
 
   # write p4 parameters to file
   my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path(q[POSITION]),
@@ -533,6 +606,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
 
   $self->info(q[  human_split is ] . ($human_split ? $human_split : q[none]));
+  $self->info(q[  markdup_method is ] . ($p4_param_vals->{markdup_method} ? $p4_param_vals->{markdup_method} : q[unspecified]));
+  $self->info(q[  markdup_optical_distance is ] . ($p4_param_vals->{markdup_optical_distance} ? $p4_param_vals->{markdup_optical_distance} : q[unspecified]));
   $self->info(q[  p4 parameters written to ] . $param_vals_fname);
   $self->info(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
@@ -558,23 +633,23 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
     q{&&},
     _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, undef,
-                $skip_target_markdup_metrics, $rpt_list, $name_root, [$bfs_input_file]),
+                $skip_target_markdup_metrics, $rpt_list, $name_root, [$cfs_input_file]),
     (grep {$_}
       ($spike_tag ? q() : (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', undef, $rpt_list, $name_root, [$cfs_input_file]),
         q{&&},
         _qc_command('alignment_filter_metrics', undef, $qc_out_path, undef, undef, $rpt_list, $name_root, [$af_input_file]),
       ),
 
       $human_split ? (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $human_split, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $human_split, undef, $rpt_list, $name_root, [$cfs_input_file]),
       ) : q()),
 
       $nchs ? (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $nchs_outfile_label, undef, $rpt_list, $name_root, [$bfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $nchs_outfile_label, undef, $rpt_list, $name_root, [$cfs_input_file]),
       ) : q(),
 
       ($do_rna and not $is_tag_zero_product) ? (join q( ),
@@ -735,7 +810,7 @@ sub _has_gbs_plex{
     $self->logcroak(qq{$rpt_list - GbS plex set but no gbs plex path found});
   }
 
-  if($library_type and $library_type !~ /^GbS/ismx){
+  if($library_type and $library_type !~ /^GbS|GnT\sMDA/ismx){
     $self->logcroak(qq{$rpt_list - GbS plex set but library type incompatible});
   }
 
@@ -753,61 +828,10 @@ sub _gbs_plex{
                 });
 }
 
-sub _target_regions_file_path {
-  my ($self, $dp, $aligner) = @_;
-
-  if (!$aligner) {
-    $self->logcroak('Aligner missing');
-  }
-
-  my $path = 1;
-  eval  { $self->_ref($dp, $aligner) ; 1; }
-  or do { $path = 0; };
-  return $path;
-}
-
 sub _ref {
   my ($self, $dp, $aligner) = @_;
 
-  if (!$aligner) {
-    $self->logcroak('Aligner missing');
-  }
-
-  my $dplims = $dp->lims;
-  my $rpt_list = $dp->rpt_list;
-  my $is_tag_zero_product = $dp->is_tag_zero_product;
-  my $ref_name = $self->_do_gbs_plex_analysis ? $dplims->gbs_plex_name : $dplims->reference_genome();
-
-  my $ref = $ref_name ? $self->_ref_cache->{$ref_name}->{$aligner} : undef;
-  if (!$ref) {
-    my $href = { 'aligner' => $aligner, 'lims' => $dplims, };
-    if ($self->repository) {
-      $href->{'repository'} = $self->repository;
-    }
-    my $role  = $self->_do_gbs_plex_analysis ? 'gbs_plex' : 'reference';
-    my $ruser = Moose::Meta::Class->create_anon_class(
-            roles => ["npg_tracking::data::${role}::find"])->new_object($href);
-    my @refs = @{$ruser->refs};
-    if (!@refs) {
-      $self->warn(qq[No reference genome set for $rpt_list]);
-    } else {
-      if (scalar @refs > 1) {
-        my $m = qq{Multiple references for $rpt_list};
-        ($is_tag_zero_product)
-          ? $self->logwarn($m)
-          : $self->logcroak($m);
-      } else {
-        $ref = $refs[0];
-        if ($ref_name) {
-          $self->_ref_cache->{$ref_name}->{$aligner} = $ref;
-        }
-      }
-    }
-  }
-  if ($ref) {
-    $self->info(qq{Reference set for $rpt_list: $ref});
-  }
-  return $ref;
+  return npg_pipeline::cache::reference->instance->get_path($dp, $aligner, $self->repository, $self->_do_gbs_plex_analysis);
 }
 
 sub _default_human_split_ref {
@@ -829,25 +853,20 @@ sub _default_human_split_ref {
   return $human_ref;
 }
 
-sub _is_alt_reference {
+sub _alt_reference {
   my ($self, $dp) = @_;
   my $ref = $self->_ref($dp, q{bwa0_6});
   if ($ref) {
     $ref .= q{.alt};
-    return -e $ref;
+    if(-e $ref) { return $ref; }
+    else { return; }
   }
-  return;
 }
 
 sub _p4_stage2_params_path {
   my ($self, $position) = @_;
 
   my $path = $self->recalibrated_path;
-
-# temporarily dump all p4s2 params files in no_cal (ignore position)
-# if($self->is_multiplexed_lane($position)) {
-#   $path .= q[/lane] . $position;
-# }
 
   return $path;
 }
@@ -881,6 +900,16 @@ and some QC checks.
 Creates and returns an array of npg_pipeline::function::definition
 objects for all entities of the run eligible for alignment and split.
 
+=head2 generate_compositions
+
+Does just enough to figure out what .composition.json files have
+to be created and creates them. Returns an array consisting of a
+single npg_pipeline::function::definition object where this function
+is flagged as excluded.
+
+Can be used to generate missing or replace corrupt composition.json
+files in an existing analysis directory. 
+
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT
@@ -905,7 +934,11 @@ objects for all entities of the run eligible for alignment and split.
 
 =item open
 
-=item st::api::lims
+=item Try::Tiny
+
+=item Class::Load
+
+=item npg_tracking::data::reference
 
 =item npg_tracking::data::reference::find
 
@@ -927,7 +960,7 @@ David K. Jackson (david.jackson@sanger.ac.uk)
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018, 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

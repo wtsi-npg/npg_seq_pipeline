@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use Cwd;
@@ -175,6 +175,21 @@ subtest 'products' => sub {
   is (scalar @{$products->{'lanes'}}, 1, 'one lane product');
   ok (exists $products->{'data_products'}, 'products data_products key exists');
   is (scalar @{$products->{'data_products'}}, 3, 'three data products');
+};
+
+subtest 'label' => sub {
+  plan tests => 4;
+
+  my $base = npg_pipeline::base->new(id_run => 22);
+  is ($base->label, '22', 'label defaults to run id');
+  $base = npg_pipeline::base->new(id_run => 22, label => '33');
+  is ($base->label, '33', 'label as set');
+  $base = npg_pipeline::base->new(product_rpt_list => '22:1:33');
+  throws_ok { $base->label }
+    qr/cannot build 'label' attribute, it should be pre-set/,
+    'error if label is not preset';
+  $base = npg_pipeline::base->new(product_rpt_list => '22:1:33', label => '33');
+  is ($base->label, '33', 'label as set');
 };
 
 1;

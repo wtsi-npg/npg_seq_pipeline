@@ -214,7 +214,7 @@ subtest 'alternative driver type: ml_warehouse_fc_cache' => sub {
                                     cache_location    => $dir);
   throws_ok { $cache->lims } qr/No record retrieved for st::api::lims::ml_warehouse_fc_cache/,
     'no records for the run - error';
-  $rs->create({id_run => 12376, position => 1});
+  $rs->create({id_run => 12376, position => 1, id_iseq_product => 'digest1'});
   throws_ok { $cache->lims } qr/No record retrieved for st::api::lims::ml_warehouse_fc_cache/,
     'records for the run are not linked to the LIMs table - error';
   $wh_schema->resultset('IseqProductMetric')->search({id_run => 12376})

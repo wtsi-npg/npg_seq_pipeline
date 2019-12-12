@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Exception;
 use File::Copy;
 use Log::Log4perl qw(:levels);
@@ -126,6 +126,19 @@ subtest 'NovaSeq run' => sub {
     qq{--collection \/seq\/illumina\/runs\/26\/$id_run\/log},
     qq{--runfolder_path $rfpath --id_run $id_run}),
     'command is correct');
+};
+
+subtest 'pipeline for a product' => sub {
+  plan tests => 1;
+
+  my $a  = npg_pipeline::function::log_files_archiver->new(
+    runfolder_path   => q{t/data/novaseq},
+    label            => 'my_label',
+    product_rpt_list => '123:4:5'
+  );
+  throws_ok { $a->create() }
+    qr/Not implemented for individual products/,
+    'functionality for individual products not implemented - error'; 
 };
 
 1;

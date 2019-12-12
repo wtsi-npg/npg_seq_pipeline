@@ -41,17 +41,22 @@ Readonly::Hash my %REGISTRY => (
 
   'p4_stage1_analysis'      => {'p4_stage1_analysis' => 'generate'},
   'seq_alignment'           => {'seq_alignment' => 'generate'},
+  'generate_compositions'   => {'seq_alignment' => 'generate_compositions'},
+  'bqsr_calc'               => {'bqsr_calc' => 'create'},
+  'haplotype_caller'        => {'haplotype_caller' => 'create'},
+  'merge_recompress'        => {'merge_recompress' => 'create'},
 
   'archive_logs'                            => {'log_files_archiver' => 'create'},
   'upload_illumina_analysis_to_qc_database' => {'illumina_qc_archiver' => 'create'},
-  'upload_fastqcheck_to_qc_database'        => {'fastqcheck_archiver' => 'create'},
   'upload_auto_qc_to_qc_database'           => {'autoqc_archiver' => 'create'},
   'archive_run_data_to_irods'               => {'run_data_to_irods_archiver' => 'create'},
+  'remove_intermediate_data'                => {'remove_intermediate_data' => 'create'},
 
   'bam_cluster_counter_check'=> {'cluster_count' => 'create'},
   'seqchksum_comparator'     => {'seqchksum_comparator' => 'create'},
   'archive_to_s3'            => {'s3_archiver' => 'create'},
   'notify_product_delivery'  => {'product_delivery_notifier' => 'create'},
+  'cache_merge_component'    => {'cache_merge_component' => 'create'},
 );
 
 Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>
@@ -82,7 +87,8 @@ Readonly::Array my @AUTOQC_FUNCTIONS =>
       qc_tag_metrics
       qc_upstream_tags
       qc_spatial_filter
-      qc_verify_bam_id 
+      qc_verify_bam_id
+      qc_review 
     /;
 
 has '_registry' => (
@@ -199,7 +205,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018, 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

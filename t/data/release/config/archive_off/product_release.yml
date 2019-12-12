@@ -7,12 +7,14 @@ default:
   irods:
     enable: true
     notify: false
+  data_deletion:
+    staging_deletion_delay: 12
 
 study:
   - study_id: "5290"
     s3:
       enable: false
-      url: "s3://product_bucket"
+      url: "gs://product_bucket"
       notify: true
     irods:
       enable: false

@@ -4,30 +4,79 @@ use namespace::autoclean;
 
 use Data::Dump qw[pp];
 use Moose::Role;
-
+use File::Spec::Functions qw{catdir};
+use List::Util qw{all};
 use npg_qc::Schema;
-use npg_qc::mqc::outcomes;
 
 with qw{WTSI::DNAP::Utilities::Loggable
-        npg_pipeline::base::config};
+        npg_tracking::util::pipeline_config};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $RELEASE_CONFIG_FILE => 'product_release.yml';
+=head1 SUBROUTINES/METHODS
+
+=head2 qc_schema
+
+Lazy-build attribute. The builder method in this role returns a
+DBIx database connection object. The attribute is allowed to be
+undefined in order to prevent, if necessary, the automatic connection
+to a database in consuming classes, which can be achieved by
+supplying a custom builder method.
+
+=cut
 
 has 'qc_schema' =>
-  (isa        => 'npg_qc::Schema',
+  (isa        => 'Maybe[npg_qc::Schema]',
    is         => 'ro',
    required   => 1,
    builder    => '_build_qc_schema',
    lazy       => 1,);
 
-has 'release_config' =>
-  (isa        => 'HashRef',
-   is         => 'rw',
-   required   => 1,
-   builder    => '_build_release_config',
-   lazy       => 1,);
+=head2 expected_files
+
+  Arg [1]    : Data product whose files to list, npg_pipeline::product.
+
+  Example    : my @files = $obj->expected_files($product)
+  Description: Return a sorted list of the files expected to be present for
+               archiving in the runfolder.
+
+  Returntype : Array
+
+=cut
+
+sub expected_files {
+  my ($self, $product) = @_;
+
+  $product or $self->logconfess('A product argument is required');
+
+  my @expected_files;
+  my $lims = $product->lims or
+    $self->logcroak('Product requires lims attribute to determine alignment');
+  my $aligned = $lims->study_alignments_in_bam;
+
+  my $dir_path = $product->existing_path($self->archive_path());
+  my @extensions = qw{cram cram.md5 seqchksum sha512primesums512.seqchksum};
+  if ( $aligned ) { push @extensions, qw{cram.crai bcfstats}; }
+  push @expected_files,
+    map { $product->file_path($dir_path, ext => $_) } @extensions;
+
+  my @suffixes = qw{F0x900 F0xB00};
+  if  ( $aligned ) { push @suffixes, qw{F0xF04_target F0xF04_target_autosome}; }
+  push @expected_files,
+    map { $product->file_path($dir_path, suffix => $_, ext => 'stats') }
+    @suffixes;
+
+  if ($aligned){
+    my $qc_path = $product->existing_qc_out_path($self->archive_path());
+    my @qc_extensions = qw{verify_bam_id.json};
+    push @expected_files,
+      map { $product->file_path($qc_path, ext => $_) } @qc_extensions;
+  }
+
+  @expected_files = sort @expected_files;
+
+  return @expected_files;
+}
 
 =head2 is_release_data
 
@@ -51,16 +100,16 @@ sub is_release_data {
   my $rpt = $product->rpt_list();
   my $name = $product->file_name_root();
   if ($product->is_tag_zero_product) {
-    $self->info("Product $name, $rpt is NOT for release (is tag zero)");
+    $self->debug("Product $name, $rpt is NOT for release (is tag zero)");
     return 0;
   }
 
   if ($product->lims->is_control) {
-    $self->info("Product $name, $rpt is NOT for release (is control)");
+    $self->debug("Product $name, $rpt is NOT for release (is control)");
     return 0;
   }
 
-  $self->info("Product $name, $rpt is for release ",
+  $self->debug("Product $name, $rpt is for release ",
               '(is not tag zero or control)');
 
   return 1;
@@ -72,7 +121,12 @@ sub is_release_data {
 
   Example    : $obj->has_qc_for_release($product)
   Description: Return true if the product has passed all QC necessary
-               to be released.
+               to be released or if the QC outcome does not matter
+               for this product. In the later case any QC outcome or
+               its absence is equally acceptable, no attempt to inspect
+               the QC outcomes is made; this is an implicit default. To
+               activate filtering by QC outcomes, explicitly configure
+               the s3 section of the study configuration for this product.
 
   Returntype : Bool
 
@@ -85,15 +139,52 @@ sub has_qc_for_release {
 
   my $rpt  = $product->rpt_list();
   my $name = $product->file_name_root();
-  my $outcomes = npg_qc::mqc::outcomes->new(qc_schema => $self->qc_schema);
-  if ($outcomes->get_library_outcome($rpt)) {
+
+  my $qc_outcome_matters = $self->qc_outcome_matters($product);
+  if (not $qc_outcome_matters) {
+    $self->debug("QC outcome does not matter for product $name, $rpt");
+    return 1;
+  }
+
+  my @seqqc = $product->final_seqqc_objs($self->qc_schema);
+  @seqqc or $self->logcroak("Product $name, $rpt are not all Final seq QC values");
+
+  if(not all { $_->is_accepted }  @seqqc) {
+    $self->info("Product $name, $rpt are not all Final Accepted seq QC values");
+    return 0;
+  }
+  my $libqc_obj = $product->final_libqc_obj($self->qc_schema);
+  # Lib outcomes are not available for full lane libraries, so the code below
+  # might give an error when absence of QC outcome is legitimate.
+  $libqc_obj or $self->logcroak("Product $name, $rpt is not Final lib QC value");
+  if ($libqc_obj->is_accepted) {
     $self->info("Product $name, $rpt is for release (passed manual QC)");
     return 1;
   }
 
-  $self->info("Product $name, $rpt is NOT for release (failed manual QC)");
+  $self->info("Product $name, $rpt is NOT for release (did not pass manual QC)");
 
   return 0;
+}
+
+=head2  qc_outcome_matters
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->qc_outcome_matters($product)
+  Description: Returns a boolean value indicating whether or not QC outcome
+               matters for the product to be archived. An ptional second
+               argument is the archiver type, s3 is the default.
+
+  Returntype : Bool
+
+=cut
+
+sub qc_outcome_matters {
+  my ($self, $product, $archiver) = @_;
+  $product or $self->logconfess('A product argument is required');
+  $archiver ||= 's3';
+  return $self->find_study_config($product)->{$archiver}->{'qc_outcome_matters'};
 }
 
 =head2 customer_name
@@ -111,27 +202,35 @@ sub has_qc_for_release {
 sub customer_name {
   my ($self, $product) = @_;
 
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
+  my $customer_name = $self->find_study_config($product)->{s3}->{customer_name};
+  $customer_name or
+    $self->logcroak(
+      q{Missing s3 archival customer name in configuration file for product } .
+      $product->composition->freeze());
 
-  my $customer_name;
-
-  if ($study_config) {
-    $customer_name = $study_config->{s3}->{customer_name};
-    $customer_name or
-      $self->logconfess(sprintf q{Missing customer name in } .
-                                q{configuration file: %s for study %s'},
-                        $self->conf_file_path($RELEASE_CONFIG_FILE),
-                        $study_config->{study_id});
-
-    if (ref $customer_name) {
-      $self->logconfess('Invalid customer name in configuration file: ',
-                        pp($customer_name));
-    }
+  if (ref $customer_name) {
+    $self->logconfess('Invalid customer name in configuration file: ',
+                      pp($customer_name));
   }
 
   return $customer_name;
+}
+
+=head2 receipts_location
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->receipts_location($product);
+  Description: Return location of the receipts for S3 submission,
+               the value might be undefined.
+
+  Returntype : Str
+
+=cut
+
+sub receipts_location {
+  my ($self, $product) = @_;
+  return $self->find_study_config($product)->{s3}->{receipts};
 }
 
 =head2 is_for_release
@@ -150,8 +249,7 @@ sub customer_name {
 
 sub is_for_release {
   my ($self, $product, $type_of_release) = @_;
-  my $study_config = $self->_find_study_config($product);
-  return ($study_config and $study_config->{$type_of_release}->{enable});
+  return $self->find_study_config($product)->{$type_of_release}->{enable};
 }
 
 =head2 is_for_s3_release
@@ -168,6 +266,8 @@ sub is_for_release {
 
 sub is_for_s3_release {
   my ($self, $product) = @_;
+
+  $product or $self->logconfess('A product argument is required');
 
   my $name        = $product->file_name_root();
   my $description = $product->composition->freeze();
@@ -200,17 +300,9 @@ sub is_for_s3_release {
 sub s3_url {
   my ($self, $product) = @_;
 
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
-
-  my $url;
-
-  if ($study_config) {
-    $url = $study_config->{s3}->{url};
-    if (ref $url) {
-      $self->logconfess('Invalid S3 URL in configuration file: ', pp($url));
-    }
+  my $url = $self->find_study_config($product)->{s3}->{url};
+  if (ref $url) {
+    $self->logconfess('Invalid S3 URL in configuration file: ', pp($url));
   }
 
   return $url;
@@ -232,21 +324,33 @@ sub s3_url {
 sub s3_profile {
   my ($self, $product) = @_;
 
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
-
-  my $profile;
-
-  if ($study_config) {
-    $profile = $study_config->{s3}->{profile};
-    if (ref $profile) {
-      $self->logconfess('Invalid S3 profile in configuration file: ',
-                        pp($profile));
-    }
+  my $profile = $self->find_study_config($product)->{s3}->{profile};
+  if (ref $profile) {
+    $self->logconfess('Invalid S3 profile in configuration file: ',
+                      pp($profile));
   }
 
   return $profile;
+}
+
+=head2 s3_date_binning
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->s3_date_binning($product)
+  Description: Return true if a date of processing element is to be added
+               as the root of the object prefix the S3 bucket. e.g.
+
+               ./2019-01-31/...
+
+  Returntype : Bool
+
+=cut
+
+sub s3_date_binning {
+  my ($self, $product) = @_;
+
+  return $self->find_study_config($product)->{s3}->{date_binning};
 }
 
 =head2 is_s3_releasable
@@ -286,9 +390,8 @@ sub is_for_s3_release_notification {
 
   my $rpt          = $product->rpt_list();
   my $name         = $product->file_name_root();
-  my $study_config = $self->_find_study_config($product);
 
-  if ($study_config and $study_config->{s3}->{notify}) {
+  if ($self->find_study_config($product)->{s3}->{notify}) {
     $self->info("Product $name, $rpt is for S3 release notification");
     return 1;
   }
@@ -304,54 +407,201 @@ sub _build_qc_schema {
   return npg_qc::Schema->connect();
 }
 
-sub _build_release_config {
-  my ($self) = @_;
+=head2 haplotype_caller_enable
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->haplotype_caller_enable($product)
+ Description: Return true if HaplotypeCaller is to be run on the product.
+ 
+ Returntype : Bool
+ 
+=cut
 
-  my $file = $self->conf_file_path($RELEASE_CONFIG_FILE);
-  $self->info("Reading product release configuration from '$file'");
-  my $config = $self->read_config($file);
-  $self->debug('Loaded product release configuration: ', pp($config));
-
-  return $config;
-}
-
-sub _find_study_config {
+sub haplotype_caller_enable {
   my ($self, $product) = @_;
 
-  my $with_spiked_control = 0;
-  my $rpt       = $product->rpt_list();
-  my $name      = $product->file_name_root();
-  #####
-  # If we were to process a pool as a single library, and all
-  # libraries in a pool belonged to the same study, passing
-  # false with_spiked_control flag will allow for retrieving
-  # a correct single study identifier. 
-  my @study_ids = $product->lims->study_ids($with_spiked_control);
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
 
-  @study_ids or
-    $self->logconfess("Failed to get a study_id for product $name, $rpt");
-  (@study_ids == 1) or
-    $self->logconfess("Multiple study ids for product $name, $rpt");
-  my $study_id = $study_ids[0];
-
-  my ($study_config) = grep { $_->{study_id} eq $study_id }
-    @{$self->release_config->{study}};
-
-  if (not defined $study_config) {
-    my $default_config = $self->release_config->{default};
-    if (not defined $default_config) {
-      $self->logcroak(sprintf q{No release configuration was defined } .
-                              q{for study %s and no default was defined in %s},
-                      $study_id, $self->conf_file_path($RELEASE_CONFIG_FILE));
-    }
-
-    $self->info(sprintf q{Using the default release configuration for } .
-                        q{study %s defined in %s},
-                $study_id, $self->conf_file_path($RELEASE_CONFIG_FILE));
-    $study_config = $default_config;
+  if ($self->find_study_config($product)->{haplotype_caller}->{enable}) {
+    $self->info("Product $name, $rpt is for HaplotypeCaller processing");
+    return 1;
   }
 
-  return $study_config;
+  $self->info("Product $name, $rpt is NOT for HaplotypeCaller processing");
+
+  return 0;
+}
+
+=head2 haplotype_caller_chunking
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->haplotype_caller_chunking($product)
+ Description: Returns base name of chunking file for product.
+
+ Returntype : Str
+ 
+=cut
+
+sub haplotype_caller_chunking {
+  my ($self, $product) = @_;
+
+  return $self->find_study_config($product)->{haplotype_caller}->{sample_chunking};
+}
+
+=head2 haplotype_caller_chunking_number
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->haplotype_caller_chunking_number($product)
+ Description: Returns number of chunks for product.
+ 
+ Returntype : Str
+ 
+=cut
+
+sub haplotype_caller_chunking_number {
+  my ($self, $product) = @_;
+
+  return $self->find_study_config($product)->{haplotype_caller}->{sample_chunking_number};
+}
+
+
+
+=head2 bqsr_enable
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->bqsr_enable($product)
+ Description: Return true if BQSR is to be run on the product.
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub bqsr_enable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if ($self->find_study_config($product)->{bqsr}->{enable}) {
+    $self->info("Product $name, $rpt is for BQSR processing");
+    return 1;
+  }
+
+  $self->info("Product $name, $rpt is NOT for BQSR processing");
+
+  return 0;
+}
+
+
+=head2 bqsr_apply_enable
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->bqsr_enable($product)
+ Description: Return true if BQSR is to be applied to the product.
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub bqsr_apply_enable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if ($self->find_study_config($product)->{bqsr}->{apply}) {
+    $self->info("Product $name, $rpt is for BQSR application");
+    return 1;
+  }
+
+  $self->info("Product $name, $rpt is NOT for BQSR application");
+
+  return 0;
+}
+
+
+=head2 bqsr_known_sites
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->bqsr_known_sites($product)
+ Description: Returns array of known sites for product.
+ 
+ Returntype : Array[Str]
+ 
+=cut
+
+sub bqsr_known_sites {
+  my ($self, $product) = @_;
+  my @known_sites = @{$self->find_study_config($product)->{bqsr}->{'known-sites'}};
+  return @known_sites;
+}
+
+=head2 bwakit_enable
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->bwakit_enable($product)
+ Description: Return true if bwakit's postalt processing is to be run on the product.
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub bwakit_enable {
+  my ($self, $product) = @_;
+
+  my $rpt          = $product->rpt_list();
+  my $name         = $product->file_name_root();
+
+  if ($self->find_study_config($product)->{bwakit}->{enable}) {
+    $self->info("Product $name, $rpt is for bwakit postalt processing");
+    return 1;
+  }
+
+  $self->info("Product $name, $rpt is NOT for bwakit postalt processing");
+
+  return 0;
+}
+
+=head2 markdup_method
+
+  Arg [1]    : npg_pipeline::product
+
+  Example    : $obj->markdup_method($product);
+  Description: Return mark duplicate method,
+               the value might be undefined.
+
+  Returntype : Str
+
+=cut
+
+sub markdup_method {
+  my ($self, $product) = @_;
+  return $self->find_study_config($product)->{markdup_method};
+}
+
+=head2 staging_deletion_delay
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->staging_deletion_delay($product)
+ Description: If the study has staging deletion delay configured,
+              returns this value, otherwise returns an undefined value.
+ 
+ Returntype : Int
+ 
+=cut
+
+sub staging_deletion_delay {
+  my ($self, $product) = @_;
+  return $self->find_study_config($product)->{'data_deletion'}->{'staging_deletion_delay'};
 }
 
 1;
@@ -386,7 +636,7 @@ used for any study without a specific configuration.
 
  irods:
     enable: <boolean> iRODS release enabled if true.
-    notify: <boolean> A notificastion message will be sent if true.
+    notify: <boolean> A notification message will be sent if true.
 
 e.g.
 
@@ -419,10 +669,6 @@ study:
       enable: true
       notify: false
 
-
-
-=head1 SUBROUTINES/METHODS
-
 =head1 BUGS AND LIMITATIONS
 
 =head1 INCOMPATIBILITIES
@@ -441,6 +687,12 @@ study:
 
 =item Readonly
 
+=item WTSI::DNAP::Utilities::Loggable
+
+=item npg_tracking::util::pipeline_config
+
+=item npg_qc::Schema
+
 =back
 
 =head1 AUTHOR
@@ -449,7 +701,7 @@ Keith James
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018, 2019 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

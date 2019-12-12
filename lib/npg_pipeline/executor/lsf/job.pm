@@ -3,13 +3,15 @@ package npg_pipeline::executor::lsf::job;
 use Moose;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
-use List::MoreUtils qw(uniq);
+use List::MoreUtils qw(uniq any);
 use Carp;
 use Readonly;
 
 use npg_pipeline::function::definition;
 
-with 'npg_pipeline::executor::options';
+with qw{
+        npg_pipeline::executor::options
+       };
 
 our $VERSION = '0';
 
@@ -141,8 +143,15 @@ has 'commands' => (
 sub _build_commands {
   my $self = shift;
   my $commands = {};
-  foreach my $d (@{$self->definitions()}) {
-    $commands->{$self->_array_index($d)} = $d->command();
+  if ( any { $_->has_chunk() } @{$self->definitions} ) {
+    my $i = 1;
+    foreach my $def (@{$self->definitions()}) {
+      $commands->{$i++} = $def->command();
+    }
+  } else {
+    foreach my $d (@{$self->definitions()}) {
+      $commands->{$self->_array_index($d)} = $d->command();
+    }
   }
   return $commands;
 }
@@ -210,7 +219,7 @@ sub BUILD {
 
   my $deflate = sub {
     my ($d, $method) = @_;
-    my $v = $_->$method;
+    my $v = $d->$method;
     $v = defined $v ? $v : 0;
     my $type = ref $v;
     if ($type) {
@@ -233,7 +242,7 @@ sub BUILD {
       croak qq[Inconsistent values for definition predicate method $has_method];
     }
 
-    if ($attr =~ /\A composition | command \Z/smx) {
+    if ($attr =~ /\A composition | command | chunk \Z/smx) {
       next;
     }
 
@@ -314,13 +323,32 @@ sub _priority {
 
 sub _dependencies {
   my $self = shift;
-  if (@{$self->upstream_job_ids()}) {
-    my @job_ids = map { qq[done($_)] }
-                  uniq
-                  sort { $a <=> $b }
-                  @{$self->upstream_job_ids()};
-    return q{-w'}.(join q{ && }, @job_ids).q{'};
+
+  my @deps = ();
+  my $seen = {};
+
+  # Sorting is done for convenience of human users.
+  # Ensuring that a job is listed only once is important mostly
+  # for tests.
+
+  foreach my $job_id ( sort { (keys %{$a})[0] <=> (keys %{$b})[0] }
+                       @{$self->upstream_job_ids()} ) {
+
+    my ($id, $is_same_degree) = each %{$job_id};
+    if (!exists $seen->{$id}) {
+      push @deps, (sprintf 'done(%i%s)',
+                   $id, $is_same_degree ? q([*]) : q());
+    } else {
+      ($seen->{$id} == $is_same_degree) or croak
+        "Inconsistent job info for job $id";
+    }
+    $seen->{$id} = $is_same_degree;
   }
+
+  if (@deps) {
+    return q{-w'}.(join q{ && }, @deps).q{'};
+  }
+
   return;
 }
 
@@ -513,6 +541,12 @@ __END__
 =item Carp
 
 =item Readonly
+
+=item npg_pipeline::function::definition
+
+=item npg_pipeline::executor::options
+
+=item npg_pipeline::product::chunk
 
 =back
 

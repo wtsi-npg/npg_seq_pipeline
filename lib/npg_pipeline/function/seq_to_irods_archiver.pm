@@ -16,7 +16,6 @@ our $VERSION = '0';
 
 Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
 Readonly::Scalar my $NUM_MAX_ERRORS      => 20;
-Readonly::Scalar my $OLD_DATED_DIR_NAME  => q[20180717];
 
 sub create {
   my $self = shift;
@@ -27,7 +26,7 @@ sub create {
   if (!$ref->{'excluded'}) {
 
     $self->ensure_restart_dir_exists();
-    my $job_name_prefix = join q{_}, q{publish_seq_data2irods}, $self->id_run();
+    my $job_name_prefix = join q{_}, q{publish_seq_data2irods}, $self->label();
 
     my $command = join q[ ],
       $PUBLISH_SCRIPT_NAME,
@@ -41,52 +40,26 @@ sub create {
       $command .= q{ --driver-type } . $self->lims_driver_type;
     }
 
-    my $old_dated_dir = $self->_find_old_dated_dir();
-    if ($old_dated_dir) {
-      $command .= q{--restart_file } . $self->restart_file_path($job_name_prefix);
-      my @positions = $self->positions();
-      my $position_list = q{};
-      if (scalar @positions < scalar $self->lims->children) {
-        foreach my $p  (@positions){
-          $position_list .= qq{ --positions $p};
-        }
-        $command .= $position_list;
+    my $run_collection = $self->irods_destination_collection();
+    foreach my $product (@{$self->products->{'data_products'}}) {
+      if ($self->is_for_irods_release($product)) {
+        my %dref = %{$ref};
+        $dref{'array_cpu_limit'}       = 1; # One job at a time
+        $dref{'apply_array_cpu_limit'} = 1;
+        $dref{'composition'}           = $product->composition;
+        $dref{'command'} = sprintf '%s --restart_file %s --collection %s --source_directory %s',
+          $command,
+          $self->restart_file_path($job_name_prefix, $product),
+          $self->irods_product_destination_collection($run_collection, $product),
+	  $product->path($self->archive_path());
+        $self->assign_common_definition_attrs(\%dref, $job_name_prefix);
+        push @definitions, npg_pipeline::function::definition->new(\%dref);
       }
-      $command .= join q[ ], q[],
-        q{--archive_path},   $self->archive_path(),
-        q{--runfolder_path}, $self->runfolder_path();
-      # Relying on PATH being the same on the host where we run the
-      # pipeline script and on the host where the job is going to be
-      # executed.
-      $command = join q[;], "export PATH=$old_dated_dir/bin:".$ENV{PATH},
-                            "export PERL5LIB=$old_dated_dir/lib/perl5",
-                            $command;
-      $self->info(qq[iRODS loader command "$command"]);
-      $ref->{'command'} = $command;
-      $self->assign_common_definition_attrs($ref, $job_name_prefix);
-      push @definitions, npg_pipeline::function::definition->new($ref);
-    } else {
-      my $run_collection = $self->irods_destination_collection();
-      foreach my $product (@{$self->products->{'data_products'}}) {
-        if ($self->is_for_irods_release($product)) {
-          my %dref = %{$ref};
-          $dref{'array_cpu_limit'}       = 1; # One job at a time
-          $dref{'apply_array_cpu_limit'} = 1;
-          $dref{'composition'}           = $product->composition;
-          $dref{'command'} = sprintf '%s --restart_file %s --collection %s --source_directory %s',
-            $command,
-            $self->restart_file_path($job_name_prefix, $product),
-            $self->irods_product_destination_collection($run_collection, $product),
-	    $product->path($self->archive_path());
-          $self->assign_common_definition_attrs(\%dref, $job_name_prefix);
-          push @definitions, npg_pipeline::function::definition->new(\%dref);
-	}
-      }
+    }
 
-      if (!@definitions) {
-        $self->info(q{No products to archive to iRODS});
-        $ref->{'excluded'} = 1;
-      }
+    if (!@definitions) {
+      $self->info(q{No products to archive to iRODS});
+      $ref->{'excluded'} = 1;
     }
   }
 
@@ -96,10 +69,14 @@ sub create {
 sub basic_definition_init_hash {
   my $self = shift;
 
+  if ($self->has_product_rpt_list) {
+    $self->logcroak(q{Not implemented for individual products});
+  }
+
   my $ref = {
     'created_by' => ref $self,
     'created_on' => $self->timestamp(),
-    'identifier' => $self->id_run(),
+    'identifier' => $self->label(),
   };
 
   if ($self->no_irods_archival) {
@@ -149,32 +126,6 @@ sub ensure_restart_dir_exists {
   return;
 }
 
-sub _find_old_dated_dir {
-  my $self = shift;
-
-  my $old_dated_dir;
-  if (-e $self->qc_path()) {
-    $self->info('Old style runfolder - have to use old iRODS loader');
-
-    my $local_bin = $self->local_bin(); # This pipeline script's bin as
-                                        # an absolute path.
-    my ($dated_directory_root) = $local_bin =~ /(.+)201[89]\d\d\d\d\/bin\Z/xms;
-    if ($dated_directory_root) {
-      $old_dated_dir = $dated_directory_root . $OLD_DATED_DIR_NAME;
-      if (-e $old_dated_dir) {
-        $self->info(qq{Found old dated directory $old_dated_dir});
-      } else {
-        undef $old_dated_dir;
-        $self->logwarn(qq{Old dated directory $old_dated_dir does not exist});
-      }
-    } else {
-      $self->logwarn(q{Failed to find old dated directory});
-    }
-  }
-
-  return $old_dated_dir;
-}
-
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -195,9 +146,9 @@ npg_pipeline::function::seq_to_irods_archiver
 
 =head1 DESCRIPTION
 
-Defines a job for publishing sequencing data to iRODS. For new style
-run folders only product data and their accompanyig files will be
-published by this job.
+Defines a job for publishing sequencing data to iRODS. Only product
+data and their accompanying files are published by this job. Some
+studies might be configured not to publish their products ti iRODS.
 
 =head1 SUBROUTINES/METHODS
 

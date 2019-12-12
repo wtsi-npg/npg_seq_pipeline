@@ -38,6 +38,11 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "update_ml_warehouse",
+            "target" : "cache_merge_component"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "archive_run_data_to_irods",
             "target" : "archive_to_irods_ml_warehouse"
          },
@@ -49,11 +54,11 @@
          {
             "relation" : "dependsOn",
             "source" : "archive_to_irods_ml_warehouse",
-            "target" : "upload_fastqcheck_to_qc_database"
+            "target" : "run_run_archived"
          },
          {
             "relation" : "dependsOn",
-            "source" : "upload_fastqcheck_to_qc_database",
+            "source" : "cache_merge_component",
             "target" : "run_run_archived"
          },
          {
@@ -64,6 +69,11 @@
          {
             "relation" : "dependsOn",
             "source" : "run_run_archived",
+            "target" : "remove_intermediate_data"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "remove_intermediate_data",
             "target" : "run_qc_complete"
          },
          {
@@ -123,12 +133,12 @@
             "label" : "archive_to_s3"
          },
          {
-            "id" : "notify_product_delivery",
-            "label" : "notify_product_delivery"
+            "id" : "cache_merge_component",
+            "label" : "cache_merge_component"
          },
          {
-            "id" : "upload_fastqcheck_to_qc_database",
-            "label" : "upload_fastqcheck_to_qc_database"
+            "id" : "notify_product_delivery",
+            "label" : "notify_product_delivery"
          },
          {
             "id" : "upload_illumina_analysis_to_qc_database",
@@ -141,6 +151,10 @@
          {
             "id" : "run_run_archived",
             "label" : "run_run_archived"
+         },
+         {
+            "id" : "remove_intermediate_data",
+            "label" : "remove_intermediate_data"
          },
          {
             "id" : "run_qc_complete",

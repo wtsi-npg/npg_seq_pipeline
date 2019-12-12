@@ -2,7 +2,7 @@ package npg_pipeline::runfolder_scaffold;
 
 use Moose::Role;
 use File::Path qw/make_path/;
-use File::Spec;
+use File::Spec::Functions qw/catfile catdir/;
 use File::Slurp;
 use Readonly;
 use Carp;
@@ -29,7 +29,8 @@ sub create_product_level {
   # Create cache dir for short files and qc out directory for every product
   foreach my $p ( (map { @{$_} } values %{$self->products}) ) {
     push @dirs, ( map { $p->$_($self->archive_path()) }
-                  qw/path qc_out_path short_files_cache_path/ );
+                  qw/path qc_out_path short_files_cache_path/ ),
+                $p->path($self->no_archive_path());
   }
   # Create tileviz directory for lane products only
   push @dirs, ( map { $_->tileviz_path($self->archive_path()) }
@@ -56,53 +57,48 @@ sub create_top_level {
 
   my @info = ();
   my @dirs = ();
-  my $path;
 
-  ######
-  # The directory names for paths are hardcoded here. Primary definitions for
-  # them are located in a number of tracking roles. These definitions should
-  # be made available in tracking so the they can be used here.
-  #
-  if (!$self->has_intensity_path()) {
-    $path = File::Spec->catdir($self->runfolder_path(), q{Data}, q{Intensities});
-    if (!-e $path) {
-      push @info, qq{Intensities path $path not found};
-      $path = $self->runfolder_path();
-    }
-    $self->_set_intensity_path($path);
+  my $path = $self->intensity_path();
+  if (!-d $path) {
+    push @info, qq{Intensities path $path not found};
+  } else {
+    push @info, qq{Intensities path: $path};
   }
-  push @info, 'Intensities path: ', $self->intensity_path();
 
-  if (!$self->has_basecall_path()) {
-    $path = File::Spec->catdir($self->intensity_path() , q{BaseCalls});
-    if (!-e $path) {
-      push @info, qq{BaseCalls path $path not found};
-      $path = $self->runfolder_path();
-    }
-    $self->_set_basecall_path($path);
+  $path = $self->basecall_path();
+  if (!-d $path) {
+    push @info, qq{Basecalls path $path not found};
+  } else {
+    push @info, qq{Basecalls path: $path};
   }
-  push @info, 'BaseCalls path: ' . $self->basecall_path();
 
   if(!$self->has_bam_basecall_path()) {
-    $path= File::Spec->catdir($self->intensity_path(), q{BAM_basecalls_} . $self->timestamp());
-    push @dirs, $path;
-    $self->set_bam_basecall_path($path);
+    if (-d $self->intensity_path()) {
+      $path = $self->set_bam_basecall_path($self->timestamp());
+    } elsif ($self->has_analysis_path()) {
+      $path = $self->set_bam_basecall_path($self->analysis_path);
+    } else {
+      my $m = sprintf 'Intensity path %s does not exist', $self->intensity_path();
+      $m .= ', either bam_basecall_path or analysis_path should be given';
+      croak $m;
+    }
   }
+  push @dirs, $self->bam_basecall_path();
   push @info, 'BAM_basecall path: ' . $self->bam_basecall_path();
 
-  if (!$self->has_recalibrated_path()) {
-    $self->_set_recalibrated_path(File::Spec->catdir($self->bam_basecall_path(), 'no_cal'));
-  }
   push @dirs, $self->recalibrated_path();
-  push @info, 'no_cal path: ' . $self->recalibrated_path();
+  push @info, 'Recalibrated directory path: ' . $self->recalibrated_path();
 
-  my $metadata_cache_dir = $self->metadata_cache_dir_path();
-  push @dirs, $metadata_cache_dir;
-  push @info, "metadata cache path: $metadata_cache_dir";
+  $path = $self->metadata_cache_dir_path();
+  push @dirs, $path;
+  push @info, "Metadata cache path: $path";
 
-  push @dirs, $self->archive_path(), $self->status_files_path();
-  push @dirs, $self->_tileviz_index_dir_path();
-  push @dirs, $self->irods_publisher_rstart_dir_path();
+  push @dirs,
+    $self->archive_path(),
+    $self->no_archive_path(),
+    $self->status_files_path(),
+    $self->_tileviz_index_dir_path(),
+    $self->irods_publisher_rstart_dir_path();
 
   my @errors = $self->make_dir(@dirs);
 
@@ -115,7 +111,7 @@ sub status_files_path {
   if (!$apath) {
     croak 'Failed to retrieve analysis_path';
   }
-  return File::Spec->catdir($apath, $STATUS_FILES_DIR_NAME);
+  return catdir($apath, $STATUS_FILES_DIR_NAME);
 }
 
 sub metadata_cache_dir_path {
@@ -124,7 +120,7 @@ sub metadata_cache_dir_path {
   if (!$apath) {
     croak 'Failed to retrieve analysis_path';
   }
-  return File::Spec->catdir($apath, $METADATA_CACHE_DIR_NAME . $self->id_run());
+  return catdir($apath, $METADATA_CACHE_DIR_NAME . $self->id_run());
 }
 
 sub irods_publisher_rstart_dir_path {
@@ -133,12 +129,12 @@ sub irods_publisher_rstart_dir_path {
   if (!$apath) {
     croak 'Failed to retrieve analysis_path';
   }
-  return File::Spec->catdir($apath, $IRODS_PUBLISHER_RSART_DIR_NAME);
+  return catdir($apath, $IRODS_PUBLISHER_RSART_DIR_NAME);
 }
 
 sub make_log_dir4names {
   my ($pkg, $analysis_path, @names) = @_;
-  my @dirs = map { File::Spec->catdir(_log_path($analysis_path), $_) } @names;
+  my @dirs = map { catdir(_log_path($analysis_path), $_) } @names;
   my @errors = __PACKAGE__->make_dir(@dirs);
   return {'dirs' => \@dirs, 'errors' => \@errors};
 }
@@ -171,15 +167,15 @@ sub path_in_outgoing {
 
 sub _tileviz_index_dir_path {
   my $self = shift;
-  return File::Spec->catdir($self->archive_path, $TILEVIZ_INDEX_DIR_NAME);
+  return catdir($self->archive_path, $TILEVIZ_INDEX_DIR_NAME);
 }
 
 sub _create_tileviz_index {
   my $self = shift;
 
   my %lanes =  map { $_->composition->get_component(0)->position,
-                     $_->tileviz_path(q[..]) . q[.html] } # tileviz.html page on the
-                     @{$self->products->{'lanes'}};       # same level as tileviz directory
+                     $_->tileviz_path(q[..]) . q[.html] } # tileviz_laneX.html page on the
+                     @{$self->products->{'lanes'}};       # same level as tileviz_laneX directory
   my $title = join q[ ], 'Run', $self->id_run(), 'Tileviz', 'Reports';
   my @content = ();
   push @content, "<html><head><title>$title</title></head>";
@@ -191,8 +187,7 @@ sub _create_tileviz_index {
   push @content, '</html>';
 
   my $tileviz_index_dir_path = $self->_tileviz_index_dir_path();
-  my $index = File::Spec->catfile($tileviz_index_dir_path,
-                                  $TILEVIZ_INDEX_FILE_NAME);
+  my $index = catfile($tileviz_index_dir_path, $TILEVIZ_INDEX_FILE_NAME);
   write_file($index, map { $_ . qq[\n] } @content);
 
   return;
@@ -206,6 +201,8 @@ sub _create_tileviz_lane_indexes {
                      @{$self->products->{'lanes'}};                     # same level as tileviz directory
 
   foreach my $lane (sort keys %lanes) {
+    next if -e $lanes{$lane}; # Do not overwrite an existing file,
+                              # it might have useful data.
     my $title = join q[ ], 'Run', $self->id_run(), 'Lane', $lane, 'Tileviz', 'Report';
     my @content = ();
     push @content, "<html><head><title>$title</title></head>";
@@ -221,7 +218,7 @@ sub _create_tileviz_lane_indexes {
 sub _log_path {
   my $analysis_path = shift;
   $analysis_path or croak 'Analysis path is needed';
-  return File::Spec->catdir($analysis_path, $LOG_DIR_NAME);
+  return catdir($analysis_path, $LOG_DIR_NAME);
 }
 
 no Moose::Role;

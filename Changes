@@ -1,6 +1,144 @@
 LIST OF CHANGES
 ---------------
 
+release 57.5.1
+- bug fix - correct node id in splice (for GbS) 
+
+release 57.5.0
+ - add BWA MEM2 support to seq_alignment function
+ - bug fix: add -f to rm command removing intermediate files (to
+     avoid error when no intermediate files are present)
+ - allow selection of duplicate marking method (biobambam,samtools
+     or picard) in seq_alignment via product_release.yml
+ - detect flowcell type and set uses_patterned_flowcell attribute
+     to allow setting of optical duplicate region size
+ - add ability to select bwakit postalt processing (if reference has
+     alternate haplotypes) in seq_alignment via product_release.yml
+
+release 57.4.0
+ - change genotype qc check to cram input
+ - LSF array indexes fix for jobs dealign with chunked data
+   (multiple jobs per product)
+ - esignate no_archive directory for files for chunked entities,
+   which are not end products
+ - haplotype caller function: early detection of prducts that are
+   not for release (tag zero and control)
+
+release 57.3.0
+ - add chromium libs (forced no target alignment) to bam prune skip 
+   list in seq_alignment
+ - archival pipeline function for deletion of intermediate files
+ - script to generate receipts files to be used by npg_run_is_deletable
+   scrit for one of teh studies
+
+release 57.2.0
+ - prune bam generation for most products with no alignment and
+   change bam_flagstats command in seq_alignment to crams
+ - skip markdup step in seq_alignment for spike tag
+ - add haplotypecaller to function list
+ - use only public run folder methods
+ - path logic improvements
+
+release 57.1.1
+ - all components of npg_run_is_deletable script to use samplesheet
+   as a source of LIMS data
+
+release 57.1.0
+ - configurable study-level qc criteria for archival and for minimum
+   delay for run folder deletion
+
+release 57.0.3
+ - add missing indexing step to merge_recompress
+
+release 57.0.2
+ - fix logic in WR dependancies where pipeline converges
+
+release 57.0.1
+ - fix where new code was not taking NPG_REPOSITORY_ROOT and add
+   duplicated code to ref cache.
+
+release 57.0.0
+ - supply MD5 in bucket file upload if available in sibling md5 file
+ - add function to support GATK HaplotypeCaller and apply BQSR
+ - add function to concat and recompress gVCFs
+ - add function to calculate BQSR table
+ - cram files as input to the adapter autoqc check
+ - make list of files due to be archived dependent on alignment
+    confuguration of the study
+ - run folders for test data restructured to reflect new-style
+    product hierarchy and not to use outdated path component
+    names (bustard, etc)
+
+release 56.1.0
+ - move reference cache from seq_alignment to own singleton class
+ - remove provisions for old-style run folders
+ - qc_review function added
+ - provisions for splitting a product into chunks
+ - to be forward compatible with changes in tracking, remove direct
+   dependency of the pipeline daemon on the short_info and location
+   tracking roles
+ - ability to run the pipeline for individual products; some archival
+   pipeline functions updated to enbable this ability on their level
+ - autoqc adapter check - give cram files as input
+
+release 56.0.1
+ - ensure that the paths serived from the archive directory in
+   different parts run_is_deletable utility are consistent.
+ - add autosome stats file to product release
+ - add missing bait prune to seq_alignment
+
+release 56.0.0
+ - add autosome target to seq_alignment
+ - pipeline configuration module and product release configuration
+   accessors are moved to npg_tracking package in order for the product
+   configuration be accessible from other packages, code in this
+   package refactored to accommodate the change
+ - conform to bambi's v 0.12.0 file and directory naming schema for
+   tileviz data
+ - add facility to do LSF 1:1 job index dependencies on array jobs
+ - when validating run folder for deletion, ensure linked directories
+   and files are recognised
+
+release 55.2
+ - switched from S3 to Google Compute Storage
+ - change bcfstats qc job to use CRAM instead of BAM file as input
+
+release 55.1
+ - added configuration option to change the S3 endpoint URL
+
+release 55.0.1
+ - bug fix for invocation of the generate() function in the
+   seq_alignment function module following an addition of the
+   generate_composition function
+
+release 55.0
+ - additional 'GnT MDA' library type added to allowed types for gbs analysis
+ - a new archival pipeline function, cache_merge_component, for caching merge
+   candidates as a part of the archival pipeline
+ - no overwriting existing tileviz files when scaffolding teh runfolder
+ - a new function, generate_compositions, for generating composition JSON files
+ - npg_run_is_deletable:
+    cross-checks for all file archival destinations to ensure that each
+      product is archived in at least one destination;
+    full logic for validating correctness of s3 archival
+
+release 54.1.2
+ - set explicit umask for wr jobs to guarantee that output is group-writable
+
+release 54.1.1
+ - bug fix in command generation for iRODS data archival from old-style
+   run folders
+
+release 54.1
+ - minor speed-up in seq_alignment function due to caching of
+   unseccessfully retrieved references
+ - npg_run_is_deletable understands per-product iRODS collections and
+   make runs that have products archivable to s3 not deletable
+ - function for saving fastqcheck files is removed from the archival
+   pipeline function graph, implementation of this function is deleted
+ - changes of p4_stage1 and seq_alignment functions to accommodate
+   removal of fastqcheck files generation in respective p4 templates
+
 release 54.0
  - archival function graph includes publishing both to s3 and iRODS
  - a function graph for post 'run archived' small pipeline

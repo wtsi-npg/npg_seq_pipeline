@@ -12,10 +12,8 @@ use Log::Log4perl;
 use Readonly;
 use Try::Tiny;
 
-
-use npg_tracking::illumina::run::folder::location;
-use npg_tracking::illumina::run::short_info;
 use npg_tracking::util::abs_path qw/abs_path/;
+use npg_tracking::illumina::runfolder;
 use npg_tracking::Schema;
 use WTSI::DNAP::Warehouse::Schema;
 use WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell;
@@ -25,7 +23,7 @@ use npg_pipeline::base::options;
 with qw{ 
          MooseX::Getopt
          WTSI::DNAP::Utilities::Loggable
-         npg_pipeline::base::config
+         npg_tracking::util::pipeline_config
        };
 
 our $VERSION = '0';
@@ -247,14 +245,7 @@ sub local_path {
 sub runfolder_path4run {
   my ($self, $id_run) = @_;
 
-  my $class =  Moose::Meta::Class->create_anon_class(
-    roles => [ qw/npg_tracking::illumina::run::folder::location
-                  npg_tracking::illumina::run::short_info/ ]
-  );
-  $class->add_attribute(q(npg_tracking_schema),
-                        {isa => 'npg_tracking::Schema', is => q(ro)});
-
-  my $path = $class->new_object(
+  my $path = npg_tracking::illumina::runfolder->new(
     npg_tracking_schema => $self->npg_tracking_schema,
     id_run              => $id_run,
   )->runfolder_path;
@@ -408,11 +399,11 @@ captured and printed to the log.
 
 =item Try::Tiny
 
-=item npg_tracking::illumina::run::folder::location
-
-=item npg_tracking::illumina::run::short_info
+=item npg_tracking::illumina::runfolder
 
 =item use npg_tracking::util::abs_path
+
+=item npg_tracking::util::pipeline_config
 
 =item npg_tracking::Schema
 
@@ -432,7 +423,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2019 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
