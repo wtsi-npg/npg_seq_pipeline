@@ -400,6 +400,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $self->logcroak(qq{only paired reads supported for non-consented human ($name_root)});
   }
 
+  my $is_botseq_lib = $l->library_type && ($l->library_type =~ /BotSeq/smx);
+
   ########
   # no target alignment:
   #  splice out unneeded p4 nodes, add -x flag to scramble,
@@ -427,7 +429,11 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
 
-    $p4_param_vals->{markdup_method} = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
+    if($is_botseq_lib) {
+      $p4_param_vals->{markdup_method} = q(botseq);
+    } else {
+      $p4_param_vals->{markdup_method} = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
+    }
     $p4_param_vals->{markdup_optical_distance_value} = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
   }
   elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$do_gbs_plex && !$is_chromium_lib) {

@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - Added BotSeq analysis - Note I've assumed the library_type matches BotSeq
+ 
 release 57.5.1
 - bug fix - correct node id in splice (for GbS) 
 

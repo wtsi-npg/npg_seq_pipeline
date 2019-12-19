@@ -38,6 +38,9 @@ Readonly::Scalar my $TILE_METRICS_INTEROP_CODES => {'cluster density'    => 100,
                                                      'version3_cluster_counts' => ord('t'),
                                                      };
 
+Readonly::Scalar my $BOTSEQ_TAG_LENGTH            => 3; # length of BotSeq tag at start of read
+Readonly::Scalar my $BOTSEQ_SKIP_LENGTH           => 5; # Number of bases to skip after the BotSeq tag
+
 sub generate {
   my $self = shift;
 
@@ -382,6 +385,70 @@ sub _generate_command_params {
     }
   }
 
+  if($self->_is_botseq) {
+    $self->info(q{P4 stage1 analysis of a BotSeq lane});
+
+    if (!$self->is_paired_read) {
+      $self->logcroak('A BotSeq lane should be paired ', $position);
+    }
+
+    my @i2b_bc_read = ();
+    my @i2b_first_0 = ();
+    my @i2b_final_0 = ();
+    my @i2b_first_index_0 = ();
+    my @i2b_final_index_0 = ();
+    my @i2b_bc_seq_val = ();
+    my @i2b_bc_qual_val = ();
+
+    # read 1
+    my($first, $final) = $self->read1_cycle_range();
+    push @i2b_bc_read, q{1},q{2};
+    push @i2b_first_index_0, qq{$first},qq{$first};
+    push @i2b_final_index_0, $first+$BOTSEQ_TAG_LENGTH-1,$first+$BOTSEQ_TAG_LENGTH-1;
+    push @i2b_bc_seq_val, q{rb},q{mb};
+    push @i2b_bc_qual_val, q{rq},q{mq};
+    push @i2b_first_0, $first+$BOTSEQ_TAG_LENGTH+$BOTSEQ_SKIP_LENGTH-1;
+    push @i2b_final_0, qq{$final};
+
+    # index read(s)
+    if($self->is_indexed()) {
+      # the first index read
+      my($first, $final) = $self->index_read1_cycle_range();
+      push @i2b_bc_read, q{1};
+      push @i2b_first_index_0, qq{$first};
+      push @i2b_final_index_0, qq{$final};
+      push @i2b_bc_seq_val, q{BC};
+      push @i2b_bc_qual_val, q{QT};
+      if($self->is_dual_index()) {
+        # the second index read
+        my($first, $final) = $self->index_read2_cycle_range();
+        push @i2b_bc_read, q{1};
+        push @i2b_first_index_0, qq{$first};
+        push @i2b_final_index_0, qq{$final};
+        push @i2b_bc_seq_val, q{BC};
+        push @i2b_bc_qual_val, q{QT};
+      }
+    }
+
+    # read 2
+    ($first, $final) = $self->read2_cycle_range();
+    push @i2b_bc_read, q{2},q{1};
+    push @i2b_first_index_0, qq{$first},qq{$first};
+    push @i2b_final_index_0, $first+$BOTSEQ_TAG_LENGTH-1, $first+$BOTSEQ_TAG_LENGTH-1;
+    push @i2b_bc_seq_val, q{rb},q{mb};
+    push @i2b_bc_qual_val, q{rq},q{mq};
+    push @i2b_first_0, $first+$BOTSEQ_TAG_LENGTH+$BOTSEQ_SKIP_LENGTH-1;
+    push @i2b_final_0, qq{$final};
+    
+    $p4_params{i2b_bc_read}       = join q{,}, @i2b_bc_read;
+    $p4_params{i2b_first_0}       = join q{,}, @i2b_first_0;
+    $p4_params{i2b_final_0}       = join q{,}, @i2b_final_0;
+    $p4_params{i2b_first_index_0} = join q{,}, @i2b_first_index_0;
+    $p4_params{i2b_final_index_0} = join q{,}, @i2b_final_index_0;
+    $p4_params{i2b_bc_seq_val}    = join q{,}, @i2b_bc_seq_val;
+    $p4_params{i2b_bc_qual_val}   = join q{,}, @i2b_bc_qual_val;
+  }
+  
   ###  TODO: remove this read length comparison if biobambam will handle this case. Check clip reinsertion.
   if($self->is_paired_read() && !$lane_lims->inline_index_exists) {
     # omit BamAdapterFinder for inline index
@@ -542,6 +609,20 @@ sub _build__extra_tradis_transposon_read {
   }
 
   return ($num_extra > 0) ? 1 : 0;
+}
+
+has q{_is_botseq} => (
+                             isa        => q{Bool},
+                             is         => q{rw},
+                             lazy_build => 1,
+                            );
+sub _build__is_botseq {
+  my $self = shift;
+
+  my $is_botseq = any {$_->library_type && $_->library_type =~ /BotSeq/smx}
+                  $self->lims->descendants();
+
+  return $is_botseq;
 }
 
 sub _parsing_interop {
