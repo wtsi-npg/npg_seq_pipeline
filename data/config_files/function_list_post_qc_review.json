@@ -9,16 +9,6 @@
          {
             "relation" : "dependsOn",
             "source" : "run_archival_in_progress",
-            "target" : "upload_illumina_analysis_to_qc_database"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "upload_illumina_analysis_to_qc_database",
-            "target" : "update_ml_warehouse"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_archival_in_progress",
             "target" : "upload_auto_qc_to_qc_database"
          },
          {
@@ -139,10 +129,6 @@
          {
             "id" : "notify_product_delivery",
             "label" : "notify_product_delivery"
-         },
-         {
-            "id" : "upload_illumina_analysis_to_qc_database",
-            "label" : "upload_illumina_analysis_to_qc_database"
          },
          {
             "id" : "upload_auto_qc_to_qc_database",
