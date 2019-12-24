@@ -79,6 +79,7 @@ Readonly::Array my @AUTOQC_FUNCTIONS =>
       qc_gc_fraction
       qc_genotype
       qc_insert_size
+      qc_interop
       qc_pulldown_metrics
       qc_qX_yield
       qc_ref_match
@@ -205,7 +206,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018, 2019 Genome Research Ltd
+Copyright (C) 2018,2019,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
