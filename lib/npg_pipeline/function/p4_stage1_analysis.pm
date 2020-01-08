@@ -39,7 +39,7 @@ Readonly::Scalar my $TILE_METRICS_INTEROP_CODES => {'cluster density'    => 100,
                                                      };
 
 Readonly::Scalar my $BOTSEQ_TAG_LENGTH            => 3; # length of BotSeq tag at start of read
-Readonly::Scalar my $BOTSEQ_SKIP_LENGTH           => 5; # Number of bases to skip after the BotSeq tag
+Readonly::Scalar my $BOTSEQ_SKIP_LENGTH           => 4; # Number of bases to skip after the BotSeq tag
 
 sub generate {
   my $self = shift;
@@ -407,7 +407,7 @@ sub _generate_command_params {
     push @i2b_final_index_0, $first+$BOTSEQ_TAG_LENGTH-1,$first+$BOTSEQ_TAG_LENGTH-1;
     push @i2b_bc_seq_val, q{rb},q{mb};
     push @i2b_bc_qual_val, q{rq},q{mq};
-    push @i2b_first_0, $first+$BOTSEQ_TAG_LENGTH+$BOTSEQ_SKIP_LENGTH-1;
+    push @i2b_first_0, $first+$BOTSEQ_TAG_LENGTH+$BOTSEQ_SKIP_LENGTH;
     push @i2b_final_0, qq{$final};
 
     # index read(s)
@@ -437,7 +437,7 @@ sub _generate_command_params {
     push @i2b_final_index_0, $first+$BOTSEQ_TAG_LENGTH-1, $first+$BOTSEQ_TAG_LENGTH-1;
     push @i2b_bc_seq_val, q{rb},q{mb};
     push @i2b_bc_qual_val, q{rq},q{mq};
-    push @i2b_first_0, $first+$BOTSEQ_TAG_LENGTH+$BOTSEQ_SKIP_LENGTH-1;
+    push @i2b_first_0, $first+$BOTSEQ_TAG_LENGTH+$BOTSEQ_SKIP_LENGTH;
     push @i2b_final_0, qq{$final};
     
     $p4_params{i2b_bc_read}       = join q{,}, @i2b_bc_read;
