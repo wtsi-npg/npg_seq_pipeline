@@ -21,7 +21,7 @@ Readonly::Scalar my $GATK_BQSR_TOOL_NAME  => 'ApplyBQSR';
 
 
 Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
-Readonly::Scalar my $MEMORY                       => q{3600}; # memory in megabytes
+Readonly::Scalar my $MEMORY                       => q{8000}; # memory in megabytes
 Readonly::Scalar my $CPUS                         => 4;
 Readonly::Scalar my $NUM_HOSTS                    => 1;
 

@@ -112,7 +112,7 @@ subtest 'run hc' => sub {
 
   ok (-d "$no_archive_path/plex4/chunk", 'output directory created');
 
-  my $mem = 3600;
+  my $mem = 8000;
   my $d = $da->[72]; # 73rd array member
   isa_ok ($d, 'npg_pipeline::function::definition');
   is ($d->created_by, 'npg_pipeline::function::haplotype_caller', 'created by correct');
@@ -163,7 +163,7 @@ subtest 'run hc with bqsr' => sub {
 
   ok (-d "$no_archive_path/plex4/chunk", 'output directory created');
 
-  my $mem = 3600;
+  my $mem = 8000;
   my $d = $da->[72]; # 73rd array member
   isa_ok ($d, 'npg_pipeline::function::definition');
   is ($d->created_by, 'npg_pipeline::function::haplotype_caller', 'created by correct');
