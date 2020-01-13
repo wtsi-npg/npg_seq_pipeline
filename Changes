@@ -9,6 +9,8 @@ release 57.6.0
 - fix haplotype caller check for a PCR free library type to be case
   insensitive
 - increase memory for bqsr and haplotype caller jobs
+- make test CRAM files compliant with samtools v.1.10.0,
+   which gives an error if no header is present in a file
 
 release 57.5.1
 - bug fix - correct node id in splice (for GbS) 
