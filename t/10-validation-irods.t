@@ -177,7 +177,7 @@ subtest 'eligible product entities' => sub {
 };
 
 subtest 'deletable or not' => sub {
-  my $num_tests = 20;
+  my $num_tests = 21;
   plan tests => $num_tests;
 
   my $archive               = join q[/], $dir, '20405';
@@ -327,6 +327,9 @@ subtest 'deletable or not' => sub {
     $v = npg_pipeline::validation::irods->new($ref);
     is($v->archived_for_deletion(), 1, 'deletable');
 
+    $trpath = $file_map->{'20405_6#4.cram'};
+    # Need a real file, since it will be inspected by samtools.
+    copy 't/data/eight_reads.cram', $trpath or die 'Failed to copy';
     # Remove an index iRODS file
     $to_remove = '20405_6#4.cram.crai';
     $ito_remove = join q[/], $IRODS_TEST_AREA1, $to_remove;
@@ -338,14 +341,22 @@ subtest 'deletable or not' => sub {
     ok(!$result, 'not deletable - index file is missing');
 
     SKIP: {
-      skip 'samtools executable not available', 1 unless which('samtools');
-    
-      # Make the parent sequence file to have zero reads
+      skip 'samtools executable not available', 2 unless which('samtools');
+
+      # Create invalid parent file, which will trigger samtools error
+      # for any samtools version.
       $trpath = $file_map->{'20405_6#4.cram'};
       open my $fh, q[>], $trpath or die "Failed to open file handle to $trpath";
+      print $fh 'hgkdghkdghkdgh';
       close $fh or warn "Failed to close file handle to $trpath\n";
       $v = npg_pipeline::validation::irods->new($ref);
-      ok($v->archived_for_deletion(), 'deletable');
+      ok(!$v->archived_for_deletion(), 'not deletable - file with no data');
+
+      # Make the parent sequence file to have zero reads.
+      copy 't/data/no_reads.cram', $trpath or die Failed to copy;
+      $v = npg_pipeline::validation::irods->new($ref);
+      ok($v->archived_for_deletion(), 'deletable - absence of an index ' .
+        'file when the main file has zero reads is OK');
     }
   };
 };
