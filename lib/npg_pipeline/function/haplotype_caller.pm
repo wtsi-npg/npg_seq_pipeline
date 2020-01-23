@@ -21,7 +21,7 @@ Readonly::Scalar my $GATK_BQSR_TOOL_NAME  => 'ApplyBQSR';
 
 
 Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
-Readonly::Scalar my $MEMORY                       => q{3600}; # memory in megabytes
+Readonly::Scalar my $MEMORY                       => q{8000}; # memory in megabytes
 Readonly::Scalar my $CPUS                         => 4;
 Readonly::Scalar my $NUM_HOSTS                    => 1;
 
@@ -77,7 +77,7 @@ sub create {
                   $super_product->file_name_root(), $super_product->rpt_list()) && next;
 
     my $ref_path = $ref_cache_instance->get_path($super_product, q(fasta), $self->repository());
-    my $indel_model = ($super_product->lims->library_type && ($super_product->lims->library_type =~ /PCR free/smx)) ? 'NONE' : 'CONSERVATIVE';
+    my $indel_model = ($super_product->lims->library_type && ($super_product->lims->library_type =~ /PCR[\s_\-]?free/ismx)) ? 'NONE' : 'CONSERVATIVE';
 
     my $gatk_args = "--emit-ref-confidence GVCF -R $ref_path --pcr-indel-model $indel_model"; # --dbsnp $dbsnp
 

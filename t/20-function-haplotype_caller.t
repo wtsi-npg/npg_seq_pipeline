@@ -46,7 +46,7 @@ make_path $archive_path;
 make_path $no_archive_path;
 my $timestamp      = '20180701-123456';
 
-my $command = qq{$gatk_exec HaplotypeCaller --emit-ref-confidence GVCF -R $ref_fasta --pcr-indel-model CONSERVATIVE -I $archive_path/plex4/26291#4.cram -O $no_archive_path/plex4/chunk/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list};
+my $command = qq{$gatk_exec HaplotypeCaller --emit-ref-confidence GVCF -R $ref_fasta --pcr-indel-model NONE -I $archive_path/plex4/26291#4.cram -O $no_archive_path/plex4/chunk/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list};
 
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv];
 
@@ -112,7 +112,7 @@ subtest 'run hc' => sub {
 
   ok (-d "$no_archive_path/plex4/chunk", 'output directory created');
 
-  my $mem = 3600;
+  my $mem = 8000;
   my $d = $da->[72]; # 73rd array member
   isa_ok ($d, 'npg_pipeline::function::definition');
   is ($d->created_by, 'npg_pipeline::function::haplotype_caller', 'created by correct');
@@ -159,11 +159,11 @@ subtest 'run hc with bqsr' => sub {
     q{trap "(rm -r $TMPDIR || :)" EXIT},
     q{echo "BQSR tempdir: $TMPDIR"},
     qq{$gatk_exec ApplyBQSR -R $ref_fasta --preserve-qscores-less-than 6 --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 --bqsr-recal-file $archive_path/plex4/26291#4.bqsr_table -I $archive_path/plex4/26291#4.cram -O \$TMPDIR/26291#4.1_bqsr.cram -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list},
-    qq{$gatk_exec HaplotypeCaller --emit-ref-confidence GVCF -R $ref_fasta --pcr-indel-model CONSERVATIVE -I \$TMPDIR/26291#4.1_bqsr.cram -O $no_archive_path/plex4/chunk/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list});
+    qq{$gatk_exec HaplotypeCaller --emit-ref-confidence GVCF -R $ref_fasta --pcr-indel-model NONE -I \$TMPDIR/26291#4.1_bqsr.cram -O $no_archive_path/plex4/chunk/26291#4.1.g.vcf.gz -L $dir/calling_intervals/Homo_sapiens/GRCh38_15_plus_hs38d1/hs38primary/hs38primary.1.interval_list});
 
   ok (-d "$no_archive_path/plex4/chunk", 'output directory created');
 
-  my $mem = 3600;
+  my $mem = 8000;
   my $d = $da->[72]; # 73rd array member
   isa_ok ($d, 'npg_pipeline::function::definition');
   is ($d->created_by, 'npg_pipeline::function::haplotype_caller', 'created by correct');

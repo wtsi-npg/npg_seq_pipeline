@@ -1,8 +1,19 @@
 LIST OF CHANGES
 ---------------
 
+release 57.6.0
+ - only set p4 parameter values for markdup_method and
+   markdup_optical_distance_value when do_target_alignment is true;
+   this also stops an error being thrown if the entity (for example,
+   tag zero product) has multiple studies and references
+ - fix haplotype caller check for a PCR free library type to be case
+   insensitive
+ - increase memory for bqsr and haplotype caller jobs
+ - make test CRAM files compliant with samtools v.1.10.0,
+   which gives an error if no header is present in a file
+
 release 57.5.1
-- bug fix - correct node id in splice (for GbS) 
+ - bug fix - correct node id in splice (for GbS) 
 
 release 57.5.0
  - add BWA MEM2 support to seq_alignment function
