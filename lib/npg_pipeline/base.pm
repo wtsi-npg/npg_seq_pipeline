@@ -41,7 +41,7 @@ Readonly::Array my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                lane_count
                                                expected_cycle_count
                                                run_flowcell
-                                               local_bin
+                                               qc_path
                                               /;
 
 =head1 NAME
@@ -110,11 +110,13 @@ defaults to the value of the id_run attribute.
 =cut
 
 has q{label} => (
-  isa        => q{Str},
-  is         => q{ro},
-  predicate  => q{has_label},
-  required   => 1,
-  lazy_build => 1,
+  isa           => q{Str},
+  is            => q{ro},
+  predicate     => q{has_label},
+  required      => 1,
+  lazy_build    => 1,
+  documentation => 'A custom label which will be used in log ' .
+                   'file names, job names, etc. instead of run id',
 );
 sub _build_label {
   my $self = shift;

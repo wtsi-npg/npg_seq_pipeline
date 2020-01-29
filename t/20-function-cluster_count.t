@@ -122,10 +122,6 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
   } q{obtain object ok};
   
   ok( !$object->_bam_cluster_count_total({}), 'no bam cluster count total returned');
-  
-  qx{mkdir $archive_path/qc};
-  qx{cp t/data/bam_flagstats/1234_3_bam_flagstats.json $archive_path/qc };
-  qx{cp t/data/bam_flagstats/1234_3_phix_bam_flagstats.json $archive_path//qc/1234_3_phix_bam_flagstats.json};
 
   my $is_indexed = 1;
   qx{mkdir -p $archive_path/lane3/qc};
@@ -175,11 +171,10 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
   my $bam_basecall_path = "$analysis_runfolder_path/Data/Intensities/BAM_basecalls_20130122-085552";
   my $archive_path = "$bam_basecall_path/no_cal/archive";
   my $recalibrated_path = "$bam_basecall_path/no_cal";
-  my $qc_path = "$archive_path/qc";
 
   my $common_command = sub {
     my $p = shift;
-    return sprintf q{$EXECUTABLE_NAME bin/npg_pipeline_check_cluster_count --bfs_fofp_name %s/lane%d/8747_bfs_fofn.txt --sf_fofp_name %s/lane%d/8747_sf_fofn.txt --id_run 8747 --bam_basecall_path %s --qc_path %s --lanes %d --runfolder_path %s}, $archive_path, $p, $archive_path, $p, $bam_basecall_path, $qc_path, $p, $analysis_runfolder_path;
+    return sprintf q{$EXECUTABLE_NAME bin/npg_pipeline_check_cluster_count --bfs_fofp_name %s/lane%d/8747_bfs_fofn.txt --sf_fofp_name %s/lane%d/8747_sf_fofn.txt --id_run 8747 --bam_basecall_path %s --lanes %d --runfolder_path %s}, $archive_path, $p, $archive_path, $p, $bam_basecall_path, $p, $analysis_runfolder_path;
   };
 
   my $c;

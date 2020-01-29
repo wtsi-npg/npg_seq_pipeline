@@ -473,7 +473,6 @@ subtest 'positions and spidering' => sub {
       no_sf_resource   => 1,
   );
   mkdir $p->archive_path;
-  mkdir $p->qc_path;
   is (join( q[ ], $p->positions), '4', 'positions array');
   lives_ok { $p->main() } q{running main for three qc functions};
 };

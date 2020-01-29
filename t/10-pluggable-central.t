@@ -80,7 +80,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
 
   lives_ok { $pb = $central->new($init); } q{no croak on new creation};
   mkdir $pb->archive_path;
-  mkdir $pb->qc_path;
   lives_ok { $pb->main() } q{no croak running qc->main()};
 }
 
