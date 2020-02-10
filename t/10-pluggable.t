@@ -29,6 +29,7 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $test_dir, 'logfile'),
                           utf8   => 1});
 
+my $product_config = q[t/data/release/config/archive_on/product_release.yml];
 my $config_dir = 'data/config_files';
 my $runfolder_path = $util->analysis_runfolder_path;
 $util->create_analysis();
@@ -194,7 +195,8 @@ subtest 'specifying functions via function_order' => sub {
     spider                => 0,
     no_sf_resource        => 1,
     no_bsub               => 0,
-    is_indexed            => 0
+    is_indexed            => 0,
+    product_conf_file_path => $product_config
   );
   is($p->id_run, 1234, 'run id set correctly');
   is($p->is_indexed, 0, 'is not indexed');
@@ -211,6 +213,7 @@ subtest 'creating executor object' => sub {
     runfolder_path        => $runfolder_path,
     bam_basecall_path     => $runfolder_path,
     spider                => 0,
+    product_conf_file_path => $product_config
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
@@ -307,6 +310,7 @@ subtest 'running the pipeline (lsf executor)' => sub {
     execute        => 0,
     no_sf_resource => 1,
     is_indexed     => 0,
+    product_conf_file_path => $product_config
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
@@ -365,6 +369,7 @@ subtest 'running the pipeline (wr executor)' => sub {
     execute        => 0,
     executor_type  => 'wr',
     is_indexed     => 0,
+    product_conf_file_path => $product_config,
   };
 
   # soft-link wr command to /bin/false so that it fails
@@ -432,6 +437,7 @@ subtest 'positions and spidering' => sub {
       lanes            => [1,2],
       spider           => 0,
       no_sf_resource   => 1,
+      product_conf_file_path => $product_config
   );
   is (join( q[ ], $p->positions), '1 2', 'positions array');
   ok(!$p->interactive, 'start job will be resumed');
@@ -448,6 +454,7 @@ subtest 'positions and spidering' => sub {
       interactive      => 1,
       spider           => 0,
       no_sf_resource   => 1,
+      product_conf_file_path => $product_config
   );
   ok($p->interactive, 'start job will not be resumed');
   lives_ok { $p->main() } "running main for $function, interactively";
@@ -471,9 +478,9 @@ subtest 'positions and spidering' => sub {
       id_flowcell_lims => 2015,
       spider           => 0,
       no_sf_resource   => 1,
+      product_conf_file_path => $product_config
   );
   mkdir $p->archive_path;
-  mkdir $p->qc_path;
   is (join( q[ ], $p->positions), '4', 'positions array');
   lives_ok { $p->main() } q{running main for three qc functions};
 };

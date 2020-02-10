@@ -56,8 +56,6 @@ Readonly::Array  my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                 conf_path
                                                 logger
                                                 workflow_type
-                                                product_config
-                                                local_bin
                                                /;
 
 =head1 NAME
