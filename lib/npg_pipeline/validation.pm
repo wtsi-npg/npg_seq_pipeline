@@ -31,6 +31,7 @@ Readonly::Array  my @NPG_DELETABLE_STATES => (@NPG_DELETABLE_UNCOND,'qc complete
 Readonly::Scalar my $MIN_KEEP_DAYS        => 14;
 Readonly::Scalar my $DEFAULT_IRODS_ROOT   => q[/seq];
 Readonly::Scalar my $STAGING_TAG          => q[staging];
+Readonly::Scalar my $DO_NOT_DELETE_NAME   => q[npg_do_not_delete];
 
 Readonly::Array  my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                 p4s1_phix_alignment_method
@@ -400,8 +401,11 @@ sub build_eligible_product_entities {
 
 =head2 run
 
-Evaluates whether the run is deletable, return strue if it is and
+Evaluates whether the run is deletable, returns true if it is and
 false if it is not.
+
+If a file or directory named "npg_do_not_delete" is present in the run
+folder, false value is returned. No further checks are performed.
 
 Needs access to LIMs data, tries to locate a samplesheet in the current
 analysis directory for the run and use it as a source of LIMS data.
@@ -413,6 +417,8 @@ true (false by default), unsets staging tag for the run.
 
 sub run {
   my $self = shift;
+
+  $self->_flagged_as_not_deletable() and return 0;
 
   my $deletable = $self->_npg_tracking_deletable('unconditional');
   my $vars_set  = 0;
@@ -515,6 +521,14 @@ has q{_run_status_obj} => (
 sub _build__run_status_obj {
   my $self = shift;
   return $self->tracking_run->current_run_status;
+}
+
+sub _flagged_as_not_deletable {
+  my $self = shift;
+  my $test = join q[/], $self->runfolder_path, $DO_NOT_DELETE_NAME;
+  my $flagged = -e $test;
+  $flagged and $self->info("File or directory '$test' exists, NOT deletable");
+  return $flagged;
 }
 
 sub _set_vars_from_samplesheet {
@@ -832,7 +846,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Ltd
+Copyright (C) 2019,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
