@@ -19,12 +19,22 @@
          {
             "relation" : "dependsOn",
             "source" : "run_analysis_in_progress",
+            "target" : "qc_interop"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_analysis_in_progress",
             "target" : "p4_stage1_analysis"
          },
          {
             "relation" : "dependsOn",
             "source" : "p4_stage1_analysis",
             "target" : "update_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "qc_interop",
+            "target" : "update_ml_warehouse_1"
          },
          {
             "relation" : "dependsOn",
@@ -304,6 +314,10 @@
          {
             "id" : "lane_analysis_in_progress",
             "label" : "lane_analysis_in_progress"
+         },
+         {
+            "id" : "qc_interop",
+            "label" : "qc_interop"
          },
          {
             "id" : "p4_stage1_analysis",
