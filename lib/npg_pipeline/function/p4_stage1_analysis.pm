@@ -4,7 +4,6 @@ use Moose;
 use Moose::Meta::Class;
 use namespace::autoclean;
 use Try::Tiny;
-use English qw{-no_match_vars};
 use Readonly;
 use File::Slurp;
 use List::Util qw{sum};
@@ -12,6 +11,7 @@ use List::MoreUtils qw{any};
 use JSON;
 use open q(:encoding(UTF8));
 
+use npg_qc::illumina::interop::parser;
 use npg_pipeline::cache::barcodes;
 use npg_pipeline::function::definition;
 
@@ -30,13 +30,6 @@ Readonly::Scalar my $MEMORY                       => q{12000}; # memory in megab
 Readonly::Scalar my $FS_RESOURCE                  => 4; # LSF resource counter to control access to staging area file system
 Readonly::Scalar my $DEFAULT_I2B_THREAD_COUNT     => 3; # value passed to bambi i2b --threads flag
 Readonly::Scalar my $DEFAULT_SPLIT_THREADS_COUNT  => 0; # value passed to samtools split --threads flag
-
-Readonly::Scalar my $TILE_METRICS_INTEROP_CODES => {'cluster density'    => 100,
-                                                     'cluster density pf' => 101,
-                                                     'cluster count'      => 102,
-                                                     'cluster count pf'   => 103,
-                                                     'version3_cluster_counts' => ord('t'),
-                                                     };
 
 sub generate {
   my $self = shift;
@@ -138,17 +131,6 @@ sub _build__job_id {
   return $self->random_string();
 }
 
-has 'interop_file_name'  => (
-                           isa        => 'Str',
-                           is         => 'ro',
-                           lazy_build => 1,
-                         );
-sub _build_interop_file_name {
-  my $self = shift;
-
-  return $self->runfolder_path . q{/InterOp/TileMetricsOut.bin};
-}
-
 has 'cluster_counts'   => (
                        isa     => 'HashRef',
                        is      => 'ro',
@@ -157,8 +139,9 @@ has 'cluster_counts'   => (
 
 sub _build_cluster_counts {
   my $self = shift;
-
-  return $self->_parsing_interop($self->interop_file_name);
+  return npg_qc::illumina::interop::parser->new(
+           runfolder_path => $self->runfolder_path
+         )->parse()->{cluster_count_pf_total};
 }
 
 # phix_aligner is used to determine the reference genome. Be aware that
@@ -421,7 +404,7 @@ sub _generate_command_params {
   }
 
   # cluster count (used to calculate FRAC for bam subsampling)
-  my $cluster_count = $self->cluster_counts->{$position}->{'cluster count pf'};
+  my $cluster_count = $self->cluster_counts->{$position};
   $p4_params{cluster_count} = $cluster_count;
   ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
   $p4_params{seed_frac} = sprintf q[%.8f], (10_000.0 / $cluster_count) + $id_run;
@@ -544,83 +527,6 @@ sub _build__extra_tradis_transposon_read {
   return ($num_extra > 0) ? 1 : 0;
 }
 
-sub _parsing_interop {
-  my ($self, $interop) = @_;
-
-  my $cluster_count_by_lane = {};
-
-  my $version;
-  my $length;
-  my $data;
-
-  my $template = 'v3f'; # three two-byte integers and one 4-byte float
-
-  open my $fh, q{<}, $interop or
-    $self->logcroak(qq{Couldn't open interop file $interop, error $ERRNO});
-  binmode $fh, ':raw';
-
-  $fh->read($data, 1) or
-    $self->logcroak(qq{Couldn't read file version in interop file $interop, error $ERRNO});
-  $version = unpack 'C', $data;
-
-  $fh->read($data, 1) or
-    $self->logcroak(qq{Couldn't read record length in interop file $interop, error $ERRNO});
-  $length = unpack 'C', $data;
-
-  my $tile_metrics = {};
-
-   ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
-   if( $version == 3) {
-     $fh->read($data, 4) or
-       $self->logcroak(qq{Couldn't read area in interop file $interop, error $ERRNO});
-     my $area = unpack 'f', $data;
-     while ($fh->read($data, $length)) {
-       $template = 'vVc'; # one 2-byte integer, one 4-byte integer and one 1-byte char
-       my ($lane,$tile,$code) = unpack $template, $data;
-       if( $code == $TILE_METRICS_INTEROP_CODES->{'version3_cluster_counts'} ){
-         $data = substr $data, 7;
-         $template = 'f2'; # two 4-byte floats
-         my ($cluster_count, $cluster_count_pf) = unpack $template, $data;
-         push @{$tile_metrics->{$lane}->{'cluster count'}}, $cluster_count;
-         push @{$tile_metrics->{$lane}->{'cluster count pf'}}, $cluster_count_pf;
-       }
-     }
-   } elsif( $version == 2) {
-     $template = 'v3f'; # three 2-byte integers and one 4-byte float
-     while ($fh->read($data, $length)) {
-       my ($lane,$tile,$code,$value) = unpack $template, $data;
-       if( $code == $TILE_METRICS_INTEROP_CODES->{'cluster count'} ){
-         push @{$tile_metrics->{$lane}->{'cluster count'}}, $value;
-       }elsif( $code == $TILE_METRICS_INTEROP_CODES->{'cluster count pf'} ){
-         push @{$tile_metrics->{$lane}->{'cluster count pf'}}, $value;
-       }
-    }
-
-   } else {
-     $self->logcroak(qq{Unknown version $version in interop file $interop});
-  }
-
-  $fh->close() or
-    $self->logcroak(qq{Couldn't close interop file $interop, error $ERRNO});
-
-  my $lanes = scalar keys %{$tile_metrics};
-  if( $lanes == 0){
-    $self->warn('No cluster count data');
-    return $cluster_count_by_lane;
-  }
-
-  # calc lane totals
-  foreach my $lane (keys %{$tile_metrics}) {
-    for my $code (keys %{$tile_metrics->{$lane}}) {
-      my $total = 0;
-      for ( @{$tile_metrics->{$lane}->{$code}} ){ $total += $_};
-      $cluster_count_by_lane->{$lane}->{$code} = $total;
-    }
-  }
-
-  return $cluster_count_by_lane;
-}
-
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -659,8 +565,6 @@ objects for all lanes.
 
 =item Try::Tiny
 
-=item English -no_match_vars
-
 =item Readonly
 
 =item Moose
@@ -679,6 +583,8 @@ objects for all lanes.
 
 =item open
 
+=item npg_qc::illumina::interop::parser
+
 =item npg_pipeline::cache::barcodes
 
 =back
@@ -693,7 +599,7 @@ Kevin Lewis
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Limited
+Copyright (C) 2019 Genome Research Limited
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

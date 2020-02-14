@@ -2,13 +2,12 @@ package npg_pipeline::function::cluster_count;
 
 use Moose;
 use namespace::autoclean;
-use English qw{-no_match_vars};
-use File::Spec;
 use File::Slurp;
-use List::MoreUtils qw{any};
+use List::Util qw{sum};
 use Readonly;
 
 use npg_qc::autoqc::qc_store;
+use npg_qc::illumina::interop::parser;
 use npg_pipeline::function::definition;
 
 extends qw{npg_pipeline::base};
@@ -16,18 +15,7 @@ extends qw{npg_pipeline::base};
 our $VERSION = '0';
 
 Readonly::Scalar my $CLUSTER_COUNT_SCRIPT => q{npg_pipeline_check_cluster_count};
-Readonly::Scalar my $VERSION_TWO          => 2;
-Readonly::Scalar my $VERSION_THREE        => 3;
-Readonly::Scalar my $FOUR                 => 4;
-Readonly::Scalar my $DATA_OFFSET          => 7;
 
-#keys used in hash and corresponding codes in tile metrics interop file
-Readonly::Scalar my $TILE_METRICS_INTEROP_CODES => {'cluster density'    => 100,
-                                                    'cluster density pf' => 101,
-                                                    'cluster count'      => 102,
-                                                    'cluster count pf'   => 103,
-                                                    'version3_cluster_counts' => ord('t'),
-                                                   };
 =head1 NAME
 
 npg_pipeline::function::cluster_count
@@ -117,52 +105,56 @@ Checks the cluster count, error if the count is inconsistent.
 =cut
 
 sub run_cluster_count_check {
-   my $self = shift;
+  my $self = shift;
 
-   $self->info('Checking cluster counts are consistent');
-   my $max_cluster_count = $self->_bustard_raw_cluster_count();
-   $self->info(qq{Raw cluster count: $max_cluster_count});
-   my $pass_cluster_count = $self->_bustard_pf_cluster_count();
-   $self->info(qq{PF cluster count: $pass_cluster_count});
+  my $interop_data = npg_qc::illumina::interop::parser->new(
+                       runfolder_path => $self->runfolder_path)->parse();
+  my @keys =  @{$self->lanes} ? @{$self->lanes} : keys %{$interop_data->{cluster_count_total}};
 
-   my $spatial_filter_processed = $self->_spatial_filter_processed_count();
-   my $spatial_filter_failed    = $self->_spatial_filter_failed_count();
-   if (defined $spatial_filter_processed) {
-     if($self->is_paired_read()){
-       $spatial_filter_processed /= 2;
-       $spatial_filter_failed /= 2;
-     }
-     $self->info(qq{Spatial filter applied to $spatial_filter_processed clusters failing $spatial_filter_failed});
-     if ($pass_cluster_count != $spatial_filter_processed and
-         $max_cluster_count != $spatial_filter_processed) {
-       my $msg = qq{Spatial filter processed count ($spatial_filter_processed) matches neither raw ($max_cluster_count) or PF ($pass_cluster_count) clusters};
-       $self->logcroak($msg);
-     }
-     $max_cluster_count = $spatial_filter_processed; # reset to max processed at spatial filter
-     $pass_cluster_count -= $spatial_filter_failed;
-     if($spatial_filter_failed){
-       $self->warn(qq{Passed cluster count drops to $pass_cluster_count});
-     }
-   }else{
-       $self->info(q{Spatial filter not applied (well, not recorded anyway)});
-   }
+  my $max_cluster_count = sum map { $interop_data->{cluster_count_total}->{$_} } @keys;
+  $self->info(qq{Raw cluster count: $max_cluster_count});
 
-   my $total_bam_cluster_count = $self->_bam_cluster_count_total();
+  my $pass_cluster_count = sum map { $interop_data->{cluster_count_pf_total}->{$_} } @keys;
+  $self->info(qq{PF cluster count: $pass_cluster_count});
 
-   if($self->is_paired_read()){
-       $total_bam_cluster_count /= 2;
+  my $spatial_filter_processed = $self->_spatial_filter_processed_count();
+  my $spatial_filter_failed    = $self->_spatial_filter_failed_count();
+  if (defined $spatial_filter_processed) {
+    if($self->is_paired_read()){
+      $spatial_filter_processed /= 2;
+      $spatial_filter_failed /= 2;
     }
-
-   $self->info(q{Actual cluster count in bam files: },
-               $total_bam_cluster_count);
-
-    if($pass_cluster_count != $total_bam_cluster_count and $max_cluster_count != $total_bam_cluster_count){
-        my $msg = qq{Cluster count in bam files not as expected\n\tExpected: $pass_cluster_count or $max_cluster_count\n\tActual:$total_bam_cluster_count };
-        $self->logcroak($msg);
+    $self->info(qq{Spatial filter applied to $spatial_filter_processed clusters failing $spatial_filter_failed});
+    if ($pass_cluster_count != $spatial_filter_processed and
+        $max_cluster_count != $spatial_filter_processed) {
+      my $msg = qq{Spatial filter processed count ($spatial_filter_processed) matches neither raw ($max_cluster_count) or PF ($pass_cluster_count) clusters};
+      $self->logcroak($msg);
     }
-    $self->info('Bam files have correct cluster count');
+    $max_cluster_count = $spatial_filter_processed; # reset to max processed at spatial filter
+    $pass_cluster_count -= $spatial_filter_failed;
+    if($spatial_filter_failed){
+      $self->warn(qq{Passed cluster count drops to $pass_cluster_count});
+    }
+  } else {
+    $self->info(q{Spatial filter not applied (well, not recorded anyway)});
+  }
 
-    return 1;
+  my $total_bam_cluster_count = $self->_bam_cluster_count_total();
+
+  if($self->is_paired_read()){
+    $total_bam_cluster_count /= 2;
+  }
+
+  $self->info(q{Actual cluster count in bam files: },
+              $total_bam_cluster_count);
+
+  if($pass_cluster_count != $total_bam_cluster_count and $max_cluster_count != $total_bam_cluster_count){
+    my $msg = qq{Cluster count in bam files not as expected\n\tExpected: $pass_cluster_count or $max_cluster_count\n\tActual:$total_bam_cluster_count };
+    $self->logcroak($msg);
+  }
+  $self->info('Bam files have correct cluster count');
+
+  return 1;
 }
 
 has 'bfs_paths' => ( isa        => 'ArrayRef',
@@ -184,7 +176,6 @@ has 'bfs_fofp_name' => ( isa        => 'Str',
                        );
 sub _build_bfs_fofp_name {
   my ( $self ) = @_;
-
   return sprintf q{%s/%s_bfs_fofn.txt}, $self->recalibrated_path, $self->id_run;
 }
 
@@ -195,149 +186,7 @@ has 'sf_fofp_name' => ( isa        => 'Str',
                       );
 sub _build_sf_fofp_name {
   my ( $self ) = @_;
-
   return sprintf q{%s/%s_sf_fofn.txt}, $self->recalibrated_path, $self->id_run;
-}
-
-has q{_bustard_pf_cluster_count} => (
-  isa => q{Int},
-  is  => q{ro},
-  lazy_build => 1,
-  writer => q{_set_bustard_pf_cluster_count},
-);
-
-sub _build__bustard_pf_cluster_count {
-  my ( $self ) = @_;
-  return $self->_populate_cluster_counts( q{pf} );
-}
-
-
-has q{_bustard_raw_cluster_count} => (
-  isa => q{Int},
-  is  => q{ro},
-  lazy_build => 1,
-  writer => q{_set_bustard_raw_cluster_count},
-);
-
-sub _build__bustard_raw_cluster_count {
-  my ( $self ) = @_;
-  return $self->_populate_cluster_counts( q{raw} );
-}
-
-sub _populate_cluster_counts {
-  my ( $self, $type ) = @_;
-
-  my $interop = $self->parsing_interop($self->runfolder_path().q{/InterOp/TileMetricsOut.bin});
-
-  my $return;
-
-  my $bustard_pf_cluster_count;
-  my $bustard_raw_cluster_count;
-  my @positions = $self->positions();
-  foreach my $l (keys %{$interop}) {
-    if(not any { $_ == $l } @positions) { next; }
-
-    $bustard_pf_cluster_count += $interop->{$l}->{'cluster count pf'};
-    if ( $type eq q{pf} ) {
-      $return += $interop->{$l}->{'cluster count pf'};
-    }
-
-    $bustard_raw_cluster_count += $interop->{$l}->{'cluster count'};
-    if ( $type eq q{raw} ) {
-      $return += $interop->{$l}->{'cluster count'};
-    }
-  }
-
-  if ( !defined $return ) {
-    $self->logcroak(q{Unable to determine a raw and/or pf cluster count});
-  }
-
-  $self->_set_bustard_pf_cluster_count($bustard_pf_cluster_count);
-  $self->_set_bustard_raw_cluster_count($bustard_raw_cluster_count);
-
-  return $return;
-
-}
-
-=head2 parsing_interop
-
-given one tile metrics interop file, return a hashref
-
-=cut
-
-sub parsing_interop {
-  my ($self, $interop) = @_;
-
-  my $cluster_count_by_lane = {};
-
-  my $version;
-  my $length;
-  my $data;
-
-###  my $template = 'v3f'; # three two-byte integers and one 4-byte float
-
-  open my $fh, q{<}, $interop or
-    $self->logcroak(qq{Couldn't open interop file $interop, error $ERRNO});
-  binmode $fh, ':raw';
-
-  $fh->read($data, 1) or
-    $self->logcroak(qq{Couldn't read file version in interop file $interop, error $ERRNO});
-  $version = unpack 'C', $data;
-
-  $fh->read($data, 1) or
-    $self->logcroak(qq{Couldn't read record length in interop file $interop, error $ERRNO});
-  $length = unpack 'C', $data;
-
-  my $tile_metrics = {};
-
-  if( $version == $VERSION_THREE) {
-    $fh->read($data, $FOUR) or
-      $self->logcroak(qq{Couldn't read area in interop file $interop, error $ERRNO});
-    my $area = unpack 'f', $data;
-    while ($fh->read($data, $length)) {
-      my $template = 'vVc'; # one 2-byte integer, one 4-byte integer and one 1-byte char
-      my ($lane,$tile,$code) = unpack $template, $data;
-      if( $code == $TILE_METRICS_INTEROP_CODES->{'version3_cluster_counts'} ){
-        $data = substr $data, $DATA_OFFSET;
-        $template = 'f2'; # two 4-byte floats
-        my ($cluster_count, $cluster_count_pf) = unpack $template, $data;
-        push @{$tile_metrics->{$lane}->{'cluster count'}}, $cluster_count;
-        push @{$tile_metrics->{$lane}->{'cluster count pf'}}, $cluster_count_pf;
-      }
-    }
-  } elsif( $version == $VERSION_TWO) {
-     my $template = 'v3f'; # three 2-byte integers and one 4-byte float
-     while ($fh->read($data, $length)) {
-       my ($lane,$tile,$code,$value) = unpack $template, $data;
-       if( $code == $TILE_METRICS_INTEROP_CODES->{'cluster count'} ){
-         push @{$tile_metrics->{$lane}->{'cluster count'}}, $value;
-       }elsif( $code == $TILE_METRICS_INTEROP_CODES->{'cluster count pf'} ){
-         push @{$tile_metrics->{$lane}->{'cluster count pf'}}, $value;
-       }
-     }
-   } else {
-     $self->logcroak(qq{Unknown version $version in interop file $interop});
-   }
-
-  $fh->close() or
-    $self->logcroak(qq{Couldn't close interop file $interop, error $ERRNO});
-
-  my $lanes = scalar keys %{$tile_metrics};
-  if( $lanes == 0){
-    $self->warn('No cluster count data');
-    return $cluster_count_by_lane;
-  }
-
-  # calc lane totals
-  foreach my $lane (keys %{$tile_metrics}) {
-    for my $code (keys %{$tile_metrics->{$lane}}) {
-      my $total = 0;
-      for ( @{$tile_metrics->{$lane}->{$code}} ){ $total += $_};
-      $cluster_count_by_lane->{$lane}->{$code} = $total;
-    }
-  }
-
-  return $cluster_count_by_lane;
 }
 
 has q{_spatial_filter_failed_count} =>(
@@ -379,7 +228,6 @@ sub _populate_spatial_filter_counts {
 
   my @sf_paths = ();
   if($self->sf_fofp_name) {
-#   @sf_paths = read_file($self->sf_fofp_name); # more careful existence/contents check?
     @sf_paths = read_file($self->sf_fofp_name, chomp => 1, ); # more careful existence/contents check?
   }
   else {
@@ -425,7 +273,6 @@ sub _bam_cluster_count_total {
 
   my @bfs_paths = ();
   if($self->bfs_fofp_name) {
-#   @bfs_paths = read_file($self->bfs_fofp_name); # more careful existence/contents check?
     @bfs_paths = read_file($self->bfs_fofp_name, chomp => 1, ); # more careful existence/contents check?
   }
   else {
@@ -479,13 +326,15 @@ __END__
 
 =item namespace::autoclean
 
-=item English
-
 =item Readonly
 
-=item File::Spec
+=item File::Slurp
+
+=item List::Util
 
 =item npg_qc::autoqc::qc_store
+
+=item npg_qc::illumina::interop::parser
 
 =back
 
@@ -501,7 +350,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2019 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

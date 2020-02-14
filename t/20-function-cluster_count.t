@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use English qw{-no_match_vars};
-use Test::More tests => 31;
+use Test::More tests => 29;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use File::Copy qw(cp);
@@ -97,9 +97,6 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       sf_fofp_name => q{},
     );
   } q{obtain object ok};
-
-  is( $object->_bustard_pf_cluster_count(),  150694669, q{correct pf_cluster_count obtained from TileMetricsOut.bin}  );
-  is( $object->_bustard_raw_cluster_count(), 158436062, q{correct raw_cluster_count obtained from TileMetricsOut.bin} );
 
   lives_ok {
     $object->run_cluster_count_check();
