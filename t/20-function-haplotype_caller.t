@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 6;
+use Test::More tests => 9;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path/;
@@ -60,7 +60,7 @@ subtest 'no_haplotype_caller flag' => sub {
   plan tests => 4;
 
   my $hc = npg_pipeline::function::haplotype_caller->new(
-    conf_path           => 't/data/release/config/haplotype_caller_on',
+    conf_path           => 't/data/release/config/haplotype_caller_on_study_specific',
     archive_path        => $archive_path,
     runfolder_path      => $runfolder_path,
     id_run              => 26291,
@@ -77,7 +77,7 @@ subtest 'no_haplotype_caller flag unset' => sub {
   plan tests => 4;
 
   my $hc = npg_pipeline::function::haplotype_caller->new(
-    conf_path          => 't/data/release/config/haplotype_caller_on',
+    conf_path          => 't/data/release/config/haplotype_caller_on_study_specific',
     archive_path        => $archive_path,
     runfolder_path      => $runfolder_path,
     id_run              => 26291,
@@ -90,6 +90,56 @@ subtest 'no_haplotype_caller flag unset' => sub {
   is($ds->[0]->excluded, undef, 'function is not excluded');
 };
 
+subtest 'no_haplotype_caller flag unset and no study settings' => sub {
+  plan tests => 4;
+
+  my $hc = npg_pipeline::function::haplotype_caller->new(
+    conf_path          => 't/data/release/config/haplotype_caller_on',
+    archive_path        => $archive_path,
+    runfolder_path      => $runfolder_path,
+    id_run              => 26291,
+    timestamp           => $timestamp,
+    repository          => $dir);
+  ok($hc->no_haplotype_caller == 0, 'no_haplotype_caller flag is set to false');
+  my $ds = $hc->create;
+  is(scalar @{$ds}, 1, '1 definitions are returned');
+  isa_ok($ds->[0], 'npg_pipeline::function::definition');
+  is($ds->[0]->excluded, 1, 'function is excluded');
+};
+
+subtest 'no_haplotype_caller flag unset and study reference settings' => sub {
+  plan tests => 4;
+
+  my $hc = npg_pipeline::function::haplotype_caller->new(
+    conf_path          => 't/data/release/config/haplotype_caller_on_study_specific_reference',
+    archive_path        => $archive_path,
+    runfolder_path      => $runfolder_path,
+    id_run              => 26291,
+    timestamp           => $timestamp,
+    repository          => $dir);
+  ok($hc->no_haplotype_caller == 0, 'no_haplotype_caller flag is set to false');
+  my $ds = $hc->create;
+  is(scalar @{$ds}, 288, '288 definitions are returned');
+  isa_ok($ds->[0], 'npg_pipeline::function::definition');
+  is($ds->[0]->excluded, undef, 'function is not excluded');
+};
+
+subtest 'no_haplotype_caller flag unset and study wrong reference settings' => sub {
+  plan tests => 4;
+
+  my $hc = npg_pipeline::function::haplotype_caller->new(
+    conf_path          => 't/data/release/config/haplotype_caller_off_study_specific_reference',
+    archive_path        => $archive_path,
+    runfolder_path      => $runfolder_path,
+    id_run              => 26291,
+    timestamp           => $timestamp,
+    repository          => $dir);
+  ok($hc->no_haplotype_caller == 0, 'no_haplotype_caller flag is set to false');
+  my $ds = $hc->create;
+  is(scalar @{$ds}, 1, '1 definitions are returned');
+  isa_ok($ds->[0], 'npg_pipeline::function::definition');
+  is($ds->[0]->excluded, 1, 'function is excluded as study on but wrong reference');
+};
 
 subtest 'run hc' => sub {
   plan tests => 20;
@@ -97,7 +147,7 @@ subtest 'run hc' => sub {
   my $hc_gen;
   lives_ok {
     $hc_gen = npg_pipeline::function::haplotype_caller->new(
-      conf_path         => 't/data/release/config/haplotype_caller_on',
+      conf_path         => 't/data/release/config/haplotype_caller_on_study_specific',
       archive_path      => $archive_path,
       runfolder_path    => $runfolder_path,
       id_run            => 26291,
@@ -140,7 +190,7 @@ subtest 'run hc with bqsr' => sub {
   my $hc_gen;
   lives_ok {
     $hc_gen = npg_pipeline::function::haplotype_caller->new(
-      conf_path         => 't/data/release/config/haplotype_caller_bqsr_on',
+      conf_path         => 't/data/release/config/haplotype_caller_bqsr_on_study_specific',
       archive_path      => $archive_path,
       runfolder_path    => $runfolder_path,
       id_run            => 26291,
@@ -189,7 +239,7 @@ subtest 'rep repos root from env' => sub {
   plan tests => 1;
 
   my $hc_gen = npg_pipeline::function::haplotype_caller->new(
-    conf_path         => 't/data/release/config/haplotype_caller_on',
+    conf_path         => 't/data/release/config/haplotype_caller_on_study_specific',
     archive_path      => $archive_path,
     runfolder_path    => $runfolder_path,
     id_run            => 26291,

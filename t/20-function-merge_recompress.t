@@ -36,7 +36,7 @@ copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunInfo.xml', "$runfolder_pat
 copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunParameters.xml', "$runfolder_path/runParameters.xml")
 or die 'Copy failed';
 
-my $conf_path = 't/data/release/config/haplotype_caller_on';
+my $conf_path = 't/data/release/config/haplotype_caller_on_study_specific';
 
 subtest 'no_haplotype_caller flag' => sub {
   plan tests => 4;

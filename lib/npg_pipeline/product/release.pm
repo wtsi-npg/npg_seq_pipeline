@@ -424,7 +424,7 @@ sub haplotype_caller_enable {
   my $rpt          = $product->rpt_list();
   my $name         = $product->file_name_root();
 
-  if ($self->find_study_config($product)->{haplotype_caller}->{enable}) {
+  if ($self->find_tertiary_config($product)->{haplotype_caller}->{enable}) {
     $self->info("Product $name, $rpt is for HaplotypeCaller processing");
     return 1;
   }
@@ -448,7 +448,7 @@ sub haplotype_caller_enable {
 sub haplotype_caller_chunking {
   my ($self, $product) = @_;
 
-  return $self->find_study_config($product)->{haplotype_caller}->{sample_chunking};
+  return $self->find_tertiary_config($product)->{haplotype_caller}->{sample_chunking};
 }
 
 =head2 haplotype_caller_chunking_number
@@ -465,7 +465,7 @@ sub haplotype_caller_chunking {
 sub haplotype_caller_chunking_number {
   my ($self, $product) = @_;
 
-  return $self->find_study_config($product)->{haplotype_caller}->{sample_chunking_number};
+  return $self->find_tertiary_config($product)->{haplotype_caller}->{sample_chunking_number};
 }
 
 
@@ -487,7 +487,7 @@ sub bqsr_enable {
   my $rpt          = $product->rpt_list();
   my $name         = $product->file_name_root();
 
-  if ($self->find_study_config($product)->{bqsr}->{enable}) {
+  if ($self->find_tertiary_config($product)->{bqsr}->{enable}) {
     $self->info("Product $name, $rpt is for BQSR processing");
     return 1;
   }
@@ -515,7 +515,7 @@ sub bqsr_apply_enable {
   my $rpt          = $product->rpt_list();
   my $name         = $product->file_name_root();
 
-  if ($self->find_study_config($product)->{bqsr}->{apply}) {
+  if ($self->find_tertiary_config($product)->{bqsr}->{apply}) {
     $self->info("Product $name, $rpt is for BQSR application");
     return 1;
   }
@@ -539,7 +539,7 @@ sub bqsr_apply_enable {
 
 sub bqsr_known_sites {
   my ($self, $product) = @_;
-  my @known_sites = @{$self->find_study_config($product)->{bqsr}->{'known-sites'}};
+  my @known_sites = @{$self->find_tertiary_config($product)->{bqsr}->{'known-sites'}};
   return @known_sites;
 }
 
