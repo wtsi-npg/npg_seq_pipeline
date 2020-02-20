@@ -3,6 +3,7 @@ LIST OF CHANGES
 
  - cluster count check and p4stage1 functions use new class
    (npg_qc::illumina::interop::parser) to parse Illumina InterOp files
+ - change npg_pipeline::product::release to use tertiary config
 
 release 57.6.0
  - only set p4 parameter values for markdup_method and

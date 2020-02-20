@@ -71,11 +71,11 @@ subtest 'no config' => sub {
   is($ds->[0]->excluded, 1, 'function is excluded');
 };
 
-subtest 'bqsr defaulted on' => sub {
+subtest 'bqsr study specific defaulted on' => sub {
   plan tests => 3;
 
   my $hc = npg_pipeline::function::bqsr_calc->new(
-    conf_path           => "t/data/release/config/bqsr",
+    conf_path           => "t/data/release/config/bqsr_on_study_specific",
     runfolder_path      => $runfolder_path,
     archive_path        => $archive_path,
     id_run              => 26291,
@@ -93,7 +93,7 @@ subtest 'create function definitions' => sub {
   my $bqsr_gen;
   lives_ok {
   $bqsr_gen = npg_pipeline::function::bqsr_calc->new(
-    conf_path         => 't/data/release/config/bqsr',
+    conf_path         => 't/data/release/config/bqsr_on_study_specific',
     archive_path      => $archive_path,
     runfolder_path    => $runfolder_path,
     id_run            => 26291,
@@ -133,7 +133,7 @@ subtest 'rep repos root from env' => sub {
   plan tests => 1;
 
   my $bqsr_gen = npg_pipeline::function::bqsr_calc->new(
-    conf_path         => 't/data/release/config/bqsr',
+    conf_path         => 't/data/release/config/bqsr_on_study_specific',
     archive_path      => $archive_path,
     runfolder_path    => $runfolder_path,
     id_run            => 26291,
