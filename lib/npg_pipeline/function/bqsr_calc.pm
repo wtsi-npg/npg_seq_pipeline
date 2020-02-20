@@ -19,7 +19,7 @@ Readonly::Scalar my $FUNCTION_NAME => 'bqsr_calc';
 Readonly::Scalar my $GATK_TOOL_NAME => 'BaseRecalibrator';
 
 Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
-Readonly::Scalar my $MEMORY                       => q{2000}; # memory in megabytes
+Readonly::Scalar my $MEMORY                       => q{6000}; # memory in megabytes
 Readonly::Scalar my $CPUS                         => 1;
 Readonly::Scalar my $NUM_HOSTS                    => 1;
 

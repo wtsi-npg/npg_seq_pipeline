@@ -1,8 +1,49 @@
 LIST OF CHANGES
 ---------------
 
+ - cluster count check and p4stage1 functions use new class
+   (npg_qc::illumina::interop::parser) to parse Illumina InterOp files
+
+release 57.6.0
+ - only set p4 parameter values for markdup_method and
+   markdup_optical_distance_value when do_target_alignment is true;
+   this also stops an error being thrown if the entity (for example,
+   tag zero product) has multiple studies and references
+ - fix haplotype caller check for a PCR free library type to be case
+   insensitive
+ - increase memory for bqsr and haplotype caller jobs
+ - make test CRAM files compliant with samtools v.1.10.0,
+   which gives an error if no header is present in a file
+
+release 57.5.1
+ - bug fix - correct node id in splice (for GbS) 
+
+release 57.5.0
+ - add BWA MEM2 support to seq_alignment function
+ - bug fix: add -f to rm command removing intermediate files (to
+     avoid error when no intermediate files are present)
+ - allow selection of duplicate marking method (biobambam,samtools
+     or picard) in seq_alignment via product_release.yml
+ - detect flowcell type and set uses_patterned_flowcell attribute
+     to allow setting of optical duplicate region size
+ - add ability to select bwakit postalt processing (if reference has
+     alternate haplotypes) in seq_alignment via product_release.yml
+
+release 57.4.0
+ - change genotype qc check to cram input
+ - LSF array indexes fix for jobs dealign with chunked data
+   (multiple jobs per product)
+ - esignate no_archive directory for files for chunked entities,
+   which are not end products
+ - haplotype caller function: early detection of prducts that are
+   not for release (tag zero and control)
+
+release 57.3.0
  - add chromium libs (forced no target alignment) to bam prune skip 
    list in seq_alignment
+ - archival pipeline function for deletion of intermediate files
+ - script to generate receipts files to be used by npg_run_is_deletable
+   scrit for one of teh studies
 
 release 57.2.0
  - prune bam generation for most products with no alignment and

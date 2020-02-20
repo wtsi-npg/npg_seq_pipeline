@@ -107,7 +107,7 @@ subtest 'create function definitions' => sub {
   my $da = $bqsr_gen->create();
   ok ($da && @{$da} == 12, sprintf("array of 12 definitions is returned, got %d", scalar@{$da}));
 
-  my $mem = 2000;
+  my $mem = 6000;
   my $d = $da->[3];
   isa_ok ($d, 'npg_pipeline::function::definition');
   is ($d->created_by, 'npg_pipeline::function::bqsr_calc', 'created by correct');

@@ -69,6 +69,11 @@
          {
             "relation" : "dependsOn",
             "source" : "run_run_archived",
+            "target" : "remove_intermediate_data"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "remove_intermediate_data",
             "target" : "run_qc_complete"
          },
          {
@@ -146,6 +151,10 @@
          {
             "id" : "run_run_archived",
             "label" : "run_run_archived"
+         },
+         {
+            "id" : "remove_intermediate_data",
+            "label" : "remove_intermediate_data"
          },
          {
             "id" : "run_qc_complete",

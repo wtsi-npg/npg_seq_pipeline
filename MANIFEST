@@ -11,6 +11,7 @@ bin/npg_pipeline_post_qc_review
 bin/npg_pipeline_preexec_references
 bin/npg_pipeline_script_must_be_unique_runner
 bin/npg_pipeline_seqchksum_comparator
+bin/npg_receipt4run_is_deletable
 bin/npg_run_is_deletable
 Build.PL
 Changes
@@ -139,6 +140,8 @@ t/bin/bsub
 t/bin/dodo/machine-location
 t/bin/machine-location
 t/bin/red/machine-location
+t/data/no_reads.cram
+t/data/eight_reads.cram
 t/data/bam_flagstats/1234_1_bam_flagstats.json
 t/data/bam_flagstats/1234_3_bam_flagstats.json
 t/data/bam_flagstats/1234_3_phix_bam_flagstats.json
@@ -247,6 +250,7 @@ t/data/miseq/samplesheet_16850.csv
 t/data/miseq/samplesheet_16866.csv
 t/data/miseq/samplesheet_20990.csv
 t/data/miseq/samplesheet_24135.csv
+t/data/miseq/samplesheet_24135_bwa_mem2.csv
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291_updated.csv
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/26291#0_p4s2_pv_in.json

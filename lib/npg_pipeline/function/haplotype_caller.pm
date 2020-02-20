@@ -21,7 +21,7 @@ Readonly::Scalar my $GATK_BQSR_TOOL_NAME  => 'ApplyBQSR';
 
 
 Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
-Readonly::Scalar my $MEMORY                       => q{3600}; # memory in megabytes
+Readonly::Scalar my $MEMORY                       => q{8000}; # memory in megabytes
 Readonly::Scalar my $CPUS                         => 4;
 Readonly::Scalar my $NUM_HOSTS                    => 1;
 
@@ -48,6 +48,7 @@ sub create {
 
   my @products = $self->no_haplotype_caller ? () :
                  grep { $self->haplotype_caller_enable($_) }
+                 grep { $self->is_release_data($_) }
                  @{$self->products->{data_products}};
 
   if ($self->no_haplotype_caller) {
@@ -66,11 +67,9 @@ sub create {
 
   foreach my $super_product (@products) {
 
-    $self->is_release_data($super_product) or next;
-
     # TODO: Check required files
     my $dir_path     = $super_product->path($self->archive_path());
-    my $out_dir_path = $super_product->chunk_out_path($self->archive_path());
+    my $out_dir_path = $super_product->chunk_out_path($self->no_archive_path());
     push @out_dirs, $out_dir_path;
     my $input_path   = $super_product->file_path($dir_path, ext => 'cram');
 
@@ -78,7 +77,7 @@ sub create {
                   $super_product->file_name_root(), $super_product->rpt_list()) && next;
 
     my $ref_path = $ref_cache_instance->get_path($super_product, q(fasta), $self->repository());
-    my $indel_model = ($super_product->lims->library_type && ($super_product->lims->library_type =~ /PCR free/smx)) ? 'NONE' : 'CONSERVATIVE';
+    my $indel_model = ($super_product->lims->library_type && ($super_product->lims->library_type =~ /PCR[\s_\-]?free/ismx)) ? 'NONE' : 'CONSERVATIVE';
 
     my $gatk_args = "--emit-ref-confidence GVCF -R $ref_path --pcr-indel-model $indel_model"; # --dbsnp $dbsnp
 

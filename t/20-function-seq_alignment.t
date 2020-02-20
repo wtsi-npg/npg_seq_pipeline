@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 14;
+use Test::More tests => 16;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -156,7 +156,7 @@ sub _find {
   return $d;
 }
 
-subtest 'test 1' => sub {
+subtest 'basic functionality' => sub {
   plan tests => 33;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/rna_seq/samplesheet_12597.csv];
@@ -183,6 +183,7 @@ subtest 'test 1' => sub {
       verbose           => 0,
       repository        => $dir,
       force_phix_split  => 0,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
 
@@ -258,6 +259,7 @@ subtest 'test 1' => sub {
       verbose           => 0,
       repository        => $dir,
       force_phix_split  => 1,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object (forcing on phix split)';
 
@@ -295,7 +297,7 @@ subtest 'test 1' => sub {
   is ($d->command, $command, 'correct non-multiplex lane args generated');
 };
 
-subtest 'test 2' => sub {
+subtest 'RNASeq analysis' => sub {
   plan tests => 22;
 
   ##RNASeq library  13066_8  library_type = Illumina cDNA protocol
@@ -323,7 +325,8 @@ subtest 'test 2' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2014},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($rna_gen->id_run, 13066, 'id_run inferred correctly');
@@ -381,7 +384,8 @@ subtest 'test 2' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2017},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($rna_gen->id_run, 17550, 'id_run inferred correctly');
@@ -464,7 +468,8 @@ subtest 'test 2' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2018},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
 
@@ -497,7 +502,8 @@ subtest 'test 3' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => "$bc_path/no_cal",
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($se_gen->id_run, 18472, 'id_run inferred correctly');
@@ -542,6 +548,7 @@ subtest 'test 4' => sub {
   my $target_file = "$ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/target/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa";
 
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = q[t/data/hiseqx/samplesheet_16839.csv];
+  local $ENV{'NPG_PIPELINE_JS_SCRIPTS_DIR'} = q[t/bin/];
 
   my $hsx_gen;
   lives_ok {
@@ -550,7 +557,8 @@ subtest 'test 4' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($hsx_gen->id_run, 16839, 'id_run inferred correctly');
@@ -628,7 +636,7 @@ subtest 'test 4' => sub {
   is ($d->command, $command, 'command for HiSeqX run 16839 lane 7 tag 0');
 };
 
-subtest 'test 5' => sub {
+subtest 'Newer flowcell' => sub {
   plan tests => 5;
   ##HiSeq, run 16807_6 (newer flowcell)
 
@@ -652,7 +660,8 @@ subtest 'test 5' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16807, 'id_run inferred correctly');
@@ -702,7 +711,7 @@ subtest 'test 5' => sub {
   is ($d->command, $command, 'command for HiSeq run 16807 lane 6 tag 0');
 };
 
-subtest 'test 6' => sub {
+subtest 'MiSeq WES baits' => sub {
   plan tests => 7;
   ##MiSeq, run 20268_1 (newer flowcell) - WITH bait added to samplesheet for lane 1
 
@@ -733,6 +742,7 @@ subtest 'test 6' => sub {
       timestamp         => q{2016},
       repository        => $dir,
       verbose           => 1,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
 
@@ -817,7 +827,9 @@ subtest 'test 6' => sub {
               "af_metrics"=> "20268_1#1_bam_alignment_filter_metrics.json",
               "run_lane_ss_fq1"=> $dir."/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal/archive/lane1/plex1/.npg_cache_10000/20268_1#1_1.fastq",
               "bait_regions_file"=> $dir .'/baits/Human_all_exon_V5/1000Genomes_hs37d5/S04380110-CTR.interval_list',
-              "recal_dir"=> $dir .'/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal'    
+              "recal_dir"=> $dir .'/160704_MS3_20268_A_MS4000667-300V2/Data/Intensities/BAM_basecalls_20160712-154117/no_cal',
+              "markdup_method" => "biobambam",
+              "markdup_optical_distance_value" => 100,
          },],
      'ops' => {  
          'prune' => ['fop.*_bmd_multiway:calibration_pu-',
@@ -832,7 +844,7 @@ subtest 'test 6' => sub {
 
 };
 
-subtest 'test 7' => sub {
+subtest 'cycle count over threshold' => sub {
   plan tests => 5;
   ##MiSeq, run 16850_1 (cycle count over threshold (currently >= 101))
 
@@ -855,7 +867,8 @@ subtest 'test 7' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16850, 'id_run inferred correctly');
@@ -904,7 +917,7 @@ subtest 'test 7' => sub {
   is ($d->command, $command, 'command for MiSeq run 16850 lane 1 tag 0');
 };
 
-subtest 'test 8' => sub {
+subtest 'nonconsented human split, no target alignment' => sub {
   plan tests => 5;
   ##MiSeq, run 16756_1 (nonconsented human split, no target alignment)
 
@@ -928,7 +941,8 @@ subtest 'test 8' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16756, 'id_run inferred correctly');
@@ -980,7 +994,7 @@ subtest 'test 8' => sub {
   is ($d->command, $command, 'command for run 16756 lane 1 tag 0');
 };
 
-subtest 'test 9' => sub {
+subtest 'nonconsented human split, target alignment' => sub {
   plan tests => 5;
   ##MiSeq, run 16866_1 (nonconsented human split, target alignment)
 
@@ -1004,7 +1018,8 @@ subtest 'test 9' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16866, 'id_run inferred correctly');
@@ -1056,7 +1071,7 @@ subtest 'test 9' => sub {
   is ($d->command, $command, 'command for run 16866 lane 1 tag 0');
 };
 
-subtest 'test 10' => sub {
+subtest 'no target alignment, no human split' => sub {
   plan tests => 5;
   ##MiSeq, run 20990_1 (no target alignment, no human split)
 
@@ -1080,7 +1095,8 @@ subtest 'test 10' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2016},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 20990, 'id_run (20990) inferred correctly');
@@ -1117,7 +1133,7 @@ subtest 'test 10' => sub {
   is ($d->command, $command, 'command for run 20990 lane 1 tag 2');
 };
 
-subtest 'test 11' => sub {
+subtest 'chromium' => sub {
   plan tests => 5;
   ##HiSeqX, run 16839_1
 
@@ -1146,6 +1162,7 @@ subtest 'test 11' => sub {
   close $fhss or warn "Failed to close $new_ss";
   # new samplesheet has one chromium sample in lane 1
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = $new_ss;
+  local $ENV{'NPG_PIPELINE_JS_SCRIPTS_DIR'} = q[t/bin/];
 
   my $chromium_gen;
   lives_ok {
@@ -1154,7 +1171,8 @@ subtest 'test 11' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($chromium_gen->id_run, 16839, 'id_run inferred correctly');
@@ -1203,7 +1221,7 @@ subtest 'test 11' => sub {
   is ($d->command, $command, 'command for run 16839 lane 1 tag 0');
 };
 
-subtest 'test 12' => sub {
+subtest 'miseq' => sub {
   plan tests => 11;
 
   my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
@@ -1227,10 +1245,12 @@ subtest 'test 12' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2017},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 24135, 'id_run inferred correctly');
+
   make_path "$bc_path/archive/tileviz";
   apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
   $ms_gen->create_product_level();
@@ -1299,7 +1319,8 @@ subtest 'generate compositions only' => sub {
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2017},
-      repository        => $dir
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
   );
   apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
   $ms_gen->create_product_level();
@@ -1318,6 +1339,98 @@ subtest 'generate compositions only' => sub {
   for my $f (@files) {
     ok (-f "$base/$f", "file $f exists");
   }
+};
+
+subtest 'product_release_tests' => sub {
+  plan tests => 92;
+
+  my %test_runs = (
+    16850 => { platform => 'miseq', runfolder_name => '150710_MS2_16850_A_MS3014507-500V2', markdup_method => 'samtools', },
+    16866 => { platform => 'miseq', runfolder_name => '150713_MS8_16866_A_MS3734403-300V2', markdup_method => 'samtools', },
+    20990 => { platform => 'miseq', runfolder_name => '161010_MS5_20990_A_MS4548606-300V2', markdup_method => 'picard', },
+    24135 => { platform => 'miseq', runfolder_name => '171020_MS5_24135_A_MS5476963-300V2', markdup_method => 'samtools', },
+    16756 => { platform => 'hiseq', runfolder_name => '150701_HS36_16756_B_C711RANXX', markdup_method => 'samtools', },
+    16803 => { platform => 'hiseq', runfolder_name => '150706_HS21_16803_B_HGLFHADXX', markdup_method => 'samtools', },
+    16807 => { platform => 'hiseq', runfolder_name => '150707_HS38_16807_A_C7U2YANXX', markdup_method => 'samtools', },
+    20268 => { platform => 'hiseq', runfolder_name => '160704_MS3_20268_A_MS4000667-300V2', markdup_method => 'biobambam', },
+    16839 => { platform => 'hiseqx', runfolder_name => '150709_HX4_16839_A_H7MHWCCXX', markdup_method => 'samtools', },
+  );
+
+  for my $run (keys %test_runs) {
+    my $run_details = $test_runs{$run};
+    my $runfolder_path = join q[/], $dir, $run_details->{runfolder_name};
+    my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_17760704-123456/no_cal';
+    `mkdir -p $bc_path`;
+    my $cache_dir = join q[/], $runfolder_path, "Data/Intensities/BAM_basecalls_17760704-123456/metadata_cache_$run";
+    `mkdir -p $cache_dir`;
+ 
+    copy("t/data/$run_details->{platform}/${run}_RunInfo.xml", "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+    copy("t/data/run_params/runParameters.miseq.xml", "$runfolder_path/runParameters.xml")
+      or die "runParameters.xml copy failed";
+ 
+    local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = qq[t/data/$run_details->{platform}/samplesheet_${run}.csv];
+ 
+    my $sa_gen;
+    lives_ok {
+      $sa_gen = npg_pipeline::function::seq_alignment->new(
+        run_folder        => $run_details->{runfolder_name},
+        runfolder_path    => $runfolder_path,
+        recalibrated_path => $bc_path,
+        timestamp         => q{1776},
+        repository        => $dir,
+        conf_path         => 't/data/release/config/seq_alignment',
+      )
+    } 'no error creating an object';
+    is ($sa_gen->id_run, $run, 'id_run inferred correctly');
+
+    my $dps;
+    lives_ok { $dps = $sa_gen->products->{data_products} } "no error finding data products for run $run";
+    for my $i (0..$#{$dps}) {
+      my $markdup_method = $sa_gen->markdup_method($dps->[$i]);
+
+      is ($markdup_method, $run_details->{markdup_method}, "markdup_method for entry $i for run $run should be inferred as $markdup_method");
+    }
+  }
+};
+
+subtest 'BWA MEM 2 test' => sub {
+  plan tests => 4;
+
+  my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
+  my $runfolder_path = join q[/], $dir, 'compositions', $runfolder;
+  my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/no_cal';
+  make_path $bc_path;
+  my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/metadata_cache_24135';
+  make_path $cache_dir;
+  make_path "$bc_path/lane1";
+  make_path "$bc_path/archive/tileviz";
+
+  copy('t/data/miseq/24135_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135_bwa_mem2.csv];
+
+  my $ms_gen = npg_pipeline::function::seq_alignment->new(
+    run_folder        => $runfolder,
+    runfolder_path    => $runfolder_path,
+    recalibrated_path => $bc_path,
+    timestamp         => q{2017},
+    repository        => $dir,
+    conf_path         => 't/data/release/config/seq_alignment',
+  );
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
+  my $da = $ms_gen->generate('analysis_pipeline');
+  ok (($da and (@{$da} == 3)), 'three definitions returned');
+  my $d = _find($da, 1, 1);
+  isa_ok ($d, 'npg_pipeline::function::definition');
+  ok (!$d->excluded, 'step not excluded');
+
+  my $l = st::api::lims->new(id_run => 24135, position => 1, tag_index => 2);
+  my $analysis = $ms_gen->_analysis($l->reference_genome, '24135:1:2');
+  ok ($analysis eq "bwa_mem2", 'run 24135 lane 1 tag 2 Analysis is BWA MEM 2');
 };
 
 1;
