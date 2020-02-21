@@ -7,10 +7,11 @@ use File::Path qw/make_path/;
 use File::Copy;
 use Log::Log4perl qw/:levels/;
 
-use_ok('npg_pipeline::function::merge_recompress');
-
 
 my $dir     = tempdir( CLEANUP => 1);
+local $ENV{NPG_REPOSITORY_ROOT} = $dir;
+
+use_ok('npg_pipeline::function::merge_recompress');
 
 +my $bcftools_exec = join q[/], $dir, 'bcftools';
 +open my $fh, '>', $bcftools_exec or die 'failed to open file for writing';
