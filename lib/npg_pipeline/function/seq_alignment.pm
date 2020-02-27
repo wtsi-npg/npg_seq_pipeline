@@ -400,7 +400,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $self->logcroak(qq{only paired reads supported for non-consented human ($name_root)});
   }
 
-  my $is_botseq_lib = $l->library_type && ($l->library_type =~ /BotSeq/smx);
+  # I've restricted this to library_types which exactly match Duplex-Seq to exclude the old library_type Bidirectional Duplex-seq
+  my $is_duplexseq_lib = $l->library_type && ($l->library_type eq q[Duplex-Seq]);
 
   ########
   # no target alignment:
@@ -429,8 +430,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
 
-    if($is_botseq_lib) {
-      $p4_param_vals->{markdup_method} = q(botseq);
+    if($is_duplexseq_lib) {
+      $p4_param_vals->{markdup_method} = q(duplexseq);
     } else {
       $p4_param_vals->{markdup_method} = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
     }
