@@ -620,7 +620,7 @@ sub _build__is_duplexseq {
   my $self = shift;
 
   # I've restricted this to library_types which exactly match Duplex-Seq to exclude the old library_type Bidirectional Duplex-seq
-  my $is_duplexseq = any {$_->library_type && $_->library_type eq [Duplex-Seq]}
+  my $is_duplexseq = any {$_->library_type && $_->library_type eq q[Duplex-Seq]}
                   $self->lims->descendants();
 
   return $is_duplexseq;
