@@ -115,7 +115,7 @@ subtest 'deletion delay' => sub {
   is ($v->min_keep_days, 12,
     'from default config which is longer than in config for study 1713');
 
-  $ref->{conf_path} = 't/data/release/config/bqsr';
+  $ref->{conf_path} = 't/data/release/config/bqsr_on_study_specific';
   $v = npg_pipeline::validation->new($ref);
   is ($v->min_keep_days, 14,
     'from hardcoded default which is longer than in config for study 1713');
