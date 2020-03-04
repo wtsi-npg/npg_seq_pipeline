@@ -196,8 +196,8 @@ sub _create_definition4interop {
   my $c = sprintf '%s --check=%s --rpt_list="%s" --qc_in=%s',
                   $QC_SCRIPT_NAME,
                   $self->qc_to_run(),
-                  catdir($self->runfolder_path(), 'InterOp'),
-                  $run_composition->freeze2rpt;
+                  $run_composition->freeze2rpt,
+                  catdir($self->runfolder_path(), 'InterOp');
   $c .= q[ ] . join q[ ],
     map { "--qc_out=$_" }
     map { $_->qc_out_path($self->archive_path) }
