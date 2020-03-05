@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - extended the spiked phix i5 tag (SPIKED_PHIX_TAG2) to 10-bases
  - cluster count check and p4stage1 functions use new class
    (npg_qc::illumina::interop::parser) to parse Illumina InterOp files
  - change npg_pipeline::product::release to use tertiary config
