@@ -19,12 +19,22 @@
          {
             "relation" : "dependsOn",
             "source" : "run_analysis_in_progress",
+            "target" : "qc_interop"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_analysis_in_progress",
             "target" : "p4_stage1_analysis"
          },
          {
             "relation" : "dependsOn",
             "source" : "p4_stage1_analysis",
             "target" : "update_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "qc_interop",
+            "target" : "update_ml_warehouse_1"
          },
          {
             "relation" : "dependsOn",
@@ -39,7 +49,7 @@
          {
             "relation" : "dependsOn",
             "source" : "update_ml_warehouse_1",
-            "target" : "pipeline_end"
+            "target" : "run_analysis_complete"
          },
          {
             "relation" : "dependsOn",
@@ -85,46 +95,6 @@
             "relation" : "dependsOn",
             "source" : "seq_alignment",
             "target" : "qc_ref_match"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_qX_yield",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_adapter",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_insert_size",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_sequence_error",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse_2",
-            "target" : "pipeline_end"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_gc_fraction",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_ref_match",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "update_ml_warehouse_2"
          },
          {
             "relation" : "dependsOn",
@@ -240,11 +210,11 @@
          {
             "relation" : "dependsOn",
             "source" : "run_analysis_complete",
-            "target" : "update_ml_warehouse_3"
+            "target" : "update_ml_warehouse_2"
          },
          {
             "relation" : "dependsOn",
-            "source" : "update_ml_warehouse_3",
+            "source" : "update_ml_warehouse_2",
             "target" : "pipeline_end"
          },
          {
@@ -304,6 +274,10 @@
          {
             "id" : "lane_analysis_in_progress",
             "label" : "lane_analysis_in_progress"
+         },
+         {
+            "id" : "qc_interop",
+            "label" : "qc_interop"
          },
          {
             "id" : "p4_stage1_analysis",
@@ -392,10 +366,6 @@
          {
             "id" : "run_analysis_complete",
             "label" : "run_analysis_complete"
-         },
-         {
-            "id" : "update_ml_warehouse_3",
-            "label" : "update_ml_warehouse"
          },
          {
             "id" : "archive_to_irods_samplesheet",

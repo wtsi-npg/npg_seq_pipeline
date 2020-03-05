@@ -373,6 +373,8 @@ sub prepare {
     my $value = $ENV{$name} || q{Not defined};
     $self->info(sprintf '*** %s: %s', $name, $value);
   }
+  $self->info('Using product configuration file ' . $self->product_conf_file_path);
+
   if ($self->spider) {
     $self->info('Running spider');
     $self->_run_spider();

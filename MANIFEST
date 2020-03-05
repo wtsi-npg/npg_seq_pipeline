@@ -140,6 +140,8 @@ t/bin/bsub
 t/bin/dodo/machine-location
 t/bin/machine-location
 t/bin/red/machine-location
+t/data/no_reads.cram
+t/data/eight_reads.cram
 t/data/bam_flagstats/1234_1_bam_flagstats.json
 t/data/bam_flagstats/1234_3_bam_flagstats.json
 t/data/bam_flagstats/1234_3_phix_bam_flagstats.json
@@ -1048,14 +1050,16 @@ t/data/qc_outcomes/fixtures/400-mqc_library_outcome_ent.yml
 t/data/qc_outcomes/fixtures/README
 t/data/release/config/archive_off/product_release.yml
 t/data/release/config/archive_on/product_release.yml
-t/data/release/config/bqsr/product_release.yml
+t/data/release/config/bqsr_on_study_specific/product_release.yml
 t/data/release/config/bqsr_off/product_release.yml
 t/data/release/config/default_s3_archival/product_release.yml
 t/data/release/config/disregard_qc_outcome/product_release.yml
 t/data/release/config/empty_default/product_release.yml
-t/data/release/config/haplotype_caller_bqsr_on/product_release.yml
+t/data/release/config/haplotype_caller_bqsr_on_study_specific/product_release.yml
+t/data/release/config/haplotype_caller_off_study_specific_reference/product_release.yml
 t/data/release/config/haplotype_caller_on/product_release.yml
 t/data/release/config/haplotype_caller_on_study_specific/product_release.yml
+t/data/release/config/haplotype_caller_on_study_specific_reference/product_release.yml
 t/data/release/config/multiple_configs/product_release.yml
 t/data/release/config/no_config/product_release.yml
 t/data/release/config/notify_off/product_release.yml

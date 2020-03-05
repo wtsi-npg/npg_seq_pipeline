@@ -1,0 +1,14 @@
+---
+default:
+  data_deletion:
+    staging_deletion_delay: 14
+
+study:
+  - study_id: "5290"
+    tertiary:
+      Homo_sapiens:
+        1000Genomes_hs37d5:
+          haplotype_caller:
+            enable: true
+            sample_chunking: hs37primary
+            sample_chunking_number: 24

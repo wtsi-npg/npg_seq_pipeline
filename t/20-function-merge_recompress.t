@@ -7,10 +7,11 @@ use File::Path qw/make_path/;
 use File::Copy;
 use Log::Log4perl qw/:levels/;
 
-use_ok('npg_pipeline::function::merge_recompress');
-
 
 my $dir     = tempdir( CLEANUP => 1);
+local $ENV{NPG_REPOSITORY_ROOT} = $dir;
+
+use_ok('npg_pipeline::function::merge_recompress');
 
 +my $bcftools_exec = join q[/], $dir, 'bcftools';
 +open my $fh, '>', $bcftools_exec or die 'failed to open file for writing';
@@ -36,7 +37,7 @@ copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunInfo.xml', "$runfolder_pat
 copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunParameters.xml', "$runfolder_path/runParameters.xml")
 or die 'Copy failed';
 
-my $conf_path = 't/data/release/config/haplotype_caller_on';
+my $conf_path = 't/data/release/config/haplotype_caller_on_study_specific';
 
 subtest 'no_haplotype_caller flag' => sub {
   plan tests => 4;
