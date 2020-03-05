@@ -5,6 +5,7 @@ use namespace::autoclean;
 use Readonly;
 use List::MoreUtils qw{any};
 use Class::Load qw{load_class};
+use File::Spec::Functions qw{catdir};
 
 use npg_pipeline::function::definition;
 use npg_qc::autoqc::constants qw/
@@ -113,28 +114,36 @@ sub create {
                       $self->qc_to_run(), $self->id_run());
 
   my @definitions = ();
-
   my %done_as_lane = ();
-  for my $lp (@{$self->products->{lanes}}) {
 
-    $self->debug(sprintf '  autoqc check %s for lane, rpt_list: %s, is_pool: %s',
-                            $self->qc_to_run(), $lp->rpt_list, ($lp->lims->is_pool? q[True]: q[False]));
+  if ($self->qc_to_run() eq 'interop') {
+    push @definitions, $self->_create_definition4interop();
+  } else {
 
-    $done_as_lane{$lp->rpt_list} = 1;
-    push @definitions, $self->_create_definition($lp, 0); # is_plex is always 0 here
-  }
+    for my $lp (@{$self->products->{lanes}}) {
 
-  for my $dp (@{$self->products->{data_products}}) {
-    if($done_as_lane{$dp->{rpt_list}}) { next; } # skip data_products that have already been processed as lanes (i.e. libraries or single-sample pools)
+      $self->debug(sprintf '  autoqc check %s for lane, rpt_list: %s, is_pool: %s',
+                   $self->qc_to_run(), $lp->rpt_list, ($lp->lims->is_pool? q[True]: q[False]));
 
-    my $tag_index = $dp->composition->get_component(0)->tag_index;
-    my $is_plex = (defined $tag_index);
+      $done_as_lane{$lp->rpt_list} = 1;
+      push @definitions, $self->_create_definition($lp, 0); # is_plex is always 0 here
+    }
 
-    $self->debug(sprintf '  autoqc check %s for data_product, rpt_list: %s, is_plex: %s, is_pool: %s, tag_index: %s',
-                             $self->qc_to_run(), $dp->{rpt_list}, ($is_plex? q[True]: q[False]),
-                             ($dp->lims->is_pool? q[True]: q[False]), ($is_plex? $tag_index: q[NONE]));
+    for my $dp (@{$self->products->{data_products}}) {
+      # skip data_products that have already been processed as lanes
+      # (i.e. libraries or single-sample pools)
+      $done_as_lane{$dp->{rpt_list}} and next;
 
-    push @definitions, $self->_create_definition($dp, $is_plex);
+      my $tag_index = $dp->composition->get_component(0)->tag_index;
+      my $is_plex = (defined $tag_index);
+
+      $self->debug(sprintf
+        '  autoqc check %s for data_product, rpt_list: %s, is_plex: %s, is_pool: %s, tag_index: %s',
+        $self->qc_to_run(), $dp->{rpt_list}, ($is_plex? q[True]: q[False]),
+        ($dp->lims->is_pool? q[True]: q[False]), ($is_plex? $tag_index: q[NONE]));
+
+      push @definitions, $self->_create_definition($dp, $is_plex);
+    }
   }
 
   if (!@definitions) {
@@ -164,14 +173,48 @@ sub _basic_attrs {
            'identifier' => $self->id_run() };
 }
 
+sub _job_name {
+  my $self = shift;
+  return join q{_}, $QC_SCRIPT_NAME, $self->qc_to_run,
+                    $self->label(), $self->timestamp();
+}
+
+sub _create_definition4interop {
+  my $self = shift;
+
+  # To level InterOp files directory should be given as qc_in.
+  # The check is run once, produces per-lane result object, which are
+  # saved in lane-level qc directories.
+
+  my @lane_components = map { $_->composition->get_component(0) }
+                        @{$self->products->{lanes}};
+  my $run_composition =
+    npg_tracking::glossary::composition->new(components => \@lane_components);
+
+  my $ref = $self->_basic_attrs();
+  $ref->{'job_name'} = $self->_job_name();
+  my $c = sprintf '%s --check=%s --rpt_list="%s" --qc_in=%s',
+                  $QC_SCRIPT_NAME,
+                  $self->qc_to_run(),
+                  $run_composition->freeze2rpt,
+                  catdir($self->runfolder_path(), 'InterOp');
+  $c .= q[ ] . join q[ ],
+    map { "--qc_out=$_" }
+    map { $_->qc_out_path($self->archive_path) }
+    @{$self->products->{lanes}};
+
+  $ref->{'command'}  = $c;
+
+  return npg_pipeline::function::definition->new($ref);
+}
+
 sub _create_definition_object {
   my ($self, $product, $command) = @_;
 
   my $ref = $self->_basic_attrs();
   my $qc_to_run = $self->qc_to_run;
 
-  $ref->{'job_name'}        = join q{_}, $QC_SCRIPT_NAME, $qc_to_run,
-                                         $self->id_run(), $self->timestamp();
+  $ref->{'job_name'}        = $self->_job_name();
   $ref->{'fs_slots_num'}    = 1;
   $ref->{'composition'}     = $product->composition;
   $ref->{'command'}         = $command;
@@ -384,6 +427,8 @@ objects for all entities of the run eligible to run this autoqc check.
 
 =item Class::Load
 
+=item File::Spec::Functions
+
 =item npg_qc::autoqc::constants
 
 =back
@@ -398,7 +443,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Limited
+Copyright (C) 2018,2019,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
