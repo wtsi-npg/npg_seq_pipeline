@@ -289,7 +289,7 @@ subtest 'get software bundle' => sub {
     pipeline_script_name => '/bin/true',
     npg_tracking_schema  => $schema,
     mlwh_schema          => $wh_schema,
-    conf_path            => $conf_file,
+    conf_path            => $temp_directory,
   );
 
   throws_ok { $runner->_software_bundle() }

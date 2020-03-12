@@ -1,0 +1,14 @@
+---
+default:
+  data_deletion:
+    staging_deletion_delay: 14
+
+study:
+  - study_id: "5290"
+    tertiary:
+      Homo_sapiens:
+        GRCh38_15_plus_hs38d1:
+          haplotype_caller:
+            enable: true
+            sample_chunking: hs38primary
+            sample_chunking_number: 24

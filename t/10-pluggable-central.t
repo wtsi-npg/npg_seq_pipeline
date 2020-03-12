@@ -11,7 +11,6 @@ use t::util;
 
 my $util = t::util->new();
 my $tdir = $util->temp_directory();
-#note $tdir;
 my @tools = map { "$tdir/$_" } qw/bamtofastq blat norm_fit/;
 foreach my $tool (@tools) {
   open my $fh, '>', $tool or die 'cannot open file for writing';
@@ -20,6 +19,8 @@ foreach my $tool (@tools) {
 }
 chmod 0755, @tools;
 local $ENV{'PATH'} = join q[:], $tdir, $ENV{'PATH'};
+
+my $product_config = q[t/data/release/config/archive_on/product_release.yml];
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
@@ -76,11 +77,11 @@ my $runfolder_path = $util->analysis_runfolder_path();
       repository       => 't/data/sequence',
       spider           => 0,
       no_sf_resource   => 1,
+      product_conf_file_path => $product_config,
   };
 
   lives_ok { $pb = $central->new($init); } q{no croak on new creation};
   mkdir $pb->archive_path;
-  mkdir $pb->qc_path;
   lives_ok { $pb->main() } q{no croak running qc->main()};
 }
 
@@ -96,7 +97,8 @@ my $runfolder_path = $util->analysis_runfolder_path();
       runfolder_path => $rf,
       timestamp      => '22-May',
       spider         => 0,
-      is_indexed     => 0
+      is_indexed     => 0,
+      product_conf_file_path => $product_config,
   };
   my $pb = $central->new($init);
   is ($pb->intensity_path, "$rf/Data/Intensities", 'intensities path');
