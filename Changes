@@ -11,6 +11,8 @@ LIST OF CHANGES
    non-products (tag zero and spiked PhiX tag) will not be archived
    either
  - remove the old warehouse loader from the analysis function graph 
+ - remove function for illumina qc analysis archival (old way of
+   saving InterOp data to QC database)
 
 release 57.7.0
  - cluster count check and p4stage1 functions use new class
