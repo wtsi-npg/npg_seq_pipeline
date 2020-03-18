@@ -2,6 +2,8 @@ package npg_pipeline::product::release::irods;
 
 use Moose::Role;
 use Readonly;
+use List::MoreUtils qw/uniq/;
+use Carp;
 
 with 'npg_pipeline::product::release' => {
        -alias    => { is_for_release => '_is_for_release' },
@@ -73,8 +75,9 @@ Return true if the product is to be released via iRODS, false otherwise.
 sub is_for_irods_release {
   my ($self, $product) = @_;
 
-  my $enable = !$self->is_release_data($product) ? 1 :
-                $self->_is_for_release($product, 'irods');
+  my $enable = !$self->is_release_data($product)
+                ? $self->_siblings_are_for_irods_release($product)
+                : $self->_is_for_release($product, 'irods');
 
   $self->info(sprintf 'Product %s, %s is %sfor iRODS release',
                       $product->file_name_root(),
@@ -83,6 +86,28 @@ sub is_for_irods_release {
 
   return $enable;
 }
+
+sub _siblings_are_for_irods_release {
+  my ($self, $product) = @_;
+
+  $product->lims or croak 'Need lims object';
+
+  my @lims = ();
+  foreach my $p ($product->lanes_as_products()) {
+    my $c = $p->composition->get_component(0);
+    my $l = $product->lims->create_lane_object($c->id_run, $c->position);
+    if ($l->is_pool) {
+      push @lims, (grep { !$_->is_phix_spike } $l->children);
+    } else {
+      push @lims, $l;
+    }
+  }
+
+  my @flags = uniq map { $self->_is_for_release($_, 'irods') ? 1 : 0 } @lims;
+
+  return (@flags == 1) && $flags[0];
+}
+
 
 no Moose::Role;
 
@@ -102,6 +127,10 @@ __END__
 
 =item Readonly
 
+=item List::MoreUtils
+
+=item Carp
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -114,7 +143,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Ltd.
+Copyright (C) 2019,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
