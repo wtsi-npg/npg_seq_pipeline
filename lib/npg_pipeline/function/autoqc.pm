@@ -8,6 +8,7 @@ use Class::Load qw{load_class};
 use File::Spec::Functions qw{catdir};
 use Try::Tiny;
 
+use npg_pipeline::cache::reference;
 use npg_pipeline::function::definition;
 use npg_qc::autoqc::constants qw/
          $SAMTOOLS_NO_FILTER
@@ -363,6 +364,12 @@ sub _should_run {
       $init_hash{'is_paired_read'} = $self->is_paired_read() ? 1 : 0;
     } elsif ($self->qc_to_run() eq 'review') {
       $init_hash{'product_conf_file_path'} = $self->product_conf_file_path;
+    } elsif ($self->qc_to_run() eq 'genotype') {
+      my $ref_fasta = npg_pipeline::cache::reference->instance()
+	              ->get_path($product, q(fasta), $self->repository());
+      if ($ref_fasta) {
+        $init_hash{'reference_fasta'} = $ref_fasta;
+      }
     }
 
     my $class = $self->_qc_module_name();
