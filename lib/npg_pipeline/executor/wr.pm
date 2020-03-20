@@ -25,6 +25,9 @@ with 'npg_tracking::util::pipeline_config';
 our $VERSION = '0';
 
 Readonly::Scalar my $GENERIC_DEP_KEY               => q[wr_group_id];
+Readonly::Scalar my $WR_LIMIT_IRODS_GROUP          => q[archival2irods];
+Readonly::Scalar my $WR_LIMIT_GROUPS_OPTION        => q[limit_grps];
+Readonly::Scalar my $MAX_NUM_IRODS_JOBS            => 3;
 Readonly::Scalar my $DEFAULT_MEMORY                => 2000;
 Readonly::Scalar my $VERTEX_JOB_PRIORITY_ATTR_NAME => q[job_priority];
 Readonly::Scalar my $WR_ENV_LIST_DELIM             => q[,];
@@ -111,6 +114,18 @@ has '_dependencies' => (
   default => sub { return {}; },
 );
 
+has '_limit4irods_archival' => (
+  isa        => 'Str',
+  is         => 'ro',
+  lazy_build => 1,
+);
+sub _build__limit4irods_archival {
+  my $self = shift;
+  my $num_jobs = $self->wr_conf->{join q[_], $WR_LIMIT_IRODS_GROUP, $WR_LIMIT_GROUPS_OPTION};
+  $num_jobs ||= $MAX_NUM_IRODS_JOBS;
+  return join q[:], $WR_LIMIT_IRODS_GROUP, $num_jobs;
+}
+
 sub _definitions4function {
   my ($self, $function_name) = @_;
 
@@ -189,6 +204,10 @@ sub _definition4job {
   my ($self, $function_name, $log_dir, $d) = @_;
 
   my $def = {};
+
+  if ($function_name =~ /irods/msx) {
+    $def->{$WR_LIMIT_GROUPS_OPTION} = $self->_limit4irods_archival();
+  }
 
   $def->{'memory'} = $d->has_memory() ? $d->memory() : $DEFAULT_MEMORY;
   $def->{'memory'} .= q[M];

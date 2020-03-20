@@ -6,7 +6,7 @@ use File::Temp qw(tempdir);
 use Graph::Directed;
 use Log::Log4perl qw(:levels);
 use Perl6::Slurp;
-use JSON qw(from_json);
+use JSON qw(from_json to_json);
 
 use_ok('npg_pipeline::product');
 use_ok('npg_pipeline::function::definition');
@@ -90,7 +90,7 @@ subtest 'wr add command' => sub {
 };
 
 subtest 'definition for a job' => sub {
-  plan tests => 3;
+  plan tests => 5;
 
   my $ref = {
     created_by    => __PACKAGE__,
@@ -105,10 +105,35 @@ subtest 'definition for a job' => sub {
 
   my $g = Graph::Directed->new();
   $g->add_edge('pipeline_wait4path', 'pipeline_start');
+  $g->add_edge('archival_to_irods_ml_warehouse', 'pipeline_wait4path');
+
+  my $conf_dir = join q[/], $tmp, 'conf_files';
+  mkdir $conf_dir or die "Failed to create directory $conf_dir";
+  my $conf_file = join q[/], $conf_dir, 'wr.json';
+  my $conf = {
+    "default_queue" => {},
+    "small_queue" => {},
+    "lowload_queue" => {},
+    "p4stage1_queue" => {"cloud_flavor" => "best"}
+  };
+
+  my $create_conf = sub {
+    my $content = shift;
+    open my $fh, q[>], $conf_file or die "Failed to open $conf_file for writing";
+    print $fh to_json($content) or die "Failed to print to $conf_file";
+    close $fh or warn "Failed to close $conf_file";
+  };
+  
+  $create_conf->($conf);
+
   my $e = npg_pipeline::executor::wr->new(
     function_definitions => {
-      'pipeline_wait4path' => [$fd], 'pipeline_start' => [$fd]},
-    function_graph       => $g
+      'pipeline_wait4path'             => [$fd],
+      'pipeline_start'                 => [$fd],
+      'archival_to_irods_ml_warehouse' => [$fd]
+    },
+    function_graph       => $g,
+    conf_path            => $conf_dir
   );
 
   my $job_def = $e->_definition4job('pipeline_wait4path', 'some_dir', $fd);
@@ -138,6 +163,32 @@ subtest 'definition for a job' => sub {
     'memory'   => '100M' };
   $job_def = $e->_definition4job('pipeline_start', 'some_dir', $fd);
   is_deeply ($job_def, $expected, 'chunked job definition with tee-ing to a log file');
+
+  delete $ref->{'chunk'};
+  $fd = npg_pipeline::function::definition->new($ref);
+  $expected = {
+    'cmd' => '(umask 0002 && /bin/true ) 2>&1 | tee -a "some_dir/archival_to_irods_ml_warehouse-today-1234.out"',
+    'cpus' => 0,
+    'priority' => 0,
+    'memory'   => '100M',
+    'limit_grps' => 'archival2irods:3' };
+  $job_def = $e->_definition4job('archival_to_irods_ml_warehouse', 'some_dir', $fd);
+  is_deeply ($job_def, $expected, 'default group limit for archival to irods');
+
+  $conf->{archival2irods_limit_grps} = 5;
+  $create_conf->($conf);
+  $e = npg_pipeline::executor::wr->new(
+    function_definitions => {
+      'pipeline_wait4path'             => [$fd],
+      'pipeline_start'                 => [$fd],
+      'archival_to_irods_ml_warehouse' => [$fd]
+    },
+    function_graph       => $g,
+    conf_path            => $conf_dir
+  );
+  $expected->{limit_grps} = 'archival2irods:5';
+  $job_def = $e->_definition4job('archival_to_irods_ml_warehouse', 'some_dir', $fd);
+  is_deeply ($job_def, $expected, 'group limit for archival to irods from the config file'); 
 };
 
 subtest 'dependencies' => sub {

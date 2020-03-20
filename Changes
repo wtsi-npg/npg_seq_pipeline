@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - limit number of iRODS achival jobs that are run in parallel by
+   a single wr manager
+
 release 57.7.0
 - cluster count check and p4stage1 functions use new class
    (npg_qc::illumina::interop::parser) to parse Illumina InterOp files
