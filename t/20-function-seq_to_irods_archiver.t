@@ -27,7 +27,7 @@ Log::Log4perl->easy_init({level  => $INFO,
                           file   => join(q[/], $tmp_dir, 'logfile')});
 
 subtest 'MiSeq run' => sub {
-  plan tests => 46;
+  plan tests => 44;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/miseq/samplesheet_16850.csv};
   my $pconfig_content = read_file $pconfig;
@@ -127,8 +127,6 @@ subtest 'MiSeq run' => sub {
   is ($d->queue, 'lowload', 'queue');
   is ($d->fs_slots_num, 1, 'one fs slot is set');
   ok ($d->reserve_irods_slots, 'iRODS slots to be reserved');
-  is ($d->array_cpu_limit, 1, 'array cpu limit is 1');
-  ok ($d->apply_array_cpu_limit, 'apply array cpu limit is set');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
