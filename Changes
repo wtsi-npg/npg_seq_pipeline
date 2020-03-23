@@ -1,6 +1,12 @@
 LIST OF CHANGES
 ---------------
 
+ - function creating definitions for autoqc jobs - when evaluating
+   whether the autoqc check should be run:
+     reduce run time by passing to the autoqc class instance,
+     where appropriate, a lims object and fastq reference path;
+     explicitly pass product_conf_file_path to this instance 
+
 release 57.7.0
 - cluster count check and p4stage1 functions use new class
    (npg_qc::illumina::interop::parser) to parse Illumina InterOp files
