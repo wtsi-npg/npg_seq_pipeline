@@ -10,9 +10,10 @@ LIST OF CHANGES
    i.e if all products in the lane should not be archived to iRODS,
    non-products (tag zero and spiked PhiX tag) will not be archived
    either
+ - remove the old warehouse loader from the analysis function graph 
 
 release 57.7.0
-- cluster count check and p4stage1 functions use new class
+ - cluster count check and p4stage1 functions use new class
    (npg_qc::illumina::interop::parser) to parse Illumina InterOp files
  - change npg_pipeline::product::release to use tertiary config
  - new qc_interop function to run interop autoqc check

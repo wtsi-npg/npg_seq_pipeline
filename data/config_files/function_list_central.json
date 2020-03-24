@@ -28,11 +28,6 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
-            "target" : "update_warehouse"
-         },
-         {
-            "relation" : "dependsOn",
             "source" : "qc_interop",
             "target" : "update_ml_warehouse_1"
          },
@@ -40,11 +35,6 @@
             "relation" : "dependsOn",
             "source" : "p4_stage1_analysis",
             "target" : "update_ml_warehouse_1"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_warehouse",
-            "target" : "pipeline_end"
          },
          {
             "relation" : "dependsOn",
@@ -282,10 +272,6 @@
          {
             "id" : "p4_stage1_analysis",
             "label" : "p4_stage1_analysis"
-         },
-         {
-            "id" : "update_warehouse",
-            "label" : "update_warehouse"
          },
          {
             "id" : "update_ml_warehouse_1",
