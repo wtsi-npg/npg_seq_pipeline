@@ -1,12 +1,13 @@
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Exception;
+use Test::Warn;
 use File::Temp qw(tempdir);
 use Graph::Directed;
 use Log::Log4perl qw(:levels);
 use Perl6::Slurp;
-use JSON qw(from_json);
+use JSON qw(to_json from_json);
 
 use_ok('npg_pipeline::product');
 use_ok('npg_pipeline::function::definition');
@@ -138,6 +139,134 @@ subtest 'definition for a job' => sub {
     'memory'   => '100M' };
   $job_def = $e->_definition4job('pipeline_start', 'some_dir', $fd);
   is_deeply ($job_def, $expected, 'chunked job definition with tee-ing to a log file');
+};
+
+subtest 'handling group limits' => sub {
+  plan tests => 12;
+
+ my $ref = {
+    created_by    => 'me',
+    created_on    => 'today',
+    identifier    => 1234,
+    job_name      => 'job_name1',
+    command       => '/bin/true',
+    num_cpus      => [1],
+    queue         => 'small'
+  };
+  my $fd1 = npg_pipeline::function::definition->new($ref);
+
+  $ref->{job_name} = 'job_name2';
+  $ref->{reserve_irods_slots} = 1;
+  my $fd2 = npg_pipeline::function::definition->new($ref);
+
+  my $g = Graph::Directed->new();
+  $g->add_edge('function_one', 'function_two');
+
+
+  my $conf_dir = join q[/], $tmp, 'conf_files';
+  mkdir $conf_dir or die "Failed to create directory $conf_dir";
+  my $conf_file = join q[/], $conf_dir, 'wr.json';
+  my $conf = {
+    "default_queue" => {},
+    "small_queue" => {},
+    "lowload_queue" => {},
+    "p4stage1_queue" => {"cloud_flavor" => "best"}
+  };
+  my $create_conf = sub {
+    my $content = shift;
+    open my $fh, q[>], $conf_file or die "Failed to open $conf_file for writing";
+    print $fh to_json($content) or die "Failed to print to $conf_file";
+    close $fh or warn "Failed to close $conf_file";
+  };
+
+  my $expected = {
+    'cmd' => '(umask 0002 && /bin/true ) 2>&1 | tee -a "some_dir/function_two-today-1234.out"',
+    'cpus' => 1,
+    'priority' => 0,
+    'memory'   => '2000M',
+  };
+
+  $create_conf->($conf);
+  my $e = npg_pipeline::executor::wr->new(
+    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
+    function_graph       => $g,
+    conf_path            => $conf_dir
+  );
+  my $job_def;
+  warning_like { $job_def = $e->_definition4job('function_two', 'some_dir', $fd2) }
+    qr/Groups limits are not configured/,
+    'warning about of absence of limits settings in wr config file';
+  is_deeply ($job_def, $expected, 'job definition without group limit');
+
+  $conf->{limit_grps} = {};
+  $create_conf->($conf);
+  $e = npg_pipeline::executor::wr->new(
+    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
+    function_graph       => $g,
+    conf_path            => $conf_dir
+  );
+  warning_like { $job_def = $e->_definition4job('function_two', 'some_dir', $fd2) }
+    qr/Groups limits are not configured/,
+    'warning about of absence of limits settings in wr config file';
+  is_deeply ($job_def, $expected, 'job definition without group limit');  
+
+  $conf->{limit_grps}->{irods} = undef;
+  $create_conf->($conf);
+  $e = npg_pipeline::executor::wr->new(
+    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
+    function_graph       => $g,
+    conf_path            => $conf_dir
+  );
+  throws_ok { $e->_definition4job('function_two', 'some_dir', $fd2) }
+    qr/Undefined limit for group \'irods\'/,
+    'error if limit is undefined in the config file';
+
+  $conf->{limit_grps}->{irods} = 5;
+  $create_conf->($conf);
+  $e = npg_pipeline::executor::wr->new(
+    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
+    function_graph       => $g,
+    conf_path            => $conf_dir
+  );
+  $job_def = $e->_definition4job('function_two', 'some_dir', $fd2);
+  $expected->{'limit_grps'} = ['irods:5'];
+  is_deeply ($e->_group_limits, {reserve_irods_slots => 'irods:5'}, 'cached group limits');
+  is_deeply ($job_def, $expected, 'job definition with group limit');
+
+  $e = npg_pipeline::executor::wr->new(
+    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
+    function_graph       => $g,
+    conf_path            => $conf_dir,
+    _limited_groups2attributes => {'irods' => 'reserve_irods_slots',
+                                   'queue' => 'queue'}
+  );
+  is_deeply ($e->_group_limits, {reserve_irods_slots => 'irods:5'}, 'cached group limits');
+  $job_def = $e->_definition4job('function_two', 'some_dir', $fd2);
+  is_deeply ($job_def, $expected, 'queue limit not included since it is not configured');
+
+  $conf->{limit_grps}->{queue} = 2;
+  $create_conf->($conf);
+  $e = npg_pipeline::executor::wr->new(
+    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
+    function_graph       => $g,
+    conf_path            => $conf_dir
+  );
+  throws_ok { $e->_definition4job('function_two', 'some_dir', $fd2) }
+    qr/Limit group 'queue' is not known/,
+    'error if limit is defined in the config file, but unregistered by the module';
+
+  $e = npg_pipeline::executor::wr->new(
+    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
+    function_graph       => $g,
+    conf_path            => $conf_dir,
+    _limited_groups2attributes => {'irods' => 'reserve_irods_slots',
+                                   'queue' => 'queue'}
+  );
+  is_deeply ($e->_group_limits,
+    {reserve_irods_slots => 'irods:5', queue => 'queue:2'}, 'cached group limits');
+  $expected->{'limit_grps'} = [qw/irods:5 queue:2/];
+  $job_def = $e->_definition4job('function_two', 'some_dir', $fd2);
+  is_deeply ($job_def, $expected, 'queue limit is included');  
 };
 
 subtest 'dependencies' => sub {
