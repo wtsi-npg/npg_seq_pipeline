@@ -93,9 +93,9 @@ sub _siblings_are_for_irods_release {
   $product->lims or croak 'Need lims object';
 
   my @lims = ();
-  foreach my $p ($product->lanes_as_products()) {
-    my $c = $p->composition->get_component(0);
-    my $l = $product->lims->create_lane_object($c->id_run, $c->position);
+  my $with_lims = 1;
+  foreach my $p ($product->lanes_as_products($with_lims)) {
+    my $l = $p->lims;
     if ($l->is_pool) {
       push @lims, (grep { !$_->is_phix_spike } $l->children);
     } else {
