@@ -6,6 +6,10 @@ LIST OF CHANGES
      reduce run time by passing to the autoqc class instance,
      where appropriate, a lims object and fastq reference path;
      explicitly pass product_conf_file_path to this instance 
+ - iRODS archival of non-products is driven by settings of products,
+   i.e if all products in the lane should not be archived to iRODS,
+   non-products (tag zero and spiked PhiX tag) will not be archived
+   either
 
 release 57.7.0
 - cluster count check and p4stage1 functions use new class

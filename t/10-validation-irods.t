@@ -97,7 +97,7 @@ subtest 'object construction, file extensions, file names' => sub {
 };
 
 subtest 'eligible product entities' => sub {
-  plan tests => 6;
+  plan tests => 4;
 
   my $config_dir = join q[/], $dir, 'config';
   mkdir $config_dir or die "Failed to create $config_dir";
@@ -170,10 +170,7 @@ subtest 'eligible product entities' => sub {
     conf_path         => $config_dir,
   );
 
-  my @eligible = @{$v->eligible_product_entities};
-  is (scalar @eligible, 2, 'two entities to archive to iRODS');
-  ok ($eligible[0]->target_product->is_tag_zero_product, 'first product is for tag zero');
-  ok ($eligible[1]->target_product->lims->is_control, 'second product is for spiked phix');
+  is (scalar @{$v->eligible_product_entities}, 0, 'no entities to archive to iRODS');
 };
 
 subtest 'deletable or not' => sub {
