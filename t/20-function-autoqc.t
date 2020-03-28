@@ -37,6 +37,7 @@ my $hiseq_rf = $util->create_runfolder($tmp,
      analysis_path  => 'BAM_basecalls_20180802'});
 
 my $archive_dir = $hiseq_rf->{'archive_path'};
+my $no_archive_dir = $hiseq_rf->{'no_archive_path'};
 my $rf_path     = $hiseq_rf->{'runfolder_path'};
 fcopy('t/data/run_params/runParameters.hiseq.xml', "$rf_path/runParameters.xml")
   or die 'Fail to copy run param file';
@@ -314,7 +315,7 @@ subtest 'ref_match' => sub {
     my $t = $d->composition->get_component(0)->tag_index;
     is ($d->command, sprintf(
     'qc --check=ref_match --rpt_list=%s --filename_root=%s --qc_out=%s --input_files=%s --input_files=%s',
-    qq["1234:8:${t}"], "1234_8#${t}", "$archive_dir/lane8/plex${t}/qc", "$archive_dir/lane8/plex${t}/.npg_cache_10000/1234_8#${t}_1.fastq",  "$archive_dir/lane8/plex${t}/.npg_cache_10000/1234_8#${t}_2.fastq"),
+    qq["1234:8:${t}"], "1234_8#${t}", "$archive_dir/lane8/plex${t}/qc", "$no_archive_dir/lane8/plex${t}/.npg_cache_10000/1234_8#${t}_1.fastq",  "$no_archive_dir/lane8/plex${t}/.npg_cache_10000/1234_8#${t}_2.fastq"),
     "ref_match command for lane 8 tag $t");
   }
 };

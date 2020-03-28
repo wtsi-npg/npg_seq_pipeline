@@ -255,12 +255,14 @@ sub _generate_command {
 
   my $check           = $self->qc_to_run();
   my $archive_path    = $self->archive_path;
+  my $no_archive_path    = $self->no_archive_path;
   my $recal_path      = $self->recalibrated_path;
   my $dp_archive_path = $dp->path($self->archive_path);
-  my $cache10k_path   = $dp->short_files_cache_path($archive_path);
+  my $dp_no_archive_path = $dp->path($self->no_archive_path);
+  my $cache10k_path   = $dp->short_files_cache_path($no_archive_path);
   my $qc_out_path     = $dp->qc_out_path($archive_path);
 
-  my $bamfile_path        = $dp->file_path($dp_archive_path, ext => 'bam');
+  my $bamfile_path        = $dp->file_path($dp_no_archive_path, ext => 'bam');
   my $cramfile_path       = $dp->file_path($dp_archive_path, ext => 'cram');
 
   my $fq1_filepath = $dp->file_path($cache10k_path, ext => 'fastq', suffix => '1');

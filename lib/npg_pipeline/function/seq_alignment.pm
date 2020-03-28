@@ -197,7 +197,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $is_plex = defined $tag_index;
 
   my $archive_path = $self->archive_path;
+  my $no_archive_path = $self->no_archive_path;
   my $dp_archive_path = $dp->path($archive_path);
+  my $dp_no_archive_path = $dp->path($no_archive_path);
   my $recal_path= $self->recalibrated_path; #?
   my $uses_patterned_flowcell = $self->uses_patterned_flowcell;
 
@@ -232,7 +234,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                                (join q{_}, q{tmp}, $self->_job_id),
                                $name_root;
 
-  my $bfs_input_file = $dp_archive_path . q[/] . $dp->file_name(ext => 'bam');
+  my $bfs_input_file = $dp_no_archive_path . q[/] . $dp->file_name(ext => 'bam');
   my $cfs_input_file = $dp_archive_path . q[/] . $dp->file_name(ext => 'cram');
   my $af_input_file = $dp->file_name(ext => 'json', suffix => 'bam_alignment_filter_metrics');
   my $fq1_filepath = File::Spec->catdir($cache10k_path, $dp->file_name(ext => 'fastq', suffix => '1'));
