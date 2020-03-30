@@ -114,7 +114,7 @@ subtest 'product level scaffold, NovaSeq all lanes' => sub {
 };
 
 subtest 'product level scaffold, NovaSeq selected lanes' => sub {
-  plan tests => 104;
+  plan tests => 152;
 
   my $util = t::util->new();
   my $rfh = $util->create_runfolder();
@@ -159,6 +159,18 @@ subtest 'product level scaffold, NovaSeq selected lanes' => sub {
   ok (-e $tileviz_index, 'tileviz index created');
   my @lines = read_file($tileviz_index);
   is (scalar @lines, 5, 'tileviz index contains five lines');
+
+  for my $l ( (2, 3) ) {
+    ok ((!-l "$napath/lane${l}/stage1/999_${l}.cram"),
+      "link for lane $l file is not created");
+  }
+
+  for my $t ( (0 .. 21, 888) ) {
+    my $name = "999_2-3#${t}.cram";
+    my $file = "$napath/lane2-3/plex${t}/stage1/$name";
+    ok ((-l $file), "link for plex $t is created");
+    is (readlink $file, "../../../../no_cal/$name", 'relative path is used');
+  }
 };
 
 1;
