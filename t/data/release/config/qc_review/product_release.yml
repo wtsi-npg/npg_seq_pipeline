@@ -11,13 +11,15 @@ default:
 study:
   - study_id: "1713"
     robo_qc:
-      - library_type:
-          - "Agilent Pulldown"
-        acceptance_criteria :
-          - "criteria1"
+      criteria:
+        - library_type:
+            - "Agilent Pulldown"
+          acceptance_criteria :
+            - "criteria1"
   - study_id: "2410"
     robo_qc:
-      - library_type:
-          - "Custom"
-        acceptance_criteria :
-          - "criteria2"
+      criteria:
+        - library_type:
+            - "Custom"
+          acceptance_criteria :
+            - "criteria2"
