@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - ability to apply limits to wr groups of jobs and a limit for
+   all iRODS jobs
  - function creating definitions for autoqc jobs - when evaluating
    whether the autoqc check should be run:
      reduce run time by passing to the autoqc class instance,
