@@ -218,6 +218,7 @@ t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_base
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/no_cal/archive/lane6/qc/8747_6.spatial_filter.json
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/InterOp/TileMetricsOut.bin
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/RunInfo.xml
+t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/runParameters.xml
 t/data/example_runfolder/151215_HS38_18472_A_H55HVADXX/Data/Intensities/BAM_basecalls_20151215-215034/metadata_cache_18472/samplesheet_18472.csv
 t/data/example_runfolder/151215_HS38_18472_A_H55HVADXX/RunInfo.xml
 t/data/file_with_dodgy_md5.md5
