@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 57.8.0
  - ability to apply limits to wr groups of jobs and a limit for
    all iRODS jobs
  - function creating definitions for autoqc jobs - when evaluating
