@@ -2,8 +2,10 @@ use strict;
 use warnings;
 use Test::More tests => 13;
 use Test::Exception;
-use List::MoreUtils qw/all/;
+use List::MoreUtils qw/all none/;
+
 use npg_tracking::glossary::composition::component::illumina;
+use st::api::lims;
 use t::util;
 
 my $tmp_dir = t::util->new()->temp_directory();
@@ -392,13 +394,15 @@ subtest 'generation of product objects for components' => sub {
 };
 
 subtest 'generation of product objects for lanes' => sub {
-  plan tests => 16;
+  plan tests => 29;
 
   my $p = npg_pipeline::product->new(rpt_list => '26219:1:3');
   my @p_lanes = $p->lanes_as_products();
   is (scalar @p_lanes, 1, 'one products');
   
-  $p = npg_pipeline::product->new(rpt_list => '26219:1:3;26219:2:3;26219:3:3;26219:4:3');
+  my $rpt_list = '26219:1:3;26219:2:3;26219:3:3;26219:4:3';
+  $p = npg_pipeline::product->new(rpt_list => $rpt_list);
+
   @p_lanes = $p->lanes_as_products();
   map { isa_ok ($_, 'npg_pipeline::product') }  @p_lanes;
   ok ((all { ! $_->selected_lanes } @p_lanes),
@@ -411,6 +415,13 @@ subtest 'generation of product objects for lanes' => sub {
     '1,2,3,4', 'correct positions');
   is (join(q[-], map {$_->rpt_list} @p_lanes),
     '26219:1-26219:2-26219:3-26219:4', 'correct rpt lists');
+  ok ((none { $_->has_lims } @p_lanes),
+    'lims object is not defined for any of lane products');
+  
+  my $with_lims = 1;
+  throws_ok { $p->lanes_as_products($with_lims) }
+    qr/should have lims attribute set/,
+    'error using with-lims option on an object with lims attr not set';
 
   $p = npg_pipeline::product->new(rpt_list => '26219:1;26219:2', selected_lanes => 1);
   @p_lanes = $p->components_as_products();
@@ -423,6 +434,24 @@ subtest 'generation of product objects for lanes' => sub {
   is (join(q[,], map {$_->composition->get_component(0)->position} @p_lanes),
     '1,2', 'correct positions');
   is (join(q[-], map {$_->rpt_list} @p_lanes), '26219:1-26219:2', 'correct rpt lists');
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv];
+  $rpt_list = '26219:1:3;26219:2:3';
+  $p = npg_pipeline::product->new(
+    rpt_list => $rpt_list,
+    lims     => st::api::lims->new(rpt_list => $rpt_list)
+  );
+  @p_lanes = $p->lanes_as_products($with_lims);
+  ok ((all { $_->has_lims } @p_lanes),
+    'lims object is defined for all lane products');
+  for my $p ((1 .. 2)) {
+    my $l = $p_lanes[$p-1]->lims;
+    is($l->tag_index, undef, 'tag idex is not defined');
+    is($l->rpt_list, undef, 'rpt list is not defined');
+    is($l->id_run, 26219, 'run id is 26219');
+    is($l->position, $p, "position is $p");
+    ok($l->is_pool, 'entity is a pool');
+  }
 };
 
 subtest 'tests for simple functions' => sub {

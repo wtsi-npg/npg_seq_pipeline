@@ -235,7 +235,7 @@ sub receipts_location {
 
 =head2 is_for_release
 
-  Arg [1]    : npg_pipeline::product
+  Arg [1]    : npg_pipeline::product or st::api::lims or similar
   Arg [2]    : Str, type of release
 
   Example    : $obj->is_for_release($product, 'irods');
@@ -249,7 +249,10 @@ sub receipts_location {
 
 sub is_for_release {
   my ($self, $product, $type_of_release) = @_;
-  return $self->find_study_config($product)->{$type_of_release}->{enable};
+  my $study_config = (ref $product eq 'npg_pipeline::product')
+                   ? $self->find_study_config($product)
+                   : $self->study_config($product); # the last one is for lims objects
+  return $study_config->{$type_of_release}->{enable};
 }
 
 =head2 is_for_s3_release
@@ -701,7 +704,7 @@ Keith James
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Ltd.
+Copyright (C) 2018,2019,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

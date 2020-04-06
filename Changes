@@ -1,8 +1,24 @@
 LIST OF CHANGES
 ---------------
 
+release 57.8.0
+ - ability to apply limits to wr groups of jobs and a limit for
+   all iRODS jobs
+ - function creating definitions for autoqc jobs - when evaluating
+   whether the autoqc check should be run:
+     reduce run time by passing to the autoqc class instance,
+     where appropriate, a lims object and fastq reference path;
+     explicitly pass product_conf_file_path to this instance 
+ - iRODS archival of non-products is driven by settings of products,
+   i.e if all products in the lane should not be archived to iRODS,
+   non-products (tag zero and spiked PhiX tag) will not be archived
+   either
+ - remove the old warehouse loader from the analysis function graph 
+ - remove function for illumina qc analysis archival (old way of
+   saving InterOp data to QC database)
+
 release 57.7.0
-- cluster count check and p4stage1 functions use new class
+ - cluster count check and p4stage1 functions use new class
    (npg_qc::illumina::interop::parser) to parse Illumina InterOp files
  - change npg_pipeline::product::release to use tertiary config
  - new qc_interop function to run interop autoqc check

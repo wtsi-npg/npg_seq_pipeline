@@ -44,8 +44,6 @@ sub create {
     foreach my $product (@{$self->products->{'data_products'}}) {
       if ($self->is_for_irods_release($product)) {
         my %dref = %{$ref};
-        $dref{'array_cpu_limit'}       = 1; # One job at a time
-        $dref{'apply_array_cpu_limit'} = 1;
         $dref{'composition'}           = $product->composition;
         $dref{'command'} = sprintf '%s --restart_file %s --collection %s --source_directory %s',
           $command,

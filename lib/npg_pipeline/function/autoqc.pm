@@ -6,7 +6,9 @@ use Readonly;
 use List::MoreUtils qw{any};
 use Class::Load qw{load_class};
 use File::Spec::Functions qw{catdir};
+use Try::Tiny;
 
+use npg_pipeline::cache::reference;
 use npg_pipeline::function::definition;
 use npg_qc::autoqc::constants qw/
          $SAMTOOLS_NO_FILTER
@@ -353,7 +355,7 @@ sub _should_run {
   }
 
   if ($can_run) {
-    my %init_hash = ( rpt_list => $rpt_list );
+    my %init_hash = ( rpt_list => $rpt_list, lims => $product->lims );
 
     if ($self->has_repository && $self->_check_uses_refrepos()) {
       $init_hash{'repository'} = $self->repository;
@@ -361,10 +363,25 @@ sub _should_run {
     if ($self->qc_to_run() eq 'insert_size') {
       $init_hash{'is_paired_read'} = $self->is_paired_read() ? 1 : 0;
     } elsif ($self->qc_to_run() eq 'review') {
-      $init_hash{'conf_path'} = $self->conf_path;
+      $init_hash{'product_conf_file_path'} = $self->product_conf_file_path;
+    } elsif ($self->qc_to_run() eq 'genotype') {
+      my $ref_fasta = npg_pipeline::cache::reference->instance()
+	              ->get_path($product, q(fasta), $self->repository());
+      if ($ref_fasta) {
+        $init_hash{'reference_fasta'} = $ref_fasta;
+      }
     }
 
-    $can_run = $self->_qc_module_name()->new(\%init_hash)->can_run();
+    my $class = $self->_qc_module_name();
+    my $check_obj;
+    try {
+      $check_obj = $class->new(\%init_hash);
+    } catch {
+      delete $init_hash{'lims'};
+      $check_obj = $class->new(\%init_hash);
+    };
+
+    $can_run = $check_obj->can_run();
   }
 
   return $can_run;
@@ -428,6 +445,8 @@ objects for all entities of the run eligible to run this autoqc check.
 =item Class::Load
 
 =item File::Spec::Functions
+
+=item Try::Tiny
 
 =item npg_qc::autoqc::constants
 

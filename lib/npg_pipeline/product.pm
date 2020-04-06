@@ -449,21 +449,43 @@ a list of one lane object. For a product that is itself a lane or a
 composition of lanes, returns objects corresponding to component lanes.
 
 The subset information is not retained in the returned objects.
-The lims attribute of the returned objects is not set.
+The lims attribute of the returned objects is not set unless a true flag
+is passed to the method as a single argument.
+
+ my @lane_products = $product->lanes_as_products();
+ defined $lane_products[0]->lims; # false
+ my $with_lims = 1;
+ @lane_products = $product->lanes_as_products($with_lims);
+ defined $lane_products[0]->lims; # true
 
 =cut
 
 sub lanes_as_products {
-  my $self = shift;
+  my ($self, $with_lims) = @_;
+
+  if ($with_lims && !$self->has_lims) {
+    croak 'In order to use with_lims option this product should have ' .
+	  'lims attribute set';
+  }
   ##no critic (BuiltinFunctions::ProhibitComplexMappings)
-  return map {
-    __PACKAGE__->new(selected_lanes => $self->selected_lanes, rpt_list => $_)
-             }
-    map { npg_tracking::glossary::rpt->deflate_rpt($_) }
+  my @lane_hashes =
     map { delete $_->{'subset'}; delete $_->{'tag_index'}; $_ }
     map { npg_tracking::glossary::rpt->inflate_rpt($_) }
     map { $_->freeze2rpt() }
     $self->composition->components_list();
+
+  my @lane_products = ();
+  foreach my $lane_hash (@lane_hashes) {
+    my $list = npg_tracking::glossary::rpt->deflate_rpt($lane_hash);
+    my $ref = {selected_lanes => $self->selected_lanes, rpt_list => $list};
+    if ($with_lims) {
+      $ref->{lims} = $self->lims->create_lane_object(
+                     $lane_hash->{id_run}, $lane_hash->{position});
+    }
+    push @lane_products, __PACKAGE__->new($ref);
+  }
+
+  return  @lane_products;
 }
 
 =head2 subset_as_product
