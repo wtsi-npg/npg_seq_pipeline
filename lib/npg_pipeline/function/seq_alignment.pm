@@ -429,6 +429,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
     $p4_param_vals->{markdup_method} = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
     $p4_param_vals->{markdup_optical_distance_value} = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
+
+    if($p4_param_vals->{markdup_method} eq q[none]) {
+      $skip_target_markdup_metrics = 1;
+    }
   }
   elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$do_gbs_plex && !$is_chromium_lib) {
       push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
@@ -637,7 +641,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     (grep {$_}
       ($spike_tag ? q() : (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', undef, $rpt_list, $name_root, [$cfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', 1, $rpt_list, $name_root, [$cfs_input_file]),
         q{&&},
         _qc_command('alignment_filter_metrics', undef, $qc_out_path, undef, undef, $rpt_list, $name_root, [$af_input_file]),
       ),
