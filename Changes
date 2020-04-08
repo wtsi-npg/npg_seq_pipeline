@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - small change to seq_alignment.pm so it does not error if 
+   gbs_plex_name (primer_panel) is set but lib type incompatible
+   with gbs analysis
+
 release 57.8.0
  - ability to apply limits to wr groups of jobs and a limit for
    all iRODS jobs

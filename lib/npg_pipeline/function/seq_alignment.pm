@@ -810,12 +810,13 @@ sub _has_gbs_plex{
     $self->debug(qq{$rpt_list - No gbs plex set});
     return 0;
   }
-  if(not $self->_gbs_plex($rpt_list)->gbs_plex_path){
-    $self->logcroak(qq{$rpt_list - GbS plex set but no gbs plex path found});
+  if(!$library_type || $library_type !~ /^GbS|GnT\sMDA/ismx){
+    $self->debug(qq{$rpt_list - Library type is incompatible with gbs analysis});
+    return 0;
   }
 
-  if($library_type and $library_type !~ /^GbS|GnT\sMDA/ismx){
-    $self->logcroak(qq{$rpt_list - GbS plex set but library type incompatible});
+  if(not $self->_gbs_plex($rpt_list)->gbs_plex_path){
+    $self->logcroak(qq{$rpt_list - GbS plex set but no gbs plex path found});
   }
 
   $self->debug(qq{$rpt_list - Doing GbS plex analysis....});
