@@ -1,6 +1,13 @@
 LIST OF CHANGES
 ---------------
 
+release 57.9.0
+ - small change to seq_alignment.pm so it does not error if 
+   gbs_plex_name (primer_panel) is set but lib type incompatible
+   with gbs analysis
+ - when markdup_method is "none", add skip_markdup_metrics flag
+   to bam_flagstats qc command
+
 release 57.8.0
  - ability to apply limits to wr groups of jobs and a limit for
    all iRODS jobs
