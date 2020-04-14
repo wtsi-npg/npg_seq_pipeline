@@ -66,6 +66,7 @@ my $builder = $class->new(
           'Sys::Filesystem::MountPoint'  => 0,
           'Try::Tiny'                    => 0,
           'UUID'                         => 0,
+          'URI'                          => 0,
           'warnings'                     => 1.05,
           'YAML'                         => 0,
           'YAML::XS'                     => 0,
@@ -105,6 +106,7 @@ my $builder = $class->new(
          },
 
          'build_requires'      => {
+          'Data::Compare'               => 0,
           'Digest::MD5'                 => 0,
           'File::Copy::Recursive'       => 0,
           'File::Temp'                  => 0,
@@ -115,6 +117,7 @@ my $builder = $class->new(
           'Test::Deep'                  => 0,
           'Test::Exception'             => 0,
           'Test::Differences'           => 0,
+          'Test::HTTP::Server'          => 0,
           'Test::More'                  => '0.8',
           'Test::Perl::Critic'          => 0,
           'Test::Trap'                  => 0,
