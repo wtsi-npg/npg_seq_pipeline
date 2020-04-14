@@ -65,6 +65,7 @@ copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunParameters.xml', "$runfold
 or die 'Copy failed';
 
 my $timestamp = q[20180701-123456];
+my $product_conf = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release.yml];
 
 subtest 'error on missing data in LIMS' => sub {
   plan tests => 2;
@@ -78,11 +79,12 @@ subtest 'error on missing data in LIMS' => sub {
   write_file($file, $text1);
   
   my $ppd = npg_pipeline::function::stage2pp->new(
-    archive_path        => $archive_path,
-    runfolder_path      => $runfolder_path,
-    id_run              => 26291,
-    timestamp           => $timestamp,
-    repository          => $dir);
+    product_conf_file_path => $product_conf,
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    timestamp              => $timestamp,
+    repository             => $dir);
   throws_ok { $ppd->create } 
     qr/bwa reference is not found for/,
     'error if reference is not defined for one of the products';
@@ -92,32 +94,35 @@ subtest 'error on missing data in LIMS' => sub {
   write_file($file, $text1);
 
   $ppd = npg_pipeline::function::stage2pp->new(
-    archive_path        => $archive_path,
-    runfolder_path      => $runfolder_path,
-    id_run              => 26291,
-    timestamp           => $timestamp,
-    repository          => $dir);
+    product_conf_file_path => $product_conf,
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    timestamp              => $timestamp,
+    repository             => $dir);
   throws_ok { $ppd->create } 
     qr/Bed file is not found for/,
     'error if primer panel is not defined for one of the products';
 };
 
 subtest 'definition generation' => sub {
-  plan tests => 6;
+  plan tests => 7;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
+  my $nf_dir = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a];
 
   my $ppd = npg_pipeline::function::stage2pp->new(
-    archive_path        => $archive_path,
-    runfolder_path      => $runfolder_path,
-    id_run              => 26291,
-    timestamp           => $timestamp,
-    repository          => $dir);
+    product_conf_file_path => $product_conf,
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    timestamp              => $timestamp,
+    repository             => $dir);
   my $ds = $ppd->create;
   is (scalar @{$ds}, 3, '3 definitions are returned');
   isa_ok ($ds->[0], 'npg_pipeline::function::definition');
   is ($ds->[0]->excluded, undef, 'function is not excluded');
-  is ($ds->[0]->command, "$dir/nextflow run wtsi-team112/ncov2019-artic-nf " .
+  is ($ds->[0]->command, "$dir/nextflow run $nf_dir " .
                          '-profile singularity,sanger ' .
                          '--illumina --cram --prefix 26291 ' .
                          "--ref $bwa_dir/MN908947.3.fa " .
@@ -125,7 +130,8 @@ subtest 'definition generation' => sub {
                          "--directory $no_archive_path/plex1/stage1 " .
                          "--outdir $archive_path/plex1",
     'correct command for plex 1');
-  is ($ds->[1]->command, "$dir/nextflow run wtsi-team112/ncov2019-artic-nf " .
+  is ($ds->[0]->job_name, 'stage2pp_ncov2cf011_26291', 'job name');
+  is ($ds->[1]->command, "$dir/nextflow run $nf_dir " .
                          '-profile singularity,sanger ' .
                          '--illumina --cram --prefix 26291 ' .
                          "--ref $bwa_dir/MN908947.3.fa " .
@@ -133,7 +139,7 @@ subtest 'definition generation' => sub {
                          "--directory $no_archive_path/plex2/stage1 " .
                          "--outdir $archive_path/plex2",
     'correct command for plex 2');
-  is ($ds->[2]->command, "$dir/nextflow run wtsi-team112/ncov2019-artic-nf " .
+  is ($ds->[2]->command, "$dir/nextflow run $nf_dir " .
                          '-profile singularity,sanger ' .
                          '--illumina --cram --prefix 26291 ' .
                          "--ref $bwa_dir/MN908947.3.fa " .
