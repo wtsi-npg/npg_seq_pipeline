@@ -1122,7 +1122,6 @@ t/data/sequence/references/PhiX/default/all/snps/phix-illumina.fa.rod
 t/data/sequence/references/PhiX/Illumina/all/fasta/phix-illumina.fa
 t/data/sequence/references/Streptococcus_equi/default/all/bwa/S-equi-4047.fasta.bwt
 t/data/sequence/references/Streptococcus_equi/default/all/fasta/S-equi-4047.fasta
-t/data/study_analysis_conf/study_analysis.yml
 t/dbic_util.pm
 t/log4perl_test.conf
 t/perlcriticrc
