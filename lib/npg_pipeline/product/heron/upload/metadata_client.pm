@@ -41,10 +41,12 @@ has 'api_uri' =>
 =head2 send_library_metadata
 
   Arg[1]     : Library, npg_pipeline::product::heron::upload::library.
-  Arg[n]     : Sample ID, Str. These must be the identifiers supplied by the
+  Arg[2]     : Sample ID, ArrayRef[Str]. These must be the identifiers supplied by the
                originator of the sample material.
+  Arg[3]     : Force biosample creation, Bool. Force the creation of new biosamples if the
+               samples in this library are not already present. Optional, defaults to false.
 
-  Example    : my $response_content = $client->send_library_metadata($library_name, @ids)
+  Example    : my $response_content = $client->send_library_metadata($library_name, \@ids)
   Description: Return the (decoded) response data on successful upload of metadata
                to the COG-UK API endpoint, or raise an error if some or all of the
                metadata were rejected.
@@ -53,9 +55,10 @@ has 'api_uri' =>
 =cut
 
 sub send_library_metadata {
-   my ($self, $library, @sample_ids) = @_;
+   my ($self, $library, $sample_ids, $force_biosamples) = @_;
 
-  my $document = $self->_make_library_metadata($library, @sample_ids);
+  my $document = $self->_make_library_metadata($library, $sample_ids,
+                                               $force_biosamples);
 
   # Add credentials
   $document->{username} = $self->username;
@@ -79,9 +82,9 @@ sub send_library_metadata {
 =head2 send_run_metadata
 
   Arg[1]     : Library, npg_pipeline::product::heron::upload::library.
-  Arg[n]     : Runs, npg_pipeline::product::heron::upload::run.
+  Arg[n]     : Runs, ArrayRef[npg_pipeline::product::heron::upload::run].
 
-  Example    : my $response_content = $client->send_run_metadata($library_name, @runs)
+  Example    : my $response_content = $client->send_run_metadata($library_name, \@runs)
   Description: Return the (decoded) response data on successful upload of metadata
                to the COG-UK API endpoint, or raise an error if some or all of the
                metadata were rejected.
@@ -90,9 +93,9 @@ sub send_library_metadata {
 =cut
 
 sub send_run_metadata {
-  my ($self, $library, @runs) = @_;
+  my ($self, $library, $runs) = @_;
 
-  my $document = $self->_make_run_metadata($library, @runs);
+  my $document = $self->_make_run_metadata($library, $runs);
 
   # Add credentials
   $document->{username} = $self->username;
@@ -182,12 +185,12 @@ sub _seq_add_uri {
 }
 
 sub _make_run_metadata {
-  my ($self, $library, @runs) = @_;
+  my ($self, $library, $runs) = @_;
 
   $library or $self->logconfess('No library was supplied');
 
   my @run_metadata;
-  foreach my $run (@runs) {
+  foreach my $run (@{$runs}) {
     push @run_metadata, {run_name         => $run->name,
                          instrument_make  => $run->instrument_make,
                          instrument_model => $run->instrument_model};
@@ -198,12 +201,12 @@ sub _make_run_metadata {
 }
 
 sub _make_library_metadata {
-  my ($self, $library, @sample_ids) = @_;
+  my ($self, $library, $sample_ids, $force_biosamples) = @_;
 
   $library or $self->logconfess('No library was supplied');
 
   my @sample_metadata;
-  foreach my $sample_id (@sample_ids) {
+  foreach my $sample_id (@{$sample_ids}) {
     push @sample_metadata, {central_sample_id => $sample_id,
                             library_selection => $library->selection,
                             library_source    => $library->source,
@@ -220,7 +223,8 @@ sub _make_library_metadata {
               primers => $library->artic_primers_version,
           },
       },
-      biosamples => \@sample_metadata,
+      biosamples            => \@sample_metadata,
+      force_biosamples      => $force_biosamples,
   };
 
   if ($library->has_artic_protocol) {

@@ -79,6 +79,7 @@ my $add_library_success_request = {
       library_strategy  => 'AMPLICON'
   }
   ],
+  force_biosamples      => 1,
   library_layout_config => 'PAIRED',
   library_name          => 'test_library_name',
   library_seq_kit       => 'NEB Ultra II',
@@ -221,7 +222,9 @@ my $library = $libpkg->new(%library_initargs);
 # We can send library requests and accept a success response
 my @sample_ids = qw(sample1 sample2 sample3);
 
-my $lib_response = $client->send_library_metadata($library, @sample_ids);
+my $force_biosamples = 1;
+my $lib_response = $client->send_library_metadata($library, \@sample_ids,
+                                                  $force_biosamples);
 ok($lib_response, 'Send library response successful');
 is_deeply($lib_response, $add_library_success_response) or
     diag explain $lib_response;
@@ -239,7 +242,7 @@ my @runs = ($runpkg->new(name => 'SANG-run1', @instrument_args),
             $runpkg->new(name => 'SANG-run2', @instrument_args),
             $runpkg->new(name => 'SANG-run3', @instrument_args));
 
-my $run_response = $client->send_run_metadata($library, @runs);
+my $run_response = $client->send_run_metadata($library, \@runs);
 ok($run_response, 'Send run response successful');
 is_deeply($run_response, $add_run_success_response) or
     diag explain $run_response;
@@ -250,6 +253,6 @@ undef $server;
 $server = Test::HTTP::Server->new;
 
 dies_ok {
-  my $response = $client->send_run_metadata($library, @runs);
+  my $response = $client->send_run_metadata($library, \@runs);
 } 'Sending metadata dies on error response';
 

@@ -25,6 +25,7 @@ our $VERSION = '0';
 my $artic_primers_version;
 my $debug;
 my $dry_run;
+my $force_biosamples;
 my @id_run;
 my $instrument_make;
 my $instrument_model;
@@ -46,6 +47,7 @@ GetOptions('artic_primers_version|' .
                'artic-primers-version=s'         => \$artic_primers_version,
            'debug'                               => \$debug,
            'dry_run|dry-run'                     => \$dry_run,
+           'force_biosamples|force-biosamples'   => \$force_biosamples,
            'help'                    => sub {
              pod2usage(-verbose => 2, -exitval => 0);
            },
@@ -84,6 +86,11 @@ if (not $token) {
 
 if (not defined $artic_primers_version) {
   pod2usage(-msg => 'A --artic-primers-version argument is required',  -exitval => 2);
+}
+
+if ($force_biosamples) {
+  $log->warn('Overriding default to force biosample creation');
+
 }
 
 if ($instrument_make) {
@@ -178,8 +185,8 @@ foreach my $id_run (@id_run) {
         $log->info(sprintf q[DRY: %s], $library->str);
       }
       else {
-        $client->send_library_metadata($library, @sample_ids);
-        $client->send_run_metadata($library, $run);
+        $client->send_library_metadata($library, \@sample_ids, $force_biosamples);
+        $client->send_run_metadata($library, [$run]);
       }
     }
   } catch {
@@ -226,6 +233,7 @@ npg_heron_metadata_upload --id-run <id_run> [--id-run <id_run> ...]
   --artic-primers-version <version>
   --url <upload base URL>
   --username <API user name> --token <API access token>
+  [--force-biosamples]
   [--sequencing-kit <sequencing kit override>]
   [--sequencing-protocol <sequencing protocol override>]
   [--sequencing-layout-config <sequencing layout config override>]
@@ -235,12 +243,16 @@ npg_heron_metadata_upload --id-run <id_run> [--id-run <id_run> ...]
   [--dry-run] [--debug] [--verbose]
 
  Options:
-   --artic-primers-version    ARTIC primers version (e.g. 2, 3). Required.
+   --artic-primers-version     ARTIC primers version (e.g. 2, 3). Required.
 
-   --debug                    Enable debug level logging. Optional, defaults
-                              to false.
+   --debug                     Enable debug level logging. Optional, defaults
+                               to false.
    --dry-run
    --dry_run                   Enable dry run. Optional, defaults to false.
+   --force_biosamples
+   --force-biosamples          Force the creation of new biosamples if any in
+                               library have not been registered. Optional,
+                               defaults to false.
    --help                      Display help.
 
    --id-run
