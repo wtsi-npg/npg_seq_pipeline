@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 3;
+use Test::More tests => 5;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path/;
@@ -23,7 +23,7 @@ my $logfile = join q[/], $dir, 'logfile';
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
-                          file   => join(q[/], $dir, 'logfile'),
+                          file   => $logfile,
                           utf8   => 1});
 
 # setup reference repository
@@ -56,6 +56,8 @@ my $archive_path = join q[/], $runfolder_path,
   'Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive';
 my $no_archive_path = join q[/], $runfolder_path,
 'Data/Intensities/BAM_basecalls_20180805-013153/no_archive';
+my $pp_archive_path = join q[/], $runfolder_path,
+'Data/Intensities/BAM_basecalls_20180805-013153/pp_archive';
 
 make_path $archive_path;
 make_path $no_archive_path;
@@ -65,7 +67,8 @@ copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunParameters.xml', "$runfold
 or die 'Copy failed';
 
 my $timestamp = q[20180701-123456];
-my $product_conf = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release.yml];
+my $repo_dir = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a];
+my $product_conf = qq[$repo_dir/product_release.yml];
 
 subtest 'error on missing data in LIMS' => sub {
   plan tests => 2;
@@ -106,10 +109,13 @@ subtest 'error on missing data in LIMS' => sub {
 };
 
 subtest 'definition generation' => sub {
-  plan tests => 7;
+  plan tests => 16;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
   my $nf_dir = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a];
+  my @out_dirs = map { qq[$pp_archive_path/plex] . $_ . q[/ncov2019_artic_nf/cf01166c42a]}
+                 qw/1 2 3/;
+  map { ok (!(-e $_), "output dir $_ does not exists") } @out_dirs;
 
   my $ppd = npg_pipeline::function::stage2pp->new(
     product_conf_file_path => $product_conf,
@@ -118,17 +124,21 @@ subtest 'definition generation' => sub {
     id_run                 => 26291,
     timestamp              => $timestamp,
     repository             => $dir);
+
   my $ds = $ppd->create;
+
+  map { ok (-d $_, "output dir $_ exists") } @out_dirs;
+
   is (scalar @{$ds}, 3, '3 definitions are returned');
   isa_ok ($ds->[0], 'npg_pipeline::function::definition');
   is ($ds->[0]->excluded, undef, 'function is not excluded');
-  is ($ds->[0]->command, "$dir/nextflow run $nf_dir " .
+  my $command =          "$dir/nextflow run $nf_dir " .
                          '-profile singularity,sanger ' .
                          '--illumina --cram --prefix 26291 ' .
                          "--ref $bwa_dir/MN908947.3.fa " .
                          "--bed $pp_repository/default/SARS-CoV-2/MN908947.3/nCoV-2019.bed ".
-                         "--directory $no_archive_path/plex1/stage1 " .
-                         "--outdir $archive_path/plex1",
+                         "--directory $no_archive_path/plex1/stage1";
+  is ($ds->[0]->command, "$command --outdir $out_dirs[0]",
     'correct command for plex 1');
   is ($ds->[0]->job_name, 'stage2pp_ncov2cf011_26291', 'job name');
   is ($ds->[1]->command, "$dir/nextflow run $nf_dir " .
@@ -137,7 +147,7 @@ subtest 'definition generation' => sub {
                          "--ref $bwa_dir/MN908947.3.fa " .
                          "--bed $pp_repository/V2/SARS-CoV-2/MN908947.3/nCoV-2019.bed ".
                          "--directory $no_archive_path/plex2/stage1 " .
-                         "--outdir $archive_path/plex2",
+                         "--outdir $out_dirs[1]",
     'correct command for plex 2');
   is ($ds->[2]->command, "$dir/nextflow run $nf_dir " .
                          '-profile singularity,sanger ' .
@@ -145,8 +155,74 @@ subtest 'definition generation' => sub {
                          "--ref $bwa_dir/MN908947.3.fa " .
                          "--bed $pp_repository/V3/SARS-CoV-2/MN908947.3/nCoV-2019.bed ".
                          "--directory $no_archive_path/plex3/stage1 " .
-                         "--outdir $archive_path/plex3",
+                         "--outdir $out_dirs[2]",
     'correct command for plex 3');
+
+  $ppd = npg_pipeline::function::stage2pp->new(
+    product_conf_file_path => qq[$repo_dir/../v.3/product_release_two_pps.yml],
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    timestamp              => $timestamp,
+    repository             => $dir);
+
+  $ds = $ppd->create;
+  is (scalar @{$ds}, 6, '6 definitions are returned');
+  is ($ds->[0]->command, "$command --outdir $out_dirs[0]",
+    'correct command for plex 1');
+  $command =~ s/cf01166c42a/v.3/;
+  is ($ds->[1]->command,
+    "$command --outdir $pp_archive_path/plex1/ncov2019_artic_nf/v.3",
+    'correct command for plex 1 for the second pipeline');
+};
+
+subtest 'step skipped' => sub {
+  plan tests => 5;
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
+
+  my $ppd = npg_pipeline::function::stage2pp->new(
+    product_conf_file_path => qq[$repo_dir/product_release_no_pp.yml],
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    timestamp              => $timestamp,
+    repository             => $dir);
+
+  my $ds = $ppd->create;
+  is (scalar @{$ds}, 1, 'one definition is returned');
+  isa_ok ($ds->[0], 'npg_pipeline::function::definition');
+  is ($ds->[0]->excluded, 1, 'function is excluded');
+
+ $ppd = npg_pipeline::function::stage2pp->new(
+    product_conf_file_path => qq[$repo_dir/product_release_no_study.yml],
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    timestamp              => $timestamp,
+    repository             => $dir);
+
+  $ds = $ppd->create;
+  is (scalar @{$ds}, 1, 'one definition is returned');
+  is ($ds->[0]->excluded, 1, 'function is excluded');
+};
+
+subtest 'skip unknown pipeline' => sub {
+  plan tests => 2;
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
+  my $ppd = npg_pipeline::function::stage2pp->new(
+    product_conf_file_path => qq[$repo_dir/product_release_unknown_pp.yml],
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    timestamp              => $timestamp,
+    repository             => $dir);
+
+  my $ds;
+  lives_ok { $ds = $ppd->create }
+    'no error when job definition creation for a pipeline is not implemented';
+  is (scalar @{$ds}, 3, '3 definitions are returned');
 };
 
 1;

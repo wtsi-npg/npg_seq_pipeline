@@ -28,13 +28,14 @@ sub create_product_level {
 
   my @dirs = ();
 
-  # Create cache dir for short files, no_archive, archive
-  # and qc out directory for every product
+  # Create cache dir for short files, no_archive, pp_archive,
+  # archive and autoqc out directory for every product
   foreach my $p ( (map { @{$_} } values %{$self->products}) ) {
     push @dirs, ( map { $p->$_($self->archive_path()) }
                   qw/path qc_out_path short_files_cache_path/ ),
                 $p->path($self->no_archive_path()),
-                $p->stage1_out_path($self->no_archive_path());
+                $p->stage1_out_path($self->no_archive_path()),
+                $p->path($self->pp_archive_path());
   }
   # Create tileviz directory for lane products only
   push @dirs, ( map { $_->tileviz_path($self->archive_path()) }
@@ -118,6 +119,7 @@ sub create_top_level {
   push @dirs,
     $self->archive_path(),
     $self->no_archive_path(),
+    $self->pp_archive_path(),
     $self->status_files_path(),
     $self->_tileviz_index_dir_path(),
     $self->irods_publisher_rstart_dir_path();

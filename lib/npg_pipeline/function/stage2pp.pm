@@ -10,16 +10,16 @@ use File::Spec::Functions;
 
 use npg_pipeline::function::definition;
 use npg_pipeline::cache::reference;
+use npg_pipeline::runfolder_scaffold;
 
 extends 'npg_pipeline::base';
 with qw{ npg_pipeline::function::util
          npg_pipeline::product::release };
 with 'npg_common::roles::software_location' => { tools => [qw/nextflow/] };
 
-Readonly::Scalar my $FUNCTION_NAME => 'stage2pp';
-Readonly::Scalar my $MEMORY        => q{5000}; # memory in megabytes
+Readonly::Scalar my $FUNCTION_NAME => q[stage2pp];
+Readonly::Scalar my $MEMORY        => q[5000]; # memory in megabytes
 Readonly::Scalar my $CPUS          => 4;
-Readonly::Scalar my $CONFIG_FILE_KEY => join q[_], $FUNCTION_NAME, q[nf];
 
 Readonly::Scalar my $STUDY_CONFIG_SECTION_NAME => q[portable_pipelines];
 Readonly::Scalar my $PP_NAME_KEY               => q[pp_name];
@@ -67,19 +67,26 @@ sub create {
     $pps or next;
 
     foreach my $pp (@{$pps}) {
-      my $method = $pp->{$PP_NAME_KEY};
-      $method =~ s/\s+/_/gsmx;
-      $method =~ s/[-]+/_/gsmx;
+      my $method = $self->_canonical_name($pp->{$PP_NAME_KEY});
       $method = join q[_], q[], $method, q[create];
       if ($self->can($method)) {
         push @definitions, $self->$method($product, $pp);
       } else {
-        $self->error($pp->{$PP_NAME_KEY} . 'portable pipeline is not implemented');
+        $self->error(sprintf
+          '"%s" portable pipeline is not implemented, method %s is not available',
+          $pp->{$PP_NAME_KEY}, $method
+        );
       }
     }
   }
 
-  if (!@definitions) {
+  if (@definitions) {
+    (@definitions == @{$self->_output_dirs}) or $self->logcroak(
+      sprintf 'Number of definitions %i and output directories %i do not match',
+      scalar @definitions, scalar @{$self->_output_dirs}
+    );
+    npg_pipeline::runfolder_scaffold->make_dir(@{$self->_output_dirs});
+  } else {
     $self->debug('no stage2pp enabled data products, skipping');
     push @definitions, npg_pipeline::function::definition->new(
                          created_by => __PACKAGE__,
@@ -92,11 +99,55 @@ sub create {
   return \@definitions;
 }
 
+has '_output_dirs' => (
+  isa      =>' ArrayRef',
+  is       => 'ro',
+  required => 0,
+  default  => sub { return []; },
+);
+
+sub _product_dir_out4pp {
+  my ($self, $product, $pp) = @_;
+
+  my $path = catdir($product->path($self->pp_archive_path()),
+                    $self->_canonical_name($pp->{$PP_NAME_KEY}),
+                    $self->_canonical_name($pp->{$PP_VERSION_KEY}));
+  push @{$self->_output_dirs}, $path;
+
+  return $path;
+}
+
+has '_names_map' => (
+  isa      =>' HashRef',
+  is       => 'ro',
+  required => 0,
+  default  => sub { return {}; },
+);
+
+sub _canonical_name {
+  my ($self, $name) = @_;
+
+  if (!exists $self->_names_map->{$name}) {
+    my $canonical = $name;
+    # Anything that is not an alphanumerical character, dot or underscore
+    # is replaced by an underscore.
+    ##no critic (RegularExpressions::ProhibitEnumeratedClasses)
+    $canonical =~ s/[^0-9a-zA-Z_.]+/_/smxg;
+    $canonical =~ /[0-9a-zA-Z]/smx or $self->logcroak(
+      sprintf 'Canonical pp name %s for %s - not much left', $canonical, $name
+    );
+    ##use critic
+    $self->_names_map->{$name} = $canonical;
+  }
+
+  return $self->_names_map->{$name};
+}
+
 sub _ncov2019_artic_nf_create {
   my ($self, $product, $pp) = @_;
 
   my $in_dir_path  = $product->stage1_out_path($self->no_archive_path());
-  my $out_dir_path = $product->path($self->archive_path());
+  my $out_dir_path = $self->_product_dir_out4pp($product, $pp);
 
   my $ref_cache_instance   = npg_pipeline::cache::reference->instance();
   my $do_gbs_plex_analysis = 0;

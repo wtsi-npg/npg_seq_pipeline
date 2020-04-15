@@ -31,7 +31,7 @@ subtest 'tests for class methods' => sub {
 };
 
 subtest 'top level scaffold' => sub {
-  plan tests => 8;
+  plan tests => 9;
 
   my $util = t::util->new();
   my $rfh = $util->create_runfolder();
@@ -50,6 +50,7 @@ subtest 'top level scaffold' => sub {
   my $bbc_path = join q[/], $ip, 'BAM_basecalls_2018';
   ok (-e $bbc_path, 'bam basecalls directory created');
   ok (-e "$bbc_path/no_archive", 'no_archive directory created');
+  ok (-e "$bbc_path/pp_archive", 'npp_archive directory created');
   my $dir = "$bbc_path/no_cal";
   ok (-e $dir, 'no_cal directory created');
   $dir = "$dir/archive";
@@ -114,7 +115,7 @@ subtest 'product level scaffold, NovaSeq all lanes' => sub {
 };
 
 subtest 'product level scaffold, NovaSeq selected lanes' => sub {
-  plan tests => 152;
+  plan tests => 175;
 
   my $util = t::util->new();
   my $rfh = $util->create_runfolder();
@@ -136,6 +137,7 @@ subtest 'product level scaffold, NovaSeq selected lanes' => sub {
   $rfs->create_top_level();
   my $apath = join q[/], $ip, 'BAM_basecalls_2018', 'no_cal', 'archive';
   my $napath = join q[/], $ip, 'BAM_basecalls_2018', 'no_archive';
+  my $ppapath = join q[/], $ip, 'BAM_basecalls_2018', 'pp_archive';
   $rfs->create_product_level();
 
   my @original = qw/lane2 lane3/;
@@ -154,6 +156,7 @@ subtest 'product level scaffold, NovaSeq selected lanes' => sub {
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
   map { ok (-d $_, "$_ created") } map {join q[/], $apath, $_} @dirs;
   map { ok (-d $_, "$_ created") } map {join q[/], $napath, $_} @original;
+  map { ok (-d $_, "$_ created") } map {join q[/], $ppapath, $_} @original;
 
   my $tileviz_index = join q[/], $apath, 'tileviz', 'index.html';
   ok (-e $tileviz_index, 'tileviz index created');

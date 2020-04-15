@@ -1036,6 +1036,10 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunParameters.xml
 t/data/p4_stage1_analysis/1234_samplesheet.csv
 t/data/p4_stage1_analysis/TileMetricsOut.bin
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release.yml
+t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_no_pp.yml
+t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_no_study.yml
+t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_unknown_pp.yml
+t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_two_pps.yml
 t/data/products/samplesheet_novaseq4lanes.csv
 t/data/products/samplesheet_rapidrun_nopool.csv
 t/data/qc/1234_samplesheet_amended.csv
