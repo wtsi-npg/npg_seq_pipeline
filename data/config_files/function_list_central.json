@@ -49,11 +49,11 @@
          {
             "relation" : "dependsOn",
             "source" : "run_secondary_analysis_in_progress",
-            "target" : "seq_alignment"
+            "target" : "stage2pp"
          },
          {
             "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
+            "source" : "run_secondary_analysis_in_progress",
             "target" : "seq_alignment"
          },
          {
@@ -124,8 +124,8 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
-            "target" : "qc_upstream_tags"
+            "source" : "stage2pp",
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
@@ -185,11 +185,6 @@
          {
             "relation" : "dependsOn",
             "source" : "qc_verify_bam_id",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_upstream_tags",
             "target" : "qc_review"
          },
          {
@@ -274,6 +269,10 @@
             "label" : "p4_stage1_analysis"
          },
          {
+            "id" : "stage2pp",
+            "label" : "stage2pp"
+         },
+         {
             "id" : "update_ml_warehouse_1",
             "label" : "update_ml_warehouse"
          },
@@ -340,10 +339,6 @@
          {
             "id" : "qc_verify_bam_id",
             "label" : "qc_verify_bam_id"
-         },
-         {
-            "id" : "qc_upstream_tags",
-            "label" : "qc_upstream_tags"
          },
          {
             "id" : "qc_review",

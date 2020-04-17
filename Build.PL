@@ -74,6 +74,7 @@ my $builder = $class->new(
           'npg_common::roles::software_location'               => 0,
           'npg_tracking::data::reference::find'                => 0,
           'npg_tracking::data::reference::list'                => 0,
+          'npg_tracking::data::primer_panel'                   => 0,
           'npg_tracking::data::bait'                           => 0,
           'npg_tracking::data::transcriptome'                  => 0,
           'npg_tracking::data::gbs_plex'                       => 0,

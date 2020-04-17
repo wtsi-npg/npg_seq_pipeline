@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 57.10.0
+ - new function, stage2pp, for running portable pipelines straight
+   after stage1 in parallel to seq_alignment
+
 release 57.9.0
  - small change to seq_alignment.pm so it does not error if 
    gbs_plex_name (primer_panel) is set but lib type incompatible

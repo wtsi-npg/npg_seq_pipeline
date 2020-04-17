@@ -20,6 +20,7 @@ Readonly::Scalar my $QC_DIR_NAME                => q[qc];
 Readonly::Scalar my $CHUNK_DIR_NAME             => q[chunk];
 Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
 Readonly::Scalar my $TILEVIZ_DIR_NAME_PREFIX    => q[tileviz];
+Readonly::Scalar my $STAGE1_OUT_DIR_NAME        => q[stage1];
 
 =head1 NAME
 
@@ -316,12 +317,24 @@ sub chunk_out_path {
   return File::Spec->catdir($self->path($dir), $CHUNK_DIR_NAME);
 }
 
+=head2 stage1_out_path
+ 
+ Returns path for an unaligned *.cram for this product taking
+ argument directory path as a base.
+ 
+=cut
+
+sub stage1_out_path {
+  my ($self, $dir) = @_;
+  return File::Spec->catdir($self->path($dir), $STAGE1_OUT_DIR_NAME);
+}
+
 =head2 existing_qc_out_path
 
 Returns path for qc output directory for this product taking
 argument directory path as a base. Uses existing_path method
 of this object to find the product path. If either the product
-path or the qc_path does not exist, an error is reised.
+path or the qc_path does not exist, an error is raised.
  
 =cut
 
@@ -689,7 +702,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018, 2019 Genome Research Ltd
+Copyright (C) 2018,2019,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
