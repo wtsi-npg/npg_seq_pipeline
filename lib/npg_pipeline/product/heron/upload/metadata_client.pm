@@ -144,7 +144,7 @@ sub _handle_response {
     $self->info('Ignored ', $ignore);
   }
 
-  my $summary = sprintf q(POST to %s failed; %d errors, %d warnings, ) .
+  my $summary = sprintf q(POST to %s; %d errors, %d warnings, ) .
                             q(%d updated, %d ignored),
                         $uri, $content->{errors}, $content->{warnings},
                         scalar @{$content->{updated}},
