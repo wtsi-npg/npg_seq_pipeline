@@ -24,7 +24,7 @@ our $VERSION = '0';
 
 my $artic_primers_version;
 my $debug;
-my $dry_run;
+my $dry_run = 1;
 my $force_biosamples = 0;
 my @id_run;
 my $instrument_make;
@@ -67,7 +67,7 @@ GetOptions('artic_primers_version|' .
            'username=s'                          => \$username,
            'verbose'                             => \$verbose);
 
-my $level = $debug ? $DEBUG : $verbose ? $INFO : $WARN;
+my $level = ($debug or $dry_run) ? $DEBUG : $verbose ? $INFO : $WARN;
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $level,
                           utf8   => 1});
@@ -138,18 +138,19 @@ foreach my $id_run (@id_run) {
     }
 
     # Query ML warehouse for pool identifier to use as a surrogate for
-    # "library_name".Tag zero reads are those not assigned when deplexing.
+    # "library_name". If some rows in the iseq_product_metrics table are
+    # not linked to their counterpart rows in the iseq_flowcell_table,
+    # we are not going to know.
     my $rs = $warehouse_db->resultset('IseqProductMetric')->search
-        ({'me.id_run'    => $id_run,
-          'me.tag_index' => {'>' => 0}, # Ignore tag zero
-          'study.name'   => $study_name},
+        ({'me.id_run'                 => $id_run,
+          'iseq_flowcell.entity_type' => 'library_indexed',
+          'study.name'                => $study_name},
          {prefetch => {'iseq_flowcell' => ['sample', 'study']}});
 
-    # flowcell may be undef
-    my @flowcells = grep { defined } map { $_->iseq_flowcell } $rs->all;
+    my @flowcells = map { $_->iseq_flowcell } $rs->all;
     if (not @flowcells) {
       $log->info(sprintf q[No samples in run: %d, study: %s], $id_run, $study_name);
-      exit(0);
+      exit 0;
     }
 
     $library_selection = 'PCR';
@@ -167,9 +168,14 @@ foreach my $id_run (@id_run) {
 
     my %library_sample_ids;
     foreach my $flowcell (@flowcells) {
+      my $msg = sprintf 'run %d, position %i, tag_index %i',
+                        $id_run, $frow->position, $frow->tag_index;
       my $library_name = $flowcell->id_pool_lims; # Pool ID maps to library name
+      $library_name or croak "id_pool_lims is not defined for $msg";
       $library_sample_ids{$library_name} ||= [];
-      push @{$library_sample_ids{$library_name}}, $flowcell->sample->supplier_name;
+      my $sname = $flowcell->sample->supplier_name;
+      $sname or croak "sample supplier_name is not defined for $msg";
+      push @{$library_sample_ids{$library_name}}, $sname;
     }
 
     foreach my $library_name (sort keys %library_sample_ids) {
@@ -263,8 +269,8 @@ npg_heron_metadata_upload --id-run <id_run> [--id-run <id_run> ...]
 
    --debug                     Enable debug level logging. Optional, defaults
                                to false.
-   --dry-run
-   --dry_run                   Enable dry run. Optional, defaults to false.
+   --[no-]dry-run
+   --[no-]dry_run              Enable/disable dry run. Optional, defaults to true.
    --force_biosamples
    --force-biosamples          Force the creation of new biosamples if any in
                                library have not been registered. Optional,
