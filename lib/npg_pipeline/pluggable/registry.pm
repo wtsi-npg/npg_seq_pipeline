@@ -40,6 +40,7 @@ Readonly::Hash my %REGISTRY => (
   'create_summary_link_analysis' => {'current_analysis_link' => 'create'},
 
   'p4_stage1_analysis'      => {'p4_stage1_analysis' => 'generate'},
+  'stage2pp'                => {'stage2pp'           => 'create'},
   'seq_alignment'           => {'seq_alignment' => 'generate'},
   'generate_compositions'   => {'seq_alignment' => 'generate_compositions'},
   'bqsr_calc'               => {'bqsr_calc' => 'create'},
