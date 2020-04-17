@@ -224,22 +224,6 @@ else {
   $log->logcroak($msg);
 }
 
-sub _ensure_unique_value {
-  my ($name, $id_run, @values) = @_;
-
-   if (not @values) {
-      croak sprintf q[No %s found for run_id %d], $name, $id_run;
-    }
-
-    my $num_values = scalar @values;
-    if ($num_values > 1) {
-      croak sprintf q[Expected 1 %s in tracking for run_id %d, ] .
-                    q[but found %d: %s], $name, $id_run, $num_values, pp(\@values);
-    }
-
-    return $values[0];
-}
-
 1;
 
 __END__
