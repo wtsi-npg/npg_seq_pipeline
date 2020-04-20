@@ -48,7 +48,7 @@ my $verbose;
 GetOptions('artic_primers_version|' .
                'artic-primers-version=s'         => \$artic_primers_version,
            'debug'                               => \$debug,
-           'dry_run|dry-run'                     => \$dry_run,
+           'dry_run|dry-run!'                    => \$dry_run,
            'force_biosamples|force-biosamples'   => \$force_biosamples,
            'help'                    => sub {
              pod2usage(-verbose => 2, -exitval => 0);
