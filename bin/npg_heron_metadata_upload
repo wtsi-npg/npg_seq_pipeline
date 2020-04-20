@@ -169,7 +169,7 @@ foreach my $id_run (@id_run) {
     my %library_sample_ids;
     foreach my $flowcell (@flowcells) {
       my $msg = sprintf 'run %d, position %i, tag_index %i',
-                        $id_run, $frow->position, $frow->tag_index;
+                        $id_run, $flowcell->position, $flowcell->tag_index;
       my $library_name = $flowcell->id_pool_lims; # Pool ID maps to library name
       $library_name or croak "id_pool_lims is not defined for $msg";
       $library_sample_ids{$library_name} ||= [];
