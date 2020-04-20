@@ -65,7 +65,8 @@ has 'artic_protocol' =>
 has 'artic_primers_version' =>
     (isa           => 'Str',
      is            => 'ro',
-     required      => 1,
+     required      => 0,
+     predicate     => 'has_artic_primers_version',
      documentation => 'The version of the ARTIC primers used',);
 
 has 'sequencing_kit' =>
@@ -98,7 +99,6 @@ sub BUILD {
 
   # Zero is not a valid value for any of these
   $args->{name}                  or croak 'An empty name was supplied';
-  $args->{artic_primers_version} or croak 'An empty artic_primers_version was supplied';
 
   my $sel = $args->{selection};
   one { $sel eq $_ } @LIBRARY_SELECTIONS or croak "Invalid library selection '$sel'";
@@ -132,9 +132,10 @@ sub str {
 
   return sprintf q[{library: name: %s, artic primers version: %s, selection: %s, ] .
                  q[source: %s, strategy: %s, kit: %s, protocol: %s, layout: %s}],
-                 $self->name, $self->artic_primers_version, $self->selection,
-                 $self->source, $self->strategy, $self->sequencing_kit,
-                 $self->sequencing_protocol, $self->sequencing_layout_config;
+      $self->name,
+      $self->has_artic_primers_version ? $self->artic_primers_version : q(),
+      $self->selection, $self->source, $self->strategy, $self->sequencing_kit,
+      $self->sequencing_protocol, $self->sequencing_layout_config;
 }
 
 __PACKAGE__->meta->make_immutable;

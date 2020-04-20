@@ -217,17 +217,15 @@ sub _make_library_metadata {
       library_seq_kit       => $library->sequencing_kit,
       library_seq_protocol  => $library->sequencing_protocol,
       library_layout_config => $library->sequencing_layout_config,
-      metadata              => {
-          artic => {
-              primers => $library->artic_primers_version,
-          },
-      },
       biosamples            => \@sample_metadata,
       force_biosamples      => $force_biosamples,
   };
 
   if ($library->has_artic_protocol) {
     $metadata->{metadata}->{artic}->{protocol} = $library->artic_protocol;
+  }
+  if ($library->has_artic_primers_version) {
+    $metadata->{metadata}->{artic}->{primers} = $library->artic_primers_version;
   }
 
   return $metadata;
