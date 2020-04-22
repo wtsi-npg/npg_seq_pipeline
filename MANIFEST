@@ -1,4 +1,5 @@
 .travis.yml
+bin/npg_heron_metadata_upload
 bin/npg_pipeline_analysis_runner
 bin/npg_pipeline_archival_runner
 bin/npg_pipeline_central
@@ -68,6 +69,9 @@ lib/npg_pipeline/pluggable/registry.pm
 lib/npg_pipeline/product.pm
 lib/npg_pipeline/product/cache_merge.pm
 lib/npg_pipeline/product/chunk.pm
+lib/npg_pipeline/product/heron/upload/library.pm
+lib/npg_pipeline/product/heron/upload/metadata_client.pm
+lib/npg_pipeline/product/heron/upload/run.pm
 lib/npg_pipeline/product/release.pm
 lib/npg_pipeline/product/release/irods.pm
 lib/npg_pipeline/runfolder_scaffold.pm
@@ -104,11 +108,12 @@ t/10-validation-irods.t
 t/10-validation-s3.t
 t/10-validation.t
 t/15-pipeline_launcher_scripts.t
+t/15-product-heron-upload-metadata.t
 t/15-product-release.t
 t/20-function-autoqc.t
 t/20-function-autoqc_archiver.t
-t/20-function-cache_merge_component.t
 t/20-function-bqsr_calc.t
+t/20-function-cache_merge_component.t
 t/20-function-cluster_count.t
 t/20-function-current_analysis_link.t
 t/20-function-definition.t
@@ -140,8 +145,6 @@ t/bin/bsub
 t/bin/dodo/machine-location
 t/bin/machine-location
 t/bin/red/machine-location
-t/data/no_reads.cram
-t/data/eight_reads.cram
 t/data/bam_flagstats/1234_1_bam_flagstats.json
 t/data/bam_flagstats/1234_3_bam_flagstats.json
 t/data/bam_flagstats/1234_3_phix_bam_flagstats.json
@@ -171,6 +174,7 @@ t/data/dbic_fixtures/300-Run.yml
 t/data/dbic_fixtures/350-RunLane.yml
 t/data/dbic_fixtures/400-RunLaneStatus.yml
 t/data/dbic_fixtures/400-RunStatus.yml
+t/data/eight_reads.cram
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/no_cal/archive/lane1/8747_bfs_fofn.txt
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/no_cal/archive/lane1/8747_sf_fofn.txt
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/no_cal/archive/lane1/qc/8747_1#0_bam_flagstats.json
@@ -253,6 +257,7 @@ t/data/miseq/samplesheet_20990.csv
 t/data/miseq/samplesheet_24135.csv
 t/data/miseq/samplesheet_24135_bwa_mem2.csv
 t/data/miseq/samplesheet_24135_V2.csv
+t/data/no_reads.cram
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291_updated.csv
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/26291#0_p4s2_pv_in.json
@@ -396,8 +401,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/26291#1.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/26291#1_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/26291#1_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/26291#1_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/26291#1_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/26291#1_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/26291#1_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/26291#1_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/26291#1_phix.bam.md5
@@ -426,8 +431,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/qc/26291#1.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/qc/26291#1_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/qc/26291#1_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/qc/26291#1_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/qc/26291#1_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/qc/26291#1_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/qc/26291#1_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/qc/26291#1_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex1/qc/26291#1_phix_F0x900.samtools_stats.json
@@ -450,8 +455,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/26291#10.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/26291#10_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/26291#10_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/26291#10_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/26291#10_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/26291#10_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/26291#10_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/26291#10_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/26291#10_phix.bam.md5
@@ -478,8 +483,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/qc/26291#10.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/qc/26291#10_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/qc/26291#10_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/qc/26291#10_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/qc/26291#10_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/qc/26291#10_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/qc/26291#10_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/qc/26291#10_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex10/qc/26291#10_phix_F0x900.samtools_stats.json
@@ -502,8 +507,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/26291#11.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/26291#11_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/26291#11_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/26291#11_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/26291#11_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/26291#11_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/26291#11_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/26291#11_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/26291#11_phix.bam.md5
@@ -530,8 +535,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/qc/26291#11.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/qc/26291#11_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/qc/26291#11_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/qc/26291#11_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/qc/26291#11_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/qc/26291#11_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/qc/26291#11_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/qc/26291#11_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex11/qc/26291#11_phix_F0x900.samtools_stats.json
@@ -554,8 +559,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12_phix.bam.md5
@@ -582,8 +587,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/qc/26291#12.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/qc/26291#12_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/qc/26291#12_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/qc/26291#12_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/qc/26291#12_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/qc/26291#12_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/qc/26291#12_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/qc/26291#12_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/qc/26291#12_phix_F0x900.samtools_stats.json
@@ -606,8 +611,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/26291#2.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/26291#2_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/26291#2_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/26291#2_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/26291#2_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/26291#2_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/26291#2_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/26291#2_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/26291#2_phix.bam.md5
@@ -634,8 +639,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/qc/26291#2.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/qc/26291#2_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/qc/26291#2_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/qc/26291#2_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/qc/26291#2_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/qc/26291#2_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/qc/26291#2_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/qc/26291#2_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex2/qc/26291#2_phix_F0x900.samtools_stats.json
@@ -658,8 +663,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/26291#3.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/26291#3_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/26291#3_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/26291#3_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/26291#3_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/26291#3_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/26291#3_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/26291#3_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/26291#3_phix.bam.md5
@@ -686,8 +691,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/qc/26291#3.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/qc/26291#3_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/qc/26291#3_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/qc/26291#3_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/qc/26291#3_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/qc/26291#3_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/qc/26291#3_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/qc/26291#3_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/qc/26291#3_phix_F0x900.samtools_stats.json
@@ -710,8 +715,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/26291#4_phix.bam.md5
@@ -738,8 +743,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/qc/26291#4.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/qc/26291#4_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/qc/26291#4_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/qc/26291#4_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/qc/26291#4_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/qc/26291#4_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/qc/26291#4_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/qc/26291#4_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex4/qc/26291#4_phix_F0x900.samtools_stats.json
@@ -762,8 +767,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/26291#5.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/26291#5_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/26291#5_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/26291#5_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/26291#5_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/26291#5_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/26291#5_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/26291#5_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/26291#5_phix.bam.md5
@@ -790,8 +795,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/qc/26291#5.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/qc/26291#5_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/qc/26291#5_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/qc/26291#5_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/qc/26291#5_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/qc/26291#5_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/qc/26291#5_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/qc/26291#5_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex5/qc/26291#5_phix_F0x900.samtools_stats.json
@@ -814,8 +819,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/26291#6.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/26291#6_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/26291#6_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/26291#6_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/26291#6_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/26291#6_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/26291#6_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/26291#6_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/26291#6_phix.bam.md5
@@ -842,8 +847,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/qc/26291#6.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/qc/26291#6_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/qc/26291#6_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/qc/26291#6_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/qc/26291#6_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/qc/26291#6_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/qc/26291#6_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/qc/26291#6_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex6/qc/26291#6_phix_F0x900.samtools_stats.json
@@ -866,8 +871,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/26291#7.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/26291#7_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/26291#7_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/26291#7_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/26291#7_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/26291#7_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/26291#7_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/26291#7_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/26291#7_phix.bam.md5
@@ -894,8 +899,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/qc/26291#7.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/qc/26291#7_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/qc/26291#7_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/qc/26291#7_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/qc/26291#7_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/qc/26291#7_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/qc/26291#7_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/qc/26291#7_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex7/qc/26291#7_phix_F0x900.samtools_stats.json
@@ -918,8 +923,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/26291#8.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/26291#8_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/26291#8_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/26291#8_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/26291#8_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/26291#8_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/26291#8_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/26291#8_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/26291#8_phix.bam.md5
@@ -946,8 +951,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/qc/26291#8.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/qc/26291#8_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/qc/26291#8_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/qc/26291#8_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/qc/26291#8_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/qc/26291#8_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/qc/26291#8_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/qc/26291#8_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex8/qc/26291#8_phix_F0x900.samtools_stats.json
@@ -997,8 +1002,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/26291#9.spatial_filter.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/26291#9_F0x900.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/26291#9_F0xB00.stats
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/26291#9_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/26291#9_F0xF04_target.stats
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/26291#9_F0xF04_target_autosome.stats
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/26291#9_phix.bai
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/26291#9_phix.bam
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/26291#9_phix.bam.md5
@@ -1025,8 +1030,8 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/qc/26291#9.verify_bam_id.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/qc/26291#9_F0x900.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/qc/26291#9_F0xB00.samtools_stats.json
-t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/qc/26291#9_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/qc/26291#9_F0xF04_target.samtools_stats.json
+t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/qc/26291#9_F0xF04_target_autosome.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/qc/26291#9_phix.bam_flagstats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/qc/26291#9_phix.sequence_summary.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/qc/26291#9_phix_F0x900.samtools_stats.json
@@ -1057,8 +1062,8 @@ t/data/qc_outcomes/fixtures/400-mqc_library_outcome_ent.yml
 t/data/qc_outcomes/fixtures/README
 t/data/release/config/archive_off/product_release.yml
 t/data/release/config/archive_on/product_release.yml
-t/data/release/config/bqsr_on_study_specific/product_release.yml
 t/data/release/config/bqsr_off/product_release.yml
+t/data/release/config/bqsr_on_study_specific/product_release.yml
 t/data/release/config/default_s3_archival/product_release.yml
 t/data/release/config/disregard_qc_outcome/product_release.yml
 t/data/release/config/empty_default/product_release.yml
@@ -1126,3 +1131,4 @@ t/dbic_util.pm
 t/log4perl_test.conf
 t/perlcriticrc
 t/util.pm
+
