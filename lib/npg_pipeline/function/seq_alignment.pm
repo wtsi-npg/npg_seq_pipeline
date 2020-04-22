@@ -432,6 +432,15 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
     if($p4_param_vals->{markdup_method} eq q[none]) {
       $skip_target_markdup_metrics = 1;
+
+      if(my $pcb=npg_pipeline::cache::reference->instance->get_primer_panel_bed_file($dp)) {
+        $p4_param_vals->{primer_clip_bed} = $pcb;
+        $self->info(qq[No markdup with primer panel: $pcb]);
+      }
+      else {
+        $p4_param_vals->{primer_clip_method} = q[no_clip];
+        $self->info(q[No markdup, no primer panel]);
+      }
     }
   }
   elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$do_gbs_plex && !$is_chromium_lib) {
