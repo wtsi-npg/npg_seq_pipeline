@@ -68,7 +68,6 @@ lib/npg_pipeline/pluggable/registry.pm
 lib/npg_pipeline/product.pm
 lib/npg_pipeline/product/cache_merge.pm
 lib/npg_pipeline/product/chunk.pm
-lib/npg_pipeline/product/heron/
 lib/npg_pipeline/product/heron/upload/library.pm
 lib/npg_pipeline/product/heron/upload/metadata_client.pm
 lib/npg_pipeline/product/heron/upload/run.pm
