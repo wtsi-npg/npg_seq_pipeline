@@ -35,7 +35,6 @@ has 'api_uri' =>
   (isa           => 'URI',
    is            => 'ro',
    required      => 1,
-   default       => sub { return URI->new('https://localhost') },
    documentation => 'COG-UK API endpoint URI to receive sequencing metadata',);
 
 =head2 send_library_metadata
