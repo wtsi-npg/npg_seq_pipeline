@@ -91,10 +91,6 @@ if (not $token) {
   pod2usage(-msg => 'A --token argument is required',  -exitval => 2);
 }
 
-if (not defined $artic_primers_version) {
-  pod2usage(-msg => 'A --artic-primers-version argument is required',  -exitval => 2);
-}
-
 if ($force_biosamples) {
   $log->warn('Overriding default to force biosample creation');
 
@@ -184,16 +180,19 @@ foreach my $id_run (@id_run) {
       $log->info(sprintf q[Found %d samples in run %d, library: %s],
                          $num_samples, $id_run, $library_name);
 
+      my @initargs = (name                     => $library_name,
+                      selection                => $library_selection,
+                      source                   => $library_source,
+                      strategy                 => $library_strategy,
+                      sequencing_kit           => $sequencing_kit,
+                      sequencing_layout_config => $sequencing_layout_config,
+                      sequencing_protocol      => $sequencing_protocol,);
+      if ($artic_primers_version) {
+        push @initargs, artic_primers_version => $artic_primers_version;
+      }
+
       if ($num_samples > 0) {
-        my $library = npg_pipeline::product::heron::upload::library->new
-            (name                     => $library_name,
-             selection                => $library_selection,
-             source                   => $library_source,
-             strategy                 => $library_strategy,
-             artic_primers_version    => $artic_primers_version,
-             sequencing_kit           => $sequencing_kit,
-             sequencing_layout_config => $sequencing_layout_config,
-             sequencing_protocol      => $sequencing_protocol);
+        my $library = npg_pipeline::product::heron::upload::library->new(@initargs);
 
         my $run = npg_pipeline::product::heron::upload::run->new
             (name             => $run_name,
@@ -236,10 +235,10 @@ npg_heron_metadata_upload
 
 npg_heron_metadata_upload --id-run <id_run> [--id-run <id_run> ...]
   --study-name <study name>
-  --artic-primers-version <version>
   --url <upload base URL>
   --username <API user name> --token <API access token>
   [--force-biosamples]
+  [--artic-primers-version <version>]
   [--sequencing-kit <sequencing kit override>]
   [--sequencing-protocol <sequencing protocol override>]
   [--sequencing-layout-config <sequencing layout config override>]
@@ -249,7 +248,7 @@ npg_heron_metadata_upload --id-run <id_run> [--id-run <id_run> ...]
   [--dry-run] [--debug] [--verbose]
 
  Options:
-   --artic-primers-version     ARTIC primers version (e.g. 2, 3). Required.
+   --artic-primers-version     ARTIC primers version (e.g. 2, 3). Optional.
 
    --debug                     Enable debug level logging. Optional, defaults
                                to false.
