@@ -7,6 +7,8 @@ use Readonly;
 
 our $VERSION = '0';
 
+extends qw(npg_pipeline::pluggable);
+
 =head1 NAME
 
 npg_pipeline::pluggable::registry
@@ -54,6 +56,7 @@ Readonly::Hash my %REGISTRY => (
 
   'bam_cluster_counter_check'=> {'cluster_count' => 'create'},
   'seqchksum_comparator'     => {'seqchksum_comparator' => 'create'},
+  'showback'     => {'showback' => 'create'},
   'archive_to_s3'            => {'s3_archiver' => 'create'},
   'notify_product_delivery'  => {'product_delivery_notifier' => 'create'},
   'cache_merge_component'    => {'cache_merge_component' => 'create'},
@@ -106,6 +109,9 @@ sub _build__registry {
     my $new_definition = {};
     $new_definition->{'module'} = (keys   %{$definition})[0];
     $new_definition->{'method'} = (values %{$definition})[0];
+    if ($function_name eq 'showback') {
+      $new_definition->{'params'} = {'executor' => $self->executor_type()};
+    }
     $r->{$function_name} = $new_definition;
   }
 

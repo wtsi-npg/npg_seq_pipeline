@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - new function 'showback' added to end of run.
+
 release 57.10.0
  - new function, stage2pp, for running portable pipelines straight
    after stage1 in parallel to seq_alignment
