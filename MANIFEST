@@ -74,6 +74,7 @@ lib/npg_pipeline/product/heron/upload/metadata_client.pm
 lib/npg_pipeline/product/heron/upload/run.pm
 lib/npg_pipeline/product/release.pm
 lib/npg_pipeline/product/release/irods.pm
+lib/npg_pipeline/product/release/portable_pipeline.pm
 lib/npg_pipeline/runfolder_scaffold.pm
 lib/npg_pipeline/validation.pm
 lib/npg_pipeline/validation/autoqc.pm
