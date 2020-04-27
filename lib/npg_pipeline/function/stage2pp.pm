@@ -15,7 +15,8 @@ use npg_pipeline::runfolder_scaffold;
 extends 'npg_pipeline::base';
 with qw{ npg_pipeline::function::util
          npg_pipeline::product::release };
-with 'npg_common::roles::software_location' => { tools => [qw/nextflow/] };
+with 'npg_common::roles::software_location' =>
+  { tools => [qw/nextflow npg_simple_robo4artic/] };
 
 Readonly::Scalar my $FUNCTION_NAME => q[stage2pp];
 Readonly::Scalar my $MEMORY        => q[5000]; # memory in megabytes
@@ -31,6 +32,8 @@ Readonly::Scalar my $JOB_NAME_SUBSTR_LENGTH    => 5;
 our $VERSION = '0';
 
 =head2 nextflow_cmd
+
+=head2 npg_simple_robo4artic_cmd
 
 =head2 create
 
@@ -148,6 +151,7 @@ sub _ncov2019_artic_nf_create {
 
   my $in_dir_path  = $product->stage1_out_path($self->no_archive_path());
   my $out_dir_path = $self->_product_dir_out4pp($product, $pp);
+  my $qc_out_path  = $product->qc_out_path($self->archive_path());
 
   my $ref_cache_instance   = npg_pipeline::cache::reference->instance();
   my $do_gbs_plex_analysis = 0;
@@ -176,14 +180,35 @@ sub _ncov2019_artic_nf_create {
   my $pp_dir = catdir($pp->{$PP_ROOT_KEY}, $pp->{$PP_NAME_KEY}, $pp->{$PP_VERSION_KEY});
   (-d $pp_dir) or $self->logcroak("$pp_dir does not exist or is not a directory");
 
+  # Run artic
   # And yes, it's -profile, not --profile!
   my $command = join q[ ], $self->nextflow_cmd(), "run $pp_dir",
-                             '-profile singularity,sanger',
-                             '--illumina --cram --prefix ' . $self->label,
-                             "--ref $ref_path",
-                             "--bed $bed_file",
-                             "--directory $in_dir_path",
-                             "--outdir $out_dir_path";
+                           '-profile singularity,sanger',
+                           '--illumina --cram --prefix ' . $self->label,
+                           "--ref $ref_path",
+                           "--bed $bed_file",
+                           "--directory $in_dir_path",
+                           "--outdir $out_dir_path";
+  my @commands = ($command);
+
+  my $artic_qc_summary = catfile($out_dir_path, $self->label . '.qc.csv');
+
+  # Check that the artic QC summary exists, fail early if not.
+  $command = qq{ ([ -f $artic_qc_summary ] && echo 'Found $artic_qc_summary')} .
+             qq{ || (echo 'Not found $artic_qc_summary' && /bin/false) };
+  push @commands, $command;
+
+  # Use the summary to create the autoqc review result.
+  # The result will not necessary be created, but this would not be an error.
+  # The npg_simple_robo4artic will exit early with success exit code if the supplier
+  # sample name does not conform to a certain pattern or if the summary is empty,
+  # which can happen in case of zero input reads.
+  $command = join q[ ], 'cat', $artic_qc_summary, q[|],
+                        $self->npg_simple_robo4artic_cmd(), $qc_out_path;
+  push @commands, $command;
+
+  $command = join q[ && ], map { q[(] . $_ . q[)] } @commands;
+
   $job_attrs{'command'}  = $command;
   $job_attrs{'job_name'} = join q[_], $FUNCTION_NAME, $pp_id, $self->label();
 

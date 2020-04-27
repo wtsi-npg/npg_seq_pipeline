@@ -12,11 +12,13 @@ my $dir = tempdir( CLEANUP => 1);
 
 use_ok('npg_pipeline::function::stage2pp');
 
-my $nf_exec = join q[/], $dir, 'nextflow';
-open my $fh1, '>', $nf_exec or die 'failed to open file for writing';
-print $fh1 'echo "nextflow mock"' or warn 'failed to print';
-close $fh1 or warn 'failed to close file handle';
-chmod 755, $nf_exec;
+for my $name (qw/npg_simple_robo4artic nextflow/) {
+  my $exec = join q[/], $dir, $name;
+  open my $fh1, '>', $exec or die 'failed to open file for writing';
+  print $fh1 'echo "$name mock"' or warn 'failed to print';
+  close $fh1 or warn 'failed to close file handle';
+  chmod 755, $exec;
+}
 local $ENV{PATH} = join q[:], $dir, $ENV{PATH};
 
 my $logfile = join q[/], $dir, 'logfile';
@@ -132,31 +134,42 @@ subtest 'definition generation' => sub {
   is (scalar @{$ds}, 3, '3 definitions are returned');
   isa_ok ($ds->[0], 'npg_pipeline::function::definition');
   is ($ds->[0]->excluded, undef, 'function is not excluded');
-  my $command =          "$dir/nextflow run $nf_dir " .
+
+  my $command =          "($dir/nextflow run $nf_dir " .
                          '-profile singularity,sanger ' .
                          '--illumina --cram --prefix 26291 ' .
                          "--ref $bwa_dir/MN908947.3.fa " .
-                         "--bed $pp_repository/default/SARS-CoV-2/MN908947.3/nCoV-2019.bed ".
-                         "--directory $no_archive_path/plex1/stage1";
-  is ($ds->[0]->command, "$command --outdir $out_dirs[0]",
-    'correct command for plex 1');
+                         "--bed $pp_repository/default/SARS-CoV-2/MN908947.3/nCoV-2019.bed";
+
+  my $summary_file = join q[/], $out_dirs[0], '26291.qc.csv';
+  my $c  = "$command --directory $no_archive_path/plex1/stage1 --outdir $out_dirs[0])" .
+           ' && ' .
+           "( ([ -f $summary_file ] && echo 'Found $summary_file') || (echo 'Not found $summary_file' && /bin/false) )" .
+           ' && ' .
+           "(cat $summary_file | $dir/npg_simple_robo4artic $archive_path/plex1/qc)";
+  my $c0 = $c;
+  is ($ds->[0]->command, $c, 'correct command for plex 1');
   is ($ds->[0]->job_name, 'stage2pp_ncov2cf011_26291', 'job name');
-  is ($ds->[1]->command, "$dir/nextflow run $nf_dir " .
-                         '-profile singularity,sanger ' .
-                         '--illumina --cram --prefix 26291 ' .
-                         "--ref $bwa_dir/MN908947.3.fa " .
-                         "--bed $pp_repository/V2/SARS-CoV-2/MN908947.3/nCoV-2019.bed ".
-                         "--directory $no_archive_path/plex2/stage1 " .
-                         "--outdir $out_dirs[1]",
-    'correct command for plex 2');
-  is ($ds->[2]->command, "$dir/nextflow run $nf_dir " .
-                         '-profile singularity,sanger ' .
-                         '--illumina --cram --prefix 26291 ' .
-                         "--ref $bwa_dir/MN908947.3.fa " .
-                         "--bed $pp_repository/V3/SARS-CoV-2/MN908947.3/nCoV-2019.bed ".
-                         "--directory $no_archive_path/plex3/stage1 " .
-                         "--outdir $out_dirs[2]",
-    'correct command for plex 3');
+
+  my $c_copy = $command;
+  $c_copy =~ s/default/V2/;
+  $summary_file = join q[/], $out_dirs[1], '26291.qc.csv';
+  $c  =    "$c_copy --directory $no_archive_path/plex2/stage1 --outdir $out_dirs[1])"  .
+           ' && ' .
+           "( ([ -f $summary_file ] && echo 'Found $summary_file') || (echo 'Not found $summary_file' && /bin/false) )" .
+           ' && ' .
+           "(cat $summary_file | $dir/npg_simple_robo4artic $archive_path/plex2/qc)";
+  is ($ds->[1]->command, $c, 'correct command for plex 2');
+
+  $c_copy = $command;
+  $c_copy =~ s/default/V3/;
+  $summary_file = join q[/], $out_dirs[2], '26291.qc.csv';
+  $c  =    "$c_copy --directory $no_archive_path/plex3/stage1 --outdir $out_dirs[2])"  .
+           ' && ' .
+           "( ([ -f $summary_file ] && echo 'Found $summary_file') || (echo 'Not found $summary_file' && /bin/false) )" .
+           ' && ' .
+           "(cat $summary_file | $dir/npg_simple_robo4artic $archive_path/plex3/qc)";
+  is ($ds->[2]->command, $c, 'correct command for plex 3');
 
   $ppd = npg_pipeline::function::stage2pp->new(
     product_conf_file_path => qq[$repo_dir/../v.3/product_release_two_pps.yml],
@@ -168,12 +181,9 @@ subtest 'definition generation' => sub {
 
   $ds = $ppd->create;
   is (scalar @{$ds}, 6, '6 definitions are returned');
-  is ($ds->[0]->command, "$command --outdir $out_dirs[0]",
-    'correct command for plex 1');
-  $command =~ s/cf01166c42a/v.3/;
-  is ($ds->[1]->command,
-    "$command --outdir $pp_archive_path/plex1/ncov2019_artic_nf/v.3",
-    'correct command for plex 1 for the second pipeline');
+  is ($ds->[0]->command, $c0, 'correct command for plex 1');
+  $c0 =~ s/cf01166c42a/v.3/g;
+  is ($ds->[1]->command, $c0, 'correct command for plex 1 for the second pipeline');
 };
 
 subtest 'step skipped' => sub {
