@@ -632,7 +632,7 @@ sub final_seqqc_objs {
 =head2 final_libqc_obj
 
   Returns a DBIx row object representing a final library QC outcome.
-  Returns an undefined value if the the final library QC outcome is
+  Returns an undefined value if the final library QC outcome is
   not available for this product.
 
   npg_qc::Schema object argument is required.
@@ -654,6 +654,28 @@ sub final_libqc_obj {
   }
 
   return;
+}
+
+=head2 uqc_obj
+
+  Returns a DBIx row object representing a utility (user) QC outcome.
+  Returns an undefined value if the this type of QC outcome is not
+  available for this product.
+
+  npg_qc::Schema object argument is required.
+
+    my $uqc_obj = $p->uqc_obj($schema);
+    print $uqc_obj->is_accepted;
+
+=cut
+
+sub uqc_obj {
+  my ($self, $schema) = @_;
+
+  $schema or croak 'qc schema argument is required';
+
+  return $schema->resultset('UqcOutcomeEnt')
+                ->search_via_composition([$self->composition])->next;
 }
 
 __PACKAGE__->meta->make_immutable;
