@@ -15,23 +15,6 @@ our $VERSION = '0';
 
 =head1 SUBROUTINES/METHODS
 
-=head2 qc_schema
-
-Lazy-build attribute. The builder method in this role returns a
-DBIx database connection object. The attribute is allowed to be
-undefined in order to prevent, if necessary, the automatic connection
-to a database in consuming classes, which can be achieved by
-supplying a custom builder method.
-
-=cut
-
-has 'qc_schema' =>
-  (isa        => 'Maybe[npg_qc::Schema]',
-   is         => 'ro',
-   required   => 1,
-   builder    => '_build_qc_schema',
-   lazy       => 1,);
-
 =head2 expected_files
 
   Arg [1]    : Data product whose files to list, npg_pipeline::product.
@@ -146,14 +129,20 @@ sub has_qc_for_release {
     return 1;
   }
 
-  my @seqqc = $product->final_seqqc_objs($self->qc_schema);
+  my $qc_db_accessor = 'qc_schema';
+  $self->can($qc_db_accessor) or $self->logcroak(
+    "$qc_db_accessor attribute should be implemented");
+  $self->$qc_db_accessor or $self->logcroak(
+    "$qc_db_accessor connection should be defined");
+
+  my @seqqc = $product->final_seqqc_objs($self->$qc_db_accessor);
   @seqqc or $self->logcroak("Product $name, $rpt are not all Final seq QC values");
 
   if(not all { $_->is_accepted }  @seqqc) {
     $self->info("Product $name, $rpt are not all Final Accepted seq QC values");
     return 0;
   }
-  my $libqc_obj = $product->final_libqc_obj($self->qc_schema);
+  my $libqc_obj = $product->final_libqc_obj($self->$qc_db_accessor);
   # Lib outcomes are not available for full lane libraries, so the code below
   # might give an error when absence of QC outcome is legitimate.
   $libqc_obj or $self->logcroak("Product $name, $rpt is not Final lib QC value");
@@ -402,12 +391,6 @@ sub is_for_s3_release_notification {
   $self->info("Product $name, $rpt is NOT for S3 release notification");
 
   return 0;
-}
-
-sub _build_qc_schema {
-  my ($self) = @_;
-
-  return npg_qc::Schema->connect();
 }
 
 =head2 haplotype_caller_enable
