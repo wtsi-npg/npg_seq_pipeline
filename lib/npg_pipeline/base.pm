@@ -59,7 +59,7 @@ within npg_pipeline package
 
 =head2 npg_tracking_schema
 
-=head2 npg_qc_schema
+=head2 qc_schema
 
 An attribute caching a connection to a QC database.
 The attribute is allowed to be undefined and is implicitly undefined
