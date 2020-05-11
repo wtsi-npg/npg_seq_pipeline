@@ -209,7 +209,7 @@ subtest 'product config for pp archival validation' => sub {
 };
 
 subtest 'definition and manifest generation' => sub {
-  plan tests => 62;
+  plan tests => 41;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
   my $id_run = 26291;
@@ -228,26 +228,36 @@ subtest 'definition and manifest generation' => sub {
   };
 
   my $f = npg_pipeline::function::pp_archiver->new($init);
+  my $ds = $f->create();
+  is (scalar @{$ds}, 1, '1 definition is returned');
+  is ($ds->[0]->excluded, 1, 'function is excluded - supplier sample name mismatch');
+
+  my $ss = read_file($ENV{NPG_CACHED_SAMPLESHEET_FILE});
+  # Change supplier sample names
+  $ss =~ s/,A1,/,AAMB-M4567,/g;
+  $ss =~ s/,C1,/,BRIS-K5678,/g;
+  $ss =~ s/,B1,/,BIRM-Z4378,/g;
+  my $new_ss = join(q[/], $dir, 'samplesheet_33990.csv');
+  write_file($new_ss, $ss);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $new_ss;
+  
+  $f = npg_pipeline::function::pp_archiver->new($init);
   throws_ok { $f->create }
-    qr/qc schema argument is required/, 'db access is required';
+    qr/qc_schema connection should be defined/, 'db access is required';
 
   my $schema = Moose::Meta::Class->create_anon_class(roles => [qw/npg_testing::db/])
     ->new_object()->create_test_db(q[npg_qc::Schema], q[t/data/qc_outcomes/fixtures]);
-  my $uqc_rs = $schema->resultset(q[UqcOutcomeEnt]);
-  is ($uqc_rs->search({})->count, 0, 'no data in uqc_outcome table');
+  my $mqc_rs = $schema->resultset(q[MqcLibraryOutcomeEnt]);
+  $mqc_rs->delete(); # ensure no data
 
   $init->{qc_schema} = $schema;
   
-  my %dict = map { $_->short_desc => $_->id_uqc_outcome }
-             $schema->resultset(q[UqcOutcomeDict])->search({})->all();
-  
   $f = npg_pipeline::function::pp_archiver->new($init);
-  my $manifest_path = $f->_manifest_path;
-  ok (!-e $manifest_path, 'manifest file does not exist');
-  my $ds = $f->create();
-  ok (!-e $manifest_path, 'manifest file does not exist');
-  is (scalar @{$ds}, 1, '1 definition is returned');
-  is ($ds->[0]->excluded, 1, 'no uqc outcomes, function is excluded');
+  throws_ok { $f->create }
+    qr/is not Final lib QC value/, 'qc outcomes are not set';
+
+  my %dict = map { $_->short_desc => $_->id_mqc_library_outcome }
+             $schema->resultset(q[MqcLibraryOutcomeDict])->search({})->all();
 
   my $rows = {};
   my $cclass = q[npg_tracking::glossary::composition::component::illumina];
@@ -258,19 +268,37 @@ subtest 'definition and manifest generation' => sub {
       $cclass->new(id_run => $id_run, position => 1, tag_index => $tag_index),
       $cclass->new(id_run => $id_run, position => 2, tag_index => $tag_index),
     ]);
-    my $id = $uqc_rs->find_or_create_seq_composition($c)->id_seq_composition;
-    $rows->{$tag_index} = $uqc_rs->create({
-                             id_seq_composition => $id,
-                             id_uqc_outcome     => $dict{'Accepted'},
-                             username           => 'cat',
-                             modified_by        => 'dog',
-                             rationale          => 'test',
-                             last_modified      => $time
+    my $id = $mqc_rs->find_or_create_seq_composition($c)->id_seq_composition;
+    $rows->{$tag_index} = $mqc_rs->create({
+                             id_seq_composition     => $id,
+                             id_mqc_outcome         => $dict{'Accepted final'},
+                             username               => 'cat',
+                             modified_by            => 'dog',
+                             last_modified          => $time
                            });
   }
 
+  my %seq_dict = map { $_->short_desc => $_->id_mqc_outcome }
+                 $schema->resultset(q[MqcOutcomeDict])->search({})->all();
+  my $smqc_rs = $schema->resultset(q[MqcOutcomeEnt]);
+  $smqc_rs->delete(); # ensure no data
+   
+  for my $p ((1, 2)) {
+    my $c = npg_tracking::glossary::composition->new(components => [
+      $cclass->new(id_run => $id_run, position => $p)
+    ]);
+    my $id = $mqc_rs->find_or_create_seq_composition($c)->id_seq_composition;
+    $smqc_rs->create({
+                      id_seq_composition => $id,
+                      id_mqc_outcome     => $seq_dict{'Accepted final'},
+                      username           => 'cat',
+                      modified_by        => 'dog',
+                      last_modified      => $time
+                    });
+  }  
+
   $f = npg_pipeline::function::pp_archiver->new($init);
-  $manifest_path = $f->_manifest_path;
+  my $manifest_path = $f->_manifest_path;
   ok (!-e $manifest_path, 'manifest file does not exist');
   $ds = $f->create();
   ok (-e $manifest_path, 'manifest file exists');
@@ -295,7 +323,7 @@ subtest 'definition and manifest generation' => sub {
     qw(sample_name files_glob staging_archive_path product_json id_product)) . qq[\n],
     'correct header line');
   my @line = (
-    'A1',
+    'AAMB-M4567',
     "$pp_archive_path/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
     "$dir/staging/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX",
     '{"components":[{"id_run":26291,"position":1,"tag_index":1},{"id_run":26291,"position":2,"tag_index":1}]}',
@@ -303,7 +331,7 @@ subtest 'definition and manifest generation' => sub {
   );
   is ((shift @lines), join(qq[\t], @line), 'correct line for merged plex 1');
 
-  $rows->{1}->update({id_uqc_outcome => $dict{'Rejected'}});
+  $rows->{1}->update({id_mqc_outcome => $dict{'Rejected final'}});
 
   $f = npg_pipeline::function::pp_archiver->new($init);
   $manifest_path = $f->_manifest_path;
@@ -314,7 +342,7 @@ subtest 'definition and manifest generation' => sub {
   is (scalar @lines, 3, 'manifest contains 3 lines');
   unlink $manifest_path;
 
-  $rows->{2}->update({id_uqc_outcome => $dict{'Undecided'}});
+  $rows->{2}->update({id_mqc_outcome => $dict{'Undecided final'}});
 
   $f = npg_pipeline::function::pp_archiver->new($init);
   $manifest_path = $f->_manifest_path;
@@ -325,16 +353,6 @@ subtest 'definition and manifest generation' => sub {
   is (scalar @lines, 2, 'manifest contains 2 lines');
   unlink $manifest_path;
 
-  $rows->{3}->delete();
-
-  $f = npg_pipeline::function::pp_archiver->new($init);
-  $manifest_path = $f->_manifest_path;
-  ok (!-e $manifest_path, 'manifest file does not exist');
-  $ds = $f->create();
-  ok (!-e $manifest_path, 'manifest file does no exists');
-  is (scalar @{$ds}, 1, '1 definition is returned');
-  is ($ds->[0]->excluded, 1, 'no uqc outcomes, function is excluded');
-
   $rows = {};
 
   for my $p ((1, 2)) {
@@ -342,14 +360,13 @@ subtest 'definition and manifest generation' => sub {
       my $c = npg_tracking::glossary::composition->new(components => [
         $cclass->new(id_run => $id_run, position => $p, tag_index => $tag_index),
       ]);
-      my $id = $uqc_rs->find_or_create_seq_composition($c)->id_seq_composition;
-      $rows->{$p}->{$tag_index} = $uqc_rs->create({
-                                  id_seq_composition => $id,
-                                  id_uqc_outcome     => $dict{'Accepted'},
-                                  username           => 'cat',
-                                  modified_by        => 'dog',
-                                  rationale          => 'test',
-                                  last_modified      => $time
+      my $id = $mqc_rs->find_or_create_seq_composition($c)->id_seq_composition;
+      $rows->{$p}->{$tag_index} = $mqc_rs->create({
+                                  id_seq_composition         => $id,
+                                  id_mqc_outcome             => $dict{'Accepted final'},
+                                  username                   => 'cat',
+                                  modified_by                => 'dog',
+                                  last_modified              => $time
                                 });
     }
   } 
@@ -368,7 +385,7 @@ subtest 'definition and manifest generation' => sub {
   unlink $manifest_path;
   shift @lines;
   @line = (
-    'A1',
+    'AAMB-M4567',
     "$pp_archive_path/lane1/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
     "$dir/staging/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX",
     '{"components":[{"id_run":26291,"position":1,"tag_index":1}]}',
@@ -377,8 +394,8 @@ subtest 'definition and manifest generation' => sub {
   like ((shift @lines), qr{/lane1/plex2/}, 'correct line for unmerged plex 2');
   like ((shift @lines), qr{/lane1/plex3/}, 'correct line for unmerged plex 3');
   
-  $rows->{1}->{1}->update({id_uqc_outcome => $dict{'Rejected'}});
-  $rows->{1}->{2}->update({id_uqc_outcome => $dict{'Undecided'}});
+  $rows->{1}->{1}->update({id_mqc_outcome => $dict{'Rejected final'}});
+  $rows->{1}->{2}->update({id_mqc_outcome => $dict{'Undecided final'}});
 
   $f = npg_pipeline::function::pp_archiver->new($init);
   $manifest_path = $f->_manifest_path;
@@ -398,40 +415,7 @@ subtest 'definition and manifest generation' => sub {
   shift @lines;
   like ((shift @lines), qr{/lane2/plex1/}, 'correct line for unmerged plex 1');
   like ((shift @lines), qr{/lane2/plex2/}, 'correct line for unmerged plex 2');
-  like ((shift @lines), qr{/lane1/plex3/}, 'correct line for unmerged plex 3');
-
-  $rows->{1}->{3}->delete();
-
-  $f = npg_pipeline::function::pp_archiver->new($init);
-  $manifest_path = $f->_manifest_path;
-  ok (!-e $manifest_path, 'manifest file does not exist');
-  $ds = $f->create();
-  is (scalar @{$ds}, 1, 'one definition is generated');
-  is ($ds->[0]->excluded, undef, 'function is not excluded');
-  ok (-e $manifest_path, 'manifest file exists');
-  @lines = read_file($manifest_path);
-  is (scalar @lines, 4, 'manifest contains 4 lines');
-  unlink $manifest_path;
-  shift @lines;
-  like ((shift @lines), qr{/lane2/plex1/}, 'correct line for unmerged plex 1');
-  like ((shift @lines), qr{/lane2/plex2/}, 'correct line for unmerged plex 2');
-  like ((shift @lines), qr{/lane2/plex3/}, 'correct line for unmerged plex 3');
-
-  $rows->{2}->{3}->delete();
-
-  $f = npg_pipeline::function::pp_archiver->new($init);
-  $manifest_path = $f->_manifest_path;
-  ok (!-e $manifest_path, 'manifest file does not exist');
-  $ds = $f->create();
-  is (scalar @{$ds}, 1, 'one definition is generated');
-  is ($ds->[0]->excluded, undef, 'function is not excluded');
-  ok (-e $manifest_path, 'manifest file exists');
-  @lines = read_file($manifest_path);
-  is (scalar @lines, 3, 'manifest contains 3 lines');
-  unlink $manifest_path;
-  shift @lines;
-  like ((shift @lines), qr{/lane2/plex1/}, 'correct line for unmerged plex 1');
-  like ((shift @lines), qr{/lane2/plex2/}, 'correct line for unmerged plex 2'); 
+  like ((shift @lines), qr{/lane1/plex3/}, 'correct line for unmerged plex 3'); 
 };
 
 subtest 'skip unknown pipeline' => sub {

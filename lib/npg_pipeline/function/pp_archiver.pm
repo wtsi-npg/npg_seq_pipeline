@@ -7,6 +7,7 @@ use Text::CSV qw/csv/;
 use File::Spec::Functions;
 use File::Basename;
 use Readonly;
+use Try::Tiny;
 
 use npg_qc::Schema;
 use npg_pipeline::function::definition;
@@ -24,6 +25,10 @@ Readonly::Scalar my $MANIFEST_PREFIX       => q[manifest4pp_upload];
 Readonly::Scalar my $PP_NAME               => q[ncov2019-artic-nf];
 Readonly::Scalar my $PP_DATA_GLOB          =>
                     catfile(q[qc_pass_climb_upload], q[*], q[*], q[*{am,fa}]);
+
+# Supplier sample name pattern for external samples. Negative look back in the
+# second part of the expression to exclude names starting with CGAP.
+Readonly::Scalar my $NAME_PATTERN          => qr/\A [[:upper:]]{4}- (?<!CGAP-) /xms;
 
 =head1 NAME
 
@@ -50,7 +55,7 @@ for pipeline's functions. Please refer to the methods'
 documentation for their functionality.
 
 The class is meant to set the sceen for the upload of data,
-produced by portable pipelines, to third-party archives.
+which are produced by portable pipelines, to third-party archives.
 
 The current implementation is not generic, it focuses on
 dealing with data for the ncov2019-artic-nf pipeline.
@@ -69,8 +74,9 @@ name is generated on each execution of either of the methods.
 
 Criteria for products to be included into the  manifest:
 the portable pipeline is flagged for external archival and
-a user (utility) QC outcome for this product exists and is
-set to 'Accepted'.
+the library manual QC outcome for this product exists and is
+set to 'Accepted Final' and the QC outcome for the lane this
+product belongs to should also be 'Accepted Final'.
 
 =cut
 
@@ -228,12 +234,9 @@ sub _build__products4upload {
     $archival_flag or next;
 
     my $sname = $product->lims->sample_supplier_name;
-    $sname or $self->logcroak('Sample supplier name is not defined');
+    ($sname and ($sname =~ $NAME_PATTERN)) or next;
 
-    # UQC outcomes are not set for controls, so internal controls
-    # are filtered out at this stage, alingside with QC failures.
-    my $uqc = $product->uqc_obj($self->qc_schema);
-    ($uqc && $uqc->is_accepted) or next;
+    $self->has_qc_for_release($product) or next;
 
     # First come basis for choosing one of the duplicates.
     if ($products4archive->{$sname}) {
@@ -345,6 +348,8 @@ __END__
 =item File::Basename
 
 =item Readonly
+
+=item Try::Tiny
 
 =item npg_qc::Schema
 
