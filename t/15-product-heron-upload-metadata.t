@@ -207,6 +207,8 @@ dies_ok {
                instrument_model => 'SomeModel');
 } 'run will not accept an invalid make';
 
+# disable proxy to access this test webservice
+local $ENV{NO_PROXY}=q(127.0.0.1);
 
 # Metadata sending tests
 $response_type = $ADD_LIBRARY_SUCCESS;
