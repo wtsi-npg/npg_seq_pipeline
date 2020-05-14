@@ -47,10 +47,12 @@ Readonly::Hash my %REGISTRY => (
   'haplotype_caller'        => {'haplotype_caller' => 'create'},
   'merge_recompress'        => {'merge_recompress' => 'create'},
 
-  'archive_logs'                            => {'log_files_archiver' => 'create'},
-  'upload_auto_qc_to_qc_database'           => {'autoqc_archiver' => 'create'},
-  'archive_run_data_to_irods'               => {'run_data_to_irods_archiver' => 'create'},
-  'remove_intermediate_data'                => {'remove_intermediate_data' => 'create'},
+  'archive_logs'                   => {'log_files_archiver' => 'create'},
+  'upload_auto_qc_to_qc_database'  => {'autoqc_archiver' => 'create'},
+  'archive_run_data_to_irods'      => {'run_data_to_irods_archiver' => 'create'},
+  'remove_intermediate_data'       => {'remove_intermediate_data' => 'create'},
+  'pp_archiver'                    => {'pp_archiver' => 'create'},
+  'pp_archiver_manifest'           => {'pp_archiver' => 'generate_manifest'},
 
   'bam_cluster_counter_check'=> {'cluster_count' => 'create'},
   'seqchksum_comparator'     => {'seqchksum_comparator' => 'create'},

@@ -632,7 +632,7 @@ sub final_seqqc_objs {
 =head2 final_libqc_obj
 
   Returns a DBIx row object representing a final library QC outcome.
-  Returns an undefined value if the the final library QC outcome is
+  Returns an undefined value if the final library QC outcome is
   not available for this product.
 
   npg_qc::Schema object argument is required.
