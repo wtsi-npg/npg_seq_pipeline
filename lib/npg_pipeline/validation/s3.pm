@@ -65,19 +65,14 @@ progress to the next step of validation.
 =head2 qc_schema
 
 Attribute, required, DBIx schema object for the QC database.
-Inherited from npg_pipeline::product::release. The builder
-method for this attribute in this class returns an undefined
-value to force passing the database connection object from
-the caller.
 
 =cut
 
-has '+qc_schema' => (
-  builder    => '_build_undef_qc_schema',
+has 'qc_schema' => (
+  isa        => 'npg_qc::Schema',
+  is         => 'ro',
+  required   => 1,
 );
-sub _build_undef_qc_schema {
-  return;
-}
 
 =head2 file_extension
 
@@ -370,7 +365,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 GRL
+Copyright (C) 2019,2020 Genome Research Ltd.
 
 This file is part of NPG.
 

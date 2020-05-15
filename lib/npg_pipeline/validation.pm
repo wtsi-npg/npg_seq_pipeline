@@ -378,13 +378,18 @@ sub _build_irods {
 =head2 qc_schema
 
 npg_qc::Schema database connection.
-Inherited from npg_pipeline::product::release::irods
+Inherited from npg_pipeline::base, changed here to lazy-build
+a database connection.
 
 =cut
 
 has '+qc_schema' => (
-  metaclass  => 'NoGetopt',
+  lazy       => 1,
+  builder    => '_build_qc_schema',
 );
+sub _build_qc_schema {
+  return npg_qc::Schema->connect();
+}
 
 ############## Public methods ###################################################
 

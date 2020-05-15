@@ -64,6 +64,7 @@ my $builder = $class->new(
           'Readonly'                     => 1.03,
           'strict'                       => 1.03,
           'Sys::Filesystem::MountPoint'  => 0,
+          'Text::CSV'                    => 0,
           'Try::Tiny'                    => 0,
           'UUID'                         => 0,
           'URI'                          => 0,

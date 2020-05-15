@@ -2,35 +2,20 @@ package npg_pipeline::product::release;
 
 use namespace::autoclean;
 
-use Data::Dump qw[pp];
+use Data::Dump qw{pp};
 use Moose::Role;
-use File::Spec::Functions qw{catdir};
 use List::Util qw{all};
-use npg_qc::Schema;
+use Readonly;
 
 with qw{WTSI::DNAP::Utilities::Loggable
         npg_tracking::util::pipeline_config};
 
 our $VERSION = '0';
 
+Readonly::Scalar my $QC_OUTCOME_MATTERS_KEY           => q{qc_outcome_matters};
+Readonly::Scalar my $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY => q{s3};
+
 =head1 SUBROUTINES/METHODS
-
-=head2 qc_schema
-
-Lazy-build attribute. The builder method in this role returns a
-DBIx database connection object. The attribute is allowed to be
-undefined in order to prevent, if necessary, the automatic connection
-to a database in consuming classes, which can be achieved by
-supplying a custom builder method.
-
-=cut
-
-has 'qc_schema' =>
-  (isa        => 'Maybe[npg_qc::Schema]',
-   is         => 'ro',
-   required   => 1,
-   builder    => '_build_qc_schema',
-   lazy       => 1,);
 
 =head2 expected_files
 
@@ -84,9 +69,9 @@ sub expected_files {
 
   Example    : $obj->is_release_data($product)
   Description: Return true if the product is data for release i.e.
-
-                - is not control data
-                - is not data from tag zero that could not be deplexed
+                - is not spiked-in control data
+                - is not data from tag zero, ie leftover data
+                  after deplexing
 
   Returntype : Bool
 
@@ -121,12 +106,7 @@ sub is_release_data {
 
   Example    : $obj->has_qc_for_release($product)
   Description: Return true if the product has passed all QC necessary
-               to be released or if the QC outcome does not matter
-               for this product. In the later case any QC outcome or
-               its absence is equally acceptable, no attempt to inspect
-               the QC outcomes is made; this is an implicit default. To
-               activate filtering by QC outcomes, explicitly configure
-               the s3 section of the study configuration for this product.
+               to be released.
 
   Returntype : Bool
 
@@ -137,23 +117,23 @@ sub has_qc_for_release {
 
   $product or $self->logconfess('A product argument is required');
 
+  my $qc_db_accessor = 'qc_schema';
+  $self->can($qc_db_accessor) or $self->logcroak(
+    "$qc_db_accessor attribute should be implemented");
+  $self->$qc_db_accessor or $self->logcroak(
+    "$qc_db_accessor connection should be defined");
+
   my $rpt  = $product->rpt_list();
   my $name = $product->file_name_root();
 
-  my $qc_outcome_matters = $self->qc_outcome_matters($product);
-  if (not $qc_outcome_matters) {
-    $self->debug("QC outcome does not matter for product $name, $rpt");
-    return 1;
-  }
-
-  my @seqqc = $product->final_seqqc_objs($self->qc_schema);
+  my @seqqc = $product->final_seqqc_objs($self->$qc_db_accessor);
   @seqqc or $self->logcroak("Product $name, $rpt are not all Final seq QC values");
 
   if(not all { $_->is_accepted }  @seqqc) {
     $self->info("Product $name, $rpt are not all Final Accepted seq QC values");
     return 0;
   }
-  my $libqc_obj = $product->final_libqc_obj($self->qc_schema);
+  my $libqc_obj = $product->final_libqc_obj($self->$qc_db_accessor);
   # Lib outcomes are not available for full lane libraries, so the code below
   # might give an error when absence of QC outcome is legitimate.
   $libqc_obj or $self->logcroak("Product $name, $rpt is not Final lib QC value");
@@ -170,11 +150,12 @@ sub has_qc_for_release {
 =head2  qc_outcome_matters
 
   Arg [1]    : npg_pipeline::product
+  Arg [2]    : Str
 
-  Example    : $obj->qc_outcome_matters($product)
+  Example    : $obj->qc_outcome_matters($product, q[s3])
   Description: Returns a boolean value indicating whether or not QC outcome
-               matters for the product to be archived. An ptional second
-               argument is the archiver type, s3 is the default.
+               matters for the product to be archived by an archiver given
+               by the second argument.
 
   Returntype : Bool
 
@@ -182,9 +163,9 @@ sub has_qc_for_release {
 
 sub qc_outcome_matters {
   my ($self, $product, $archiver) = @_;
-  $product or $self->logconfess('A product argument is required');
-  $archiver ||= 's3';
-  return $self->find_study_config($product)->{$archiver}->{'qc_outcome_matters'};
+  $product  or $self->logconfess('A product argument is required');
+  $archiver or $self->logconfess('An archiver argument is required');
+  return $self->find_study_config($product)->{$archiver}->{$QC_OUTCOME_MATTERS_KEY};
 }
 
 =head2 customer_name
@@ -202,11 +183,12 @@ sub qc_outcome_matters {
 sub customer_name {
   my ($self, $product) = @_;
 
-  my $customer_name = $self->find_study_config($product)->{s3}->{customer_name};
+  my $customer_name = $self->find_study_config($product)
+                      ->{$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY}->{customer_name};
   $customer_name or
     $self->logcroak(
-      q{Missing s3 archival customer name in configuration file for product } .
-      $product->composition->freeze());
+      sprintf q{Missing %s archival customer name in configuration file for product %s},
+      $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY, $product->composition->freeze());
 
   if (ref $customer_name) {
     $self->logconfess('Invalid customer name in configuration file: ',
@@ -230,7 +212,8 @@ sub customer_name {
 
 sub receipts_location {
   my ($self, $product) = @_;
-  return $self->find_study_config($product)->{s3}->{receipts};
+  return $self->find_study_config($product)
+           ->{$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY}->{receipts};
 }
 
 =head2 is_for_release
@@ -260,8 +243,8 @@ sub is_for_release {
   Arg [1]    : npg_pipeline::product
 
   Example    : $obj->is_for_s3_release($product)
-  Description: Return true if the product is to be released via S3.
-               Raise an error if no S3 URL has been configured.
+  Description: Return true if the product is configured for cloud archivel.
+               Raise an error if no cloud URL has been configured.
 
   Returntype : Bool
 
@@ -275,15 +258,15 @@ sub is_for_s3_release {
   my $name        = $product->file_name_root();
   my $description = $product->composition->freeze();
 
-  my $enable = $self->is_for_release($product, 's3');
+  my $enable = $self->is_for_release($product, $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY);
 
   if ($enable and not $self->s3_url($product)) {
     $self->logconfess("Configuration error for product $name, $description: " ,
-                      'S3 release is enabled but no URL was provided');
+      "$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY release is enabled but no URL was provided");
   }
 
-  $self->info(sprintf 'Product %s, %s is %sfor S3 release',
-                      $name, $description, $enable ? q[] : q[NOT ]);
+  $self->info(sprintf 'Product %s, %s is %sfor %s release',
+    $name, $description, $enable ? q[] : q[NOT ], $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY);
 
   return $enable;
 }
@@ -293,7 +276,7 @@ sub is_for_s3_release {
   Arg [1]    : npg_pipeline::product
 
   Example    : $obj->s3_url($product)
-  Description: Return an S3 URL for release of the product or undef
+  Description: Return a cloud URL for release of the product or undef
                if there is no URL.
 
   Returntype : Str
@@ -303,9 +286,11 @@ sub is_for_s3_release {
 sub s3_url {
   my ($self, $product) = @_;
 
-  my $url = $self->find_study_config($product)->{s3}->{url};
+  my $url = $self->find_study_config($product)
+                 ->{$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY}->{url};
   if (ref $url) {
-    $self->logconfess('Invalid S3 URL in configuration file: ', pp($url));
+    $self->logconfess(sprintf 'Invalid %s URL in configuration file: %',
+                      $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY, pp($url));
   }
 
   return $url;
@@ -316,9 +301,9 @@ sub s3_url {
   Arg [1]    : npg_pipeline::product
 
   Example    : $obj->s3_profile($product)
-  Description: Return an S3 profile name for release of the product or
+  Description: Return a cloud profile name for release of the product or
                undef if there is no profile. A profile is a named set of
-               credentials used by some S3 client software.
+               credentials used by some cloud client software.
 
   Returntype : Str
 
@@ -327,10 +312,11 @@ sub s3_url {
 sub s3_profile {
   my ($self, $product) = @_;
 
-  my $profile = $self->find_study_config($product)->{s3}->{profile};
+  my $profile = $self->find_study_config($product)
+                     ->{$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY}->{profile};
   if (ref $profile) {
-    $self->logconfess('Invalid S3 profile in configuration file: ',
-                      pp($profile));
+    $self->logconfess('Invalid %s profile in configuration file: ',
+                      $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY, pp($profile));
   }
 
   return $profile;
@@ -353,7 +339,8 @@ sub s3_profile {
 sub s3_date_binning {
   my ($self, $product) = @_;
 
-  return $self->find_study_config($product)->{s3}->{date_binning};
+  return $self->find_study_config($product)
+              ->{$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY}->{date_binning};
 }
 
 =head2 is_s3_releasable
@@ -361,8 +348,10 @@ sub s3_date_binning {
   Arg [1]    : npg_pipeline::product
 
   Example    : $obj->is_for_s3_release($product)
-  Description: Return true if the product is to be released via S3
-               and has QC outcome compatible with being released.
+  Description: Return true if the product is to be archived to a cloud
+               destination. If the QC outcome matters for being releasable,
+               the product's QC outcome should be compatible with being
+               released.
 
   Returntype : Bool
 
@@ -373,7 +362,8 @@ sub is_s3_releasable {
 
   return $self->is_release_data($product)   &&
          $self->is_for_s3_release($product) &&
-         $self->has_qc_for_release($product);
+         ( !$self->qc_outcome_matters($product, $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY) ||
+           $self->has_qc_for_release($product) );
 }
 
 =head2 is_for_s3_release_notification
@@ -381,8 +371,8 @@ sub is_s3_releasable {
   Arg [1]    : npg_pipeline::product
 
   Example    : $obj->is_for_s3_release_notification($product)
-  Description: Return true if a notification is to be sent on release
-               for the product.
+  Description: Return true if a notification is to be sent on the
+               external archival of the product.
 
   Returntype : Bool
 
@@ -393,21 +383,17 @@ sub is_for_s3_release_notification {
 
   my $rpt          = $product->rpt_list();
   my $name         = $product->file_name_root();
+  my $m = "for $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY release notification";
 
-  if ($self->find_study_config($product)->{s3}->{notify}) {
-    $self->info("Product $name, $rpt is for S3 release notification");
+  if ($self->find_study_config($product)
+           ->{$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY}->{notify}) {
+    $self->info("Product $name, $rpt is $m");
     return 1;
   }
 
-  $self->info("Product $name, $rpt is NOT for S3 release notification");
+  $self->info("Product $name, $rpt is NOT $m");
 
   return 0;
-}
-
-sub _build_qc_schema {
-  my ($self) = @_;
-
-  return npg_qc::Schema->connect();
 }
 
 =head2 haplotype_caller_enable
@@ -693,8 +679,6 @@ study:
 =item WTSI::DNAP::Utilities::Loggable
 
 =item npg_tracking::util::pipeline_config
-
-=item npg_qc::Schema
 
 =back
 
