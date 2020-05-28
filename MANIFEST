@@ -14,6 +14,7 @@ bin/npg_pipeline_script_must_be_unique_runner
 bin/npg_pipeline_seqchksum_comparator
 bin/npg_receipt4run_is_deletable
 bin/npg_run_is_deletable
+bin/npg_upload2climb
 Build.PL
 Changes
 data/config_files/function_list_central.json
