@@ -19,6 +19,23 @@ with 'npg_common::roles::software_location' => { tools => [qw/npg_upload2climb/]
 
 our $VERSION = '0';
 
+################# Package-level constants ###################
+
+# Supplier sample name pattern for external samples. Negative look back in the
+# second part of the expression to exclude names starting with CGAP.
+Readonly::Scalar our $SAMPLE_NAME_PATTERN  => qr/\A [[:upper:]]{4}- (?<!CGAP-) /xms;
+
+Readonly::Array  our @CSV_PARSER_OPTIONS   => ( strict      => 1,
+                                                sep_char    => qq[\t],
+                                                eol         => qq[\n],
+                                                quote_char  => undef,
+                                                escape_char => undef, );
+Readonly::Scalar our $SAMPLE_NAME_COLUMN_NAME => q[sample_name];
+Readonly::Scalar our $SAP_COLUMN_NAME         => q[staging_archive_path];
+Readonly::Scalar our $FILES_GLOB_COLUMN_NAME  => q[files_glob];
+
+##################### Private constants #####################
+
 Readonly::Scalar my $MANIFEST_PATH_ENV_VAR => q[NPG_MANIFEST4PP_FILE];
 Readonly::Scalar my $MANIFEST_PREFIX       => q[manifest4pp_upload];
 
@@ -26,9 +43,13 @@ Readonly::Scalar my $PP_NAME               => q[ncov2019-artic-nf];
 Readonly::Scalar my $PP_DATA_GLOB          =>
                     catfile(q[qc_pass_climb_upload], q[*], q[*], q[*{am,fa}]);
 
-# Supplier sample name pattern for external samples. Negative look back in the
-# second part of the expression to exclude names starting with CGAP.
-Readonly::Scalar my $NAME_PATTERN          => qr/\A [[:upper:]]{4}- (?<!CGAP-) /xms;
+Readonly::Array  my @COLUMN_NAMES          => (
+                                           $SAMPLE_NAME_COLUMN_NAME,
+                                           $FILES_GLOB_COLUMN_NAME,
+                                           $SAP_COLUMN_NAME,
+                                           q[product_json],
+                                           q[id_product],
+                                              );
 
 =head1 NAME
 
@@ -196,15 +217,13 @@ sub _generate_manifest4archiver {
 
   my $num_lines = @lines;
   # add header
-  unshift @lines, [qw/sample_name files_glob staging_archive_path product_json id_product/];
+  unshift @lines, \@COLUMN_NAMES;
 
   if ($num_lines == 0) {
     $self->warn('Nothing to archive, am empty manifest will be generated');
   }
   $self->info('Writing manifest to ' . $self->_manifest_path);
-  csv(in => \@lines, out => $self->_manifest_path, strict => 1,
-      sep_char => qq[\t], eol => qq[\n],
-      quote_char => undef, escape_char => undef);
+  csv(in => \@lines, out => $self->_manifest_path, @CSV_PARSER_OPTIONS);
 
   return $num_lines;
 }
@@ -234,7 +253,7 @@ sub _build__products4upload {
     $archival_flag or next;
 
     my $sname = $product->lims->sample_supplier_name;
-    ($sname and ($sname =~ $NAME_PATTERN)) or next;
+    ($sname and ($sname =~ $SAMPLE_NAME_PATTERN)) or next;
 
     $self->has_qc_for_release($product) or next;
 
