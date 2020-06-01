@@ -213,9 +213,8 @@ subtest 'definition and manifest generation' => sub {
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
   my $id_run = 26291;
-  my $product_conf =  join(q[/], $dir, 'product_release.yml');
-
-  make_path "$dir/staging"; # create staging root
+  my $product_conf =
+    q[t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release.yml];
 
   my $init = {
     product_conf_file_path => $product_conf,
@@ -299,6 +298,8 @@ subtest 'definition and manifest generation' => sub {
 
   $f = npg_pipeline::function::pp_archiver->new($init);
   my $manifest_path = $f->_manifest_path;
+  my $coptions = q[--user cat --host climb.com --pkey_file ~/.ssh/mykey];
+
   ok (!-e $manifest_path, 'manifest file does not exist');
   $ds = $f->create();
   ok (-e $manifest_path, 'manifest file exists');
@@ -307,7 +308,7 @@ subtest 'definition and manifest generation' => sub {
   is ($d->excluded, undef, 'function is not excluded');
   is ($d->composition, undef, 'composition is not defined');
   is ($d->job_name, "pp_archiver_$id_run", 'job name');
-  is ($d->command, "$exec $manifest_path", 'correct command');
+  is ($d->command, "$exec $coptions --manifest $manifest_path", 'correct command');
 
   ok ($f->merge_lanes, 'merge flag is true');
   my @data_products = @{$f->products->{'data_products'}};
@@ -325,7 +326,7 @@ subtest 'definition and manifest generation' => sub {
   my @line = (
     'AAMB-M4567',
     "$pp_archive_path/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
-    "$dir/staging/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX",
+    't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
     '{"components":[{"id_run":26291,"position":1,"tag_index":1},{"id_run":26291,"position":2,"tag_index":1}]}',
     "b65be328691835deeff44c4025fadecd9af6512c10044754dd2161d8a7c85000\n"
   );
@@ -378,7 +379,7 @@ subtest 'definition and manifest generation' => sub {
   ok (!-e $manifest_path, 'manifest file does not exist');
   $ds = $f->create();
   is (scalar @{$ds}, 1, 'one definition is generated');
-  is ($ds->[0]->command, "$exec $manifest_path", 'correct command');
+  is ($ds->[0]->command, "$exec $coptions --manifest $manifest_path", 'correct command');
   ok (-e $manifest_path, 'manifest file exists');
   @lines = read_file($manifest_path);
   is (scalar @lines, 4, 'manifest contains 4 lines');
@@ -387,7 +388,7 @@ subtest 'definition and manifest generation' => sub {
   @line = (
     'AAMB-M4567',
     "$pp_archive_path/lane1/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
-    "$dir/staging/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX",
+    't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
     '{"components":[{"id_run":26291,"position":1,"tag_index":1}]}',
     "3709acf46bbedf27819413030709fb2f196ba5e8642b4d2b4319f7bddfa8c2c9\n");
   is ((shift @lines), join(qq[\t], @line), 'correct line for unmerged plex 1');
@@ -415,7 +416,7 @@ subtest 'definition and manifest generation' => sub {
   shift @lines;
   like ((shift @lines), qr{/lane2/plex1/}, 'correct line for unmerged plex 1');
   like ((shift @lines), qr{/lane2/plex2/}, 'correct line for unmerged plex 2');
-  like ((shift @lines), qr{/lane1/plex3/}, 'correct line for unmerged plex 3'); 
+  like ((shift @lines), qr{/lane1/plex3/}, 'correct line for unmerged plex 3');
 };
 
 subtest 'skip unknown pipeline' => sub {

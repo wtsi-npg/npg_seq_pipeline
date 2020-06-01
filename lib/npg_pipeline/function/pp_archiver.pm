@@ -40,6 +40,8 @@ Readonly::Scalar my $MANIFEST_PATH_ENV_VAR => q[NPG_MANIFEST4PP_FILE];
 Readonly::Scalar my $MANIFEST_PREFIX       => q[manifest4pp_upload];
 
 Readonly::Scalar my $PP_NAME               => q[ncov2019-artic-nf];
+Readonly::Scalar my $CLIMB_ARCHIVAL_KEY    => q[climb_archival];
+Readonly::Array  my @CLIMB_ARCHIVAL_CREDENTIALS_KEYS => qw/user host pkey_file/;
 Readonly::Scalar my $PP_DATA_GLOB          =>
                     catfile(q[qc_pass_climb_upload], q[*], q[*], q[*{am,fa}]);
 
@@ -153,7 +155,8 @@ sub create {
   if (@sample_names) {
     $ref->{'job_name'} = join q[_], 'pp_archiver', $self->label();
     $ref->{'command'}  = join q[ ], $self->npg_upload2climb_cmd,
-                                    $self->_manifest_path;
+                                    $self->_climb_archival_options(),
+                                    '--manifest', $self->_manifest_path;
     $self->_generate_manifest4archiver();
   } else {
     $self->debug('No pp data to archive, skipping');
@@ -338,6 +341,23 @@ sub _build__manifest_path {
   }
 
   return $path;
+}
+
+sub _climb_archival_options {
+  my $self = shift;
+
+  my $aconfig = $self->_pipeline_config->{$CLIMB_ARCHIVAL_KEY};
+  $aconfig and (ref $aconfig eq q[HASH]) or $self->logcroak(
+    "$CLIMB_ARCHIVAL_KEY section of the product config. is absent");
+
+  my @options = ();
+  for my $key (@CLIMB_ARCHIVAL_CREDENTIALS_KEYS) {
+    $aconfig->{$key} or $self->logcroak(
+      "$key entry is absent in product config.");
+    push @options, q[--] . $key, $aconfig->{$key};
+  }
+
+  return join q[ ], @options;
 }
 
 __PACKAGE__->meta->make_immutable;
