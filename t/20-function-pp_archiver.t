@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path/;
@@ -43,6 +43,9 @@ copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunInfo.xml', "$runfolder_pat
 'Copy failed';
 copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunParameters.xml', "$runfolder_path/runParameters.xml")
 or die 'Copy failed';
+
+my $schema = Moose::Meta::Class->create_anon_class(roles => [qw/npg_testing::db/])
+    ->new_object()->create_test_db(q[npg_qc::Schema], q[t/data/qc_outcomes/fixtures]);
 
 my $timestamp = q[20180701-123456];
 my $repo_dir = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a];
@@ -244,8 +247,6 @@ subtest 'definition and manifest generation' => sub {
   throws_ok { $f->create }
     qr/qc_schema connection should be defined/, 'db access is required';
 
-  my $schema = Moose::Meta::Class->create_anon_class(roles => [qw/npg_testing::db/])
-    ->new_object()->create_test_db(q[npg_qc::Schema], q[t/data/qc_outcomes/fixtures]);
   my $mqc_rs = $schema->resultset(q[MqcLibraryOutcomeEnt]);
   $mqc_rs->delete(); # ensure no data
 
@@ -321,10 +322,10 @@ subtest 'definition and manifest generation' => sub {
   unlink $manifest_path;
 
   is ((shift @lines), join(qq[\t],
-    qw(sample_name files_glob staging_archive_path product_json id_product)) . qq[\n],
+    qw(sample_name library_type primer_panel files_glob staging_archive_path product_json id_product)) . qq[\n],
     'correct header line');
   my @line = (
-    'AAMB-M4567',
+    qw/AAMB-M4567 Standard nCoV-2019/,
     "$pp_archive_path/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
     't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
     '{"components":[{"id_run":26291,"position":1,"tag_index":1},{"id_run":26291,"position":2,"tag_index":1}]}',
@@ -386,7 +387,7 @@ subtest 'definition and manifest generation' => sub {
   unlink $manifest_path;
   shift @lines;
   @line = (
-    'AAMB-M4567',
+    qw/AAMB-M4567  Standard nCoV-2019/,
     "$pp_archive_path/lane1/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
     't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
     '{"components":[{"id_run":26291,"position":1,"tag_index":1}]}',
@@ -417,6 +418,62 @@ subtest 'definition and manifest generation' => sub {
   like ((shift @lines), qr{/lane2/plex1/}, 'correct line for unmerged plex 1');
   like ((shift @lines), qr{/lane2/plex2/}, 'correct line for unmerged plex 2');
   like ((shift @lines), qr{/lane1/plex3/}, 'correct line for unmerged plex 3');
+};
+
+subtest 'skip sample with consent withdrawn' => sub {
+  plan tests => 7;
+
+  my $ss = read_file(join(q[/], $dir, 'samplesheet_33990.csv'));
+  # Set consent withdrawn to true for one sample.
+  $ss =~ s/to:600,,,,0/to:600,,,,1/ or die 'substitution failed';
+  my $new_ss = join(q[/], $dir, 'samplesheet_33990_cw.csv');
+  write_file($new_ss, $ss); 
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $new_ss;
+
+  # Make all samples pass lib QC.
+  my %dict = map { $_->short_desc => $_->id_mqc_library_outcome }
+             $schema->resultset(q[MqcLibraryOutcomeDict])->search({})->all();
+  my $mqc_rs = $schema->resultset(q[MqcLibraryOutcomeEnt])->search({});
+  $mqc_rs->update({id_mqc_outcome => $dict{'Accepted final'}});
+
+  my $product_conf =
+    q[t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release.yml];
+  my $init = {
+    product_conf_file_path => $product_conf,
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    timestamp              => $timestamp,
+    repository             => $dir,
+    qc_schema              => $schema,
+    merge_lanes            => 0,
+  };
+
+  my $f = npg_pipeline::function::pp_archiver->new($init);
+  my $manifest_path = $f->_manifest_path;
+  ok (!-e $manifest_path, 'manifest file does not exist');
+  my $ds = $f->create();
+  ok (-e $manifest_path, 'manifest file exists');
+  is (scalar @{$ds}, 1, '1 definition is returned');
+  my $d = $ds->[0];
+  is ($d->excluded, undef, 'function is not excluded');
+
+  is (scalar(grep { $f->is_release_data($_) }
+             @{$f->products->{'data_products'}}),
+    6, '6 products for release');
+
+  my @lines = read_file($manifest_path);
+  unlink $manifest_path;
+  is (scalar @lines, 4, 'manifest contains 4 lines');
+
+  shift @lines;
+  my @line = (
+    qw/AAMB-M4567 Standard nCoV-2019/,
+    "$pp_archive_path/lane2/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
+    't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
+    '{"components":[{"id_run":26291,"position":2,"tag_index":1}]}',
+    "11c776e3a9791f1abeaba44c8ee673dacc844778397eca15719786ffae001b0b\n");
+  is ((shift @lines), join(qq[\t], @line), 'concented plex 1 is listed');
 };
 
 subtest 'skip unknown pipeline' => sub {

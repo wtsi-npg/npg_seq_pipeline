@@ -6,6 +6,9 @@ LIST OF CHANGES
  - required arguments are passed to the npg_upload2climb script when
    the pp_archiver function job description is generated
  - the pp_archiver function is added to the archival pipeline graph
+ - archival to CLIMB is skipped for samples with withdrawn consent
+ - library type and primer panel are added to the CLIMB archival
+   manifest
 
 release 57.12.0
  - a new function definition class npg_pipeline::function::pp_archiver,

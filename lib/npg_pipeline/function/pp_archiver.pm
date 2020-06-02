@@ -47,10 +47,12 @@ Readonly::Scalar my $PP_DATA_GLOB          =>
 
 Readonly::Array  my @COLUMN_NAMES          => (
                                            $SAMPLE_NAME_COLUMN_NAME,
+                                           qw / library_type
+                                                primer_panel /,
                                            $FILES_GLOB_COLUMN_NAME,
                                            $SAP_COLUMN_NAME,
-                                           q[product_json],
-                                           q[id_product],
+                                           qw / product_json
+                                                id_product /,
                                               );
 
 =head1 NAME
@@ -210,8 +212,11 @@ sub _generate_manifest4archiver {
   my @lines = ();
   foreach my $sname (sort keys %{$self->_products4upload}) {
     my $cached = $self->_products4upload->{$sname};
-    my $c = $cached->{'product'}->composition;
+    my $c      = $cached->{'product'}->composition;
+    my $lims   = $cached->{'product'}->lims;
     push @lines, [$sname,
+                  $lims->library_type  || q[],
+                  $lims->gbs_plex_name || q[],
                   $cached->{'pp_data_glob'},
                   $self->_staging_archive_path,
                   $c->freeze(),
@@ -256,8 +261,10 @@ sub _build__products4upload {
     $archival_flag or next;
 
     my $sname = $product->lims->sample_supplier_name;
-    ($sname and ($sname =~ $SAMPLE_NAME_PATTERN)) or next;
 
+    # Skips
+    ($sname and ($sname =~ $SAMPLE_NAME_PATTERN)) or next;
+    $product->lims->sample_consent_withdrawn and next;
     $self->has_qc_for_release($product) or next;
 
     # First come basis for choosing one of the duplicates.
