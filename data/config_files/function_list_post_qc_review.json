@@ -33,6 +33,11 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "update_ml_warehouse",
+            "target" : "pp_archiver"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "archive_run_data_to_irods",
             "target" : "archive_to_irods_ml_warehouse"
          },
@@ -49,6 +54,11 @@
          {
             "relation" : "dependsOn",
             "source" : "cache_merge_component",
+            "target" : "run_run_archived"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "pp_archiver",
             "target" : "run_run_archived"
          },
          {
@@ -125,6 +135,10 @@
          {
             "id" : "cache_merge_component",
             "label" : "cache_merge_component"
+         },
+         {
+            "id" : "pp_archiver",
+            "label" : "pp_archiver"
          },
          {
             "id" : "notify_product_delivery",
