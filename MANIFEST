@@ -1050,6 +1050,8 @@ t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_no_study
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_unknown_pp.yml
 t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_no_staging_root.yml
 t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_two_pps.yml
+t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_two_studies.yml
+t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release.yml
 t/data/products/samplesheet_novaseq4lanes.csv
 t/data/products/samplesheet_rapidrun_nopool.csv
 t/data/qc/1234_samplesheet_amended.csv

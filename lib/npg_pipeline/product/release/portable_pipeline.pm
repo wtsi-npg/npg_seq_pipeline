@@ -105,38 +105,39 @@ sub pps_config4lims_entity {
 
   $lims or croak 'lims attribute should be defined';
 
-  my $strict = 1; # disregard the default section
-  my $study_config = $self->study_config($lims, $strict);
-  ($study_config and exists $study_config->{$STUDY_CONFIG_SECTION_NAME}) or return;
-
-  my $pps = $study_config->{$STUDY_CONFIG_SECTION_NAME};
-  ($pps and (q[ARRAY] eq ref $pps)) or croak 'array of portable pipelines is expected';
-
   my @pps4type = ();
 
-  my $trim = sub {
-    my $s = shift;
-    $s =~ s/\s+\Z//smx;
-    $s =~ s/\A\s+//smx;
-    return $s;
-  };
+  my $strict = 1; # disregard the default section
+  my $study_config = $self->study_config($lims, $strict);
+  if ($study_config and exists $study_config->{$STUDY_CONFIG_SECTION_NAME}) {
 
-  foreach my $pp (@{$pps}) {
-    ($pp and (q[HASH] eq ref $pp)) or croak 'portable pipeline config should be a hash';
-    $pp->{$PP_NAME_KEY} or croak "$PP_NAME_KEY is missing in a pp config";
-    $pp->{$PP_VERSION_KEY} or croak sprintf '%s is missing in a %s pp config',
-                                             $PP_VERSION_KEY, $pp->{$PP_NAME_KEY};
+    my $pps = $study_config->{$STUDY_CONFIG_SECTION_NAME};
+    ($pps and (q[ARRAY] eq ref $pps)) or croak 'array of portable pipelines is expected';
 
-    $pp->{$PP_TYPE_KEY} or croak sprintf '%s is missing in a %s pp config',
-                                             $PP_TYPE_KEY, $pp->{$PP_NAME_KEY};
-    $pp->{$PP_TYPE_KEY} = $trim->($pp->{$PP_TYPE_KEY});
-    if ($pp_type && ($pp->{$PP_TYPE_KEY} ne $pp_type)) {
-      next;
+    my $trim = sub {
+      my $s = shift;
+      $s =~ s/\s+\Z//smx;
+      $s =~ s/\A\s+//smx;
+      return $s;
+    };
+
+    foreach my $pp (@{$pps}) {
+      ($pp and (q[HASH] eq ref $pp)) or croak 'portable pipeline config should be a hash';
+      $pp->{$PP_NAME_KEY} or croak "$PP_NAME_KEY is missing in a pp config";
+      $pp->{$PP_VERSION_KEY} or croak sprintf '%s is missing in a %s pp config',
+                                              $PP_VERSION_KEY, $pp->{$PP_NAME_KEY};
+
+      $pp->{$PP_TYPE_KEY} or croak sprintf '%s is missing in a %s pp config',
+                                           $PP_TYPE_KEY, $pp->{$PP_NAME_KEY};
+      $pp->{$PP_TYPE_KEY} = $trim->($pp->{$PP_TYPE_KEY});
+      if ($pp_type && ($pp->{$PP_TYPE_KEY} ne $pp_type)) {
+        next;
+      }
+
+      $pp->{$PP_NAME_KEY}    =  $trim->($pp->{$PP_NAME_KEY});
+      $pp->{$PP_VERSION_KEY} = $trim->($pp->{$PP_VERSION_KEY});
+      push @pps4type, $pp;
     }
-
-    $pp->{$PP_NAME_KEY}    =  $trim->($pp->{$PP_NAME_KEY});
-    $pp->{$PP_VERSION_KEY} = $trim->($pp->{$PP_VERSION_KEY});
-    push @pps4type, $pp;
   }
 
   return \@pps4type;

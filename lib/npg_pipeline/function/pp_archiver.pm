@@ -8,6 +8,7 @@ use File::Spec::Functions;
 use File::Basename;
 use Readonly;
 use Try::Tiny;
+use Perl6::Slurp;
 
 use npg_qc::Schema;
 use npg_pipeline::function::definition;
@@ -40,15 +41,19 @@ Readonly::Scalar my $MANIFEST_PATH_ENV_VAR => q[NPG_MANIFEST4PP_FILE];
 Readonly::Scalar my $MANIFEST_PREFIX       => q[manifest4pp_upload];
 
 Readonly::Scalar my $PP_NAME               => q[ncov2019-artic-nf];
+Readonly::Scalar my $CLIMB_ARCHIVAL_KEY    => q[climb_archival];
+Readonly::Array  my @CLIMB_ARCHIVAL_CREDENTIALS_KEYS => qw/user host pkey_file/;
 Readonly::Scalar my $PP_DATA_GLOB          =>
                     catfile(q[qc_pass_climb_upload], q[*], q[*], q[*{am,fa}]);
 
 Readonly::Array  my @COLUMN_NAMES          => (
                                            $SAMPLE_NAME_COLUMN_NAME,
+                                           qw / library_type
+                                                primer_panel /,
                                            $FILES_GLOB_COLUMN_NAME,
                                            $SAP_COLUMN_NAME,
-                                           q[product_json],
-                                           q[id_product],
+                                           qw / product_json
+                                                id_product /,
                                               );
 
 =head1 NAME
@@ -149,13 +154,15 @@ sub create {
               created_on => $self->timestamp(),
               identifier => $self->label};
 
-  my @sample_names = sort keys %{$self->_products4upload};
-  if (@sample_names) {
+  # Create and write out the manifest.
+  my $num_samples = $self->_generate_manifest4archiver();
+
+  if ($num_samples) {
     $ref->{'job_name'} = join q[_], 'pp_archiver', $self->label();
     $ref->{'command'}  = join q[ ], $self->npg_upload2climb_cmd,
-                                    $self->_manifest_path;
-    $self->_generate_manifest4archiver();
-  } else {
+                                    $self->_climb_archival_options(),
+                                    '--manifest', $self->_manifest_path;
+  } else { # An 'empty' manifest has been generated.
     $self->debug('No pp data to archive, skipping');
     $ref->{'excluded'} = 1;
   }
@@ -193,68 +200,64 @@ sub generate_manifest {
 sub _generate_manifest4archiver {
   my $self = shift;
 
+  my $num_samples;
   my $path = $ENV{$MANIFEST_PATH_ENV_VAR};
-  if ($path and -f $path) {
+
+  if ($path and -e $path) {
     $self->info(sprintf 'Existing manifest %s will be used', $path);
-    return;
+    my @lines = slurp $path;
+    $num_samples = (scalar @lines) - 1;
+    ($num_samples >= 0) or $self->logcroak("No content in $path");
   } else {
     $self->info(sprintf 'A new manifest %s will be created', $self->_manifest_path);
+
+    # In the context of one run the third column of the manifest is redundant.
+    # However, this would help to deal with ad-hock situations.
+
+    my @lines = ();
+    foreach my $sname (sort keys %{$self->_samples4upload}) {
+      my $cached = $self->_samples4upload->{$sname};
+      my $c      = $cached->{'product'}->composition;
+      my $lims   = $cached->{'product'}->lims;
+      push @lines, [$sname,
+                    $lims->library_type  || q[],
+                    $lims->gbs_plex_name || q[],
+                    $cached->{'pp_data_glob'},
+                    $self->_staging_archive_path,
+                    $c->freeze(),
+                    $c->digest()];
+    }
+
+    $num_samples = @lines;
+    # add header
+    unshift @lines, \@COLUMN_NAMES;
+
+    $self->info('Writing manifest to ' . $self->_manifest_path);
+    csv(in => \@lines, out => $self->_manifest_path, @CSV_PARSER_OPTIONS);
   }
 
-  # In the context of one run the third column of the manifest is redundant.
-  # However, this would help to deal with ad-hock situations.
+  $num_samples or $self->warn('Nothing to archive,the manifest is empty');
 
-  my @lines = ();
-  foreach my $sname (sort keys %{$self->_products4upload}) {
-    my $cached = $self->_products4upload->{$sname};
-    my $c = $cached->{'product'}->composition;
-    push @lines, [$sname,
-                  $cached->{'pp_data_glob'},
-                  $self->_staging_archive_path,
-                  $c->freeze(),
-                  $c->digest()];
-  }
-
-  my $num_lines = @lines;
-  # add header
-  unshift @lines, \@COLUMN_NAMES;
-
-  if ($num_lines == 0) {
-    $self->warn('Nothing to archive, am empty manifest will be generated');
-  }
-  $self->info('Writing manifest to ' . $self->_manifest_path);
-  csv(in => \@lines, out => $self->_manifest_path, @CSV_PARSER_OPTIONS);
-
-  return $num_lines;
+  return $num_samples;
 }
 
-has '_products4upload' => (
+has '_samples4upload' => (
   isa        => q{HashRef},
   is         => q{ro},
   lazy_build => 1,
 );
-sub _build__products4upload {
+sub _build__samples4upload {
   my $self = shift;
-
-  my $p_config = $self->_pipeline_config();
-  $p_config or return {};
-
-  my $short_id = $self->pp_short_id($p_config);
-
-  my @products = grep { $self->is_release_data($_) }
-                 @{$self->products->{data_products}};
 
   my $products4archive = {};
 
-  foreach my $product (@products) {
-
-    my $archival_flag = grep { $self->pp_short_id($_) eq $short_id }
-                        @{$self->pps_config4product($product)};
-    $archival_flag or next;
+  foreach my $product ( @{$self->_products4upload} ) {
 
     my $sname = $product->lims->sample_supplier_name;
-    ($sname and ($sname =~ $SAMPLE_NAME_PATTERN)) or next;
 
+    # Skips
+    ($sname and ($sname =~ $SAMPLE_NAME_PATTERN)) or next;
+    $product->lims->sample_consent_withdrawn and next;
     $self->has_qc_for_release($product) or next;
 
     # First come basis for choosing one of the duplicates.
@@ -266,11 +269,43 @@ sub _build__products4upload {
     $products4archive->{$sname}->{'product'} = $product;
 
     # Where are the files to upload?
-    my $dir = $self->pp_archive4product($product, $p_config, $self->pp_archive_path);
+    my $dir = $self->pp_archive4product(
+                    $product, $self->_pipeline_config, $self->pp_archive_path);
     $products4archive->{$sname}->{'pp_data_glob'} = catdir($dir, $PP_DATA_GLOB);
   }
 
   return $products4archive;
+}
+
+has '_products4upload' => (
+  isa        => q{ArrayRef},
+  is         => q{ro},
+  lazy_build => 1,
+);
+sub _build__products4upload {
+  my $self = shift;
+
+  my @products =  grep { $self->is_release_data($_) }
+                  @{$self->products->{data_products}};
+  my $pps4archival= {};
+  my @products4upload = ();
+
+  foreach my $product (@products) {
+    my @pps = grep { $self->pp_enable_external_archival($_) }
+              grep { $self->pp_name($_) eq $PP_NAME }
+              @{$self->pps_config4product($product)};
+    @pps or next;
+    foreach my $pp (@pps) {
+      $pps4archival->{$self->pp_short_id($pp)} = 1;
+    }
+    push @products4upload, $product;
+  }
+
+  if (keys %{$pps4archival} > 1) {
+    $self->logcroak('Multiple external archives are not supported');
+  }
+
+  return \@products4upload;
 }
 
 has '_pipeline_config' => (
@@ -281,31 +316,16 @@ has '_pipeline_config' => (
 sub _build__pipeline_config {
   my $self = shift;
 
-  my @products = grep { $self->is_release_data($_) }
-                 @{$self->products->{data_products}};
-
-  my $pps4archival = {};
-  foreach my $product (@products) {
-    my @pps = grep { $self->pp_enable_external_archival($_) }
-              grep { $self->pp_name($_) eq $PP_NAME }
-              @{$self->pps_config4product($product)};
-    @pps or next;
-    foreach my $pp (@pps) {
-      push @{$pps4archival->{$self->pp_short_id($pp)}}, $pp;
+  foreach my $product ( @{$self->_products4upload} ) {
+    my @pps = @{$self->pps_config4product($product)};
+    if (@pps) {
+      my $config = $pps[0];
+      $self->pp_staging_root($config); # validates
+      return $config; # any config will do, we know there is only one
     }
   }
 
-  my @pipeline_ids = keys %{$pps4archival};
-  my $config;
-  if (@pipeline_ids) {
-    if (@pipeline_ids > 1) {
-      $self->logcroak('Multiple external archives are not supported');
-    }
-    $config = $pps4archival->{$pipeline_ids[0]}->[0];
-    $self->pp_staging_root($config); # validates
-  }
-
-  return $config;
+  return;
 }
 
 has '_staging_archive_path' => (
@@ -340,6 +360,23 @@ sub _build__manifest_path {
   return $path;
 }
 
+sub _climb_archival_options {
+  my $self = shift;
+
+  my $aconfig = $self->_pipeline_config->{$CLIMB_ARCHIVAL_KEY};
+  $aconfig and (ref $aconfig eq q[HASH]) or $self->logcroak(
+    "$CLIMB_ARCHIVAL_KEY section of the product config. is absent");
+
+  my @options = ();
+  for my $key (@CLIMB_ARCHIVAL_CREDENTIALS_KEYS) {
+    $aconfig->{$key} or $self->logcroak(
+      "$key entry is absent in product config.");
+    push @options, q[--] . $key, $aconfig->{$key};
+  }
+
+  return join q[ ], @options;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -369,6 +406,8 @@ __END__
 =item Readonly
 
 =item Try::Tiny
+
+=item Perl6::Slurp
 
 =item npg_qc::Schema
 
