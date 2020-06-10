@@ -154,7 +154,7 @@ sub _execute_function {
 
   my $g = $self->function_graph4jobs;
 
-  my @depends_on_with_degree = ();
+  my $depends_on_with_degree = {};
 
   if (!$g->is_source_vertex($function)) {
     #####
@@ -167,7 +167,15 @@ sub _execute_function {
 
     my $map_degree = sub {
       my ($ids, $is_same_degree) = @_;
-      return (map { {$_ => $is_same_degree} } @{$ids});
+      for my $id ( @{$ids} ) {
+        if (exists $depends_on_with_degree->{$id}) {
+          ($depends_on_with_degree->{$id} == $is_same_degree) or
+            $self->logcroak("Discrepancy in job degree for job $id");
+        } else {
+          $depends_on_with_degree->{$id} = $is_same_degree;
+        }
+      }
+      return;
     };
 
     # Do we have a composition attribute?
@@ -175,7 +183,7 @@ sub _execute_function {
     my $definition = $self->function_definitions->{$function}[0];
     if ( !$definition->has_composition ) {
       # If not our relationship is many to one or one to one and should be controlled by done(<job_id)
-      @depends_on_with_degree = $map_degree->(\@depends_on, 0);
+      $map_degree->(\@depends_on, 0);
     } else {
       my @this_comp_digest = map {$_->composition()->digest()}
                              @{$self->function_definitions->{$function}};
@@ -189,21 +197,21 @@ sub _execute_function {
                 $g->get_vertex_attribute($prev_function, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
         if ((scalar @a > 1) || !$self->function_definitions->{$prev_function}[0]->has_composition) {
           #mark this relationship as "done()"
-          push @depends_on_with_degree, $map_degree->(\@a, 0);
+          $map_degree->(\@a, 0);
         } else {
           my @prev_comp_digest = map {$_->composition()->digest()}
                                  @{$self->function_definitions->{$prev_function}};
           my @prev_chunk = map {$_->chunk_label()}
                            @{$self->function_definitions->{$prev_function}};
           # Mark as "done()" or "one(<job_id>[*])"depending on match evaluation
-          push @depends_on_with_degree, $map_degree->(
+          $map_degree->(
             \@a, ((@this_comp_digest ~~ @prev_comp_digest) and (@this_chunk ~~ @prev_chunk) ? 1 : 0));
         }
       }
     }
   }
 
-  my @ids = $self->_submit_function($function, @depends_on_with_degree);
+  my @ids = $self->_submit_function($function, $depends_on_with_degree);
   if (!@ids) {
     $self->logcroak(q{A list of LSF job ids should be returned});
   }
@@ -281,7 +289,7 @@ sub _kill_jobs {
 }
 
 sub _submit_function {
-  my ($self, $function_name, @depends_on) = @_;
+  my ($self, $function_name, $depends_on) = @_;
 
   my $definitions = {};
   #####
@@ -302,10 +310,9 @@ sub _submit_function {
 
   my @lsf_ids = ();
   foreach my $da (values %{$definitions}) {
-
     my %args = %{$self->_common_attrs()};
     $args{'definitions'}      = $da;
-    $args{'upstream_job_ids'} = \@depends_on;
+    $args{'upstream_job_ids'} = $depends_on;
     $args{'fs_resource'}      = $self->fs_resource();
     $args{'log_dir'}          = $log_dir;
     my $job = npg_pipeline::executor::lsf::job->new(\%args);
@@ -316,7 +323,7 @@ sub _submit_function {
     }
 
     my $bsub_cmd =  sprintf q(bsub %s%s '%s'),
-      !@depends_on ? q[-H ] : q[],
+      (not keys %{$depends_on}) ? q[-H ] : q[],
       $job->params(),
       (join q[ ], $SCRIPT4SAVED_COMMANDS, '--path', $file_path,
                                           '--function_name', $function_name);

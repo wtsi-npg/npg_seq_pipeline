@@ -1,8 +1,9 @@
 package npg_pipeline::runfolder_scaffold;
 
 use Moose::Role;
+use File::Basename;
 use File::Path qw/make_path/;
-use File::Spec::Functions qw/catfile catdir/;
+use File::Spec::Functions qw/catfile catdir abs2rel/;
 use File::Slurp;
 use Readonly;
 use Carp;
@@ -26,11 +27,15 @@ sub create_product_level {
   }
 
   my @dirs = ();
-  # Create cache dir for short files and qc out directory for every product
+
+  # Create cache dir for short files, no_archive, pp_archive,
+  # archive and autoqc out directory for every product
   foreach my $p ( (map { @{$_} } values %{$self->products}) ) {
     push @dirs, ( map { $p->$_($self->archive_path()) }
                   qw/path qc_out_path short_files_cache_path/ ),
-                $p->path($self->no_archive_path());
+                $p->path($self->no_archive_path()),
+                $p->stage1_out_path($self->no_archive_path()),
+                $p->path($self->pp_archive_path());
   }
   # Create tileviz directory for lane products only
   push @dirs, ( map { $_->tileviz_path($self->archive_path()) }
@@ -45,6 +50,24 @@ sub create_product_level {
     # can use in lane-level data, it will produce output and will overwrite this file.
     #
     $self->_create_tileviz_lane_indexes();
+
+    #####
+    # In per-product no_archive directories, which were created above,
+    # create links to cram output of stage1 if the links do not yet exist. 
+    #
+    # A link is created without an error even if its target does not exit.
+    # The target will be created during the p4stage1 step.
+    #
+    my $ext = 'cram';
+    foreach my $p ( @{$self->products->{'data_products'}}) {
+      my $link   = $p->file_path($p->stage1_out_path($self->no_archive_path()), ext => $ext);
+      my $link_base_dir = dirname($link);
+      if (!-l $link) { # a link might exist if we are re-using the analysis directory
+        my $target = $p->file_path($self->recalibrated_path(), ext => $ext);
+        $target = abs2rel($target, $link_base_dir);
+        symlink $target, $link or croak "Failed to create a symlink $link to target $target";
+      }
+    }
   }
 
   my $m = join qq[\n], 'Created the following directories:', @dirs;
@@ -96,6 +119,7 @@ sub create_top_level {
   push @dirs,
     $self->archive_path(),
     $self->no_archive_path(),
+    $self->pp_archive_path(),
     $self->status_files_path(),
     $self->_tileviz_index_dir_path(),
     $self->irods_publisher_rstart_dir_path();
@@ -288,6 +312,8 @@ Given a path in analysis directory changes it to outgoing directory.
 
 =item namespace::autoclean
 
+=item File::Basename
+
 =item File::Path
 
 =item File::Spec
@@ -316,7 +342,7 @@ Given a path in analysis directory changes it to outgoing directory.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018, 2019 Genome Research Ltd
+Copyright (C) 2018,2019,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

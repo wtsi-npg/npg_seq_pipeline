@@ -22,30 +22,8 @@ sub build_pipeline_script_name {
   return $PIPELINE_SCRIPT;
 }
 
-has 'study_analysis_conf' => (
-  isa        => q{HashRef},
-  is         => q{ro},
-  lazy_build => 1,
-  metaclass  => 'NoGetopt',
-  init_arg   => undef,
-);
-sub _build_study_analysis_conf {
-  my $self = shift;
-
-  my $config = {};
-  try {
-    $config = $self->read_config($self->conf_file_path(q{study_analysis.yml}));
-  } catch {
-    $self->warn(qq{Failed to retrieve study analysis configuration: $_});
-  };
-
-  return $config;
-}
-
 sub run {
   my $self = shift;
-
-  $self->study_analysis_conf();
 
   foreach my $run ($self->runs_with_status($ANALYSIS_PENDING)) {
     try {
@@ -81,45 +59,10 @@ sub _process_one_run {
     $arg_refs->{'job_priority'} += $inherited_priority;
   }
   $arg_refs->{'rf_path'}  = $self->runfolder_path4run($id_run);
-  $arg_refs->{'software'} = $self->_software_bundle($arg_refs->{'studies'});
 
   $self->run_command( $id_run, $self->_generate_command( $arg_refs ));
 
   return;
-}
-
-sub _software_bundle {
-  my ($self, $studies) = @_;
-
-  if (!$studies) {
-    $self->logcroak('Study ids are missing');
-  }
-
-  my @s = @{$studies};
-
-  my $conf = $self->study_analysis_conf();
-
-  my @software = uniq map { $conf->{$_} || q[] } @s;
-  if (@software > 1) {
-    $self->logcroak(q{Multiple software bundles for a run});
-  }
-
-  my $software_dir = @software ? $software[0] : q[];
-  if ($software_dir && !-d $software_dir) {
-    $self->logcroak(qq{Directory '$software_dir' does not exist});
-  }
-
-  return $software_dir ? abs_path($software_dir) : q[];
-}
-
-##########
-# Remove from the PATH the bin the daemon is running from
-#
-sub _clean_path {
-  my ($self, $path) = @_;
-  my $bin = $self->local_bin;
-  my @path_components  = split /$PATH_DELIM/smx, $path;
-  return join $PATH_DELIM, grep { (abs_path($_) || q[]) ne $bin} @path_components;
 }
 
 sub _generate_command {
@@ -141,19 +84,8 @@ sub _generate_command {
   $cmd .= q{ --id_flowcell_lims } . $arg_refs->{'id'};
 
   my $path = join $PATH_DELIM, $self->local_path(), $ENV{'PATH'};
-  my $analysis_path_root = $arg_refs->{'software'};
-  if ($analysis_path_root) {
-    $path = join $PATH_DELIM, "${analysis_path_root}/bin", $self->_clean_path($path);
-  }
-  my $prefix = $self->daemon_conf()->{'command_prefix'} || q();
-  $cmd = qq{export PATH=$path; $prefix$cmd};
-  if ($analysis_path_root) {
-    $cmd = join q[; ],
-           qq[export PERL5LIB=${analysis_path_root}/lib/perl5],
-           qq[export CLASSPATH=${analysis_path_root}/jars],
-           $cmd;
-  }
-  return $cmd;
+
+  return qq{export PATH=$path; $cmd};
 }
 
 no Moose;
@@ -225,7 +157,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Ltd.
+Copyright (C) 2016, 2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
