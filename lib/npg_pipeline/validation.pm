@@ -771,7 +771,7 @@ sub _file_archive_deletable {
                'one file archive');
 
   my %product_digests =
-    map { $_->target_product->composition->digest => $_->target_product->composition}
+    map { $_->target_product->composition->digest => $_->target_product}
     @{$self->product_entities};
   my %archived_product_digest =
     map { $_->target_product->composition->digest => 1}
@@ -780,9 +780,16 @@ sub _file_archive_deletable {
   my $deletable = 1;
   for my $original (keys %product_digests) {
     if (!exists $archived_product_digest{$original}) {
+      my $tp = $product_digests{$original};
       $self->logwarn('Product not available in any of file archives: ' .
-                      $product_digests{$original}->freeze());
-      $deletable = 0;
+                      $tp->composition->freeze());
+      if ($tp->is_tag_zero_product) {
+        $self->info('... but it is a tag zero product');
+      } elsif ($tp->lims->is_control) {
+        $self->info('... but it is a PhiX spike');
+      } else {
+        $deletable = 0;
+      }
     }
   }
 
