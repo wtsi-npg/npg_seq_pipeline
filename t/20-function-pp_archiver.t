@@ -1,12 +1,12 @@
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path/;
 use File::Copy;
-use Log::Log4perl qw/:levels/;
 use File::Slurp;
+use Log::Log4perl qw/:levels/;
 use Moose::Meta::Class;
 use DateTime;
 
@@ -200,10 +200,11 @@ subtest 'product config for pp archival validation' => sub {
 subtest 'definition and manifest generation' => sub {
   plan tests => 41;
 
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
   my $id_run = 26291;
   my $product_conf =
     q[t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release.yml];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    q[t/data/portable_pipelines/samplesheet4archival_all_controls.csv];
 
   my $init = {
     product_conf_file_path => $product_conf,
@@ -220,14 +221,8 @@ subtest 'definition and manifest generation' => sub {
   is (scalar @{$ds}, 1, '1 definition is returned');
   is ($ds->[0]->excluded, 1, 'function is excluded - supplier sample name mismatch');
 
-  my $ss = read_file($ENV{NPG_CACHED_SAMPLESHEET_FILE});
-  # Change supplier sample names
-  $ss =~ s/,A1,/,AAMB-M4567,/g;
-  $ss =~ s/,C1,/,BRIS-K5678,/g;
-  $ss =~ s/,B1,/,BIRM-Z4378,/g;
-  my $new_ss = join(q[/], $dir, 'samplesheet_33990.csv');
-  write_file($new_ss, $ss);
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $new_ss;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    q[t/data/portable_pipelines/samplesheet4archival_none_controls.csv];
   
   $f = npg_pipeline::function::pp_archiver->new($init);
   throws_ok { $f->create }
@@ -409,14 +404,9 @@ subtest 'definition and manifest generation' => sub {
 subtest 'skip sample with consent withdrawn' => sub {
   plan tests => 7;
 
-  my $ss = read_file(join(q[/], $dir, 'samplesheet_33990.csv'));
-
-  # Set consent withdrawn to true for one sample.
-
-  $ss =~ s/to:600,,,,0/to:600,,,,1/ or die 'substitution failed';
-  my $new_ss = join(q[/], $dir, 'samplesheet_33990_cw.csv');
-  write_file($new_ss, $ss); 
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $new_ss;
+  # Consent withdrawn is set to true for one sample.
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    q[t/data/portable_pipelines/samplesheet4archival_none_controls_cons_wthdr.csv];
 
   # Make all samples pass lib QC.
   my %dict = map { $_->short_desc => $_->id_mqc_library_outcome }
@@ -464,23 +454,35 @@ subtest 'skip sample with consent withdrawn' => sub {
   is ((shift @lines), join(qq[\t], @line), 'concented plex 1 is listed');
 };
 
+subtest 'error on unset sample supplier name' => sub {
+  plan tests => 1;
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    q[t/data/portable_pipelines/samplesheet4archival_none_controls_no_suppl_name.csv];
+  my $product_conf =
+    q[t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release.yml];
+
+  my $init = {
+    product_conf_file_path => $product_conf,
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    timestamp              => $timestamp,
+    repository             => $dir,
+    qc_schema              => $schema,
+    merge_lanes            => 0,
+  };
+  throws_ok { npg_pipeline::function::pp_archiver->new($init)->create() }
+    qr/Supplier sample name is not set/,
+    'error when supplier sample name is not set';
+};
+
 subtest 'samples from different studies' => sub {
   plan tests => 8;
 
-  my @ss = read_file(join(q[/], $dir, 'samplesheet_33990.csv'));
-
-  # Set a different study for all samples in lane 1.
-
-  my @new_lines = ();
-  for my $l (@ss) {
-    if ($l =~ /\A 1,/smx) {
-      $l =~ s/,3073,/,3070,/;
-    }
-    push @new_lines, $l;
-  }
-  my $new_ss = join(q[/], $dir, 'samplesheet_33990_cw.csv');
-  write_file($new_ss, @new_lines); 
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $new_ss;
+  # A different study for all samples in lane 1
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+     q[t/data/portable_pipelines/samplesheet4archival_none_controls_diff_study.csv];
 
   my $product_conf =
     q[t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_two_studies.yml];
@@ -515,7 +517,8 @@ subtest 'samples from different studies' => sub {
 subtest 'skip unknown pipeline' => sub {
   plan tests => 2;
 
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    q[t/data/portable_pipelines/samplesheet4archival_none_controls.csv];
   my $f = npg_pipeline::function::pp_archiver->new(
     product_conf_file_path => qq[$repo_dir/product_release_unknown_pp.yml],
     archive_path           => $archive_path,

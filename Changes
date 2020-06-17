@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - switch to sample control flag when determining eligibility for
+   pp data srchival
+
 release 57.13.1
  - made run deletion policy consistent wiht a change to eligibility
    for iRODS archival (see commit 457da605c9f7fe97f82954ffe7155ca96e034753),
