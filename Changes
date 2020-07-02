@@ -1,8 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 57.14.0
  - switch to sample control flag when determining eligibility for
-   pp data srchival
+   pp data archival
 
 release 57.13.1
  - made run deletion policy consistent wiht a change to eligibility
