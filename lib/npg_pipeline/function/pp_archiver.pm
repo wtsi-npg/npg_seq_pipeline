@@ -22,10 +22,6 @@ our $VERSION = '0';
 
 ################# Package-level constants ###################
 
-# Supplier sample name pattern for external samples. Negative look back in the
-# second part of the expression to exclude names starting with CGAP.
-Readonly::Scalar our $SAMPLE_NAME_PATTERN  => qr/\A [[:upper:]]{4}- (?<!CGAP-) /xms;
-
 Readonly::Array  our @CSV_PARSER_OPTIONS   => ( strict      => 1,
                                                 sep_char    => qq[\t],
                                                 eol         => qq[\n],
@@ -253,12 +249,14 @@ sub _build__samples4upload {
 
   foreach my $product ( @{$self->_products4upload} ) {
 
-    my $sname = $product->lims->sample_supplier_name;
-
     # Skips
-    ($sname and ($sname =~ $SAMPLE_NAME_PATTERN)) or next;
+    $product->lims->sample_is_control and next;
     $product->lims->sample_consent_withdrawn and next;
     $self->has_qc_for_release($product) or next;
+
+    my $sname = $product->lims->sample_supplier_name;
+    $sname or $self->logcroak('Supplier sample name is not set for ' .
+      $product->composition->freeze());
 
     # First come basis for choosing one of the duplicates.
     if ($products4archive->{$sname}) {

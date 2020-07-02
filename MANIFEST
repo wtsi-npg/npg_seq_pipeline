@@ -1044,6 +1044,11 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunInfo.xml
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunParameters.xml
 t/data/p4_stage1_analysis/1234_samplesheet.csv
 t/data/p4_stage1_analysis/TileMetricsOut.bin
+t/data/portable_pipelines/samplesheet4archival_all_controls.csv
+t/data/portable_pipelines/samplesheet4archival_none_controls.csv
+t/data/portable_pipelines/samplesheet4archival_none_controls_cons_wthdr.csv
+t/data/portable_pipelines/samplesheet4archival_none_controls_diff_study.csv
+t/data/portable_pipelines/samplesheet4archival_none_controls_no_suppl_name.csv
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release.yml
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_no_pp.yml
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_no_study.yml
