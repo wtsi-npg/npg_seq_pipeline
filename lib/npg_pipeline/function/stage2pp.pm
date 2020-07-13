@@ -117,6 +117,7 @@ sub _canonical_name {
 sub _ncov2019_artic_nf_create {
   my ($self, $product, $pp) = @_;
 
+  my $pp_version   = $self->pp_version($pp);
   my $in_dir_path  = $product->stage1_out_path($self->no_archive_path());
   my $qc_out_path  = $product->qc_out_path($self->archive_path());
   my $out_dir_path = $self->pp_archive4product($product, $pp, $self->pp_archive_path());
@@ -187,6 +188,9 @@ sub _ncov2019_artic_nf_create {
     $command = join q[ ], $command,
                           q[--rpt_list], $product->composition->freeze2rpt,
                           q[--tm_json_file], $tm_qc_out_path;
+  }
+  if ($pp_version) {
+    $command = join q[ ], $command, q[--pp_version], $pp_version;
   }
   push @commands, $command;
 

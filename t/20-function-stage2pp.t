@@ -150,7 +150,7 @@ subtest 'definition generation' => sub {
            ' && ' .
            "(cat $summary_file | $dir/npg_simple_robo4artic $archive_path/plex1/qc)" .
            ' && ' .
-           "(cat $summary_file | $dir/npg_autoqc_generic4artic --qc_out $archive_path/plex1/qc)";
+           "(cat $summary_file | $dir/npg_autoqc_generic4artic --qc_out $archive_path/plex1/qc --pp_version cf01166c42a)";
   my $c0 = $c;
   is ($ds->[0]->command, $c, 'correct command for plex 1');
   is ($ds->[0]->job_name, 'stage2pp_ncov2cf011_26291', 'job name');
@@ -164,7 +164,7 @@ subtest 'definition generation' => sub {
            ' && ' .
            "(cat $summary_file | $dir/npg_simple_robo4artic $archive_path/plex2/qc)" .
            ' && ' .
-           "(cat $summary_file | $dir/npg_autoqc_generic4artic --qc_out $archive_path/plex2/qc)";
+           "(cat $summary_file | $dir/npg_autoqc_generic4artic --qc_out $archive_path/plex2/qc --pp_version cf01166c42a)";
   is ($ds->[1]->command, $c, 'correct command for plex 2');
 
   $c_copy = $command;
@@ -176,7 +176,7 @@ subtest 'definition generation' => sub {
            ' && ' .
            "(cat $summary_file | $dir/npg_simple_robo4artic $archive_path/plex3/qc)" .
            ' && ' .
-           "(cat $summary_file | $dir/npg_autoqc_generic4artic --qc_out $archive_path/plex3/qc)";
+           "(cat $summary_file | $dir/npg_autoqc_generic4artic --qc_out $archive_path/plex3/qc --pp_version cf01166c42a)";
   is ($ds->[2]->command, $c, 'correct command for plex 3');
 
   $ppd = npg_pipeline::function::stage2pp->new(
@@ -198,7 +198,7 @@ subtest 'definition generation' => sub {
         "(cat $summary_file | $dir/npg_simple_robo4artic $archive_path/lane1/plex1/qc)" .
         ' && ' .
         "(cat $summary_file | $dir/npg_autoqc_generic4artic --qc_out $archive_path/lane1/plex1/qc " .
-        "--rpt_list 26291:1:1 --tm_json_file $archive_path/lane1/qc/26291_1.tag_metrics.json)";
+        "--rpt_list 26291:1:1 --tm_json_file $archive_path/lane1/qc/26291_1.tag_metrics.json --pp_version cf01166c42a)";
   is ($ds->[0]->command, $c, 'correct command for unmerged plex 1');
 
   $ppd = npg_pipeline::function::stage2pp->new(
