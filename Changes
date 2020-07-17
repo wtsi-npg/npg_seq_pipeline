@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - append autoqc generic result generation at the end of ncov2019_artic_nf
+   portable pipeline
+
 release 57.14.0
  - switch to sample control flag when determining eligibility for
    pp data archival
