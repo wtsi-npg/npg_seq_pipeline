@@ -1,8 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+release 57.15.0
  - append autoqc generic result generation at the end of ncov2019_artic_nf
    portable pipeline
+ - tests update following a change in the default behaviour of the
+   add_object method in WTSI::NPG::iRODS 
 
 release 57.14.0
  - switch to sample control flag when determining eligibility for
