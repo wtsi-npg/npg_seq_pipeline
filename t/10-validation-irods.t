@@ -229,7 +229,7 @@ subtest 'deletable or not' => sub {
         my $md5_path = $p . q[.md5];
         write_file($md5_path, md5_hex($content));
         my $ipath = join q[/], $IRODS_TEST_AREA1, $file_name;
-        $irods->add_object($p, $ipath);
+        $irods->add_object($p, $ipath,$WTSI::NPG::iRODS::CALC_CHECKSUM);
       } 
     }
 
@@ -281,7 +281,7 @@ subtest 'deletable or not' => sub {
       qr/$trpath is not in iRODS/, 'warning - cram file missing in iRODS';
     is($result, 0, 'not deletable - cram file missing in iRODS');
     # Restore previously removed file
-    $irods->add_object($trpath, $ito_remove);
+    $irods->add_object($trpath, $ito_remove, $WTSI::NPG::iRODS::CALC_CHECKSUM);
 
     $v = npg_pipeline::validation::irods->new($ref);
     is($v->archived_for_deletion(), 1, 'deletable');
@@ -313,7 +313,7 @@ subtest 'deletable or not' => sub {
 
     # Create an extra cram file in iRODS
     my $extra = join q[/], $IRODS_TEST_AREA1, 'extra.cram';
-    $irods->add_object($trpath, $extra);
+    $irods->add_object($trpath, $extra, $WTSI::NPG::iRODS::CALC_CHECKSUM);
     $v = npg_pipeline::validation::irods->new($ref);
     warning_like { $result = $v->archived_for_deletion() }
       qr/$extra is in iRODS, but not on staging/, 'warning - unexpected file in iRODS';

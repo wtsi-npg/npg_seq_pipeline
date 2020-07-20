@@ -17,7 +17,7 @@ with qw{ npg_pipeline::function::util
          npg_pipeline::product::release 
          npg_pipeline::product::release::portable_pipeline };
 with 'npg_common::roles::software_location' =>
-  { tools => [qw/nextflow npg_simple_robo4artic/] };
+  { tools => [qw/nextflow npg_simple_robo4artic npg_autoqc_generic4artic/] };
 
 Readonly::Scalar my $FUNCTION_NAME => q[stage2pp];
 Readonly::Scalar my $MEMORY        => q[5000]; # memory in megabytes
@@ -117,10 +117,24 @@ sub _canonical_name {
 sub _ncov2019_artic_nf_create {
   my ($self, $product, $pp) = @_;
 
+  my $pp_version   = $self->pp_version($pp);
   my $in_dir_path  = $product->stage1_out_path($self->no_archive_path());
   my $qc_out_path  = $product->qc_out_path($self->archive_path());
   my $out_dir_path = $self->pp_archive4product($product, $pp, $self->pp_archive_path());
   push @{$self->_output_dirs}, $out_dir_path;
+
+  # Figure out a path to the JSON file with tag metrics results for
+  # a lane this product belongs to. 
+  my @lane_products = $product->lanes_as_products();
+  my $tm_qc_out_path;
+  if (@lane_products == 1) {
+    $tm_qc_out_path = catfile(
+      $lane_products[0]->qc_out_path($self->archive_path()),
+      $lane_products[0]->file_name(ext => q[tag_metrics.json]));
+  } else {
+    $self->warn(
+      'Multiple parent lanes for a product, not giving tag metrics path');
+  }
 
   my $ref_cache_instance   = npg_pipeline::cache::reference->instance();
   my $do_gbs_plex_analysis = 0;
@@ -160,11 +174,24 @@ sub _ncov2019_artic_nf_create {
 
   # Use the summary to create the autoqc review result.
   # The result will not necessary be created, but this would not be an error.
-  # The npg_simple_robo4artic will exit early with success exit code if the supplier
-  # sample name does not conform to a certain pattern or if the summary is empty,
-  # which can happen in case of zero input reads.
-  $command = join q[ ], 'cat', $artic_qc_summary, q[|],
-                        $self->npg_simple_robo4artic_cmd(), $qc_out_path;
+  # The npg_simple_robo4artic will exit early with success exit code if the
+  # summary is empty, which can happen in case of zero input reads.
+
+  my $in = join q[ ], 'cat', $artic_qc_summary, q[|];
+  $command = join q[ ], $in, $self->npg_simple_robo4artic_cmd(), $qc_out_path;
+  push @commands, $command;
+
+  # Use the summary to create the autoqc generic result.
+  $command = join q[ ], $in, $self->npg_autoqc_generic4artic_cmd(),
+                             q[--qc_out], $qc_out_path;
+  if ($tm_qc_out_path) {
+    $command = join q[ ], $command,
+                          q[--rpt_list], $product->composition->freeze2rpt,
+                          q[--tm_json_file], $tm_qc_out_path;
+  }
+  if ($pp_version) {
+    $command = join q[ ], $command, q[--pp_version], $pp_version;
+  }
   push @commands, $command;
 
   $command = join q[ && ], map { q[(] . $_ . q[)] } @commands;
