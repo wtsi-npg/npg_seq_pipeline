@@ -62,6 +62,8 @@ sub create {
       my $method = $self->canonical_name($pp_name);
       $method = join q[_], q[], $method, q[create];
       if ($self->can($method)) {
+        # Definition factory method might return an undefined
+        # value, which will be filtered out later.
         push @definitions, $self->$method($product, $pp);
       } else {
         $self->error(sprintf
@@ -71,6 +73,8 @@ sub create {
       }
     }
   }
+
+  @definitions = grep { $_ } @definitions;
 
   if (@definitions) {
     (@definitions == @{$self->_output_dirs}) or $self->logcroak(
