@@ -23,6 +23,7 @@ with 'npg_common::roles::software_location' =>
                 /] };
 
 Readonly::Scalar my $FUNCTION_NAME     => q[stage2pp];
+
 Readonly::Scalar my $DEFAULT_MEMORY_MB => 1000;
 Readonly::Scalar my $DEFAULT_NUM_CPUS  => 1;
 Readonly::Hash   my %PER_PP_REQS   => (
@@ -85,7 +86,7 @@ sub create {
   @definitions = grep { $_ } @definitions;
 
   if (@definitions) {
-    (@definitions == @{$self->_output_dirs}) or $self->logcroak(
+    (@definitions <= @{$self->_output_dirs}) or $self->logcroak(
       sprintf 'Number of definitions %i and output directories %i do not match',
       scalar @definitions, scalar @{$self->_output_dirs}
     );
@@ -136,8 +137,38 @@ sub _num_cpus {
   return $req->{num_cpus} || $DEFAULT_NUM_CPUS;
 }
 
+sub _primer_bed_file {
+  my ($self,$product) = @_;
+  my $bed_file = npg_pipeline::cache::reference->instance()
+                 ->get_primer_panel_bed_file($product, $self->repository);
+  $bed_file or $self->logcroak(
+    'Bed file is not found for ' . $product->composition->freeze());
+  return $bed_file;
+}
+
+sub _and_commands {
+  my @commands = @_;
+  return join q[ && ], map { q[(] . $_ . q[)] } @commands;
+}
+
+sub _job_name {
+  my ($self, $pp) = @_;
+  return join q[_], $FUNCTION_NAME, $self->pp_short_id($pp), $self->label();
+}
+
+sub _job_attrs {
+  my ($self, $product, $pp, $reqs) = @_;
+  return {'created_by'  => __PACKAGE__,
+          'created_on'  => $self->timestamp(),
+          'identifier'  => $self->label,
+          'job_name'    => $self->_job_name($pp),
+          'num_cpus'    => [_num_cpus($reqs)],
+          'memory'      => _memory($reqs),
+          'composition' => $product->composition()};
+}
+
 sub _ncov2019_artic_nf_create {
-  my ($self, $product, $pp, $req) = @_;
+  my ($self, $product, $pp, $reqs) = @_;
 
   my $pp_version   = $self->pp_version($pp);
   my $in_dir_path  = $product->stage1_out_path($self->no_archive_path());
@@ -164,17 +195,8 @@ sub _ncov2019_artic_nf_create {
                  ->get_path($product, 'bwa0_6', $self->repository, $do_gbs_plex_analysis);
   $ref_path or $self->logcroak(
     'bwa reference is not found for ' . $product->composition->freeze());
-  my $bed_file = $ref_cache_instance
-                 ->get_primer_panel_bed_file($product, $self->repository);
-  $bed_file or $self->logcroak(
-    'Bed file is not found for ' . $product->composition->freeze());
 
-  my %job_attrs = ('created_by'  => __PACKAGE__,
-                   'created_on'  => $self->timestamp(),
-                   'identifier'  => $self->label,
-                   'num_cpus'    => [_num_cpus($req)],
-                   'memory'      => _memory($req),
-                   'composition' => $product->composition(), );
+  my $job_attrs = $self->_job_attrs($product, $pp, $reqs);
 
   # Run artic
   # And yes, it's -profile, not --profile!
@@ -182,7 +204,7 @@ sub _ncov2019_artic_nf_create {
                            '-profile singularity,sanger',
                            '--illumina --cram --prefix ' . $self->label,
                            "--ref $ref_path",
-                           "--bed $bed_file",
+                           '--bed ' . $self->_primer_bed_file($product),
                            "--directory $in_dir_path",
                            "--outdir $out_dir_path";
   my @commands = ($command);
@@ -216,12 +238,9 @@ sub _ncov2019_artic_nf_create {
   }
   push @commands, $command;
 
-  $command = join q[ && ], map { q[(] . $_ . q[)] } @commands;
+  $job_attrs->{'command'}  = _and_commands(@commands);
 
-  $job_attrs{'command'}  = $command;
-  $job_attrs{'job_name'} = join q[_], $FUNCTION_NAME, $self->pp_short_id($pp), $self->label();
-
-  return npg_pipeline::function::definition->new(\%job_attrs);
+  return npg_pipeline::function::definition->new($job_attrs);
 }
 
 __PACKAGE__->meta->make_immutable;
