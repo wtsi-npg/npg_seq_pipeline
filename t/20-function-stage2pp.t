@@ -113,7 +113,7 @@ subtest 'error on missing data in LIMS' => sub {
 };
 
 subtest 'definition generation' => sub {
-  plan tests => 20;
+  plan tests => 21;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
   my $nf_dir = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a];
@@ -128,6 +128,8 @@ subtest 'definition generation' => sub {
     id_run                 => 26291,
     timestamp              => $timestamp,
     repository             => $dir);
+
+  is ($ppd->pipeline_type, 'stage2pp', 'default pipeline type');
 
   my $ds = $ppd->create;
 
