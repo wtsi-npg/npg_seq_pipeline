@@ -17,7 +17,11 @@ with qw{ npg_pipeline::function::util
          npg_pipeline::product::release 
          npg_pipeline::product::release::portable_pipeline };
 with 'npg_common::roles::software_location' =>
-  { tools => [qw/nextflow npg_simple_robo4artic npg_autoqc_generic4artic/] };
+  { tools => [qw/
+                  nextflow
+                  npg_simple_robo4artic
+                  npg_autoqc_generic4artic
+                /] };
 
 Readonly::Scalar my $FUNCTION_NAME => q[stage2pp];
 Readonly::Scalar my $MEMORY        => q[5000]; # memory in megabytes
@@ -28,6 +32,8 @@ our $VERSION = '0';
 =head2 nextflow_cmd
 
 =head2 npg_simple_robo4artic_cmd
+
+=head2 npg_autoqc_generic4artic_cmd
 
 =head2 create
 
