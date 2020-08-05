@@ -17,15 +17,17 @@ with qw{ npg_pipeline::function::util
          npg_pipeline::product::release 
          npg_pipeline::product::release::portable_pipeline };
 with 'npg_common::roles::software_location' =>
-  { tools => [qw/
-                  nextflow
+  { tools => [qw/ nextflow
                   npg_simple_robo4artic
                   npg_autoqc_generic4artic
                 /] };
 
-Readonly::Scalar my $FUNCTION_NAME => q[stage2pp];
-Readonly::Scalar my $MEMORY        => q[5000]; # memory in megabytes
-Readonly::Scalar my $CPUS          => 4;
+Readonly::Scalar my $FUNCTION_NAME     => q[stage2pp];
+Readonly::Scalar my $DEFAULT_MEMORY_MB => 1000;
+Readonly::Scalar my $DEFAULT_NUM_CPUS  => 1;
+Readonly::Hash   my %PER_PP_REQS   => (
+  ncov2019_artic_nf => {memory_mb => 5000, num_cpus => 4},
+                                      );
 
 our $VERSION = '0';
 
@@ -65,12 +67,12 @@ sub create {
 
     foreach my $pp (@{$pps}) {
       my $pp_name = $self->pp_name($pp);
-      my $method = $self->canonical_name($pp_name);
-      $method = join q[_], q[], $method, q[create];
+      my $cname   = $self->canonical_name($pp_name);
+      my $method  = join q[_], q[], $cname, q[create];
       if ($self->can($method)) {
         # Definition factory method might return an undefined
         # value, which will be filtered out later.
-        push @definitions, $self->$method($product, $pp);
+        push @definitions, $self->$method($product, $pp, $PER_PP_REQS{$cname} || {});
       } else {
         $self->error(sprintf
           '"%s" portable pipeline is not implemented, method %s is not available',
@@ -124,8 +126,18 @@ sub _canonical_name {
   return $self->_names_map->{$name};
 }
 
+sub _memory {
+  my $req = shift;
+  return $req->{memory_mb} || $DEFAULT_MEMORY_MB;
+}
+
+sub _num_cpus {
+  my $req = shift;
+  return $req->{num_cpus} || $DEFAULT_NUM_CPUS;
+}
+
 sub _ncov2019_artic_nf_create {
-  my ($self, $product, $pp) = @_;
+  my ($self, $product, $pp, $req) = @_;
 
   my $pp_version   = $self->pp_version($pp);
   my $in_dir_path  = $product->stage1_out_path($self->no_archive_path());
@@ -160,8 +172,8 @@ sub _ncov2019_artic_nf_create {
   my %job_attrs = ('created_by'  => __PACKAGE__,
                    'created_on'  => $self->timestamp(),
                    'identifier'  => $self->label,
-                   'num_cpus'    => [$CPUS],
-                   'memory'      => $MEMORY,
+                   'num_cpus'    => [_num_cpus($req)],
+                   'memory'      => _memory($req),
                    'composition' => $product->composition(), );
 
   # Run artic
