@@ -4,6 +4,7 @@ LIST OF CHANGES
  - a generic way to specify constructor options in the function
    listing in a registry and its implementation to iRODS archival
    jobs and a stage2pp job
+ - implementation for the ampliconstats portable pipeline
 
 release 57.16.0
  - a new function for archival of pp data to iRODS

@@ -20,6 +20,8 @@ with 'npg_common::roles::software_location' =>
   { tools => [qw/ nextflow
                   npg_simple_robo4artic
                   npg_autoqc_generic4artic
+                  samtools
+                  qc
                 /] };
 
 Readonly::Scalar my $DEFAULT_PIPELINE_TYPE => q[stage2pp];
@@ -29,6 +31,8 @@ Readonly::Scalar my $DEFAULT_NUM_CPUS  => 1;
 Readonly::Hash   my %PER_PP_REQS   => (
   ncov2019_artic_nf => {memory_mb => 5000, num_cpus => 4},
                                       );
+
+Readonly::Scalar my $AMPLICONSTATS_OPTIONS => q[-t 50 -d 1,10,20,100];
 
 our $VERSION = '0';
 
@@ -50,6 +54,10 @@ has 'pipeline_type' => (
 =head2 npg_simple_robo4artic_cmd
 
 =head2 npg_autoqc_generic4artic_cmd
+
+=head2 samtools_cmd
+
+=head2 qc_cmd
 
 =head2 create
 
@@ -97,11 +105,9 @@ sub create {
   @definitions = grep { $_ } @definitions;
 
   if (@definitions) {
-    (@definitions == @{$self->_output_dirs}) or $self->logcroak(
-      sprintf 'Number of definitions %i and output directories %i do not match',
-      scalar @definitions, scalar @{$self->_output_dirs}
-    );
     # Create directories for all expected outputs.
+    $self->info('The following pp output directories will be created:' .
+                join qq[\n], q[], @{$self->_output_dirs});
     npg_pipeline::runfolder_scaffold->make_dir(@{$self->_output_dirs});
   } else {
     $self->debug('no stage2pp enabled data products, skipping');
@@ -250,6 +256,84 @@ sub _ncov2019_artic_nf_create {
   push @commands, $command;
 
   $job_attrs->{'command'}  = _and_commands(@commands);
+
+  return npg_pipeline::function::definition->new($job_attrs);
+}
+
+has '_lane_counter4ampliconstats' => (
+  isa      =>' HashRef',
+  is       => 'ro',
+  required => 0,
+  default  => sub { return {}; },
+);
+
+sub _ncov2019_artic_nf_ampliconstats_create {
+  my ($self, $product, $pp, $reqs) = @_;
+
+  my $pp_name = $self->pp_name($pp);
+
+  # Can we deal with this product?
+  if ($product->composition->num_components > 1) { # No
+    $self->warn(qq[$pp_name is for one-component compositions]);
+    return;
+  }
+  # Have we dealt with this lane already?
+  my $position = $product->composition->get_component(0)->position;
+  if ($self->_lane_counter4ampliconstats->{$position}) { # Yes
+    return;
+  }
+
+  my $lane_product = ($product->lanes_as_products)[0];
+  my $lane_pp_path = $self->pp_archive4product($lane_product, $pp, $self->pp_archive_path());
+  push @{$self->_output_dirs}, $lane_pp_path;
+  my $sta_file = join q[/], $lane_pp_path, $lane_product->file_name(ext => q[astats]);
+
+  my $file_glob = $self->pp_input_glob($pp);
+  $file_glob or $self->logcroak(qq[Input glob is not defined for '$pp_name' pp]);
+  my $input_files_glob = join q[/], $lane_pp_path, $file_glob;
+  my $lane_archive = $lane_product->path($self->archive_path());
+  my $lane_qc_dir = $lane_product->qc_out_path($self->archive_path());
+
+  my $image_dir = join q[/], $lane_qc_dir, q[ampliconstats];
+  push @{$self->_output_dirs}, $image_dir;
+
+  my $job_attrs = $self->_job_attrs($lane_product, $pp, $reqs);
+  my $sta_cpus_option = $job_attrs->{num_cpus} > 1 ?
+                        q[-@] . ($job_attrs->{num_cpus} - 1) : q[];
+
+  # Use samtools to produce ampliconstats - one file per lane.
+  my $sta_command = join q[ ], $self->samtools_cmd,
+                               'ampliconstats',
+                               $sta_cpus_option,
+                               $AMPLICONSTATS_OPTIONS,
+                               $self->_primer_bed_file($product),
+                               $input_files_glob;
+  $sta_command = join q[ > ], $sta_command, $sta_file;
+  # Invoke a lane-level qc check on the ampliconstats file produced
+  # in the previous step with an option to fan out qc check outputs
+  # to individual per-sample directories.
+  my $qca_command = join q[ ], $self->qc_cmd,
+                               '--check generic',
+                               '--spec ampliconstats',
+                               '--rpt_list ' . $lane_product->composition->freeze2rpt,
+                               '--input_files ' . $sta_file,
+                               '--pp_name ncov2019_artic_nf_ampliconstats',
+                               '--pp_version ' . $self->pp_version($pp),
+                               '--ampstats_section FREADS',
+                               '--qc_out ' . $lane_qc_dir,
+                               '--sample_qc_out ' . $lane_archive . q[/plex*/qc];
+
+  # Run plot-ampliconstats to produce gnuplot plot files and PNG images
+  # for them; prior to this filenames in ampliconstats should be remapped.
+  my $pa_command = join q[ ], 'plot-ampliconstats',
+                              '-page 48',
+                              $image_dir,
+                              $sta_file;
+
+  $job_attrs->{'command'}  = _and_commands($sta_command, $qca_command, $pa_command);
+
+  # Set lane flag so that we skip the next product for this lane.
+  $self->_lane_counter4ampliconstats->{$position} = 1;
 
   return npg_pipeline::function::definition->new($job_attrs);
 }
