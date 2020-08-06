@@ -1,125 +1,90 @@
 package npg_pipeline::function::pp_data_to_irods_archiver;
 
+use Moose;
 use Data::Dump qw[pp];
 use JSON;
-use Moose;
 use namespace::autoclean;
 use Readonly;
 
 use npg_pipeline::function::definition;
 
-extends 'npg_pipeline::base';
-
-with qw{npg_pipeline::product::release
-        npg_pipeline::product::release::portable_pipeline};
+extends 'npg_pipeline::function::seq_to_irods_archiver';
 
 our $VERSION = '0';
 
-Readonly::Scalar my $IRODS_PP_ROOT       => q{/seq/illumina/pp/run};
+Readonly::Scalar my $IRODS_PP_ROOT       => q{/seq/illumina/pp/runs};
 Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_tree.pl};
-Readonly::Scalar my $THOUSAND            => 1000;
 
-has 'irods_destination_collection' => (
-    isa      => 'Str',
-    is       => 'ro',
-    required => 1,
-    lazy     => 1,
-    builder  => '_build_irods_destination_collection',
+has '+irods_root_collection_ns' => (
+  default => $IRODS_PP_ROOT,
 );
 
-
 sub create {
-  my ($self) = @_;
+  my $self = shift;
 
-  my $job_name = join q[_], $PUBLISH_SCRIPT_NAME, $self->label;
+  my $ref = $self->basic_definition_init_hash();
+  my @definitions = ();
 
-  my @products;
+  if (not $ref->{'excluded'}) {
 
-  # Translate the double negative
-  my $do_archival = not $self->no_irods_archival();
-  if ($do_archival) {
-    @products = grep {
-      $self->is_for_release($_, $npg_pipeline::product::release::IRODS_PP_RELEASE)
-    } grep {
-      $self->is_release_data($_)
-    } @{$self->products->{data_products}}
-  }
+    # Not using script name in the job name since the tree publisher
+    # script is generic and can be used in many different functions.
+    my $job_name = __PACKAGE__;
+    ($job_name) = $job_name =~ /::(\w+)\Z/smx;
+    $job_name = join q[_], $job_name, $self->label;
 
-  my @definitions;
-  foreach my $product (@products) {
-    my $config = $self->find_study_config($product);
-    if (not $config->{irods_pp}->{enable}) {
-      next;
-    }
+    my @products = grep { $self->is_release_data($_) }
+                   @{$self->products->{data_products}};
 
-    # TODO: add this to the metadata
-    my $composition = encode_json($product->composition->freeze);
+    foreach my $product (@products) {
+      my $config = $self->find_study_config($product);
+      $config or next;
+      $config->{irods_pp}->{enable} or next;
 
-    # TODO: other metadata, example:
-    # [{"attribute": "id_run", "value": "34576"},
-    #  {"attribute": "position", "value": "1"},
-    #  {"attribute": "tag_index", "value": "3"},
-    #  {"attribute": "supplier_sample_name", "value": "XXYYZZ"},
-    #  {"attribute": "pp_name", "value": "ncov2019_artic_nf"},
-    #  {"attribute": "pp_version", "value": "v0.8.0"},
-    #  {"attribute": "target", "value": "pp"}]
+      # TODO: add this to the metadata
+      my $composition = encode_json($product->composition->freeze);
 
-    # lims source for most of these. Are some of these in the config?
-    # Guaranteed to be there?
+      # TODO: other metadata, example:
+      # [{"attribute": "id_run", "value": "34576"},
+      #  {"attribute": "position", "value": "1"},
+      #  {"attribute": "tag_index", "value": "3"},
+      #  {"attribute": "supplier_sample_name", "value": "XXYYZZ"},
+      #  {"attribute": "target", "value": "pp"},
 
-    my $source = $self->pp_archive4product($product,
-                                           $self->pps_config4product($product),
-                                           # Where is this defined?
-                                           $self->pp_archive_path);
+      my @args = ( $PUBLISH_SCRIPT_NAME,
+                   q{--collection}, $product->path($self->irods_destination_collection()),
+                   q{--source},     $product->path($self->pp_archive_path()), );
 
-    my @args = ($PUBLISH_SCRIPT_NAME,
-                q{--collection}, $self->irods_destination_collection(),
-                q{--source},     $source);
-
-
-    if (defined $config->{irods_pp}->{filters}->{include}) {
-      my $inc = $config->{irods_pp}->{filters}->{include};
-      ref $inc eq 'ARRAY' or
+      if (defined $config->{irods_pp}->{filters}->{include}) {
+        my $inc = $config->{irods_pp}->{filters}->{include};
+        (ref $inc eq 'ARRAY') or
           $self->logcroak(q{Malformed configuration; 'include' },
                           q{expected a list, but found: }, pp($inc));
-      foreach my $val (@{$inc}) {
-        push @args, q{--include}, "'$val'";
+        foreach my $val (@{$inc}) {
+          push @args, q{--include}, qq('${val}');
+        }
       }
+
+      # TODO: create the metadata and write to a tempfile
+      # push @args, q{--metadata}, $self->metadata_json();
+
+      my %dref = %{$ref};
+      $dref{'composition'} = $product->composition;
+      $dref{'command'}     = join q[ ], @args;
+      $self->assign_common_definition_attrs(\%dref, $job_name);
+      push @definitions, npg_pipeline::function::definition->new(\%dref);
     }
 
-    # TODO: create the metadata and write to a tempfile
-    # push @args, q{--metadata}, $self->metadata_json();
-
-    my $command = join q[ ], @args;
-    $self->error(qq[iRODS loader command "$command"]);
-
-    push @definitions,
-         npg_pipeline::function::definition->new
-             ('created_by'  => __PACKAGE__,
-              'created_on'  => $self->timestamp(),
-              'identifier'  => $self->label,
-              'job_name'    => $job_name,
-              'command'     => $command,
-              'composition' => $product->composition());
+    if (not @definitions) {
+      $self->info(q{No pp products to archive to iRODS});
+      $ref->{'excluded'} = 1;
+    }
   }
 
-  if (not @definitions) {
-    push @definitions, npg_pipeline::function::definition->new
-        ('created_by' => __PACKAGE__,
-         'created_on' => $self->timestamp(),
-         'identifier' => $self->label,
-         'excluded'   => 1);
-  }
-
-  return \@definitions;
+  return @definitions
+         ? \@definitions
+         : [npg_pipeline::function::definition->new($ref)];
 };
-
-
-sub _build_irods_destination_collection {
-  my ($self) = @_;
-  return join q{/}, ($IRODS_PP_ROOT, int $self->id_run/$THOUSAND, $self->id_run);
-}
-
 
 __PACKAGE__->meta->make_immutable;
 
@@ -141,11 +106,9 @@ npg_pipeline::function::pp_data_to_irods_archiver
 
 =head1 SUBROUTINES/METHODS
 
-=head2 create
+=head2 irods_root_collection_ns
 
-Creates and returns a single function definition as an array.
-Function definition is created as a npg_pipeline::function::definition
-type object.
+=head2 create
 
 =head1 DIAGNOSTICS
 
@@ -161,6 +124,10 @@ type object.
 
 =item namespace::autoclean
 
+=item Data::Dump
+
+=item JSON
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -169,7 +136,8 @@ type object.
 
 =head1 AUTHOR
 
-
+Keith James
+Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
