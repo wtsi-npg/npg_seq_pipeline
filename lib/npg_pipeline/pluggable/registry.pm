@@ -53,6 +53,7 @@ Readonly::Hash my %REGISTRY => (
   'remove_intermediate_data'       => {'remove_intermediate_data' => 'create'},
   'pp_archiver'                    => {'pp_archiver' => 'create'},
   'pp_archiver_manifest'           => {'pp_archiver' => 'generate_manifest'},
+  'archive_pp_data_to_irods'       => {'pp_data_to_irods_archiver' => 'create'},
 
   'bam_cluster_counter_check'=> {'cluster_count' => 'create'},
   'seqchksum_comparator'     => {'seqchksum_comparator' => 'create'},
