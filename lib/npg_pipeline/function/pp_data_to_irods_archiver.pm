@@ -1,4 +1,4 @@
-package npg_pipeline::function::heron_irods_archiver;
+package npg_pipeline::function::pp_data_to_irods_archiver;
 
 use Data::Dump qw[pp];
 use JSON;
@@ -129,7 +129,7 @@ __END__
 
 =head1 NAME
 
-npg_pipeline::function::heron_run_irods_archiver;
+npg_pipeline::function::pp_data_to_irods_archiver
 
 =head1 SYNOPSIS
 

@@ -14,7 +14,7 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
 
 my $runfolder_path = 't/data/novaseq/200709_A00948_0157_AHM2J2DRXX';
 
-my $pkg = 'npg_pipeline::function::heron_irods_archiver';
+my $pkg = 'npg_pipeline::function::pp_data_to_irods_archiver';
 use_ok($pkg);
 
 subtest 'local flag' => sub {

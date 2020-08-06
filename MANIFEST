@@ -55,6 +55,7 @@ lib/npg_pipeline/function/merge_recompress.pm
 lib/npg_pipeline/function/p4_stage1_analysis.pm
 lib/npg_pipeline/function/stage2pp.pm
 lib/npg_pipeline/function/pp_archiver.pm
+lib/npg_pipeline/function/pp_data_to_irods_archiver.pm
 lib/npg_pipeline/function/product_delivery_notifier.pm
 lib/npg_pipeline/function/run_data_to_irods_archiver.pm
 lib/npg_pipeline/function/s3_archiver.pm
@@ -126,6 +127,7 @@ t/20-function-merge_recompress.t
 t/20-function-p4_stage1_analysis.t
 t/20-function-stage2pp.t
 t/20-function-pp_archiver.t
+t/20-function-pp_data_to_irods_archiver.t
 t/20-function-product_delivery_notifier.t
 t/20-function-run_data_to_irods_archiver.t
 t/20-function-s3_archiver.t
