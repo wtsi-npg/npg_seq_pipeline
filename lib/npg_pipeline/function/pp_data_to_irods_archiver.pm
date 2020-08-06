@@ -3,6 +3,7 @@ package npg_pipeline::function::pp_data_to_irods_archiver;
 use Moose;
 use Data::Dump qw[pp];
 use JSON;
+use File::Slurp;
 use namespace::autoclean;
 use Readonly;
 
@@ -27,6 +28,8 @@ sub create {
 
   if (not $ref->{'excluded'}) {
 
+    $self->ensure_restart_dir_exists();
+
     # Not using script name in the job name since the tree publisher
     # script is generic and can be used in many different functions.
     my $job_name = __PACKAGE__;
@@ -41,19 +44,12 @@ sub create {
       $config or next;
       $config->{irods_pp}->{enable} or next;
 
-      # TODO: add this to the metadata
-      my $composition = encode_json($product->composition->freeze);
-
-      # TODO: other metadata, example:
-      # [{"attribute": "id_run", "value": "34576"},
-      #  {"attribute": "position", "value": "1"},
-      #  {"attribute": "tag_index", "value": "3"},
-      #  {"attribute": "supplier_sample_name", "value": "XXYYZZ"},
-      #  {"attribute": "target", "value": "pp"},
+      my $metadata_file = $self->_create_metadata_file($product, $job_name);
 
       my @args = ( $PUBLISH_SCRIPT_NAME,
                    q{--collection}, $product->path($self->irods_destination_collection()),
-                   q{--source},     $product->path($self->pp_archive_path()), );
+                   q{--source},     $product->path($self->pp_archive_path()),
+                   q{--metadata},   $metadata_file, );
 
       if (defined $config->{irods_pp}->{filters}->{include}) {
         my $inc = $config->{irods_pp}->{filters}->{include};
@@ -64,9 +60,6 @@ sub create {
           push @args, q{--include}, qq('${val}');
         }
       }
-
-      # TODO: create the metadata and write to a tempfile
-      # push @args, q{--metadata}, $self->metadata_json();
 
       my %dref = %{$ref};
       $dref{'composition'} = $product->composition;
@@ -85,6 +78,33 @@ sub create {
          ? \@definitions
          : [npg_pipeline::function::definition->new($ref)];
 };
+
+sub _create_metadata_file {
+  my ($self, $product, $job_name) = @_;
+#encode_json($product->composition->freeze),
+  my %meta_hash = (
+    composition => $product->composition->freeze,
+    id_product  => $product->composition->digest,
+    supplier_sample_name => $product->lims->sample_supplier_name,
+    target      => q{pp},
+  );
+
+  # Convert to baton format.  
+  my @meta_list = ();
+  foreach my $aname (sort keys %meta_hash) {
+    push @meta_list,
+      {attribute => $aname, value => $meta_hash{$aname}};
+  }
+
+  my $file = join q[_], $job_name, $self->random_string(),
+                        $product->composition->digest();
+  $file .= q{.metadata.json};
+  $file = join q[/], $self->irods_publisher_rstart_dir_path(), $file;
+
+  write_file($file, to_json(\@meta_list));
+
+  return $file;
+}
 
 __PACKAGE__->meta->make_immutable;
 
@@ -127,6 +147,8 @@ npg_pipeline::function::pp_data_to_irods_archiver
 =item Data::Dump
 
 =item JSON
+
+=item File::Slurp
 
 =back
 
