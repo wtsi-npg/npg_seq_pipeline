@@ -85,9 +85,11 @@ sub _create_metadata_file {
   my %meta_hash = (
     composition => $product->composition->freeze,
     id_product  => $product->composition->digest,
-    supplier_sample_name => $product->lims->sample_supplier_name,
     target      => q{pp},
   );
+  if(my$ssn=$product->lims->sample_supplier_name){
+    $meta_hash{supplier_sample_name} = $ssn;
+  }
 
   # Convert to baton format.  
   my @meta_list = ();
