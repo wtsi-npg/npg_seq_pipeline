@@ -102,7 +102,7 @@ subtest 'create job definition' => sub {
   is ($h->{attribute}, 'id_product');
   is ($h->{value}, 'd28ec931b99c952007283973d380111784f69ed3215cffb2783a9fb878961798');
   $h = $meta->[2];
-  is ($h->{attribute}, 'supplier_sample_name');
+  is ($h->{attribute}, 'sample_supplier_name');
   is ($h->{value}, 'BRIS-1852F16');
   $h = $meta->[3];
   is ($h->{attribute}, 'target');
