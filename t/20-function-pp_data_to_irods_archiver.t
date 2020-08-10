@@ -47,7 +47,7 @@ subtest 'no_irods_archival flag' => sub {
 };
 
 subtest 'create job definition' => sub {
-  plan tests => 23;
+  plan tests => 32;
 
   # To predict the name of the file with metadata,
   # seed the random number generator.
@@ -92,8 +92,9 @@ subtest 'create job definition' => sub {
     q( --include 'ncov2019_artic_nf/v0.\\d+\\b\\S+call\\S+/\\S+variants.tsv'),
     'correct command');
 
-  ok (-e $meta_file, 'metadata file is created');
+  ok (-e $meta_file, 'metadata file (with sample supplier name) is created');
   my $meta = from_json(read_file($meta_file));
+  is (scalar @{$meta}, 4);
   my $h = $meta->[0];
   is ($h->{attribute}, 'composition');
   is ($h->{value}, '{"components":[{"id_run":34576,"position":1,"tag_index":1}]}');
@@ -106,5 +107,24 @@ subtest 'create job definition' => sub {
   $h = $meta->[3];
   is ($h->{attribute}, 'target');
   is ($h->{value}, 'pp');
+
+  # missing Sample supplier name
+  $meta_file = $bbc_path . q(/irods_publisher_restart_files/) .
+    q(pp_data_to_irods_archiver_34576_20200806-130730-) .
+    q(2769995162_696911af0b6c1ecae6cd7ed3f3c5c9961a1d7d9f6075a5efbaa080e0c6410a33) .
+    q(.metadata.json);
+  ok (-e $meta_file, 'metadata (without sample supplier name) file is created');
+  $meta = from_json(read_file($meta_file));
+  is (scalar @{$meta}, 3);
+  $h = $meta->[0];
+  is ($h->{attribute}, 'composition');
+  is ($h->{value}, '{"components":[{"id_run":34576,"position":1,"tag_index":2}]}');
+  $h = $meta->[1];
+  is ($h->{attribute}, 'id_product');
+  is ($h->{value}, '696911af0b6c1ecae6cd7ed3f3c5c9961a1d7d9f6075a5efbaa080e0c6410a33');
+  $h = $meta->[2];
+  is ($h->{attribute}, 'target');
+  is ($h->{value}, 'pp');
+
 };
 
