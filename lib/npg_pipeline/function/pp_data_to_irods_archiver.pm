@@ -49,6 +49,7 @@ sub create {
       my @args = ( $PUBLISH_SCRIPT_NAME,
                    q{--collection}, $product->path($self->irods_destination_collection()),
                    q{--source},     $product->path($self->pp_archive_path()),
+                   q{--group},      q(ss_).$product->lims->study_id(),
                    q{--metadata},   $metadata_file, );
 
       if (defined $config->{irods_pp}->{filters}->{include}) {
