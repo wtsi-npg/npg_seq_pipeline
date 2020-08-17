@@ -43,12 +43,17 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "archive_to_irods_ml_warehouse",
+            "target" : "archive_pp_data_to_irods"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "archive_to_s3",
             "target" : "notify_product_delivery"
          },
          {
             "relation" : "dependsOn",
-            "source" : "archive_to_irods_ml_warehouse",
+            "source" : "archive_pp_data_to_irods",
             "target" : "run_run_archived"
          },
          {
@@ -123,6 +128,10 @@
          {
             "id" : "archive_to_irods_ml_warehouse",
             "label" : "archive_to_irods_ml_warehouse"
+         },
+         {
+            "id" : "archive_pp_data_to_irods",
+            "label" : "archive_pp_data_to_irods"
          },
          {
             "id" : "archive_run_data_to_irods",
