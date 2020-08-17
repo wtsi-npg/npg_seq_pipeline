@@ -85,6 +85,7 @@ subtest 'create job definition' => sub {
   is ($d->command, 'npg_publish_tree.pl' . 
     q( --collection /seq/illumina/pp/runs/34/34576/lane1/plex1) .
     q( --source ) . $bbc_path . q(/pp_archive/lane1/plex1) .
+    q( --group ss_6187#seq) .
     q( --metadata ) . $meta_file .
     q( --include 'ncov2019_artic_nf/v0.(7|8)\\b\\S+trim\\S+/\\S+bam') .
     q( --include 'ncov2019_artic_nf/v0.(11)\\b\\S+trim\\S+/\\S+cram') .
