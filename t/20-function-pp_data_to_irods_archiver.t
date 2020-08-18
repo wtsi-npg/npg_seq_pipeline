@@ -90,7 +90,8 @@ subtest 'create job definition' => sub {
     q( --include 'ncov2019_artic_nf/v0.(7|8)\\b\\S+trim\\S+/\\S+bam') .
     q( --include 'ncov2019_artic_nf/v0.(11)\\b\\S+trim\\S+/\\S+cram') .
     q( --include 'ncov2019_artic_nf/v0.\\d+\\b\\S+make\\S+/\\S+consensus.fa') .
-    q( --include 'ncov2019_artic_nf/v0.\\d+\\b\\S+call\\S+/\\S+variants.tsv'),
+    q( --include 'ncov2019_artic_nf/v0.\\d+\\b\\S+call\\S+/\\S+variants.tsv') .
+    q( --exclude 'test_file_pollution'),
     'correct command');
 
   ok (-e $meta_file, 'metadata file (with sample supplier name) is created');

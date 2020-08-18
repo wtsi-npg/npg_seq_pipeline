@@ -42,29 +42,34 @@ sub create {
     foreach my $product (@products) {
       my $config = $self->find_study_config($product);
       $config or next;
-      $config->{irods_pp}->{enable} or next;
+      my $enable = $config->{irods_pp}->{enable};
+      $self->info(sprintf 'Pp data for product %s will%s be archived to iRODS',
+                  $product->composition->freeze,
+                  $enable ? q() : q( not));
+      $enable or next;
 
       my $metadata_file = $self->_create_metadata_file($product, $job_name);
 
-      my @args = ( $PUBLISH_SCRIPT_NAME,
-                   q{--collection}, $product->path($self->irods_destination_collection()),
+      my @args = ( q{--collection}, $product->path($self->irods_destination_collection()),
                    q{--source},     $product->path($self->pp_archive_path()),
                    q{--group},      q('ss_).$product->lims->study_id().q(#seq'), #TODO use npg_irods code?
                    q{--metadata},   $metadata_file, );
 
-      if (defined $config->{irods_pp}->{filters}->{include}) {
-        my $inc = $config->{irods_pp}->{filters}->{include};
-        (ref $inc eq 'ARRAY') or
-          $self->logcroak(q{Malformed configuration; 'include' },
-                          q{expected a list, but found: }, pp($inc));
-        foreach my $val (@{$inc}) {
-          push @args, q{--include}, qq('${val}');
+      for my $filter_type (qw/include exclude/) {
+        if (defined $config->{irods_pp}->{filters}->{$filter_type}) {
+          my $filters = $config->{irods_pp}->{filters}->{$filter_type};
+          (ref $filters eq 'ARRAY') or
+            $self->logcroak(qq(Malformed configuration for filter '${filter_type}'; ),
+                             q(expected a list, but found: ), pp($filters));
+          foreach my $val (@{$filters}) {
+            push @args, qq(--${filter_type}), qq('${val}');
+          }
         }
       }
 
       my %dref = %{$ref};
       $dref{'composition'} = $product->composition;
-      $dref{'command'}     = join q[ ], @args;
+      $dref{'command'}     = join q[ ], $PUBLISH_SCRIPT_NAME, @args;
       $self->assign_common_definition_attrs(\%dref, $job_name);
       push @definitions, npg_pipeline::function::definition->new(\%dref);
     }
@@ -82,7 +87,7 @@ sub create {
 
 sub _create_metadata_file {
   my ($self, $product, $job_name) = @_;
-#encode_json($product->composition->freeze),
+
   my %meta_hash = (
     composition => $product->composition->freeze,
     id_product  => $product->composition->digest,
