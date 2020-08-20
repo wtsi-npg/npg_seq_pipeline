@@ -24,7 +24,7 @@ with 'npg_common::roles::software_location' =>
 
 Readonly::Scalar my $DEFAULT_PIPELINE_TYPE => q[stage2pp];
 
-Readonly::Scalar my $DEFAULT_MEMORY_MB => 1000;
+Readonly::Scalar my $DEFAULT_MEMORY_MB => 300;
 Readonly::Scalar my $DEFAULT_NUM_CPUS  => 1;
 Readonly::Hash   my %PER_PP_REQS   => (
   ncov2019_artic_nf => {memory_mb => 5000, num_cpus => 4},
