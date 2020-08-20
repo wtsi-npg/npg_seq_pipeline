@@ -97,7 +97,7 @@ sub create {
   @definitions = grep { $_ } @definitions;
 
   if (@definitions) {
-    (@definitions <= @{$self->_output_dirs}) or $self->logcroak(
+    (@definitions == @{$self->_output_dirs}) or $self->logcroak(
       sprintf 'Number of definitions %i and output directories %i do not match',
       scalar @definitions, scalar @{$self->_output_dirs}
     );
