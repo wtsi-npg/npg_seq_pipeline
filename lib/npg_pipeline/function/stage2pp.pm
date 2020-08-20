@@ -17,23 +17,43 @@ with qw{ npg_pipeline::function::util
          npg_pipeline::product::release 
          npg_pipeline::product::release::portable_pipeline };
 with 'npg_common::roles::software_location' =>
-  { tools => [qw/nextflow npg_simple_robo4artic npg_autoqc_generic4artic/] };
+  { tools => [qw/ nextflow
+                  npg_simple_robo4artic
+                  npg_autoqc_generic4artic
+                /] };
 
-Readonly::Scalar my $FUNCTION_NAME => q[stage2pp];
-Readonly::Scalar my $MEMORY        => q[5000]; # memory in megabytes
-Readonly::Scalar my $CPUS          => 4;
+Readonly::Scalar my $DEFAULT_PIPELINE_TYPE => q[stage2pp];
+
+Readonly::Scalar my $DEFAULT_MEMORY_MB => 300;
+Readonly::Scalar my $DEFAULT_NUM_CPUS  => 1;
+Readonly::Hash   my %PER_PP_REQS   => (
+  ncov2019_artic_nf => {memory_mb => 5000, num_cpus => 4},
+                                      );
 
 our $VERSION = '0';
+
+=head2 pipeline_type
+
+  Attribute, defaults to 'stage2pp'.
+
+=cut
+
+has 'pipeline_type' => (
+  isa      => 'Str',
+  is       => 'ro',
+  required => 0,
+  default  => $DEFAULT_PIPELINE_TYPE,
+);
 
 =head2 nextflow_cmd
 
 =head2 npg_simple_robo4artic_cmd
 
+=head2 npg_autoqc_generic4artic_cmd
+
 =head2 create
 
-  Arg [1]    : None
-
-  Example    : my $defs = $obj->create
+  Example    : my $defs = $obj->create();
   Description: Create per-product function definitions objects.
 
   Returntype : ArrayRef[npg_pipeline::function::definition]
@@ -52,17 +72,19 @@ sub create {
 
     my $pps;
     try {
-      $pps = $self->pps_config4product($product, $FUNCTION_NAME);
+      $pps = $self->pps_config4product($product, $self->pipeline_type);
     } catch {
       $self->logcroak($_);
     };
 
     foreach my $pp (@{$pps}) {
       my $pp_name = $self->pp_name($pp);
-      my $method = $self->canonical_name($pp_name);
-      $method = join q[_], q[], $method, q[create];
+      my $cname   = $self->canonical_name($pp_name);
+      my $method  = join q[_], q[], $cname, q[create];
       if ($self->can($method)) {
-        push @definitions, $self->$method($product, $pp);
+        # Definition factory method might return an undefined
+        # value, which will be filtered out later.
+        push @definitions, $self->$method($product, $pp, $PER_PP_REQS{$cname} || {});
       } else {
         $self->error(sprintf
           '"%s" portable pipeline is not implemented, method %s is not available',
@@ -71,6 +93,8 @@ sub create {
       }
     }
   }
+
+  @definitions = grep { $_ } @definitions;
 
   if (@definitions) {
     (@definitions == @{$self->_output_dirs}) or $self->logcroak(
@@ -93,14 +117,14 @@ sub create {
 }
 
 has '_output_dirs' => (
-  isa      =>' ArrayRef',
+  isa      => 'ArrayRef',
   is       => 'ro',
   required => 0,
   default  => sub { return []; },
 );
 
 has '_names_map' => (
-  isa      =>' HashRef',
+  isa      => 'HashRef',
   is       => 'ro',
   required => 0,
   default  => sub { return {}; },
@@ -114,8 +138,48 @@ sub _canonical_name {
   return $self->_names_map->{$name};
 }
 
+sub _memory {
+  my $req = shift;
+  return $req->{memory_mb} || $DEFAULT_MEMORY_MB;
+}
+
+sub _num_cpus {
+  my $req = shift;
+  return $req->{num_cpus} || $DEFAULT_NUM_CPUS;
+}
+
+sub _primer_bed_file {
+  my ($self,$product) = @_;
+  my $bed_file = npg_pipeline::cache::reference->instance()
+                 ->get_primer_panel_bed_file($product, $self->repository);
+  $bed_file or $self->logcroak(
+    'Bed file is not found for ' . $product->composition->freeze());
+  return $bed_file;
+}
+
+sub _and_commands {
+  my @commands = @_;
+  return join q[ && ], map { q[(] . $_ . q[)] } @commands;
+}
+
+sub _job_name {
+  my ($self, $pp) = @_;
+  return join q[_], $self->pipeline_type, $self->pp_short_id($pp), $self->label();
+}
+
+sub _job_attrs {
+  my ($self, $product, $pp, $reqs) = @_;
+  return {'created_by'  => __PACKAGE__,
+          'created_on'  => $self->timestamp(),
+          'identifier'  => $self->label,
+          'job_name'    => $self->_job_name($pp),
+          'num_cpus'    => [_num_cpus($reqs)],
+          'memory'      => _memory($reqs),
+          'composition' => $product->composition()};
+}
+
 sub _ncov2019_artic_nf_create {
-  my ($self, $product, $pp) = @_;
+  my ($self, $product, $pp, $reqs) = @_;
 
   my $pp_version   = $self->pp_version($pp);
   my $in_dir_path  = $product->stage1_out_path($self->no_archive_path());
@@ -142,17 +206,8 @@ sub _ncov2019_artic_nf_create {
                  ->get_path($product, 'bwa0_6', $self->repository, $do_gbs_plex_analysis);
   $ref_path or $self->logcroak(
     'bwa reference is not found for ' . $product->composition->freeze());
-  my $bed_file = $ref_cache_instance
-                 ->get_primer_panel_bed_file($product, $self->repository);
-  $bed_file or $self->logcroak(
-    'Bed file is not found for ' . $product->composition->freeze());
 
-  my %job_attrs = ('created_by'  => __PACKAGE__,
-                   'created_on'  => $self->timestamp(),
-                   'identifier'  => $self->label,
-                   'num_cpus'    => [$CPUS],
-                   'memory'      => $MEMORY,
-                   'composition' => $product->composition(), );
+  my $job_attrs = $self->_job_attrs($product, $pp, $reqs);
 
   # Run artic
   # And yes, it's -profile, not --profile!
@@ -160,7 +215,7 @@ sub _ncov2019_artic_nf_create {
                            '-profile singularity,sanger',
                            '--illumina --cram --prefix ' . $self->label,
                            "--ref $ref_path",
-                           "--bed $bed_file",
+                           '--bed ' . $self->_primer_bed_file($product),
                            "--directory $in_dir_path",
                            "--outdir $out_dir_path";
   my @commands = ($command);
@@ -194,12 +249,9 @@ sub _ncov2019_artic_nf_create {
   }
   push @commands, $command;
 
-  $command = join q[ && ], map { q[(] . $_ . q[)] } @commands;
+  $job_attrs->{'command'}  = _and_commands(@commands);
 
-  $job_attrs{'command'}  = $command;
-  $job_attrs{'job_name'} = join q[_], $FUNCTION_NAME, $self->pp_short_id($pp), $self->label();
-
-  return npg_pipeline::function::definition->new(\%job_attrs);
+  return npg_pipeline::function::definition->new($job_attrs);
 }
 
 __PACKAGE__->meta->make_immutable;
