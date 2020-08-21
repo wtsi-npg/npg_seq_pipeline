@@ -3,7 +3,7 @@ LIST OF CHANGES
 
 release 57.16.0
  - a new function for archival of pp data to iRODS
- - stage2pp function implementatio. is refactored to create common functions
+ - stage2pp function implementation is refactored to create common functions
    and attributes, which in future could be used by additional portable
    pipelines
 
