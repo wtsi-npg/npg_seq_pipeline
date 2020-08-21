@@ -30,6 +30,7 @@ Readonly::Scalar my $DEFAULT_MEMORY_MB => 300;
 Readonly::Scalar my $DEFAULT_NUM_CPUS  => 1;
 Readonly::Hash   my %PER_PP_REQS   => (
   ncov2019_artic_nf => {memory_mb => 5000, num_cpus => 4},
+  ncov2019_artic_nf_ampliconstats => {memory_mb => 1000, num_cpus => 2},
                                       );
 
 Readonly::Scalar my $AMPLICONSTATS_OPTIONS => q[-t 50 -d 1,10,20,100];
@@ -273,7 +274,8 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   my $pp_name = $self->pp_name($pp);
 
   # Can we deal with this product?
-  if ($product->composition->num_components > 1) { # No
+  if ($product->composition->num_components > 1) {
+    # Not dealing with merges
     $self->warn(qq[$pp_name is for one-component compositions]);
     return;
   }
@@ -284,22 +286,26 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   }
 
   my $lane_product = ($product->lanes_as_products)[0];
-  my $lane_pp_path = $self->pp_archive4product($lane_product, $pp, $self->pp_archive_path());
+  my $lane_pp_path = $self->pp_archive4product(
+    $lane_product, $pp, $self->pp_archive_path());
   push @{$self->_output_dirs}, $lane_pp_path;
-  my $sta_file = join q[/], $lane_pp_path, $lane_product->file_name(ext => q[astats]);
+  my $sta_file = join q[/],
+    $lane_pp_path, $lane_product->file_name(ext => q[astats]);
 
   my $file_glob = $self->pp_input_glob($pp);
   $file_glob or $self->logcroak(qq[Input glob is not defined for '$pp_name' pp]);
-  my $input_files_glob = join q[/], $lane_pp_path, $file_glob;
+  my $input_files_glob = join q[/],
+    $lane_product->path($self->pp_archive_path()), $file_glob;
   my $lane_archive = $lane_product->path($self->archive_path());
   my $lane_qc_dir = $lane_product->qc_out_path($self->archive_path());
 
   my $image_dir = join q[/], $lane_qc_dir, q[ampliconstats];
   push @{$self->_output_dirs}, $image_dir;
+  my $prefix = join q[/], $image_dir, $lane_product->file_name();
 
   my $job_attrs = $self->_job_attrs($lane_product, $pp, $reqs);
-  my $sta_cpus_option = $job_attrs->{num_cpus} > 1 ?
-                        q[-@] . ($job_attrs->{num_cpus} - 1) : q[];
+  my $num_cpus = $job_attrs->{num_cpus}->[0];
+  my $sta_cpus_option = $num_cpus > 1 ? q[-@] . ($num_cpus - 1) : q[];
 
   # Use samtools to produce ampliconstats - one file per lane.
   my $sta_command = join q[ ], $self->samtools_cmd,
@@ -321,13 +327,13 @@ sub _ncov2019_artic_nf_ampliconstats_create {
                                '--pp_version ' . $self->pp_version($pp),
                                '--ampstats_section FREADS',
                                '--qc_out ' . $lane_qc_dir,
-                               '--sample_qc_out ' . $lane_archive . q[/plex*/qc];
+                               '--sample_qc_out ' . q['] . $lane_archive . q[/plex*/qc'];
 
   # Run plot-ampliconstats to produce gnuplot plot files and PNG images
   # for them; prior to this filenames in ampliconstats should be remapped.
   my $pa_command = join q[ ], 'plot-ampliconstats',
                               '-page 48',
-                              $image_dir,
+                              $prefix,
                               $sta_file;
 
   $job_attrs->{'command'}  = _and_commands($sta_command, $qca_command, $pa_command);

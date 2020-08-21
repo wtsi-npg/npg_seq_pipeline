@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path/;
@@ -14,7 +14,10 @@ use_ok('npg_pipeline::function::stage2pp');
 
 for my $name (qw/npg_autoqc_generic4artic
                  npg_simple_robo4artic
-                 nextflow/) {
+                 nextflow
+                 samtools
+                 plot-ampliconstats
+                 qc/) {
   my $exec = join q[/], $dir, $name;
   open my $fh1, '>', $exec or die 'failed to open file for writing';
   print $fh1 'echo "$name mock"' or warn 'failed to print';
@@ -112,7 +115,7 @@ subtest 'error on missing data in LIMS' => sub {
     'error if primer panel is not defined for one of the products';
 };
 
-subtest 'definition generation' => sub {
+subtest 'definition generation, ncov2019_artic_nf pp' => sub {
   plan tests => 21;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
@@ -185,6 +188,7 @@ subtest 'definition generation' => sub {
 
   $ppd = npg_pipeline::function::stage2pp->new(
     product_conf_file_path => $product_conf,
+    pipeline_type          => 'stage2pp',
     archive_path           => $archive_path,
     runfolder_path         => $runfolder_path,
     id_run                 => 26291,
@@ -207,6 +211,7 @@ subtest 'definition generation' => sub {
 
   $ppd = npg_pipeline::function::stage2pp->new(
     product_conf_file_path => qq[$repo_dir/../v.3/product_release_two_pps.yml],
+    pipeline_type          => 'stage2pp',
     archive_path           => $archive_path,
     runfolder_path         => $runfolder_path,
     id_run                 => 26291,
@@ -266,6 +271,99 @@ subtest 'skip unknown pipeline' => sub {
   lives_ok { $ds = $ppd->create }
     'no error when job definition creation for a pipeline is not implemented';
   is (scalar @{$ds}, 3, '3 definitions are returned');
+};
+
+subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
+  plan tests => 22;
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
+#  my $nf_dir = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a];
+#  my @out_dirs = map { qq[$pp_archive_path/plex] . $_ . q[/ncov2019_artic_nf/cf01166c42a]}
+#                 qw/1 2 3/;
+#  map { ok (!(-e $_), "output dir $_ does not exists") } @out_dirs;
+
+  my $ppd = npg_pipeline::function::stage2pp->new(
+    product_conf_file_path => $product_conf,
+    pipeline_type          => 'stage2App',
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    merge_lanes            => 1,
+    timestamp              => $timestamp,
+    repository             => $dir);
+
+  is ($ppd->pipeline_type, 'stage2App', 'pipeline type');
+
+  my $ds = $ppd->create;
+  is (@{$ds}, 1, 'one definition is returned');
+  is ($ds->[0]->excluded, 1, 'merged product, the function is excluded');
+
+  $ppd = npg_pipeline::function::stage2pp->new(
+    product_conf_file_path => $product_conf,
+    pipeline_type          => 'stage2App',
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    merge_lanes            => 0,
+    timestamp              => $timestamp,
+    repository             => $dir);
+
+  $ds = $ppd->create;
+  is (@{$ds}, 2, 'two definitions are returned');
+  
+  my $d = $ds->[0];
+  isa_ok ($d, 'npg_pipeline::function::definition');
+  ok (!$d->excluded, 'the function is not excluded');
+  ok ($d->composition, 'composition is defined');
+  is ($d->composition->num_components, 1, 'composition is for one component');
+  my $component = $d->composition->get_component(0);
+  ok ((($component->position == 1) and not defined $component->tag_index),
+    'definition for lane 1 job');
+  
+  my @commands = ();
+  for my $p ((1, 2)) {
+    my $astats_file = $pp_archive_path . qq(/lane${p}) .
+      qq(/ncov2019_artic_nf_ampliconstats/0.1/26291_${p}.astats);
+    push @commands,
+                '(' .
+      $dir . q(/samtools ampliconstats -@1 -t 50 -d 1,10,20,100 ) .
+      $dir . q(/primer_panel/nCoV-2019/default/SARS-CoV-2/MN908947.3/nCoV-2019.bed ) .
+      $pp_archive_path . qq(/lane${p}) .
+      q(/plex*/ncov2019_artic_nf/cf01166c42a) .
+      q(/ncovIlluminaCram_ncovIllumina_sequenceAnalysis_trimPrimerSequences) .
+      q(/*primertrimmed.sorted.bam) .
+      q( > ) . $astats_file .
+                ') && (' .
+      $dir . q(/qc --check generic --spec ampliconstats ) .
+      qq(--rpt_list 26291:${p} --input_files $astats_file ) .
+      q(--pp_name ncov2019_artic_nf_ampliconstats --pp_version 0.1 ) .
+      q(--ampstats_section FREADS ) .
+      q(--qc_out ) . $archive_path . qq(/lane${p}/qc ) .
+      q(--sample_qc_out ') . $archive_path . qq(/lane${p}/plex*/qc') .
+                ') && (' .
+      q(plot-ampliconstats -page 48 ) .
+      $archive_path . qq(/lane${p}/qc/ampliconstats/26291_${p} ) .
+      $astats_file .
+                ')';
+  }
+    
+  is ($d->command, $commands[0], 'correct command for lane 1');
+  is ($d->job_name, 'stage2App_ncov20.1_26291', 'job name');
+  is ($d->memory, 1000, 'memory');
+  is_deeply ($d->num_cpus, [2], 'number of CPUs');
+
+  $d = $ds->[1];
+  isa_ok ($d, 'npg_pipeline::function::definition');
+  ok (!$d->excluded, 'the function is not excluded');
+  ok ($d->composition, 'composition is defined');
+  is ($d->composition->num_components, 1, 'composition is for one component');
+  $component = $d->composition->get_component(0);
+  ok ((($component->position == 2) and not defined $component->tag_index),
+    'definition for lane 2 job');
+  is ($d->command, $commands[1], 'correct command for lane 2');
+  is ($d->job_name, 'stage2App_ncov20.1_26291', 'job name');
+  is ($d->memory, 1000, 'memory');
+  is_deeply ($d->num_cpus, [2], 'number of CPUs');
 };
 
 1;
