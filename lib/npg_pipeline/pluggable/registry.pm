@@ -44,6 +44,8 @@ Readonly::Hash my %REGISTRY => (
   'p4_stage1_analysis'      => {'p4_stage1_analysis' => 'generate'},
   'stage2pp'                => {'stage2pp' =>
     {method => 'create', pipeline_type => 'stage2pp'}},
+  'stage2App'                => {'stage2pp' =>
+    {method => 'create', pipeline_type => 'stage2App'}},
   'seq_alignment'           => {'seq_alignment' => 'generate'},
   'generate_compositions'   => {'seq_alignment' => 'generate_compositions'},
   'bqsr_calc'               => {'bqsr_calc' => 'create'},

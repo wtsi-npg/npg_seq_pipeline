@@ -5,6 +5,8 @@ LIST OF CHANGES
    listing in a registry and its implementation to iRODS archival
    jobs and a stage2pp job
  - implementation for the ampliconstats portable pipeline
+ - new pipeline function - stage2App - and its mapping to the
+   npg_pipeline::function::stage2pp class
 
 release 57.16.0
  - a new function for archival of pp data to iRODS
