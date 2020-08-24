@@ -4,13 +4,17 @@ use namespace::autoclean;
 
 use Data::Dump qw{pp};
 use Moose::Role;
-use List::Util qw{all};
+use List::Util qw{all any};
 use Readonly;
 
 with qw{WTSI::DNAP::Utilities::Loggable
         npg_tracking::util::pipeline_config};
 
 our $VERSION = '0';
+
+Readonly::Scalar our $S3_RELEASE                      => q{s3};
+Readonly::Scalar our $IRODS_RELEASE                   => q{irods};
+Readonly::Scalar our $IRODS_PP_RELEASE                => q{irods_pp};
 
 Readonly::Scalar my $QC_OUTCOME_MATTERS_KEY           => q{qc_outcome_matters};
 Readonly::Scalar my $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY => q{s3};
@@ -232,6 +236,17 @@ sub receipts_location {
 
 sub is_for_release {
   my ($self, $product, $type_of_release) = @_;
+
+  my @rtypes = ($IRODS_RELEASE, $IRODS_PP_RELEASE, $S3_RELEASE);
+
+  $type_of_release or
+      $self->logcroak(q[A defined type_of_release argument is required, ],
+                      q[expected one of: ], pp(\@rtypes));
+
+  any { $type_of_release eq $_ } @rtypes or
+      $self->logcroak("Unknown release type '$type_of_release', ",
+                      q[expected one of: ], pp(\@rtypes));
+
   my $study_config = (ref $product eq 'npg_pipeline::product')
                    ? $self->find_study_config($product)
                    : $self->study_config($product); # the last one is for lims objects

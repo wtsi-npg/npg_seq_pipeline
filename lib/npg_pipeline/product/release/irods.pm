@@ -27,6 +27,20 @@ Moose role providing utility methods for iRODS context
 
 =head1 SUBROUTINES/METHODS
 
+=head2 irods_root_collection_ns
+
+Configurable iRODS root collection for NovaSeq data.
+Defaults to /seq/illumina/runs .
+
+=cut
+
+has 'irods_root_collection_ns' => (
+  isa           => 'Str',
+  is            => 'ro',
+  required      => 0,
+  default       => $IRODS_ROOT_NOVASEQ_RUNS,
+);
+
 =head2 irods_destination_collection
 
 Returns iRODS destination collection for the run.
@@ -42,8 +56,9 @@ has 'irods_destination_collection' => (
 );
 sub _build_irods_destination_collection {
   my $self = shift;
-  return join q[/], $self->platform_NovaSeq() ?
-    ($IRODS_ROOT_NOVASEQ_RUNS, int $self->id_run/$THOUSAND) : ($IRODS_ROOT_NON_NOVASEQ_RUNS),
+  return join q[/], $self->platform_NovaSeq()
+    ? ($self->irods_root_collection_ns, int $self->id_run/$THOUSAND)
+    : ($IRODS_ROOT_NON_NOVASEQ_RUNS),
     $self->id_run;
 }
 

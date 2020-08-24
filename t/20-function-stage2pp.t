@@ -113,7 +113,7 @@ subtest 'error on missing data in LIMS' => sub {
 };
 
 subtest 'definition generation' => sub {
-  plan tests => 18;
+  plan tests => 21;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
   my $nf_dir = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a];
@@ -128,6 +128,8 @@ subtest 'definition generation' => sub {
     id_run                 => 26291,
     timestamp              => $timestamp,
     repository             => $dir);
+
+  is ($ppd->pipeline_type, 'stage2pp', 'default pipeline type');
 
   my $ds = $ppd->create;
 
@@ -154,6 +156,8 @@ subtest 'definition generation' => sub {
   my $c0 = $c;
   is ($ds->[0]->command, $c, 'correct command for plex 1');
   is ($ds->[0]->job_name, 'stage2pp_ncov2cf011_26291', 'job name');
+  is ($ds->[0]->memory, 5000, 'memory');
+  is_deeply ($ds->[0]->num_cpus, [4], 'number of CPUs');
 
   my $c_copy = $command;
   $c_copy =~ s/default/V2/;
