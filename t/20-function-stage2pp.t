@@ -312,17 +312,17 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
       q(/*primertrimmed.sorted.bam) .
       q( > ) . $astats_file .
                 ') && (' .
+      q[perl -e 'use strict;use warnings;use Perl6::Slurp; my%h=grep{$_} map{(split qq(\t))} (slurp shift); map{print} map{s/\b(?:\w+_)?(\d+_\d(#\d+))\S*\b/($h{$1} || q{unknown}).$2/e; $_} (slurp shift)'] .
+      qq( $replacement_map_file $astats_file | ) .
+      q(plot-ampliconstats -page 48 ) .
+      $archive_path . qq(/lane${p}/qc/ampliconstats/26291_${p}) .
+                ') && (' .
       $dir . q(/qc --check generic --spec ampliconstats ) .
       qq(--rpt_list 26291:${p} --input_files $astats_file ) .
       q(--pp_name ncov2019_artic_nf_ampliconstats --pp_version 0.1 ) .
       q(--ampstats_section FREADS ) .
       q(--qc_out ) . $archive_path . qq(/lane${p}/qc ) .
       q(--sample_qc_out ') . $archive_path . qq(/lane${p}/plex*/qc') .
-                ') && (' .
-      q[perl -e 'use strict;use warnings;use Perl6::Slurp; my%h=grep{$_} map{(split qq(\t))} (slurp shift); map{print} map{s/\b(?:\w+_)?(\d+_\d(#\d+))\S*\b/($h{$1} || q{unknown}).$2/e; $_} (slurp shift)'] .
-      qq( $replacement_map_file $astats_file | ) .
-      q(plot-ampliconstats -page 48 ) .
-      $archive_path . qq(/lane${p}/qc/ampliconstats/26291_${p}) .
                 ')';
   }
 

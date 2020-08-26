@@ -377,7 +377,12 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   push @pa_commands, join q[ ], 'plot-ampliconstats', '-page 48', $prefix;
   my $pa_command = join q[ | ], @pa_commands;
 
-  $job_attrs->{'command'}  = _and_commands($sta_command, $qca_command, $pa_command);
+  # Order of commands in the job:
+  #   1. Generate ampliconstats file.
+  #   2. Using this file, generate plots.
+  #   3. Run the qc scripts (lane-level) to capture necessary data from the
+  #      ampliconstats file and, possibly, some image files.
+  $job_attrs->{'command'}  = _and_commands($sta_command, $pa_command, $qca_command);
 
   # Set lane flag so that we skip the next product for this lane.
   $self->_lane_counter4ampliconstats->{$position} = 1;
