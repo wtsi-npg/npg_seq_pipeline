@@ -284,7 +284,7 @@ sub _generate_replacement_map {
 
   my $position = $lane_product->composition->get_component(0)->position;
   my @map =
-    map  { join q[ ],
+    map  { join qq[\t],
       $_->file_name(), $_->lims->sample_supplier_name || q[unknown] }
     grep { $_->composition->get_component(0)->position == $position}
     @{$self->_products};
@@ -367,7 +367,7 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   push @pa_commands, join q[ ],
     q[perl -e],
     q['use strict;use warnings;use Perl6::Slurp;],
-    q[my%h=grep{$_} map{(split /\s/)} (slurp shift);],
+    q[my%h=grep{$_} map{(split qq(\t))} (slurp shift);],
     q[map{print}],
     q[map{s/\b(?:\w+_)?(\d+_\d(#\d+))\S*\b/($h{$1} || q{unknown}).$2/e; $_}],
     q[(slurp shift)'],

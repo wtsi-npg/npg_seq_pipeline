@@ -319,7 +319,7 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
       q(--qc_out ) . $archive_path . qq(/lane${p}/qc ) .
       q(--sample_qc_out ') . $archive_path . qq(/lane${p}/plex*/qc') .
                 ') && (' .
-      q[perl -e 'use strict;use warnings;use Perl6::Slurp; my%h=grep{$_} map{(split /\s/)} (slurp shift); map{print} map{s/\b(?:\w+_)?(\d+_\d(#\d+))\S*\b/($h{$1} || q{unknown}).$2/e; $_} (slurp shift)'] .
+      q[perl -e 'use strict;use warnings;use Perl6::Slurp; my%h=grep{$_} map{(split qq(\t))} (slurp shift); map{print} map{s/\b(?:\w+_)?(\d+_\d(#\d+))\S*\b/($h{$1} || q{unknown}).$2/e; $_} (slurp shift)'] .
       qq( $replacement_map_file $astats_file | ) .
       q(plot-ampliconstats -page 48 ) .
       $archive_path . qq(/lane${p}/qc/ampliconstats/26291_${p}) .
@@ -355,9 +355,9 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
   is_deeply ([(split q[ ], $d->command)], $commands[0], 'correct command for lane 1');
   ok (-f $replacement_files[0], 'lane 1 replacement file created');
   is (read_file($replacement_files[0]), join(qq[\n] ,
-    '26291_1#1 A1',
-    '26291_1#2 B1',
-    '26291_1#3 C1'), 'lane 1 replacement file content is correct');
+    "26291_1#1\tA1",
+    "26291_1#2\tB1",
+    "26291_1#3\tC1"), 'lane 1 replacement file content is correct');
   is ($d->job_name, 'stage2App_ncov20.1_26291', 'job name');
   is ($d->memory, 1000, 'memory');
   is_deeply ($d->num_cpus, [2], 'number of CPUs');
@@ -372,9 +372,9 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
     'definition for lane 2 job');
   ok (-f $replacement_files[1], 'lane 2 replacement file created');
   is (read_file($replacement_files[1]), join(qq[\n] ,
-    '26291_2#1 A1',
-    '26291_2#2 B1',
-    '26291_2#3 C1'), 'lane 2 replacement file content is correct');
+    "26291_2#1\tA1",
+    "26291_2#2\tB1",
+    "26291_2#3\tC1"), 'lane 2 replacement file content is correct');
   is_deeply ([(split q[ ], $d->command)], $commands[1], 'correct command for lane 2');
   is ($d->job_name, 'stage2App_ncov20.1_26291', 'job name');
   is ($d->memory, 1000, 'memory');
