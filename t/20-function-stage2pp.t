@@ -274,13 +274,9 @@ subtest 'skip unknown pipeline' => sub {
 };
 
 subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
-  plan tests => 22;
+  plan tests => 28;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
-#  my $nf_dir = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a];
-#  my @out_dirs = map { qq[$pp_archive_path/plex] . $_ . q[/ncov2019_artic_nf/cf01166c42a]}
-#                 qw/1 2 3/;
-#  map { ok (!(-e $_), "output dir $_ does not exists") } @out_dirs;
 
   my $ppd = npg_pipeline::function::stage2pp->new(
     product_conf_file_path => $product_conf,
@@ -297,6 +293,43 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
   my $ds = $ppd->create;
   is (@{$ds}, 1, 'one definition is returned');
   is ($ds->[0]->excluded, 1, 'merged product, the function is excluded');
+
+  my @commands = ();
+  my @replacement_files = ();
+  for my $p ((1, 2)) {
+    my $pp_path = qq(${pp_archive_path}/lane${p}) .
+      qq(/ncov2019_artic_nf_ampliconstats/0.1/);
+    my $astats_file = $pp_path . qq(26291_${p}.astats);
+    my $replacement_map_file = $pp_path . q(replacement_map.txt);
+    push @replacement_files, $replacement_map_file;
+    push @commands,
+                '(' .
+      $dir . q(/samtools ampliconstats -@1 -t 50 -d 1,10,20,100 ) .
+      $dir . q(/primer_panel/nCoV-2019/default/SARS-CoV-2/MN908947.3/nCoV-2019.bed ) .
+      $pp_archive_path . qq(/lane${p}) .
+      q(/plex*/ncov2019_artic_nf/cf01166c42a) .
+      q(/ncovIlluminaCram_ncovIllumina_sequenceAnalysis_trimPrimerSequences) .
+      q(/*primertrimmed.sorted.bam) .
+      q( > ) . $astats_file .
+                ') && (' .
+      $dir . q(/qc --check generic --spec ampliconstats ) .
+      qq(--rpt_list 26291:${p} --input_files $astats_file ) .
+      q(--pp_name ncov2019_artic_nf_ampliconstats --pp_version 0.1 ) .
+      q(--ampstats_section FREADS ) .
+      q(--qc_out ) . $archive_path . qq(/lane${p}/qc ) .
+      q(--sample_qc_out ') . $archive_path . qq(/lane${p}/plex*/qc') .
+                ') && (' .
+      q[perl -e 'use strict;use warnings;use Perl6::Slurp; my%h=grep{$_} map{(split /\s/)} (slurp shift); map{print} map{s/\b(?:\w+_)?(\d+_\d(#\d+))\S*\b/($h{$1} || q{unknown}).$2/e; $_} (slurp shift)'] .
+      qq( $replacement_map_file $astats_file | ) .
+      q(plot-ampliconstats -page 48 ) .
+      $archive_path . qq(/lane${p}/qc/ampliconstats/26291_${p}) .
+                ')';
+  }
+
+  @commands = map { [(split q[ ])] } @commands;
+
+  ok (!-e $replacement_files[0], 'replacement file for lane 1 does not exist');
+  ok (!-e $replacement_files[1], 'replacement file for lane 2 does not exist');  
 
   $ppd = npg_pipeline::function::stage2pp->new(
     product_conf_file_path => $product_conf,
@@ -318,36 +351,13 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
   is ($d->composition->num_components, 1, 'composition is for one component');
   my $component = $d->composition->get_component(0);
   ok ((($component->position == 1) and not defined $component->tag_index),
-    'definition for lane 1 job');
-  
-  my @commands = ();
-  for my $p ((1, 2)) {
-    my $astats_file = $pp_archive_path . qq(/lane${p}) .
-      qq(/ncov2019_artic_nf_ampliconstats/0.1/26291_${p}.astats);
-    push @commands,
-                '(' .
-      $dir . q(/samtools ampliconstats -@1 -t 50 -d 1,10,20,100 ) .
-      $dir . q(/primer_panel/nCoV-2019/default/SARS-CoV-2/MN908947.3/nCoV-2019.bed ) .
-      $pp_archive_path . qq(/lane${p}) .
-      q(/plex*/ncov2019_artic_nf/cf01166c42a) .
-      q(/ncovIlluminaCram_ncovIllumina_sequenceAnalysis_trimPrimerSequences) .
-      q(/*primertrimmed.sorted.bam) .
-      q( > ) . $astats_file .
-                ') && (' .
-      $dir . q(/qc --check generic --spec ampliconstats ) .
-      qq(--rpt_list 26291:${p} --input_files $astats_file ) .
-      q(--pp_name ncov2019_artic_nf_ampliconstats --pp_version 0.1 ) .
-      q(--ampstats_section FREADS ) .
-      q(--qc_out ) . $archive_path . qq(/lane${p}/qc ) .
-      q(--sample_qc_out ') . $archive_path . qq(/lane${p}/plex*/qc') .
-                ') && (' .
-      q(plot-ampliconstats -page 48 ) .
-      $archive_path . qq(/lane${p}/qc/ampliconstats/26291_${p} ) .
-      $astats_file .
-                ')';
-  }
-    
-  is ($d->command, $commands[0], 'correct command for lane 1');
+    'definition for lane 1 job'); 
+  is_deeply ([(split q[ ], $d->command)], $commands[0], 'correct command for lane 1');
+  ok (-f $replacement_files[0], 'lane 1 replacement file created');
+  is (read_file($replacement_files[0]), join(qq[\n] ,
+    '26291_1#1 A1',
+    '26291_1#2 B1',
+    '26291_1#3 C1'), 'lane 1 replacement file content is correct');
   is ($d->job_name, 'stage2App_ncov20.1_26291', 'job name');
   is ($d->memory, 1000, 'memory');
   is_deeply ($d->num_cpus, [2], 'number of CPUs');
@@ -360,7 +370,12 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
   $component = $d->composition->get_component(0);
   ok ((($component->position == 2) and not defined $component->tag_index),
     'definition for lane 2 job');
-  is ($d->command, $commands[1], 'correct command for lane 2');
+  ok (-f $replacement_files[1], 'lane 2 replacement file created');
+  is (read_file($replacement_files[1]), join(qq[\n] ,
+    '26291_2#1 A1',
+    '26291_2#2 B1',
+    '26291_2#3 C1'), 'lane 2 replacement file content is correct');
+  is_deeply ([(split q[ ], $d->command)], $commands[1], 'correct command for lane 2');
   is ($d->job_name, 'stage2App_ncov20.1_26291', 'job name');
   is ($d->memory, 1000, 'memory');
   is_deeply ($d->num_cpus, [2], 'number of CPUs');

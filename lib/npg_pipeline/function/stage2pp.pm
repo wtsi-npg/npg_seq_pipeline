@@ -7,6 +7,7 @@ use Readonly;
 use Carp;
 use Try::Tiny;
 use File::Spec::Functions;
+use File::Slurp;
 
 use npg_pipeline::function::definition;
 use npg_pipeline::cache::reference;
@@ -72,12 +73,9 @@ has 'pipeline_type' => (
 sub create {
   my ($self) = @_;
 
-  my @products = grep { $self->is_release_data($_) }
-                 @{$self->products->{data_products}};
-
   my @definitions = ();
 
-  foreach my $product (@products) {
+  foreach my $product (@{$self->_products}) {
 
     my $pps;
     try {
@@ -121,6 +119,19 @@ sub create {
   }
 
   return \@definitions;
+}
+
+has '_products' => (
+  isa        => 'ArrayRef',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
+);
+sub _build__products {
+  my $self = shift;
+  my @products = grep { $self->is_release_data($_) }
+                 @{$self->products->{data_products}};
+  return \@products;
 }
 
 has '_output_dirs' => (
@@ -268,6 +279,19 @@ has '_lane_counter4ampliconstats' => (
   default  => sub { return {}; },
 );
 
+sub _generate_replacement_map {
+  my ($self, $lane_product) = @_;
+
+  my $position = $lane_product->composition->get_component(0)->position;
+  my @map =
+    map  { join q[ ],
+      $_->file_name(), $_->lims->sample_supplier_name || q[unknown] }
+    grep { $_->composition->get_component(0)->position == $position}
+    @{$self->_products};
+
+  return \@map;
+}
+
 sub _ncov2019_artic_nf_ampliconstats_create {
   my ($self, $product, $pp, $reqs) = @_;
 
@@ -289,6 +313,8 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   my $lane_pp_path = $self->pp_archive4product(
     $lane_product, $pp, $self->pp_archive_path());
   push @{$self->_output_dirs}, $lane_pp_path;
+  # Make directory now, we need to create a replacement map file there.
+  npg_pipeline::runfolder_scaffold->make_dir($lane_pp_path);
   my $sta_file = join q[/],
     $lane_pp_path, $lane_product->file_name(ext => q[astats]);
 
@@ -302,6 +328,10 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   my $image_dir = join q[/], $lane_qc_dir, q[ampliconstats];
   push @{$self->_output_dirs}, $image_dir;
   my $prefix = join q[/], $image_dir, $lane_product->file_name();
+
+  my $replacement_map_file = join q[/], $lane_pp_path, 'replacement_map.txt';
+  write_file($replacement_map_file, join qq[\n],
+             @{$self->_generate_replacement_map($lane_product)});
 
   my $job_attrs = $self->_job_attrs($lane_product, $pp, $reqs);
   my $num_cpus = $job_attrs->{num_cpus}->[0];
@@ -330,11 +360,22 @@ sub _ncov2019_artic_nf_ampliconstats_create {
                                '--sample_qc_out ' . q['] . $lane_archive . q[/plex*/qc'];
 
   # Run plot-ampliconstats to produce gnuplot plot files and PNG images
-  # for them; prior to this filenames in ampliconstats should be remapped.
-  my $pa_command = join q[ ], 'plot-ampliconstats',
-                              '-page 48',
-                              $prefix,
-                              $sta_file;
+  # for them; prior to this filenames in ampliconstats should be remapped
+  # to supplier sample names; tag index part of the file name to be retained.
+  my @pa_commands = ();
+  ##no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+  push @pa_commands, join q[ ],
+    q[perl -e],
+    q['use strict;use warnings;use Perl6::Slurp;],
+    q[my%h=grep{$_} map{(split /\s/)} (slurp shift);],
+    q[map{print}],
+    q[map{s/\b(?:\w+_)?(\d+_\d(#\d+))\S*\b/($h{$1} || q{unknown}).$2/e; $_}],
+    q[(slurp shift)'],
+    $replacement_map_file,
+    $sta_file;
+  ##use critic
+  push @pa_commands, join q[ ], 'plot-ampliconstats', '-page 48', $prefix;
+  my $pa_command = join q[ | ], @pa_commands;
 
   $job_attrs->{'command'}  = _and_commands($sta_command, $qca_command, $pa_command);
 
@@ -387,6 +428,8 @@ npg_pipeline::function::stage2pp
 =item Try::Tiny
 
 =item File::Spec::Functions
+
+=item File::Slurp
 
 =item npg_common::roles::software_location
 
