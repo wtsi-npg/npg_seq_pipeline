@@ -282,12 +282,14 @@ has '_lane_counter4ampliconstats' => (
 sub _generate_replacement_map {
   my ($self, $lane_product) = @_;
 
-  my $position = $lane_product->composition->get_component(0)->position;
-  my @map =
-    map  { join qq[\t],
-      $_->file_name(), $_->lims->sample_supplier_name || q[unknown] }
-    grep { $_->composition->get_component(0)->position == $position}
-    @{$self->_products};
+  my $pos = $lane_product->composition->get_component(0)->position;
+  my @map = ();
+  for my $p (@{$self->_products}) {
+    ($p->composition->get_component(0)->position == $pos) or next;
+    my $sn = $p->lims->sample_supplier_name || q[unknown];
+    $sn =~ s/\s/_/gxms; # No white spaces policy!
+    push @map, join qq[\t], $p->file_name, $sn;
+  }
 
   return \@map;
 }
@@ -366,11 +368,11 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   ##no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
   push @pa_commands, join q[ ],
     q[perl -e],
-    q['use strict;use warnings;use Perl6::Slurp;],
-    q[my%h=grep{$_} map{(split qq(\t))} (slurp shift);],
+    q['use strict;use warnings;use File::Slurp;],
+    q[my%h=map{(split qq(\t))} (read_file shift, chomp=>1);],
     q[map{print}],
     q[map{s/\b(?:\w+_)?(\d+_\d(#\d+))\S*\b/($h{$1} || q{unknown}).$2/e; $_}],
-    q[(slurp shift)'],
+    q[(read_file shift)'],
     $replacement_map_file,
     $sta_file;
   ##use critic

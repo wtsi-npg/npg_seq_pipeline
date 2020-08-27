@@ -312,7 +312,7 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
       q(/*primertrimmed.sorted.bam) .
       q( > ) . $astats_file .
                 ') && (' .
-      q[perl -e 'use strict;use warnings;use Perl6::Slurp; my%h=grep{$_} map{(split qq(\t))} (slurp shift); map{print} map{s/\b(?:\w+_)?(\d+_\d(#\d+))\S*\b/($h{$1} || q{unknown}).$2/e; $_} (slurp shift)'] .
+      q[perl -e 'use strict;use warnings;use File::Slurp; my%h=map{(split qq(\t))} (read_file shift, chomp=>1); map{print} map{s/\b(?:\w+_)?(\d+_\d(#\d+))\S*\b/($h{$1} || q{unknown}).$2/e; $_} (read_file shift)'] .
       qq( $replacement_map_file $astats_file | ) .
       q(plot-ampliconstats -page 48 ) .
       $archive_path . qq(/lane${p}/qc/ampliconstats/26291_${p}) .
