@@ -274,7 +274,7 @@ subtest 'skip unknown pipeline' => sub {
 };
 
 subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
-  plan tests => 28;
+  plan tests => 30;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
 
@@ -296,7 +296,16 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
 
   my @commands = ();
   my @replacement_files = ();
-  for my $p ((1, 2)) {
+  my @astats_sections = qw(FREADS FPCOV-1 FPCOV-10 FPCOV-20 FPCOV-100);
+
+  my $count = 0;
+  for my $p ((1, 2, 1)) {
+
+    $count++;
+    my @s = @astats_sections;
+    $count == 3 and pop @s;
+    my $sections = join q[ ], map { q[--ampstats_section ] . $_ } @s;
+
     my $pp_path = qq(${pp_archive_path}/lane${p}) .
       qq(/ncov2019_artic_nf_ampliconstats/0.1/);
     my $astats_file = $pp_path . qq(26291_${p}.astats);
@@ -304,7 +313,8 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
     push @replacement_files, $replacement_map_file;
     push @commands,
                 '(' .
-      $dir . q(/samtools ampliconstats -@1 -t 50 -d 1,10,20,100 ) .
+      $dir . q(/samtools ampliconstats -@1 -t 50 -d 1,10,20) .
+      ($count == 3 ? q( ) : q(,100 )) .
       $dir . q(/primer_panel/nCoV-2019/default/SARS-CoV-2/MN908947.3/nCoV-2019.bed ) .
       $pp_archive_path . qq(/lane${p}) .
       q(/plex*/ncov2019_artic_nf/cf01166c42a) .
@@ -320,7 +330,7 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
       $dir . q(/qc --check generic --spec ampliconstats ) .
       qq(--rpt_list 26291:${p} --input_files $astats_file ) .
       q(--pp_name ncov2019_artic_nf_ampliconstats --pp_version 0.1 ) .
-      q(--ampstats_section FREADS ) .
+      qq($sections ) .
       q(--qc_out ) . $archive_path . qq(/lane${p}/qc ) .
       q(--sample_qc_out ') . $archive_path . qq(/lane${p}/plex*/qc') .
                 ')';
@@ -379,6 +389,21 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
   is ($d->job_name, 'stage2App_ncov20.1_26291', 'job name');
   is ($d->memory, 1000, 'memory');
   is_deeply ($d->num_cpus, [2], 'number of CPUs');
+
+  $ppd = npg_pipeline::function::stage2pp->new(
+    product_conf_file_path => qq[$repo_dir/product_release_explicit_astats_depth.yml],
+    pipeline_type          => 'stage2App',
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    merge_lanes            => 0,
+    timestamp              => $timestamp,
+    repository             => $dir);
+
+  $ds = $ppd->create;
+  is (@{$ds}, 2, 'two definitions are returned');
+  $d = $ds->[0];
+  is_deeply ([(split q[ ], $d->command)], $commands[2], 'correct command for lane 1');
 };
 
 1;

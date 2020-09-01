@@ -33,8 +33,8 @@ Readonly::Hash   my %PER_PP_REQS   => (
   ncov2019_artic_nf => {memory_mb => 5000, num_cpus => 4},
   ncov2019_artic_nf_ampliconstats => {memory_mb => 1000, num_cpus => 2},
                                       );
-
-Readonly::Scalar my $AMPLICONSTATS_OPTIONS => q[-t 50 -d 1,10,20,100];
+Readonly::Array  my @DEFAULT_AMPLICONSTATS_DEPTH  => qw(1 10 20 100);
+Readonly::Scalar my $AMPLICONSTATS_OPTIONS        => q[-t 50];
 
 our $VERSION = '0';
 
@@ -311,6 +311,9 @@ sub _ncov2019_artic_nf_ampliconstats_create {
     return;
   }
 
+  my $depth_array = $pp->{'ampliconstats_min_base_depth'}
+                    || \@DEFAULT_AMPLICONSTATS_DEPTH;
+
   my $lane_product = ($product->lanes_as_products)[0];
   my $lane_pp_path = $self->pp_archive4product(
     $lane_product, $pp, $self->pp_archive_path());
@@ -344,12 +347,15 @@ sub _ncov2019_artic_nf_ampliconstats_create {
                                'ampliconstats',
                                $sta_cpus_option,
                                $AMPLICONSTATS_OPTIONS,
+                               q[-d ] . join(q[,], @{$depth_array}),
                                $self->_primer_bed_file($product),
                                $input_files_glob;
   $sta_command = join q[ > ], $sta_command, $sta_file;
   # Invoke a lane-level qc check on the ampliconstats file produced
   # in the previous step with an option to fan out qc check outputs
   # to individual per-sample directories.
+  my @sections = map {q[FPCOV-] . $_} @{$depth_array};
+  unshift @sections, q[FREADS];
   my $qca_command = join q[ ], $self->qc_cmd,
                                '--check generic',
                                '--spec ampliconstats',
@@ -357,7 +363,7 @@ sub _ncov2019_artic_nf_ampliconstats_create {
                                '--input_files ' . $sta_file,
                                '--pp_name ncov2019_artic_nf_ampliconstats',
                                '--pp_version ' . $self->pp_version($pp),
-                               '--ampstats_section FREADS',
+                               (map {'--ampstats_section ' . $_} @sections),
                                '--qc_out ' . $lane_qc_dir,
                                '--sample_qc_out ' . q['] . $lane_archive . q[/plex*/qc'];
 
