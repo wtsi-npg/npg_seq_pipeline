@@ -24,6 +24,8 @@ with 'npg_common::roles::software_location' =>
                   samtools
                   qc
                 /] };
+# Not creating above an accessor for the plot-ampliconstats script
+# since perl subs cannot have dashes in their names.
 
 Readonly::Scalar my $DEFAULT_PIPELINE_TYPE => q[stage2pp];
 
@@ -37,6 +39,38 @@ Readonly::Array  my @DEFAULT_AMPLICONSTATS_DEPTH  => qw(1 10 20 100);
 Readonly::Scalar my $AMPLICONSTATS_OPTIONS        => q[-t 50];
 
 our $VERSION = '0';
+
+=head1 NAME
+
+npg_pipeline::function::stage2pp
+
+=head1 SYNOPSIS
+
+  my $obj = npg_pipeline::function::stage2pp->new(
+    runfolder_path => $path,
+    pipeline_type  => 'stage2pp');
+
+=head1 DESCRIPTION
+
+This class contains callbacks for arbitrary pipeline functions
+that are mapped to the create method of this class. The way
+these functions are scheduled is determined by the function
+graph.
+
+The create method returns an array of definition for portable
+pipelines that have to be invoked for products (samples). Tag
+zero and spiked controls are not considered. The nature of the
+portable pipelines for each product and their parameters are
+defined by the product configuration file. Multiple definitions
+can be returned for a single product.
+
+This class is intended for pipelines which use either stage 1
+analysis output as input or the output generated during the
+stage 2 of the analysis. The output of these pipelines is
+normally required at the data archival stage and/or for quality
+assessment of the data before the archival step.
+
+=head1 SUBROUTINES/METHODS
 
 =head2 pipeline_type
 
@@ -411,18 +445,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 __END__
-
-=head1 NAME
-
-npg_pipeline::function::stage2pp
-
-=head1 SYNOPSIS
-
-  my $obj = npg_pipeline::function::stage2pp->new(runfolder_path => $path);
-
-=head1 DESCRIPTION
-
-=head1 SUBROUTINES/METHODS
 
 =head1 BUGS AND LIMITATIONS
 
