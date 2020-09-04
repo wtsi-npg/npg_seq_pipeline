@@ -305,22 +305,25 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
     my @s = @astats_sections;
     $count == 3 and pop @s;
     my $sections = join q[ ], map { q[--ampstats_section ] . $_ } @s;
-
+ 
     my $pp_path = qq(${pp_archive_path}/lane${p}) .
       qq(/ncov2019_artic_nf_ampliconstats/0.1/);
+    my $glob = $pp_archive_path . qq(/lane${p}) .
+      q(/plex*/ncov2019_artic_nf/cf01166c42a) .
+      q(/ncovIlluminaCram_ncovIllumina_sequenceAnalysis_trimPrimerSequences) .
+      q(/*primertrimmed.sorted.bam);
     my $astats_file = $pp_path . qq(26291_${p}.astats);
     my $replacement_map_file = $pp_path . q(replacement_map.txt);
     push @replacement_files, $replacement_map_file;
     push @commands,
                 '(' .
+      qq(! ls $glob) .
+                ') || (' .
+                '(' .
       $dir . q(/samtools ampliconstats -@1 -t 50 -d 1,10,20) .
       ($count == 3 ? q( ) : q(,100 )) .
       $dir . q(/primer_panel/nCoV-2019/default/SARS-CoV-2/MN908947.3/nCoV-2019.bed ) .
-      $pp_archive_path . qq(/lane${p}) .
-      q(/plex*/ncov2019_artic_nf/cf01166c42a) .
-      q(/ncovIlluminaCram_ncovIllumina_sequenceAnalysis_trimPrimerSequences) .
-      q(/*primertrimmed.sorted.bam) .
-      q( > ) . $astats_file .
+      $glob . q( > ) . $astats_file .
                 ') && (' .
       q[perl -e 'use strict;use warnings;use File::Slurp; my%h=map{(split qq(\t))} (read_file shift, chomp=>1); map{print} map{s/\b(?:\w+_)?(\d+_\d(#\d+))\S*\b/($h{$1} || q{unknown}).$2/e; $_} (read_file shift)'] .
       qq( $replacement_map_file $astats_file | ) .
@@ -333,7 +336,7 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
       qq($sections ) .
       q(--qc_out ) . $archive_path . qq(/lane${p}/qc ) .
       q(--sample_qc_out ') . $archive_path . qq(/lane${p}/plex*/qc') .
-                ')';
+                '))';
   }
 
   @commands = map { [(split q[ ])] } @commands;

@@ -175,9 +175,9 @@ sub _primer_bed_file {
   return $bed_file;
 }
 
-sub _and_commands {
-  my @commands = @_;
-  return join q[ && ], map { q[(] . $_ . q[)] } @commands;
+sub _join_commands {
+  my ($operator, @commands) = @_;
+  return join qq[ $operator ], map { q[(] . $_ . q[)] } @commands;
 }
 
 sub _job_name {
@@ -267,7 +267,7 @@ sub _ncov2019_artic_nf_create {
   }
   push @commands, $command;
 
-  $job_attrs->{'command'}  = _and_commands(@commands);
+  $job_attrs->{'command'}  = _join_commands(q(&&), @commands);
 
   return npg_pipeline::function::definition->new($job_attrs);
 }
@@ -384,13 +384,21 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   ##use critic
   push @pa_commands, join q[ ], 'plot-ampliconstats', '-page 48', $prefix;
   my $pa_command = join q[ | ], @pa_commands;
+  my $ls_command = qq[! ls $input_files_glob];
 
   # Order of commands in the job:
-  #   1. Generate ampliconstats file.
-  #   2. Using this file, generate plots.
-  #   3. Run the qc scripts (lane-level) to capture necessary data from the
-  #      ampliconstats file and, possibly, some image files.
-  $job_attrs->{'command'}  = _and_commands($sta_command, $pa_command, $qca_command);
+  #   1. List file glob (covers all samples in a lane), which will be given
+  #      to the samtools ampliconstats command; exit normally in case of an
+  #      error, which can be caused by the absence of artic output (all
+  #      samples in a lane failing).
+  #   2. Generate ampliconstats file (lane-level).
+  #   3. Using this file, generate plots both on a lane and sample level.
+  #   4. Run the qc script (lane-level) to capture necessary data from the
+  #      ampliconstats file; the qc script will create autoqc results on
+  #      both lane and sample level.
+  $job_attrs->{'command'}  = _join_commands(q(||),
+    $ls_command,
+    _join_commands(q(&&), $sta_command, $pa_command, $qca_command));
 
   # Set lane flag so that we skip the next product for this lane.
   $self->_lane_counter4ampliconstats->{$position} = 1;
