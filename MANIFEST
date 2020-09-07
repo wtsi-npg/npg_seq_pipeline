@@ -12,6 +12,7 @@ bin/npg_pipeline_post_qc_review
 bin/npg_pipeline_preexec_references
 bin/npg_pipeline_script_must_be_unique_runner
 bin/npg_pipeline_seqchksum_comparator
+bin/npg_pipeline_showback
 bin/npg_receipt4run_is_deletable
 bin/npg_run_is_deletable
 bin/npg_upload2climb
@@ -41,6 +42,8 @@ lib/npg_pipeline/executor.pm
 lib/npg_pipeline/executor/lsf.pm
 lib/npg_pipeline/executor/lsf/job.pm
 lib/npg_pipeline/executor/options.pm
+lib/npg_pipeline/executor/showback_lsf.pm
+lib/npg_pipeline/executor/showback_wr.pm
 lib/npg_pipeline/executor/wr.pm
 lib/npg_pipeline/function/autoqc.pm
 lib/npg_pipeline/function/autoqc_archiver.pm
@@ -62,6 +65,7 @@ lib/npg_pipeline/function/s3_archiver.pm
 lib/npg_pipeline/function/seq_alignment.pm
 lib/npg_pipeline/function/seq_to_irods_archiver.pm
 lib/npg_pipeline/function/seqchksum_comparator.pm
+lib/npg_pipeline/function/showback.pm
 lib/npg_pipeline/function/start_stop.pm
 lib/npg_pipeline/function/status.pm
 lib/npg_pipeline/function/util.pm

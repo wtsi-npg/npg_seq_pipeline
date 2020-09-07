@@ -200,7 +200,7 @@
          {
             "relation" : "dependsOn",
             "source" : "update_ml_warehouse_2",
-            "target" : "pipeline_end"
+            "target" : "showback"
          },
          {
             "relation" : "dependsOn",
@@ -230,18 +230,22 @@
          {
             "relation" : "dependsOn",
             "source" : "merge_recompress",
-            "target" : "pipeline_end"
+            "target" : "showback"
          },
          {
             "relation" : "dependsOn",
             "source" : "run_qc_review_pending",
-            "target" : "pipeline_end"
+            "target" : "showback"
          },
          {
             "relation" : "dependsOn",
             "source" : "archive_to_irods_samplesheet",
-            "target" : "pipeline_end"
-         }
+            "target" : "showback"
+         },
+	 {  "relation" : "dependsOn",
+	    "source" : "showback",
+	    "target" : "pipeline_end"
+	 }
       ],
       "nodes" : [
          {
@@ -371,7 +375,11 @@
          {
             "id" : "pipeline_end",
             "label" : "pipeline_end"
-         }
+         },
+	 {
+	    "id" : "showback",
+	    "label" : "showback"
+	 }
       ]
    }
 }
