@@ -25,7 +25,7 @@ Readonly::Scalar my $MANIFEST_EXTENTION    => q[.tsv];
 Readonly::Scalar my $MANIFEST_SUFFIX       => q[.climbupload];
 Readonly::Scalar my $SHIFT_EIGHT           => 8;
 Readonly::Scalar my $UPLOAD_DIR            => q[upload];
-Readonly::Scalar my $UPLOADED_SAMPLES_GLOB => join q[/], $UPLOAD_DIR, q[*], q[*];
+Readonly::Scalar my $UPLOADED_SAMPLES_GLOB => q[upload{,_sample_withdrawn,_controls}/*/*]; # also consider samples previously uploaded but moved aside as controls or withdrawn
 
 Readonly::Hash   my %CSV_PARSER_OPTIONS    =>
                     @npg_pipeline::function::pp_archiver::CSV_PARSER_OPTIONS;
