@@ -199,10 +199,11 @@ sub _uploaded_samples {
 
   my $remote = join q[@], $user, $host;
   my $remote_command = qq[ls -d $UPLOADED_SAMPLES_GLOB];
-  my $command = join q[ ], ('ssh', '-i', $pkey_file, $remote, $remote_command);
+  my @command = ('ssh', '-i', $pkey_file, $remote, $remote_command);
+  my $command = join q[ ], @command;
   $logger->info(qq[Will execute '$command']);
 
-  open my $fh, q[-|], $command or croak qq[Failed to open a handle for '$command'];
+  open my $fh, q[-|], @command or croak qq[Failed to open a handle for '$command'];
   my $samples = {};
   while (my $line= <$fh>) {
     $line =~ s{.*/}{}xmsg;
@@ -269,10 +270,10 @@ sub _upload_archive {
   my @ca = qw/rsync/;
   $dry_run and push @ca, q[--dry-run];
   my $remote = sprintf q[%s@%s:%s/], $user, $host, $UPLOAD_DIR;
-  push @ca, q[-e], qq["ssh -i $pkey_file"], q[-av], $ar, $remote;
+  push @ca, q[-e], qq[ssh -i $pkey_file], q[-av], $ar, $remote;
   my $command = join q[ ], @ca;
   $logger->info("Will execute '$command'");
-  (0 == system $command) or croak "Failed to execute '$command', $CHILD_ERROR";
+  (0 == system @ca) or croak "Failed to execute '$command', $CHILD_ERROR";
 
   return;
 }
