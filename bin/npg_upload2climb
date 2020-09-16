@@ -25,7 +25,7 @@ Readonly::Scalar my $MANIFEST_EXTENTION    => q[.tsv];
 Readonly::Scalar my $MANIFEST_SUFFIX       => q[.climbupload];
 Readonly::Scalar my $SHIFT_EIGHT           => 8;
 Readonly::Scalar my $UPLOAD_DIR            => q[upload];
-Readonly::Scalar my $UPLOADED_SAMPLES_GLOB => join q[/], $UPLOAD_DIR, q[*], q[];
+Readonly::Scalar my $UPLOADED_SAMPLES_GLOB => join q[/], $UPLOAD_DIR, q[*], q[*];
 
 Readonly::Hash   my %CSV_PARSER_OPTIONS    =>
                     @npg_pipeline::function::pp_archiver::CSV_PARSER_OPTIONS;
@@ -198,16 +198,14 @@ sub _set_header {
 sub _uploaded_samples {
 
   my $remote = join q[@], $user, $host;
-  my $remote_command = qq[ls $UPLOADED_SAMPLES_GLOB];
+  my $remote_command = qq[ls -d $UPLOADED_SAMPLES_GLOB];
   my $command = join q[ ], ('ssh', '-i', $pkey_file, $remote, $remote_command);
   $logger->info(qq[Will execute '$command']);
 
   open my $fh, q[-|], $command or croak qq[Failed to open a handle for '$command'];
   my $samples = {};
-  my $re = $npg_pipeline::function::pp_archiver::SAMPLE_NAME_PATTERN;
   while (my $line= <$fh>) {
-    $line =~ $re or next;
-    $line =~ s/\s//xmsg;
+    $line =~ s{.*/}{}xmsg;
     $samples->{$line} = 1;
   };
   close $fh or croak qq[Failed to close a handle for '$command'];
