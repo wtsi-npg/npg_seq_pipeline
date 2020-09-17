@@ -270,7 +270,12 @@ sub _upload_archive {
   my @ca = qw/rsync/;
   $dry_run and push @ca, q[--dry-run];
   my $remote = sprintf q[%s@%s:%s/], $user, $host, $UPLOAD_DIR;
-  push @ca, q[-e], qq[ssh -i $pkey_file], q[-av], $ar, $remote;
+  push @ca, q[-e], qq[ssh -i $pkey_file], q[-vlogDpr], q[--size-only], $ar, $remote;
+  # rsync options: we want times at the remote site to reflect upload time so
+  # no 't'. When deciding to upload over an existing file using 'c' for checksum takes
+  # too long, so considered using 'u' to ignore remote files which are more recent
+  # but if we're running on an upload dir we prob do want that file even if remote
+  # seems more recent, so use '--size-only'.
   my $command = join q[ ], @ca;
   $logger->info("Will execute '$command'");
   (0 == system @ca) or croak "Failed to execute '$command', $CHILD_ERROR";
