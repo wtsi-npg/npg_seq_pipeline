@@ -278,7 +278,10 @@ sub _upload_archive {
   # seems more recent, so use '--size-only'.
   my $command = join q[ ], @ca;
   $logger->info("Will execute '$command'");
-  (0 == system @ca) or croak "Failed to execute '$command', $CHILD_ERROR";
+  if (0 != system @ca) {
+    my $child_error = $CHILD_ERROR >> $SHIFT_EIGHT;
+    croak "Error executing '$command': $child_error";
+  }
 
   return;
 }
