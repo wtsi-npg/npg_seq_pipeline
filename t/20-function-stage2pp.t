@@ -332,7 +332,7 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
                 ') && (' .
       $dir . q(/qc --check generic --spec ampliconstats ) .
       qq(--rpt_list 26291:${p} --input_files $astats_file ) .
-      q(--pp_name ncov2019_artic_nf_ampliconstats --pp_version 0.1 ) .
+      q(--pp_name 'ncov2019-artic-nf ampliconstats' --pp_version 0.1 ) .
       qq($sections ) .
       q(--qc_out ) . $archive_path . qq(/lane${p}/qc ) .
       q(--sample_qc_out ') . $archive_path . qq(/lane${p}/plex*/qc') .

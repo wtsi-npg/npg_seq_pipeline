@@ -230,6 +230,11 @@ sub _job_attrs {
           'composition' => $product->composition()};
 }
 
+sub _pp_name_arg {
+  my ($self, $pp) = @_;
+  return q[--pp_name '] . $self->pp_name($pp) . q['];
+}
+
 sub _ncov2019_artic_nf_create {
   my ($self, $product, $pp, $reqs) = @_;
 
@@ -395,7 +400,7 @@ sub _ncov2019_artic_nf_ampliconstats_create {
                                '--spec ampliconstats',
                                '--rpt_list ' . $lane_product->composition->freeze2rpt,
                                '--input_files ' . $sta_file,
-                               '--pp_name ncov2019_artic_nf_ampliconstats',
+                               $self->_pp_name_arg($pp),
                                '--pp_version ' . $self->pp_version($pp),
                                (map {'--ampstats_section ' . $_} @sections),
                                '--qc_out ' . $lane_qc_dir,
