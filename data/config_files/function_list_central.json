@@ -53,6 +53,11 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "stage2pp",
+            "target" : "stage2App"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "run_secondary_analysis_in_progress",
             "target" : "seq_alignment"
          },
@@ -124,7 +129,7 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "stage2pp",
+            "source" : "stage2App",
             "target" : "qc_review"
          },
          {
@@ -271,6 +276,10 @@
          {
             "id" : "stage2pp",
             "label" : "stage2pp"
+         },
+         {
+            "id" : "stage2App",
+            "label" : "stage2App"
          },
          {
             "id" : "update_ml_warehouse_1",
