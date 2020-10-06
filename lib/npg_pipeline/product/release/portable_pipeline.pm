@@ -15,6 +15,7 @@ Readonly::Scalar my $PP_TYPE_KEY               => q[pp_type];
 Readonly::Scalar my $PP_ROOT_KEY               => q[pp_root];
 Readonly::Scalar my $PP_ARCHIVAL_FLAG_KEY      => q[pp_archival_flag];
 Readonly::Scalar my $PP_STAGING_ROOT_KEY       => q[pp_staging_root];
+Readonly::Scalar my $PP_INPUT_GLOB_KEY         => q[pp_input_glob];
 Readonly::Scalar my $JOB_NAME_SUBSTR_LENGTH    => 5;
 
 our $VERSION = '0';
@@ -281,6 +282,21 @@ sub pp_staging_root {
     "$PP_STAGING_ROOT_KEY $root does not exist or is not a directory";
 
   return $root
+}
+
+=head2 pp_input_glob
+
+Returns an input glob expression if it is set, undefined
+value if it is not set. Can be used as a class method.
+
+  my $staging_root = $obj->pp_input_glob($pp_conf);
+
+=cut
+
+sub pp_input_glob {
+  my ($self, $pp_conf) = @_;
+  $pp_conf or croak 'pp config should be defined';
+  return  $pp_conf->{$PP_INPUT_GLOB_KEY};
 }
 
 =head2 canonical_name

@@ -19,4 +19,8 @@ study:
         pp_version: "0.1"
         pp_type: "stage2App"
         pp_input_glob: "plex*/ncov2019_artic_nf/cf01166c42a/ncovIlluminaCram_ncovIllumina_sequenceAnalysis_trimPrimerSequences/*primertrimmed.sorted.bam"
+        ampliconstats_min_base_depth:
+          - 1
+          - 10
+          - 20
         pp_archival_flag: false
