@@ -70,6 +70,9 @@ Readonly::Hash my %REGISTRY => (
      {method => 'create', lims_driver_type =>'samplesheet'}},
   'archive_to_irods_ml_warehouse' => {'seq_to_irods_archiver' =>
      {method => 'create', lims_driver_type =>'ml_warehouse_fc_cache'}},
+
+  'qc_generic_artic' => {'autoqc::generic' => {method => 'create',
+    spec => 'artic', portable_pipeline_name => 'ncov2019-artic-nf'}},
 );
 
 Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>

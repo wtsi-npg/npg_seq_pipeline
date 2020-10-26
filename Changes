@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+ - a class for generating job definitions for autoqc generic
+   checks
+ - implementation of job generation for autoqc generic check
+   for artic
+
 release 57.17.0
  - a generic way to specify constructor options in the function
    listing in a registry and its implementation to iRODS archival

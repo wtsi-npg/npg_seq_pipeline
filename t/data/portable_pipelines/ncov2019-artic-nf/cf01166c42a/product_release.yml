@@ -15,6 +15,7 @@ study:
         pp_version: "cf01166c42a"
         pp_type: "stage2pp"
         pp_root: "t/data/portable_pipelines"
+        pp_qc_summary: "*.qc.csv"
       - pp_name: "ncov2019-artic-nf ampliconstats"
         pp_version: "0.1"
         pp_type: "stage2App"
