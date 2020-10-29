@@ -98,7 +98,7 @@ sub create {
       $self->logcroak($_);
     };
 
-    my @pipelines = grep { $self->pp_qc_summary($_) }
+    my @pipelines = grep { $self->pp_autoqc_flag($_) }
                     grep { $self->pp_name($_) eq $self->portable_pipeline_name }
                     @{$pps};
     @pipelines or next;

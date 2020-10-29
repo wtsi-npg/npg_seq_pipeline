@@ -16,7 +16,8 @@ Readonly::Scalar my $PP_ROOT_KEY               => q[pp_root];
 Readonly::Scalar my $PP_ARCHIVAL_FLAG_KEY      => q[pp_archival_flag];
 Readonly::Scalar my $PP_STAGING_ROOT_KEY       => q[pp_staging_root];
 Readonly::Scalar my $PP_INPUT_GLOB_KEY         => q[pp_input_glob];
-Readonly::Scalar my $QC_SUMMARY_KEY            => q[pp_qc_summary];
+Readonly::Scalar my $PP_QC_SUMMARY_KEY         => q[pp_qc_summary];
+Readonly::Scalar my $PP_AUTOQC_FLAG_KEY        => q[pp_autoqc_flag];
 Readonly::Scalar my $JOB_NAME_SUBSTR_LENGTH    => 5;
 
 our $VERSION = '0';
@@ -305,14 +306,37 @@ sub pp_input_glob {
 Returns pp_qc_summary value if it is set, undefined
 value if it is not set. Can be used as a class method.
 
-  my $staging_root = $obj->qc_input_glob($pp_conf);
+  my $staging_root = $obj->pp_qc_summary($pp_conf);
 
 =cut
 
 sub pp_qc_summary {
   my ($self, $pp_conf) = @_;
   $pp_conf or croak 'pp config should be defined';
-  return  $pp_conf->{$QC_SUMMARY_KEY};
+  return  $pp_conf->{$PP_QC_SUMMARY_KEY};
+}
+
+=head2 pp_autoqc_flag
+
+Returns the value of the autoqc flag for this pipeline. Can be used as a
+class method.
+
+If this flag is set to a true value, a relevant autoqc check should be
+invoked on the output of this pipeline. Different versions of the same
+pipeline can be configured to run in parallel because their output is
+written to different directories. The destination for autoqc results
+does not have this flexibility, therefore, only one version of each kind
+of a portable pipeline can be flagged for downstream autoqc result computation.
+
+  my $flag = $obj->pp_autoqc_flag($pp_conf);
+
+=cut
+
+sub pp_autoqc_flag {
+  my ($self, $pp_conf) = @_;
+  $pp_conf or croak 'pp config should be defined';
+
+  return  $pp_conf->{$PP_AUTOQC_FLAG_KEY};
 }
 
 =head2 canonical_name
