@@ -153,6 +153,22 @@ sub create {
   return \@definitions;
 }
 
+=head2 astats_min_depth_array
+
+A class or package method returning an array of the minimum
+base depths used to drive the samtools ampliconstats tool.
+Can also be invoked on an object instance.
+
+=cut
+
+sub astats_min_depth_array {
+  my ($self, $pp) = @_;
+  $pp or $self->logcroak('pp argument required');
+  my $depth_array = $pp->{'ampliconstats_min_base_depth'}
+                    || \@DEFAULT_AMPLICONSTATS_DEPTH;
+  return $depth_array;
+}
+
 has '_products' => (
   isa        => 'ArrayRef',
   is         => 'ro',
@@ -300,8 +316,7 @@ sub _ncov2019_artic_nf_ampliconstats_create {
     return;
   }
 
-  my $depth_array = $pp->{'ampliconstats_min_base_depth'}
-                    || \@DEFAULT_AMPLICONSTATS_DEPTH;
+  my $depth_array = $self->astats_min_depth_array($pp);
 
   my $lane_product = ($product->lanes_as_products)[0];
   my $lane_pp_path = $self->pp_archive4product(

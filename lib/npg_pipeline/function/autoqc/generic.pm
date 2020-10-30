@@ -8,6 +8,7 @@ use File::Spec::Functions qw{catdir catfile};
 use Try::Tiny;
 
 use npg_pipeline::function::definition;
+use npg_pipeline::function::stage2pp;
 
 extends q{npg_pipeline::base};
 with qw{ npg_pipeline::function::util
@@ -148,13 +149,41 @@ sub _create_artic {
 
     return (
       '--tm_json_file',
-      catfile($lane_p->qc_out_path($self->archive_path()),
-              $lane_p->file_name(ext => q[tag_metrics.json])),
+      $lane_p->file_path($lane_p->qc_out_path(
+        $self->archive_path()), ext => q[tag_metrics.json]),
       '--input_files_glob',
       catfile($input_dir_glob, $input_file_glob),
       '--sample_qc_out',
       catdir($lane_p->path($self->archive_path()), 'plex*/qc'),
            );
+  };
+
+  return $self->_create_lane_level_definition($product, $pp, $args_generator);
+}
+
+sub _create_ampliconstats {
+  my ($self, $product, $pp) = @_;
+
+  my $args_generator = sub {
+    my $lane_p = shift;
+
+    my @args =
+      map { 'FPCOV-' . $_ }
+      @{npg_pipeline::function::stage2pp->astats_min_depth_array($pp)};
+    unshift @args, 'FREADS';
+    @args = map { ('--ampstats_section', $_) } @args;
+
+    push @args, (
+      '--input_files',
+      $lane_p->file_path($self->pp_archive4product(
+        $lane_p, $pp, $self->pp_archive_path()), ext => q[astats]),
+      '--qc_out',
+      $lane_p->qc_out_path($self->archive_path()),
+      '--sample_qc_out',
+      catdir($lane_p->path($self->archive_path()), 'plex*/qc'),
+                );
+
+    return @args;
   };
 
   return $self->_create_lane_level_definition($product, $pp, $args_generator);
