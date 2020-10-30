@@ -63,6 +63,11 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "stage2App",
+            "target" : "qc_generic_ampliconstats"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "run_secondary_analysis_in_progress",
             "target" : "seq_alignment"
          },
@@ -134,11 +139,6 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "stage2App",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
             "source" : "qc_qX_yield",
             "target" : "qc_review"
          },
@@ -180,6 +180,11 @@
          {
             "relation" : "dependsOn",
             "source" : "qc_generic_artic",
+            "target" : "qc_review"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "qc_generic_ampliconstats",
             "target" : "qc_review"
          },
          {
@@ -302,6 +307,10 @@
          {
             "id" : "qc_generic_artic",
             "label" : "qc_generic_artic"
+         },
+         {
+            "id" : "qc_generic_ampliconstats",
+            "label" : "qc_generic_ampliconstats"
          },
          {
             "id" : "qc_qX_yield",
