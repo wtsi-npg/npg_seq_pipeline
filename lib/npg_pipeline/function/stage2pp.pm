@@ -18,10 +18,7 @@ with qw{ npg_pipeline::function::util
          npg_pipeline::product::release 
          npg_pipeline::product::release::portable_pipeline };
 with 'npg_common::roles::software_location' =>
-  { tools => [qw/ nextflow
-                  samtools
-                  qc
-                /] };
+  { tools => [qw/ nextflow samtools /] };
 # Not creating above an accessor for the plot-ampliconstats script
 # since perl subs cannot have dashes in their names.
 
@@ -85,13 +82,7 @@ has 'pipeline_type' => (
 
 =head2 nextflow_cmd
 
-=head2 npg_simple_robo4artic_cmd
-
-=head2 npg_autoqc_generic4artic_cmd
-
 =head2 samtools_cmd
-
-=head2 qc_cmd
 
 =head2 create
 
@@ -355,21 +346,6 @@ sub _ncov2019_artic_nf_ampliconstats_create {
                                $self->_primer_bed_file($product),
                                $input_files_glob;
   $sta_command = join q[ > ], $sta_command, $sta_file;
-  # Invoke a lane-level qc check on the ampliconstats file produced
-  # in the previous step with an option to fan out qc check outputs
-  # to individual per-sample directories.
-  my @sections = map {q[FPCOV-] . $_} @{$depth_array};
-  unshift @sections, q[FREADS];
-  my $qca_command = join q[ ], $self->qc_cmd,
-                               '--check generic',
-                               '--spec ampliconstats',
-                               '--rpt_list ' . $lane_product->composition->freeze2rpt,
-                               '--input_files ' . $sta_file,
-                               $self->_pp_name_arg($pp),
-                               '--pp_version ' . $self->pp_version($pp),
-                               (map {'--ampstats_section ' . $_} @sections),
-                               '--qc_out ' . $lane_qc_dir,
-                               '--sample_qc_out ' . q['] . $lane_archive . q[/plex*/qc'];
 
   # Run plot-ampliconstats to produce gnuplot plot files and PNG images
   # for them; prior to this filenames in ampliconstats should be remapped
@@ -397,12 +373,9 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   #      samples in a lane failing).
   #   2. Generate ampliconstats file (lane-level).
   #   3. Using this file, generate plots both on a lane and sample level.
-  #   4. Run the qc script (lane-level) to capture necessary data from the
-  #      ampliconstats file; the qc script will create autoqc results on
-  #      both lane and sample level.
   $job_attrs->{'command'}  = _join_commands(q(||),
     $ls_command,
-    _join_commands(q(&&), $sta_command, $pa_command, $qca_command));
+    _join_commands(q(&&), $sta_command, $pa_command));
 
   # Set lane flag so that we skip the next product for this lane.
   $self->_lane_counter4ampliconstats->{$position} = 1;
