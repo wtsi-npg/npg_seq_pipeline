@@ -1,6 +1,13 @@
 LIST OF CHANGES
 ---------------
 
+ - a class for generating job definitions for autoqc generic
+   checks
+ - implementation of job generation for autoqc generic check
+   for artic
+ - generation of the autoqc generic result for artic and the
+   review result is removed from the stage2pp job for artic
+
 release 57.17.0
  - a generic way to specify constructor options in the function
    listing in a registry and its implementation to iRODS archival

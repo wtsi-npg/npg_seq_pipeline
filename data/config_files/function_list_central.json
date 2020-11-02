@@ -58,6 +58,11 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "stage2pp",
+            "target" : "qc_generic_artic"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "run_secondary_analysis_in_progress",
             "target" : "seq_alignment"
          },
@@ -171,6 +176,11 @@
             "relation" : "dependsOn",
             "source" : "bam_cluster_counter_check",
             "target" : "run_analysis_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "qc_generic_artic",
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
@@ -288,6 +298,10 @@
          {
             "id" : "run_secondary_analysis_in_progress",
             "label" : "run_secondary_analysis_in_progress"
+         },
+         {
+            "id" : "qc_generic_artic",
+            "label" : "qc_generic_artic"
          },
          {
             "id" : "qc_qX_yield",
