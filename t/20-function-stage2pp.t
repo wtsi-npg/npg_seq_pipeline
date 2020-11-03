@@ -14,8 +14,7 @@ use_ok('npg_pipeline::function::stage2pp');
 
 for my $name (qw/nextflow
                  samtools
-                 plot-ampliconstats
-                 qc/) {
+                 plot-ampliconstats/) {
   my $exec = join q[/], $dir, $name;
   open my $fh1, '>', $exec or die 'failed to open file for writing';
   print $fh1 'echo "$name mock"' or warn 'failed to print';
@@ -307,13 +306,6 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
       qq( $replacement_map_file $astats_file | ) .
       q(plot-ampliconstats -page 48 ) .
       $archive_path . qq(/lane${p}/qc/ampliconstats/26291_${p}) .
-                ') && (' .
-      $dir . q(/qc --check generic --spec ampliconstats ) .
-      qq(--rpt_list 26291:${p} --input_files $astats_file ) .
-      q(--pp_name 'ncov2019-artic-nf ampliconstats' --pp_version 0.1 ) .
-      qq($sections ) .
-      q(--qc_out ) . $archive_path . qq(/lane${p}/qc ) .
-      q(--sample_qc_out ') . $archive_path . qq(/lane${p}/plex*/qc') .
                 '))';
   }
 

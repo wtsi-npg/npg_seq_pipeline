@@ -73,6 +73,9 @@ Readonly::Hash my %REGISTRY => (
 
   'qc_generic_artic' => {'autoqc::generic' => {method => 'create',
     spec => 'artic', portable_pipeline_name => 'ncov2019-artic-nf'}},
+  'qc_generic_ampliconstats' => {'autoqc::generic' => {
+    method => 'create', spec => 'ampliconstats',
+    portable_pipeline_name => 'ncov2019-artic-nf_ampliconstats'}},
 );
 
 Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>
