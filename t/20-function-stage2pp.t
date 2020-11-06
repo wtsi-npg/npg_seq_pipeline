@@ -12,12 +12,9 @@ my $dir = tempdir( CLEANUP => 1);
 
 use_ok('npg_pipeline::function::stage2pp');
 
-for my $name (qw/npg_autoqc_generic4artic
-                 npg_simple_robo4artic
-                 nextflow
+for my $name (qw/nextflow
                  samtools
-                 plot-ampliconstats
-                 qc/) {
+                 plot-ampliconstats/) {
   my $exec = join q[/], $dir, $name;
   open my $fh1, '>', $exec or die 'failed to open file for writing';
   print $fh1 'echo "$name mock"' or warn 'failed to print';
@@ -115,7 +112,7 @@ subtest 'error on missing data in LIMS' => sub {
     'error if primer panel is not defined for one of the products';
 };
 
-subtest 'definition generation, ncov2019_artic_nf pp' => sub {
+subtest 'definition generation, ncov2019-artic-nf pp' => sub {
   plan tests => 21;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
@@ -142,48 +139,33 @@ subtest 'definition generation, ncov2019_artic_nf pp' => sub {
   isa_ok ($ds->[0], 'npg_pipeline::function::definition');
   is ($ds->[0]->excluded, undef, 'function is not excluded');
 
-  my $command =          "($dir/nextflow run $nf_dir " .
-                         '-profile singularity,sanger ' .
-                         '--illumina --cram --prefix 26291 ' .
-                         "--ref $bwa_dir/MN908947.3.fa " .
-                         "--bed $pp_repository/default/SARS-CoV-2/MN908947.3/nCoV-2019.bed";
-
-  my $summary_file = join q[/], $out_dirs[0], '26291.qc.csv';
-  my $c  = "$command --directory $no_archive_path/plex1/stage1 --outdir $out_dirs[0])" .
-           ' && ' .
-           "( ([ -f $summary_file ] && echo 'Found $summary_file') || (echo 'Not found $summary_file' && /bin/false) )" .
-           ' && ' .
-           "(cat $summary_file | $dir/npg_simple_robo4artic $archive_path/plex1/qc)" .
-           ' && ' .
-           "(cat $summary_file | $dir/npg_autoqc_generic4artic --qc_out $archive_path/plex1/qc --pp_version cf01166c42a)";
-  my $c0 = $c;
+  my $command = join q[ ],
+    "$dir/nextflow run $nf_dir",
+    '-profile singularity,sanger',
+    '--illumina --cram --prefix 26291',
+    "--ref $bwa_dir/MN908947.3.fa",
+    "--bed $pp_repository/default/SARS-CoV-2/MN908947.3/nCoV-2019.bed";
+  
+  my $c = join q[ ], $command,
+                     "--directory $no_archive_path/plex1/stage1",
+                     "--outdir $out_dirs[0]";
   is ($ds->[0]->command, $c, 'correct command for plex 1');
   is ($ds->[0]->job_name, 'stage2pp_ncov2cf011_26291', 'job name');
   is ($ds->[0]->memory, 5000, 'memory');
   is_deeply ($ds->[0]->num_cpus, [4], 'number of CPUs');
 
-  my $c_copy = $command;
-  $c_copy =~ s/default/V2/;
-  $summary_file = join q[/], $out_dirs[1], '26291.qc.csv';
-  $c  =    "$c_copy --directory $no_archive_path/plex2/stage1 --outdir $out_dirs[1])"  .
-           ' && ' .
-           "( ([ -f $summary_file ] && echo 'Found $summary_file') || (echo 'Not found $summary_file' && /bin/false) )" .
-           ' && ' .
-           "(cat $summary_file | $dir/npg_simple_robo4artic $archive_path/plex2/qc)" .
-           ' && ' .
-           "(cat $summary_file | $dir/npg_autoqc_generic4artic --qc_out $archive_path/plex2/qc --pp_version cf01166c42a)";
+  $c = $command;
+  $c =~ s/default/V2/;
+  $c = join q[ ], $c,
+       "--directory $no_archive_path/plex2/stage1",
+       "--outdir $out_dirs[1]";
   is ($ds->[1]->command, $c, 'correct command for plex 2');
 
-  $c_copy = $command;
-  $c_copy =~ s/default/V3/;
-  $summary_file = join q[/], $out_dirs[2], '26291.qc.csv';
-  $c  =    "$c_copy --directory $no_archive_path/plex3/stage1 --outdir $out_dirs[2])"  .
-           ' && ' .
-           "( ([ -f $summary_file ] && echo 'Found $summary_file') || (echo 'Not found $summary_file' && /bin/false) )" .
-           ' && ' .
-           "(cat $summary_file | $dir/npg_simple_robo4artic $archive_path/plex3/qc)" .
-           ' && ' .
-           "(cat $summary_file | $dir/npg_autoqc_generic4artic --qc_out $archive_path/plex3/qc --pp_version cf01166c42a)";
+  $c= $command;
+  $c =~ s/default/V3/;
+  $c = join q[ ], $c,
+                  "--directory $no_archive_path/plex3/stage1",
+                  "--outdir $out_dirs[2]";
   is ($ds->[2]->command, $c, 'correct command for plex 3');
 
   $ppd = npg_pipeline::function::stage2pp->new(
@@ -198,17 +180,12 @@ subtest 'definition generation, ncov2019_artic_nf pp' => sub {
   $ds = $ppd->create;
   is (scalar @{$ds}, 6, '6 definitions are returned');
   my $out_dir = qq[$pp_archive_path/lane1/plex1/ncov2019_artic_nf/cf01166c42a];
-  $summary_file = join q[/], $out_dir, '26291.qc.csv';
-  $c  = "$command --directory $no_archive_path/lane1/plex1/stage1 --outdir $out_dir)" .
-        ' && ' .
-        "( ([ -f $summary_file ] && echo 'Found $summary_file') || (echo 'Not found $summary_file' && /bin/false) )" .
-        ' && ' .
-        "(cat $summary_file | $dir/npg_simple_robo4artic $archive_path/lane1/plex1/qc)" .
-        ' && ' .
-        "(cat $summary_file | $dir/npg_autoqc_generic4artic --qc_out $archive_path/lane1/plex1/qc " .
-        "--rpt_list 26291:1:1 --tm_json_file $archive_path/lane1/qc/26291_1.tag_metrics.json --pp_version cf01166c42a)";
+  $c = join q[ ], $command,
+                  "--directory $no_archive_path/lane1/plex1/stage1",
+                  "--outdir $out_dir";
   is ($ds->[0]->command, $c, 'correct command for unmerged plex 1');
 
+  $c =~ s{/lane1}{}gsmx;
   $ppd = npg_pipeline::function::stage2pp->new(
     product_conf_file_path => qq[$repo_dir/../v.3/product_release_two_pps.yml],
     pipeline_type          => 'stage2pp',
@@ -219,9 +196,9 @@ subtest 'definition generation, ncov2019_artic_nf pp' => sub {
     repository             => $dir);
   $ds = $ppd->create;
   is (scalar @{$ds}, 6, '6 definitions are returned');
-  is ($ds->[0]->command, $c0, 'correct command for plex 1');
-  $c0 =~ s/cf01166c42a/v.3/g;
-  is ($ds->[1]->command, $c0, 'correct command for plex 1 for the second pipeline');
+  is ($ds->[0]->command, $c, 'correct command for plex 1');
+  $c =~ s/cf01166c42a/v.3/g;
+  is ($ds->[1]->command, $c, 'correct command for plex 1 for the second pipeline');
 };
 
 subtest 'step skipped' => sub {
@@ -329,13 +306,6 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
       qq( $replacement_map_file $astats_file | ) .
       q(plot-ampliconstats -page 48 ) .
       $archive_path . qq(/lane${p}/qc/ampliconstats/26291_${p}) .
-                ') && (' .
-      $dir . q(/qc --check generic --spec ampliconstats ) .
-      qq(--rpt_list 26291:${p} --input_files $astats_file ) .
-      q(--pp_name 'ncov2019-artic-nf ampliconstats' --pp_version 0.1 ) .
-      qq($sections ) .
-      q(--qc_out ) . $archive_path . qq(/lane${p}/qc ) .
-      q(--sample_qc_out ') . $archive_path . qq(/lane${p}/plex*/qc') .
                 '))';
   }
 

@@ -43,6 +43,7 @@ lib/npg_pipeline/executor/lsf/job.pm
 lib/npg_pipeline/executor/options.pm
 lib/npg_pipeline/executor/wr.pm
 lib/npg_pipeline/function/autoqc.pm
+lib/npg_pipeline/function/autoqc/generic.pm
 lib/npg_pipeline/function/autoqc_archiver.pm
 lib/npg_pipeline/function/bqsr_calc.pm
 lib/npg_pipeline/function/cache_merge_component.pm
@@ -115,6 +116,7 @@ t/15-pipeline_launcher_scripts.t
 t/15-product-heron-upload-metadata.t
 t/15-product-release.t
 t/20-function-autoqc.t
+t/20-function-autoqc-generic.t
 t/20-function-autoqc_archiver.t
 t/20-function-bqsr_calc.t
 t/20-function-cache_merge_component.t
