@@ -15,11 +15,12 @@ study:
         pp_version: "cf01166c42a"
         pp_type: "stage2pp"
         pp_root: "t/data/portable_pipelines"
-        pp_qc_summary: "*.qc.csv"
-        pp_autoqc_flag: true
       - pp_name: "ncov2019-artic-nf ampliconstats"
         pp_version: "0.1"
         pp_type: "stage2App"
         pp_input_glob: "plex*/ncov2019_artic_nf/cf01166c42a/ncovIlluminaCram_ncovIllumina_sequenceAnalysis_trimPrimerSequences/*primertrimmed.sorted.bam"
-        pp_autoqc_flag: true
+        ampliconstats_min_base_depth:
+          - 1
+          - 10
+          - 20
         pp_archival_flag: false

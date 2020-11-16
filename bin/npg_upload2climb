@@ -25,7 +25,7 @@ Readonly::Scalar my $MANIFEST_EXTENTION    => q[.tsv];
 Readonly::Scalar my $MANIFEST_SUFFIX       => q[.climbupload];
 Readonly::Scalar my $SHIFT_EIGHT           => 8;
 Readonly::Scalar my $UPLOAD_DIR            => q[upload];
-Readonly::Scalar my $UPLOADED_SAMPLES_GLOB => join q[/], $UPLOAD_DIR, q[*], q[];
+Readonly::Scalar my $UPLOADED_SAMPLES_GLOB => q[upload{,_sample_withdrawn,_controls}/*/*]; # also consider samples previously uploaded but moved aside as controls or withdrawn
 
 Readonly::Hash   my %CSV_PARSER_OPTIONS    =>
                     @npg_pipeline::function::pp_archiver::CSV_PARSER_OPTIONS;
@@ -198,16 +198,15 @@ sub _set_header {
 sub _uploaded_samples {
 
   my $remote = join q[@], $user, $host;
-  my $remote_command = qq[ls $UPLOADED_SAMPLES_GLOB];
-  my $command = join q[ ], ('ssh', '-i', $pkey_file, $remote, $remote_command);
+  my $remote_command = qq[ls -d $UPLOADED_SAMPLES_GLOB];
+  my @command = ('ssh', '-i', $pkey_file, $remote, $remote_command);
+  my $command = join q[ ], @command;
   $logger->info(qq[Will execute '$command']);
 
-  open my $fh, q[-|], $command or croak qq[Failed to open a handle for '$command'];
+  open my $fh, q[-|], @command or croak qq[Failed to open a handle for '$command'];
   my $samples = {};
-  my $re = $npg_pipeline::function::pp_archiver::SAMPLE_NAME_PATTERN;
   while (my $line= <$fh>) {
-    $line =~ $re or next;
-    $line =~ s/\s//xmsg;
+    $line =~ s{.*/}{}xmsg;
     $samples->{$line} = 1;
   };
   close $fh or croak qq[Failed to close a handle for '$command'];
@@ -271,10 +270,18 @@ sub _upload_archive {
   my @ca = qw/rsync/;
   $dry_run and push @ca, q[--dry-run];
   my $remote = sprintf q[%s@%s:%s/], $user, $host, $UPLOAD_DIR;
-  push @ca, q[-e], qq["ssh -i $pkey_file"], q[-av], $ar, $remote;
+  push @ca, q[-e], qq[ssh -i $pkey_file], q[-vlogDpr], q[--size-only], $ar, $remote;
+  # rsync options: we want times at the remote site to reflect upload time so
+  # no 't'. When deciding to upload over an existing file using 'c' for checksum takes
+  # too long, so considered using 'u' to ignore remote files which are more recent
+  # but if we're running on an upload dir we prob do want that file even if remote
+  # seems more recent, so use '--size-only'.
   my $command = join q[ ], @ca;
   $logger->info("Will execute '$command'");
-  (0 == system $command) or croak "Failed to execute '$command', $CHILD_ERROR";
+  if (0 != system @ca) {
+    my $child_error = $CHILD_ERROR >> $SHIFT_EIGHT;
+    croak "Error executing '$command': $child_error";
+  }
 
   return;
 }

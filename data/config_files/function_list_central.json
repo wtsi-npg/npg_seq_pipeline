@@ -53,6 +53,21 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "stage2pp",
+            "target" : "stage2App"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "stage2pp",
+            "target" : "qc_generic_artic"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "stage2App",
+            "target" : "qc_generic_ampliconstats"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "run_secondary_analysis_in_progress",
             "target" : "seq_alignment"
          },
@@ -124,11 +139,6 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "stage2pp",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
             "source" : "qc_qX_yield",
             "target" : "qc_review"
          },
@@ -166,6 +176,16 @@
             "relation" : "dependsOn",
             "source" : "bam_cluster_counter_check",
             "target" : "run_analysis_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "qc_generic_artic",
+            "target" : "qc_review"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "qc_generic_ampliconstats",
+            "target" : "qc_review"
          },
          {
             "relation" : "dependsOn",
@@ -273,12 +293,24 @@
             "label" : "stage2pp"
          },
          {
+            "id" : "stage2App",
+            "label" : "stage2App"
+         },
+         {
             "id" : "update_ml_warehouse_1",
             "label" : "update_ml_warehouse"
          },
          {
             "id" : "run_secondary_analysis_in_progress",
             "label" : "run_secondary_analysis_in_progress"
+         },
+         {
+            "id" : "qc_generic_artic",
+            "label" : "qc_generic_artic"
+         },
+         {
+            "id" : "qc_generic_ampliconstats",
+            "label" : "qc_generic_ampliconstats"
          },
          {
             "id" : "qc_qX_yield",

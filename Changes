@@ -1,6 +1,26 @@
 LIST OF CHANGES
 ---------------
 
+release 58.0.0
+ - a class for generating job definitions for autoqc generic
+   checks
+ - implementation of job generation for autoqc generic checks
+   for artic and ampliconstats
+ - generation of the autoqc generic result for artic and the
+   review result is removed from the stage2pp job for artic
+ - generation of the autoqc generic result for ampliconstats is
+   removed from the stage2App job for ampliconstats
+
+release 57.17.0
+ - a generic way to specify constructor options in the function
+   listing in a registry and its implementation to iRODS archival
+   jobs and a stage2pp job
+ - implementation for the ampliconstats portable pipeline
+ - new pipeline function - stage2App - and its mapping to the
+   npg_pipeline::function::stage2pp class
+ - a new portable pipeline to produce ampliconstats data and its
+   mapping to the stage2App pipeline function
+
 release 57.16.0
  - a new function for archival of pp data to iRODS
  - stage2pp function implementation is refactored to create common functions
