@@ -1,4 +1,5 @@
 .travis.yml
+bin/npg_climb2mlwh
 bin/npg_heron_metadata_upload
 bin/npg_pipeline_analysis_runner
 bin/npg_pipeline_archival_runner
@@ -73,6 +74,7 @@ lib/npg_pipeline/pluggable/registry.pm
 lib/npg_pipeline/product.pm
 lib/npg_pipeline/product/cache_merge.pm
 lib/npg_pipeline/product/chunk.pm
+lib/npg_pipeline/product/heron/upload/climb2mlwh.pm
 lib/npg_pipeline/product/heron/upload/library.pm
 lib/npg_pipeline/product/heron/upload/metadata_client.pm
 lib/npg_pipeline/product/heron/upload/run.pm
@@ -113,6 +115,7 @@ t/10-validation-irods.t
 t/10-validation-s3.t
 t/10-validation.t
 t/15-pipeline_launcher_scripts.t
+t/15-product-climb2mlwh.t
 t/15-product-heron-upload-metadata.t
 t/15-product-release.t
 t/20-function-autoqc.t

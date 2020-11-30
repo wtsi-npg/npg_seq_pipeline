@@ -16,7 +16,7 @@ use npg_pipeline::function::definition;
 extends 'npg_pipeline::base';
 with qw/ npg_pipeline::product::release
          npg_pipeline::product::release::portable_pipeline /;
-with 'npg_common::roles::software_location' => { tools => [qw/npg_upload2climb/] };
+with 'npg_common::roles::software_location' => { tools => [qw/npg_upload2climb npg_climb2mlwh/] };
 
 our $VERSION = '0';
 
@@ -157,7 +157,10 @@ sub create {
     $ref->{'job_name'} = join q[_], 'pp_archiver', $self->label();
     $ref->{'command'}  = join q[ ], $self->npg_upload2climb_cmd,
                                     $self->_climb_archival_options(),
-                                    '--manifest', $self->_manifest_path;
+                                    '--manifest', $self->_manifest_path,
+                                    q[&&], $self->npg_climb2mlwh_cmd,
+                                    $self->_climb_archival_options(),
+                                    '--run_folder', $self->run_folder;
   } else { # An 'empty' manifest has been generated.
     $self->debug('No pp data to archive, skipping');
     $ref->{'excluded'} = 1;

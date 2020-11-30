@@ -21,6 +21,13 @@ open my $fh1, '>', $exec or die 'failed to open file for writing';
 print $fh1 'echo "npg_upload2climb mock"' or warn 'failed to print';
 close $fh1 or warn 'failed to close file handle';
 chmod 755, $exec;
+
+my $exec2 = join q[/], $dir, 'npg_climb2mlwh';
+open $fh1, '>', $exec2 or die 'failed to open file for writing';
+print $fh1 'echo "npg_climb2mlwh mock"' or warn 'failed to print';
+close $fh1 or warn 'failed to close file handle';
+chmod 755, $exec2;
+
 local $ENV{PATH} = join q[:], $dir, $ENV{PATH};
 
 my $logfile = join q[/], $dir, 'logfile';
@@ -31,7 +38,8 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           utf8   => 1});
 
 # setup runfolder
-my $runfolder_path = join q[/], $dir, 'novaseq', '180709_A00538_0010_BH3FCMDRXX';
+my $run_folder = '180709_A00538_0010_BH3FCMDRXX';
+my $runfolder_path = join q[/], $dir, 'novaseq', $run_folder;
 my $bbc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20180805-013153';
 my $archive_path = join q[/], $bbc_path, 'no_cal/archive';
 my $no_archive_path = join q[/], $bbc_path, 'no_archive';
@@ -290,7 +298,7 @@ subtest 'definition and manifest generation' => sub {
   is ($d->excluded, undef, 'function is not excluded');
   is ($d->composition, undef, 'composition is not defined');
   is ($d->job_name, "pp_archiver_$id_run", 'job name');
-  is ($d->command, "$exec $coptions --manifest $manifest_path", 'correct command');
+  is ($d->command, "$exec $coptions --manifest $manifest_path && $exec2 $coptions --run_folder $run_folder", 'correct command');
 
   ok ($f->merge_lanes, 'merge flag is true');
   my @data_products = @{$f->products->{'data_products'}};
@@ -361,7 +369,7 @@ subtest 'definition and manifest generation' => sub {
   ok (!-e $manifest_path, 'manifest file does not exist');
   $ds = $f->create();
   is (scalar @{$ds}, 1, 'one definition is generated');
-  is ($ds->[0]->command, "$exec $coptions --manifest $manifest_path", 'correct command');
+  is ($ds->[0]->command, "$exec $coptions --manifest $manifest_path && $exec2 $coptions --run_folder $run_folder", 'correct command');
   ok (-e $manifest_path, 'manifest file exists');
   @lines = read_file($manifest_path);
   is (scalar @lines, 4, 'manifest contains 4 lines');
