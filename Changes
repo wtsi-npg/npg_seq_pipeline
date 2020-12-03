@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+ - added ability to use custom locations and or names for the
+   main log of the pipeline script
+ - the main log of teh pipeline script is hard-liked in or
+   copied to the analysis directory
+
 release 58.0.0
  - a class for generating job definitions for autoqc generic
    checks
