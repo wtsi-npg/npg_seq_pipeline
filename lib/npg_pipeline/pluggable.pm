@@ -40,61 +40,14 @@ npg_pipeline::pluggable
 =head1 SUBROUTINES/METHODS
 
 ##################################################################
-################## Public attributes #############################
+################## Public attributes, ############################
 ###### which will be available as script arguments ###############
-########## unless their metaclass is NoGetopt ####################
+########## unless their metaclass is NoGetopt, ###################
+##################################################################
+################## and public methods ############################
 ##################################################################
 
-############## Boolean flags #####################################
-
-=head2 spider
-
-Toggles spider (creating/reusing cached LIMs data), true by default
-
-=cut
-
-has q{spider} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  default       => 1,
-  documentation => q{Toggles creating/reusing cached LIMs data, true by default},
-);
-
-=head2 executor_type
-
-Executor type. By default commands will be submitted to LSF.
-Can be specified in the general configuration file.
-
-=cut
-
-has q{executor_type} => (
-  isa           => q{Str},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{Executor type, defaults to lsf},
-);
-sub _build_executor_type {
-  my $self = shift;
-  my $et = $self->general_values_conf()->{'executor_type'};
-  return $et ? $et : $DEFAULT_EXECUTOR_TYPE;
-}
-
-=head2 execute
-
-A boolean flag turning on/off transferring the graph to the executor,
-true by default.
-
-=cut
-
-has q{execute} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  default       => 1,
-  documentation =>
-  q{A flag turning on/off execution, true by default},
-);
-
-############## End of flags #####################################
+############## All about functions ###############################
 
 =head2 function_order
 
@@ -254,6 +207,42 @@ has q{function_definitions} => (
   metaclass  => q{NoGetopt},
 );
 
+############## All about job execution ###########################
+
+=head2 execute
+
+A boolean flag turning on/off transferring the graph to the executor,
+true by default.
+
+=cut
+
+has q{execute} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 1,
+  documentation =>
+  q{A flag turning on/off execution, true by default},
+);
+
+=head2 executor_type
+
+Executor type. By default commands will be submitted to LSF.
+Can be specified in the general configuration file.
+
+=cut
+
+has q{executor_type} => (
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{Executor type, defaults to lsf},
+);
+sub _build_executor_type {
+  my $self = shift;
+  my $et = $self->general_values_conf()->{'executor_type'};
+  return $et ? $et : $DEFAULT_EXECUTOR_TYPE;
+}
+
 =head2 executor
 
 Executor object of type specified by the executor_type attribute.
@@ -290,6 +279,8 @@ sub _build_executor {
   return $module->new($attrs);
 }
 
+############## Everything else ##################################
+
 =head2 BUILD
 
 Called by Moose at the end of object instantiation.
@@ -303,13 +294,9 @@ sub BUILD {
   return;
 }
 
-##################################################################
-############## Public methods ####################################
-##################################################################
-
 =head2 main
 
- Runs the pipeline.
+Runs the pipeline.
 
 =cut
 
@@ -352,12 +339,25 @@ sub main {
   return;
 }
 
+=head2 spider
+
+Toggles spider (creating/reusing cached LIMs data), true by default.
+
+=cut
+
+has q{spider} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 1,
+  documentation => q{Toggles creating/reusing cached LIMs data, true by default},
+);
+
 =head2 prepare
 
- Actions that have to be performed by the pipeline before the functions
- can be called, for example, creation of pipeline-specific directories.
- In this module some envronment variables are printed to the log by this
- method, then, if spider functionality is enabled, LIMs data are cached.
+Actions that have to be performed by the pipeline before the functions
+can be called, for example, creation of pipeline-specific directories.
+In this module some envronment variables are printed to the log by this
+method, then, if spider functionality is enabled, LIMs data are cached.
 
 =cut
 
