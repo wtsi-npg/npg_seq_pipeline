@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-use Test::More tests => 10;
+use Test::More tests => 14;
 use strict;
 use warnings;
 use Getopt::Long;
@@ -9,7 +9,8 @@ use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use npg_pipeline::product::heron::majora qw/ get_table_info_for_id_run
                                              get_majora_data
                                              json_to_structure
-                                             update_metadata/;
+                                             update_metadata
+                                             get_ids_missing_data/;
 #getting simplified json output from file
 my $short_json_string;
 my $path = 't/data/majora/simplified_majora_output.json';
@@ -22,8 +23,7 @@ close($fh);
 
 #example run with test schema
 my $id_run = 35340;
-#my $schema =npg_tracking::Schema->connect();
-#my $mlwh_schema=WTSI::DNAP::Warehouse::Schema->connect();
+
 my $npg_tracking_schema=t::dbic_util->new()->test_schema('t/data/dbic_fixtures/');
 my $schema_for_fn=t::dbic_util->new()->test_schema_mlwh('t/data/fixtures/mlwh-majora');
 
@@ -31,8 +31,6 @@ my ($fn,$rs) = get_table_info_for_id_run($id_run,$npg_tracking_schema,$schema_fo
 
 ok($fn eq "201102_A00950_0194_AHTJJKDRXX", "folder name is correct");
 is($rs, 20, "correct number of rows in result set");
-
-
 
 my %ds = json_to_structure($short_json_string,$fn);
 my $ds_ref = \%ds;
@@ -107,6 +105,42 @@ update_metadata($test_rs_for_empty,$empty_ref);
 
 my @cog_val_after_empty = (map{$_->iseq_heron_product_metric->cog_sample_meta}$test_rs_for_empty->all());
 is_deeply([(undef)x20],\@cog_val_after_empty,"values after update empty data structure");
+
+
+#testing the get_ids_missing_data for id_runs missing data
+my $schema_ids_without_data=t::dbic_util->new()->test_schema_mlwh('t/data/fixtures/mlwh-majora');
+my $checking_missing_data_rs = $schema_ids_without_data->resultset('IseqHeronProductMetric')->search({});
+
+#id_runs with cog_sample_meta = 1 AND climb_upload set
+$checking_missing_data_rs->update({cog_sample_meta=>1});
+
+my @ids_cog_not_zero = get_ids_missing_data($schema_ids_without_data);
+my @empty;
+
+is_deeply(\@ids_cog_not_zero,\@empty, "no id_runs returned when cog_sample_meta is not 0");
+
+#id_runs when cog_sample_meta=0 AND climb_upload set
+$checking_missing_data_rs->update({cog_sample_meta=>0});
+
+my @id_zero_set = get_ids_missing_data($schema_ids_without_data);
+
+is_deeply(\@id_zero_set,[35340,35348,35355,35356], "id_runs with cog_sample_meta:0 and climb_upload set returned");
+
+
+#id_runs with cog_sample_meta = 0 and climb_upload =undef
+$checking_missing_data_rs->update({cog_sample_meta=>0});
+$checking_missing_data_rs->update({climb_upload=>undef});
+
+my @ids_climb_undef = get_ids_missing_data($schema_ids_without_data);
+
+is_deeply(\@ids_climb_undef,\@empty, "no id_runs returned when climb_upload is undef");
+
+#id_runs with cog_sample_meta = 1 and climb_upload = undef
+$checking_missing_data_rs->update({cog_sample_meta=>1});
+
+my @ids_climb_undef_cog_set = get_ids_missing_data($schema_ids_without_data);
+
+is_deeply(\@ids_climb_undef_cog_set,\@empty, "no id_runs returned when climb_upload is undef and cog_sample_meta is 1");
 
 done_testing();
 

@@ -13,7 +13,9 @@ our $VERSION = '0';
 our @EXPORT_OK = qw/  get_table_info_for_id_run
                       get_majora_data
                       json_to_structure
-                      update_metadata/;
+                      update_metadata
+                      get_ids_missing_data/;
+
 sub get_table_info_for_id_run {
   my ($id_run,$npg_tracking_schema,$mlwh_schema)= @_ ;
   if (!defined $id_run) {carp 'need an id_run'};
@@ -86,6 +88,24 @@ sub update_metadata {
   };
   return;
 }
+
+sub get_ids_missing_data{
+  my ($schema) = @_;
+  my $rs = $schema->resultset('IseqHeronProductMetric')->search(
+    {
+      'study.name'         => 'Heron Project',
+      'me.cog_sample_meta' => 0,
+      'me.climb_upload'    => {-not=>undef}
+    },
+    {
+      join => {'iseq_product_metric' => {'iseq_flowcell' => ['study']}},
+      columns => 'iseq_product_metric.id_run',
+      distinct => 1
+    }
+  );
+  my @ids = map { $_->iseq_product_metric->id_run } $rs->all();
+  return @ids;
+}
 1;
 __END__
 
@@ -121,6 +141,11 @@ my $ds_ref = \%ds;
 #reference can then be passed to update_metadata to update the
 # database.
 update_metadata($rs,$ds_ref);
+
+#Alternativley id runs with missing data can be obtained by running 
+#get_ids_missing_data which takes a schema as argument and returns
+#a list of id_runs
+my @ids = get_ids_missing_data($schema);
 
 =head1 DESCRIPTION
 
@@ -169,6 +194,12 @@ If there IS sample data AND there IS a value for submission_org:
 cog_sample_meta is set to 1.
 If there IS sample data AND there IS NO value for submission_org:
 cog_sample_meta is set to 0.
+
+=head2 get_ids_missing_data
+
+Takes a schema as argument.
+searches schema for Heron runs which are missing cog_sample_meta
+values and returns as a list their id_runs.
 
 =head1 DIAGNOSTICS
 =head1 CONFIGURATION AND ENVIRONMENT
