@@ -6,6 +6,7 @@ use warnings;
 use Carp;
 use JSON;
 use English qw( -no_match_vars );
+use DateTime;
 use Exporter qw(import);
 
 our $VERSION = '0';
@@ -14,7 +15,8 @@ our @EXPORT_OK = qw/  get_table_info_for_id_run
                       get_majora_data
                       json_to_structure
                       update_metadata
-                      get_ids_missing_data/;
+                      get_ids_missing_data
+                      get_ids_from_date/;
 
 sub get_table_info_for_id_run {
   my ($id_run,$npg_tracking_schema,$mlwh_schema)= @_ ;
@@ -106,6 +108,31 @@ sub get_ids_missing_data{
   my @ids = map { $_->iseq_product_metric->id_run } $rs->all();
   return @ids;
 }
+
+sub get_ids_from_date{
+  my ($schema, $days) = @_;
+  my $dt_end = DateTime->now();
+  my $dt_start = $dt_end->subtract(days =>$days);
+  my $dtf = $schema->storage->datetime_parser;
+  my $rs = $schema->resultset('IseqHeronProductMetric')->search(
+    {
+      'study.name'         => 'Heron Project',
+      'me.cog_sample_meta' => 0,
+      #TODO: dates might not be matching climb_upload value exactly therefore not returning runs
+      'me.climb_upload'    =>{ -between =>[$dtf->format_datetime($dt_start),
+                                           $dtf->format_datetime($dt_end),
+                                          ],
+                             }
+    },
+    {
+      join => {'iseq_product_metric' => {'iseq_flowcell' => ['study']}},
+      columns => 'iseq_product_metric.id_run',
+      distinct => 1
+    }
+  );
+  my @ids = map { $_->iseq_product_metric->id_run } $rs->all();
+  return @ids;
+}
 1;
 __END__
 
@@ -146,6 +173,11 @@ update_metadata($rs,$ds_ref);
 #get_ids_missing_data which takes a schema as argument and returns
 #a list of id_runs
 my @ids = get_ids_missing_data($schema);
+
+#id_runs can also be obtained through get_ids_from_date which returns
+#a list of id_runs from between the current time and X many days ago e.g
+my @ids = get_ids_from_date($schema,4);
+#gets ids between now and 4 days ago
 
 =head1 DESCRIPTION
 
@@ -200,6 +232,13 @@ cog_sample_meta is set to 0.
 Takes a schema as argument.
 searches schema for Heron runs which are missing cog_sample_meta
 values and returns as a list their id_runs.
+
+=head2 get_ids_from_date
+
+Takes two arguments.
+First argument - Schema to get id_runs from.
+Second argument - number of days before the current time from which
+id_runs will be fetched.
 
 =head1 DIAGNOSTICS
 =head1 CONFIGURATION AND ENVIRONMENT
