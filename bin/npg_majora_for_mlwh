@@ -25,10 +25,10 @@ my $days;
 GetOptions 'id_run=i' => \@id_runs, #numeric
 'days=i' =>\$days,
 or croak "Error in command line arguments\n";
-if (!@id_runs and !$days) {
+if ((not @id_runs) and (not $days)) {
   #gets a list of id_runs missing data
   @id_runs = get_ids_missing_data($mlwh_schema);
-}elsif(!@id_runs and $days) {
+}elsif((not @id_runs) and $days) {
   #gets list of id_runs missing data from (current time - days) up to current time
   @id_runs = get_ids_from_date($mlwh_schema,$days)
 }elsif(@id_runs and $days){
