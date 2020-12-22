@@ -58,7 +58,6 @@ sub json_to_structure {
     my @libarray = @{$libref};
     foreach my $lib (@libarray) {
       my $lib_name = $lib->{library_name};
-      carp "$lib\t$lib_name";
       my $bioref = $lib->{biosamples};
       my @biosamples = @{$bioref};
       foreach my $sample (@biosamples) {
