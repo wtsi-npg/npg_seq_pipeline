@@ -95,7 +95,7 @@ sub get_ids_missing_data{
   my $rs = $schema->resultset('IseqHeronProductMetric')->search(
     {
       'study.name'         => 'Heron Project',
-      'me.cog_sample_meta' => 0,
+      'me.cog_sample_meta' => [undef,0],
       'me.climb_upload'    => {-not=>undef}
     },
     {
@@ -116,7 +116,7 @@ sub get_ids_from_date{
   my $rs = $schema->resultset('IseqHeronProductMetric')->search(
     {
       'study.name'         => 'Heron Project',
-      'me.cog_sample_meta' => 0,
+      'me.cog_sample_meta' => [undef,0],
       #TODO: dates might not be matching climb_upload value exactly therefore not returning runs
       'me.climb_upload'    =>{ -between =>[$dtf->format_datetime($dt_start),
                                            $dtf->format_datetime($dt_end),
