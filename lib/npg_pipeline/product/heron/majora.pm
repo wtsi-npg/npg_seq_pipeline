@@ -91,11 +91,12 @@ sub update_metadata {
 }
 
 sub _get_id_runs_missing_cog_metadata_rs{
-  my ($schema) = @_;
+  my ($schema, $meta_search) = @_;
+  $meta_search //= [undef,0]; # missing run -> library -> biosample connection, or missing biosample metadata
   return $schema->resultset('IseqHeronProductMetric')->search(
     {
       'study.name'         => 'Heron Project',
-      'me.cog_sample_meta' => [undef,0], # missing run -> library -> biosample connection, or missing biosample metadata
+      'me.cog_sample_meta' => $meta_search,
       'me.climb_upload'    => {-not=>undef} # only consider for data uploaded
     },
     {
@@ -107,16 +108,16 @@ sub _get_id_runs_missing_cog_metadata_rs{
 }
 
 sub get_ids_missing_data{
-  my ($schema) = @_;
-  my @ids = map { $_->iseq_product_metric->id_run } _get_id_runs_missing_cog_metadata_rs($schema)->all();
+  my ($schema, $meta_search) = @_;
+  my @ids = map { $_->iseq_product_metric->id_run } _get_id_runs_missing_cog_metadata_rs($schema, $meta_search)->all();
   return @ids;
 }
 
 sub get_ids_from_date{
-  my ($schema, $days) = @_;
+  my ($schema, $days, $meta_search) = @_;
   my $dt = DateTime->now();
   $dt->subtract(days =>$days);
-  my $rs = _get_id_runs_missing_cog_metadata_rs($schema)->search(
+  my $rs = _get_id_runs_missing_cog_metadata_rs($schema, $meta_search)->search(
     {
       #TODO: dates might not be matching climb_upload value exactly therefore not returning runs
       'me.climb_upload'    =>{ q(>) =>$dt }
@@ -222,14 +223,17 @@ cog_sample_meta is set to 0.
 =head2 get_ids_missing_data
 
 Takes a schema as argument.
+Optionally takes second argument: array ref of cog_sample_meta to search 
+for (default [undef,0]).
 searches schema for Heron runs which are missing cog_sample_meta
 values and returns as a list their id_runs.
 
 =head2 get_ids_from_date
 
-Takes two arguments.
 First argument - Schema to get id_runs from.
 Second argument - number of days before the current time from which
+Optionally takes third argument: array ref of cog_sample_meta to search 
+for (default [undef,0]).
 id_runs will be fetched.
 
 =head1 DIAGNOSTICS

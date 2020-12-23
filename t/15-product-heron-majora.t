@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-use Test::More tests => 14;
+use Test::More tests => 17;
 use strict;
 use warnings;
 use Getopt::Long;
@@ -126,12 +126,15 @@ $checking_missing_data_rs->search({'iseq_product_metric.id_run'=>35356})->update
 $checking_missing_data_rs->search({'iseq_product_metric.id_run'=>35355, 'iseq_product_metric.position'=>1})->update({cog_sample_meta=>0});
 $checking_missing_data_rs->search({'iseq_product_metric.id_run'=>35355, 'iseq_product_metric.position'=>2})->update({cog_sample_meta=>undef});
 ## one run half NULL, half 1
-$checking_missing_data_rs->search({'iseq_product_metric.id_run'=>35348, 'iseq_product_metric.position'=>2})->update({cog_sample_meta=>undef});
+$checking_missing_data_rs->search({'iseq_product_metric.id_run'=>35348, 'iseq_product_metric.position'=>2, tag_index=>{q(>)=>2}})->update({cog_sample_meta=>undef});
 ## leaving run 35340 all 1
 
 my @id_zero_set = get_ids_missing_data($schema_ids_without_data);
 
 is_deeply(\@id_zero_set,[35348,35355,35356], "id_runs with cog_sample_meta:0 or NULL and climb_upload set returned");
+is_deeply([get_ids_missing_data($schema_ids_without_data,[0])],[35355,35356], "id_runs with cog_sample_meta:0 and climb_upload set returned");
+is_deeply([get_ids_missing_data($schema_ids_without_data,[undef])],[35348,35355], "id_runs with cog_sample_meta:NULL and climb_upload set returned");
+is_deeply([get_ids_missing_data($schema_ids_without_data,[1])],[35340,35348], "id_runs with cog_sample_meta:1 and climb_upload set returned");
 
 
 #id_runs with cog_sample_meta = 0 and climb_upload =undef
