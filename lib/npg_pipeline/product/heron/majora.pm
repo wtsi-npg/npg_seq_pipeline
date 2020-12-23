@@ -114,17 +114,12 @@ sub get_ids_missing_data{
 
 sub get_ids_from_date{
   my ($schema, $days) = @_;
-  my $dt_end = DateTime->now();
-  my $dt_start = $dt_end->clone();
-  $dt_start->subtract(days =>$days);
-  my $dtf = $schema->storage->datetime_parser;
+  my $dt = DateTime->now();
+  $dt->subtract(days =>$days);
   my $rs = _get_id_runs_missing_cog_metadata_rs($schema)->search(
     {
       #TODO: dates might not be matching climb_upload value exactly therefore not returning runs
-      'me.climb_upload'    =>{ -between =>[$dtf->format_datetime($dt_start),
-                                           $dtf->format_datetime($dt_end),
-                                          ],
-                             }
+      'me.climb_upload'    =>{ q(>) =>$dt }
     }
   );
   my @ids = map { $_->iseq_product_metric->id_run } $rs->all();
