@@ -90,13 +90,13 @@ sub update_metadata {
   return;
 }
 
-sub get_ids_missing_data{
+sub _get_id_runs_missing_cog_metadata_rs{
   my ($schema) = @_;
-  my $rs = $schema->resultset('IseqHeronProductMetric')->search(
+  return $schema->resultset('IseqHeronProductMetric')->search(
     {
       'study.name'         => 'Heron Project',
-      'me.cog_sample_meta' => [undef,0],
-      'me.climb_upload'    => {-not=>undef}
+      'me.cog_sample_meta' => [undef,0], # missing run -> library -> biosample connection, or missing biosample metadata
+      'me.climb_upload'    => {-not=>undef} # only consider for data uploaded
     },
     {
       join => {'iseq_product_metric' => {'iseq_flowcell' => ['study']}},
@@ -104,7 +104,11 @@ sub get_ids_missing_data{
       distinct => 1
     }
   );
-  my @ids = map { $_->iseq_product_metric->id_run } $rs->all();
+}
+
+sub get_ids_missing_data{
+  my ($schema) = @_;
+  my @ids = map { $_->iseq_product_metric->id_run } _get_id_runs_missing_cog_metadata_rs($schema)->all();
   return @ids;
 }
 
@@ -113,20 +117,13 @@ sub get_ids_from_date{
   my $dt_end = DateTime->now();
   my $dt_start = $dt_end->subtract(days =>$days);
   my $dtf = $schema->storage->datetime_parser;
-  my $rs = $schema->resultset('IseqHeronProductMetric')->search(
+  my $rs = _get_id_runs_missing_cog_metadata_rs($schema)->search(
     {
-      'study.name'         => 'Heron Project',
-      'me.cog_sample_meta' => [undef,0],
       #TODO: dates might not be matching climb_upload value exactly therefore not returning runs
       'me.climb_upload'    =>{ -between =>[$dtf->format_datetime($dt_start),
                                            $dtf->format_datetime($dt_end),
                                           ],
                              }
-    },
-    {
-      join => {'iseq_product_metric' => {'iseq_flowcell' => ['study']}},
-      columns => 'iseq_product_metric.id_run',
-      distinct => 1
     }
   );
   my @ids = map { $_->iseq_product_metric->id_run } $rs->all();
