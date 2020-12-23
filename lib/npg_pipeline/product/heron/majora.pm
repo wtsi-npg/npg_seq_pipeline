@@ -115,7 +115,8 @@ sub get_ids_missing_data{
 sub get_ids_from_date{
   my ($schema, $days) = @_;
   my $dt_end = DateTime->now();
-  my $dt_start = $dt_end->subtract(days =>$days);
+  my $dt_start = $dt_end->clone();
+  $dt_start->subtract(days =>$days);
   my $dtf = $schema->storage->datetime_parser;
   my $rs = _get_id_runs_missing_cog_metadata_rs($schema)->search(
     {
