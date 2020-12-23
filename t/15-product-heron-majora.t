@@ -1,16 +1,18 @@
 #!/usr/bin/env perl
-use Test::More tests => 17;
+use Test::More tests => 20;
 use strict;
 use warnings;
+use DateTime;
 use Getopt::Long;
 use FindBin qw($Bin);
 use t::dbic_util;
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" ); 
-use npg_pipeline::product::heron::majora qw/ get_table_info_for_id_run
+use_ok('npg_pipeline::product::heron::majora', qw/ get_table_info_for_id_run
                                              get_majora_data
                                              json_to_structure
                                              update_metadata
-                                             get_id_runs_missing_data/;
+                                             get_id_runs_missing_data
+                                             get_id_runs_missing_data_in_last_days/);
 #getting simplified json output from file
 my $short_json_string;
 my $path = 't/data/majora/simplified_majora_output.json';
@@ -130,11 +132,17 @@ $checking_missing_data_rs->search({'iseq_product_metric.id_run'=>35348, 'iseq_pr
 ## leaving run 35340 all 1
 
 my @id_zero_set = get_id_runs_missing_data($schema_ids_without_data);
-
 is_deeply(\@id_zero_set,[35348,35355,35356], "id_runs with cog_sample_meta:0 or NULL and climb_upload set returned");
 is_deeply([get_id_runs_missing_data($schema_ids_without_data,[0])],[35355,35356], "id_runs with cog_sample_meta:0 and climb_upload set returned");
 is_deeply([get_id_runs_missing_data($schema_ids_without_data,[undef])],[35348,35355], "id_runs with cog_sample_meta:NULL and climb_upload set returned");
 is_deeply([get_id_runs_missing_data($schema_ids_without_data,[1])],[35340,35348], "id_runs with cog_sample_meta:1 and climb_upload set returned");
+
+#my$ndays = DateTime->now()->subtract_datetime( DateTime->new({year=>2020, month=>11, day=>3}))->in_units('days');
+my$ndays = DateTime->now()->delta_days( DateTime->new({year=>2020, month=>11, day=>3}))->in_units('days');
+is_deeply([get_id_runs_missing_data_in_last_days($schema_ids_without_data,$ndays)],[35348,35355,35356], "id_runs with cog_sample_meta:0 or NULL and climb_upload in last $ndays");
+$ndays-=4;
+is_deeply([get_id_runs_missing_data_in_last_days($schema_ids_without_data,$ndays)],[], "id_runs with cog_sample_meta:0 or NULL and climb_upload in last $ndays");
+
 
 
 #id_runs with cog_sample_meta = 0 and climb_upload =undef
