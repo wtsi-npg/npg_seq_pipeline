@@ -15,8 +15,8 @@ our @EXPORT_OK = qw/  get_table_info_for_id_run
                       get_majora_data
                       json_to_structure
                       update_metadata
-                      get_ids_missing_data
-                      get_ids_from_date/;
+                      get_id_runs_missing_data
+                      get_id_runs_missing_data_in_last_days/;
 
 sub get_table_info_for_id_run {
   my ($id_run,$npg_tracking_schema,$mlwh_schema)= @_ ;
@@ -107,13 +107,13 @@ sub _get_id_runs_missing_cog_metadata_rs{
   );
 }
 
-sub get_ids_missing_data{
+sub get_id_runs_missing_data{
   my ($schema, $meta_search) = @_;
   my @ids = map { $_->iseq_product_metric->id_run } _get_id_runs_missing_cog_metadata_rs($schema, $meta_search)->all();
   return @ids;
 }
 
-sub get_ids_from_date{
+sub get_id_runs_missing_data_in_last_days{
   my ($schema, $days, $meta_search) = @_;
   my $dt = DateTime->now();
   $dt->subtract(days =>$days);
@@ -163,13 +163,13 @@ my $ds_ref = \%ds;
 update_metadata($rs,$ds_ref);
 
 #Alternativley id runs with missing data can be obtained by running 
-#get_ids_missing_data which takes a schema as argument and returns
+#get_id_runs_missing_data which takes a schema as argument and returns
 #a list of id_runs
-my @ids = get_ids_missing_data($schema);
+my @ids = get_id_runs_missing_data($schema);
 
-#id_runs can also be obtained through get_ids_from_date which returns
+#id_runs can also be obtained through get_id_runs_missing_data_in_last_days which returns
 #a list of id_runs from between the current time and X many days ago e.g
-my @ids = get_ids_from_date($schema,4);
+my @ids = get_id_runs_missing_data_in_last_days($schema,4);
 #gets ids between now and 4 days ago
 
 =head1 DESCRIPTION
@@ -220,7 +220,7 @@ cog_sample_meta is set to 1.
 If there IS sample data AND there IS NO value for submission_org:
 cog_sample_meta is set to 0.
 
-=head2 get_ids_missing_data
+=head2 get_id_runs_missing_data
 
 Takes a schema as argument.
 Optionally takes second argument: array ref of cog_sample_meta to search 
@@ -228,7 +228,7 @@ for (default [undef,0]).
 searches schema for Heron runs which are missing cog_sample_meta
 values and returns as a list their id_runs.
 
-=head2 get_ids_from_date
+=head2 get_id_runs_missing_data_in_last_days
 
 First argument - Schema to get id_runs from.
 Second argument - number of days before the current time from which
