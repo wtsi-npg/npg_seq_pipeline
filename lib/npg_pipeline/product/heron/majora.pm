@@ -126,6 +126,49 @@ sub get_id_runs_missing_data_in_last_days{
   my @ids = map { $_->iseq_product_metric->id_run } $rs->all();
   return @ids;
 }
+
+sub _ocarina_commands_to_update_majora_for_run{
+  #TODO - replace Ocarina use with direct api calls...
+  my ($id_run,$npg_tracking_schema,$mlwh_schema)= @_ ;
+  if (!defined $id_run) {carp 'need an id_run'};
+  my$rn=$npg_tracking_schema->resultset(q(Run))->find($id_run)->folder_name;
+  my$rs=$mlwh_schema->resultset(q(IseqProductMetric))->search_rs({'me.id_run'=>$id_run, tag_index=>{q(>) => 0}},{join=>{iseq_flowcell=>q(sample)}});
+  my$rsu=$mlwh_schema->resultset(q(Sample))->search({q(iseq_heron_product_metric.climb_upload)=>{q(-not)=>undef}},{join=>{iseq_flowcells=>{iseq_product_metrics=>q(iseq_heron_product_metric)}}});
+  my%l2bs;my%l2pp;my%l2lsp; my%r2l;
+  while (my$r=$rs->next){
+      my$ifc=$r->iseq_flowcell ;# or next;
+      my$bs=$ifc->sample->supplier_name;
+      my$lb=$ifc->id_pool_lims;
+      # lookup by library abd sample name - skip if no climb_uploads.
+      next unless $rsu->search({q(me.supplier_name)=>$bs, q(iseq_flowcells.id_pool_lims)=>$lb})->count();
+      # i.e. do not use exising $r record as same library might upload differnt samples in differnt runs - Majora library must contain both
+      my$pp=$r->iseq_flowcell->primer_panel;
+      $pp=$pp=~m{nCoV-2019/V(\d)\b}?$1:q("");
+      my$lt=$r->iseq_flowcell->pipeline_id_lims;
+      my$lsp=q();
+      if($lt=~m{^Sanger_artic_v[34]} or $lt=~m{PCR amplicon ligated adapters}){ $lsp=q(LIGATION)}elsif($lt=~m{PCR amplicon tailed adapters} or $lt=~m{Sanger_tailed_artic_v1_384}){$lsp=q(TAILING)}else{die "Do not know how to deal with library type: $lt"}
+      $r2l{$rn}{$lb}++;
+      $l2bs{$lb}{$bs}++;
+      $l2pp{$lb}{$pp}++;
+      $l2lsp{$lb}{$lsp}++;
+  }
+  my@cmds=();
+  foreach my$lb(sort keys %l2bs){
+    die"multiple primer panels in $lb" if (1!=keys %{$l2pp{$lb}});
+    die"multiple library seq protocol in $lb" if (1!=keys %{$l2lsp{$lb}});
+    my($pp)=keys %{$l2pp{$lb}};
+    my($lsp)=keys %{$l2lsp{$lb}};
+    push @cmds, join" ",q(ocarina --env put library --force-biosamples --library-seq-kit "NEB Ultra II" --library-seq-protocol ").$lsp.q(" --library-layout-config "PAIRED" --apply-all-library VIRAL_RNA PCR AMPLICON "" ).$pp.q( --library-name), $lb,  q(--biosamples), sort keys%{$l2bs{$lb}}
+  }
+  foreach my$rn(sort keys%r2l){
+    foreach my$lb(sort keys %{$r2l{$rn}}){
+      #TODO - get instrument type properly
+      push @cmds, join" ",q(ocarina --env put sequencing --instrument-make ILLUMINA --instrument-model),($rn=~m{_MS}?q(MiSeq):q(NovaSeq)), q(--run-name), $rn, q(--library-name), $lb;
+    }
+  }
+  return @cmds;
+}
+
 1;
 __END__
 
