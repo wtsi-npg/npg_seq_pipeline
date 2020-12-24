@@ -137,7 +137,7 @@ is_deeply([get_id_runs_missing_data($schema_ids_without_data,[0])],[35355,35356]
 is_deeply([get_id_runs_missing_data($schema_ids_without_data,[undef])],[35348,35355], "id_runs with cog_sample_meta:NULL and climb_upload set returned");
 is_deeply([get_id_runs_missing_data($schema_ids_without_data,[1])],[35340,35348], "id_runs with cog_sample_meta:1 and climb_upload set returned");
 
-#my$ndays = DateTime->now()->subtract_datetime( DateTime->new({year=>2020, month=>11, day=>3}))->in_units('days');
+# the date in the fixtures is fixed, so we need to work back from "now" when the test is run, to figure out how many days it has been since then
 my$ndays = DateTime->now()->delta_days( DateTime->new({year=>2020, month=>11, day=>3}))->in_units('days');
 is_deeply([get_id_runs_missing_data_in_last_days($schema_ids_without_data,$ndays)],[35348,35355,35356], "id_runs with cog_sample_meta:0 or NULL and climb_upload in last $ndays");
 $ndays-=4;

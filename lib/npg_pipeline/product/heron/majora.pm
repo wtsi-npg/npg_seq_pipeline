@@ -82,7 +82,7 @@ sub update_metadata {
       $sample_data = $libdata->{$fc->sample->supplier_name};
       if ($sample_data) {
         $sample_meta = defined $sample_data->{submission_org} ?1:0;
-        carp "setting $sample_meta for ". $fc->sample->supplier_name;
+        #carp "setting $sample_meta for ". $fc->sample->supplier_name; #TODO use a logger
       }
     }
     $row->iseq_heron_product_metric->update({cog_sample_meta=>$sample_meta});
@@ -140,13 +140,13 @@ sub _ocarina_commands_to_update_majora_for_run{
       my$bs=$ifc->sample->supplier_name;
       my$lb=$ifc->id_pool_lims;
       # lookup by library abd sample name - skip if no climb_uploads.
-      next unless $rsu->search({q(me.supplier_name)=>$bs, q(iseq_flowcells.id_pool_lims)=>$lb})->count();
+      if(not $rsu->search({q(me.supplier_name)=>$bs, q(iseq_flowcells.id_pool_lims)=>$lb})->count() ) {next;}
       # i.e. do not use exising $r record as same library might upload differnt samples in differnt runs - Majora library must contain both
       my$pp=$r->iseq_flowcell->primer_panel;
-      $pp=$pp=~m{nCoV-2019/V(\d)\b}?$1:q("");
+      $pp=$pp=~m{nCoV-2019/V(\d)\b}smx?$1:q("");
       my$lt=$r->iseq_flowcell->pipeline_id_lims;
       my$lsp=q();
-      if($lt=~m{^Sanger_artic_v[34]} or $lt=~m{PCR amplicon ligated adapters}){ $lsp=q(LIGATION)}elsif($lt=~m{PCR amplicon tailed adapters} or $lt=~m{Sanger_tailed_artic_v1_384}){$lsp=q(TAILING)}else{die "Do not know how to deal with library type: $lt"}
+      if($lt=~m{^Sanger_artic_v[34]}smx or $lt=~m{PCR[ ]amplicon[ ]ligated[ ]adapters}smx){ $lsp=q(LIGATION)}elsif($lt=~m{PCR[ ]amplicon[ ]tailed[ ]adapters}smx or $lt=~m{Sanger_tailed_artic_v1_384}smx){$lsp=q(TAILING)}else{croak "Do not know how to deal with library type: $lt"}
       $r2l{$rn}{$lb}++;
       $l2bs{$lb}{$bs}++;
       $l2pp{$lb}{$pp}++;
@@ -154,16 +154,16 @@ sub _ocarina_commands_to_update_majora_for_run{
   }
   my@cmds=();
   foreach my$lb(sort keys %l2bs){
-    die"multiple primer panels in $lb" if (1!=keys %{$l2pp{$lb}});
-    die"multiple library seq protocol in $lb" if (1!=keys %{$l2lsp{$lb}});
+    croak "multiple primer panels in $lb" if (1!=keys %{$l2pp{$lb}});
+    croak "multiple library seq protocol in $lb" if (1!=keys %{$l2lsp{$lb}});
     my($pp)=keys %{$l2pp{$lb}};
     my($lsp)=keys %{$l2lsp{$lb}};
-    push @cmds, join" ",q(ocarina --env put library --force-biosamples --library-seq-kit "NEB Ultra II" --library-seq-protocol ").$lsp.q(" --library-layout-config "PAIRED" --apply-all-library VIRAL_RNA PCR AMPLICON "" ).$pp.q( --library-name), $lb,  q(--biosamples), sort keys%{$l2bs{$lb}}
+    push @cmds, join q( ),q(ocarina --env put library --force-biosamples --library-seq-kit "NEB Ultra II" --library-seq-protocol ").$lsp.q(" --library-layout-config "PAIRED" --apply-all-library VIRAL_RNA PCR AMPLICON "" ).$pp.q( --library-name), $lb,  q(--biosamples), sort keys%{$l2bs{$lb}}
   }
   foreach my$rn(sort keys%r2l){
     foreach my$lb(sort keys %{$r2l{$rn}}){
       #TODO - get instrument type properly
-      push @cmds, join" ",q(ocarina --env put sequencing --instrument-make ILLUMINA --instrument-model),($rn=~m{_MS}?q(MiSeq):q(NovaSeq)), q(--run-name), $rn, q(--library-name), $lb;
+      push @cmds, join q( ),q(ocarina --env put sequencing --instrument-make ILLUMINA --instrument-model),($rn=~m{_MS}smx?q(MiSeq):q(NovaSeq)), q(--run-name), $rn, q(--library-name), $lb;
     }
   }
   return @cmds;
