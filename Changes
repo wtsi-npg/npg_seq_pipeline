@@ -1,12 +1,12 @@
 LIST OF CHANGES
 ---------------
 
+release 58.1.0
  - added npg_climb2mlwh to update warehouse from uploaded
-   climb data.
- - added ability to use custom locations and or names for the
+   climb data
+ - added ability to use custom locations and/or names for the
    main log of the pipeline script
- - the main log of teh pipeline script is hard-liked in or
-   copied to the analysis directory
+ - the main log of the pipeline script is copied to the analysis directory
  - add script for updating MLWH with state of Majora/COG-UK metadata
 
 release 58.0.0
