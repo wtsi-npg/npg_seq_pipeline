@@ -15,8 +15,8 @@ our @EXPORT_OK = qw/  get_table_info_for_id_run
                       get_majora_data
                       json_to_structure
                       update_metadata
-                      get_ids_missing_data
-                      get_ids_from_date/;
+                      get_id_runs_missing_data
+                      get_id_runs_missing_data_in_last_days/;
 
 sub get_table_info_for_id_run {
   my ($id_run,$npg_tracking_schema,$mlwh_schema)= @_ ;
@@ -58,7 +58,6 @@ sub json_to_structure {
     my @libarray = @{$libref};
     foreach my $lib (@libarray) {
       my $lib_name = $lib->{library_name};
-      carp "$lib\t$lib_name";
       my $bioref = $lib->{biosamples};
       my @biosamples = @{$bioref};
       foreach my $sample (@biosamples) {
@@ -83,7 +82,7 @@ sub update_metadata {
       $sample_data = $libdata->{$fc->sample->supplier_name};
       if ($sample_data) {
         $sample_meta = defined $sample_data->{submission_org} ?1:0;
-        carp "setting $sample_meta for ". $fc->sample->supplier_name;
+        #carp "setting $sample_meta for ". $fc->sample->supplier_name; #TODO use a logger
       }
     }
     $row->iseq_heron_product_metric->update({cog_sample_meta=>$sample_meta});
@@ -91,48 +90,85 @@ sub update_metadata {
   return;
 }
 
-sub get_ids_missing_data{
-  my ($schema) = @_;
-  my $rs = $schema->resultset('IseqHeronProductMetric')->search(
+sub _get_id_runs_missing_cog_metadata_rs{
+  my ($schema, $meta_search) = @_;
+  $meta_search //= [undef,0]; # missing run -> library -> biosample connection, or missing biosample metadata
+  return $schema->resultset('IseqHeronProductMetric')->search(
     {
       'study.name'         => 'Heron Project',
-      'me.cog_sample_meta' => 0,
-      'me.climb_upload'    => {-not=>undef}
+      'me.cog_sample_meta' => $meta_search,
+      'me.climb_upload'    => {-not=>undef} # only consider for data uploaded
     },
     {
       join => {'iseq_product_metric' => {'iseq_flowcell' => ['study']}},
       columns => 'iseq_product_metric.id_run',
       distinct => 1
+    }
+  );
+}
+
+sub get_id_runs_missing_data{
+  my ($schema, $meta_search) = @_;
+  my @ids = map { $_->iseq_product_metric->id_run } _get_id_runs_missing_cog_metadata_rs($schema, $meta_search)->all();
+  return @ids;
+}
+
+sub get_id_runs_missing_data_in_last_days{
+  my ($schema, $days, $meta_search) = @_;
+  my $dt = DateTime->now();
+  $dt->subtract(days =>$days);
+  my $rs = _get_id_runs_missing_cog_metadata_rs($schema, $meta_search)->search(
+    {
+      #TODO: dates might not be matching climb_upload value exactly therefore not returning runs
+      'me.climb_upload'    =>{ q(>) =>$dt }
     }
   );
   my @ids = map { $_->iseq_product_metric->id_run } $rs->all();
   return @ids;
 }
 
-sub get_ids_from_date{
-  my ($schema, $days) = @_;
-  my $dt_end = DateTime->now();
-  my $dt_start = $dt_end->subtract(days =>$days);
-  my $dtf = $schema->storage->datetime_parser;
-  my $rs = $schema->resultset('IseqHeronProductMetric')->search(
-    {
-      'study.name'         => 'Heron Project',
-      'me.cog_sample_meta' => 0,
-      #TODO: dates might not be matching climb_upload value exactly therefore not returning runs
-      'me.climb_upload'    =>{ -between =>[$dtf->format_datetime($dt_start),
-                                           $dtf->format_datetime($dt_end),
-                                          ],
-                             }
-    },
-    {
-      join => {'iseq_product_metric' => {'iseq_flowcell' => ['study']}},
-      columns => 'iseq_product_metric.id_run',
-      distinct => 1
+sub _ocarina_commands_to_update_majora_for_run{
+  #TODO - replace Ocarina use with direct api calls...
+  my ($id_run,$npg_tracking_schema,$mlwh_schema)= @_ ;
+  if (!defined $id_run) {carp 'need an id_run'};
+  my$rn=$npg_tracking_schema->resultset(q(Run))->find($id_run)->folder_name;
+  my$rs=$mlwh_schema->resultset(q(IseqProductMetric))->search_rs({'me.id_run'=>$id_run, tag_index=>{q(>) => 0}},{join=>{iseq_flowcell=>q(sample)}});
+  my$rsu=$mlwh_schema->resultset(q(Sample))->search({q(iseq_heron_product_metric.climb_upload)=>{q(-not)=>undef}},{join=>{iseq_flowcells=>{iseq_product_metrics=>q(iseq_heron_product_metric)}}});
+  my%l2bs;my%l2pp;my%l2lsp; my%r2l;
+  while (my$r=$rs->next){
+      my$ifc=$r->iseq_flowcell ;# or next;
+      my$bs=$ifc->sample->supplier_name;
+      my$lb=$ifc->id_pool_lims;
+      # lookup by library abd sample name - skip if no climb_uploads.
+      if(not $rsu->search({q(me.supplier_name)=>$bs, q(iseq_flowcells.id_pool_lims)=>$lb})->count() ) {next;}
+      # i.e. do not use exising $r record as same library might upload differnt samples in differnt runs - Majora library must contain both
+      my$pp=$r->iseq_flowcell->primer_panel;
+      $pp=$pp=~m{nCoV-2019/V(\d)\b}smx?$1:q("");
+      my$lt=$r->iseq_flowcell->pipeline_id_lims;
+      my$lsp=q();
+      if($lt=~m{^Sanger_artic_v[34]}smx or $lt=~m{PCR[ ]amplicon[ ]ligated[ ]adapters}smx){ $lsp=q(LIGATION)}elsif($lt=~m{PCR[ ]amplicon[ ]tailed[ ]adapters}smx or $lt=~m{Sanger_tailed_artic_v1_384}smx){$lsp=q(TAILING)}else{croak "Do not know how to deal with library type: $lt"}
+      $r2l{$rn}{$lb}++;
+      $l2bs{$lb}{$bs}++;
+      $l2pp{$lb}{$pp}++;
+      $l2lsp{$lb}{$lsp}++;
+  }
+  my@cmds=();
+  foreach my$lb(sort keys %l2bs){
+    croak "multiple primer panels in $lb" if (1!=keys %{$l2pp{$lb}});
+    croak "multiple library seq protocol in $lb" if (1!=keys %{$l2lsp{$lb}});
+    my($pp)=keys %{$l2pp{$lb}};
+    my($lsp)=keys %{$l2lsp{$lb}};
+    push @cmds, join q( ),q(ocarina --env put library --force-biosamples --library-seq-kit "NEB Ultra II" --library-seq-protocol ").$lsp.q(" --library-layout-config "PAIRED" --apply-all-library VIRAL_RNA PCR AMPLICON "" ).$pp.q( --library-name), $lb,  q(--biosamples), sort keys%{$l2bs{$lb}}
+  }
+  foreach my$rn(sort keys%r2l){
+    foreach my$lb(sort keys %{$r2l{$rn}}){
+      #TODO - get instrument type properly
+      push @cmds, join q( ),q(ocarina --env put sequencing --instrument-make ILLUMINA --instrument-model),($rn=~m{_MS}smx?q(MiSeq):q(NovaSeq)), q(--run-name), $rn, q(--library-name), $lb;
     }
-  );
-  my @ids = map { $_->iseq_product_metric->id_run } $rs->all();
-  return @ids;
+  }
+  return @cmds;
 }
+
 1;
 __END__
 
@@ -170,13 +206,13 @@ my $ds_ref = \%ds;
 update_metadata($rs,$ds_ref);
 
 #Alternativley id runs with missing data can be obtained by running 
-#get_ids_missing_data which takes a schema as argument and returns
+#get_id_runs_missing_data which takes a schema as argument and returns
 #a list of id_runs
-my @ids = get_ids_missing_data($schema);
+my @ids = get_id_runs_missing_data($schema);
 
-#id_runs can also be obtained through get_ids_from_date which returns
+#id_runs can also be obtained through get_id_runs_missing_data_in_last_days which returns
 #a list of id_runs from between the current time and X many days ago e.g
-my @ids = get_ids_from_date($schema,4);
+my @ids = get_id_runs_missing_data_in_last_days($schema,4);
 #gets ids between now and 4 days ago
 
 =head1 DESCRIPTION
@@ -227,17 +263,20 @@ cog_sample_meta is set to 1.
 If there IS sample data AND there IS NO value for submission_org:
 cog_sample_meta is set to 0.
 
-=head2 get_ids_missing_data
+=head2 get_id_runs_missing_data
 
 Takes a schema as argument.
+Optionally takes second argument: array ref of cog_sample_meta to search 
+for (default [undef,0]).
 searches schema for Heron runs which are missing cog_sample_meta
 values and returns as a list their id_runs.
 
-=head2 get_ids_from_date
+=head2 get_id_runs_missing_data_in_last_days
 
-Takes two arguments.
 First argument - Schema to get id_runs from.
 Second argument - number of days before the current time from which
+Optionally takes third argument: array ref of cog_sample_meta to search 
+for (default [undef,0]).
 id_runs will be fetched.
 
 =head1 DIAGNOSTICS

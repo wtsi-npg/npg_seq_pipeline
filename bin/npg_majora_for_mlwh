@@ -10,8 +10,8 @@ use npg_pipeline::product::heron::majora qw/ get_table_info_for_id_run
                                               get_majora_data
                                               json_to_structure
                                               update_metadata
-                                              get_ids_missing_data
-                                              get_ids_from_date/;
+                                              get_id_runs_missing_data
+                                              get_id_runs_missing_data_in_last_days/;
 use npg_tracking::Schema;
 use WTSI::DNAP::Warehouse::Schema;
 
@@ -27,10 +27,10 @@ GetOptions 'id_run=i' => \@id_runs, #numeric
 or croak "Error in command line arguments\n";
 if ((not @id_runs) and (not $days)) {
   #gets a list of id_runs missing data
-  @id_runs = get_ids_missing_data($mlwh_schema);
+  @id_runs = get_id_runs_missing_data($mlwh_schema);
 }elsif((not @id_runs) and $days) {
   #gets list of id_runs missing data from (current time - days) up to current time
-  @id_runs = get_ids_from_date($mlwh_schema,$days)
+  @id_runs = get_id_runs_missing_data_in_last_days($mlwh_schema,$days)
 }elsif(@id_runs and $days){
   croak "Error cannot set both id_runs and days\n";
 };
