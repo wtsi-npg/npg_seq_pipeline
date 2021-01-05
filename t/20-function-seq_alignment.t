@@ -1342,7 +1342,7 @@ subtest 'generate compositions only' => sub {
 };
 
 subtest 'product_release_tests' => sub {
-  plan tests => 92;
+  plan tests => 279;
 
   my %test_runs = (
     16850 => { platform => 'miseq', runfolder_name => '150710_MS2_16850_A_MS3014507-500V2', markdup_method => 'samtools', },
@@ -1354,6 +1354,7 @@ subtest 'product_release_tests' => sub {
     16807 => { platform => 'hiseq', runfolder_name => '150707_HS38_16807_A_C7U2YANXX', markdup_method => 'samtools', },
     20268 => { platform => 'hiseq', runfolder_name => '160704_MS3_20268_A_MS4000667-300V2', markdup_method => 'biobambam', },
     16839 => { platform => 'hiseqx', runfolder_name => '150709_HX4_16839_A_H7MHWCCXX', markdup_method => 'samtools', },
+    35843 => { platform => 'novaseq', runfolder_name => '201207_A00537_0423_AHH537DSXY', markdup_method => 'duplexseq', },
   );
 
   for my $run (keys %test_runs) {

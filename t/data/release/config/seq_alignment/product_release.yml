@@ -21,3 +21,7 @@ study:
     markdup_method: "biobambam"
   - study_id: "3597"
     markdup_method: "samtools"
+  - study_id: "6050"
+    markdup_method: "duplexseq"
+  - study_id: "6320"
+    markdup_method: "duplexseq"

@@ -392,6 +392,10 @@ sub _generate_command_params {
       $self->logcroak('A Duplex-Seq lane should be paired ', $position);
     }
 
+    # The first $DUPLEXSEQ_TAG_LENGTH bases(quality values) and the next $DUPLEXSEQ_SKIP_LENGTH bases(quality values) are removed and
+    # placed in tags rb(qr) and br(bq). This is done on both the forward and reverse reads with the tags created on the corresponding
+    # read. The rb(qr) tags on each read are duplicated on the paired read but the tags are re-named mb(mq).
+
     my @i2b_bc_read = ();
     my @i2b_first_0 = ();
     my @i2b_final_0 = ();

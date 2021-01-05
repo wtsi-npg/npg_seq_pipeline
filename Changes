@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - Adding tests for Duplex-Seq
  - BotSeq renamed Duplex-Seq, which is the new library_type
    previously skipped bases and qualities are now retained in two new tags
  - Added BotSeq analysis - Note I've assumed the library_type matches BotSeq
