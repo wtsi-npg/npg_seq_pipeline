@@ -16,7 +16,8 @@ our @EXPORT_OK = qw/  get_table_info_for_id_run
                       json_to_structure
                       update_metadata
                       get_id_runs_missing_data
-                      get_id_runs_missing_data_in_last_days/;
+                      get_id_runs_missing_data_in_last_days
+                      update_majora/;
 
 sub get_table_info_for_id_run {
   my ($id_run,$npg_tracking_schema,$mlwh_schema)= @_ ;
@@ -33,20 +34,21 @@ sub get_table_info_for_id_run {
 
 sub get_majora_data {
   my ($fn) = @_;
-  my @curl_command = qw(curl -s -L);
+  use HTTP::Request;
+  use LWP::UserAgent;
+  use JSON::MaybeXS qw(encode_json);
+  my $ua = LWP::UserAgent->new();
+  my $url = $ENV{MAJORA_DOMAIN}.q(/api/v2/process/sequencing/get/);
+  my $header;
   if (my $token = $ENV{MAJORA_OAUTH_TOKEN}){
-    push @curl_command,('--header',"Authorization: Bearer $token");
+    $header = [q(Authorization) => qq(Bearer $token) ,q(Content-Type) => q(application/json; charset=UTF-8)];
+  }else{
+    $header = [q(Content-Type) => q(application/json; charset=UTF-8)];
   }
-  push @curl_command,('--header', 'Content-Type: application/json', '--request', 'POST', '--data', qq({"username":"$ENV{MAJORA_USER}", "token":"$ENV{MAJORA_TOKEN}", "run_name":["$fn"]}), "$ENV{MAJORA_DOMAIN}/api/v2/process/sequencing/get/");
-  open my $fh, q[-|], @curl_command;
-  my $curldata;
-  do {
-    local $INPUT_RECORD_SEPARATOR = undef;
-    $curldata = <$fh>;
-  };
-  close $fh;
-  $curldata or carp 'nothing back from curl';
-  return($curldata);
+  my $encoded_data = encode_json({username=>$ENV{MAJORA_USER}, token=>$ENV{MAJORA_TOKEN}, run_name=>["$fn"]});
+  my $r = HTTP::Request->new('POST', $url, $header, $encoded_data);
+  my$res= $ua->request($r);
+  return($res->decoded_content);
 }
 
 sub json_to_structure {
@@ -139,7 +141,7 @@ sub _ocarina_commands_to_update_majora_for_run{
       my$ifc=$r->iseq_flowcell ;# or next;
       my$bs=$ifc->sample->supplier_name;
       my$lb=$ifc->id_pool_lims;
-      # lookup by library abd sample name - skip if no climb_uploads.
+      # lookup by library and sample name - skip if no climb_uploads.
       if(not $rsu->search({q(me.supplier_name)=>$bs, q(iseq_flowcells.id_pool_lims)=>$lb})->count() ) {next;}
       # i.e. do not use exising $r record as same library might upload differnt samples in differnt runs - Majora library must contain both
       my$pp=$r->iseq_flowcell->primer_panel;
@@ -167,6 +169,17 @@ sub _ocarina_commands_to_update_majora_for_run{
     }
   }
   return @cmds;
+}
+sub update_majora{
+  my ($id_run,$npg_tracking_schema,$mlwh_schema) = @_;
+  my @ocarina_cmds = _ocarina_commands_to_update_majora_for_run($id_run,$npg_tracking_schema, $mlwh_schema);
+  my $ocarina_cmds_string = join("\n",@ocarina_cmds);
+  open (my $fh, q(|-),'bash') or croak "cannot run $ocarina_cmds_string";
+  {
+    local $INPUT_RECORD_SEPARATOR = undef;
+    print $fh $ocarina_cmds_string; 
+  };
+  close $fh;
 }
 
 1;
@@ -274,10 +287,17 @@ values and returns as a list their id_runs.
 =head2 get_id_runs_missing_data_in_last_days
 
 First argument - Schema to get id_runs from.
-Second argument - number of days before the current time from which
+Second argument - number of days before the current time from which to search
 Optionally takes third argument: array ref of cog_sample_meta to search 
 for (default [undef,0]).
 id_runs will be fetched.
+
+=head2 update_majora
+
+First Argument - id_run to get ocarina commands for
+Second argument - npg_tracking_schema for foldername
+Third argument - mlwh_schema to search database for id_run information
+runs ocarina commands to update id_run info on majora
 
 =head1 DIAGNOSTICS
 =head1 CONFIGURATION AND ENVIRONMENT
