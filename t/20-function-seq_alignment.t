@@ -1342,7 +1342,7 @@ subtest 'generate compositions only' => sub {
 };
 
 subtest 'product_release_tests' => sub {
-  plan tests => 279;
+  plan tests => 264;
 
   my %test_runs = (
     16850 => { platform => 'miseq', runfolder_name => '150710_MS2_16850_A_MS3014507-500V2', markdup_method => 'samtools', },
@@ -1387,9 +1387,13 @@ subtest 'product_release_tests' => sub {
     my $dps;
     lives_ok { $dps = $sa_gen->products->{data_products} } "no error finding data products for run $run";
     for my $i (0..$#{$dps}) {
-      my $markdup_method = $sa_gen->markdup_method($dps->[$i]);
-
-      is ($markdup_method, $run_details->{markdup_method}, "markdup_method for entry $i for run $run should be inferred as $markdup_method");
+      my $p = $dps->[$i];
+      $p->is_tag_zero_product and next;
+      my $markdup_method = $sa_gen->markdup_method($p);
+      is ($markdup_method,
+        ($p->lims->is_control ? q{samtools} : $run_details->{markdup_method}),
+        "markdup_method for entry $i for run $run is $markdup_method") or
+        diag $p->composition->freeze;
     }
   }
 };
