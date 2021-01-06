@@ -1342,7 +1342,7 @@ subtest 'generate compositions only' => sub {
 };
 
 subtest 'product_release_tests' => sub {
-  plan tests => 264;
+  plan tests => 279;
 
   my %test_runs = (
     16850 => { platform => 'miseq', runfolder_name => '150710_MS2_16850_A_MS3014507-500V2', markdup_method => 'samtools', },
@@ -1388,12 +1388,18 @@ subtest 'product_release_tests' => sub {
     lives_ok { $dps = $sa_gen->products->{data_products} } "no error finding data products for run $run";
     for my $i (0..$#{$dps}) {
       my $p = $dps->[$i];
-      $p->is_tag_zero_product and next;
       my $markdup_method = $sa_gen->markdup_method($p);
-      is ($markdup_method,
-        ($p->lims->is_control ? q{samtools} : $run_details->{markdup_method}),
-        "markdup_method for entry $i for run $run is $markdup_method") or
-        diag $p->composition->freeze;
+      if ($p->is_tag_zero_product and ($run == 35843)) {
+        is ($markdup_method, q{biobambam},
+          'fall back to default for tag zero when nothing is configured for a study');
+      } elsif ($p->lims->is_control) {
+        is ($markdup_method, q{biobambam},
+          'fall back to default for spiked PhiX, since its study has no config');
+      } else {
+        is ($markdup_method, $run_details->{markdup_method},
+          "markdup_method for entry $i for run $run is $markdup_method") or
+          diag $p->composition->freeze;
+      }
     }
   }
 };

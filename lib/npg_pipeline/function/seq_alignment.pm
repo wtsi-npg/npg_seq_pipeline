@@ -54,7 +54,7 @@ around 'markdup_method' => sub {
     # I've restricted this to library_types which exactly match Duplex-Seq
     # to exclude the old library_type 'Bidirectional Duplex-seq'.
     my $mdm =  ($lt eq q[Duplex-Seq]) ? q(duplexseq) : $self->$orig($product);
-    $mdm ||= q(biobambam);
+    $mdm or $self->logcroak('markdup method is not defined for a product');
 
     return $mdm;
 };
