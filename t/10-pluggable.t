@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 12;
+use Test::More tests => 13;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
@@ -542,6 +542,88 @@ subtest 'script name, pipeline name and function list' => sub {
   throws_ok { $base->function_list }
     qr/Bad function list name: some\+other:/,
     'error when function list name contains illegal characters';
+};
+
+subtest 'log file name, directory and path' => sub {
+  plan tests => 18;
+
+  my $log_name_re = qr/t_10-pluggable\.t_1234_02122020-\d+\.log/;
+
+  my $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,    
+      timestamp        => '02122020',
+  );
+  like ($p->log_file_name, $log_name_re, 'log file name is built correctly');
+  is ($p->log_file_dir, $runfolder_path, 'default for the log directory');
+  is ($p->log_file_path, join(q[/], $p->log_file_dir, $p->log_file_name),
+    'default log file path');
+
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,    
+      timestamp        => '02122020',
+      log_file_name    => 'custom.log'
+  );
+  is ($p->log_file_name, 'custom.log', 'log file name as set');
+  is ($p->log_file_dir, $runfolder_path, 'default for the log directory');
+  is ($p->log_file_path, join(q[/], $p->log_file_dir, $p->log_file_name),
+    'custom log file path');
+
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,    
+      timestamp        => '02122020',
+      log_file_dir     => "$runfolder_path/custom"
+  );
+  like ($p->log_file_name, $log_name_re, 'default log file name');
+  is ($p->log_file_dir, "$runfolder_path/custom", 'log directory as set');
+  is ($p->log_file_path, join(q[/], "$runfolder_path/custom", $p->log_file_name),
+    'custom log file path');
+
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,    
+      timestamp        => '02122020',
+      log_file_dir     => "$runfolder_path/custom",
+      log_file_name    => 'custom.log'
+  );
+  is ($p->log_file_name, 'custom.log', 'log file name as set');
+  is ($p->log_file_dir, "$runfolder_path/custom" , 'log directory as set');
+  is ($p->log_file_path, "$runfolder_path/custom/custom.log",
+    'custom log file path');
+
+  # setting all three does not make sense, but is not prohibited either
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,    
+      timestamp        => '02122020',
+      log_file_dir     => "$runfolder_path/my_log",
+      log_file_name    => 'custom.log',
+      log_file_path    => "$runfolder_path/custom/my.log" 
+  );
+  is ($p->log_file_name, 'custom.log', 'log file name as set');
+  is ($p->log_file_dir, "$runfolder_path/my_log", 'log directory as set');
+  is ($p->log_file_path, "$runfolder_path/custom/my.log",
+    'custom log file path as directly set');
+
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,    
+      timestamp        => '02122020',
+      log_file_path    => "$runfolder_path/custom/my.log" 
+  );
+  is ($p->log_file_name, 'my.log', 'log file name is derived from path');
+  is ($p->log_file_dir, "$runfolder_path/custom", 
+    'log directory is derived from path');
+  is ($p->log_file_path, "$runfolder_path/custom/my.log",
+    'custom log file path as directly set'); 
 };
 
 1;
