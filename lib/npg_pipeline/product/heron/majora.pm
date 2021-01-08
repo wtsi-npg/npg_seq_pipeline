@@ -8,6 +8,10 @@ use JSON;
 use English qw( -no_match_vars );
 use DateTime;
 use Exporter qw(import);
+#for api calls
+use HTTP::Request;
+use JSON::MaybeXS qw(encode_json);
+use LWP::UserAgent;
 
 our $VERSION = '0';
 
@@ -121,7 +125,6 @@ sub get_id_runs_missing_data_in_last_days{
   $dt->subtract(days =>$days);
   my $rs = _get_id_runs_missing_cog_metadata_rs($schema, $meta_search)->search(
     {
-      #TODO: dates might not be matching climb_upload value exactly therefore not returning runs
       'me.climb_upload'    =>{ q(>) =>$dt }
     }
   );
@@ -129,8 +132,7 @@ sub get_id_runs_missing_data_in_last_days{
   return @ids;
 }
 
-sub _ocarina_commands_to_update_majora_for_run{
-  #TODO - replace Ocarina use with direct api calls...
+sub _api_calls_to_update_majora_for_run{
   my ($id_run,$npg_tracking_schema,$mlwh_schema)= @_ ;
   if (!defined $id_run) {carp 'need an id_run'};
   my$rn=$npg_tracking_schema->resultset(q(Run))->find($id_run)->folder_name;
@@ -154,32 +156,72 @@ sub _ocarina_commands_to_update_majora_for_run{
       $l2pp{$lb}{$pp}++;
       $l2lsp{$lb}{$lsp}++;
   }
-  my@cmds=();
+  my @cmds;
   foreach my$lb(sort keys %l2bs){
     croak "multiple primer panels in $lb" if (1!=keys %{$l2pp{$lb}});
     croak "multiple library seq protocol in $lb" if (1!=keys %{$l2lsp{$lb}});
     my($pp)=keys %{$l2pp{$lb}};
     my($lsp)=keys %{$l2lsp{$lb}};
-    push @cmds, join q( ),q(ocarina --env put library --force-biosamples --library-seq-kit "NEB Ultra II" --library-seq-protocol ").$lsp.q(" --library-layout-config "PAIRED" --apply-all-library VIRAL_RNA PCR AMPLICON "" ).$pp.q( --library-name), $lb,  q(--biosamples), sort keys%{$l2bs{$lb}}
+
+    my $url = $ENV{MAJORA_DOMAIN}.q(api/v2/artifact/library/add/);
+    my $header = [q(Content-Type) => q(application/json; charset=UTF-8)];    
+    my @biosample_info;
+    foreach my $key (keys%{$l2bs{$lb}}){
+      push @biosample_info, {central_sample_id=>$key,
+                             library_selection=>"PCR",
+                             library_source   =>"VIRAL_RNA",
+                             library_strategy =>"AMPLICON",
+                             library_protocol =>"",
+                             library_primers  =>$pp
+                            };
+    }
+    my $encoded_data = encode_json({username=>$ENV{MAJORA_USER}, token=>$ENV{MAJORA_TOKEN},
+                                    library_name=>$lb,
+                                    library_layout_config=>"PAIRED",
+                                    library_seq_kit=> "NEB ULTRA II",
+                                    library_seq_protocol=> $lsp,
+                                    biosamples=>[@biosample_info]
+                                    });
+  
+  my $ua = LWP::UserAgent->new();
+  my $r = HTTP::Request->new('POST', $url, $header, $encoded_data);
+  push @cmds, $r;
   }
+
+  # adding sequencing run
   foreach my$rn(sort keys%r2l){
     foreach my$lb(sort keys %{$r2l{$rn}}){
-      #TODO - get instrument type properly
-      push @cmds, join q( ),q(ocarina --env put sequencing --instrument-make ILLUMINA --instrument-model),($rn=~m{_MS}smx?q(MiSeq):q(NovaSeq)), q(--run-name), $rn, q(--library-name), $lb;
+
+      my $url = $ENV{MAJORA_DOMAIN}.q(api/v2/process/sequencing/add/);
+      my $header = [q(Content-Type) => q(application/json; charset=UTF-8)];
+      #TODO to get instrument type properly
+      my $instrument_model= ($rn=~m{_MS}smx?q(MiSeq):q(NovaSeq));
+      my $encoded_data = encode_json({username=>$ENV{MAJORA_USER},
+                                      token=>$ENV{MAJORA_TOKEN},
+                                      library_name=>$lb,
+                                      runs=> [{
+                                              run_name=>$rn,
+                                              instrument_make=>"ILLUMINA", 
+                                              instrument_model=>$instrument_model
+                                              }]
+                                     });
+    
+      my $r = HTTP::Request->new('POST', $url, $header, $encoded_data);
+      push @cmds, $r;
     }
   }
-  return @cmds;
+ return @cmds;
 }
+
 sub update_majora{
   my ($id_run,$npg_tracking_schema,$mlwh_schema) = @_;
-  my @ocarina_cmds = _ocarina_commands_to_update_majora_for_run($id_run,$npg_tracking_schema, $mlwh_schema);
-  my $ocarina_cmds_string = join("\n",@ocarina_cmds);
-  open (my $fh, q(|-),'bash') or croak "cannot run $ocarina_cmds_string";
-  {
-    local $INPUT_RECORD_SEPARATOR = undef;
-    print $fh $ocarina_cmds_string; 
-  };
-  close $fh;
+  my @cmds = _api_calls_to_update_majora_for_run($id_run,$npg_tracking_schema, $mlwh_schema);
+
+  foreach my $r (@cmds){
+    my $ua = LWP::UserAgent->new();
+    my $res= $ua->request($r);
+    print $res->decoded_content;# output response
+  }
 }
 
 1;
@@ -297,7 +339,7 @@ id_runs will be fetched.
 First Argument - id_run to get ocarina commands for
 Second argument - npg_tracking_schema for foldername
 Third argument - mlwh_schema to search database for id_run information
-runs ocarina commands to update id_run info on majora
+Uses api calls to update id_run info on majora
 
 =head1 DIAGNOSTICS
 =head1 CONFIGURATION AND ENVIRONMENT

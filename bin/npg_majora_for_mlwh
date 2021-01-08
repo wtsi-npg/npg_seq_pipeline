@@ -11,7 +11,8 @@ use npg_pipeline::product::heron::majora qw/ get_table_info_for_id_run
                                               json_to_structure
                                               update_metadata
                                               get_id_runs_missing_data
-                                              get_id_runs_missing_data_in_last_days/;
+                                              get_id_runs_missing_data_in_last_days
+                                              update_majora/;
 use npg_tracking::Schema;
 use WTSI::DNAP::Warehouse::Schema;
 
@@ -22,8 +23,10 @@ my $mlwh_schema=WTSI::DNAP::Warehouse::Schema->connect();
 
 my @id_runs;
 my $days;
+my $update;
 GetOptions 'id_run=i' => \@id_runs, #numeric
-'days=i' =>\$days,
+  'days=i' =>\$days,
+  'update'=>\$update
 or croak "Error in command line arguments\n";
 if ((not @id_runs) and (not $days)) {
   #gets a list of id_runs missing data
@@ -35,11 +38,13 @@ if ((not @id_runs) and (not $days)) {
   croak "Error cannot set both id_runs and days\n";
 };
 
+
 for my $id_run (@id_runs){
+  if ($update){
+    update_majora(@id_runs, $schema, $mlwh_schema);
+  }
   my ($fn,$rs) = get_table_info_for_id_run($id_run,$schema,$mlwh_schema);
-
   my $json_string = get_majora_data($fn);
-
   my %ds = json_to_structure($json_string,$fn);
   my $ds_ref = \%ds;
   update_metadata($rs,$ds_ref);
