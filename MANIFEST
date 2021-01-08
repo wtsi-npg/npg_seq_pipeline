@@ -15,6 +15,7 @@ bin/npg_pipeline_script_must_be_unique_runner
 bin/npg_pipeline_seqchksum_comparator
 bin/npg_receipt4run_is_deletable
 bin/npg_run_is_deletable
+bin/npg_samplesheet4MiSeq
 bin/npg_upload2climb
 Build.PL
 Changes
@@ -90,6 +91,7 @@ lib/npg_pipeline/validation/irods.pm
 lib/npg_pipeline/validation/s3.pm
 lib/npg_tracking/daemon/analysis.pm
 lib/npg_tracking/daemon/archival.pm
+lib/npg_tracking/samplesheet/auto.pm
 MANIFEST			This list of files
 README
 README.md
@@ -150,6 +152,7 @@ t/50-npg_pipeline-daemon-analysis.t
 t/50-npg_pipeline-daemon-archival.t
 t/60-npg_tracking-daemon-analysis.t
 t/60-npg_tracking-daemon-archival.t
+t/60-npg_tracking-samplesheet-auto.t
 t/bin/bkill
 t/bin/bresume
 t/bin/bsub
@@ -1123,6 +1126,7 @@ t/data/runfolder/archive/lane1/1234_1#15_phix.bam
 t/data/runfolder/archive/lane4/1234_4#16.bam
 t/data/runfolder/archive/lane4/1234_4#32.bam
 t/data/runfolder/Data/RunInfo.xml
+t/data/samplesheet/miseq_default.csv
 t/data/samplesheet_1234.csv
 t/data/samplesheet_8747.csv
 t/data/samplesheet_33990.csv

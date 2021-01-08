@@ -13,13 +13,11 @@ our $VERSION = '0';
 Log::Log4perl->easy_init($INFO);
 
 my $log = Log::Log4perl->get_logger('main');
-$log->info("Starting npg samplesheet");
+$log->info('Starting npg samplesheet');
 
 npg_tracking::samplesheet::auto->new()->loop();
 
-exit 0;
-
-1;
+0;
 
 __END__
 
@@ -63,6 +61,10 @@ npg_samplesheet4MiSeq
 =item npg_tracking::samplesheet::auto
 
 =back
+
+=head1 EXIT STATUS
+
+  Does not exit unless is sent a signal to terminate.
 
 =head1 INCOMPATIBILITIES
 

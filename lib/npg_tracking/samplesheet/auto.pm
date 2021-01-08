@@ -10,6 +10,8 @@ use File::Spec::Functions;
 
 use npg::samplesheet;
 use npg_tracking::Schema;
+use WTSI::DNAP::Warehouse::Schema;
+use st::api::lims;
 use st::api::lims::samplesheet;
 
 our $VERSION = '0';
@@ -50,6 +52,19 @@ sub _build_npg_tracking_schema {
   return npg_tracking::Schema->connect();
 }
 
+=head2 mlwh_schema
+
+=cut
+
+has 'mlwh_schema' => (
+  'isa'        => 'WTSI::DNAP::Warehouse::Schema',
+  'is'         => 'ro',
+  'lazy_build' => 1,
+);
+sub _build_mlwh_schema {
+  return WTSI::DNAP::Warehouse::Schema->connect();
+}
+
 =head2 sleep_interval
 
 =cut
@@ -86,7 +101,16 @@ sub process {
   while(my$r=$rs->next){
     my $id_run = $r->id_run;
     $self->log->debug( join q[,],$id_run,$r->instrument->name);
-    my$ss=npg::samplesheet->new(run=>$r);
+ 
+    my $l = st::api::lims->new(
+      id_run           => $id_run,
+      position         => 1,
+      id_flowcell_lims => $r->batch_id,
+      driver_type      => q(ml_warehouse),
+      mlwh_schema      => $self->mlwh_schema
+    );
+    my $ss = npg::samplesheet->new(run => $r, lims => [$l]);
+
     my$o=$ss->output;
     my $generate_new = 1;
 
@@ -195,7 +219,11 @@ __END__
 
 =item npg::samplesheet
 
+=item st:api::lims
+
 =item st::api::lims::samplesheet
+
+=item WTSI::DNAP::Warehouse::Schema
 
 =back
 
@@ -209,7 +237,7 @@ David K. Jackson E<lt>david.jackson@sanger.ac.ukE<gt>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019,2021 GRL.
+Copyright (C) 2012,2013,2014,2019,2021 GRL.
 
 This file is part of NPG.
 
