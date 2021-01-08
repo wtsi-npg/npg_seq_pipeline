@@ -1,4 +1,4 @@
-package npg::samplesheet::auto;
+package npg_tracking::samplesheet::auto;
 
 use Moose;
 use namespace::autoclean;
@@ -20,13 +20,13 @@ with q(MooseX::Log::Log4perl);
 
 =head1 NAME
 
-npg::samplesheet::auto
+npg_tracking::samplesheet::auto
 
 =head1 VERSION
 
 =head1 SYNOPSIS
 
-  use npg::samplesheet::auto;
+  use npg_tracking::samplesheet::auto;
   use Log::Log4perl qw(:easy);
   BEGIN{ Log::Log4perl->easy_init({level=>$INFO,}); }
   npg::samplesheet::auto->new()->loop(); # in a daemon
@@ -209,7 +209,7 @@ David K. Jackson E<lt>david.jackson@sanger.ac.ukE<gt>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 GRL
+Copyright (C) 2019,2021 GRL.
 
 This file is part of NPG.
 

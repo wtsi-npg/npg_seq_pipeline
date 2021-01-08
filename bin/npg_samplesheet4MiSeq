@@ -6,7 +6,7 @@ use FindBin qw($Bin);
 use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Log::Log4perl qw(:easy);
 
-use npg::samplesheet::auto;
+use npg_tracking::samplesheet::auto;
 
 our $VERSION = '0';
 
@@ -15,7 +15,7 @@ Log::Log4perl->easy_init($INFO);
 my $log = Log::Log4perl->get_logger('main');
 $log->info("Starting npg samplesheet");
 
-npg::samplesheet::auto->new()->loop();
+npg_tracking::samplesheet::auto->new()->loop();
 
 exit 0;
 
@@ -60,6 +60,8 @@ npg_samplesheet4MiSeq
 
 =item Log::Log4perl
 
+=item npg_tracking::samplesheet::auto
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -72,7 +74,7 @@ Jaime Tovar E<lt>jmtc@sanger.ac.ukE<gt>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2020 Genome Research Limited
+Copyright (C) 2020,2021 GRL
 
 This file is part of NPG.
 
