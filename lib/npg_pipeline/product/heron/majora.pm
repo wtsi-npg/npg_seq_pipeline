@@ -8,7 +8,6 @@ use JSON;
 use English qw( -no_match_vars );
 use DateTime;
 use Exporter qw(import);
-#for api calls
 use HTTP::Request;
 use JSON::MaybeXS qw(encode_json);
 use LWP::UserAgent;
@@ -38,21 +37,16 @@ sub get_table_info_for_id_run {
 
 sub get_majora_data {
   my ($fn) = @_;
-  use HTTP::Request;
-  use LWP::UserAgent;
-  use JSON::MaybeXS qw(encode_json);
-  my $ua = LWP::UserAgent->new();
-  my $url = $ENV{MAJORA_DOMAIN}.q(/api/v2/process/sequencing/get/);
+  my $url =q(/api/v2/process/sequencing/get/);
   my $header;
   if (my $token = $ENV{MAJORA_OAUTH_TOKEN}){
     $header = [q(Authorization) => qq(Bearer $token) ,q(Content-Type) => q(application/json; charset=UTF-8)];
   }else{
     $header = [q(Content-Type) => q(application/json; charset=UTF-8)];
   }
-  my $encoded_data = encode_json({username=>$ENV{MAJORA_USER}, token=>$ENV{MAJORA_TOKEN}, run_name=>["$fn"]});
-  my $r = HTTP::Request->new('POST', $url, $header, $encoded_data);
-  my$res= $ua->request($r);
-  return($res->decoded_content);
+  my $data_to_encode = {run_name=>["$fn"]};
+  my $res = _use_majora_api('POST',$url,$header,$data_to_encode);
+  return($res);
 }
 
 sub json_to_structure {
@@ -132,7 +126,7 @@ sub get_id_runs_missing_data_in_last_days{
   return @ids;
 }
 
-sub _api_calls_to_update_majora_for_run{
+sub update_majora{
   my ($id_run,$npg_tracking_schema,$mlwh_schema)= @_ ;
   if (!defined $id_run) {carp 'need an id_run'};
   my$rn=$npg_tracking_schema->resultset(q(Run))->find($id_run)->folder_name;
@@ -156,72 +150,66 @@ sub _api_calls_to_update_majora_for_run{
       $l2pp{$lb}{$pp}++;
       $l2lsp{$lb}{$lsp}++;
   }
-  my @cmds;
   foreach my$lb(sort keys %l2bs){
     croak "multiple primer panels in $lb" if (1!=keys %{$l2pp{$lb}});
     croak "multiple library seq protocol in $lb" if (1!=keys %{$l2lsp{$lb}});
     my($pp)=keys %{$l2pp{$lb}};
     my($lsp)=keys %{$l2lsp{$lb}};
 
-    my $url = $ENV{MAJORA_DOMAIN}.q(api/v2/artifact/library/add/);
-    my $header = [q(Content-Type) => q(application/json; charset=UTF-8)];    
+    my $url = q(api/v2/artifact/library/add/);
+    my $header = [q(Content-Type) => q(application/json; charset=UTF-8)];
     my @biosample_info;
     foreach my $key (keys%{$l2bs{$lb}}){
       push @biosample_info, {central_sample_id=>$key,
-                             library_selection=>"PCR",
-                             library_source   =>"VIRAL_RNA",
-                             library_strategy =>"AMPLICON",
-                             library_protocol =>"",
+                             library_selection=>'PCR',
+                             library_source   =>'VIRAL_RNA',
+                             library_strategy =>'AMPLICON',
+                             library_protocol =>'',
                              library_primers  =>$pp
                             };
     }
-    my $encoded_data = encode_json({username=>$ENV{MAJORA_USER}, token=>$ENV{MAJORA_TOKEN},
-                                    library_name=>$lb,
-                                    library_layout_config=>"PAIRED",
-                                    library_seq_kit=> "NEB ULTRA II",
-                                    library_seq_protocol=> $lsp,
-                                    biosamples=>[@biosample_info]
-                                    });
-  
-  my $ua = LWP::UserAgent->new();
-  my $r = HTTP::Request->new('POST', $url, $header, $encoded_data);
-  push @cmds, $r;
+    my $data_to_encode = {
+                                  library_name=>$lb,
+                                  library_layout_config=>'PAIRED',
+                                  library_seq_kit=> 'NEB ULTRA II',
+                                  library_seq_protocol=> $lsp,
+                                  biosamples=>[@biosample_info]
+                       };
+   _use_majora_api('POST', $url, $header, $data_to_encode);
   }
 
   # adding sequencing run
   foreach my$rn(sort keys%r2l){
     foreach my$lb(sort keys %{$r2l{$rn}}){
 
-      my $url = $ENV{MAJORA_DOMAIN}.q(api/v2/process/sequencing/add/);
+      my $url = q(api/v2/process/sequencing/add/);
       my $header = [q(Content-Type) => q(application/json; charset=UTF-8)];
-      #TODO to get instrument type properly
+      #TODO to get instrument type properly - use ISeqRunLaneMetric
       my $instrument_model= ($rn=~m{_MS}smx?q(MiSeq):q(NovaSeq));
-      my $encoded_data = encode_json({username=>$ENV{MAJORA_USER},
-                                      token=>$ENV{MAJORA_TOKEN},
-                                      library_name=>$lb,
-                                      runs=> [{
-                                              run_name=>$rn,
-                                              instrument_make=>"ILLUMINA", 
-                                              instrument_model=>$instrument_model
-                                              }]
-                                     });
-    
-      my $r = HTTP::Request->new('POST', $url, $header, $encoded_data);
-      push @cmds, $r;
+      my $data_to_encode = {
+                            library_name=>$lb,
+                            runs=> [{
+                                     run_name=>$rn,
+                                     instrument_make=>'ILLUMINA',
+                                     instrument_model=>$instrument_model
+                                   }]
+                           };
+      _use_majora_api('POST', $url, $header, $data_to_encode);
     }
   }
- return @cmds;
+ return;
 }
 
-sub update_majora{
-  my ($id_run,$npg_tracking_schema,$mlwh_schema) = @_;
-  my @cmds = _api_calls_to_update_majora_for_run($id_run,$npg_tracking_schema, $mlwh_schema);
-
-  foreach my $r (@cmds){
-    my $ua = LWP::UserAgent->new();
-    my $res= $ua->request($r);
-    print $res->decoded_content;# output response
-  }
+sub _use_majora_api{
+  my ($method,$url_end,$header,$data_to_encode) = @_;
+  my $url = $ENV{MAJORA_DOMAIN}.$url_end;
+  $data_to_encode->{username} =$ENV{MAJORA_USER};
+  $data_to_encode->{token} = $ENV{MAJORA_TOKEN};
+  my $encoded_data = encode_json($data_to_encode);
+  my $ua = LWP::UserAgent->new();
+  my $r = HTTP::Request->new($method, $url, $header, $encoded_data);
+  my$res= $ua->request($r);
+  return $res->decoded_content;
 }
 
 1;
