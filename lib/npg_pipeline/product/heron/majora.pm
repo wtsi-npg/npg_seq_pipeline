@@ -164,7 +164,7 @@ sub update_majora{
                              library_selection=>'PCR',
                              library_source   =>'VIRAL_RNA',
                              library_strategy =>'AMPLICON',
-                             library_protocol =>'',
+                             library_protocol =>q{},
                              library_primers  =>$pp
                             };
     }
@@ -202,8 +202,9 @@ sub update_majora{
 
 sub _use_majora_api{
   my ($method,$url_end,$header,$data_to_encode) = @_;
+  $data_to_encode = {%{$data_to_encode}};
   my $url = $ENV{MAJORA_DOMAIN}.$url_end;
-  $data_to_encode->{username} =$ENV{MAJORA_USER};
+  $data_to_encode->{username} = $ENV{MAJORA_USER};
   $data_to_encode->{token} = $ENV{MAJORA_TOKEN};
   my $encoded_data = encode_json($data_to_encode);
   my $ua = LWP::UserAgent->new();

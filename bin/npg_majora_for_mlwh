@@ -26,21 +26,28 @@ my $days;
 my $update;
 GetOptions 'id_run=i' => \@id_runs, #numeric
   'days=i' =>\$days,
-  'update'=>\$update
+  'update-majora'=>\$update
 or croak "Error in command line arguments\n";
+
+
+my %majora_update_runs= $update? (map{$_ => 1} @id_runs) : ();
 if ((not @id_runs) and (not $days)) {
   #gets a list of id_runs missing data
   @id_runs = get_id_runs_missing_data($mlwh_schema);
+  if ($update) {
+    %majora_update_runs=(map{$_ => 1} get_id_runs_missing_data($mlwh_schema, [undef]) );
+  }
 }elsif((not @id_runs) and $days) {
   #gets list of id_runs missing data from (current time - days) up to current time
   @id_runs = get_id_runs_missing_data_in_last_days($mlwh_schema,$days)
+  if ($update) {
+    %majora_update_runs=(map{$_ => 1}get_id_runs_missing_data_in_last_days($mlwh_schema, $days, [undef]));
+  }
 }elsif(@id_runs and $days){
   croak "Error cannot set both id_runs and days\n";
 };
-
-
 for my $id_run (@id_runs){
-  if ($update){
+  if ($majora_update_runs{$id_run}){
     update_majora(@id_runs, $schema, $mlwh_schema);
   }
   my ($fn,$rs) = get_table_info_for_id_run($id_run,$schema,$mlwh_schema);
@@ -49,5 +56,3 @@ for my $id_run (@id_runs){
   my $ds_ref = \%ds;
   update_metadata($rs,$ds_ref);
 };
-
-
