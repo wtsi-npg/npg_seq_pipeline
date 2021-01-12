@@ -38,14 +38,8 @@ sub get_table_info_for_id_run {
 sub get_majora_data {
   my ($fn) = @_;
   my $url =q(/api/v2/process/sequencing/get/);
-  my $header;
-  if (my $token = $ENV{MAJORA_OAUTH_TOKEN}){
-    $header = [q(Authorization) => qq(Bearer $token) ,q(Content-Type) => q(application/json; charset=UTF-8)];
-  }else{
-    $header = [q(Content-Type) => q(application/json; charset=UTF-8)];
-  }
   my $data_to_encode = {run_name=>["$fn"]};
-  my $res = _use_majora_api('POST',$url,$header,$data_to_encode);
+  my $res = _use_majora_api('POST',$url,$data_to_encode);
   return($res);
 }
 
@@ -157,7 +151,6 @@ sub update_majora{
     my($lsp)=keys %{$l2lsp{$lb}};
 
     my $url = q(api/v2/artifact/library/add/);
-    my $header = [q(Content-Type) => q(application/json; charset=UTF-8)];
     my @biosample_info;
     foreach my $key (keys%{$l2bs{$lb}}){
       push @biosample_info, {central_sample_id=>$key,
@@ -175,7 +168,7 @@ sub update_majora{
                                   library_seq_protocol=> $lsp,
                                   biosamples=>[@biosample_info]
                        };
-   _use_majora_api('POST', $url, $header, $data_to_encode);
+   _use_majora_api('POST', $url, $data_to_encode);
   }
 
   # adding sequencing run
@@ -183,7 +176,6 @@ sub update_majora{
     foreach my$lb(sort keys %{$r2l{$rn}}){
 
       my $url = q(api/v2/process/sequencing/add/);
-      my $header = [q(Content-Type) => q(application/json; charset=UTF-8)];
       #TODO to get instrument type properly - use ISeqRunLaneMetric
       my $instrument_model= ($rn=~m{_MS}smx?q(MiSeq):q(NovaSeq));
       my $data_to_encode = {
@@ -194,18 +186,26 @@ sub update_majora{
                                      instrument_model=>$instrument_model
                                    }]
                            };
-      _use_majora_api('POST', $url, $header, $data_to_encode);
+      _use_majora_api('POST', $url, $data_to_encode);
     }
   }
  return;
 }
 
 sub _use_majora_api{
-  my ($method,$url_end,$header,$data_to_encode) = @_;
+  my ($method,$url_end,$data_to_encode) = @_;
   $data_to_encode = {%{$data_to_encode}};
   my $url = $ENV{MAJORA_DOMAIN}.$url_end;
+  my $header;
+  if (my $token = $ENV{MAJORA_OAUTH_TOKEN}){
+    $header = [q(Authorization) => qq(Bearer $token) ,q(Content-Type) => q(application/json; charset=UTF-8)];
+    $data_to_encode->{token} = 'DUMMYTOKENSTRING';
+  }else{
+    $header = [q(Content-Type) => q(application/json; charset=UTF-8)];
+    $data_to_encode->{token} = $ENV{MAJORA_TOKEN};
+  }
+
   $data_to_encode->{username} = $ENV{MAJORA_USER};
-  $data_to_encode->{token} = $ENV{MAJORA_TOKEN};
   my $encoded_data = encode_json($data_to_encode);
   my $ua = LWP::UserAgent->new();
   my $r = HTTP::Request->new($method, $url, $header, $encoded_data);
