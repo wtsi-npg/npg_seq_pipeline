@@ -48,7 +48,7 @@ sub json_to_structure {
   my $data = from_json($json_string);
   my %data_structure= ();
   if ($data) {
-    my $libref = $data->{get}{$fn}{libraries};
+    my $libref = $data->{get}{$fn}{libraries}|| [];
     my @libarray = @{$libref};
     foreach my $lib (@libarray) {
       my $lib_name = $lib->{library_name};
@@ -170,7 +170,6 @@ sub update_majora{
                        };
    _use_majora_api('POST', $url, $data_to_encode);
   }
-
   # adding sequencing run
   foreach my$rn(sort keys%r2l){
     foreach my$lb(sort keys %{$r2l{$rn}}){
@@ -204,7 +203,6 @@ sub _use_majora_api{
     $header = [q(Content-Type) => q(application/json; charset=UTF-8)];
     $data_to_encode->{token} = $ENV{MAJORA_TOKEN};
   }
-
   $data_to_encode->{username} = $ENV{MAJORA_USER};
   my $encoded_data = encode_json($data_to_encode);
   my $ua = LWP::UserAgent->new();
