@@ -39,7 +39,7 @@ if ((not @id_runs) and (not $days)) {
   }
 }elsif((not @id_runs) and $days) {
   #gets list of id_runs missing data from (current time - days) up to current time
-  @id_runs = get_id_runs_missing_data_in_last_days($mlwh_schema,$days)
+  @id_runs = get_id_runs_missing_data_in_last_days($mlwh_schema,$days);
   if ($update) {
     %majora_update_runs=(map{$_ => 1}get_id_runs_missing_data_in_last_days($mlwh_schema, $days, [undef]));
   }
