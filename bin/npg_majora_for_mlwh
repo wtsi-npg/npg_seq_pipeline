@@ -21,38 +21,97 @@ our $VERSION = '0';
 my $schema =npg_tracking::Schema->connect();
 my $mlwh_schema=WTSI::DNAP::Warehouse::Schema->connect();
 
-my @id_runs;
-my $days;
-my $update;
-GetOptions 'id_run=i' => \@id_runs, #numeric
-  'days=i' =>\$days,
-  'update-majora'=>\$update
-or croak "Error in command line arguments\n";
+my $majora = npg_pipeline::product::heron::majora->new_with_options();
+$majora->run();
 
+__END__
 
-my %majora_update_runs= $update? (map{$_ => 1} @id_runs) : ();
-if ((not @id_runs) and (not $days)) {
-  #gets a list of id_runs missing data
-  @id_runs = get_id_runs_missing_data($mlwh_schema);
-  if ($update) {
-    %majora_update_runs=(map{$_ => 1} get_id_runs_missing_data($mlwh_schema, [undef]) );
-  }
-}elsif((not @id_runs) and $days) {
-  #gets list of id_runs missing data from (current time - days) up to current time
-  @id_runs = get_id_runs_missing_data_in_last_days($mlwh_schema,$days);
-  if ($update) {
-    %majora_update_runs=(map{$_ => 1}get_id_runs_missing_data_in_last_days($mlwh_schema, $days, [undef]));
-  }
-}elsif(@id_runs and $days){
-  croak "Error cannot set both id_runs and days\n";
-};
-for my $id_run (@id_runs){
-  if ($majora_update_runs{$id_run}){
-    update_majora($id_run, $schema, $mlwh_schema);
-  }
-  my ($fn,$rs) = get_table_info_for_id_run($id_run,$schema,$mlwh_schema);
-  my $json_string = get_majora_data($fn);
-  my %ds = json_to_structure($json_string,$fn);
-  my $ds_ref = \%ds;
-  update_metadata($rs,$ds_ref);
-};
+=head1 NAME
+
+npg_majora_for_mlwh
+
+=head1 USAGE
+
+=head1 CONFIGURATION
+
+=head1 SYNOPSIS
+
+npg_majora_for_mlwh [Options]
+
+Options:
+  --dry_run
+  --verbose
+  --days
+  --id_run
+  --update
+
+=head1 OPTIONS
+
+=over
+
+=item --dry-run
+
+=item --verbose
+
+=item --days
+
+=item --id_run
+
+=item --update
+
+=back
+
+=head1 SUBROUTINES/METHODS
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item Carp
+
+=item Getopt::Long
+
+=item FindBin
+
+=item Log::Log4perl
+
+=back
+
+=head1 INCOMPATIBILITIES
+
+None known
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 AUTHOR
+
+Fred Dodd
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2020 Genome Research Ltd.
+
+This file is part of NPG.
+
+NPG is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut
