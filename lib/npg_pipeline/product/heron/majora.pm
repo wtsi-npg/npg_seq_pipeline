@@ -208,6 +208,9 @@ sub _use_majora_api{
   my $ua = LWP::UserAgent->new();
   my $r = HTTP::Request->new($method, $url, $header, $encoded_data);
   my$res= $ua->request($r);
+  if (200 != $res->code){
+    croak q(Majora API returned a ).($res->code).qq( code. Content:\n).($res->decoded_content()).qq(\n);
+  }
   return $res->decoded_content;
 }
 
