@@ -166,6 +166,7 @@ sub update_majora{
                                   library_layout_config=>'PAIRED',
                                   library_seq_kit=> 'NEB ULTRA II',
                                   library_seq_protocol=> $lsp,
+                                  force_biosamples=> \1, # JSON encode as true, Sanger-only Majora interaction
                                   biosamples=>[@biosample_info]
                        };
    _use_majora_api('POST', $url, $data_to_encode);
