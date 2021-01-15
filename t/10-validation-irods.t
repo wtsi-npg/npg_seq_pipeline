@@ -35,6 +35,20 @@ my @comp = split '/', $dir;
 my $dname = pop @comp;
 my $IRODS_TEST_AREA1 = "$dname";
 
+my $baton = q[baton-list];
+my $mock_bin = $dir;
+if (!(which $baton)) {
+  diag "WARNING: $baton executable is not available";
+  diag "A mock $baton executable will be used";
+  $mock_bin = join q[/], $dir, 'mock-bin';
+  mkdir $mock_bin;
+  my $exec = join q[/], $mock_bin, $baton;
+  open my $fh, q[>], $exec;
+  print $fh 'echo 2.0.1';
+  close $fh;
+  chmod 0755, $exec;
+}
+
 my $have_irods_execs = exist_irods_executables();
 my $env_file = $ENV{'WTSI_NPG_iRODS_Test_IRODS_ENVIRONMENT_FILE'} || q[];
 local $ENV{'IRODS_ENVIRONMENT_FILE'} = $env_file || 'DUMMY_VALUE';
@@ -43,6 +57,7 @@ my $test_area_created = ($env_file && $have_irods_execs) ? create_irods_test_are
 Log::Log4perl::init_once('./t/log4perl_test.conf');
 my $logger = Log::Log4perl->get_logger(q[]);
 
+local $ENV{PATH} = join q[:], $ENV{PATH}, $mock_bin;
 my $irods = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
 
 my $irrelevant_entity =  npg_pipeline::validation::entity->new(

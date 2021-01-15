@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - use a mock execubable in one of the tests to allow all tests in
+   this package to run successfully if NPG tools stack is not available
+   (excluding tests that are run against a test iRODS server)
+
 release 58.1.0
  - added npg_climb2mlwh to update warehouse from uploaded
    climb data
