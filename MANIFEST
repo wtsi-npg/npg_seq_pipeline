@@ -1054,6 +1054,7 @@ t/data/novaseq/201207_A00537_0423_AHH537DSXY/InterOp/TileMetricsOut.bin
 t/data/novaseq/201207_A00537_0423_AHH537DSXY/RunInfo.xml
 t/data/novaseq/201207_A00537_0423_AHH537DSXY/RunParameters.xml
 t/data/novaseq/35843_RunInfo.xml
+t/data/novaseq/35843_RunParameters.xml
 t/data/novaseq/samplesheet_35843.csv
 t/data/p4_stage1_analysis/1234_samplesheet.csv
 t/data/p4_stage1_analysis/TileMetricsOut.bin

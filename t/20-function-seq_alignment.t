@@ -1414,8 +1414,14 @@ subtest 'product_release_tests' => sub {
     `mkdir -p $cache_dir`;
  
     copy("t/data/$run_details->{platform}/${run}_RunInfo.xml", "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-    copy("t/data/run_params/runParameters.miseq.xml", "$runfolder_path/runParameters.xml")
-      or die "runParameters.xml copy failed";
+    if ($run_details->{platform} eq 'novaseq') {
+      # we need to use a run specific RunParameters.xml file to pick up the correct run_id
+      copy("t/data/$run_details->{platform}/${run}_RunParameters.xml", "$runfolder_path/RunParameters.xml")
+        or die "RunParameters.xml copy failed";
+    } else {
+      copy("t/data/run_params/runParameters.miseq.xml", "$runfolder_path/runParameters.xml")
+        or die "runParameters.xml copy failed";
+    }
  
     local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = qq[t/data/$run_details->{platform}/samplesheet_${run}.csv];
  
