@@ -262,7 +262,7 @@ sub _get_index_lengths {
 # Determine parameters for the lane from LIMS information and create the hash from which the p4 stage1
 #  analysis param_vals file will be generated. Generate the vtfp/viv commands using this param_vals file.
 #########################################################################################################
-sub _generate_command_params {
+sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexity)
   my ($self, $lane_lims, $tag_list_file, $lane_product) = @_;
   my %p4_params = (
                     samtools_executable => q{samtools},
@@ -417,7 +417,7 @@ sub _generate_command_params {
     # index read(s)
     if($self->is_indexed()) {
       # the first index read
-      my($first, $final) = $self->index_read1_cycle_range();
+      ($first, $final) = $self->index_read1_cycle_range();
       push @i2b_bc_read, q{1};
       push @i2b_first_index_0, qq{$first};
       push @i2b_final_index_0, qq{$final};
@@ -425,7 +425,7 @@ sub _generate_command_params {
       push @i2b_bc_qual_val, q{QT};
       if($self->is_dual_index()) {
         # the second index read
-        my($first, $final) = $self->index_read2_cycle_range();
+        ($first, $final) = $self->index_read2_cycle_range();
         push @i2b_bc_read, q{1};
         push @i2b_first_index_0, qq{$first};
         push @i2b_final_index_0, qq{$final};
@@ -443,7 +443,7 @@ sub _generate_command_params {
     push @i2b_bc_qual_val, q{rq},q{mq},q{bq};
     push @i2b_first_0, $first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH;
     push @i2b_final_0, qq{$final};
-    
+
     $p4_params{i2b_bc_read}       = join q{,}, @i2b_bc_read;
     $p4_params{i2b_first_0}       = join q{,}, @i2b_first_0;
     $p4_params{i2b_final_0}       = join q{,}, @i2b_final_0;
@@ -452,7 +452,7 @@ sub _generate_command_params {
     $p4_params{i2b_bc_seq_val}    = join q{,}, @i2b_bc_seq_val;
     $p4_params{i2b_bc_qual_val}   = join q{,}, @i2b_bc_qual_val;
   }
-  
+
   ###  TODO: remove this read length comparison if biobambam will handle this case. Check clip reinsertion.
   if($self->is_paired_read() && !$lane_lims->inline_index_exists) {
     # omit BamAdapterFinder for inline index

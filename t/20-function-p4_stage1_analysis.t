@@ -4,6 +4,7 @@ use Test::More tests => 5;
 use Test::Exception;
 use Cwd;
 use File::Copy qw(cp);
+use File::Copy::Recursive qw[dircopy];
 use Perl6::Slurp;
 use JSON;
 
@@ -306,9 +307,13 @@ subtest 'check_save_arguments_minimap2' => sub {
 subtest 'check_duplex-seq' => sub {
   plan tests => 25;
  
-  my $id_run  = 35843;
   my $rf_name = '201207_A00537_0423_AHH537DSXY';
   my $rfpath  = abs_path(getcwd) . qq{/t/data/novaseq/$rf_name};
+  my $copy = join q[/], $dir, $rf_name;
+  dircopy $rfpath, $copy or die 'Failed to copy run folder';
+  $rfpath = $copy;
+
+  my $id_run  = 35843;
   my $bbp = qq{$rfpath/Data/Intensities/BAM_basecalls_20201210-102032};
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
