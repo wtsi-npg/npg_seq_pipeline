@@ -15,12 +15,10 @@ with 'WTSI::DNAP::Utilities::Loggable';
 our $VERSION = '0';
 
 Readonly::Scalar my $TAG_LIST_FILE_HEADER      => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
-# we used to set both the i7 and i5 spiked phix tags for dual index runs
-Readonly::Scalar my $SPIKED_PHIX_PADDED_2        => q{ACAACGCAATC-TCTTTCCC};
-Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_PADDED_2 => q{ACAACGCAATC-AGATCTCG};
-# now we simply add the missing i5 spiked phix tag for dual index runs
-Readonly::Scalar my $SPIKED_PHIX_TAG2        => q{TCTTTCCC};
-Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_TAG2 => q{AGATCTCG};
+# For dual index runs add the expected i5 tag sequences for samples (e.g. phix) which have no i5 tag
+# I've extended these to 10 bases. For I5OPPOSITE final `GT` predicted from adapter documentation.
+Readonly::Scalar my $SPIKED_PHIX_TAG2        => q{TCTTTCCCTA};
+Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_TAG2 => q{AGATCTCGGT};
 
 =head1 NAME
 

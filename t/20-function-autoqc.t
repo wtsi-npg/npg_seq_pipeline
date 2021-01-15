@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 15;
+use Test::More tests => 16;
 use Test::Exception;
 use File::Path qw/make_path/;
 use File::Copy::Recursive qw/fcopy dircopy/;
@@ -594,6 +594,34 @@ subtest 'review' => sub {
     qq{--filename_root=8747_1#1 --qc_out=$archive_dir/lane1/plex1/qc } .
     qq{--qc_in=$archive_dir/lane1/plex1/qc --conf_path=t/data/release/config/qc_review};
   is ($d->command, $expected_command, 'correct command for plex-level job');
+};
+
+subtest 'interop' => sub {
+  plan tests => 5;
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_8747.csv';
+
+  my $qc = npg_pipeline::function::autoqc->new(
+    qc_to_run         => 'interop',
+    is_indexed        => 1,
+    id_run            => 8747,
+    label             => 'myrun',
+    runfolder_path    => $rf_path,
+    timestamp         => q{today},
+    conf_path         => q{t/data/release/config/archive_on}
+  );
+  my $da = $qc->create();
+  ok ($da && (@{$da} == 1), 'one interop definition returned');
+  my $d = $da->[0];
+  ok (!$d->excluded, 'function is no excluded');
+  ok (!$d->composition, 'composition is not set');
+  is ($d->job_name, 'qc_interop_myrun_today', 'interop job name');
+  my $adir = "${rf_path}/Data/Intensities/BAM_basecalls_20180802/no_cal/archive";
+  is ($d->command, 'qc --check=interop --rpt_list=' . 
+      q["] . join(q{;}, map { '8747:' . $_ } (1 .. 8)) . q["] .
+      " --qc_in=${rf_path}/InterOp" .
+      join( q[], map { " --qc_out=${adir}/lane". $_ . '/qc'  } (1 .. 8) ),
+    'command');
 };
 
 1;

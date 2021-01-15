@@ -26,10 +26,12 @@ local $ENV{'no_proxy'}   = q[];
 
 my $rf = $util->analysis_runfolder_path;
 my $bbp = "$rf/bam_basecall_path";
+my $product_config = q[t/data/release/config/archive_on/product_release.yml];
+
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{/does/not/exist.csv};
   $util->create_analysis();
-  my $out = `$bin/npg_pipeline_central --spider --no_bsub --no_sf_resource --runfolder_path $rf --function_order dodo 2>&1`;
+  my $out = `$bin/npg_pipeline_central --product_conf_file_path $product_config --spider --no_bsub --no_sf_resource --runfolder_path $rf --function_order dodo 2>&1`;
   like($out,
   qr/Error initializing pipeline: Error while spidering/,
   'error in spidering when pre-set samplesheet does not exist');
@@ -40,7 +42,7 @@ my $bbp = "$rf/bam_basecall_path";
   $util->create_analysis();
   $util->create_run_info();
 
-  my $out = `$bin/npg_pipeline_central --no-spider --no_bsub --no_sf_resource --runfolder_path $rf --bam_basecall_path $bbp --function_order dodo 2>&1`;
+  my $out = `$bin/npg_pipeline_central --product_conf_file_path $product_config --no-spider --no_bsub --no_sf_resource --runfolder_path $rf --bam_basecall_path $bbp --function_order dodo 2>&1`;
   like($out,
   qr/Handler for 'dodo' is not registered/,
   'error when function does not exist');
@@ -62,8 +64,8 @@ my $bbp = "$rf/bam_basecall_path";
   ok(!$CHILD_ERROR, qq{Return code of $CHILD_ERROR});
 
   lives_ok { qx{
-    $bin/npg_pipeline_post_qc_review --no_bsub --no_sf_resource --runfolder_path $rf  --bam_basecall_path $bbp --function_list some}; }
-    q{ran bin/npg_pipeline_post_qc_review with non-exisitng function list};
+    $bin/npg_pipeline_post_qc_review --no_bsub --no_sf_resource --runfolder_path $rf  --bam_basecall_path $bbp --function_list some --conf_path $config_dir}; }
+    q{ran bin/npg_pipeline_post_qc_review with non-exisiting function list};
   ok($CHILD_ERROR, qq{Child error $CHILD_ERROR});
 }
 

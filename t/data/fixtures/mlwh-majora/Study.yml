@@ -1,0 +1,42 @@
+---
+- abbreviation: Heron
+  abstract: TBD
+  accession_number: ~
+  aligned: 1
+  array_express_accession_number: ~
+  contains_human_dna: 0
+  contaminated_human_dna: 0
+  created: 2020-03-17 13:31:05
+  data_access_group: team51 team117 pathogen malaria jb26 heron-analysis
+  data_deletion_period: ~
+  data_destination: ~
+  data_release_delay_period: ~
+  data_release_delay_reason: ~
+  data_release_sort_of_study: genomic sequencing
+  data_release_strategy: not applicable
+  data_release_timing: never
+  deleted_at: ~
+  description: TBD
+  ega_dac_accession_number: ~
+  ega_policy_accession_number: ~
+  ena_project_id: 0
+  ethically_approved: ~
+  faculty_sponsor: None
+  hmdmc_number: ~
+  id_lims: SQSCP
+  id_study_lims: 6187
+  id_study_tmp: 6017
+  last_updated: 2020-10-16 13:07:12
+  name: Heron Project
+  prelim_id: ~
+  recorded_at: 2020-10-16 13:07:12
+  reference_genome: SARS-CoV-2 (MN908947.3)
+  remove_x_and_autosomes: 0
+  s3_email_list: ~
+  separate_y_chromosome_data: 0
+  state: active
+  study_title: Heron Project
+  study_type: Whole Genome Sequencing
+  study_visibility: Hold
+  uuid_study_lims: 8d888f76-6853-11ea-be7e-fa163e2f1184
+

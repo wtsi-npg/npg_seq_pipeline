@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 11;
+use Test::More tests => 9;
 use Test::Exception;
 use Cwd;
 use File::Path qw{ make_path };
@@ -232,7 +232,7 @@ subtest 'retrieve lims data' => sub {
 };
 
 subtest 'generate command' => sub {
-  plan tests => 2;
+  plan tests => 1;
 
   my $runner  = $package->new(
                pipeline_script_name => '/bin/true',
@@ -242,82 +242,13 @@ subtest 'generate command' => sub {
   my $lims_data = $runner->check_lims_link($test_run);
   $lims_data->{'job_priority'} = 4;
   $lims_data->{'rf_path'} = 't';
-  $lims_data->{'software'} = q[];
   my $original_path = $ENV{'PATH'};
   my $perl_bin = abs_path($EXECUTABLE_NAME);
   $perl_bin =~ s/\/perl\Z//smx;
   my $path = join q[:], "${current_dir}/t", $perl_bin, $original_path;
   my $command = q[/bin/true --verbose --job_priority 4 --runfolder_path t --qc_run --id_flowcell_lims 55];
   is($runner->_generate_command($lims_data),
-    qq[export PATH=${path}; $command],
-    'command without changing software bundle');
-
-  $lims_data->{'software'} = q[t/data];
-  $path = join q[:], $perl_bin, $original_path;
-  is($runner->_generate_command($lims_data),
-    qq[export PERL5LIB=t/data/lib/perl5; export CLASSPATH=t/data/jars; export PATH=t/data/bin:${path}; $command],
-    'command with software bundle');
-};
-
-subtest 'retrieve study analysis configuration' => sub {
-  plan tests => 5;
-
-  my $d = npg_pipeline::daemon::analysis->new();
-  isa_ok( $d->daemon_conf(), q{HASH}, q{$} . qq{base->daemon_conf} );
-
-  $d = npg_pipeline::daemon::analysis->new(conf_path => $temp_directory);
-  is_deeply($d->study_analysis_conf(), {},
-    'no study analysis config file - empty array returned');
-
-  $d = npg_pipeline::daemon::analysis->new(conf_path => 't/data/study_analysis_conf');
-  my $conf = $d->study_analysis_conf();
-  isa_ok($conf, 'HASH', 'HASH of study configurations');
-  is($conf->{'12345'}, 't', 'dated directory name for study 12345');
-  is($conf->{'XY345'}, '/some/dir', 'dated directory name for study 12345');
-};
-
-subtest 'get software bundle' => sub {
-  plan tests => 7;
-
-  my $conf_file = join q[/], $temp_directory, 'study_conf.yml';
-  open my $fh, '>', $conf_file;
-  print $fh "---\n";
-  print $fh "12345: t\n";
-  close $fh;
-
-  my $runner  = $package->new(
-    pipeline_script_name => '/bin/true',
-    npg_tracking_schema  => $schema,
-    mlwh_schema          => $wh_schema,
-    conf_path            => $conf_file,
-  );
-
-  throws_ok { $runner->_software_bundle() }
-    qr/Study ids are missing/,
-    'error if no study array is given';
-  lives_ok { $runner->_software_bundle([]) }
-    'no error if study array is empty';
-
-  $runner  = $package->new(
-    pipeline_script_name => '/bin/true',
-    npg_tracking_schema  => $schema,
-    mlwh_schema          => $wh_schema,
-    conf_path            => 't/data/study_analysis_conf',
-  );
-
-  throws_ok { $runner->_software_bundle([qw/3 12345/]) }
-    qr/Multiple software bundles for a run/,
-    'Software and no software - error';
-  throws_ok { $runner->_software_bundle([qw/12345 12346/]) }
-    qr/Multiple software bundles for a run/,
-    'Multiple software bundles - error';
-  throws_ok { $runner->_software_bundle([qw/XY345/]) }
-    qr/Directory \'\/some\/dir\' does not exist/,
-    'directory does not exist - error';
-
-  is($runner->_software_bundle([]), q[], 'no study info - no path');
-  is($runner->_software_bundle([qw/12346 12347/]),
-    "${current_dir}/t/data/cache", 'study analysis directory retrieved');
+    qq[export PATH=${path}; $command], 'command');
 };
 
 subtest 'mock continious running' => sub {

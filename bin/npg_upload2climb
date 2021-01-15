@@ -1,0 +1,413 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use English qw(-no_match_vars);
+use Carp;
+use Readonly;
+use Getopt::Long;
+use Pod::Usage;
+use Log::Log4perl qw(:easy);
+use Try::Tiny;
+use Text::CSV;
+use File::Path qw(make_path);
+use File::Basename;
+use File::Spec::Functions;
+use List::MoreUtils qw(none);
+
+use npg_pipeline::function::pp_archiver;
+
+our $VERSION = '0';
+
+Readonly::Scalar my $MANIFEST_EXTENTION    => q[.tsv];
+Readonly::Scalar my $MANIFEST_SUFFIX       => q[.climbupload];
+Readonly::Scalar my $SHIFT_EIGHT           => 8;
+Readonly::Scalar my $UPLOAD_DIR            => q[upload];
+Readonly::Scalar my $UPLOADED_SAMPLES_GLOB => q[upload{,_sample_withdrawn,_controls}/*/*]; # also consider samples previously uploaded but moved aside as controls or withdrawn
+
+Readonly::Hash   my %CSV_PARSER_OPTIONS    =>
+                    @npg_pipeline::function::pp_archiver::CSV_PARSER_OPTIONS;
+
+my $help;
+my $verbose;
+my $host;
+my $user;
+my $pkey_file;
+my $manifest_file;
+my $dry_run;
+
+GetOptions ('help'        => \$help,
+            'dry_run!'    => \$dry_run,
+            'verbose'     => \$verbose,
+            'host=s'      => \$host,
+            'user=s'      => \$user,
+            'pkey_file=s' => \$pkey_file,
+            'manifest=s'  => \$manifest_file,) or pod2usage(2);
+
+$help and pod2usage(1);
+
+Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
+                          level  => $verbose ? $DEBUG : $INFO});
+my $logger = Log::Log4perl->get_logger();
+
+$dry_run and $logger->info('DRY RUN');
+
+$manifest_file or
+  ($logger->error('--manifest option should be supplied') and pod2usage(2));
+$host or
+  ($logger->error('--host option should be supplied') and pod2usage(2));
+$user or
+  ($logger->error('--user option should be supplied') and pod2usage(2));
+$pkey_file or
+  ($logger->error('--pkey_file option should be supplied') and pod2usage(2));
+
+if (not -f $manifest_file) {
+  $logger->error("Manifest $manifest_file does not exist");
+  exit 1;
+}
+if (not -f $pkey_file) {
+  $logger->error("Private key file $pkey_file does not exist");
+  exit 1;
+}
+
+my $manifest4upload_file = $manifest_file;
+if ( not $manifest4upload_file =~
+         s/$MANIFEST_EXTENTION\Z/${MANIFEST_SUFFIX}${MANIFEST_EXTENTION}/xms) {
+  $manifest4upload_file .= $MANIFEST_SUFFIX . $MANIFEST_EXTENTION;
+}
+
+my $e;
+if (-e $manifest4upload_file) {
+  $logger->info("Found existing manifest for upload $manifest4upload_file");
+} else {
+  $logger->info("Will generate manifest for upload $manifest4upload_file");
+  try {
+    _generate_upload_manifest($manifest_file, $manifest4upload_file);
+  } catch {
+    $e = $_;
+    $logger->error("Error generating upload manifest: $e");
+    -e $manifest4upload_file and unlink $manifest4upload_file;
+  };
+}
+
+$e and exit 1;
+
+my $to_upload = [];
+try {
+  open my $fh, q[<], $manifest4upload_file or croak
+    "Failed to open $manifest4upload_file for reading";
+  my $csv = Text::CSV->new(\%CSV_PARSER_OPTIONS);
+  _set_header($csv, $fh);
+  $to_upload = $csv->getline_hr_all($fh);
+  close $fh or $logger->warn("Failed to close file handle to $manifest4upload_file");
+} catch {
+  $e = $_;
+  $logger->error("Error reading upload manifest $manifest4upload_file: $e");
+};
+
+if (not @{$to_upload}) {
+  $logger->warn('Nothing to upload, exiting');
+  exit ($e ? 1 : 0);
+}
+
+my $archives;
+try {
+  $archives = _scaffold_staging_archive($to_upload);
+} catch {
+  $e = $_;
+  $logger->error("Error scaffolding staging archive: $e");
+  $logger->info('Exiting');
+};
+
+$e and exit 1;
+
+foreach my $ar (@{$archives}) {
+  try {
+    _upload_archive($ar);
+    $logger->info("Successfully uploaded $ar");
+  } catch {
+    $e = $_;
+    $logger->error("Error uploading $ar: $e");
+  };
+}
+
+$logger->info('Exiting');
+
+exit ($e ? 1 : 0);
+
+############################ Private functions ##############################
+
+sub _generate_upload_manifest {
+  my ($m, $um) = @_;
+
+  my $usamples = _uploaded_samples();
+  my $num_samples = scalar keys %{$usamples};
+  $logger->info("Found $num_samples uploaded samples");
+
+  open my $mfh,  q[<], $m or croak "Failed to open $m for reading";
+  open my $umfh, q[>], $um or croak "Failed to open $um for writing";
+
+  my $csv = Text::CSV->new(\%CSV_PARSER_OPTIONS);
+  my $header = _set_header($csv, $mfh);
+  $csv->print($umfh, $header); # whether there are going to be records
+                               # or not, we want the header
+
+  my $sn_cn  = $npg_pipeline::function::pp_archiver::SAMPLE_NAME_COLUMN_NAME;
+  my $count = 0;
+  while (my $line = $csv->getline_hr($mfh)) {
+    $count++;
+    my $sample_name = $line->{$sn_cn};
+    $sample_name or croak "$sn_cn not defined in $m, line $count";
+    $usamples->{$sample_name} and next; # if already uploaded, skip
+    $csv->print_hr($umfh, $line);
+  }
+
+  close $mfh  or $logger->warn("Failed to close file handle to $m");
+  close $umfh or $logger->warn("Failed to close file handle to $um");
+
+  $count or $logger->warn("No data in $m");
+
+  return;
+}
+
+sub _set_header {
+  my ($parser, $fh) = @_;
+
+  $parser or croak 'Parser object is not defined';
+  $fh or croak 'File handle is not defined';
+
+  my $header = $parser->getline($fh);
+  ($header and @{$header}) or croak 'Empty manifest header';
+  # Check that the columns we will use are present.
+  for my $name ((
+    $npg_pipeline::function::pp_archiver::SAMPLE_NAME_COLUMN_NAME,
+    $npg_pipeline::function::pp_archiver::SAP_COLUMN_NAME,
+    $npg_pipeline::function::pp_archiver::FILES_GLOB_COLUMN_NAME
+                ))
+  {
+    (none { $_ eq $name } @{$header}) and croak
+      "Manifest should have a column named '$name'";
+  }
+  $parser->column_names($header);
+
+  return $header;
+}
+
+sub _uploaded_samples {
+
+  my $remote = join q[@], $user, $host;
+  my $remote_command = qq[ls -d $UPLOADED_SAMPLES_GLOB];
+  my @command = ('ssh', '-i', $pkey_file, $remote, $remote_command);
+  my $command = join q[ ], @command;
+  $logger->info(qq[Will execute '$command']);
+
+  open my $fh, q[-|], @command or croak qq[Failed to open a handle for '$command'];
+  my $samples = {};
+  while (my $line= <$fh>) {
+    $line =~ s{.*/}{}xmsg;
+    $samples->{$line} = 1;
+  };
+  close $fh or croak qq[Failed to close a handle for '$command'];
+  my $child_error = $CHILD_ERROR >> $SHIFT_EIGHT;
+  $child_error and croak qq[Error executing '$command': $child_error];
+
+  return $samples;
+}
+
+sub _scaffold_staging_archive {
+  my $records = shift;
+
+  my $paths = {};
+  my $sap_cn = $npg_pipeline::function::pp_archiver::SAP_COLUMN_NAME;
+  my $sn_cn  = $npg_pipeline::function::pp_archiver::SAMPLE_NAME_COLUMN_NAME;
+  my $fg_cn  = $npg_pipeline::function::pp_archiver::FILES_GLOB_COLUMN_NAME;
+
+  my $count = 0;
+  foreach my $r (@{$records}) {
+
+    $count++;
+
+    my $m = "is not defined in the upload manifest, line $count";
+    my $sap = $r->{$sap_cn};
+    $sap or croak "$sap_cn $m";
+    my $sample_name = $r->{$sn_cn};
+    $sample_name or croak "$sn_cn $m";
+    my $files_glob = $r->{$fg_cn};
+    $files_glob or croak "$fg_cn $m";
+
+    $paths->{$sap} = 1;
+    my $sample_dir = catdir($sap, $sample_name);
+    if (not -d $sample_dir) {
+      $logger->debug("Creating $sample_dir");
+      (make_path($sample_dir) > 0) or croak "Failed to create $sample_dir";
+    }
+
+    my @files = glob $files_glob;
+    if (scalar @files < 2) {
+      croak "Fewer than 2 files found for $files_glob";
+    }
+    for my $f (@files) {
+      my $file_name = fileparse($f);
+      my $link = catfile($sample_dir, $file_name);
+      if (-e $link) {
+        $logger->debug("$link exists");
+      } else {
+        $m = "hard link $link to $f";
+        $logger->debug("Creating $m");
+        (link $f, $link) or croak "Failed to create $m";
+      }
+    }
+  }
+
+  return [keys %{$paths}];
+}
+
+sub _upload_archive {
+  my $ar = shift;
+
+  my @ca = qw/rsync/;
+  $dry_run and push @ca, q[--dry-run];
+  my $remote = sprintf q[%s@%s:%s/], $user, $host, $UPLOAD_DIR;
+  push @ca, q[-e], qq[ssh -i $pkey_file], q[-vlogDpr], q[--size-only], $ar, $remote;
+  # rsync options: we want times at the remote site to reflect upload time so
+  # no 't'. When deciding to upload over an existing file using 'c' for checksum takes
+  # too long, so considered using 'u' to ignore remote files which are more recent
+  # but if we're running on an upload dir we prob do want that file even if remote
+  # seems more recent, so use '--size-only'.
+  my $command = join q[ ], @ca;
+  $logger->info("Will execute '$command'");
+  if (0 != system @ca) {
+    my $child_error = $CHILD_ERROR >> $SHIFT_EIGHT;
+    croak "Error executing '$command': $child_error";
+  }
+
+  return;
+}
+
+__END__
+
+=head1 NAME
+
+npg_upload2climb
+
+=head1 USAGE
+
+=head1 CONFIGURATION
+
+=head1 SYNOPSIS
+
+  npg_upload2climb --host climb.com --user me --pkey_file ~/.ssh/climb.pem \
+                   --manifest path/manifest.tsv
+
+  npg_upload2climb --host climb.com --user me --pkey_file ~/.ssh/climb.pem \
+                   --manifest path/manifest.tsv --dry_run
+
+=head1 DESCRIPTION
+
+=head1 REQUIRED ARGUMENTS
+
+=over
+
+=item --host
+
+=item --user
+
+=item --pkey_file
+
+=item --manifest
+
+=back
+
+=head1 OPTIONS
+
+=over
+
+=item --dry_run - off by default
+
+=item --verbose - off by default
+
+=item --help
+
+=back
+
+=head1 SUBROUTINES/METHODS
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item FindBin
+
+=item lib
+
+=item English
+
+=item Carp
+
+=item Readonly
+
+=item Getopt::Long
+
+=item Pod::Usage
+
+=item Log::Log4perl
+
+=item Try::Tiny
+
+=item Text::CSV
+
+=item File::Path
+
+=item File::Basename
+
+=item File::Spec::Functions
+
+=item List::MoreUtils
+
+=back
+
+=head1 INCOMPATIBILITIES
+
+None known
+
+=head1 EXIT STATUS
+
+0 on success, 2 on error in scripts' arguments, 1 on any other error
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 AUTHOR
+
+Marina Gourtovaia E<lt>mg8@sanger.ac.ukE<gt>
+David Jackson E<lt>dj3@sanger.ac.ukE<gt>
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2020 Genome Research Ltd.
+
+This file is part of NPG.
+
+NPG is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut

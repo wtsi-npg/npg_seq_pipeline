@@ -1,0 +1,15 @@
+---
+default:
+  s3:
+    enable: false
+    url: null
+    notify: false
+  irods:
+    enable: true
+    notify: false
+
+study:
+  - study_id: "4056"
+    irods:
+      enable: true
+      notify: false

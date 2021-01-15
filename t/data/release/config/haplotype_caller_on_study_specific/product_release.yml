@@ -1,11 +1,13 @@
 ---
 default:
-  haplotype_caller:
-    enable: false
+  data_deletion:
+    staging_deletion_delay: 14
 
 study:
-  - study_id: "291"
-    haplotype_caller:
-      enable: true
-      sample_chunking: hs38primary
-      sample_chunking_number: 24
+  - study_id: "5290"
+    tertiary:
+      default:
+        haplotype_caller:
+          enable: true
+          sample_chunking: hs38primary
+          sample_chunking_number: 24

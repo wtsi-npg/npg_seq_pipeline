@@ -315,4 +315,16 @@
   is_paired: 0
   priority: 1
   team: 'RAD'
-
+- actual_cycle_count: 438
+  batch_id: 78048
+  expected_cycle_count: 438
+  flowcell_id: HTJJKDRXX
+  folder_name: 201102_A00950_0194_AHTJJKDRXX
+  folder_path_glob: '/{export,nfs}/esa-sv-20200210-02/IL_seq_data/*/'
+  id_instrument: 163
+  id_instrument_format: 16
+  id_run: 35340
+  id_run_pair: ~
+  is_paired: 0
+  priority: 3
+  team: A

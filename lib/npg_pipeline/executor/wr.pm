@@ -35,6 +35,9 @@ Readonly::Array  my @ENV_VARS_TO_PROPAGATE => qw/ PATH
                                                   NPG_REPOSITORY_ROOT
                                                   IRODS_ENVIRONMENT_FILE /;
 
+Readonly::Scalar my $WR_LIMIT_GROUPS_OPTION        => q[limit_grps];
+Readonly::Hash   my %LIMIT_GROUPS2DEFINITION_ATTRS => ('irods' => 'reserve_irods_slots',);
+
 =head1 NAME
 
 npg_pipeline::executor::wr
@@ -104,6 +107,37 @@ override 'execute' => sub {
 ##################################################################
 ############## Private attributes and methods ####################
 ##################################################################
+
+has '_limited_groups2attributes' => (
+  isa     => 'HashRef',
+  is      => 'ro',
+  default => sub { \%LIMIT_GROUPS2DEFINITION_ATTRS },
+);
+
+has '_group_limits' => (
+  isa        => 'HashRef',
+  is         => 'ro',
+  lazy_build => 1,
+);
+sub _build__group_limits {
+  my $self = shift;
+
+  my $limits = {};
+  my $groups = $self->wr_conf->{$WR_LIMIT_GROUPS_OPTION};
+  if ($groups and keys %{$groups}) {
+    foreach my $group (keys %{$groups}) {
+      my $name = $self->_limited_groups2attributes->{$group};
+      $name or $self->logcroak(qq[Limit group '$group' is not known]);
+      defined $groups->{$group} or
+        $self->logcroak(qq[Undefined limit for group '$group']);
+      $limits->{$name} = join q[:], $group, $groups->{$group};
+    }
+  } else {
+    $self->logwarn(q[Groups limits are not configured]);
+  }
+
+  return $limits;
+}
 
 has '_dependencies' => (
   isa        => 'HashRef[HashRef]',
@@ -210,6 +244,14 @@ sub _definition4job {
         $def->{$key} = $value;
       }
     }
+  }
+
+  my @limit_groups = sort
+                     map  { $self->_group_limits->{$_} }
+                     grep { $d->$_ }
+                     keys %{$self->_group_limits};
+  if (@limit_groups) {
+    $def->{$WR_LIMIT_GROUPS_OPTION} = \@limit_groups;
   }
 
   my $log_file = sub {

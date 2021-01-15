@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use Test::Warn;
 use Test::Trap qw/ :warn /;
@@ -16,9 +16,10 @@ use t::util;
 use_ok ('npg_pipeline::validation');
 
 my $util = t::util->new();
+my $logfile = join q[/], $util->temp_directory(), 'logfile';
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $WARN,
-                          file   => join(q[/], $util->temp_directory(), 'logfile'),
+                          file   => $logfile,
                           utf8   => 1});
 
 my $qc_schema = Moose::Meta::Class->create_anon_class(
@@ -114,7 +115,7 @@ subtest 'deletion delay' => sub {
   is ($v->min_keep_days, 12,
     'from default config which is longer than in config for study 1713');
 
-  $ref->{conf_path} = 't/data/release/config/bqsr';
+  $ref->{conf_path} = 't/data/release/config/bqsr_on_study_specific';
   $v = npg_pipeline::validation->new($ref);
   is ($v->min_keep_days, 14,
     'from hardcoded default which is longer than in config for study 1713');
@@ -229,6 +230,25 @@ subtest 'xarchive validation' => sub {
     qr/Product not available in any of file archives/,
     'warnings about one product missing from archives';
   ok (!$deletable, 'not deletable');
+};
+
+subtest 'flagged as not deletable' => sub {
+  plan tests => 2;
+
+  my $rfh = _create_test_runfolder_8747();
+  my $ref = {
+    id_run => 8747,
+    runfolder_path => $rfh->{'runfolder_path'},
+    analysis_path  => $rfh->{'analysis_path'},
+    archive_path   => $rfh->{'archive_path'},
+    qc_schema      => $qc_schema
+  };
+  mkdir join q[/], $rfh->{'runfolder_path'}, 'npg_do_not_delete';
+
+  my $v = npg_pipeline::validation->new($ref);
+  ok ($v->_flagged_as_not_deletable(),
+    'detected that the run folder is flagged as not deletable');
+  ok (!$v->run(), 'run is not deletable');
 };
 
 1;

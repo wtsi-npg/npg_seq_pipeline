@@ -7,6 +7,8 @@ use Carp;
 use Try::Tiny;
 use Graph::Directed;
 use File::Spec::Functions qw{catfile splitpath};
+use File::Basename;
+use File::Copy;
 use Class::Load qw{load_class};
 use File::Slurp;
 use JSON qw{from_json};
@@ -39,62 +41,93 @@ npg_pipeline::pluggable
 
 =head1 SUBROUTINES/METHODS
 
+=cut
+
 ##################################################################
-################## Public attributes #############################
+################## Public attributes, ############################
 ###### which will be available as script arguments ###############
-########## unless their metaclass is NoGetopt ####################
+########## unless their metaclass is NoGetopt, ###################
+##################################################################
+################## and public methods ############################
 ##################################################################
 
-############## Boolean flags #####################################
+############## All about the main pipeline log ###################
 
-=head2 spider
+=head2 log_file_name
 
-Toggles spider (creating/reusing cached LIMs data), true by default
-
-=cut
-
-has q{spider} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  default       => 1,
-  documentation => q{Toggles creating/reusing cached LIMs data, true by default},
-);
-
-=head2 executor_type
-
-Executor type. By default commands will be submitted to LSF.
-Can be specified in the general configuration file.
+The name for the log file of this pipeline script.
 
 =cut
 
-has q{executor_type} => (
-  isa           => q{Str},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{Executor type, defaults to lsf},
+has q{log_file_name} => (
+  isa        => q{Str},
+  is         => q{ro},
+  lazy_build => 1,
+  documentation =>
+  q{The name for the log file of this pipeline script.},
 );
-sub _build_executor_type {
+sub _build_log_file_name {
   my $self = shift;
-  my $et = $self->general_values_conf()->{'executor_type'};
-  return $et ? $et : $DEFAULT_EXECUTOR_TYPE;
+
+  my $name;
+  if ($self->_has_log_file_path) {
+    ($name) = fileparse $self->log_file_path;
+  } else {
+    $name = $self->_output_file_name_root() . q{.log};
+  }
+
+  return $name;
 }
 
-=head2 execute
+=head2 log_file_dir
 
-A boolean flag turning on/off transferring the graph to the executor,
-true by default.
+The directory for the log file of this pipeline script.
 
 =cut
 
-has q{execute} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  default       => 1,
+has q{log_file_dir} => (
+  isa        => q{Str},
+  is         => q{ro},
+  lazy_build => 1,
   documentation =>
-  q{A flag turning on/off execution, true by default},
+  q{The directory for the log file of this pipeline script.},
 );
+sub _build_log_file_dir {
+  my $self = shift;
 
-############## End of flags #####################################
+  my $dir;
+  if ($self->_has_log_file_path) {
+    my $name;
+    ($name, $dir) = fileparse $self->log_file_path;
+    $dir =~ s{/\Z}{}smx;
+  } else {
+    $dir = $self->runfolder_path();
+  }
+
+  return $dir;
+}
+
+=head2 log_file_path
+
+The full path for the log file of this pipeline script.
+Computed from log_file_dir and log_file_name.
+
+=cut
+
+has q{log_file_path} => (
+  isa           => q{Str},
+  is            => q{ro},
+  predicate     => '_has_log_file_path',
+  lazy_build    => 1,
+  documentation =>
+  q{The full path for the log file of this pipeline script.},
+);
+sub _build_log_file_path {
+  my $self = shift;
+  return catfile($self->log_file_dir(), $self->log_file_name);
+}
+
+############## All about functions ###############################
 
 =head2 function_order
 
@@ -254,6 +287,42 @@ has q{function_definitions} => (
   metaclass  => q{NoGetopt},
 );
 
+############## All about job execution ###########################
+
+=head2 execute
+
+A boolean flag turning on/off transferring the graph to the executor,
+true by default.
+
+=cut
+
+has q{execute} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 1,
+  documentation =>
+  q{A flag turning on/off execution, true by default},
+);
+
+=head2 executor_type
+
+Executor type. By default commands will be submitted to LSF.
+Can be specified in the general configuration file.
+
+=cut
+
+has q{executor_type} => (
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{Executor type, defaults to lsf},
+);
+sub _build_executor_type {
+  my $self = shift;
+  my $et = $self->general_values_conf()->{'executor_type'};
+  return $et ? $et : $DEFAULT_EXECUTOR_TYPE;
+}
+
 =head2 executor
 
 Executor object of type specified by the executor_type attribute.
@@ -290,6 +359,8 @@ sub _build_executor {
   return $module->new($attrs);
 }
 
+############## Everything else ##################################
+
 =head2 BUILD
 
 Called by Moose at the end of object instantiation.
@@ -303,13 +374,9 @@ sub BUILD {
   return;
 }
 
-##################################################################
-############## Public methods ####################################
-##################################################################
-
 =head2 main
 
- Runs the pipeline.
+Runs the pipeline.
 
 =cut
 
@@ -347,17 +414,34 @@ sub main {
     # untie. Dies not cause an error if STDERR has not been
     # tied. 
     untie *STDERR;
-    croak($error);
   }
+
+  $self->_create_log_link();
+
+  $error and croak $error;
+
   return;
 }
 
+=head2 spider
+
+Toggles spider (creating/reusing cached LIMs data), true by default.
+
+=cut
+
+has q{spider} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 1,
+  documentation => q{Toggles creating/reusing cached LIMs data, true by default},
+);
+
 =head2 prepare
 
- Actions that have to be performed by the pipeline before the functions
- can be called, for example, creation of pipeline-specific directories.
- In this module some envronment variables are printed to the log by this
- method, then, if spider functionality is enabled, LIMs data are cached.
+Actions that have to be performed by the pipeline before the functions
+can be called, for example, creation of pipeline-specific directories.
+In this module some envronment variables are printed to the log by this
+method, then, if spider functionality is enabled, LIMs data are cached.
 
 =cut
 
@@ -373,6 +457,8 @@ sub prepare {
     my $value = $ENV{$name} || q{Not defined};
     $self->info(sprintf '*** %s: %s', $name, $value);
   }
+  $self->info('Using product configuration file ' . $self->product_conf_file_path);
+
   if ($self->spider) {
     $self->info('Running spider');
     $self->_run_spider();
@@ -380,17 +466,6 @@ sub prepare {
     $self->info('Not running spider');
   }
   return;
-}
-
-=head2 log_file_path
-
-Suggested log file full path.
-
-=cut
-
-sub log_file_path {
-  my $self = shift;
-  return catfile($self->runfolder_path(), $self->_log_file_name);
 }
 
 ##################################################################
@@ -442,16 +517,6 @@ sub _build__output_file_name_root {
   # If $self->script_name includes a directory path, change / to _
   $name =~ s{/}{_}gmxs;
   return $name;
-}
-
-has q{_log_file_name} => (
-  isa        => q{Str},
-  is         => q{ro},
-  lazy_build => 1,
-);
-sub _build__log_file_name {
-  my $self = shift;
-  return $self->_output_file_name_root() . q{.log};
 }
 
 has q{_cloned_attributes} => (
@@ -638,6 +703,35 @@ sub _run_spider {
   return;
 }
 
+#####
+# Attempts to create in the analysis directory a hard link to
+# or, if unsuccessful, a copy of the log file of the pipeline.
+# All errors are captured. Best effort.
+#
+sub _create_log_link {
+  my $self = shift;
+
+  (-e $self->analysis_path) or return;
+
+  my $link = catfile($self->analysis_path, $self->log_file_name);
+  if (!-e $link) {
+    try {
+      my $linked = 1;
+      if (not link $self->log_file_path, $link) {
+        # If cannot hard link, just copy.
+        $linked = copy $self->log_file_path, $link;
+      }
+      $linked and $self->info("Created link or copy $link for the log file");
+    } catch {
+      $self->warn("Error creating a link or copy: $_");
+    };
+  } else {
+    $self->warn("Will not overwrite existing file $link");
+  }
+
+  return;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -668,6 +762,10 @@ __END__
 
 =item File::Spec::Functions
 
+=item File::Basename
+
+=item File::Copy
+
 =item Readonly
 
 =item Try:Tiny
@@ -695,7 +793,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -1,0 +1,23 @@
+---
+default:
+  s3:
+    enable: false
+    url: null
+    notify: false
+  irods:
+    enable: true
+    notify: false
+
+study:
+  - study_id: "3073"
+    portable_pipelines:
+      - pp_name: "ncov2019-artic-nf"
+        pp_version: "cf01166c42a"
+        pp_type: "stage2pp"
+        pp_root: "t/data/portable_pipelines"
+        pp_archival_flag: false
+      - pp_name: "new pipeline"
+        pp_version: "v3"
+        pp_type: "stage2pp"
+        pp_root: "t/data/portable_pipelines"
+        pp_archival_flag: true

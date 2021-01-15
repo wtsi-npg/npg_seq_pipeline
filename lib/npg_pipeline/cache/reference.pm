@@ -11,6 +11,7 @@ use Try::Tiny;
 
 use npg_tracking::util::types;
 use npg_tracking::data::reference;
+use npg_tracking::data::primer_panel;
 use npg_pipeline::function::util;
 use npg_pipeline::cache::reference::constants qw( $TARGET_REGIONS_DIR $TARGET_AUTOSOME_REGIONS_DIR $REFERENCE_ABSENT );
 
@@ -18,7 +19,10 @@ with 'WTSI::DNAP::Utilities::Loggable';
 
 our $VERSION = '0';
 
-has [qw/ _ref_cache _resources_cache _calling_intervals_cache /] => (
+has [qw/ _ref_cache
+         _resources_cache
+         _calling_intervals_cache 
+         _primer_panel_cache /] => (
   isa      => 'HashRef',
   is       => 'ro',
   required => 0,
@@ -38,7 +42,7 @@ has [qw/ _ref_cache _resources_cache _calling_intervals_cache /] => (
 =cut
 
 sub get_path {
-  my ($self, $dp, $aligner, $repository, $_do_gbs_plex_analysis) = @_;
+  my ($self, $dp, $aligner, $repository, $do_gbs_plex_analysis) = @_;
 
   if (!$aligner) {
     $self->logcroak('Aligner missing');
@@ -47,7 +51,7 @@ sub get_path {
   my $dplims = $dp->lims;
   my $rpt_list = $dp->rpt_list;
   my $is_tag_zero_product = $dp->is_tag_zero_product;
-  my $ref_name = $_do_gbs_plex_analysis ? $dplims->gbs_plex_name : $dplims->reference_genome();
+  my $ref_name = $do_gbs_plex_analysis ? $dplims->gbs_plex_name : $dplims->reference_genome();
 
   my $ref = $ref_name ? $self->_ref_cache->{$ref_name}->{$aligner} : undef;
   if ($ref) {
@@ -60,7 +64,7 @@ sub get_path {
       $href->{'repository'} = $repository;
     }
 
-    my $class = q[npg_tracking::data::] . ($_do_gbs_plex_analysis ? 'gbs_plex' : 'reference');
+    my $class = q[npg_tracking::data::] . ($do_gbs_plex_analysis ? 'gbs_plex' : 'reference');
     load_class($class);
     my $ruser = $class->new($href);
     my @refs = ();
@@ -171,6 +175,55 @@ sub _get_vc_dir {
   return $dir;
 }
 
+=head2 get_primer_panel_bed_file
+ 
+ Arg [1]    : $dp
+ Arg [2]    : $repository, optional
+ 
+ Example    : my $file = npg_pipeline::cache::reference->instance
+                        ->get_primer_panel_bed_file($dp);
+              my $file = npg_pipeline::cache::reference->instance
+                         ->get_primer_panel_bed_file($dp, $ref_repository_root);
+ Description: Get primer panel bed file path for this product.
+              If the reference repository root argument is given, this
+              custom repository is used, otherwise a default reference
+              repository is used. If the primer_panel LIMs value is not
+              defined for this product, an undefined value is returned;
+ 
+ Returntype : String
+ 
+=cut
+
+sub get_primer_panel_bed_file {
+  my ($self, $product, $repository) = @_;
+  $product or croak 'Product argument required';
+  $product->lims or croak 'Product should have lims attribute set';
+
+  my $init = { lims => $product->lims };
+  if ($repository) {
+    $init->{repository} = $repository;
+  }
+  my $pp = npg_tracking::data::primer_panel->new($init);
+
+  $repository = $pp->repository;
+  my $primer_panel = $pp->primer_panel;
+  my $bed_file;
+
+  if ($primer_panel) {
+    my $reference_genome = $pp->lims->reference_genome;
+    $reference_genome or croak 'reference_genome is not defined';
+    $bed_file = $self->_primer_panel_cache()
+                ->{$repository}->{$primer_panel}->{$reference_genome};
+    if (!$bed_file) {
+      $bed_file = $pp->primer_panel_bed_file();
+      $self->_primer_panel_cache()
+        ->{$repository}->{$primer_panel}->{$reference_genome} = $bed_file;
+    }
+  }
+
+  return $bed_file;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -180,6 +233,7 @@ __PACKAGE__->meta->make_immutable;
  npg_pipeline::cache::reference
 
 =head1 SYNOPSIS
+
 
   npg_pipeline::cache::reference->instance->get_path($data_product, $aligner)
 
@@ -215,6 +269,8 @@ __PACKAGE__->meta->make_immutable;
 
 =item npg_tracking::data::reference
 
+=item npg_tracking::data::primer_panel
+
 =back
 
 =head1 AUTHOR
@@ -223,7 +279,7 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 LICENSE AND COPYRIGHT
 
- Copyright (C) 2019 Genome Research Ltd.
+ Copyright (C) 2019,2020 Genome Research Ltd.
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
