@@ -43,8 +43,6 @@ my $test_area_created = ($env_file && $have_irods_execs) ? create_irods_test_are
 Log::Log4perl::init_once('./t/log4perl_test.conf');
 my $logger = Log::Log4perl->get_logger(q[]);
 
-my $irods = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
-
 my $irrelevant_entity =  npg_pipeline::validation::entity->new(
   staging_archive_root => q[t],
   target_product       => npg_pipeline::product->new(rpt_list => q[5174:1:0])
@@ -76,7 +74,6 @@ subtest 'object construction, file extensions, file names' => sub {
     product_entities  => [$irrelevant_entity],
     staging_files     => {'5174:1:0' => ['5174_1#0.cram', '5174_1#0.cram.crai']},
     logger            => $logger,
-    irods             => $irods,
     file_extension    => 'cram'
   };
 
@@ -116,7 +113,6 @@ subtest 'eligible product entities' => sub {
     product_entities  => [],
     staging_files     => {'16850:1:0' => ['16850_1#0.cram', '16850_1#0.cram.crai']},
     logger            => $logger,
-    irods             => $irods,
     file_extension    => 'cram',
     conf_path         => $config_dir,
   );
@@ -139,7 +135,6 @@ subtest 'eligible product entities' => sub {
     product_entities  => \@ets,
     staging_files     => {'16850:1:0' => ['16850_1#0.cram', '16850_1#0.cram.crai']},
     logger            => $logger,
-    irods             => $irods,
     file_extension    => 'cram',
     conf_path         => $config_dir,
   );
@@ -165,7 +160,6 @@ subtest 'eligible product entities' => sub {
     product_entities  => \@ets,
     staging_files     => {'26291:0' => ['26291#0.cram', '26291#0.cram.crai']},
     logger            => $logger,
-    irods             => $irods,
     file_extension    => 'cram',
     conf_path         => $config_dir,
   );
@@ -183,14 +177,14 @@ subtest 'deletable or not' => sub {
   SKIP: {
     skip 'Test iRODS not available (WTSI_NPG_iRODS_Test_IRODS_ENVIRONMENT_FILE not set?)',
          $num_tests unless $test_area_created;
-
+  my $irods = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger =>
+  $logger);
    my $ref = {
       irods_destination_collection => "${IRODS_TEST_AREA1}",
       product_entities  => [$irrelevant_entity],
       staging_files     => {},
       eligible_product_entities => [],
       logger            => $logger,
-      irods             => $irods,
       file_extension    => 'cram'
     };
 
@@ -254,7 +248,6 @@ subtest 'deletable or not' => sub {
       staging_files     => $staging_files,
       eligible_product_entities => [],
       logger            => $logger,
-      irods             => $irods,
       file_extension    => 'cram'
     };
     $v = npg_pipeline::validation::irods->new($ref);

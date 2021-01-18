@@ -79,7 +79,8 @@ required.
 has 'irods' => (
   isa        => 'WTSI::NPG::iRODS',
   is         => 'ro',
-  required   => 1,
+  required   => 0,
+  lazy_build => 1
 );
 
 =head2 staging_files
