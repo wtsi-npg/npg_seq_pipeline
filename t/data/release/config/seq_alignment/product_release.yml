@@ -1,6 +1,6 @@
 ---
 default:
-  markdup_method: "samtools"
+  markdup_method: "biobambam"
 
 study:
   - study_id: "3573"

@@ -19,12 +19,17 @@
          {
             "relation" : "dependsOn",
             "source" : "run_analysis_in_progress",
+            "target" : "qc_interop"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_analysis_in_progress",
             "target" : "p4_stage1_analysis"
          },
          {
             "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
-            "target" : "update_warehouse"
+            "source" : "qc_interop",
+            "target" : "update_ml_warehouse_1"
          },
          {
             "relation" : "dependsOn",
@@ -33,13 +38,8 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "update_warehouse",
-            "target" : "pipeline_end"
-         },
-         {
-            "relation" : "dependsOn",
             "source" : "update_ml_warehouse_1",
-            "target" : "pipeline_end"
+            "target" : "run_analysis_complete"
          },
          {
             "relation" : "dependsOn",
@@ -49,11 +49,26 @@
          {
             "relation" : "dependsOn",
             "source" : "run_secondary_analysis_in_progress",
-            "target" : "seq_alignment"
+            "target" : "stage2pp"
          },
          {
             "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
+            "source" : "stage2pp",
+            "target" : "stage2App"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "stage2pp",
+            "target" : "qc_generic_artic"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "stage2App",
+            "target" : "qc_generic_ampliconstats"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_secondary_analysis_in_progress",
             "target" : "seq_alignment"
          },
          {
@@ -85,46 +100,6 @@
             "relation" : "dependsOn",
             "source" : "seq_alignment",
             "target" : "qc_ref_match"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_qX_yield",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_adapter",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_insert_size",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_sequence_error",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse_2",
-            "target" : "pipeline_end"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_gc_fraction",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_ref_match",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "update_ml_warehouse_2"
          },
          {
             "relation" : "dependsOn",
@@ -161,11 +136,6 @@
             "relation" : "dependsOn",
             "source" : "seq_alignment",
             "target" : "qc_verify_bam_id"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
-            "target" : "qc_upstream_tags"
          },
          {
             "relation" : "dependsOn",
@@ -209,6 +179,16 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "qc_generic_artic",
+            "target" : "qc_review"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "qc_generic_ampliconstats",
+            "target" : "qc_review"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "qc_bcfstats",
             "target" : "qc_review"
          },
@@ -229,22 +209,17 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "qc_upstream_tags",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
             "source" : "qc_review",
             "target" : "run_analysis_complete"
          },
          {
             "relation" : "dependsOn",
             "source" : "run_analysis_complete",
-            "target" : "update_ml_warehouse_3"
+            "target" : "update_ml_warehouse_2"
          },
          {
             "relation" : "dependsOn",
-            "source" : "update_ml_warehouse_3",
+            "source" : "update_ml_warehouse_2",
             "target" : "pipeline_end"
          },
          {
@@ -306,12 +281,20 @@
             "label" : "lane_analysis_in_progress"
          },
          {
+            "id" : "qc_interop",
+            "label" : "qc_interop"
+         },
+         {
             "id" : "p4_stage1_analysis",
             "label" : "p4_stage1_analysis"
          },
          {
-            "id" : "update_warehouse",
-            "label" : "update_warehouse"
+            "id" : "stage2pp",
+            "label" : "stage2pp"
+         },
+         {
+            "id" : "stage2App",
+            "label" : "stage2App"
          },
          {
             "id" : "update_ml_warehouse_1",
@@ -320,6 +303,14 @@
          {
             "id" : "run_secondary_analysis_in_progress",
             "label" : "run_secondary_analysis_in_progress"
+         },
+         {
+            "id" : "qc_generic_artic",
+            "label" : "qc_generic_artic"
+         },
+         {
+            "id" : "qc_generic_ampliconstats",
+            "label" : "qc_generic_ampliconstats"
          },
          {
             "id" : "qc_qX_yield",
@@ -382,20 +373,12 @@
             "label" : "qc_verify_bam_id"
          },
          {
-            "id" : "qc_upstream_tags",
-            "label" : "qc_upstream_tags"
-         },
-         {
             "id" : "qc_review",
             "label" : "qc_review"
          },
          {
             "id" : "run_analysis_complete",
             "label" : "run_analysis_complete"
-         },
-         {
-            "id" : "update_ml_warehouse_3",
-            "label" : "update_ml_warehouse"
          },
          {
             "id" : "archive_to_irods_samplesheet",

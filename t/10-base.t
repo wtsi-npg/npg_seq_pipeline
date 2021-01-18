@@ -44,15 +44,14 @@ subtest 'timestamp and random string' => sub {
 };
 
 subtest 'config' => sub {
-  plan tests => 3;
+  plan tests => 2;
 
   my $base = npg_pipeline::base->new();
   isa_ok( $base->general_values_conf(), q{HASH});
-  lives_ok {
-    $base = npg_pipeline::base->new(conf_path => q{does/not/exist});
-  } q{base ok};
-  throws_ok{ $base->general_values_conf()} qr{does not exist or is not readable},
-    'Croaks for non-esistent config file as expected';;
+  throws_ok {
+   npg_pipeline::base->new(conf_path => q{does/not/exist});
+  } qr/Attribute \(conf_path\) does not pass the type constraint/,
+    'Croaks for non-esistent config file as expected';
 };
 
 subtest 'flowcell id and barcode' => sub {

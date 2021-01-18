@@ -54,7 +54,7 @@ around 'markdup_method' => sub {
     # I've restricted this to library_types which exactly match Duplex-Seq
     # to exclude the old library_type 'Bidirectional Duplex-seq'.
     my $mdm =  ($lt eq q[Duplex-Seq]) ? q(duplexseq) : $self->$orig($product);
-    $mdm ||= q(biobambam);
+    $mdm or $self->logcroak('markdup method is not defined for a product');
 
     return $mdm;
 };
@@ -439,6 +439,19 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
     $p4_param_vals->{markdup_method} = $self->markdup_method($dp);
     $p4_param_vals->{markdup_optical_distance_value} = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
+
+    if($p4_param_vals->{markdup_method} eq q[none]) {
+      $skip_target_markdup_metrics = 1;
+
+      if(my $pcb=npg_pipeline::cache::reference->instance->get_primer_panel_bed_file($dp)) {
+        $p4_param_vals->{primer_clip_bed} = $pcb;
+        $self->info(qq[No markdup with primer panel: $pcb]);
+      }
+      else {
+        $p4_param_vals->{primer_clip_method} = q[no_clip];
+        $self->info(q[No markdup, no primer panel]);
+      }
+    }
   }
   elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$do_gbs_plex && !$is_chromium_lib) {
       push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
@@ -647,7 +660,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     (grep {$_}
       ($spike_tag ? q() : (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', undef, $rpt_list, $name_root, [$cfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', 1, $rpt_list, $name_root, [$cfs_input_file]),
         q{&&},
         _qc_command('alignment_filter_metrics', undef, $qc_out_path, undef, undef, $rpt_list, $name_root, [$af_input_file]),
       ),
@@ -816,12 +829,13 @@ sub _has_gbs_plex{
     $self->debug(qq{$rpt_list - No gbs plex set});
     return 0;
   }
-  if(not $self->_gbs_plex($rpt_list)->gbs_plex_path){
-    $self->logcroak(qq{$rpt_list - GbS plex set but no gbs plex path found});
+  if(!$library_type || $library_type !~ /^GbS|GnT\sMDA/ismx){
+    $self->debug(qq{$rpt_list - Library type is incompatible with gbs analysis});
+    return 0;
   }
 
-  if($library_type and $library_type !~ /^GbS|GnT\sMDA/ismx){
-    $self->logcroak(qq{$rpt_list - GbS plex set but library type incompatible});
+  if(not $self->_gbs_plex($rpt_list)->gbs_plex_path){
+    $self->logcroak(qq{$rpt_list - GbS plex set but no gbs plex path found});
   }
 
   $self->debug(qq{$rpt_list - Doing GbS plex analysis....});

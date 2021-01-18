@@ -78,6 +78,9 @@ to delete the run folder from the staging area. It uses cached LIMs information,
 which is stored in a samplesheet. If -lims-driver-type argiment is set, up-to-date
 LIMs information is retrieved from a system corresponding to this driver type.
 
+If a file or directory named "npg_do_not_delete" is present in the run folder,
+the run folder is considered as not deletable.
+
 =head1 SUBROUTINES/METHODS
 
 =head1 DIAGNOSTICS

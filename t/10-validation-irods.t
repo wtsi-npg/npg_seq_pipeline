@@ -97,7 +97,7 @@ subtest 'object construction, file extensions, file names' => sub {
 };
 
 subtest 'eligible product entities' => sub {
-  plan tests => 6;
+  plan tests => 4;
 
   my $config_dir = join q[/], $dir, 'config';
   mkdir $config_dir or die "Failed to create $config_dir";
@@ -170,14 +170,11 @@ subtest 'eligible product entities' => sub {
     conf_path         => $config_dir,
   );
 
-  my @eligible = @{$v->eligible_product_entities};
-  is (scalar @eligible, 2, 'two entities to archive to iRODS');
-  ok ($eligible[0]->target_product->is_tag_zero_product, 'first product is for tag zero');
-  ok ($eligible[1]->target_product->lims->is_control, 'second product is for spiked phix');
+  is (scalar @{$v->eligible_product_entities}, 0, 'no entities to archive to iRODS');
 };
 
 subtest 'deletable or not' => sub {
-  my $num_tests = 20;
+  my $num_tests = 21;
   plan tests => $num_tests;
 
   my $archive               = join q[/], $dir, '20405';
@@ -232,7 +229,7 @@ subtest 'deletable or not' => sub {
         my $md5_path = $p . q[.md5];
         write_file($md5_path, md5_hex($content));
         my $ipath = join q[/], $IRODS_TEST_AREA1, $file_name;
-        $irods->add_object($p, $ipath);
+        $irods->add_object($p, $ipath,$WTSI::NPG::iRODS::CALC_CHECKSUM);
       } 
     }
 
@@ -284,7 +281,7 @@ subtest 'deletable or not' => sub {
       qr/$trpath is not in iRODS/, 'warning - cram file missing in iRODS';
     is($result, 0, 'not deletable - cram file missing in iRODS');
     # Restore previously removed file
-    $irods->add_object($trpath, $ito_remove);
+    $irods->add_object($trpath, $ito_remove, $WTSI::NPG::iRODS::CALC_CHECKSUM);
 
     $v = npg_pipeline::validation::irods->new($ref);
     is($v->archived_for_deletion(), 1, 'deletable');
@@ -316,7 +313,7 @@ subtest 'deletable or not' => sub {
 
     # Create an extra cram file in iRODS
     my $extra = join q[/], $IRODS_TEST_AREA1, 'extra.cram';
-    $irods->add_object($trpath, $extra);
+    $irods->add_object($trpath, $extra, $WTSI::NPG::iRODS::CALC_CHECKSUM);
     $v = npg_pipeline::validation::irods->new($ref);
     warning_like { $result = $v->archived_for_deletion() }
       qr/$extra is in iRODS, but not on staging/, 'warning - unexpected file in iRODS';
@@ -327,6 +324,9 @@ subtest 'deletable or not' => sub {
     $v = npg_pipeline::validation::irods->new($ref);
     is($v->archived_for_deletion(), 1, 'deletable');
 
+    $trpath = $file_map->{'20405_6#4.cram'};
+    # Need a real file, since it will be inspected by samtools.
+    copy 't/data/eight_reads.cram', $trpath or die 'Failed to copy';
     # Remove an index iRODS file
     $to_remove = '20405_6#4.cram.crai';
     $ito_remove = join q[/], $IRODS_TEST_AREA1, $to_remove;
@@ -338,14 +338,22 @@ subtest 'deletable or not' => sub {
     ok(!$result, 'not deletable - index file is missing');
 
     SKIP: {
-      skip 'samtools executable not available', 1 unless which('samtools');
-    
-      # Make the parent sequence file to have zero reads
+      skip 'samtools executable not available', 2 unless which('samtools');
+
+      # Create invalid parent file, which will trigger samtools error
+      # for any samtools version.
       $trpath = $file_map->{'20405_6#4.cram'};
       open my $fh, q[>], $trpath or die "Failed to open file handle to $trpath";
+      print $fh 'hgkdghkdghkdgh';
       close $fh or warn "Failed to close file handle to $trpath\n";
       $v = npg_pipeline::validation::irods->new($ref);
-      ok($v->archived_for_deletion(), 'deletable');
+      ok(!$v->archived_for_deletion(), 'not deletable - file with no data');
+
+      # Make the parent sequence file to have zero reads.
+      copy 't/data/no_reads.cram', $trpath or die Failed to copy;
+      $v = npg_pipeline::validation::irods->new($ref);
+      ok($v->archived_for_deletion(), 'deletable - absence of an index ' .
+        'file when the main file has zero reads is OK');
     }
   };
 };

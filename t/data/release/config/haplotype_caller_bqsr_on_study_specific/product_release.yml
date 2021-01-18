@@ -1,0 +1,19 @@
+---
+default:
+  data_deletion:
+    staging_deletion_delay: 14
+
+study:
+  - study_id: "5290"
+    tertiary:
+      default:
+        bqsr:
+          enable: true
+          apply: true
+          known-sites:
+            - dbsnp_138.hg38
+            - Mills_and_1000G_gold_standard.indels.hg38
+        haplotype_caller:
+          enable: true
+          sample_chunking: hs38primary
+          sample_chunking_number: 24
