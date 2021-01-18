@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunInfo Version="5">
-	<Run Id="201207_A00537_0423_AHH537DSXY" Number="423">
-		<Flowcell>HH537DSXY</Flowcell>
-		<Instrument>A00537</Instrument>
-		<Date>12/7/2020 12:28:32 PM</Date>
+	<Run Id="210111_A00513_0447_AHJ55JDSXY" Number="447">
+		<Flowcell>HJ55JDSXY</Flowcell>
+		<Instrument>A00513</Instrument>
+		<Date>1/11/2021 2:00:02 PM</Date>
 		<Reads>
 			<Read Number="1" NumCycles="151" IsIndexedRead="N"/>
 			<Read Number="2" NumCycles="8" IsIndexedRead="Y"/>

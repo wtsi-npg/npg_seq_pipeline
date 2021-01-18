@@ -385,7 +385,7 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
     }
   }
 
-  if($self->_is_duplexseq) {
+  if($self->_is_duplexseq($lane_lims)) {
     $self->info(q{P4 stage1 analysis of a Duplex-Seq lane});
 
     if (!$self->is_paired_read) {
@@ -615,17 +615,12 @@ sub _build__extra_tradis_transposon_read {
   return ($num_extra > 0) ? 1 : 0;
 }
 
-has q{_is_duplexseq} => (
-                             isa        => q{Bool},
-                             is         => q{rw},
-                             lazy_build => 1,
-                            );
-sub _build__is_duplexseq {
-  my $self = shift;
+sub _is_duplexseq {
+  my ( $self, $lane_lims ) = @_;
 
   # I've restricted this to library_types which exactly match Duplex-Seq to exclude the old library_type Bidirectional Duplex-seq
   my $is_duplexseq = any {$_->library_type && $_->library_type eq q[Duplex-Seq]}
-                  $self->lims->descendants();
+                  $lane_lims->descendants();
 
   return $is_duplexseq;
 }
