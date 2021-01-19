@@ -48,7 +48,7 @@ if ((not @id_runs) and (not $days)) {
 };
 for my $id_run (@id_runs){
   if ($majora_update_runs{$id_run}){
-    update_majora(@id_runs, $schema, $mlwh_schema);
+    update_majora($id_run, $schema, $mlwh_schema);
   }
   my ($fn,$rs) = get_table_info_for_id_run($id_run,$schema,$mlwh_schema);
   my $json_string = get_majora_data($fn);

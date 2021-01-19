@@ -166,6 +166,7 @@ sub update_majora{
                                   library_layout_config=>'PAIRED',
                                   library_seq_kit=> 'NEB ULTRA II',
                                   library_seq_protocol=> $lsp,
+                                  force_biosamples=> \1, # JSON encode as true, Sanger-only Majora interaction
                                   biosamples=>[@biosample_info]
                        };
    _use_majora_api('POST', $url, $data_to_encode);
@@ -208,6 +209,9 @@ sub _use_majora_api{
   my $ua = LWP::UserAgent->new();
   my $r = HTTP::Request->new($method, $url, $header, $encoded_data);
   my$res= $ua->request($r);
+  if ($res->is_error){
+    croak q(Majora API returned a ).($res->code).qq( code. Content:\n).($res->decoded_content()).qq(\n);
+  }
   return $res->decoded_content;
 }
 
