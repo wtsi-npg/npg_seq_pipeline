@@ -1390,7 +1390,7 @@ subtest 'generate compositions only' => sub {
 };
 
 subtest 'product_release_tests' => sub {
-  plan tests => 92;
+  plan tests => 279;
 
   my %test_runs = (
     16850 => { platform => 'miseq', runfolder_name => '150710_MS2_16850_A_MS3014507-500V2', markdup_method => 'samtools', },
@@ -1402,6 +1402,7 @@ subtest 'product_release_tests' => sub {
     16807 => { platform => 'hiseq', runfolder_name => '150707_HS38_16807_A_C7U2YANXX', markdup_method => 'samtools', },
     20268 => { platform => 'hiseq', runfolder_name => '160704_MS3_20268_A_MS4000667-300V2', markdup_method => 'biobambam', },
     16839 => { platform => 'hiseqx', runfolder_name => '150709_HX4_16839_A_H7MHWCCXX', markdup_method => 'samtools', },
+    35843 => { platform => 'novaseq', runfolder_name => '201207_A00537_0423_AHH537DSXY', markdup_method => 'duplexseq', },
   );
 
   for my $run (keys %test_runs) {
@@ -1413,8 +1414,14 @@ subtest 'product_release_tests' => sub {
     `mkdir -p $cache_dir`;
  
     copy("t/data/$run_details->{platform}/${run}_RunInfo.xml", "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-    copy("t/data/run_params/runParameters.miseq.xml", "$runfolder_path/runParameters.xml")
-      or die "runParameters.xml copy failed";
+    if ($run_details->{platform} eq 'novaseq') {
+      # we need to use a run specific RunParameters.xml file to pick up the correct run_id
+      copy("t/data/$run_details->{platform}/${run}_RunParameters.xml", "$runfolder_path/RunParameters.xml")
+        or die "RunParameters.xml copy failed";
+    } else {
+      copy("t/data/run_params/runParameters.miseq.xml", "$runfolder_path/runParameters.xml")
+        or die "runParameters.xml copy failed";
+    }
  
     local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = qq[t/data/$run_details->{platform}/samplesheet_${run}.csv];
  
@@ -1434,9 +1441,19 @@ subtest 'product_release_tests' => sub {
     my $dps;
     lives_ok { $dps = $sa_gen->products->{data_products} } "no error finding data products for run $run";
     for my $i (0..$#{$dps}) {
-      my $markdup_method = $sa_gen->markdup_method($dps->[$i]);
-
-      is ($markdup_method, $run_details->{markdup_method}, "markdup_method for entry $i for run $run should be inferred as $markdup_method");
+      my $p = $dps->[$i];
+      my $markdup_method = $sa_gen->markdup_method($p);
+      if ($p->is_tag_zero_product and ($run == 35843)) {
+        is ($markdup_method, q{biobambam},
+          'fall back to default for tag zero when nothing is configured for a study');
+      } elsif ($p->lims->is_control) {
+        is ($markdup_method, q{biobambam},
+          'fall back to default for spiked PhiX, since its study has no config');
+      } else {
+        is ($markdup_method, $run_details->{markdup_method},
+          "markdup_method for entry $i for run $run is $markdup_method") or
+          diag $p->composition->freeze;
+      }
     }
   }
 };
