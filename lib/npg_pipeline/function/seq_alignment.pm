@@ -40,13 +40,24 @@ Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
 Readonly::Scalar my $PFC_MARKDUP_OPT_DIST         => q{2500};  # distance in pixels for optical duplicate detection on patterned flowcells
 Readonly::Scalar my $NON_PFC_MARKDUP_OPT_DIST     => q{100};   # distance in pixels for optical duplicate detection on non-patterned flowcells
-Readonly::Scalar my $MARKDUP_DEFAULT              => q{biobambam};
 
-=head2 phix_reference
+around 'markdup_method' => sub {
+    my $orig = shift;
+    my $self = shift;
 
-A path to Phix reference fasta file to split phiX spike-in reads
+    my $product = shift;
+    $product or $self->logcroak('Product object argument is required');
+    my $lims = $product->lims;
+    $lims or $self->logcroak('lims object is not defined for a product');
+    my $lt = $lims->library_type;
+    $lt ||= q[];
+    # I've restricted this to library_types which exactly match Duplex-Seq
+    # to exclude the old library_type 'Bidirectional Duplex-seq'.
+    my $mdm =  ($lt eq q[Duplex-Seq]) ? q(duplexseq) : $self->$orig($product);
+    $mdm or $self->logcroak('markdup method is not defined for a product');
 
-=cut
+    return $mdm;
+};
 
 has 'phix_reference' => (isa        => 'Str',
                          is         => 'ro',
@@ -426,8 +437,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{reference_dict} = $self->_ref($dp, q(picard)) . q(.dict);
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
-
-    $p4_param_vals->{markdup_method} = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
+    $p4_param_vals->{markdup_method} = $self->markdup_method($dp);
     $p4_param_vals->{markdup_optical_distance_value} = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
 
     if($p4_param_vals->{markdup_method} eq q[none]) {
@@ -909,6 +919,16 @@ and some QC checks.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 phix_reference
+
+A path to Phix reference fasta file to split phiX spike-in reads
+
+=head2 markdup_method
+
+This method is inherited from npg_pipeline::product role and
+changed to return a default value (biobambam) and duplexseq for
+the Duplex-Seq library type. 
+
 =head2 generate
 
 Creates and returns an array of npg_pipeline::function::definition
@@ -974,7 +994,7 @@ David K. Jackson (david.jackson@sanger.ac.uk)
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018, 2019 Genome Research Ltd
+Copyright (C) 2018,2019,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

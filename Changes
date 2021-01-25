@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 58.2.0
+ - enhancement of code for interaction with the Majora/COG-UK API
+ - added analysis for Duplex-Seq libraries
+ 
 release 58.1.0
  - added npg_climb2mlwh to update warehouse from uploaded
    climb data

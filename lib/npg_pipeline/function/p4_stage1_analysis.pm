@@ -31,6 +31,9 @@ Readonly::Scalar my $FS_RESOURCE                  => 4; # LSF resource counter t
 Readonly::Scalar my $DEFAULT_I2B_THREAD_COUNT     => 3; # value passed to bambi i2b --threads flag
 Readonly::Scalar my $DEFAULT_SPLIT_THREADS_COUNT  => 0; # value passed to samtools split --threads flag
 
+Readonly::Scalar my $DUPLEXSEQ_TAG_LENGTH         => 3; # length of Duplex-Seq tag at start of read
+Readonly::Scalar my $DUPLEXSEQ_SKIP_LENGTH        => 4; # Number of bases to skip after the Duplex-Seq tag
+
 sub generate {
   my $self = shift;
 
@@ -242,7 +245,7 @@ sub _get_index_lengths {
 # Determine parameters for the lane from LIMS information and create the hash from which the p4 stage1
 #  analysis param_vals file will be generated. Generate the vtfp/viv commands using this param_vals file.
 #########################################################################################################
-sub _generate_command_params {
+sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexity)
   my ($self, $lane_lims, $tag_list_file, $lane_product) = @_;
   my %p4_params = (
                     samtools_executable => q{samtools},
@@ -363,6 +366,74 @@ sub _generate_command_params {
       $p4_params{i2b_sec_bc_seq_val} = q{br};
       $p4_params{i2b_sec_bc_qual_val} = q{qr};
     }
+  }
+
+  if($self->_is_duplexseq($lane_lims)) {
+    $self->info(q{P4 stage1 analysis of a Duplex-Seq lane});
+
+    if (!$self->is_paired_read) {
+      $self->logcroak('A Duplex-Seq lane should be paired ', $position);
+    }
+
+    # The first $DUPLEXSEQ_TAG_LENGTH bases(quality values) and the next $DUPLEXSEQ_SKIP_LENGTH bases(quality values) are removed and
+    # placed in tags rb(qr) and br(bq). This is done on both the forward and reverse reads with the tags created on the corresponding
+    # read. The rb(qr) tags on each read are duplicated on the paired read but the tags are re-named mb(mq).
+
+    my @i2b_bc_read = ();
+    my @i2b_first_0 = ();
+    my @i2b_final_0 = ();
+    my @i2b_first_index_0 = ();
+    my @i2b_final_index_0 = ();
+    my @i2b_bc_seq_val = ();
+    my @i2b_bc_qual_val = ();
+
+    # read 1
+    my($first, $final) = $self->read1_cycle_range();
+    push @i2b_bc_read, q{1},q{2},q{1};
+    push @i2b_first_index_0, qq{$first},qq{$first},$first+$DUPLEXSEQ_TAG_LENGTH;
+    push @i2b_final_index_0, $first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH-1;
+    push @i2b_bc_seq_val, q{rb},q{mb},q{br};
+    push @i2b_bc_qual_val, q{rq},q{mq},q{bq};
+    push @i2b_first_0, $first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH;
+    push @i2b_final_0, qq{$final};
+
+    # index read(s)
+    if($self->is_indexed()) {
+      # the first index read
+      ($first, $final) = $self->index_read1_cycle_range();
+      push @i2b_bc_read, q{1};
+      push @i2b_first_index_0, qq{$first};
+      push @i2b_final_index_0, qq{$final};
+      push @i2b_bc_seq_val, q{BC};
+      push @i2b_bc_qual_val, q{QT};
+      if($self->is_dual_index()) {
+        # the second index read
+        ($first, $final) = $self->index_read2_cycle_range();
+        push @i2b_bc_read, q{1};
+        push @i2b_first_index_0, qq{$first};
+        push @i2b_final_index_0, qq{$final};
+        push @i2b_bc_seq_val, q{BC};
+        push @i2b_bc_qual_val, q{QT};
+      }
+    }
+
+    # read 2
+    ($first, $final) = $self->read2_cycle_range();
+    push @i2b_bc_read, q{2},q{1},q{2};
+    push @i2b_first_index_0, qq{$first},qq{$first},$first+$DUPLEXSEQ_TAG_LENGTH;
+    push @i2b_final_index_0, $first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH-1;
+    push @i2b_bc_seq_val, q{rb},q{mb},q{br};
+    push @i2b_bc_qual_val, q{rq},q{mq},q{bq};
+    push @i2b_first_0, $first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH;
+    push @i2b_final_0, qq{$final};
+
+    $p4_params{i2b_bc_read}       = join q{,}, @i2b_bc_read;
+    $p4_params{i2b_first_0}       = join q{,}, @i2b_first_0;
+    $p4_params{i2b_final_0}       = join q{,}, @i2b_final_0;
+    $p4_params{i2b_first_index_0} = join q{,}, @i2b_first_index_0;
+    $p4_params{i2b_final_index_0} = join q{,}, @i2b_final_index_0;
+    $p4_params{i2b_bc_seq_val}    = join q{,}, @i2b_bc_seq_val;
+    $p4_params{i2b_bc_qual_val}   = join q{,}, @i2b_bc_qual_val;
   }
 
   ###  TODO: remove this read length comparison if biobambam will handle this case. Check clip reinsertion.
@@ -525,6 +596,16 @@ sub _build__extra_tradis_transposon_read {
   }
 
   return ($num_extra > 0) ? 1 : 0;
+}
+
+sub _is_duplexseq {
+  my ( $self, $lane_lims ) = @_;
+
+  # I've restricted this to library_types which exactly match Duplex-Seq to exclude the old library_type Bidirectional Duplex-seq
+  my $is_duplexseq = any {$_->library_type && $_->library_type eq q[Duplex-Seq]}
+                  $lane_lims->descendants();
+
+  return $is_duplexseq;
 }
 
 __PACKAGE__->meta->make_immutable;
