@@ -19,6 +19,8 @@ Readonly::Scalar my $TAG_LIST_FILE_HEADER      => qq{barcode_sequence\tbarcode_n
 # I've extended these to 10 bases. For I5OPPOSITE final `GT` predicted from adapter documentation.
 Readonly::Scalar my $SPIKED_PHIX_TAG2        => q{TCTTTCCCTA};
 Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_TAG2 => q{AGATCTCGGT};
+Readonly::Scalar my $TAG_SUFFIX => q{AT};
+Readonly::Scalar my $TAG2_SUFFIX => q{AC};
 
 =head1 NAME
 
@@ -230,6 +232,25 @@ sub _get_tag_length {
   return $key;
 }
 
+# Add suffix to an index of the form "AAAAAA-GGGGGG"
+# to bring to a length of the form [4,6]
+sub _add_suffix {
+  my ($self, $index, $index_lengths) = @_;
+  my @idx = split /-/smx, $index;
+  my @ilengths = @{$index_lengths};
+  # if there is only one index length set the second index length to 0
+  if (scalar @ilengths == 1) { push @ilengths, 0; }
+  # if there is no separator in the index set the second part of the index to empty
+  if (scalar @idx == 1) { push @idx, q{}; }
+  # add suffix if required
+  if (length $idx[0] < $ilengths[0]) { $idx[0] .= $TAG_SUFFIX; }
+  if ( (length $idx[1] < $ilengths[1]) && length $idx[1]) { $idx[1] .= $TAG2_SUFFIX; }
+  my $result = join q{-},@idx;
+  # remove the separator if the second part of the truncated index is empty
+  if ($result =~ /-$/smx) { chop $result; }
+  return $result;
+}
+
 # truncate an index of the form "AAAAAA-GGGGGG"
 # to a length of the form [4,6]
 sub _truncate_index {
@@ -250,11 +271,11 @@ sub _truncate_index {
 
 sub _check_tag_length {
   my ($self, $tag_seq_list, $tag_index_list, $spiked_phix_tag_index) = @_;
-
   # ensure no tags are longer than the index length
   # Note: this is not correct for runs where not ALL the index reads appear in the BC(QT) tag i.e. TraDIS it
   # works only because the first index read (the transposon) is longer that the second index read (the tag)
-  my @indexed_length_tags = map {$self->_truncate_index($_, $self->index_lengths)} @{$tag_seq_list};
+  my @indexed_length_tags = map {$self->_add_suffix($_, $self->index_lengths)} @{$tag_seq_list};
+  @indexed_length_tags = map {$self->_truncate_index($_, $self->index_lengths)} @indexed_length_tags;
 
   my %tag_length;
   foreach my $i (0..$#indexed_length_tags) {
@@ -321,8 +342,7 @@ sub _process_tag_list {
   foreach my $tag_index (@tag_index_list){
     if(!$tag_index){
       $self->warn('The tag index is not available');
-      return (undef, undef);
-    }
+      return (undef, undef); }
     my $tag_seq = $tags->{$tag_index};
     if(!$tag_seq){
       $self->warn('The tag sequence are not available');
@@ -333,24 +353,43 @@ sub _process_tag_list {
 
   my $tag_seq_list_checked = $self->_check_tag_length(\@tag_seq_list, \@tag_index_list, $spiked_phix_tag_index, $tags);
 
-  my $trimmed_tag_seq_list = $self->_trim_tag_common_suffix($tag_seq_list_checked, \@tag_index_list, $spiked_phix_tag_index);
+  # check for common suffix on index 1 and 2 seperately
+  my $trimmed_tag_seq_list0 = $self->_trim_tag_common_suffix($tag_seq_list_checked, \@tag_index_list, $spiked_phix_tag_index, 0);
+  my $trimmed_tag_seq_list1 = $self->_trim_tag_common_suffix($tag_seq_list_checked, \@tag_index_list, $spiked_phix_tag_index, 1);
 
-  $self->_check_tag_uniqueness($trimmed_tag_seq_list);
+  # then merge the results
+  my @trimmed_tag_seq_list;
+  for my $n (0 .. $#{$tag_seq_list_checked}) {
+    my @t = ($trimmed_tag_seq_list0->[$n], $trimmed_tag_seq_list1->[$n]);
+    my $tag = q();
+    if (($t[0] =~ /[^n]/smxi)) { $tag = $t[0]; }
+    if ($t[1]) { $tag .= q(-); }
+    if (($t[1] =~ /[^n]/smxi)) { $tag = $tag . $t[1]; }
+    push @trimmed_tag_seq_list, $tag;
+  }
 
-  return (\@tag_index_list, $trimmed_tag_seq_list);
+  $self->_check_tag_uniqueness(\@trimmed_tag_seq_list);
+
+  return (\@tag_index_list, \@trimmed_tag_seq_list);
 }
 
 #trim common suffix of a list of tag sequences, ignore spiked phix tag
 #croak if the tag sequence are different in length or they are all the same
+#index_number is 0 or 1 for dual index tags
 sub _trim_tag_common_suffix {
-  my ($self, $tag_seq_list, $tag_index_list, $spiked_phix_tag_index) = @_;
+  my ($self, $tag_seq_list_full, $tag_index_list, $spiked_phix_tag_index, $index_number) = @_;
 
-  my $ntags = scalar @{$tag_seq_list};
+  $index_number ||= 0;
+  my $ntags = scalar @{$tag_seq_list_full};
 
   if($ntags == 1){
     $self->info('Only one tag found for this lane');
-    return $tag_seq_list;
+    return $tag_seq_list_full;
   }
+
+  # only look at first (or second) index of a dual index tag
+  my @tag_seq_list_array = map { (split /-/smx)[$index_number] || q( )} @{$tag_seq_list_full};
+  my $tag_seq_list = \@tag_seq_list_array;
 
   my %tag_length = map {length $_ => 1 } @{$tag_seq_list};
 
@@ -378,14 +417,21 @@ sub _trim_tag_common_suffix {
     return $tag_seq_list;
   }
 
-  if($tag_length{$tag_common_suffix_length}){
-    $self->logcroak("All tags are the same @{$tag_seq_list}");
+  if ($tag_length{$tag_common_suffix_length}){
+    if ($tag_seq_list->[0] && $index_number==0) {
+      if ($tag_seq_list->[0] =~ /[^n]/smxi) {   # make an exception for all 'N'
+        $self->logcroak("All tags are the same @{$tag_seq_list}");
+      }
+    }
   }
 
   my @trimmed_tag_seq_list;
 
   foreach my $tag (@{$tag_seq_list}){
-    push @trimmed_tag_seq_list, substr $tag, 0, - $tag_common_suffix_length;
+    if ($tag =~ /[^n]/smxi) {
+      $tag = substr $tag, 0, - $tag_common_suffix_length;
+    }
+    push @trimmed_tag_seq_list, $tag;
   }
 
   return \@trimmed_tag_seq_list;

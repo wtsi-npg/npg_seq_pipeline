@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 61;
+use Test::More tests => 74;
 use Test::Exception;
 use File::Slurp;
 use File::Temp qw(tempdir);
@@ -137,6 +137,69 @@ use_ok(q{npg_pipeline::cache::barcodes});
 }
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch6532.csv];
+
+  my $lims = st::api::lims->new(id_run => 1234)->children_ia;
+  my $create_lane = npg_pipeline::cache::barcodes->new(
+      lane_lims    => $lims->{1},
+      index_lengths=> [7,7],
+      location     => $dir,
+  );
+
+  my $tag_list_lane = {1=> 'actgffc-actcfga', 2 => 'aacggfc-aacgfga'};
+  my ($index_list, $tag_seq_list) = $create_lane->_process_tag_list($tag_list_lane,168);
+  is_deeply($index_list, [1,2], 'dual index');
+  is_deeply($tag_seq_list, [qw(actgf-actc aacgg-aacg)], 'correct dual tag list after trimming');
+}
+
+{
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch6532.csv];
+
+  my $lims = st::api::lims->new(id_run => 1234)->children_ia;
+  my $create_lane = npg_pipeline::cache::barcodes->new(
+      lane_lims    => $lims->{1},
+      index_lengths=> [7,7],
+      location     => $dir,
+  );
+
+  my $tag_list_lane = {1=> 'actgffc-actcfga', 2 => 'actgffc-aacgfga'};
+  throws_ok { $create_lane->_process_tag_list($tag_list_lane,168) }
+    qr{All tags are the same actgffc actgffc}, q{dual tags are not unique - throw error};
+}
+
+{
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch6532.csv];
+
+  my $lims = st::api::lims->new(id_run => 1234)->children_ia;
+  my $create_lane = npg_pipeline::cache::barcodes->new(
+      lane_lims    => $lims->{1},
+      index_lengths=> [7,7],
+      location     => $dir,
+  );
+
+  my $tag_list_lane = {1=> 'nnnnnnn-actcfga', 2 => 'nnnnnnn-aacgfga'};
+  my ($index_list, $tag_seq_list) = $create_lane->_process_tag_list($tag_list_lane,168);
+  is_deeply($index_list, [1,2], 'dual index');
+  is_deeply($tag_seq_list, [qw(-actc -aacg)], 'correct dual tag list after trimming');
+}
+
+{
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch6532.csv];
+
+  my $lims = st::api::lims->new(id_run => 1234)->children_ia;
+  my $create_lane = npg_pipeline::cache::barcodes->new(
+      lane_lims    => $lims->{1},
+      index_lengths=> [7,7],
+      location     => $dir,
+  );
+
+  my $tag_list_lane = {1=> 'actcfga-nnnnnnn', 2 => 'aacgfga-nnnnnnn'};
+  my ($index_list, $tag_seq_list) = $create_lane->_process_tag_list($tag_list_lane,168);
+  is_deeply($index_list, [1,2], 'dual index');
+  is_deeply($tag_seq_list, [qw(actc- aacg-)], 'correct dual tag list after trimming');
+}
+
+ {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch6532.csv];  
 
   my $lims = st::api::lims->new(id_run => 1234)->children_ia;
@@ -154,12 +217,12 @@ use_ok(q{npg_pipeline::cache::barcodes});
 
   $create_lane = npg_pipeline::cache::barcodes->new(
       lane_lims    => $lims->{1},
-      index_lengths=> [12],
+      index_lengths=> [14],
       location     => $dir,
   );
   $tag_list_lane_init = {1=> 'ACAACGCAATC', 2 => 'TGCGATGTTAAT', 3 => 'GGCCAATGGGGA',};
   throws_ok { $create_lane->_process_tag_list($tag_list_lane_init, 1) }
-    qr/It looks likes the padded sequence for spiked PhiX ACAACGCAATC is too short/,
+    qr/It looks likes the padded sequence for spiked PhiX ACAACGCAATCAT is too short/,
     'error when spiked phix tag is not long enough';  
 }
 
@@ -215,22 +278,24 @@ use_ok(q{npg_pipeline::cache::barcodes});
       index_lengths=> [6],
       location     => $dir,
   );
-  throws_ok {
+  lives_ok {
     $tags_length_checked = $create_lane->_check_tag_length( [
       qw{ AAAAA AAAAA AAAAA AAAAACCCC }
     ] , [ qw{1 2 3 4} ] , 168 );
-  } qr{AAAAA:AAAAA:AAAAA:AAAAAC}, q{short tags shorter than index length, one tag longer than index length};
+  } q{tags returned ok};
+  is_deeply( $tags_length_checked, [qw{AAAAAA AAAAAA AAAAAA AAAAAC}], q{short tags shorter than index length, one tag longer than index length});
   lives_ok {
     $tags_length_checked = $create_lane->_check_tag_length( [
       qw{ AAAAA AAAAA AAAAA AAAAACCCC }
     ] , [ qw{1 2 3 168} ] , 168 );
   } q{tags returned ok};
-  is_deeply( $tags_length_checked, $expected_tag_results, q{short tags shorter than index length, one tag longer than index length is PhiX} );
-  throws_ok {
+  is_deeply( $tags_length_checked, [qw{AAAAAA AAAAAA AAAAAA AAAAAC}], q{short tags shorter than index length, one tag longer than index length is PhiX} );
+  lives_ok {
     $tags_length_checked = $create_lane->_check_tag_length( [
       qw{ AAAAA AAAAA AAAAACCCC AAAAACCCC }
     ] , [ qw{1 2 168 168} ] , 168 ) ;
-  } qr{AAAAA:AAAAA:AAAAAC:AAAAAC}, q{short tags shorter than index length, multiple tags longer than index length all PhiX};
+  } q{tags returned ok};
+  is_deeply( $tags_length_checked, [ qw{AAAAAA AAAAAA AAAAAC AAAAAC}], q{short tags shorter than index length, multiple tags longer than index length all PhiX});
 
   $create_lane  = npg_pipeline::cache::barcodes->new(
       lane_lims     => $lims->{1},
@@ -241,18 +306,18 @@ use_ok(q{npg_pipeline::cache::barcodes});
     $tags_length_checked = $create_lane->_check_tag_length( [
       qw{ AAAAA AAAAA AAAAA AAAAACCCC }
     ] , [ qw{1 2 3 4} ] , 168 ) ;
-  } qr{AAAAA:AAAAA:AAAAA:AAAAACCCC}, q{2 different lengths, longest shorter than the index_length};
+  } qr{AAAAAAT:AAAAAAT:AAAAAAT:AAAAACCCCAT}, q{2 different lengths, longest shorter than the index_length};
   lives_ok {
     $tags_length_checked = $create_lane->_check_tag_length( [
-      qw{ AAAAA AAAAA AAAAA AAAAACCCC }
+      qw{ AAAAAAT AAAAAAT AAAAAAT AAAAACCCCAT }
     ] , [ qw{1 2 3 168} ] , 168 ) ;
   } q{tags returned ok};
-  is_deeply( $tags_length_checked, $expected_tag_results, q{2 different lengths, one longer tag shorter than the index_length is PhiX} );
+  is_deeply( $tags_length_checked, [qw{AAAAAATAT AAAAAATAT AAAAAATAT AAAAACCCC}], q{2 different lengths, one longer tag shorter than the index_length is PhiX} );
   throws_ok {
     $tags_length_checked = $create_lane->_check_tag_length( [
-      qw{ AAAAA AAAAACCCC AAAAA AAAAACCCC }
+      qw{ AAAAAAT AAAAACCCCAT AAAAAAT AAAAACCCCAT }
     ] , [ qw{1 168 3 168} ] , 168 ) ;
-  } qr{AAAAA:AAAAACCCC:AAAAA:AAAAACCCC}, q{2 different lengths, multiple longer tags shorter than the index_length all PhiX};
+  } qr{AAAAAATAT:AAAAACCCCATA:AAAAAATAT:AAAAACCCCATA}, q{2 different lengths, multiple longer tags shorter than the index_length all PhiX};
 
   $create_lane  = npg_pipeline::cache::barcodes->new(
       lane_lims    => $lims->{1},
@@ -263,7 +328,7 @@ use_ok(q{npg_pipeline::cache::barcodes});
     $tags_length_checked = $create_lane->_check_tag_length( [
       qw{ AAAAA AAAAACCCC AAAAA AAAAACCCC }
     ] , [ qw{1 2 3 4} ] , 168 ) ;
-  } qr{AAAAA:AAAAACCCC:AAAAA:AAAAACCCC}, q{2 different lengths, more than one longest};
+  } qr{AAAAAAT:AAAAACCCC:AAAAAAT:AAAAACCCC}, q{2 different lengths, more than one longest};
 
   $create_lane  = npg_pipeline::cache::barcodes->new(
       lane_lims    => $lims->{1},
@@ -274,17 +339,18 @@ use_ok(q{npg_pipeline::cache::barcodes});
     $tags_length_checked = $create_lane->_check_tag_length( [
       qw{ AAAAA AAAAA AAAAA AAAA }
     ] , [ qw{1 2 3 4} ] , 168 ) ;
-  } qr{AAAAA:AAAAA:AAAAA:AAAA}, q{2 different lengths, only one shortest};
+  } qr{AAAAAAT:AAAAAAT:AAAAAAT:AAAAAT}, q{2 different lengths, only one shortest};
   throws_ok {
     $tags_length_checked = $create_lane->_check_tag_length( [
       qw{ AAAAA AAAAACCCC AAAAA AAAAACCCC }
     ] , [ qw{168 2 168 4} ] , 168 ) ;
-  } qr{AAAAA:AAAAACCCC:AAAAA:AAAAACCCC}, q{2 different lengths, multiple shortest all PhiX};
+  } qr{AAAAAAT:AAAAACCCC:AAAAAAT:AAAAACCCC}, q{2 different lengths, multiple shortest all PhiX};
   throws_ok {
     $tags_length_checked = $create_lane->_check_tag_length( [
       qw{ AAAAAC AAAAA AAAAA AAAA }
     ] , [ qw{1 2 3 4} ] , 168 ) ;
-  } qr{AAAAAC:AAAAA:AAAAA:AAAA}, q{3 different lengths};
+  } qr{AAAAACAT:AAAAAAT:AAAAAAT:AAAAAT}, q{3 different lengths};
+
 }
 
 {
@@ -359,6 +425,32 @@ use_ok(q{npg_pipeline::cache::barcodes});
   my $file_contents;
   lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
   my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACT-AGGCTATA\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACG-AGATCTCG\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
+  is($file_contents, $expected, 'i5opposite dual index tag list file contents as expected');
+}
+
+{
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/barcodes/samplesheet_batch42225_amended3.csv];
+
+  my $expected_tag_list = "$dir/lane_1.taglist";
+  unlink  $expected_tag_list;
+
+  my $lims = st::api::lims->new(id_run => 18124)->children_ia;
+  my $create_lane  = npg_pipeline::cache::barcodes->new(
+      lane_lims     => $lims->{1},
+      index_lengths=> [6,10],
+      location     => $dir,
+      i5opposite   => 0,
+  );
+
+  my $tag_list;
+  lives_ok {
+    $tag_list = $create_lane->generate();
+  } q{i5opposite dual index no croak running generate() for batch 42227};
+
+  is($tag_list, $expected_tag_list, 'i5opposite dual index tag list file path');
+  my $file_contents;
+  lives_ok {$file_contents = read_file($tag_list);} 'i5opposite dual index reading tag list file';
+  my $expected = qq[barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription\nATTACT-TATAGCCTAC\t1\t15144164\t3165STDY6250498\tHX Test Plan: Development of sequencing and library prep protocols using Human DNA \nACAACG-TCTTTCCCTA\t888\t12172503\tphiX_for_spiked_buffers\tIllumina Controls: SPIKED_CONTROL];
   is($file_contents, $expected, 'i5opposite dual index tag list file contents as expected');
 }
 
