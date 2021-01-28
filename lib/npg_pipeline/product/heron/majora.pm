@@ -16,7 +16,6 @@ use HTTP::Request;
 use JSON::MaybeXS qw(encode_json);
 use LWP::UserAgent;
 use Log::Log4perl qw(:easy);
-use Data::Dumper; ###TODO DELETE
 use npg_tracking::Schema;
 use WTSI::DNAP::Warehouse::Schema;
 
@@ -93,7 +92,7 @@ sub _build__npg_tracking_schema {
 }
 
 sub _build__mlwh_schema {
-  return WTSI::DNAP::Warehouse::Schema->connect();;
+  return WTSI::DNAP::Warehouse::Schema->connect();
 }
 
 sub _build_logger {
@@ -106,8 +105,8 @@ sub _build_logger {
 
 sub run {
   my $self = shift;
-  my %majora_update_runs= $self->update? (map{$_ => 1} $self->id_runs) : ();
-  
+  my %majora_update_runs= $self->update? (map{$_ => 1} @{$self->id_runs}) : ();
+ 
   if (($self->update) and ($self->dry_run)){
     $self->logger->error_die('both --update and --dry_run are set');
   }
@@ -118,7 +117,7 @@ sub run {
   if ((not @{$self->id_runs}) and (not $self->days)) {
     #gets a list of id_runs missing data
     $self->logger->info('Getting id_runs missing COG metadata');
-    
+ 
     my @id_runs_missing_data = $self->get_id_runs_missing_data();
     $self->id_runs(\@id_runs_missing_data); 
  
@@ -138,9 +137,10 @@ sub run {
       %majora_update_runs=(map{$_ => 1}$self->get_id_runs_missing_data_in_last_days([undef]));
     }
 
-  }elsif((@{$self->id_runs}!= 0) and $self->days){
+  }elsif((@{$self->id_runs}!= 0) and ($self->days or ($self->days eq '0'))){
     $self->logger->error_die('Cannot set both id_runs and days');
   };
+
   for my $id_run (@{$self->id_runs}){
     if (($majora_update_runs{$id_run}) and (not $self->dry_run)){
       $self->logger->info("Updating Majora for $id_run");
@@ -148,18 +148,19 @@ sub run {
     }
     $self->logger->info("Fetching npg_tracking and Warehouse DB info for $id_run");
     my ($fn,$rs) = $self->get_table_info_for_id_run($id_run);
-    
+ 
     $self->logger->info("Fetching Majora data for $fn");
-    my $json_string = $self->get_majora_data($fn); 
+    my $json_string = $self->get_majora_data($fn);      
     
     $self->logger->debug('Converting the json returned from Majora to perl structure');
-    my %ds = $self->json_to_structure($json_string,$fn); 
+    my %ds = $self->json_to_structure($json_string,$fn);
     my $ds_ref = \%ds;
+    
     if (not $self->dry_run){
       $self->logger->info("Updating Metadata for $id_run");
       $self->update_metadata($rs,$ds_ref);
     }
-  };
+  }
 }
 
 sub get_table_info_for_id_run {
@@ -220,7 +221,9 @@ sub update_metadata {
     my $sample_data;
     my $sample_meta;
     if ($libdata) {
-      $sample_data = $libdata->{$fc->sample->supplier_name};
+      my $sname = $fc->sample->supplier_name;
+      next unless $sname;
+      $sample_data = $libdata->{$fc->sample->supplier_name}; 
       if ($sample_data) {
         $sample_meta = defined $sample_data->{submission_org} ?1:0;
         $self->logger->info("setting $sample_meta for ". $fc->sample->supplier_name);
