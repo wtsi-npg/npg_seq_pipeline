@@ -30,9 +30,17 @@ __END__
 
 npg_majora_for_mlwh
 
+=head1 DESCRIPTION
+
+Script to automate updating id_run metadata.
+
+=head1 REQUIRED ARGUMENTS
+
 =head1 USAGE
 
 =head1 CONFIGURATION
+
+=head1 EXIT STATUS
 
 =head1 SYNOPSIS
 
