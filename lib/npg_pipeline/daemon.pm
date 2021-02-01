@@ -1,29 +1,21 @@
 package npg_pipeline::daemon;
 
+use FindBin qw($Bin);
 use Moose;
 use namespace::autoclean;
-use Moose::Meta::Class;
 use MooseX::StrictConstructor;
-use Carp;
 use English qw/-no_match_vars/;
-use File::Spec::Functions qw/catfile/;
-use List::MoreUtils  qw/none uniq/;
-use Log::Log4perl;
+use List::MoreUtils  qw/none/;
 use Readonly;
 use Try::Tiny;
 
 use npg_tracking::util::abs_path qw/abs_path/;
 use npg_tracking::illumina::runfolder;
 use npg_tracking::Schema;
-use WTSI::DNAP::Warehouse::Schema;
-use WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell;
-
-use npg_pipeline::base::options;
 
 with qw{ 
          MooseX::Getopt
          WTSI::DNAP::Utilities::Loggable
-         npg_tracking::util::pipeline_config
        };
 
 our $VERSION = '0';
@@ -33,7 +25,6 @@ Readonly::Array  my @GREEN_STAGING     =>
    qw(sf18 sf19 sf20 sf21 sf22 sf23 sf24 sf25 sf26 sf27 sf28 sf29 sf30 sf31 sf46 sf47 sf49 sf50 sf51);
 
 Readonly::Scalar my $SLEEPY_TIME  => 900;
-Readonly::Scalar my $NO_LIMS_LINK => -1;
 
 has 'pipeline_script_name' => (
   isa        => q{Str},
@@ -51,24 +42,6 @@ has 'dry_run' => (
   documentation => 'dry run mode flag, false by default',
 );
 
-has 'daemon_conf' => (
-  isa        => q{HashRef},
-  is         => q{ro},
-  lazy_build => 1,
-  metaclass  => 'NoGetopt',
-  init_arg   => undef,
-);
-sub _build_daemon_conf { # this file is optional
-  my ( $self ) = @_;
-  my $path = abs_path( catfile($self->conf_path(), 'daemon.ini') );
-  $path ||= q{};
-  my $config = $self->read_config( $path );
-  if (ref $config ne 'HASH') {
-    $config = {};
-  }
-  return $config;
-}
-
 has 'seen' => (
   isa       => q{HashRef},
   is        => q{ro},
@@ -77,7 +50,7 @@ has 'seen' => (
   default   => sub { return {}; },
 );
 
-has q{green_host} => (
+has 'green_host' => (
   isa        => q{Bool},
   is         => q{ro},
   metaclass  => 'NoGetopt',
@@ -104,48 +77,10 @@ sub _build_npg_tracking_schema {
   return npg_tracking::Schema->connect();
 }
 
-has 'mlwh_schema' => (
-  isa        => q{WTSI::DNAP::Warehouse::Schema},
-  is         => q{ro},
-  metaclass  => 'NoGetopt',
-  lazy_build => 1,
-);
-sub _build_mlwh_schema {
-  return WTSI::DNAP::Warehouse::Schema->connect();
-}
-
-has 'iseq_flowcell' => (
-  isa        => q{DBIx::Class::ResultSet},
-  is         => q{ro},
-  metaclass  => 'NoGetopt',
-  lazy_build => 1,
-);
-sub _build_iseq_flowcell {
-  my $self = shift;
-  return $self->mlwh_schema->resultset('IseqFlowcell')
-              ->search({}, {'join' => 'study'});
-}
-
-has 'lims_query_class' => (
-  isa        => q{Moose::Meta::Class},
-  is         => q{ro},
-  metaclass  => 'NoGetopt',
-  default    => sub {
-    my $package_name = 'npg_pipeline::mlwh_query';
-    my $class=Moose::Meta::Class->create($package_name);
-    $class->add_attribute('flowcell_barcode', {isa =>'Str', is=>'ro'});
-    $class->add_attribute('id_flowcell_lims', {isa =>'Maybe[Str]', is=>'ro'});
-    $class->add_attribute('iseq_flowcell',    {isa =>'DBIx::Class::ResultSet', is=>'ro'});
-    return Moose::Meta::Class->create_anon_class(
-      superclasses=> [$package_name],
-      roles       => [qw/WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell/] );
-  },
-);
-
 sub runs_with_status {
   my ($self, $status_name) = @_;
   if (!$status_name) {
-    croak q[Need status name];
+    $self->logcroak(q[Need status name]);
   }
   return map {$_->run() } $self->npg_tracking_schema()->resultset(q[RunStatus])->search(
      { q[me.iscurrent] => 1, q[run_status_dict.description] => $status_name},
@@ -160,8 +95,9 @@ sub staging_host_match {
 
   if (defined $self->green_host) {
     if (!$folder_path_glob) {
-      croak q[Need folder_path_glob to decide whether the run folder ] .
-            q[and the daemon host are co-located];
+      $self->logcroak(
+	q[Need folder_path_glob to decide whether the run folder ] .
+        q[and the daemon host are co-located]);
     }
     $match =  $self->green_host ^ none { $folder_path_glob =~ m{/$_/}smx } @GREEN_STAGING;
   }
@@ -172,43 +108,10 @@ sub staging_host_match {
 sub check_lims_link {
   my ($self, $run) = @_;
 
-  my $fc_barcode = $run->flowcell_id;
-  if(!$fc_barcode) {
-    croak q{No flowcell barcode};
-  }
-
   my $batch_id = $run->batch_id();
-  my $ref = { 'iseq_flowcell'  => $self->iseq_flowcell };
-  $ref->{'flowcell_barcode'} = $fc_barcode;
-  $ref->{'id_flowcell_lims'} = $batch_id;
+  $batch_id or $self->logcroak(q{No batch id});
 
-  my $obj = $self->lims_query_class()->new_object($ref);
-  my @fcell_rows = $obj->query_resultset()->all();
-  my $fcell_row = $fcell_rows[0];
-
-  if ( !($batch_id || $fcell_row)  ) {
-    croak q{No matching flowcell LIMs record is found};
-  }
-
-  my $lims = {};
-  $lims->{'id'} = $batch_id;
-  if ($fcell_row) {
-    $lims->{'qc_run'} = (defined $fcell_row->purpose && $fcell_row->purpose eq 'qc') ? 1 : undef;
-  } else {
-    $lims->{'qc_run'} = npg_pipeline::base::options->is_qc_run($lims->{'id'});
-    if (!$lims->{'qc_run'}) {
-      croak q{Not QC run and not in the ml warehouse};
-    }
-  }
-
-  my @studies = ();
-  if (!$lims->{'qc_run'}) {
-    @studies = uniq map { $_->study_id } grep { !$_->is_control } @fcell_rows;
-    @studies = sort @studies;
-  }
-  $lims->{'studies'} = \@studies;
-
-  return $lims;
+  return {id => $batch_id};
 }
 
 sub run_command {
@@ -239,7 +142,7 @@ sub local_path {
   my $self = shift;
   my $perl_path = "$EXECUTABLE_NAME";
   $perl_path =~ s/\/perl$//xms;
-  return ($self->local_bin, abs_path($perl_path));
+  return map { abs_path $_ } ($Bin, $perl_path);
 }
 
 sub runfolder_path4run {
@@ -313,26 +216,9 @@ An attribute
 Builder method for the pipeline_script_name attribute, should be
 implemented by children.
 
-=head2 conf_path
-
-An attribute inherited from npg_pipeline::base::config,
-a full path to directory containing config files.
-
-=head2 conf_file_path
-
-Method inherited from npg_pipeline::base::config.
-
-=head2 read_config
-
-Method inherited from npg_pipeline::base::config.
-
-=head2 daemon_conf
-
 =head2 seen
 
 =head2 npg_tracking_schema
-
-=head2 iseq_flowcell
 
 =head2 run_command
 
@@ -375,21 +261,17 @@ captured and printed to the log.
 
 =over
 
+=item FindBin
+
 =item Moose
 
 =item namespace::autoclean
-
-=item Moose::Meta::Class
 
 =item MooseX::StrictConstructor
 
 =item MooseX::Getopt
 
-=item Carp
-
-=item File::Spec::Functions
-
-=item English -no_match_vars
+=item English
 
 =item List::MoreUtils
 
@@ -403,13 +285,7 @@ captured and printed to the log.
 
 =item use npg_tracking::util::abs_path
 
-=item npg_tracking::util::pipeline_config
-
 =item npg_tracking::Schema
-
-=item WTSI::DNAP::Warehouse::Schema
-
-=item WTSI::DNAP::Warehouse::Schema::Query::IseqFlowcell
 
 =back
 

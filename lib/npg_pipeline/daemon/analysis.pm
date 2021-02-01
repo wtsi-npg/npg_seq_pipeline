@@ -1,12 +1,9 @@
 package npg_pipeline::daemon::analysis;
 
 use Moose;
-use Carp;
+use namespace::autoclean;
 use Readonly;
 use Try::Tiny;
-use List::MoreUtils qw/uniq/;
-
-use npg_tracking::util::abs_path qw/abs_path/;
 
 extends qw{npg_pipeline::daemon};
 
@@ -72,15 +69,6 @@ sub _generate_command {
              $self->pipeline_script_name,
              $arg_refs->{'job_priority'},
              $arg_refs->{'rf_path'};
-
-  if (!$arg_refs->{'id'}) {
-    # Batch id is needed for MiSeq runs, including qc runs
-    $self->logcroak(q{Lims flowcell id is missing});
-  }
-  if ($arg_refs->{'qc_run'}) {
-    $cmd .= q{ --qc_run};
-    $self->info('QC run');
-  }
   $cmd .= q{ --id_flowcell_lims } . $arg_refs->{'id'};
 
   my $path = join $PATH_DELIM, $self->local_path(), $ENV{'PATH'};
@@ -88,8 +76,8 @@ sub _generate_command {
   return qq{export PATH=$path; $cmd};
 }
 
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
 
 __END__
@@ -113,12 +101,6 @@ from npg_pipeline::base.
 
 =head2 build_pipeline_script_name
 
-=head2 study_analysis_conf
-
-Returns a hash ref of study analysis configuration details.
-If the configuration file is not found or is not readable,
-an empty hash is returned.
-
 =head2 run
 
 Invokes the analysis pipeline script for runs with 'analysis pending'
@@ -134,15 +116,11 @@ status. Runs for which LIMS data are not available are skipped.
 
 =item Moose
 
+=item namespace::autoclean
+
 =item Try::Tiny
 
 =item Readonly
-
-=item Carp
-
-=item List::MoreUtils
-
-=item npg_tracking::util::abs_path
 
 =back
 

@@ -1,6 +1,7 @@
 package npg_pipeline::daemon::archival;
 
 use Moose;
+use namespace::autoclean;
 use Readonly;
 use Try::Tiny;
 
@@ -79,8 +80,6 @@ sub _instrument_model_is_novaseq {
   return $run->instrument_format->model eq q[NovaSeq];
 }
 
-no Moose;
-
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -121,6 +120,8 @@ Invokes the archival pipeline for runs with a status 'archival pending'.
 =over
 
 =item Moose
+
+=item namespace::autoclean
 
 =item Try::Tiny
 
