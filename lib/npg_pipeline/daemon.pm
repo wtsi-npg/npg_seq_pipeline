@@ -96,7 +96,7 @@ sub staging_host_match {
   if (defined $self->green_host) {
     if (!$folder_path_glob) {
       $self->logcroak(
-        q[Need folder_path_glob to decide whether the run folder ] .
+	q[Need folder_path_glob to decide whether the run folder ] .
         q[and the daemon host are co-located]);
     }
     $match =  $self->green_host ^ none { $folder_path_glob =~ m{/$_/}smx } @GREEN_STAGING;
