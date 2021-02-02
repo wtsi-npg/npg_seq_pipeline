@@ -14,6 +14,7 @@ use npg_tracking::util::abs_path qw/abs_path/;
 use npg_tracking::util::types;
 use st::api::lims;
 use npg::samplesheet;
+use WTSI::DNAP::Warehouse::Schema;
 
 with qw/
          npg_tracking::glossary::run
@@ -36,60 +37,15 @@ npg_pipeline::cache
                            cache_location => 'my_dir',
                           )->setup;
 
-  npg_pipeline::cache->new(id_run           => 78,
-                           id_flowcell_lims => '5260271901788',
-                           lims_driver_type => 'warehouse',
-                           set_env_vars     => 1,
-                           cache_location   => 'my_dir',
-                          )->setup;
-
-  npg_pipeline::cache->new(id_run           => 78,
-                           flowcell_barcode => 'HBF2DADXX',
-                           set_env_vars     => 1,
-                           cache_location   => 'my_dir',
-                          )->setup;
-
 =head1 SUBROUTINES/METHODS
 
 =head2 id_run
  
 Integer run id, required.
 
-=head2 flowcell_barcode
-
-Manufacturer flowcell barcode/id
-
 =head2 id_flowcell_lims
 
-LIMs specific flowcell id.
-
-=head2 lims_driver_type
- 
-Driver type to be used to build lims accessor,
-defaults to mlwarehouse.
-
-=cut
-
-has 'lims_driver_type'  => (isa        => 'Str',
-                            is         => 'ro',
-                            required   => 0,
-                            default    => sub { mlwarehouse_driver_name() },);
-
-=head2 wh_schema
- 
-DBIx schema class for old warehouse access.
-
-=cut
-
-has 'wh_schema'  => (isa        => 'npg_warehouse::Schema',
-                     is         => 'ro',
-                     required   => 0,
-                     lazy_build => 1,);
-sub _build_wh_schema {
-  require npg_warehouse::Schema;
-  require st::api::lims::warehouse;
-  return npg_warehouse::Schema->connect();
-}
+LIMs specific flowcell id, required.
 
 =head2 mlwh_schema
  
@@ -97,16 +53,14 @@ DBIx schema class for ml_warehouse access.
 
 =cut
 
-has q{mlwh_schema} => (
-                isa        => q{WTSI::DNAP::Warehouse::Schema},
-                is         => q{ro},
+has 'mlwh_schema' => (
+                isa        => 'WTSI::DNAP::Warehouse::Schema',
+                is         => 'ro',
                 required   => 0,
                 lazy_build => 1,);
 sub _build_mlwh_schema {
-  require WTSI::DNAP::Warehouse::Schema;
   return WTSI::DNAP::Warehouse::Schema->connect();
 }
-
 
 =head2 lims
  
@@ -121,51 +75,17 @@ has 'lims'       => (isa        => 'ArrayRef[st::api::lims]',
 sub _build_lims {
   my $self = shift;
 
-  my $clims;
-  my $driver_type = $self->lims_driver_type;
+  $self->id_flowcell_lims or
+    croak 'id_flowcell_lims (batch id) is required';
 
-  if ($driver_type eq $self->warehouse_driver_name) {
+  my $ref = {
+    driver_type      => 'ml_warehouse',
+    id_run           => $self->id_run,
+    mlwh_schema      => $self->mlwh_schema,
+    id_flowcell_lims => $self->id_flowcell_lims
+  };
 
-    if (!$self->id_flowcell_lims) {
-      croak "lims_id accessor should be defined for $driver_type driver";
-    }
-
-    my $position = 1; # MiSeq runs only
-    my $driver =  st::api::lims::warehouse->new(
-        npg_warehouse_schema => $self->wh_schema,
-        position             => $position,
-        tube_ean13_barcode   => $self->id_flowcell_lims );
-
-    my $lims = st::api::lims->new(
-        position    => $position,
-        driver      => $driver,
-        driver_type => $driver_type );
-    $clims = [$lims];
-
-  } elsif ($driver_type =~ /warehouse/smx ) {
-
-    if ($driver_type eq $self->mlwarehouse_driver_name &&
-        !($self->id_flowcell_lims || $self->flowcell_barcode)) {
-      croak 'Neither flowcell barcode nor lims flowcell id is known';
-    }
-
-    my $ref = {
-      driver_type      => $driver_type,
-      id_run           => $self->id_run,
-      mlwh_schema      => $self->mlwh_schema
-    };
-    for my $name (qw/id_flowcell_lims flowcell_barcode/) {
-      if ($self->$name) {
-        $ref->{$name} = $self->$name;
-      }
-    }
-    $clims = [st::api::lims->new($ref)->children];
-
-  } else {
-    croak "Unknown driver type $driver_type";
-  }
-
-  return $clims;
+  return [st::api::lims->new($ref)->children];
 }
 
 =head2 set_env_vars
@@ -248,18 +168,6 @@ An array of non-error messages, empty by default.
 has 'messages'  => (isa        => 'ArrayRef[Str]',
                     is         => 'ro',
                     default    => sub { [] },);
-
-=head2 warehouse_driver_name
-
-=head2 mlwarehouse_driver_name
-
-=cut
-sub warehouse_driver_name {
-  return 'warehouse';
-}
-sub mlwarehouse_driver_name {
-  return 'ml_warehouse';
-}
 
 =head2 setup
 
@@ -350,8 +258,8 @@ sub _add_message {
 __PACKAGE__->meta->make_immutable;
 
 1;
-__END__
 
+__END__
 
 =head1 DESCRIPTION
 
@@ -389,12 +297,6 @@ Creates or finds existing cache of lims and other metadata needed to run the pip
 
 =item st::api::lims
 
-=item st::api::lims::warehouse
-
-=item st::api::lims::ml_warehouse
-
-=item npg_warehouse::Schema
-
 =item WTSI::DNAP::Warehouse::Schema
 
 =item npg_tracking::glossary::run
@@ -415,7 +317,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016 Genome Research Ltd
+Copyright (C) 2014,2015,2016,2017,2018,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

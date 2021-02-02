@@ -231,13 +231,7 @@ subtest 'compute runfolder path' => sub {
   $row->update(
     {folder_path_glob => $temp . q[/sf33/ILorHSany_sf33/*/], folder_name => $name});
 
-<<<<<<< HEAD
   my $runner = $package->new(npg_tracking_schema => $schema);
-=======
-  my $runner = $package->new(
-               npg_tracking_schema => $schema,
-             );
->>>>>>> refactor daemon code as lots of functionality is no longer needed
   is( $runner->runfolder_path4run(1234), $rf, 'runfolder path is correct');
 };
 
