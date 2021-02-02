@@ -135,12 +135,17 @@ Invokes the archival pipeline for runs with a status 'archival pending'.
 
 =head1 AUTHOR
 
-Andy Brown
-Marina Gourtovaia
+=over
+
+=item Andy Brown
+
+=item Marina Gourtovaia
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2016,2017,2018,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

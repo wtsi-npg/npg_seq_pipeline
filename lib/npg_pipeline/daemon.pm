@@ -295,11 +295,15 @@ captured and printed to the log.
 
 =head1 AUTHOR
 
-Marina Gourtovaia
+=over
+
+=item Marina Gourtovaia
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Ltd.
+Copyright (C) 2016,2017,2018,2019,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
