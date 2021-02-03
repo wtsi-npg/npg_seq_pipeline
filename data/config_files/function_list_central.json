@@ -54,6 +54,16 @@
          {
             "relation" : "dependsOn",
             "source" : "stage2pp",
+            "target" : "archive_pp_data_to_irods"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "archive_pp_data_to_irods",
+            "target" : "update_ml_warehouse_1"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "stage2pp",
             "target" : "stage2App"
          },
          {
@@ -63,8 +73,18 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "qc_generic_artic",
+            "target" : "update_ml_warehouse_1"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "stage2App",
             "target" : "qc_generic_ampliconstats"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "qc_generic_ampliconstats",
+            "target" : "update_ml_warehouse_1"
          },
          {
             "relation" : "dependsOn",
@@ -379,6 +399,10 @@
          {
             "id" : "run_analysis_complete",
             "label" : "run_analysis_complete"
+         },
+         {
+            "id" : "archive_pp_data_to_irods",
+            "label" : "archive_pp_data_to_irods"
          },
          {
             "id" : "archive_to_irods_samplesheet",
