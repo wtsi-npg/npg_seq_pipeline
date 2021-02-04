@@ -128,7 +128,7 @@ sub update_majora{
   my$rsu=$mlwh_schema->resultset(q(Sample))->search({q(iseq_heron_product_metric.climb_upload)=>{q(-not)=>undef}},{join=>{iseq_flowcells=>{iseq_product_metrics=>q(iseq_heron_product_metric)}}});
   my%l2bs;my%l2pp;my%l2lsp; my%r2l;
   while (my$r=$rs->next){
-      my$ifc=$r->iseq_flowcell ;# or next;
+      my$ifc=$r->iseq_flowcell or next;
       my$bs=$ifc->sample->supplier_name;
       my$lb=$ifc->id_pool_lims;
       # lookup by library and sample name - skip if no climb_uploads.
