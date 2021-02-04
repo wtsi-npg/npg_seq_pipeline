@@ -1,6 +1,12 @@
 LIST OF CHANGES
 ---------------
 
+release 58.3.0
+ - bugfix in the code for interaction with the Majora/COG-UK API:
+   cope with no iseq_flowcell entry for resultset
+ - function graph for teh analysis pipeline - add early archival of
+   the artic pp output to iRODS
+
 release 58.2.0
  - enhancement of code for interaction with the Majora/COG-UK API
  - added analysis for Duplex-Seq libraries
