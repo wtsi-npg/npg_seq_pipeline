@@ -1,20 +1,21 @@
 #!/usr/bin/env perl
-use Test::More tests => 24;
+use Moose::Util::TypeConstraints;
+use Test::More tests => 28;
 use strict;
 use warnings;
 use JSON;
 use DateTime;
 use Getopt::Long;
 use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use t::dbic_util;
+use Test::Mock::LWP::UserAgent;
+use Test::Mock::HTTP::Response;
+use Test::Mock::HTTP::Request;
 use Log::Log4perl qw(:easy);
-use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" ); 
-use_ok('npg_pipeline::product::heron::majora', qw/ get_table_info_for_id_run
-                                             get_majora_data
-                                             json_to_structure
-                                             update_metadata
-                                             get_id_runs_missing_data
-                                             get_id_runs_missing_data_in_last_days/);
+
+use_ok('npg_pipeline::product::heron::majora');
+
 #getting simplified json output from file
 my $short_json_string;
 my $path = 't/data/majora/simplified_majora_output.json';
@@ -28,31 +29,57 @@ close($fh);
 #example run with test schema
 my $id_run = 35340;
 
+#Adding test schemas
 my $npg_tracking_schema=t::dbic_util->new()->test_schema('t/data/dbic_fixtures/');
 my $schema_for_fn=t::dbic_util->new()->test_schema_mlwh('t/data/fixtures/mlwh-majora');
 
-my $init = {
-  _npg_tracking_schema       => $npg_tracking_schema,
-  _mlwh_schema               => $schema_for_fn
-};
+## adding MAJORA_DOMAIN environment variable
+$ENV{MAJORA_DOMAIN} = 'https://covid.majora.ironowl.it/';
+$ENV{MAJORA_USER} = 'DUMMYUSER';
+$ENV{MAJORA_TOKEN} = 'DUMMYTOKEN';
 
+#JSON returned when no folder name is found
+#{"errors": 0, "warnings": 1, "messages": [], "tasks": [], "new": [],"updated": [], "ignored": ['2021FolderNameNotFound'],"request": "1a89b394-d0a4-48c9-84ed-0060fb425f5c", "get": {}, "success": true});
+my $mock_json_response = qq({"errors": 0, "warnings": 1, "messages": [], "tasks": [], "new": [],"updated": [], "ignored": ["2021FolderNameNotFound"],"request": "1a89b394-d0a4-48c9-84ed-0060fb425f5c", "get": {}, "success": true});
+
+#setting Mock response content
+$Mock_resp->mock(content => sub {$mock_json_response});
+$Mock_resp->mock(decoded_content =>sub {$mock_json_response});
+$Mock_resp->mock( code=> sub { 200 } );
+
+my $init = {
+  _npg_tracking_schema    => $npg_tracking_schema,
+  _mlwh_schema            => $schema_for_fn,
+  user_agent              => $Mock_ua,
+};
 my $majora = npg_pipeline::product::heron::majora->new($init);
 
-my ($fn,$rs) = $majora->get_table_info_for_id_run($id_run);
 
+my ($fn,$rs) = $majora->get_table_info_for_id_run($id_run);
 ok($fn eq "201102_A00950_0194_AHTJJKDRXX", "folder name is correct");
 is($rs, 20, "correct number of rows in result set");
 
 my $json_string_no_fn = $majora->get_majora_data('2021FolderNameNotFound');
-my $json_string_no_fn_decoded = decode_json($json_string_no_fn);
-#json when run isnt found
-#{"errors": 0, "warnings": 1, "messages": [], "tasks": [], "new": [],"updated": [], "ignored": ['2021FolderNameNotFound'],"request": "1a89b394-d0a4-48c9-84ed-0060fb425f5c", "get": {}, "success": true});
+my $Mock_args = $Mock_request->new_args;
 
-is ($json_string_no_fn_decoded->{errors}, 0, 'error returned in json is 0');
-is ($json_string_no_fn_decoded->{warnings},1,'warnings returned in json is 1');
+#expected args to pass
+my $request = 'HTTP::Request';
+my $method = 'POST';
+my $url = '/api/v2/process/sequencing/get/';
+my $encoded_data = {"run_name"=>["2021FolderNameNotFound"],"token"=>"DUMMYTOKEN","username"=>"DUMMYUSER"};
+my $data_to_encode = {%{$encoded_data}};
 
+my $header = [q(Content-Type) => q(application/json; charset=UTF-8)];
 
-is_deeply($json_string_no_fn_decoded->{ignored},[('2021FolderNameNotFound')], 'foldername is ignored');
+# checking args passed are correct
+is ($Mock_args->[0],$request, 'First argument is HTTP::Request');
+is ($Mock_args->[1],$method, 'method is POST');
+is ($Mock_args->[2],$ENV{MAJORA_DOMAIN}.$url, 'URL is correct');
+is_deeply($Mock_args->[3],$header, 'Header is correct');
+my $Mock_decoded_data = decode_json($Mock_args->[4]); 
+is_deeply($Mock_decoded_data->{run_name},$encoded_data->{run_name}, 'run_name is passed correctly');
+is($Mock_decoded_data->{username},$encoded_data->{username}, 'username is passed correctly');
+is($Mock_decoded_data->{token},$encoded_data->{token}, 'token is passed correctly');
 
 my %ds_no_fn = $majora->json_to_structure($json_string_no_fn,'2021FolderNameNotFound');
 my $ds_ref_no_fn = \%ds_no_fn;

@@ -4,9 +4,9 @@ use autodie;
 use strict;
 use warnings;
 use Moose;
+use Moose::Util::TypeConstraints;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
-use Carp;
 use JSON;
 use English qw( -no_match_vars );
 use DateTime;
@@ -86,6 +86,12 @@ has 'logger' => (
     lazy_build => 1,
 );
 
+has 'user_agent' => (
+    is         => q{rw},
+    builder    => q{_build_user_agent},
+    lazy_build => 1,
+);
+
 
 sub _build__npg_tracking_schema {
   return npg_tracking::Schema->connect();
@@ -93,6 +99,10 @@ sub _build__npg_tracking_schema {
 
 sub _build__mlwh_schema {
   return WTSI::DNAP::Warehouse::Schema->connect();
+}
+
+sub _build_user_agent {
+  return LWP::UserAgent->new();
 }
 
 sub _build_logger {
@@ -137,7 +147,7 @@ sub run {
       %majora_update_runs=(map{$_ => 1}$self->get_id_runs_missing_data_in_last_days([undef]));
     }
 
-  }elsif((@{$self->id_runs}!= 0) and ($self->days or ($self->days eq '0'))){
+  }elsif((@{$self->id_runs}!= 0) and (($self->days) or ($self->days eq '0'))){
     $self->logger->error_die('Cannot set both id_runs and days');
   };
 
@@ -220,7 +230,7 @@ sub update_metadata {
     if ($libdata) {
       my $sname = $fc->sample->supplier_name;
       if (! $sname) {next};
-      $sample_data = $libdata->{$fc->sample->supplier_name};
+      $sample_data = $libdata->{$sname};
       if ($sample_data) {
         $sample_meta = defined $sample_data->{submission_org} ?1:0;
         $self->logger->info("setting $sample_meta for ". $fc->sample->supplier_name);
@@ -288,7 +298,7 @@ sub update_majora{
   my$rsu=$self->_mlwh_schema->resultset(q(Sample))->search({q(iseq_heron_product_metric.climb_upload)=>{q(-not)=>undef}},{join=>{iseq_flowcells=>{iseq_product_metrics=>q(iseq_heron_product_metric)}}});
   my%l2bs;my%l2pp;my%l2lsp; my%r2l;
   while (my$r=$rs->next){
-      my$ifc=$r->iseq_flowcell ;# or next;
+      my$ifc=$r->iseq_flowcell or next;
       my$bs=$ifc->sample->supplier_name;
       my$lb=$ifc->id_pool_lims;
       # lookup by library and sample name - skip if no climb_uploads.
@@ -339,9 +349,7 @@ sub update_majora{
   # adding sequencing run
   foreach my$rn(sort keys%r2l){
     foreach my$lb(sort keys %{$r2l{$rn}}){
-
       my $url = q(api/v2/process/sequencing/add/);
-      #TODO to get instrument type properly - use ISeqRunLaneMetric
       my $instrument_model= ($rn=~m{_MS}smx?q(MiSeq):q(NovaSeq));
       my $data_to_encode = {
                             library_name=>$lb,
@@ -361,6 +369,9 @@ sub update_majora{
 sub _use_majora_api{
   my ($self,$method,$url_end,$data_to_encode) = @_;
   $data_to_encode = {%{$data_to_encode}};
+  if (!defined $ENV{MAJORA_DOMAIN}){
+    $self->logger->error('MAJORA_DOMAIN environment variable not set');
+  }
   my $url = $ENV{MAJORA_DOMAIN}.$url_end;
   my $header;
   if (my $token = $ENV{MAJORA_OAUTH_TOKEN}){
@@ -372,9 +383,11 @@ sub _use_majora_api{
   }
   $data_to_encode->{username} = $ENV{MAJORA_USER};
   my $encoded_data = encode_json($data_to_encode);
-  my $ua = LWP::UserAgent->new();
+  my $ua =  $self->user_agent;
+
   my $r = HTTP::Request->new($method, $url, $header, $encoded_data);
-  my$res= $ua->request($r);
+  my $res = $ua->request($r);
+
   if ($res->is_error){
     $self->logger->error_die(q(Majora API returned a ).($res->code).qq( code. Content:\n).($res->decoded_content()).qq(\n));
   }
@@ -493,3 +506,4 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 =cut
+#!/usr/bin/env perl
