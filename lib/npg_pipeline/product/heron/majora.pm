@@ -68,18 +68,21 @@ sub update_metadata {
   my %data_structure = %{$ds_ref};
   while (my $row=$rs_iseq->next) {
     my $fc = $row->iseq_flowcell;
-    $fc or next;
+    $fc or next; # no LIMS data
+    my $sn = $fc->sample->supplier_name;
+    $sn or next; # no Heron/COG-UK relevant id
+    my $hm = $row->iseq_heron_product_metric;
+    $hm or next; # no heron table created (yet?)
     my $libdata = $data_structure{$fc->id_pool_lims};
-    my $sample_data;
     my $sample_meta;
     if ($libdata) {
-      $sample_data = $libdata->{$fc->sample->supplier_name};
+      my $sample_data = $libdata->{$sn};
       if ($sample_data) {
         $sample_meta = defined $sample_data->{submission_org} ?1:0;
-        #carp "setting $sample_meta for ". $fc->sample->supplier_name; #TODO use a logger
+        #carp "setting $sample_meta for $sn"; #TODO use a logger
       }
     }
-    $row->iseq_heron_product_metric->update({cog_sample_meta=>$sample_meta});
+    $hm->update({cog_sample_meta=>$sample_meta});
   };
   return;
 }
