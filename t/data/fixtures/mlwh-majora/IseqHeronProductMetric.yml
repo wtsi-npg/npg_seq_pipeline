@@ -124,8 +124,8 @@
   path_root: ~
   pct_covered_bases: 96.21
   pct_n_bases: 3.79
-  pp_name: ncov2019-artic-nf
-  pp_version: v0.10.0
+  pp_name: Alternate-pp-name
+  pp_version: v12.34.56
   supplier_sample_name: MILK-AB8BFD
 - artic_qc_outcome: TRUE
   climb_upload: 2020-11-04 11:36:34
@@ -156,8 +156,8 @@
   path_root: ~
   pct_covered_bases: 99.6
   pct_n_bases: 0.4
-  pp_name: ncov2019-artic-nf
-  pp_version: v0.10.0
+  pp_name: Alternate-pp-name
+  pp_version: v12.34.56
   supplier_sample_name: MILK-AB8C54
 - artic_qc_outcome: TRUE
   climb_upload: 2020-11-06 10:49:31
@@ -188,8 +188,8 @@
   path_root: 201103_A00968_0145_AHTJMFDRXX/ALDP-A669A9/35348_2#2
   pct_covered_bases: 99.6
   pct_n_bases: 0.4
-  pp_name: ncov2019-artic-nf
-  pp_version: v0.10.0
+  pp_name: Alternate-pp-name
+  pp_version: v12.34.56
   supplier_sample_name: ALDP-A669A9
 - artic_qc_outcome: TRUE
   climb_upload: ~
@@ -204,8 +204,8 @@
   path_root: ~
   pct_covered_bases: 99.6
   pct_n_bases: 0.4
-  pp_name: ncov2019-artic-nf
-  pp_version: v0.10.0
+  pp_name: Alternate-pp-name
+  pp_version: v12.34.56
   supplier_sample_name: CAMC-AB0199
 - artic_qc_outcome: TRUE
   climb_upload: ~
@@ -220,8 +220,8 @@
   path_root: ~
   pct_covered_bases: 99.6
   pct_n_bases: 0.4
-  pp_name: ncov2019-artic-nf
-  pp_version: v0.10.0
+  pp_name: Alternate-pp-name
+  pp_version: v12.34.56
   supplier_sample_name: CAMC-AB018A
 - artic_qc_outcome: TRUE
   climb_upload: 2020-11-06 11:59:32
@@ -476,8 +476,8 @@
   path_root: 201103_A00968_0145_AHTJMFDRXX/ALDP-A668BB/35348_2#7
   pct_covered_bases: 99.6
   pct_n_bases: 0.4
-  pp_name: ncov2019-artic-nf
-  pp_version: v0.10.0
+  pp_name: Alternate-pp-name
+  pp_version: v12.34.56
   supplier_sample_name: ALDP-A668BB
 - artic_qc_outcome: TRUE
   climb_upload: 2020-11-06 10:51:53
@@ -700,8 +700,8 @@
   path_root: 201103_A00968_0145_AHTJMFDRXX/ALDP-A672DA/35348_2#8
   pct_covered_bases: 99.58
   pct_n_bases: 0.4
-  pp_name: ncov2019-artic-nf
-  pp_version: v0.10.0
+  pp_name: Alternate-pp-name2
+  pp_version: v99.99.99
   supplier_sample_name: ALDP-A672DA
 - artic_qc_outcome: TRUE
   climb_upload: 2020-11-04 11:31:35
@@ -1100,8 +1100,8 @@
   path_root: 201103_A00968_0145_AHTJMFDRXX/ALDP-A67216/35348_2#6
   pct_covered_bases: 99.6
   pct_n_bases: 0.4
-  pp_name: ncov2019-artic-nf
-  pp_version: v0.10.0
+  pp_name: Alternate-pp-name2
+  pp_version: v99.99.99
   supplier_sample_name: ALDP-A67216
 - artic_qc_outcome: TRUE
   climb_upload: 2020-11-06 11:59:44
@@ -1164,8 +1164,8 @@
   path_root: 201103_A00968_0145_AHTJMFDRXX/ALDP-A668AC/35348_2#5
   pct_covered_bases: 99.6
   pct_n_bases: 0.4
-  pp_name: ncov2019-artic-nf
-  pp_version: v0.10.0
+  pp_name: Alternate-pp-name2
+  pp_version: v99.99.99
   supplier_sample_name: ALDP-A668AC
 - artic_qc_outcome: TRUE
   climb_upload: 2020-11-04 11:30:25
@@ -1196,8 +1196,8 @@
   path_root: 201103_A00968_0145_AHTJMFDRXX/ALDP-A668E8/35348_2#9
   pct_covered_bases: 99.6
   pct_n_bases: 0.4
-  pp_name: ncov2019-artic-nf
-  pp_version: v0.10.0
+  pp_name: Alternate-pp-name2
+  pp_version: v99.99.99
   supplier_sample_name: ALDP-A668E8
 - artic_qc_outcome: TRUE
   climb_upload: 2020-11-06 12:13:08
