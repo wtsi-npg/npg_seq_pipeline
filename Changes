@@ -1,6 +1,14 @@
 LIST OF CHANGES
 ---------------
 
+ - Code for the archival and analysis daemons refactored:
+     1. Removed provisions for the access to configuration files
+        which have never been used.
+     2. The analysis daemon is no longer responsible for marking
+        runs as QC runs.
+     3. Removed access to ml warehouse for retrieval of LIMs data
+        since this information is no longer required.
+
 release 58.3.0
  - bugfix in the code for interaction with the Majora/COG-UK API:
    cope with no iseq_flowcell entry for resultset
