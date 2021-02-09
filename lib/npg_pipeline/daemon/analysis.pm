@@ -36,6 +36,13 @@ sub run {
   return;
 }
 
+sub _get_batch_id {
+  my ($self, $run) = @_;
+  my $batch_id = $run->batch_id();
+  $batch_id or $self->logcroak(q{No batch id});
+  return $batch_id;
+}
+
 sub _process_one_run {
   my ($self, $run) = @_;
 
@@ -46,30 +53,32 @@ sub _process_one_run {
     return;
   }
 
-  my $arg_refs = $self->check_lims_link($run);
-  $arg_refs->{'script'} = $self->pipeline_script_name;
+  my $arg_refs = {
+    batch_id     => $self->_get_batch_id($run),
+    rf_path      => $self->runfolder_path4run($id_run),
+    job_priority => $run->run_lanes->count <= 2 ?
+                    $RAPID_RUN_JOB_PRIORITY : $DEFAULT_JOB_PRIORITY
+  };
 
-  $arg_refs->{'job_priority'} = $run->run_lanes->count <= 2 ?
-    $RAPID_RUN_JOB_PRIORITY : $DEFAULT_JOB_PRIORITY;
   my $inherited_priority = $run->priority;
   if ($inherited_priority > 0) { #not sure we curate what we get from LIMs
     $arg_refs->{'job_priority'} += $inherited_priority;
   }
-  $arg_refs->{'rf_path'}  = $self->runfolder_path4run($id_run);
 
-  $self->run_command( $id_run, $self->_generate_command( $arg_refs ));
+  $self->run_command($id_run, $self->_generate_command($arg_refs));
 
   return;
 }
 
 sub _generate_command {
-  my ( $self, $arg_refs ) = @_;
+  my ($self, $arg_refs) = @_;
 
-  my $cmd = sprintf '%s --verbose --job_priority %i --runfolder_path %s',
+  my $cmd = sprintf
+    '%s --verbose --job_priority %i --runfolder_path %s --id_flowcell_lims %s',
              $self->pipeline_script_name,
              $arg_refs->{'job_priority'},
-             $arg_refs->{'rf_path'};
-  $cmd .= q{ --id_flowcell_lims } . $arg_refs->{'id'};
+             $arg_refs->{'rf_path'},
+             $arg_refs->{'batch_id'};
 
   my $path = join $PATH_DELIM, $self->local_path(), $ENV{'PATH'};
 

@@ -5,7 +5,7 @@ use Moose;
 use namespace::autoclean;
 use MooseX::StrictConstructor;
 use English qw/-no_match_vars/;
-use List::MoreUtils  qw/none/;
+use List::MoreUtils qw/none/;
 use Readonly;
 use Try::Tiny;
 
@@ -24,7 +24,7 @@ Readonly::Scalar my $GREEN_DATACENTRE  => q[green];
 Readonly::Array  my @GREEN_STAGING     =>
    qw(sf18 sf19 sf20 sf21 sf22 sf23 sf24 sf25 sf26 sf27 sf28 sf29 sf30 sf31 sf46 sf47 sf49 sf50 sf51);
 
-Readonly::Scalar my $SLEEPY_TIME  => 900;
+Readonly::Scalar my $SLEEPY_TIME => 900;
 
 has 'pipeline_script_name' => (
   isa        => q{Str},
@@ -96,22 +96,13 @@ sub staging_host_match {
   if (defined $self->green_host) {
     if (!$folder_path_glob) {
       $self->logcroak(
-	q[Need folder_path_glob to decide whether the run folder ] .
+        q[Need folder_path_glob to decide whether the run folder ] .
         q[and the daemon host are co-located]);
     }
     $match =  $self->green_host ^ none { $folder_path_glob =~ m{/$_/}smx } @GREEN_STAGING;
   }
 
   return $match;
-}
-
-sub check_lims_link {
-  my ($self, $run) = @_;
-
-  my $batch_id = $run->batch_id();
-  $batch_id or $self->logcroak(q{No batch id});
-
-  return {id => $batch_id};
 }
 
 sub run_command {
@@ -230,8 +221,6 @@ case of error.
 =head2 staging_host_match
 
 =head2 green_host
-
-=head2 check_lims_link
 
 =head2 local_path
 

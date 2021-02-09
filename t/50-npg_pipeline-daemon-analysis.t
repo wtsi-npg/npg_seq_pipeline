@@ -72,7 +72,7 @@ subtest 'staging host matching' => sub {
   like($runner->_generate_command( {
     rf_path      => $rf_path,
     job_priority => 50,
-    id           => 1480,
+    batch_id     => 1480,
   } ), qr/$command_start $rf_path/, q{generated command is correct});
 
   ok($runner->green_host,'running on a host in a green datacentre');
@@ -108,7 +108,7 @@ subtest 'staging host matching' => sub {
   like($runner->_generate_command( {
     rf_path      => $rf_path,
     job_priority => 50,
-    id           => 56,
+    batch_id     => 56,
   }), qr/$command_start $rf_path --id_flowcell_lims 56/,
     q{generated command is correct});
   ok(!$runner->green_host, 'host is not in green datacentre');
@@ -130,7 +130,7 @@ package test_analysis_anotherrunner;
 use Moose;
 use Carp;
 extends 'npg_pipeline::daemon::analysis';
-sub check_lims_link{ croak 'No LIMs link'; }
+sub _get_batch_id{ croak 'No LIMs link'; }
 sub runfolder_path4run { return '/some/path'; }
 
 ########test class definition end########
@@ -157,12 +157,11 @@ subtest 'retrieve lims data' => sub {
   my $runner = $package->new(npg_tracking_schema => $schema);
 
   $test_run->update({'batch_id' => 0});
-  throws_ok {$runner->check_lims_link($test_run)}
+  throws_ok {$runner->_get_batch_id($test_run)}
     qr/No batch id/, 'no batch id - error';
 
   $test_run->update({'batch_id' => 567891234});
-  my $lims_data = $runner->check_lims_link($test_run);
-  is ($lims_data->{'id'}, '567891234', 'lims id');
+  is ($runner->_get_batch_id($test_run), '567891234', 'batch id');
 };
 
 subtest 'generate command' => sub {
@@ -173,15 +172,15 @@ subtest 'generate command' => sub {
                pipeline_script_name => '/bin/true',
                npg_tracking_schema  => $schema,
   );
-  my $lims_data = $runner->check_lims_link($test_run);
-  $lims_data->{'job_priority'} = 4;
-  $lims_data->{'rf_path'} = 't';
+  my $data = {batch_id => $runner->_get_batch_id($test_run)};
+  $data->{'job_priority'} = 4;
+  $data->{'rf_path'} = 't';
   my $original_path = $ENV{'PATH'};
   my $perl_bin = abs_path($EXECUTABLE_NAME);
   $perl_bin =~ s/\/perl\Z//smx;
   my $path = join q[:], "${current_dir}/t", $perl_bin, $original_path;
   my $command = q[/bin/true --verbose --job_priority 4 --runfolder_path t --id_flowcell_lims 55];
-  is($runner->_generate_command($lims_data),
+  is($runner->_generate_command($data),
     qq[export PATH=${path}; $command], 'command');
 };
 
@@ -232,9 +231,7 @@ subtest 'compute runfolder path' => sub {
   $row->update(
     {folder_path_glob => $temp . q[/sf33/ILorHSany_sf33/*/], folder_name => $name});
 
-  my $runner = $package->new(
-               npg_tracking_schema => $schema,
-             );
+  my $runner = $package->new(npg_tracking_schema => $schema);
   is( $runner->runfolder_path4run(1234), $rf, 'runfolder path is correct');
 };
 

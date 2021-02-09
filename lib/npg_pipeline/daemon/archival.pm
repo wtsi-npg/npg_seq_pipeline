@@ -35,7 +35,6 @@ sub run {
       } else {
         if ( $self->staging_host_match($run->folder_path_glob) &&
              (!$self->_instrument_model_is_novaseq($run) || $self->_can_start_nv_archival()) ) {
-          $self->check_lims_link($run);
           if ($self->run_command($id_run, $self->_generate_command($id_run))) {
             $self->info();
             $self->info(qq{Submitted run $id_run for archival});
@@ -108,8 +107,6 @@ from npg_pipeline::base.
 Invokes the archival pipeline for runs with a status 'archival pending'.
 
 =head2 build_pipeline_script_name
-
-=head2 sleep_time_between_runs
 
 =head1 DIAGNOSTICS
 
