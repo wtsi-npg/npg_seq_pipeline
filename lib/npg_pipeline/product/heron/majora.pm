@@ -223,20 +223,21 @@ sub update_metadata {
   my %data_structure = %{$ds_ref};
   while (my $row=$rs_iseq->next) {
     my $fc = $row->iseq_flowcell;
-    $fc or next;
+    $fc or next; #no LIMS data
+    my $sn = $fc->sample->supplier_name;
+    $sn or next;# no Heron/COG-UK relevant id
+    my $hm = $row->iseq_heron_product_metric;
+    $hm or next; # no heron table created (yet?)
     my $libdata = $data_structure{$fc->id_pool_lims};
-    my $sample_data;
     my $sample_meta;
     if ($libdata) {
-      my $sname = $fc->sample->supplier_name;
-      if (! $sname) {next};
-      $sample_data = $libdata->{$sname};
+      my $sample_data = $libdata->{$sn};
       if ($sample_data) {
         $sample_meta = defined $sample_data->{submission_org} ?1:0;
-        $self->logger->info("setting $sample_meta for ". $fc->sample->supplier_name);
+        $self->logger->info("setting $sample_meta for $sn");
       }
     }
-    $row->iseq_heron_product_metric->update({cog_sample_meta=>$sample_meta});
+    $hm->update({cog_sample_meta=>$sample_meta});
   };
   return;
 }
@@ -356,7 +357,7 @@ sub update_majora{
                             runs=> [{
                                      run_name=>$rn,
                                      instrument_make=>'ILLUMINA',
-                                     instrument_model=>$instrument_model
+                                     instrument_model=>$instrument_model,
                                    }]
                            };
       $self->logger->debug("Sending call to update Majora for library $lb");
