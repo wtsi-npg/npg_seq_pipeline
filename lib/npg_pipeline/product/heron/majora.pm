@@ -1,21 +1,15 @@
-#!/usr/bin/env perl
 package npg_pipeline::product::heron::majora;
+
 use autodie;
-use strict;
-use warnings;
 use Moose;
-use Moose::Util::TypeConstraints;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
-use JSON;
-use English qw( -no_match_vars );
 use DateTime;
-use Readonly;
-use Exporter qw(import);
 use HTTP::Request;
-use JSON::MaybeXS qw(encode_json);
+use JSON::XS;
 use LWP::UserAgent;
 use Log::Log4perl qw(:easy);
+
 use npg_tracking::Schema;
 use WTSI::DNAP::Warehouse::Schema;
 
@@ -23,18 +17,9 @@ with qw{MooseX::Getopt};
 
 our $VERSION = '0';
 
-our @EXPORT_OK = qw/  get_table_info_for_id_run
-                      get_majora_data
-                      json_to_structure
-                      update_metadata
-                      get_id_runs_missing_data
-                      get_id_runs_missing_data_in_last_days
-                      update_majora/;
-
 has '_npg_tracking_schema'    => (
     isa        => q{DBIx::Class::Schema},
     is         => q{ro},
-    builder    => q{_build__npg_tracking_schema},
     required   => 1,
     lazy_build => 1,
 );
@@ -42,7 +27,6 @@ has '_npg_tracking_schema'    => (
 has '_mlwh_schema'    => (
     isa        => q{DBIx::Class::Schema},
     is         => q{ro},
-    builder    => q{_build__mlwh_schema},
     required   => 1,
     lazy_build => 1,
 );
@@ -51,47 +35,43 @@ has 'verbose'  => (
     isa     => q{Bool},
     is      => q{ro},
     default => 1,
-    lazy    => 1,
 );
 
 has 'dry_run'  => (
     isa     => q{Bool},
     is      => q{ro},
     default => 0,
-    lazy    => 1,
 );
 
 has 'days' => (
-    isa    => q(Int),
-    is     => q(ro),
+    isa     => q{Int},
+    is      => q{ro},
 );
 
 has 'update'  => (
     isa     => q{Bool},
     is      => q{ro},
-    default => q{0},
-    lazy    => 1,
+    default => 0,
 );
 
 has 'id_runs' => (
     isa     => q{ArrayRef[Int]},
-    is      => q{rw},
+    is      => q{ro},
     default => sub {[]},
 );
 
 has 'logger' => (
+    metaclass  => q{NoGetopt},
     isa        => q{Log::Log4perl::Logger},
-    is         => q{rw},
-    builder    => q{_build_logger},
+    is         => q{ro},
     lazy_build => 1,
 );
 
 has 'user_agent' => (
-    is         => q{rw},
-    builder    => q{_build_user_agent},
+    metaclass  => q{NoGetopt},
+    is         => q{ro},
     lazy_build => 1,
 );
-
 
 sub _build__npg_tracking_schema {
   return npg_tracking::Schema->connect();
@@ -115,7 +95,7 @@ sub _build_logger {
 
 sub run {
   my $self = shift;
-  my %majora_update_runs= $self->update? (map{$_ => 1} @{$self->id_runs}) : ();
+  my %majora_update_runs= $self->update ? (map {$_ => 1} @{$self->id_runs}) : ();
 
   if (($self->update) and ($self->dry_run)){
     $self->logger->error_die('both --update and --dry_run are set');
@@ -197,7 +177,7 @@ sub get_majora_data {
 
 sub json_to_structure {
   my ($self,$json_string, $fn) = @_;
-  my $data = from_json($json_string);
+  my $data = decode_json($json_string);
   if (@{$data->{ignored}} != 0) {
     $self->logger->error('response from Majora ignored a folder : ' . $json_string);
   }
@@ -398,15 +378,16 @@ sub _use_majora_api{
 __PACKAGE__->meta->make_immutable;
 
 1;
-__END__
 
 =head1 NAME
 
-npg_heron::majora
+npg_pipeline::product::heron::majora
 
 =head1 SYNOPSIS
 
-Perl script used to update Majora data and/or id_run cog_sample_meta data.
+=head1 DESCRIPTION
+
+Updates Majora data and/or id_run cog_sample_meta data.
 
 =head1 SUBROUTINES/METHODS
 
@@ -471,40 +452,66 @@ id_runs will be fetched.
 
 Takes id_run as argument, to then call api to update Majora.
 
-=head1 DESCRIPTION
- 
-Module for updating Majora with id_run metadata.
-
 =head1 DIAGNOSTICS
+
 =head1 CONFIGURATION AND ENVIRONMENT
+
 =head1 DEPENDENCIES
-=head1 USAGE
 
-npg_majora_for_mlwh [--verbose][--dry_run][--update][--id_run <id_run>][--days <days>]
-
-=head1 REQUIRED ARGUMENTS
-=head1 OPTIONS
-=head1 EXIT STATUS
-=head1 CONFIGURATION
 =over
-=item JSON
+
+=item autodie
+
+=item Moose
+
+=item MooseX::StrictConstructor
+
+=item namespace::autoclean
+
+=item DateTime
+
+=item HTTP::Request
+
+=item JSON::XS
+
+=item LWP::UserAgent
+
+=item Log::Log4perl
+
+=item MooseX::Getopt
+
+=item npg_tracking::Schema
+
+=item WTSI::DNAP::Warehouse::Schema
+
 =back
+
 =head1 INCOMPATIBILITIES
+
 =head1 BUGS AND LIMITATIONS
+
 =head1 AUTHOR
+
 Fred Dodd
+
 =head1 LICENSE AND COPYRIGHT
-Copyright (C) 2020 GRL
+
+Copyright (C) 2020,2021 Genome Reserach Ltd.
+
 This file is part of NPG.
+
 NPG is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
+
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 =cut
-#!/usr/bin/env perl
+
