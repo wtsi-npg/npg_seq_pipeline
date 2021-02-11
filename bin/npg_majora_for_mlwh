@@ -2,24 +2,11 @@
 
 use strict;
 use warnings;
-use Carp;
-use Getopt::Long;
 use FindBin qw($Bin);
 use lib (-d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5":"$Bin/../lib");
-use npg_pipeline::product::heron::majora qw/ get_table_info_for_id_run
-                                              get_majora_data
-                                              json_to_structure
-                                              update_metadata
-                                              get_id_runs_missing_data
-                                              get_id_runs_missing_data_in_last_days
-                                              update_majora/;
-use npg_tracking::Schema;
-use WTSI::DNAP::Warehouse::Schema;
+use npg_pipeline::product::heron::majora;
 
 our $VERSION = '0';
-
-my $schema =npg_tracking::Schema->connect();
-my $mlwh_schema=WTSI::DNAP::Warehouse::Schema->connect();
 
 my $majora = npg_pipeline::product::heron::majora->new_with_options();
 $majora->run();
@@ -50,7 +37,7 @@ Options:
   --dry_run
   --verbose
   --days
-  --id_run
+  --id_runs
   --update
 
 =head1 OPTIONS
@@ -83,10 +70,6 @@ Options:
 
 =item warnings
 
-=item Carp
-
-=item Getopt::Long
-
 =item FindBin
 
 =item Log::Log4perl
@@ -105,7 +88,7 @@ Fred Dodd
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2020 Genome Research Ltd.
+Copyright (C) 2020,2021 Genome Research Ltd.
 
 This file is part of NPG.
 
