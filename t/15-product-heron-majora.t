@@ -1,13 +1,7 @@
-#!/usr/bin/env perl
-use Moose::Util::TypeConstraints;
-use Test::More tests => 28;
 use strict;
 use warnings;
+use Test::More tests => 28;
 use JSON;
-use DateTime;
-use Getopt::Long;
-use FindBin qw($Bin);
-use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use t::dbic_util;
 use Test::Mock::LWP::UserAgent;
 use Test::Mock::HTTP::Response;
@@ -234,5 +228,4 @@ my @ids_climb_undef_cog_set = $majora->get_id_runs_missing_data();
 
 is_deeply(\@ids_climb_undef_cog_set,\@empty, "no id_runs returned when climb_upload is undef and cog_sample_meta is 1");
 
-done_testing();
-
+1;
