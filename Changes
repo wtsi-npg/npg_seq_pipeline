@@ -11,6 +11,13 @@ LIST OF CHANGES
         runs as QC runs.
      3. Removed access to ml warehouse for retrieval of LIMs data
         since this information is no longer required.
+ - The qc_run pipeline option is removed, it was supporting a way
+   of setting up LIMs data for MiSeq runs which is no longer used.
+ - The lims_driver_type pipeline option is removed, it has never
+   been used, the pipeline will use the ml_warehouse driver by default
+   when creating a samplesheet. Internally this option is available
+   in some classes of the pipeline code base to indicate what driver
+   should be used by the jobs, this functionality remains intact.
  - A simpler implementation of wr's limit groups to allow for setting
    a persistent limit globally and for using limit groups that map
    directly to accessors of the function definition object.
