@@ -54,7 +54,7 @@
          {
             "relation" : "dependsOn",
             "source" : "archive_pp_data_to_irods",
-            "target" : "update_ml_warehouse_3"
+            "target" : "update_ml_warehouse_2"
          },
          {
             "relation" : "dependsOn",
@@ -215,21 +215,21 @@
          {
             "relation" : "dependsOn",
             "source" : "qc_review",
-            "target" : "update_ml_warehouse_3"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse_3",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_complete",
             "target" : "update_ml_warehouse_2"
          },
          {
             "relation" : "dependsOn",
             "source" : "update_ml_warehouse_2",
+            "target" : "run_analysis_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_analysis_complete",
+            "target" : "update_ml_warehouse_3"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "update_ml_warehouse_3",
             "target" : "pipeline_end"
          },
          {
@@ -311,6 +311,14 @@
             "label" : "update_ml_warehouse"
          },
          {
+            "id" : "update_ml_warehouse_2",
+            "label" : "update_ml_warehouse"
+         },
+         {
+            "id" : "update_ml_warehouse_3",
+            "label" : "update_ml_warehouse"
+         },
+         {
             "id" : "run_secondary_analysis_in_progress",
             "label" : "run_secondary_analysis_in_progress"
          },
@@ -349,14 +357,6 @@
          {
             "id" : "seq_alignment",
             "label" : "seq_alignment"
-         },
-         {
-            "id" : "update_ml_warehouse_2",
-            "label" : "update_ml_warehouse"
-         },
-         {
-            "id" : "update_ml_warehouse_3",
-            "label" : "update_ml_warehouse"
          },
          {
             "id" : "bam_cluster_counter_check",
