@@ -9,7 +9,7 @@ use HTTP::Request;
 use JSON::XS;
 use LWP::UserAgent;
 use Log::Log4perl qw(:easy);
-
+use List::MoreUtils qw(any);
 use npg_tracking::Schema;
 use WTSI::DNAP::Warehouse::Schema;
 
@@ -307,19 +307,19 @@ sub get_id_runs_missing_data_in_last_days{
 }
 
 sub update_majora{
-  my ($self,$id_run)= @_ ;
-  my $libtypes = {
-                  'PCR amplicon ligated adapters'     => q(LIGATION),
-                  'PCR amplicon ligated adapters 384' => q(LIGATION),
-                  'Sanger_artic_V3_96'                => q(LIGATION),
-                  'Sanger_artic_V4_96'                => q(LIGATION),
+  my ($self,$id_run)= @_;
 
-                  'PCR with TruSeq tails amplicon'    => q(TAILING),
-                  'PCR amplicon tailed adapters 384'  => q(TAILING),
-                  'Sanger_tailed_artic_v1_384'        => q(TAILING),
-                  'PCR with TruSeq tails amplicon 384'=> q(TAILING),
-                  'Sanger_tailed_artic_v1_96'         => q(TAILING),
-                 };
+  my $libtypes = {
+    LIGATION => ['PCR amplicon ligated adapters',
+                 'PCR amplicon ligated adapters 384',
+                 'Sanger_artic_V3_96',
+                 'Sanger_artic_V4_96'],
+    TAILING =>  ['PCR with TruSeq tails amplicon',
+                 'PCR amplicon tailed adapters 384',
+                 'Sanger_tailed_artic_v1_384',
+                 'PCR with TruSeq tails amplicon 384',
+                 'Sanger_tailed_artic_v1_96' ]
+  };
 
   if (!defined $id_run) {$self->logger->error('need an id_run')};
   my$rn=$self->_npg_tracking_schema->resultset(q(Run))->find($id_run)->folder_name;
@@ -335,13 +335,21 @@ sub update_majora{
       # i.e. do not use exising $r record as same library might upload differnt samples in differnt runs - Majora library must contain both
       my$pp=$r->iseq_flowcell->primer_panel;
       $pp=$pp=~m{nCoV-2019/V(\d)\b}smx?$1:q("");
+
       my$lt=$r->iseq_flowcell->pipeline_id_lims;
+      $lt ||= q();
+      $lt = uc $lt;
       my$lsp=q();
-      if ($libtypes->{$lt}){
-        $lsp = $libtypes->{$lt};
-      }else{
-        $self->logger->error_die("Do not know how to deal with library type: $lt");
+      for my $type (keys %{$libtypes}) {
+        if (any { $lt eq $_ } map { uc } @{$libtypes->{$type}}) {
+          $lsp = $type;
+          last;
+        }
       }
+      if (not $lsp) {
+        $self->logger->error_die("Do not know how to deal with library type: '$lt'");
+      }
+
       $r2l{$rn}{$lb}++;
       $l2bs{$lb}{$bs}++;
       $l2pp{$lb}{$pp}++;
@@ -527,6 +535,8 @@ Takes id_run as argument, to then call api to update Majora.
 =item Log::Log4perl
 
 =item MooseX::Getopt
+
+=item List::MoreUtils
 
 =item npg_tracking::Schema
 
