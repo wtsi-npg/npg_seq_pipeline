@@ -39,8 +39,9 @@ Readonly::Scalar my $MANIFEST_PREFIX       => q[manifest4pp_upload];
 Readonly::Scalar my $PP_NAME               => q[ncov2019-artic-nf];
 Readonly::Scalar my $CLIMB_ARCHIVAL_KEY    => q[climb_archival];
 Readonly::Array  my @CLIMB_ARCHIVAL_CREDENTIALS_KEYS => qw/user host pkey_file/;
-Readonly::Scalar my $PP_DATA_GLOB          =>
-                    catfile(q[qc_pass_climb_upload], q[*], q[*], q[*{am,fa}]);
+Readonly::Scalar my $PP_DATA_GLOB => q[*_{] .
+                q[trimPrimerSequences/*.mapped.bam,makeConsensus/*.fa] .
+				       q[}];
 
 Readonly::Array  my @COLUMN_NAMES          => (
                                            $SAMPLE_NAME_COLUMN_NAME,
@@ -76,7 +77,7 @@ generate_manifest(), which can serve as callbacks to
 for pipeline's functions. Please refer to the methods'
 documentation for their functionality.
 
-The class is meant to set the sceen for the upload of data,
+The class is meant to set the scene for the upload of data,
 which are produced by portable pipelines, to third-party archives.
 
 The current implementation is not generic, it focuses on
@@ -426,7 +427,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2020 Genome Research Ltd.
+Copyright (C) 2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
