@@ -18,16 +18,29 @@ with qw{MooseX::Getopt};
 our $VERSION = '0';
 
 has '_npg_tracking_schema'    => (
-    isa        => q{DBIx::Class::Schema},
+    isa        => q{npg_tracking::Schema},
     is         => q{ro},
     required   => 1,
     lazy_build => 1,
 );
 
 has '_mlwh_schema'    => (
-    isa        => q{DBIx::Class::Schema},
+    isa        => q{WTSI::DNAP::Warehouse::Schema},
     is         => q{ro},
     required   => 1,
+    lazy_build => 1,
+);
+
+has '_id_runs_are_given' => (
+    isa     => q{Bool},
+    is      => q{rw},
+    default => 0,
+);
+
+has '_majora_update_runs' => (
+    isa        => q{HashRef},
+    is         => q{ro},
+    required   => 0,
     lazy_build => 1,
 );
 
@@ -55,9 +68,10 @@ has 'update'  => (
 );
 
 has 'id_runs' => (
-    isa     => q{ArrayRef[Int]},
-    is      => q{ro},
-    default => sub {[]},
+    isa        => q{ArrayRef[Int]},
+    is         => q{ro},
+    lazy_build => 1,
+    predicate  => '_has_id_runs',
 );
 
 has 'logger' => (
@@ -81,6 +95,47 @@ sub _build__mlwh_schema {
   return WTSI::DNAP::Warehouse::Schema->connect();
 }
 
+sub _build__majora_update_runs {
+  my $self = shift;
+
+  my @majora_update_runs = ();
+  if ($self->update) {
+    if ($self->_id_runs_are_given) {
+      @majora_update_runs = @{$self->id_runs};
+    } else {
+      if ($self->days) {
+        $self->logger->debug(
+          'Selecting id_runs missing data from the last ' .
+          $self->days.' days for Majora update');
+        @majora_update_runs = $self->get_id_runs_missing_data_in_last_days([undef]);
+      } else {
+        $self->logger->debug('Getting id_runs with missing data for Majora update');
+        @majora_update_runs = $self->get_id_runs_missing_data([undef]);
+      }
+    }
+  }
+  my %h = map { $_ => 1 } @majora_update_runs;
+
+  return \%h;
+}
+
+sub _build_id_runs {
+  my $self = shift;
+
+  my @id_runs = ();
+  if (not $self->days) {
+    $self->logger->info('Getting id_runs missing COG metadata');
+    @id_runs = $self->get_id_runs_missing_data();
+  } else {
+    @id_runs = $self->get_id_runs_missing_data_in_last_days();
+    $self->logger->debug( join(q{, }, @id_runs) .
+    ' = id_runs after getting missing data from the last ' .
+    $self->days . ' days');
+  }
+
+  return \@id_runs;
+}
+
 sub _build_user_agent {
   return LWP::UserAgent->new();
 }
@@ -93,46 +148,40 @@ sub _build_logger {
   return $logger;
 }
 
+sub BUILD {
+  my $self = shift;
+
+  if ($self->update and $self->dry_run){
+    $self->logger->error_die(
+      q{'update' and 'dry_run' attributes cannot be set at the same time});
+  }
+  if ($self->days and ($self->days <= 0)){
+    $self->logger->error_die(
+      q{'days' attribute value should be a positive number});
+  }
+  if ($self->_has_id_runs and $self->days) {
+    $self->logger->error_die(
+      q{'id_runs' and 'days' attributes cannot be set at the same time});
+  }
+  if ($self->_has_id_runs and (@{$self->id_runs} == 0)) {
+    $self->logger->error_die(
+      q{'id_runs' attribute cannot be set to an empty array});
+  }
+
+  $self->_has_id_runs and $self->_id_runs_are_given(1);
+
+  if ($self->dry_run) {
+    $self->logger->info(q{DRY RUN});
+  }
+
+  return;
+}
+
 sub run {
   my $self = shift;
-  my %majora_update_runs= $self->update ? (map {$_ => 1} @{$self->id_runs}) : ();
-
-  if (($self->update) and ($self->dry_run)){
-    $self->logger->error_die('both --update and --dry_run are set');
-  }
-  if (($self->days) and ($self->days eq '0')){
-    $self->logger->error_die('cannot set days to 0');
-  }
-
-  if ((not @{$self->id_runs}) and (not $self->days)) {
-    #gets a list of id_runs missing data
-    $self->logger->info('Getting id_runs missing COG metadata');
-
-    my @id_runs_missing_data = $self->get_id_runs_missing_data();
-    $self->id_runs(\@id_runs_missing_data);
-
-    if ($self->update) {
-      $self->logger->debug('Getting id_runs with missing data for Majora update');
-      %majora_update_runs=(map{$_ => 1} $self->get_id_runs_missing_data( [undef]) );
-    }
-
-  }elsif((not @{$self->id_runs}) and $self->days) {
-    #gets list of id_runs missing data from (current time - days) up to current time
-    my @id_runs_missing_data = $self->get_id_runs_missing_data_in_last_days();
-    $self->id_runs(\@id_runs_missing_data);
-    $self->logger->debug( join(', ' ,@{$self->id_runs}).' = id_runs after getting missing data from the last '. $self->days . ' days');
-
-    if ($self->update) {
-      $self->logger->debug('Selecting id_runs missing data from the last '. $self->days.' days for Majora update');
-      %majora_update_runs=(map{$_ => 1}$self->get_id_runs_missing_data_in_last_days([undef]));
-    }
-
-  }elsif((@{$self->id_runs}!= 0) and (($self->days) or ($self->days eq '0'))){
-    $self->logger->error_die('Cannot set both id_runs and days');
-  };
 
   for my $id_run (@{$self->id_runs}){
-    if (($majora_update_runs{$id_run}) and (not $self->dry_run)){
+    if ($self->_majora_update_runs->{$id_run} and (not $self->dry_run)){
       $self->logger->info("Updating Majora for $id_run");
       $self->update_majora($id_run);
     }
@@ -144,11 +193,10 @@ sub run {
 
     $self->logger->debug('Converting the json returned from Majora to perl structure');
     my %ds = $self->json_to_structure($json_string,$fn);
-    my $ds_ref = \%ds;
 
     if (not $self->dry_run){
       $self->logger->info("Updating Metadata for $id_run");
-      $self->update_metadata($rs,$ds_ref);
+      $self->update_metadata($rs,\%ds);
     }
   }
   return;
