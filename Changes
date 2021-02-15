@@ -21,6 +21,8 @@ LIST OF CHANGES
  - A simpler implementation of wr's limit groups to allow for setting
    a persistent limit globally and for using limit groups that map
    directly to accessors of the function definition object.
+ - Do not limit the number of NovaSeq runs that are being archived
+   at the same time.
 
 release 58.3.0
  - bugfix in the code for interaction with the Majora/COG-UK API:
