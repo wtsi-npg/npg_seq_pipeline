@@ -239,7 +239,7 @@ subtest 'handling group limits' => sub {
   );
   is_deeply ($e->_limit_groups, [qw/irods s3/], 'cached limit groups');
   $job_def = $e->_definition4job('function_two', 'some_dir', $fd2);
-  is_deeply ($job_def->{limit_grps}, [qw/irods/], 'queue limit is included');
+  is_deeply ($job_def->{limit_grps}, [qw/irods/], 'irods limit is included');
   $job_def = $e->_definition4job('function_one', 'some_dir', $fd1);
   is_deeply ($job_def->{limit_grps}, [qw/s3/], 's3 limit is included');
   is_deeply ($e->_attributes2limit_groups,
