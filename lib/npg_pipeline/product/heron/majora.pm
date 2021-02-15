@@ -255,7 +255,7 @@ sub update_metadata {
     my $sn = $fc->sample->supplier_name;
     $sn or next;# no Heron/COG-UK relevant id
     my $hm = $row->iseq_heron_product_metric;
-    $hm or next; # no heron table created (yet?)
+    $hm or next; #if missing iseq_heron_product_metric row
     my $libdata = $data_structure{$fc->id_pool_lims};
     my $sample_meta;
     if ($libdata) {
@@ -297,6 +297,7 @@ sub get_id_runs_missing_data_in_last_days{
   my ($self, $meta_search) = @_;
   my $dt = DateTime->now();
   $dt->subtract(days => $self->days);
+  $dt = $self->_mlwh_schema->storage->datetime_parser->format_datetime($dt);
   my $rs = $self->_get_id_runs_missing_cog_metadata_rs($meta_search)->search(
     {
       'me.climb_upload'    =>{ q(>) =>$dt }
@@ -446,6 +447,11 @@ npg_pipeline::product::heron::majora
 Updates Majora data and/or id_run cog_sample_meta data.
 
 =head1 SUBROUTINES/METHODS
+
+=head2 BUILD
+
+Builds attributes and dies when options are contradicting 
+e.g. dry_run and update are both set.
 
 =head2 run
 
