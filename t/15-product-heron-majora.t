@@ -1,13 +1,13 @@
 use strict;
 use warnings;
-use Test::More tests => 28;
+use Test::More tests => 38;
 use JSON;
 use t::dbic_util;
 use Test::Mock::LWP::UserAgent;
 use Test::Mock::HTTP::Response;
 use Test::Mock::HTTP::Request;
 use Log::Log4perl qw(:easy);
-
+use Test::Exception;
 use_ok('npg_pipeline::product::heron::majora');
 
 #getting simplified json output from file
@@ -23,6 +23,12 @@ close($fh);
 #example run with test schema
 my $id_run = 35340;
 
+#setting $ndays variable for getting id_runs from the last 'ndays'
+#the date in the fixtures is fixed, so we need to work back from "now" when the test is run,
+# to figure out how many days it has been since then
+my $ndays = DateTime->now()->delta_days( DateTime->new({year=>2020, month=>11, day=>3}))->in_units('days');
+
+
 #Adding test schemas
 my $npg_tracking_schema=t::dbic_util->new()->test_schema('t/data/dbic_fixtures/');
 my $schema_for_fn=t::dbic_util->new()->test_schema_mlwh('t/data/fixtures/mlwh-majora');
@@ -31,6 +37,58 @@ my $schema_for_fn=t::dbic_util->new()->test_schema_mlwh('t/data/fixtures/mlwh-ma
 $ENV{MAJORA_DOMAIN} = 'https://covid.majora.ironowl.it/';
 $ENV{MAJORA_USER} = 'DUMMYUSER';
 $ENV{MAJORA_TOKEN} = 'DUMMYTOKEN';
+
+#testing input options
+
+throws_ok { npg_pipeline::product::heron::majora->new(update=>1, dry_run=>1) }  qr/'update' and 'dry_run' attributes cannot be set at the same time/,
+'error when both update and dry_run attrs are set';
+
+throws_ok { npg_pipeline::product::heron::majora->new(days=>0) }  qr/'days' attribute value should be a positive number/,
+'error when days attribute is set to 0';
+
+throws_ok { npg_pipeline::product::heron::majora->new(id_runs=>[1,2], days=>4) }  qr/'id_runs' and 'days' attributes cannot be set at the same time/,
+'error when both id_runs and days attrs are defined';
+
+throws_ok { npg_pipeline::product::heron::majora->new(id_runs=>[]) }  qr/'id_runs' attribute cannot be set to an empty array/,
+'error when id_runs attribute is  defined as empty array';
+
+my $majora = npg_pipeline::product::heron::majora->new(update=>0);
+is_deeply($majora->_majora_update_runs,{}, "Majora_update_runs is empty when update isn't set");
+
+$majora = npg_pipeline::product::heron::majora->new(update=>1,id_runs=>[1,2,3]);
+is_deeply($majora->_majora_update_runs,{1=>1,2=>1,3=>1}, "hash of id_runs set to 1 when update is set");
+
+#checking values of id_runs and _majora_update_runs when --update and --days are set
+my $init = {
+  _npg_tracking_schema       => $npg_tracking_schema,
+  _mlwh_schema               => $schema_for_fn,
+  days                       => $ndays,
+  update                     => 1,
+ };
+
+my $rs_runs_missing_data = $schema_for_fn->resultset('IseqHeronProductMetric')->search({},{join=>q(iseq_product_metric)});
+$rs_runs_missing_data->update({cog_sample_meta=>undef});
+
+# setting object up with new schema with ndays in
+$majora = npg_pipeline::product::heron::majora->new($init);
+
+is_deeply($majora->_majora_update_runs,{35340 =>1,35355=>1,35348=>1,35356=>1},'id_runs for Majora update when days not set is correct');
+is_deeply(sort $majora->id_runs,[35340,35348,35355,35356], "id_runs with --update are correct");
+
+#checking values of id_runs and _majora_update_runs when --update is set and days is NOT set
+$init = {
+  _npg_tracking_schema       => $npg_tracking_schema,
+  _mlwh_schema               => $schema_for_fn,
+  update                     => 1,
+ };
+# setting cog_sample meta values to undef
+$rs_runs_missing_data = $schema_for_fn->resultset('IseqHeronProductMetric')->search({},{join=>q(iseq_product_metric)});
+$rs_runs_missing_data->update({cog_sample_meta=>undef});
+
+# setting object up with new schema with ndays in
+$majora = npg_pipeline::product::heron::majora->new($init);
+is_deeply($majora->_majora_update_runs,{35340 =>1,35355=>1,35348=>1,35356=>1}, 'id_runs for Majora when only update is set is correct');
+is_deeply(sort $majora->id_runs,[35340,35348,35355,35356], "id_runs with only update is set, are correct");
 
 #JSON returned when no folder name is found
 #{"errors": 0, "warnings": 1, "messages": [], "tasks": [], "new": [],"updated": [], "ignored": ['2021FolderNameNotFound'],"request": "1a89b394-d0a4-48c9-84ed-0060fb425f5c", "get": {}, "success": true});
@@ -41,12 +99,12 @@ $Mock_resp->mock(content => sub {$mock_json_response});
 $Mock_resp->mock(decoded_content =>sub {$mock_json_response});
 $Mock_resp->mock( code=> sub { 200 } );
 
-my $init = {
+$init = {
   _npg_tracking_schema    => $npg_tracking_schema,
   _mlwh_schema            => $schema_for_fn,
   user_agent              => $Mock_ua,
 };
-my $majora = npg_pipeline::product::heron::majora->new($init);
+$majora = npg_pipeline::product::heron::majora->new($init);
 
 
 my ($fn,$rs) = $majora->get_table_info_for_id_run($id_run);
@@ -192,8 +250,6 @@ is_deeply([$majora->get_id_runs_missing_data([0])],[35355,35356], "id_runs with 
 is_deeply([$majora->get_id_runs_missing_data([undef])],[35348,35355], "id_runs with cog_sample_meta:NULL and climb_upload set returned");
 is_deeply([$majora->get_id_runs_missing_data([1])],[35340,35348], "id_runs with cog_sample_meta:1 and climb_upload set returned");
 
-# the date in the fixtures is fixed, so we need to work back from "now" when the test is run, to figure out how many days it has been since then
-my$ndays = DateTime->now()->delta_days( DateTime->new({year=>2020, month=>11, day=>3}))->in_units('days');
 $init = {
   _npg_tracking_schema       => $npg_tracking_schema,
   _mlwh_schema               => $schema_ids_without_data,

@@ -57,8 +57,9 @@ has 'dry_run'  => (
 );
 
 has 'days' => (
-    isa     => q{Int},
-    is      => q{ro},
+    isa       => q{Int},
+    is        => q{ro},
+    predicate => q{_has_days},
 );
 
 has 'update'  => (
@@ -155,7 +156,7 @@ sub BUILD {
     $self->logger->error_die(
       q{'update' and 'dry_run' attributes cannot be set at the same time});
   }
-  if ($self->days and ($self->days <= 0)){
+  if (($self->_has_days) and $self->days <= 0){
     $self->logger->error_die(
       q{'days' attribute value should be a positive number});
   }
