@@ -1,51 +1,235 @@
-#!/usr/bin/env perl
 package npg_pipeline::product::heron::majora;
+
 use autodie;
-use strict;
-use warnings;
-use Carp;
-use JSON;
-use English qw( -no_match_vars );
+use Moose;
+use MooseX::StrictConstructor;
+use namespace::autoclean;
 use DateTime;
-use Exporter qw(import);
 use HTTP::Request;
-use JSON::MaybeXS qw(encode_json);
+use JSON::XS;
 use LWP::UserAgent;
+use Log::Log4perl qw(:easy);
+use List::MoreUtils qw(any);
+use npg_tracking::Schema;
+use WTSI::DNAP::Warehouse::Schema;
+
+with qw{MooseX::Getopt};
 
 our $VERSION = '0';
 
-our @EXPORT_OK = qw/  get_table_info_for_id_run
-                      get_majora_data
-                      json_to_structure
-                      update_metadata
-                      get_id_runs_missing_data
-                      get_id_runs_missing_data_in_last_days
-                      update_majora/;
+has '_npg_tracking_schema'    => (
+    isa        => q{npg_tracking::Schema},
+    is         => q{ro},
+    required   => 1,
+    lazy_build => 1,
+);
+
+has '_mlwh_schema'    => (
+    isa        => q{WTSI::DNAP::Warehouse::Schema},
+    is         => q{ro},
+    required   => 1,
+    lazy_build => 1,
+);
+
+has '_id_runs_are_given' => (
+    isa     => q{Bool},
+    is      => q{rw},
+    default => 0,
+);
+
+has '_majora_update_runs' => (
+    isa        => q{HashRef},
+    is         => q{ro},
+    required   => 0,
+    lazy_build => 1,
+);
+
+has 'verbose'  => (
+    isa     => q{Bool},
+    is      => q{ro},
+    default => 1,
+);
+
+has 'dry_run'  => (
+    isa     => q{Bool},
+    is      => q{ro},
+    default => 0,
+);
+
+has 'days' => (
+    isa       => q{Int},
+    is        => q{ro},
+    predicate => q{_has_days},
+);
+
+has 'update'  => (
+    isa     => q{Bool},
+    is      => q{ro},
+    default => 0,
+);
+
+has 'id_runs' => (
+    isa        => q{ArrayRef[Int]},
+    is         => q{ro},
+    lazy_build => 1,
+    predicate  => '_has_id_runs',
+);
+
+has 'logger' => (
+    metaclass  => q{NoGetopt},
+    isa        => q{Log::Log4perl::Logger},
+    is         => q{ro},
+    lazy_build => 1,
+);
+
+has 'user_agent' => (
+    metaclass  => q{NoGetopt},
+    is         => q{ro},
+    lazy_build => 1,
+);
+
+sub _build__npg_tracking_schema {
+  return npg_tracking::Schema->connect();
+}
+
+sub _build__mlwh_schema {
+  return WTSI::DNAP::Warehouse::Schema->connect();
+}
+
+sub _build__majora_update_runs {
+  my $self = shift;
+
+  my @majora_update_runs = ();
+  if ($self->update) {
+    if ($self->_id_runs_are_given) {
+      @majora_update_runs = @{$self->id_runs};
+    } else {
+      if ($self->days) {
+        $self->logger->debug(
+          'Selecting id_runs missing data from the last ' .
+          $self->days.' days for Majora update');
+        @majora_update_runs = $self->get_id_runs_missing_data_in_last_days([undef]);
+      } else {
+        $self->logger->debug('Getting id_runs with missing data for Majora update');
+        @majora_update_runs = $self->get_id_runs_missing_data([undef]);
+      }
+    }
+  }
+  my %h = map { $_ => 1 } @majora_update_runs;
+
+  return \%h;
+}
+
+sub _build_id_runs {
+  my $self = shift;
+
+  my @id_runs = ();
+  if (not $self->days) {
+    $self->logger->info('Getting id_runs missing COG metadata');
+    @id_runs = $self->get_id_runs_missing_data();
+  } else {
+    @id_runs = $self->get_id_runs_missing_data_in_last_days();
+    $self->logger->debug( join(q{, }, @id_runs) .
+    ' = id_runs after getting missing data from the last ' .
+    $self->days . ' days');
+  }
+
+  return \@id_runs;
+}
+
+sub _build_user_agent {
+  return LWP::UserAgent->new();
+}
+
+sub _build_logger {
+  my $self=shift;
+  Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n'});
+  my $logger = Log::Log4perl->get_logger();
+  $logger->level($self->verbose ? $DEBUG : $INFO);
+  return $logger;
+}
+
+sub BUILD {
+  my $self = shift;
+
+  if ($self->update and $self->dry_run){
+    $self->logger->error_die(
+      q{'update' and 'dry_run' attributes cannot be set at the same time});
+  }
+  if (($self->_has_days) and $self->days <= 0){
+    $self->logger->error_die(
+      q{'days' attribute value should be a positive number});
+  }
+  if ($self->_has_id_runs and $self->days) {
+    $self->logger->error_die(
+      q{'id_runs' and 'days' attributes cannot be set at the same time});
+  }
+  if ($self->_has_id_runs and (@{$self->id_runs} == 0)) {
+    $self->logger->error_die(
+      q{'id_runs' attribute cannot be set to an empty array});
+  }
+
+  $self->_has_id_runs and $self->_id_runs_are_given(1);
+
+  if ($self->dry_run) {
+    $self->logger->info(q{DRY RUN});
+  }
+
+  return;
+}
+
+sub run {
+  my $self = shift;
+
+  for my $id_run (@{$self->id_runs}){
+    if ($self->_majora_update_runs->{$id_run} and (not $self->dry_run)){
+      $self->logger->info("Updating Majora for $id_run");
+      $self->update_majora($id_run);
+    }
+    $self->logger->info("Fetching npg_tracking and Warehouse DB info for $id_run");
+    my ($fn,$rs) = $self->get_table_info_for_id_run($id_run);
+
+    $self->logger->info("Fetching Majora data for $fn");
+    my $json_string = $self->get_majora_data($fn);
+
+    $self->logger->debug('Converting the json returned from Majora to perl structure');
+    my %ds = $self->json_to_structure($json_string,$fn);
+
+    if (not $self->dry_run){
+      $self->logger->info("Updating Metadata for $id_run");
+      $self->update_metadata($rs,\%ds);
+    }
+  }
+  return;
+}
 
 sub get_table_info_for_id_run {
-  my ($id_run,$npg_tracking_schema,$mlwh_schema)= @_ ;
-  if (!defined $id_run) {carp 'need an id_run'};
+  my ($self, $id_run) = @_;
+  if (!defined $id_run) {$self->logger->error_die('need an id_run');};
 
-  my$rs=$npg_tracking_schema->resultset(q(Run));
+  my$rs=$self->_npg_tracking_schema->resultset(q(Run));
   my$fn=$rs->find($id_run)->folder_name;
 
-  my $rs_iseq=$mlwh_schema->resultset('IseqProductMetric')->search({'id_run' => $id_run},
+  my $rs_iseq=$self->_mlwh_schema->resultset('IseqProductMetric')->search({'id_run' => $id_run},
                                      {join=>{'iseq_flowcell' => 'sample'}});
   my @table_info = ($fn,$rs_iseq);
   return (@table_info);
 }
 
 sub get_majora_data {
-  my ($fn) = @_;
+  my ($self,$fn) = @_;
   my $url =q(/api/v2/process/sequencing/get/);
   my $data_to_encode = {run_name=>["$fn"]};
-  my $res = _use_majora_api('POST',$url,$data_to_encode);
+  my $res = $self->_use_majora_api('POST',$url,$data_to_encode);
   return($res);
 }
 
 sub json_to_structure {
-  my ($json_string, $fn) = @_;
-  my $data = from_json($json_string);
+  my ($self,$json_string, $fn) = @_;
+  my $data = decode_json($json_string);
+  if (@{$data->{ignored}} != 0) {
+    $self->logger->error('response from Majora ignored a folder : ' . $json_string);
+  }
   my %data_structure= ();
   if ($data) {
     my $libref = $data->{get}{$fn}{libraries}|| [];
@@ -64,30 +248,33 @@ sub json_to_structure {
 }
 
 sub update_metadata {
-  my ($rs_iseq,$ds_ref) = @_;
+  my ($self,$rs_iseq,$ds_ref) = @_;
   my %data_structure = %{$ds_ref};
   while (my $row=$rs_iseq->next) {
     my $fc = $row->iseq_flowcell;
-    $fc or next;
+    $fc or next; #no LIMS data
+    my $sn = $fc->sample->supplier_name;
+    $sn or next;# no Heron/COG-UK relevant id
+    my $hm = $row->iseq_heron_product_metric;
+    $hm or next; #if missing iseq_heron_product_metric row
     my $libdata = $data_structure{$fc->id_pool_lims};
-    my $sample_data;
     my $sample_meta;
     if ($libdata) {
-      $sample_data = $libdata->{$fc->sample->supplier_name};
+      my $sample_data = $libdata->{$sn};
       if ($sample_data) {
         $sample_meta = defined $sample_data->{submission_org} ?1:0;
-        #carp "setting $sample_meta for ". $fc->sample->supplier_name; #TODO use a logger
+        $self->logger->info("setting $sample_meta for $sn");
       }
     }
-    $row->iseq_heron_product_metric->update({cog_sample_meta=>$sample_meta});
+    $hm->update({cog_sample_meta=>$sample_meta});
   };
   return;
 }
 
 sub _get_id_runs_missing_cog_metadata_rs{
-  my ($schema, $meta_search) = @_;
+  my ($self,$meta_search) = @_;
   $meta_search //= [undef,0]; # missing run -> library -> biosample connection, or missing biosample metadata
-  return $schema->resultset('IseqHeronProductMetric')->search(
+  return $self->_mlwh_schema->resultset('IseqHeronProductMetric')->search(
     {
       'study.name'         => 'Heron Project',
       'me.cog_sample_meta' => $meta_search,
@@ -102,16 +289,17 @@ sub _get_id_runs_missing_cog_metadata_rs{
 }
 
 sub get_id_runs_missing_data{
-  my ($schema, $meta_search) = @_;
-  my @ids = map { $_->iseq_product_metric->id_run } _get_id_runs_missing_cog_metadata_rs($schema, $meta_search)->all();
+  my ($self,$meta_search) = @_;
+  my @ids = map { $_->iseq_product_metric->id_run } $self->_get_id_runs_missing_cog_metadata_rs($meta_search)->all();
   return @ids;
 }
 
 sub get_id_runs_missing_data_in_last_days{
-  my ($schema, $days, $meta_search) = @_;
+  my ($self, $meta_search) = @_;
   my $dt = DateTime->now();
-  $dt->subtract(days =>$days);
-  my $rs = _get_id_runs_missing_cog_metadata_rs($schema, $meta_search)->search(
+  $dt->subtract(days => $self->days);
+  $dt = $self->_mlwh_schema->storage->datetime_parser->format_datetime($dt);
+  my $rs = $self->_get_id_runs_missing_cog_metadata_rs($meta_search)->search(
     {
       'me.climb_upload'    =>{ q(>) =>$dt }
     }
@@ -121,11 +309,24 @@ sub get_id_runs_missing_data_in_last_days{
 }
 
 sub update_majora{
-  my ($id_run,$npg_tracking_schema,$mlwh_schema)= @_ ;
-  if (!defined $id_run) {carp 'need an id_run'};
-  my$rn=$npg_tracking_schema->resultset(q(Run))->find($id_run)->folder_name;
-  my$rs=$mlwh_schema->resultset(q(IseqProductMetric))->search_rs({'me.id_run'=>$id_run, tag_index=>{q(>) => 0}},{join=>{iseq_flowcell=>q(sample)}});
-  my$rsu=$mlwh_schema->resultset(q(Sample))->search({q(iseq_heron_product_metric.climb_upload)=>{q(-not)=>undef}},{join=>{iseq_flowcells=>{iseq_product_metrics=>q(iseq_heron_product_metric)}}});
+  my ($self,$id_run)= @_;
+
+  my $libtypes = {
+    LIGATION => ['PCR amplicon ligated adapters',
+                 'PCR amplicon ligated adapters 384',
+                 'Sanger_artic_V3_96',
+                 'Sanger_artic_V4_96'],
+    TAILING =>  ['PCR with TruSeq tails amplicon',
+                 'PCR amplicon tailed adapters 384',
+                 'Sanger_tailed_artic_v1_384',
+                 'PCR with TruSeq tails amplicon 384',
+                 'Sanger_tailed_artic_v1_96' ]
+  };
+
+  if (!defined $id_run) {$self->logger->error('need an id_run')};
+  my$rn=$self->_npg_tracking_schema->resultset(q(Run))->find($id_run)->folder_name;
+  my$rs=$self->_mlwh_schema->resultset(q(IseqProductMetric))->search_rs({'me.id_run'=>$id_run, tag_index=>{q(>) => 0}},{join=>{iseq_flowcell=>q(sample)}});
+  my$rsu=$self->_mlwh_schema->resultset(q(Sample))->search({q(iseq_heron_product_metric.climb_upload)=>{q(-not)=>undef}},{join=>{iseq_flowcells=>{iseq_product_metrics=>q(iseq_heron_product_metric)}}});
   my%l2bs;my%l2pp;my%l2lsp; my%r2l;
   while (my$r=$rs->next){
       my$ifc=$r->iseq_flowcell or next;
@@ -136,17 +337,29 @@ sub update_majora{
       # i.e. do not use exising $r record as same library might upload differnt samples in differnt runs - Majora library must contain both
       my$pp=$r->iseq_flowcell->primer_panel;
       $pp=$pp=~m{nCoV-2019/V(\d)\b}smx?$1:q("");
+
       my$lt=$r->iseq_flowcell->pipeline_id_lims;
+      $lt ||= q();
+      $lt = uc $lt;
       my$lsp=q();
-      if($lt=~m{^Sanger_artic_v[34]}smx or $lt=~m{PCR[ ]amplicon[ ]ligated[ ]adapters}smx){ $lsp=q(LIGATION)}elsif($lt=~m{PCR[ ]amplicon[ ]tailed[ ]adapters}smx or $lt=~m{Sanger_tailed_artic_v1_384}smx){$lsp=q(TAILING)}else{croak "Do not know how to deal with library type: $lt"}
+      for my $type (keys %{$libtypes}) {
+        if (any { $lt eq $_ } map { uc } @{$libtypes->{$type}}) {
+          $lsp = $type;
+          last;
+        }
+      }
+      if (not $lsp) {
+        $self->logger->error_die("Do not know how to deal with library type: '$lt'");
+      }
+
       $r2l{$rn}{$lb}++;
       $l2bs{$lb}{$bs}++;
       $l2pp{$lb}{$pp}++;
       $l2lsp{$lb}{$lsp}++;
   }
   foreach my$lb(sort keys %l2bs){
-    croak "multiple primer panels in $lb" if (1!=keys %{$l2pp{$lb}});
-    croak "multiple library seq protocol in $lb" if (1!=keys %{$l2lsp{$lb}});
+    if (1!=keys %{$l2pp{$lb}})  { $self->logger->error_die("multiple primer panels in $lb") };
+    if (1!=keys %{$l2lsp{$lb}}) { $self->logger->error_die("multiple library seq protocol in $lb") };
     my($pp)=keys %{$l2pp{$lb}};
     my($lsp)=keys %{$l2lsp{$lb}};
 
@@ -169,32 +382,35 @@ sub update_majora{
                                   force_biosamples=> \1, # JSON encode as true, Sanger-only Majora interaction
                                   biosamples=>[@biosample_info]
                        };
-   _use_majora_api('POST', $url, $data_to_encode);
+   $self->logger->debug("Sending call to update Majora for library $lb");
+   $self->_use_majora_api('POST', $url, $data_to_encode);
   }
   # adding sequencing run
   foreach my$rn(sort keys%r2l){
     foreach my$lb(sort keys %{$r2l{$rn}}){
-
       my $url = q(api/v2/process/sequencing/add/);
-      #TODO to get instrument type properly - use ISeqRunLaneMetric
       my $instrument_model= ($rn=~m{_MS}smx?q(MiSeq):q(NovaSeq));
       my $data_to_encode = {
                             library_name=>$lb,
                             runs=> [{
                                      run_name=>$rn,
                                      instrument_make=>'ILLUMINA',
-                                     instrument_model=>$instrument_model
+                                     instrument_model=>$instrument_model,
                                    }]
                            };
-      _use_majora_api('POST', $url, $data_to_encode);
+      $self->logger->debug("Sending call to update Majora for library $lb");
+      $self->_use_majora_api('POST', $url, $data_to_encode);
     }
   }
  return;
 }
 
 sub _use_majora_api{
-  my ($method,$url_end,$data_to_encode) = @_;
+  my ($self,$method,$url_end,$data_to_encode) = @_;
   $data_to_encode = {%{$data_to_encode}};
+  if (!defined $ENV{MAJORA_DOMAIN}){
+    $self->logger->error('MAJORA_DOMAIN environment variable not set');
+  }
   my $url = $ENV{MAJORA_DOMAIN}.$url_end;
   my $header;
   if (my $token = $ENV{MAJORA_OAUTH_TOKEN}){
@@ -206,74 +422,47 @@ sub _use_majora_api{
   }
   $data_to_encode->{username} = $ENV{MAJORA_USER};
   my $encoded_data = encode_json($data_to_encode);
-  my $ua = LWP::UserAgent->new();
+  my $ua =  $self->user_agent;
+
   my $r = HTTP::Request->new($method, $url, $header, $encoded_data);
-  my$res= $ua->request($r);
+  my $res = $ua->request($r);
+
   if ($res->is_error){
-    croak q(Majora API returned a ).($res->code).qq( code. Content:\n).($res->decoded_content()).qq(\n);
+    $self->logger->error_die(q(Majora API returned a ).($res->code).qq( code. Content:\n).($res->decoded_content()).qq(\n));
   }
   return $res->decoded_content;
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;
-__END__
 
 =head1 NAME
 
-npg_heron::majora
+npg_pipeline::product::heron::majora
 
 =head1 SYNOPSIS
 
-#first setting schemas and id_run
-my $id_run = <id_run>;
-my $schema =npg_tracking::Schema->connect();
-my $mlwh_schema=WTSI::DNAP::Warehouse::Schema->connect();
-
-#Then the id_run, npg_tacking schema and mlwh schema are passed to 
-#get_table_info_for_id_run. The folder name and IseqProductMetrics
-#result set are returned
-my ($fn,$rs) = get_table_info_for_id_run($id_run,$schema,$mlwh_schema);
-
-#get_majora_data can be passed the foldername obtained by 
-#get_table_info_for_id_run, which will return the a string containing
-#the JSON information from majora.
-my $json_string = get_majora_data($fn);
-
-#We can then pass json_string with the folder name obtained before
-#to json_to_structure which will return the data structure to parse
-#This should then be turned into a reference to pass to update_metadata.
-
-my %ds = json_to_structure($json_string,$fn);
-my $ds_ref = \%ds;
-
-#The result set of the npg_tracking schema and the data structure
-#reference can then be passed to update_metadata to update the
-# database.
-update_metadata($rs,$ds_ref);
-
-#Alternativley id runs with missing data can be obtained by running 
-#get_id_runs_missing_data which takes a schema as argument and returns
-#a list of id_runs
-my @ids = get_id_runs_missing_data($schema);
-
-#id_runs can also be obtained through get_id_runs_missing_data_in_last_days which returns
-#a list of id_runs from between the current time and X many days ago e.g
-my @ids = get_id_runs_missing_data_in_last_days($schema,4);
-#gets ids between now and 4 days ago
-
 =head1 DESCRIPTION
 
-Module for updating cog_sample_meta in mlwarehouse database for a
-particular id_run. 
+Updates Majora data and/or id_run cog_sample_meta data.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 BUILD
+
+Builds attributes and dies when options are contradicting 
+e.g. dry_run and update are both set.
+
+=head2 run
+
+Takes the options (--dry_run, --verbose,--id_run,--update,--days)
+from command line using Moose::GetOpt,to run the methods based on 
+the options given.
+
 =head2 get_table_info_for_id_run
 
-Takes three arguments
-First argument - An id_run.
-Second argument - schema to get the folder name.
-Third argument - mlwarehouse database schema.
+Takes an id_run as argument.
 Returns an List containing the id_run, corresponding foldername and
 the resultset from IseqProductMetrics table in the database for the
 given id_run.
@@ -311,53 +500,83 @@ cog_sample_meta is set to 0.
 
 =head2 get_id_runs_missing_data
 
-Takes a schema as argument.
-Optionally takes second argument: array ref of cog_sample_meta to search 
+Optionally takes an argument: array ref of cog_sample_meta to search 
 for (default [undef,0]).
 searches schema for Heron runs which are missing cog_sample_meta
 values and returns as a list their id_runs.
 
 =head2 get_id_runs_missing_data_in_last_days
 
-First argument - Schema to get id_runs from.
-Second argument - number of days before the current time from which to search
-Optionally takes third argument: array ref of cog_sample_meta to search 
+Optionally takes an argument: array ref of cog_sample_meta to search 
 for (default [undef,0]).
 id_runs will be fetched.
 
 =head2 update_majora
 
-First Argument - id_run to get ocarina commands for
-Second argument - npg_tracking_schema for foldername
-Third argument - mlwh_schema to search database for id_run information
-Uses api calls to update id_run info on majora
+Takes id_run as argument, to then call api to update Majora.
 
 =head1 DIAGNOSTICS
+
 =head1 CONFIGURATION AND ENVIRONMENT
+
 =head1 DEPENDENCIES
-=head1 USAGE
-=head1 REQUIRED ARGUMENTS
-=head1 OPTIONS
-=head1 EXIT STATUS
-=head1 CONFIGURATION
+
 =over
-=item JSON
+
+=item autodie
+
+=item Moose
+
+=item MooseX::StrictConstructor
+
+=item namespace::autoclean
+
+=item DateTime
+
+=item HTTP::Request
+
+=item JSON::XS
+
+=item LWP::UserAgent
+
+=item Log::Log4perl
+
+=item MooseX::Getopt
+
+=item List::MoreUtils
+
+=item npg_tracking::Schema
+
+=item WTSI::DNAP::Warehouse::Schema
+
 =back
+
 =head1 INCOMPATIBILITIES
+
 =head1 BUGS AND LIMITATIONS
+
 =head1 AUTHOR
+
 Fred Dodd
+
 =head1 LICENSE AND COPYRIGHT
-Copyright (C) 2020 GRL
+
+Copyright (C) 2020,2021 Genome Reserach Ltd.
+
 This file is part of NPG.
+
 NPG is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
+
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 =cut
+
