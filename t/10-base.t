@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 10;
+use Test::More tests => 8;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use Cwd;
@@ -71,59 +71,6 @@ subtest 'flowcell id and barcode' => sub {
   is ($base->id_run, 15441, 'id run derived correctly from runfolder_path');
   is ($base->id_flowcell_lims, 45, 'lims flowcell id returned correctly');
   is ($base->flowcell_id, 'MS2806735-300V2', 'MiSeq reagent kit id derived from runfolder path');
-};
-
-subtest 'qc run flag' => sub {
-  plan tests => 10;
-
-  package mytest::central;
-  use base 'npg_pipeline::base';
-  package main;
-
-  my $base = npg_pipeline::base->new(flowcell_id  => 'HBF2DADXX');
-  ok( !$base->is_qc_run(), 'looking on flowcell lims id: not qc run');
-  ok( !$base->qc_run, 'not qc run');
-  ok( $base->is_qc_run('3980331130775'), 'looking on argument - qc run');
-  
-  $base = npg_pipeline::base->new(id_flowcell_lims => 3456);
-  ok( !$base->is_qc_run(), 'looking on flowcell lims id: not qc run');
-  ok( !$base->qc_run, 'not qc run');
-  ok( !$base->is_qc_run(3456), 'looking on argument: not qc run');
-
-  $base = mytest::central->new(id_flowcell_lims => 3456, qc_run => 1);
-  ok( !$base->is_qc_run(), 'looking on flowcell lims id: not qc run');
-  
-  $base = mytest::central->new(id_flowcell_lims => '3980331130775');
-  ok( $base->is_qc_run(), 'looking on flowcell lims id: qc run');
-  ok( $base->qc_run, 'qc run');
-  ok( $base->is_qc_run('3980331130775'), 'looking on argument: qc run');
-};
-
-subtest 'lims driver type' => sub {
-  plan tests => 7;
-
-  my $base = npg_pipeline::base->new(id_run => 4);
-  is($base->lims_driver_type, 'ml_warehouse');
-  $base = npg_pipeline::base->new(id_run => 4,
-                                  id_flowcell_lims => 1234567890123);
-  is($base->lims_driver_type, 'warehouse');
-  $base = npg_pipeline::base->new(id_run => 4,
-                                  id_flowcell_lims => 12345678);
-  is($base->lims_driver_type, 'ml_warehouse');
-  $base = npg_pipeline::base->new(id_run => 4, qc_run=>0);
-  is($base->lims_driver_type, 'ml_warehouse');
-  $base = npg_pipeline::base->new(id_run => 4,
-                                  qc_run => 0,
-                                  id_flowcell_lims => 1234567890123);
-  is($base->lims_driver_type, 'ml_warehouse');
-  $base = npg_pipeline::base->new(id_run => 4,
-                                  qc_run=>1,
-                                  id_flowcell_lims => 1234567890123);
-  is($base->lims_driver_type, 'warehouse');
-  $base = npg_pipeline::base->new(id_run => 4,
-                                  qc_run=>1,
-                                  id_flowcell_lims => 12345678);
-  is($base->lims_driver_type, 'ml_warehouse');
 };
 
 subtest 'repository preexec' => sub {

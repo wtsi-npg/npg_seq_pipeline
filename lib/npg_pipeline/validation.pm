@@ -47,7 +47,6 @@ Readonly::Array  my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                 qc_path
                                                 align_tag0
                                                 local
-                                                qc_run
                                                 repository
                                                 index_length
                                                 index_file_extension
@@ -853,12 +852,17 @@ __END__
 
 =head1 AUTHOR
 
-Steven Leonard
-Marina Gourtovaia
+=over
+
+=item Steven Leonard
+
+=item Marina Gourtovaia
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019,2020 Genome Research Ltd.
+Copyright (C) 2019,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

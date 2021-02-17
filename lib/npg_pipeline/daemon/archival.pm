@@ -1,6 +1,7 @@
 package npg_pipeline::daemon::archival;
 
 use Moose;
+use namespace::autoclean;
 use Readonly;
 use Try::Tiny;
 
@@ -34,7 +35,6 @@ sub run {
       } else {
         if ( $self->staging_host_match($run->folder_path_glob) &&
              (!$self->_instrument_model_is_novaseq($run) || $self->_can_start_nv_archival()) ) {
-          $self->check_lims_link($run);
           if ($self->run_command($id_run, $self->_generate_command($id_run))) {
             $self->info();
             $self->info(qq{Submitted run $id_run for archival});
@@ -79,8 +79,6 @@ sub _instrument_model_is_novaseq {
   return $run->instrument_format->model eq q[NovaSeq];
 }
 
-no Moose;
-
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -110,8 +108,6 @@ Invokes the archival pipeline for runs with a status 'archival pending'.
 
 =head2 build_pipeline_script_name
 
-=head2 sleep_time_between_runs
-
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT
@@ -121,6 +117,8 @@ Invokes the archival pipeline for runs with a status 'archival pending'.
 =over
 
 =item Moose
+
+=item namespace::autoclean
 
 =item Try::Tiny
 
@@ -134,12 +132,17 @@ Invokes the archival pipeline for runs with a status 'archival pending'.
 
 =head1 AUTHOR
 
-Andy Brown
-Marina Gourtovaia
+=over
+
+=item Andy Brown
+
+=item Marina Gourtovaia
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2016,2017,2018,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

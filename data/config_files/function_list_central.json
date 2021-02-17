@@ -39,11 +39,6 @@
          {
             "relation" : "dependsOn",
             "source" : "update_ml_warehouse_1",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
             "target" : "run_secondary_analysis_in_progress"
          },
          {
@@ -59,7 +54,7 @@
          {
             "relation" : "dependsOn",
             "source" : "archive_pp_data_to_irods",
-            "target" : "update_ml_warehouse_1"
+            "target" : "update_ml_warehouse_2"
          },
          {
             "relation" : "dependsOn",
@@ -73,18 +68,8 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "qc_generic_artic",
-            "target" : "update_ml_warehouse_1"
-         },
-         {
-            "relation" : "dependsOn",
             "source" : "stage2App",
             "target" : "qc_generic_ampliconstats"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_generic_ampliconstats",
-            "target" : "update_ml_warehouse_1"
          },
          {
             "relation" : "dependsOn",
@@ -185,7 +170,7 @@
          {
             "relation" : "dependsOn",
             "source" : "qc_ref_match",
-            "target" : "qc_review"
+            "target" : "run_analysis_complete"
          },
          {
             "relation" : "dependsOn",
@@ -230,16 +215,21 @@
          {
             "relation" : "dependsOn",
             "source" : "qc_review",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_complete",
             "target" : "update_ml_warehouse_2"
          },
          {
             "relation" : "dependsOn",
             "source" : "update_ml_warehouse_2",
+            "target" : "run_analysis_complete"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "run_analysis_complete",
+            "target" : "update_ml_warehouse_3"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "update_ml_warehouse_3",
             "target" : "pipeline_end"
          },
          {
@@ -321,6 +311,14 @@
             "label" : "update_ml_warehouse"
          },
          {
+            "id" : "update_ml_warehouse_2",
+            "label" : "update_ml_warehouse"
+         },
+         {
+            "id" : "update_ml_warehouse_3",
+            "label" : "update_ml_warehouse"
+         },
+         {
             "id" : "run_secondary_analysis_in_progress",
             "label" : "run_secondary_analysis_in_progress"
          },
@@ -359,10 +357,6 @@
          {
             "id" : "seq_alignment",
             "label" : "seq_alignment"
-         },
-         {
-            "id" : "update_ml_warehouse_2",
-            "label" : "update_ml_warehouse"
          },
          {
             "id" : "bam_cluster_counter_check",

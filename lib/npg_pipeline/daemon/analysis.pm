@@ -1,12 +1,9 @@
 package npg_pipeline::daemon::analysis;
 
 use Moose;
-use Carp;
+use namespace::autoclean;
 use Readonly;
 use Try::Tiny;
-use List::MoreUtils qw/uniq/;
-
-use npg_tracking::util::abs_path qw/abs_path/;
 
 extends qw{npg_pipeline::daemon};
 
@@ -39,6 +36,13 @@ sub run {
   return;
 }
 
+sub _get_batch_id {
+  my ($self, $run) = @_;
+  my $batch_id = $run->batch_id();
+  $batch_id or $self->logcroak(q{No batch id});
+  return $batch_id;
+}
+
 sub _process_one_run {
   my ($self, $run) = @_;
 
@@ -49,47 +53,40 @@ sub _process_one_run {
     return;
   }
 
-  my $arg_refs = $self->check_lims_link($run);
-  $arg_refs->{'script'} = $self->pipeline_script_name;
+  my $arg_refs = {
+    batch_id     => $self->_get_batch_id($run),
+    rf_path      => $self->runfolder_path4run($id_run),
+    job_priority => $run->run_lanes->count <= 2 ?
+                    $RAPID_RUN_JOB_PRIORITY : $DEFAULT_JOB_PRIORITY
+  };
 
-  $arg_refs->{'job_priority'} = $run->run_lanes->count <= 2 ?
-    $RAPID_RUN_JOB_PRIORITY : $DEFAULT_JOB_PRIORITY;
   my $inherited_priority = $run->priority;
   if ($inherited_priority > 0) { #not sure we curate what we get from LIMs
     $arg_refs->{'job_priority'} += $inherited_priority;
   }
-  $arg_refs->{'rf_path'}  = $self->runfolder_path4run($id_run);
 
-  $self->run_command( $id_run, $self->_generate_command( $arg_refs ));
+  $self->run_command($id_run, $self->_generate_command($arg_refs));
 
   return;
 }
 
 sub _generate_command {
-  my ( $self, $arg_refs ) = @_;
+  my ($self, $arg_refs) = @_;
 
-  my $cmd = sprintf '%s --verbose --job_priority %i --runfolder_path %s',
+  my $cmd = sprintf
+    '%s --verbose --job_priority %i --runfolder_path %s --id_flowcell_lims %s',
              $self->pipeline_script_name,
              $arg_refs->{'job_priority'},
-             $arg_refs->{'rf_path'};
-
-  if (!$arg_refs->{'id'}) {
-    # Batch id is needed for MiSeq runs, including qc runs
-    $self->logcroak(q{Lims flowcell id is missing});
-  }
-  if ($arg_refs->{'qc_run'}) {
-    $cmd .= q{ --qc_run};
-    $self->info('QC run');
-  }
-  $cmd .= q{ --id_flowcell_lims } . $arg_refs->{'id'};
+             $arg_refs->{'rf_path'},
+             $arg_refs->{'batch_id'};
 
   my $path = join $PATH_DELIM, $self->local_path(), $ENV{'PATH'};
 
   return qq{export PATH=$path; $cmd};
 }
 
-no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;
 
 __END__
@@ -113,12 +110,6 @@ from npg_pipeline::base.
 
 =head2 build_pipeline_script_name
 
-=head2 study_analysis_conf
-
-Returns a hash ref of study analysis configuration details.
-If the configuration file is not found or is not readable,
-an empty hash is returned.
-
 =head2 run
 
 Invokes the analysis pipeline script for runs with 'analysis pending'
@@ -134,15 +125,11 @@ status. Runs for which LIMS data are not available are skipped.
 
 =item Moose
 
+=item namespace::autoclean
+
 =item Try::Tiny
 
 =item Readonly
-
-=item Carp
-
-=item List::MoreUtils
-
-=item npg_tracking::util::abs_path
 
 =back
 
@@ -152,12 +139,17 @@ status. Runs for which LIMS data are not available are skipped.
 
 =head1 AUTHOR
 
-Andy Brown
-Marina Gourtovaia
+=over
+
+=item Andy Brown
+
+=item Marina Gourtovaia
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2016, 2020 Genome Research Ltd.
+Copyright (C) 2016,2017,2018,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

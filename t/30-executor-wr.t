@@ -142,7 +142,7 @@ subtest 'definition for a job' => sub {
 };
 
 subtest 'handling group limits' => sub {
-  plan tests => 12;
+  plan tests => 18;
 
  my $ref = {
     created_by    => 'me',
@@ -194,11 +194,13 @@ subtest 'handling group limits' => sub {
   );
   my $job_def;
   warning_like { $job_def = $e->_definition4job('function_two', 'some_dir', $fd2) }
-    qr/Groups limits are not configured/,
+    qr/No limit groups are configured/,
     'warning about of absence of limits settings in wr config file';
   is_deeply ($job_def, $expected, 'job definition without group limit');
+  is_deeply ($e->_attributes2limit_groups, {},
+    'empty mapping of attributes to limit groups');   
 
-  $conf->{limit_grps} = {};
+  $conf->{limit_grps} = [];
   $create_conf->($conf);
   $e = npg_pipeline::executor::wr->new(
     function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
@@ -206,22 +208,13 @@ subtest 'handling group limits' => sub {
     conf_path            => $conf_dir
   );
   warning_like { $job_def = $e->_definition4job('function_two', 'some_dir', $fd2) }
-    qr/Groups limits are not configured/,
+    qr/No limit groups are configured/,
     'warning about of absence of limits settings in wr config file';
-  is_deeply ($job_def, $expected, 'job definition without group limit');  
+  is_deeply ($job_def, $expected, 'job definition without group limit');
+  is_deeply ($e->_attributes2limit_groups, {},
+    'empty mapping of attributes to limit groups');
 
-  $conf->{limit_grps}->{irods} = undef;
-  $create_conf->($conf);
-  $e = npg_pipeline::executor::wr->new(
-    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
-    function_graph       => $g,
-    conf_path            => $conf_dir
-  );
-  throws_ok { $e->_definition4job('function_two', 'some_dir', $fd2) }
-    qr/Undefined limit for group \'irods\'/,
-    'error if limit is undefined in the config file';
-
-  $conf->{limit_grps}->{irods} = 5;
+  $conf->{limit_grps} = [qw(irods)];
   $create_conf->($conf);
   $e = npg_pipeline::executor::wr->new(
     function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
@@ -229,44 +222,60 @@ subtest 'handling group limits' => sub {
     conf_path            => $conf_dir
   );
   $job_def = $e->_definition4job('function_two', 'some_dir', $fd2);
-  $expected->{'limit_grps'} = ['irods:5'];
-  is_deeply ($e->_group_limits, {reserve_irods_slots => 'irods:5'}, 'cached group limits');
+  $expected->{'limit_grps'} = [qw/irods/];
+  is_deeply ($e->_limit_groups, [qw/irods/], 'cached limit group');
   is_deeply ($job_def, $expected, 'job definition with group limit');
+  is_deeply ($e->_attributes2limit_groups, {irods => 'reserve_irods_slots'},
+    'mapping of attributes to limit groups');
 
-  $e = npg_pipeline::executor::wr->new(
-    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
-    function_graph       => $g,
-    conf_path            => $conf_dir,
-    _limited_groups2attributes => {'irods' => 'reserve_irods_slots',
-                                   'queue' => 'queue'}
-  );
-  is_deeply ($e->_group_limits, {reserve_irods_slots => 'irods:5'}, 'cached group limits');
-  $job_def = $e->_definition4job('function_two', 'some_dir', $fd2);
-  is_deeply ($job_def, $expected, 'queue limit not included since it is not configured');
-
-  $conf->{limit_grps}->{queue} = 2;
+  $conf->{limit_grps} = [qw/queue irods/];
   $create_conf->($conf);
-  $e = npg_pipeline::executor::wr->new(
-    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
-    function_graph       => $g,
-    conf_path            => $conf_dir
-  );
-  throws_ok { $e->_definition4job('function_two', 'some_dir', $fd2) }
-    qr/Limit group 'queue' is not known/,
-    'error if limit is defined in the config file, but unregistered by the module';
 
   $e = npg_pipeline::executor::wr->new(
     function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
     function_graph       => $g,
     conf_path            => $conf_dir,
-    _limited_groups2attributes => {'irods' => 'reserve_irods_slots',
-                                   'queue' => 'queue'}
   );
-  is_deeply ($e->_group_limits,
-    {reserve_irods_slots => 'irods:5', queue => 'queue:2'}, 'cached group limits');
-  $expected->{'limit_grps'} = [qw/irods:5 queue:2/];
+  is_deeply ($e->_limit_groups, [qw/irods queue/], 'cached limit groups');
+  $expected->{'limit_grps'} = [qw/irods queue/];
   $job_def = $e->_definition4job('function_two', 'some_dir', $fd2);
-  is_deeply ($job_def, $expected, 'queue limit is included');  
+  is_deeply ($job_def, $expected, 'queue limit is included');
+  is_deeply ($e->_attributes2limit_groups,
+    {irods => 'reserve_irods_slots', queue => 'queue'},
+    'mapping of attributes to limit groups');  
+
+  $conf->{limit_grps} = [qw/queue/];
+  $create_conf->($conf);
+
+  $e = npg_pipeline::executor::wr->new(
+    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
+    function_graph       => $g,
+    conf_path            => $conf_dir,
+  );
+  is_deeply ($e->_limit_groups, [qw/queue/], 'cached limit group');
+  $expected->{'limit_grps'} = [qw/queue/];
+  $job_def = $e->_definition4job('function_two', 'some_dir', $fd2);
+  is_deeply ($job_def, $expected, 'queue limit is included');
+  is_deeply ($e->_attributes2limit_groups, {queue => 'queue'},
+    'mapping of attributes to limit groups');
+  
+  $conf->{limit_grps} = [qw/queue irods group2/];
+  $create_conf->($conf);
+
+  $e = npg_pipeline::executor::wr->new(
+    function_definitions => {'function_one' => [$fd1], 'function_two' => [$fd2]},
+    function_graph       => $g,
+    conf_path            => $conf_dir,
+  );
+  is_deeply ($e->_limit_groups, [qw/group2 irods queue/], 'cached limit groups');
+  $expected->{'limit_grps'} = [qw/group2 irods queue/];
+  is_deeply ($e->_attributes2limit_groups,
+    {irods => 'reserve_irods_slots', queue => 'queue', group2 => 'group2'},
+    'mapping of attributes to limit groups');  
+  throws_ok { $e->_definition4job('function_two', 'some_dir', $fd2) }
+    qr/Limit group 'group2' does not map to an existing definition object method/,
+    'error when one of limit groups does not map to a known method ' .
+    'of the definition object and no explicit mapping exists';
 };
 
 subtest 'dependencies' => sub {
