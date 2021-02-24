@@ -7,6 +7,10 @@ LIST OF CHANGES
  - The wait4path pipeline job does not have a log. To enable wr to
    recognise that these jobs are unique, echoing a random string
    is added to the shell command. 
+ - Remove the limit on the number of NovaSeq runs being archived at
+   the same time. Introduce a limit on the number of runs,
+   irrespectively of the instrument type, which are moved to archival
+   within the last hour.
 
 release 59.0.0
  - Following a decision to send data to CLIMB regardless of artic
