@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - More options for defining wr limit groups: allow an exact match
+   to the last component of pipeline function class name.
+ - An additional wr limit group - s3 - is configured.
+
 release 59.0.0
  - Following a decision to send data to CLIMB regardless of artic
    QC status, the file glob of the data to upload is changed to

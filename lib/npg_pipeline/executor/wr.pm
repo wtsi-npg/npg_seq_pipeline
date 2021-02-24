@@ -253,16 +253,7 @@ sub _definition4job {
     }
   }
 
-  my @limit_groups = ();
-  for my $group ( keys %{$self->_attributes2limit_groups} ) {
-    my $method = $self->_attributes2limit_groups->{$group};
-    $d->can($method) or $self->logcroak(
-      "Limit group '$group' does not map to an existing " .
-      'definition object method'
-    );
-    $d->$method and push @limit_groups, $group;
-  }
-
+  my @limit_groups = $self->_limit_groups4job($d);
   if (@limit_groups) {
     $def->{$WR_LIMIT_GROUPS_OPTION} = [(sort @limit_groups)];
   }
@@ -294,6 +285,35 @@ sub _definition4job {
   $def->{'cmd'} = $command;
 
   return $def;
+}
+
+sub _limit_groups4job {
+  my ($self, $d) = @_;
+
+  my @limit_groups = ();
+  for my $group ( keys %{$self->_attributes2limit_groups} ) {
+    my $method = $self->_attributes2limit_groups->{$group};
+    my $set_limit = 0;
+    if ($group ne $method) {
+      $d->can($method) or $self->logcroak(
+        "Limit group '$group' does not map to an existing " .
+        'definition object method'
+      );
+      $set_limit = $d->$method;
+    } else {
+      if ($d->can($method)) {
+        # Have a method that exactly matches the group? - Use it.
+        $set_limit = $d->can($method);
+      } else {
+        # Does the group name match the name of the class that created
+        # this definition?
+        $set_limit = ($d->created_by =~ /$group/smx);
+      }
+    }
+    $set_limit and push @limit_groups, $group;
+  }
+
+  return @limit_groups;
 }
 
 sub _wr_add_command {
@@ -391,7 +411,7 @@ __END__
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
