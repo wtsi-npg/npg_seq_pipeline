@@ -4,6 +4,9 @@ LIST OF CHANGES
  - More options for defining wr limit groups: allow an exact match
    to the last component of pipeline function class name.
  - An additional wr limit group - s3 - is configured.
+ - The wait4path pipeline job does not have a log. To enable wr to
+   recognise that these jobs are unique, echoing a random string
+   is added to the shell command. 
 
 release 59.0.0
  - Following a decision to send data to CLIMB regardless of artic
