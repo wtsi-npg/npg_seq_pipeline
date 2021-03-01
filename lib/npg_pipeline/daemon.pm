@@ -78,14 +78,27 @@ sub _build_npg_tracking_schema {
 }
 
 sub runs_with_status {
-  my ($self, $status_name) = @_;
+  my ($self, $status_name, $from_time) = @_;
   if (!$status_name) {
     $self->logcroak(q[Need status name]);
   }
-  return map {$_->run() } $self->npg_tracking_schema()->resultset(q[RunStatus])->search(
-     { q[me.iscurrent] => 1, q[run_status_dict.description] => $status_name},
-     {prefetch=>q[run_status_dict], order_by => q[me.date],}
-  )->all();
+
+  my $condition =  {
+    q[me.iscurrent]                => 1,
+    q[run_status_dict.description] => $status_name
+  };
+  if ($from_time) {
+    my $time = $self->npg_tracking_schema()->storage
+                    ->datetime_parser->format_datetime($from_time);
+    $condition->{q[me.date]} = {q[>] => $time};
+  }
+
+  return
+    map { $_->run() }
+    $self->npg_tracking_schema()->resultset(q[RunStatus])->search(
+      $condition,
+      {prefetch=>q[run_status_dict], order_by => q[me.date],}
+    )->all();
 }
 
 sub staging_host_match {
@@ -217,6 +230,31 @@ Runs the pipeline script. Returns 1 if successful, 0 in
 case of error.
 
 =head2 runs_with_status
+
+With one argument, which should be a valid run status description,
+returns a list of DBIx::Class::Row objects from the Run result set,
+which correspond to runs with the current status descriptiongiven
+by the argument.
+  
+  # find runs with current status 'archival pending'
+  my @rows = $obj->runs_with_status('archival pending');
+
+With two arguments, the first one a valid run status description,
+the second one a DateTime object, returns a subset of the list
+that is returned by this method with one argument. The additional
+selection condition is that the time of timestamp of the run status
+should be after the time given by the second argument.
+
+  # find runs which have current status 'archival in progress' and
+  # have reached this status within the last two hours
+  my $date = DateTime-now()->subtract(hours => 2);
+  my @rows = $obj->runs_with_status('archival in progress', $date);
+
+In both cases a list of returned objects is sorted in the assending
+run status timestamp order.
+
+If no run satisfies the conditions given by the argument(s), an
+empty list is returned.
 
 =head2 staging_host_match
 
