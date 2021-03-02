@@ -17,6 +17,7 @@ Readonly::Scalar our $IRODS_RELEASE                   => q{irods};
 Readonly::Scalar our $IRODS_PP_RELEASE                => q{irods_pp};
 
 Readonly::Scalar my $QC_OUTCOME_MATTERS_KEY           => q{qc_outcome_matters};
+Readonly::Scalar my $ACCEPT_UNDEF_QC_OUTCOME_KEY      => q{accept_undef_qc_outcome};
 Readonly::Scalar my $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY => q{s3};
 
 =head1 SUBROUTINES/METHODS
@@ -130,26 +131,61 @@ sub has_qc_for_release {
   my $rpt  = $product->rpt_list();
   my $name = $product->file_name_root();
 
-  my @seqqc = $product->final_seqqc_objs($self->$qc_db_accessor);
-  @seqqc or $self->logcroak("Product $name, $rpt are not all Final seq QC values");
-
-  if(not all { $_->is_accepted }  @seqqc) {
-    $self->info("Product $name, $rpt are not all Final Accepted seq QC values");
-    return 0;
-  }
-  my $libqc_obj = $product->final_libqc_obj($self->$qc_db_accessor);
-  # Lib outcomes are not available for full lane libraries, so the code below
-  # might give an error when absence of QC outcome is legitimate.
-  $libqc_obj or $self->logcroak("Product $name, $rpt is not Final lib QC value");
-  if ($libqc_obj->is_accepted) {
-    $self->info("Product $name, $rpt is for release (passed manual QC)");
-    return 1;
+  my @seqqc =  $product->seqqc_objs($self->$qc_db_accessor);
+ 
+  if (!@seqqc){#if seqqc outcome is undef
+    if ($self->accept_undef_qc_outcome($product,$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY)){
+      return 1;
+    }else{
+      $self->logcroak("Product $name, $rpt are not all Final seq QC values");
+    }
   }
 
-  $self->info("Product $name, $rpt is NOT for release (did not pass manual QC)");
+  #if seqqc is not final
+  if (any {not $_->has_final_outcome} @seqqc){
+    $self->logcroak("Product $name, $rpt are not all Final seq QC values"); 
+  }
+  #If seqqc is FINAL
+  my @seqqc_final_objs =  $product->final_seqqc_objs($self->$qc_db_accessor);
+  if(@seqqc_final_objs){
+    # if any seqqc is FINAL REJECTED
+    if (any {$_->is_rejected} @seqqc){
+      return 0;
+    }
+    my $libqc_obj = $product->libqc_obj($self->$qc_db_accessor);# getting regular lib values
+    #checking if libqc is undef
+    $libqc_obj or $self->logcroak("Product $name, $rpt is not Final lib QC value");
 
+    #seqqc is FINAL ACCEPTED
+    if (all {$_->is_accepted} @seqqc){
+      
+      if (any {not $_->has_final_outcome} $libqc_obj){# if libqc is not final
+        $self->logcroak("Product $name, $rpt is not Final lib QC value");
+      }
+      #libqc is final
+      if(all {$_->has_final_outcome} $libqc_obj){
+        if (all {$_->is_accepted} $libqc_obj){#seqqc is Final accepted and libqc is Final accepted
+          return 1;
+        }
+        elsif(any {$_->is_rejected} $libqc_obj){#libqc is rejected
+          return 0;
+        }
+        elsif(all {$_->is_undecided} $libqc_obj){#libqc is undecided
+          if ($self->accept_undef_qc_outcome($product,$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY)){
+            return 1;
+          }else{
+            return 0;
+          }
+        }
+      }
+    }
+  }    
   return 0;
-}
+};
+ 
+  
+
+
 
 =head2  qc_outcome_matters
 
@@ -171,6 +207,28 @@ sub qc_outcome_matters {
   $archiver or $self->logconfess('An archiver argument is required');
   return $self->find_study_config($product)->{$archiver}->{$QC_OUTCOME_MATTERS_KEY};
 }
+
+=head2  accept_undef_qc_outcome
+
+  Arg [1]    : npg_pipeline::product
+  Arg [2]    : Str
+
+  Example    : $obj->accept_undef_qc_outcome($product, q[s3])
+  Description: Returns a boolean value indicating whether or not QC outcome
+               can be undefined for the product to be archived by an archiver given
+               by the second argument.
+
+  Returntype : Bool
+
+=cut
+
+sub accept_undef_qc_outcome {
+  my ($self, $product,$archiver) = @_;
+  $product  or $self->logconfess('A product argument is required');
+  $archiver or $self->logconfess('An archiver argument is required');
+  return $self->find_study_config($product)->{$archiver}->{$ACCEPT_UNDEF_QC_OUTCOME_KEY};
+}
+
 
 =head2 customer_name
 

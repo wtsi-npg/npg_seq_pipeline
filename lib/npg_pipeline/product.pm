@@ -629,6 +629,35 @@ sub final_seqqc_objs {
   return @seqqc;
 }
 
+=head2 seqqc_objs
+
+  Returns a list of  DBIx row objects representing a sequencing QC outcomes
+  for component lanes of this product, even if not all outcomes are final.
+
+  npg_qc::Schema object argument is required.
+
+    use List::MoreUtils qw/all any/;
+    my @seq_qc_objs = $p->seqqc_objs($schema);
+    #these may or may not be final outcomes
+    my $passed = @seq_qc_objs && (all { $_->is_accepted } @seq_qc_objs);
+    my $failed = !@seq_qc_objs || (any { $_->is_rejected } @seq_qc_objs);
+
+=cut
+
+sub seqqc_objs {
+  my ($self, $schema) = @_;
+
+  $schema or croak 'qc schema argument is required';
+
+  my @lp = $self->lanes_as_products;
+  my @seqqc = $schema->resultset('MqcOutcomeEnt')
+              ->search_via_composition([map{$_->composition}@lp])->all;
+  if (@lp != @seqqc) {
+    return;
+  }
+  return @seqqc;
+}
+
 =head2 final_libqc_obj
 
   Returns a DBIx row object representing a final library QC outcome.
@@ -655,6 +684,34 @@ sub final_libqc_obj {
 
   return;
 }
+
+=head2 libqc_obj
+
+  Returns a DBIx row object representing the library QC outcome.
+  Returns an undefined value if the library QC outcome is
+  not available for this product.
+
+  npg_qc::Schema object argument is required.
+
+    my $lib_qc_obj = $p->libqc_obj($schema);
+
+=cut
+
+sub libqc_obj {
+  my ($self, $schema) = @_;
+
+  $schema or croak 'qc schema argument is required';
+
+  my $libqc = $schema->resultset('MqcLibraryOutcomeEnt')
+                     ->search_via_composition([$self->composition])->next;
+  if ($libqc) {
+    return $libqc;
+  }
+  
+  return;
+}
+
+
 
 __PACKAGE__->meta->make_immutable;
 
