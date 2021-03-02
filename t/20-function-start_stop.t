@@ -93,7 +93,8 @@ subtest 'wait4path function' => sub {
     .  q{'};
   my @command_components = split q[;], $d->command;
   my $start = shift @command_components;
-  like ($start, qr/bash -c 'echo \d{10}/, 'first part of the command is correct');
+  my $start_re = qr/bash -c 'echo \d+/;
+  like ($start, $start_re, 'first part of the command is correct');
   is (join(q[;], @command_components), $command,
     'second part of the command is correct');
 
@@ -105,7 +106,7 @@ subtest 'wait4path function' => sub {
   $d = $ds->[0];
   @command_components = split q[;], $d->command;
   $start = shift @command_components;
-  like ($start, qr/bash -c 'echo \d{10}/, 'first part of the command is correct');
+  like ($start, $start_re, 'first part of the command is correct');
   is (join(q[;], @command_components), $command,
     'second part of the command is correct');
   is ($d->command_preexec, qq{[ -d '$path' ]}, 'preexec command');
