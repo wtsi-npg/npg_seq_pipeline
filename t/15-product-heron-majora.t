@@ -114,7 +114,6 @@ is($rs, 20, "correct number of rows in result set");
 
 my $json_string_no_fn = $majora->get_majora_data('2021FolderNameNotFound');
 my $Mock_args = $Mock_request->new_args;
-
 #expected args to pass
 my $request = 'HTTP::Request';
 my $method = 'POST';
@@ -298,6 +297,7 @@ $majora = npg_pipeline::product::heron::majora->new($init);
 $Mock_resp->mock(content => sub {});
 #$Mock_resp->mock(decoded_content =>sub {});
 $Mock_resp->mock( code=> sub { 200 } );
+$Mock_resp->mock( is_error => sub { return; } );
 
 #updating Majora data for id_run (35340)
 $majora->update_majora($id_run);
@@ -334,8 +334,9 @@ is($Mock_decoded_data->{token},$encoded_data->{token}, 'token is passed correctl
 
 
 #Warning is returned when different values for pp_name and pp_version
-$majora->update_majora(35348);
-warning_like { $majora->update_majora(35348) } qr/Different values found for pp_name and pp_version. Passing empty value/,'warning of undef pp_name or pp_version values'
+warning_like { $majora->update_majora(35348) }
+  qr/Different values found for pp_name and pp_version. Passing empty value/,
+  'warning of undef pp_name or pp_version values';
 $Mock_args = $Mock_request->new_args;
 
 #bioinfo_pipe_version and bioinfo_pipe_name should both have empty value when multiple values
