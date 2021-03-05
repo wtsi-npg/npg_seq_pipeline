@@ -132,18 +132,18 @@ sub has_qc_for_release {
   my $name = $product->file_name_root();
 
   my @seqqc =  $product->seqqc_objs($self->$qc_db_accessor);
- 
+
   if (!@seqqc){#if seqqc outcome is undef
     if ($self->accept_undef_qc_outcome($product,$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY)){
       return 1;
     }else{
-      $self->logcroak("Seq QC is not defined");
+      $self->logcroak('Seq QC is not defined');
     }
   }
 
   #if seqqc is not final
   if (any {not $_->has_final_outcome} @seqqc){
-    $self->logcroak("Product $name, $rpt are not all Final seq QC values"); 
+    $self->logcroak("Product $name, $rpt are not all Final seq QC values");
   }else{
   #If seqqc is FINAL
     # if any seqqc is FINAL REJECTED
@@ -153,9 +153,9 @@ sub has_qc_for_release {
 
     my $libqc_obj = $product->libqc_obj($self->$qc_db_accessor);# getting regular lib values
     #checking if libqc is undef
-    $libqc_obj or $self->logcroak("lib QC is undefined");
+    $libqc_obj or $self->logcroak('lib QC is undefined');
 
-      if (not $libqc_obj->has_final_outcome} ){# if libqc is not final
+      if (not $libqc_obj->has_final_outcome ){# if libqc is not final
         $self->logcroak("Product $name, $rpt is not Final lib QC value");
       }else{
       #libqc is final
@@ -174,13 +174,9 @@ sub has_qc_for_release {
         }
       }
     }
-  }    
+  }
   return 0;
-};
- 
-  
-
-
+}
 
 =head2  qc_outcome_matters
 
