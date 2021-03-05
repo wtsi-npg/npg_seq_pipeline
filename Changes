@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 59.1.0
  - More options for defining wr limit groups: allow an exact match
    to the last component of pipeline function class name.
  - An additional wr limit group - s3 - is configured.
