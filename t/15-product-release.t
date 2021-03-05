@@ -107,7 +107,7 @@ subtest 'expected_unaligned_files' => sub {
 };
 
 
-subtest '1:1 is_s3_releasable when accept_undef_qc_outcome: undef' => sub {
+subtest '1:1 is_s3_releasable when accept_undef_qc_outcome: undef and seqqc is undef' => sub {
   plan tests => 4;
   my $lane_qc_rs = $qc->resultset('MqcOutcomeEnt');
   $lane_qc_rs->delete;#seqqc is undef
@@ -132,8 +132,8 @@ subtest '1:1 is_s3_releasable when accept_undef_qc_outcome: undef' => sub {
 
   is($archiver->qc_outcome_matters($product,'s3'),1,'qc_outcome_matters is set to true');
   is($archiver->accept_undef_qc_outcome($product,'s3'),undef,'accept_undef_qc_outcome is set to false');
-  throws_ok{$archiver->has_qc_for_release($product)} qr/Product $name, $rpt are not all Final seq QC values/, 'throws error when accept_undef_qc_outcome is false and seq_qc is undefined for has_qc_for_release';
-  throws_ok{$archiver->is_s3_releasable($product)} qr/Product $name, $rpt are not all Final seq QC values/, 'throws error when accept_undef_qc_outcome is false and seq_qc is undefined for is_s3_releasable';
+  throws_ok{$archiver->has_qc_for_release($product)} qr/Seq QC is not defined/, 'throws error when accept_undef_qc_outcome is false and seq_qc is undefined for has_qc_for_release';
+  throws_ok{$archiver->is_s3_releasable($product)} qr/Seq QC is not defined/, 'throws error when accept_undef_qc_outcome is false and seq_qc is undefined for is_s3_releasable';
 
 };
 
@@ -230,7 +230,7 @@ subtest '1:4 has_qc_for_release when accept_undef_qc_outcome: undef, seq_qc outc
 
   is($archiver->qc_outcome_matters($product,'s3'),1,'qc_outcome_matters is set to true');
   is($archiver->accept_undef_qc_outcome($product,'s3'),undef,'accept_undef_qc_outcome is set to false');
-  throws_ok{$archiver->has_qc_for_release($product)} qr/Product $name, $rpt is not Final lib QC value/, 'throws error when accept_undef_qc_outcome is false and seq_qc is final accepted and lib_qc is undef for has_qc_for_release';
+  throws_ok{$archiver->has_qc_for_release($product)} qr/lib QC is undefined/, 'throws error when accept_undef_qc_outcome is false and seq_qc is final accepted and lib_qc is undef for has_qc_for_release';
 
 };
 
@@ -483,8 +483,8 @@ subtest '2:4 has_qc_for_release when accept_undef_qc_outcome: true, seq_qc outco
 
   is($archiver->qc_outcome_matters($product,'s3'),1,'qc_outcome_matters is set to true');
   is($archiver->accept_undef_qc_outcome($product,'s3'),1,'accept_undef_qc_outcome is set to true');
-  throws_ok{$archiver->has_qc_for_release($product)} qr/Product $name, $rpt is not Final lib QC value/, 'throws error when accept_undef_qc_outcome is true and seq_qc is final accepted and lib_qc is undef for has_qc_for_release';
-throws_ok{$archiver->is_s3_releasable($product)} qr/Product $name, $rpt is not Final lib QC value/, 'throws error when accept_undef_qc_outcome is true and seq_qc is final accepted and lib_qc is undef for has_qc_for_release';
+  throws_ok{$archiver->has_qc_for_release($product)} qr/lib QC is undefined/, 'throws error when accept_undef_qc_outcome is true and seq_qc is final accepted and lib_qc is undef for has_qc_for_release';
+throws_ok{$archiver->is_s3_releasable($product)} qr/lib QC is undefined/, 'throws error when accept_undef_qc_outcome is true and seq_qc is final accepted and lib_qc is undef for has_qc_for_release';
 
 };
 

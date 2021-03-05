@@ -137,40 +137,35 @@ sub has_qc_for_release {
     if ($self->accept_undef_qc_outcome($product,$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY)){
       return 1;
     }else{
-      $self->logcroak("Product $name, $rpt are not all Final seq QC values");
+      $self->logcroak("Seq QC is not defined");
     }
   }
 
   #if seqqc is not final
   if (any {not $_->has_final_outcome} @seqqc){
     $self->logcroak("Product $name, $rpt are not all Final seq QC values"); 
-  }
+  }else{
   #If seqqc is FINAL
-  my @seqqc_final_objs =  $product->final_seqqc_objs($self->$qc_db_accessor);
-  if(@seqqc_final_objs){
     # if any seqqc is FINAL REJECTED
     if (any {$_->is_rejected} @seqqc){
       return 0;
-    }
+    }else{ #seqqc is FINAL ACCEPTED
+
     my $libqc_obj = $product->libqc_obj($self->$qc_db_accessor);# getting regular lib values
     #checking if libqc is undef
-    $libqc_obj or $self->logcroak("Product $name, $rpt is not Final lib QC value");
+    $libqc_obj or $self->logcroak("lib QC is undefined");
 
-    #seqqc is FINAL ACCEPTED
-    if (all {$_->is_accepted} @seqqc){
-      
-      if (any {not $_->has_final_outcome} $libqc_obj){# if libqc is not final
+      if (not $libqc_obj->has_final_outcome} ){# if libqc is not final
         $self->logcroak("Product $name, $rpt is not Final lib QC value");
-      }
+      }else{
       #libqc is final
-      if(all {$_->has_final_outcome} $libqc_obj){
-        if (all {$_->is_accepted} $libqc_obj){#seqqc is Final accepted and libqc is Final accepted
+        if ( $libqc_obj->is_accepted ){#seqqc is Final accepted and libqc is Final accepted
           return 1;
         }
-        elsif(any {$_->is_rejected} $libqc_obj){#libqc is rejected
+        elsif( $libqc_obj->is_rejected ){#libqc is rejected
           return 0;
         }
-        elsif(all {$_->is_undecided} $libqc_obj){#libqc is undecided
+        elsif( $libqc_obj->is_undecided ){#libqc is undecided
           if ($self->accept_undef_qc_outcome($product,$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY)){
             return 1;
           }else{
