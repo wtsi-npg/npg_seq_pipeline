@@ -1,6 +1,7 @@
 use strict;
 use warnings;
-use Test::More tests => 52;
+use Test::More tests => 53;
+use Test::Warn;
 use JSON;
 use t::dbic_util;
 use Test::Mock::LWP::UserAgent;
@@ -331,8 +332,10 @@ is_deeply($Mock_decoded_data->{runs},$encoded_data->{runs}, 'run_name is passed 
 is($Mock_decoded_data->{username},$encoded_data->{username}, 'username is passed correctly');
 is($Mock_decoded_data->{token},$encoded_data->{token}, 'token is passed correctly');
 
-## test for when multiple values for analysis and version
+
+#Warning is returned when different values for pp_name and pp_version
 $majora->update_majora(35348);
+warning_like { $majora->update_majora(35348) } qr/Different values found for pp_name and pp_version. Passing empty value/,'warning of undef pp_name or pp_version values'
 $Mock_args = $Mock_request->new_args;
 
 #bioinfo_pipe_version and bioinfo_pipe_name should both have empty value when multiple values
@@ -361,5 +364,4 @@ is_deeply($Mock_decoded_data->{runs},$encoded_data->{runs}, 'run_name is passed 
 
 is($Mock_decoded_data->{username},$encoded_data->{username}, 'username is passed correctly');
 is($Mock_decoded_data->{token},$encoded_data->{token}, 'token is passed correctly');
-
 1;
