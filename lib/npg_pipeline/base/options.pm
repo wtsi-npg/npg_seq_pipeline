@@ -1,7 +1,6 @@
 package npg_pipeline::base::options;
 
 use Moose::Role;
-use npg_pipeline::cache;
 
 our $VERSION = '0';
 
@@ -259,58 +258,6 @@ has q{id_flowcell_lims} => (
   required => 0,
 );
 
-=head2 qc_run
-
-Boolean flag indicating whether this run is a qc run,
-will be built if not supplied;
-
-=cut
-
-has q{qc_run} => (
- isa           => q{Bool},
- is            => q{ro},
- lazy_build    => 1,
- documentation => q{Boolean flag indicating whether the run is QC run, }.
-                  q{will be built if not supplied},);
-sub _build_qc_run {
-  my $self = shift;
-  return $self->is_qc_run();
-}
-
-=head2 is_qc_run
-
-Examines id_flowcell_lims attribute. If it consists of 13 digits, ie is a tube barcode,
-returns true, otherwise returns false.
-
-=cut
-
-sub is_qc_run {
-  my ($self, $lims_id) = @_;
-  $lims_id ||= $self->id_flowcell_lims;
-  return $lims_id && $lims_id =~ /\A\d{13}\z/smx; # it's a tube barcode
-}
-
-=head2 lims_driver_type
-
-Optional lims driver type name
-
-=cut
-
-has q{lims_driver_type} => (
-  isa           => q{Str},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{Optional lims driver type name},
-);
-sub _build_lims_driver_type {
-  my $self = shift;
-  return $self->qc_run ?
-    ($self->is_qc_run($self->id_flowcell_lims) ?
-       npg_pipeline::cache->warehouse_driver_name :
-       npg_pipeline::cache->mlwarehouse_driver_name
-    ) : npg_pipeline::cache->mlwarehouse_driver_name;
-}
-
 =head2 no_haplotype_caller
 
 Switches off haplotype caller.
@@ -348,11 +295,19 @@ __END__
 
 =head1 AUTHOR
 
-Marina Gourtovaia, Kevin Lewis, David K. Jackson
+=over
+
+=item Marina Gourtovaia
+
+=item Kevin Lewis
+
+=item David K. Jackson
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2019 Genome Research Ltd
+Copyright (C) 2018,2019,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

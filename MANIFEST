@@ -243,9 +243,6 @@ t/data/fixtures/mlwh/000-Sample.yml
 t/data/fixtures/mlwh/000-Study.yml
 t/data/fixtures/mlwh/100-IseqFlowcell.yml
 t/data/fixtures/mlwh/100-StudyUser.yml
-t/data/fixtures/wh/CurrentAliquot.yml
-t/data/fixtures/wh/CurrentLibraryTube.yml
-t/data/fixtures/wh/CurrentSampleTube.yml
 t/data/hiseq/16756_RunInfo.xml
 t/data/hiseq/16803_RunInfo.xml
 t/data/hiseq/16807_RunInfo.xml

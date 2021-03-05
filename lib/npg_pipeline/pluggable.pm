@@ -690,9 +690,7 @@ sub _run_spider {
       'id_run'           => $self->id_run,
       'set_env_vars'     => 1,
       'cache_dir_path'   => $self->metadata_cache_dir_path(),
-      'lims_driver_type' => $self->lims_driver_type,
       'id_flowcell_lims' => $self->id_flowcell_lims,
-      'flowcell_barcode' => $self->flowcell_id
     );
     $cache->setup();
     $self->info(join qq[\n], @{$cache->messages});
@@ -788,12 +786,17 @@ __END__
 
 =head1 AUTHOR
 
-Andy Brown
-Marina Gourtovaia
+=over
+
+=item Andy Brown
+
+=item Marina Gourtovaia
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2020 Genome Research Ltd.
+Copyright (C) 2014,2015,2016,2017,2018,2019,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

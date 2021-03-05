@@ -187,7 +187,7 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --max_errors 10 --alt_process qc_run --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
     'command is correct for qc run');
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(

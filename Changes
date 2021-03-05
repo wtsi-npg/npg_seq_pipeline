@@ -1,6 +1,43 @@
 LIST OF CHANGES
 ---------------
 
+ - More options for defining wr limit groups: allow an exact match
+   to the last component of pipeline function class name.
+ - An additional wr limit group - s3 - is configured.
+ - The wait4path pipeline job does not have a log. To enable wr to
+   recognise that these jobs are unique, echoing a random string
+   is added to the shell command. 
+ - Remove the limit on the number of NovaSeq runs being archived at
+   the same time. Introduce a limit on the number of runs,
+   irrespectively of the instrument type, which are moved to archival
+   within the last hour.
+
+release 59.0.0
+ - Following a decision to send data to CLIMB regardless of artic
+   QC status, the file glob of the data to upload is changed to
+   locations where both passed and failed data are available.
+ - Code for the archival and analysis daemons refactored:
+     1. Removed provisions for the access to configuration files
+        which have never been used.
+     2. The analysis daemon is no longer responsible for marking
+        runs as QC runs.
+     3. Removed access to ml warehouse for retrieval of LIMs data
+        since this information is no longer required.
+ - The qc_run pipeline option is removed, it was supporting a way
+   of setting up LIMs data for MiSeq runs which is no longer used.
+ - The lims_driver_type pipeline option is removed, it has never
+   been used, the pipeline will use the ml_warehouse driver by default
+   when creating a samplesheet. Internally this option is available
+   in some classes of the pipeline code base to indicate what driver
+   should be used by the jobs, this functionality remains intact.
+ - A simpler implementation of wr's limit groups to allow for setting
+   a persistent limit globally and for using limit groups that map
+   directly to accessors of the function definition object.
+ - Code in npg_pipeline::product::heron::majora is reimplemented as
+   a Moose class, most of the code of the npg_majora_for_mlwh script
+   is moved to this class, a logger is introduced. Improved a way
+   of matching a library type to majora metadata.
+
 release 58.3.0
  - bugfix in the code for interaction with the Majora/COG-UK API:
    cope with no iseq_flowcell entry for resultset
