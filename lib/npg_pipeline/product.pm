@@ -706,7 +706,7 @@ sub libqc_obj {
                      ->search_via_composition([$self->composition])->next;
   if ($libqc) {
     return $libqc;
-  } 
+  }
   return;
 }
 
