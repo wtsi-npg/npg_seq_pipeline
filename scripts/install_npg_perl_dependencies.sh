@@ -5,24 +5,12 @@ set -e -x
 # iRODS test server is not set up, so tests that require it will
 # be skipped
 
-# install conda client
-wget "https://repo.continuum.io/miniconda/Miniconda2-4.6.14-Linux-x86_64.sh" -O miniconda.sh;
-chmod +x miniconda.sh;
-./miniconda.sh -b  -p /home/travis/miniconda;
-export PATH=/home/travis/miniconda/bin:$PATH;
+#setting environment variables
+WTSI_NPG_GITHUB_URL=$1
+WTSI_NPG_CONDA_REPO=$2
+WTSI_NPG_BUILD_BRANCH=$3
 
-# install baton from our conda channel
-conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --channel default --mkdir --prefix /home/travis/miniconda/baton baton;
-
-# install samtools from our conda channel
-# this is needed for our basic IRODS Perl wrapper to work
-conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --channel default --mkdir --prefix /home/travis/miniconda/samtools samtools;
-
-# The default build branch for all repositories. This defaults to
-# TRAVIS_BRANCH unless set in the Travis build environment.
-WTSI_NPG_BUILD_BRANCH=${WTSI_NPG_BUILD_BRANCH:=$TRAVIS_BRANCH}
-
-# CPAN
+eval $(perl -I ~/perl5ext/lib/perl5/ -Mlocal::lib=~/perl5ext)
 cpanm --quiet --notest Alien::Tidyp # For npg_tracking
 cpanm --quiet --notest Module::Build
 cpanm --quiet --notest Net::SSLeay
@@ -49,26 +37,25 @@ for repo in $repos
 do
     export PERL5LIB=$repo/blib/lib:$PERL5LIB:$repo/lib
 done
-
+  
 for repo in $repos
 do
     cd $repo
-    cpanm --quiet --notest --installdeps .
+    cpanm  --quiet --notest --installdeps .
     perl Build.PL
     ./Build
 done
 
 # Finally, bring any common dependencies up to the latest version and
 # install
+
+# to set liblocal for perl5_npg
+eval $(perl -I ~/perl5ext/lib/perl5/ -Mlocal::lib=~/perl5npg)
+
 for repo in $repos
 do
     cd $repo
-    cpanm --quiet --notest --installdeps .
+    cpanm  --quiet --notest --installdeps .
     ./Build install
 done
-
-cd $TRAVIS_BUILD_DIR
-
-
-
-
+cd
