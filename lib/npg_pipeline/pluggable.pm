@@ -147,7 +147,7 @@ has q{function_order} => (
 
 =head2 function_list
 
-A lazy-build attribute with a wrapper around it. Is set to an 
+A lazy-build attribute with a wrapper around it. Is set to an
 absolute path to a JSON file where the function graph is defined.
 Can be supplied as a hint for finding the file, will be resolved to
 an absolute path.
@@ -386,6 +386,7 @@ sub main {
   my $error = q{};
   my $when = q{initializing pipeline};
   try {
+    $self->_save_product_conf_to_analysis_dir();
     $self->prepare();
     $when = q{running functions};
     $self->_schedule_functions();
@@ -411,12 +412,12 @@ sub main {
     # this script's log, which might be a file.
     # We currently tie STDERR so output to standard error
     # goes to this script's log file. Hence the need to
-    # untie. Dies not cause an error if STDERR has not been
-    # tied. 
+    # untie. Does not cause an error if STDERR has not been
+    # tied.
     untie *STDERR;
   }
 
-  $self->_create_log_link();
+  $self->_link_log_to_analysis_dir($self->log_file_name);
 
   $error and croak $error;
 
@@ -604,7 +605,7 @@ sub _run_function {
   #####
   # Use some function-specific attributes that we received
   # from the registry.
-  #  
+  #
   while (my ($key, $value) = each %{$params}) {
     $attrs->{$key} = $value;
   }
@@ -613,7 +614,7 @@ sub _run_function {
   # Instantiate the function implementor object, call on it the
   # method whose name we received from the registry, return
   # the result.
-  #    
+  #
   return $module->new($attrs)->$method_name($self->_pipeline_name);
 }
 
@@ -625,13 +626,13 @@ sub _schedule_functions {
   #####
   # Topological ordering of a directed graph is a linear ordering of
   # its vertices such that for every directed edge uv from vertex u
-  # to vertex v, u comes before v in the ordering, see 
+  # to vertex v, u comes before v in the ordering, see
   # https://en.wikipedia.org/wiki/Topological_sorting
   #
   # We need to run some of the functions in the very beginning since
   # they create the analysis directory structure the rest of the job
   # submission code relies on. The graph should be defined in a way
-  # that guarantees that topological sort returns functions in 
+  # that guarantees that topological sort returns functions in
   # correct order.
   #
   my @functions = $g->topological_sort();
@@ -701,32 +702,61 @@ sub _run_spider {
   return;
 }
 
-#####
-# Attempts to create in the analysis directory a hard link to
-# or, if unsuccessful, a copy of the log file of the pipeline.
-# All errors are captured. Best effort.
-#
-sub _create_log_link {
-  my $self = shift;
+# Attempts to link the pipeline log file to the analysis directory
+sub _link_log_to_analysis_dir {
+  my ($self) = @_;
+  $self->_tolerant_persist_file_to_analysis_dir(
+    $self->log_file_name, undef, 1
+  );
+  return;
+}
 
-  (-e $self->analysis_path) or return;
-
-  my $link = catfile($self->analysis_path, $self->log_file_name);
-  if (!-e $link) {
-    try {
-      my $linked = 1;
-      if (not link $self->log_file_path, $link) {
-        # If cannot hard link, just copy.
-        $linked = copy $self->log_file_path, $link;
-      }
-      $linked and $self->info("Created link or copy $link for the log file");
-    } catch {
-      $self->warn("Error creating a link or copy: $_");
-    };
-  } else {
-    $self->warn("Will not overwrite existing file $link");
+sub _save_product_conf_to_analysis_dir {
+  my ($self) = @_;
+  # First check for unusual file names:
+  my ($filename, $dirs, $suffix) = fileparse(
+    $self->product_conf_file_path,
+    qr/[.][^.]*/
+  );
+  if ($filename ne 'product_release') {
+    $filename = 'product_release_'.$filename.$suffix;
   }
+  $filename = $filename.'_'.$self->random_string.$suffix;
 
+  $self->_tolerant_persist_file_to_analysis_dir(
+    $self->product_conf_file_path,
+    $filename
+  );
+  return;
+}
+
+# Links or copies a file to analysis_path, and optionally
+# renames the file in its destination
+sub _tolerant_persist_file_to_analysis_dir {
+  my ($self, $source_file, $override_name, $link) = @_;
+
+  # Shouldn't this be an error?
+  my $analysis_path = $self->analysis_path;
+  (-e $analysis_path) or return;
+  my $target_file;
+  if ($override_name) {
+    $target_file = catfile($analysis_path, $override_name);
+  } else {
+    $target_file = catfile($analysis_path, $source_file);
+  }
+  my $state;
+  if ($link) {
+    return if -e $target_file;
+    $state = link $source_file, $target_file;
+    $self->info("Created link to $target_file for the log file");
+    return if $state;
+  }
+  $state = copy $source_file, $target_file;
+  if (!$state) {
+    $self->warn("Failed to make a copy of $source_file at $target_file");
+  } else {
+    $self->info("Created copy of $source_file into $analysis_path");
+  }
   return;
 }
 
