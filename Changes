@@ -12,6 +12,8 @@ release 59.1.0
    the same time. Introduce a limit on the number of runs,
    irrespectively of the instrument type, which are moved to archival
    within the last hour.
+ - Include pipeline version and name when sending sequencing run metadata
+   to the majora service.
 
 release 59.0.0
  - Following a decision to send data to CLIMB regardless of artic
