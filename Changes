@@ -1,6 +1,18 @@
 LIST OF CHANGES
 ---------------
 
+release 59.1.0
+ - More options for defining wr limit groups: allow an exact match
+   to the last component of pipeline function class name.
+ - An additional wr limit group - s3 - is configured.
+ - The wait4path pipeline job does not have a log. To enable wr to
+   recognise that these jobs are unique, echoing a random string
+   is added to the shell command. 
+ - Remove the limit on the number of NovaSeq runs being archived at
+   the same time. Introduce a limit on the number of runs,
+   irrespectively of the instrument type, which are moved to archival
+   within the last hour.
+
 release 59.0.0
  - Following a decision to send data to CLIMB regardless of artic
    QC status, the file glob of the data to upload is changed to
