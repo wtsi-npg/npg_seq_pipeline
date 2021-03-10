@@ -716,7 +716,7 @@ sub _save_product_conf_to_analysis_dir {
   # First check for unusual file names:
   my ($filename, $dirs, $suffix) = fileparse(
     $self->product_conf_file_path,
-    qr/[.][^.]*/
+    qr/[.][^.]*/xms
   );
   if ($filename ne 'product_release') {
     $filename = 'product_release_'.$filename.$suffix;
