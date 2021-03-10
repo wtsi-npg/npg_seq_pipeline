@@ -706,7 +706,7 @@ sub _run_spider {
 sub _link_log_to_analysis_dir {
   my ($self) = @_;
   $self->_tolerant_persist_file_to_analysis_dir(
-    $self->log_file_name, undef, 1
+    $self->log_file_path, $self->log_file_name, 1
   );
   return;
 }
