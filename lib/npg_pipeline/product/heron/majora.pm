@@ -9,7 +9,9 @@ use HTTP::Request;
 use JSON::XS;
 use LWP::UserAgent;
 use Log::Log4perl qw(:easy);
-use List::MoreUtils qw(any);
+use List::MoreUtils qw(any uniq);
+use Carp;
+
 use npg_tracking::Schema;
 use WTSI::DNAP::Warehouse::Schema;
 
@@ -323,90 +325,148 @@ sub update_majora{
                  'Sanger_tailed_artic_v1_96' ]
   };
 
-  if (!defined $id_run) {$self->logger->error('need an id_run')};
-  my$rn=$self->_npg_tracking_schema->resultset(q(Run))->find($id_run)->folder_name;
-  my$rs=$self->_mlwh_schema->resultset(q(IseqProductMetric))->search_rs({'me.id_run'=>$id_run, tag_index=>{q(>) => 0}},{join=>{iseq_flowcell=>q(sample)}});
-  my$rsu=$self->_mlwh_schema->resultset(q(Sample))->search({q(iseq_heron_product_metric.climb_upload)=>{q(-not)=>undef}},{join=>{iseq_flowcells=>{iseq_product_metrics=>q(iseq_heron_product_metric)}}});
-  my%l2bs;my%l2pp;my%l2lsp; my%r2l;
-  while (my$r=$rs->next){
-      my$ifc=$r->iseq_flowcell or next;
-      my$bs=$ifc->sample->supplier_name;
-      my$lb=$ifc->id_pool_lims;
-      # lookup by library and sample name - skip if no climb_uploads.
-      if(not $rsu->search({q(me.supplier_name)=>$bs, q(iseq_flowcells.id_pool_lims)=>$lb})->count() ) {next;}
-      # i.e. do not use exising $r record as same library might upload differnt samples in differnt runs - Majora library must contain both
-      my$pp=$r->iseq_flowcell->primer_panel;
-      $pp=$pp=~m{nCoV-2019/V(\d)\b}smx?$1:q("");
+  if (!defined $id_run) {
+    $self->logger->error('need an id_run')
+  };
 
-      my$lt=$r->iseq_flowcell->pipeline_id_lims;
+  my $runfolder_name =
+    $self->_npg_tracking_schema->resultset(q(Run))->find($id_run)->folder_name;
+  my $rs=$self->_mlwh_schema->resultset(q(IseqProductMetric))->search_rs(
+    {'me.id_run' => $id_run, 'me.tag_index' => {q(>) => 0}},
+    {join     => [{iseq_flowcell=>q(sample)}, q(iseq_heron_product_metric)],
+     prefetch => [{iseq_flowcell=>q(sample)}, q(iseq_heron_product_metric)]});
+  my $rsu=$self->_mlwh_schema->resultset(q(Sample))->search(
+    {q(iseq_heron_product_metric.climb_upload)=>{q(-not)=>undef}},
+    {join     => {iseq_flowcells=>{iseq_product_metrics=>q(iseq_heron_product_metric)}}});
+
+  my %l2bs; my %l2pp; my %l2lsp; my %r2l;
+
+  while (my $r = $rs->next) {
+      my $ifc = $r->iseq_flowcell or next;
+      my $sample_name = $ifc->sample->supplier_name;
+      my $lib = $ifc->id_pool_lims;
+
+      # lookup by library and sample name - skip if no climb_uploads.
+      $rsu->search({q(me.supplier_name)=>$sample_name, q(iseq_flowcells.id_pool_lims)=>$lib})->count() or next;
+      # i.e. do not use exising $r record as same library might upload different samples
+      # in differnt runs - Majora library must contain both
+
+      my $primer_panel = $r->iseq_flowcell->primer_panel;
+      ($primer_panel) = $primer_panel =~ m{nCoV-2019/V(\d)\b}smx?$1:q("");
+
+      my $lt = $r->iseq_flowcell->pipeline_id_lims;
       $lt ||= q();
       $lt = uc $lt;
-      my$lsp=q();
+      my $lib_seq_protocol = q();
       for my $type (keys %{$libtypes}) {
         if (any { $lt eq $_ } map { uc } @{$libtypes->{$type}}) {
-          $lsp = $type;
+          $lib_seq_protocol = $type;
           last;
         }
       }
-      if (not $lsp) {
+      if (not $lib_seq_protocol) {
         $self->logger->error_die("Do not know how to deal with library type: '$lt'");
       }
 
-      $r2l{$rn}{$lb}++;
-      $l2bs{$lb}{$bs}++;
-      $l2pp{$lb}{$pp}++;
-      $l2lsp{$lb}{$lsp}++;
-  }
-  foreach my$lb(sort keys %l2bs){
-    if (1!=keys %{$l2pp{$lb}})  { $self->logger->error_die("multiple primer panels in $lb") };
-    if (1!=keys %{$l2lsp{$lb}}) { $self->logger->error_die("multiple library seq protocol in $lb") };
-    my($pp)=keys %{$l2pp{$lb}};
-    my($lsp)=keys %{$l2lsp{$lb}};
+      my $pp_name;
+      my $pp_version;
+      my $heron_row = $r->iseq_heron_product_metric();
+      if ($heron_row) {
+        $pp_name    = $heron_row->pp_name;
+        $pp_version = $heron_row->pp_version;
+      }
+      $pp_name    ||= q();
+      $pp_version ||= q();
 
-    my $url = q(api/v2/artifact/library/add/);
-    my @biosample_info;
+      push @{$r2l{$runfolder_name}{$lib}}, {$pp_name => $pp_version};
+      $l2bs{$lib}{$sample_name}++;
+      $l2pp{$lib}{$primer_panel}++;
+      $l2lsp{$lib}{$lib_seq_protocol}++;
+  }
+
+  my $url = q(api/v2/artifact/library/add/);
+
+  foreach my $lb (sort keys %l2bs) {
+
+    (1 == keys %{$l2pp{$lb}})  or $self->logger->error_die("multiple primer panels in $lb");
+    (1 == keys %{$l2lsp{$lb}}) or $self->logger->error_die("multiple library seq protocol in $lb");
+    my ($primer_panel)     = keys %{$l2pp{$lb}};
+    my ($lib_seq_protocol) = keys %{$l2lsp{$lb}};
+
+    my @biosample_info = ();
     foreach my $key (keys%{$l2bs{$lb}}){
-      push @biosample_info, {central_sample_id=>$key,
-                             library_selection=>'PCR',
-                             library_source   =>'VIRAL_RNA',
-                             library_strategy =>'AMPLICON',
-                             library_protocol =>q{},
-                             library_primers  =>$pp
+      push @biosample_info, {central_sample_id=> $key,
+                             library_selection=> 'PCR',
+                             library_source   => 'VIRAL_RNA',
+                             library_strategy => 'AMPLICON',
+                             library_protocol => q{},
+                             library_primers  => $primer_panel
                             };
     }
+
     my $data_to_encode = {
-                                  library_name=>$lb,
-                                  library_layout_config=>'PAIRED',
-                                  library_seq_kit=> 'NEB ULTRA II',
-                                  library_seq_protocol=> $lsp,
-                                  force_biosamples=> \1, # JSON encode as true, Sanger-only Majora interaction
-                                  biosamples=>[@biosample_info]
-                       };
+                           library_name          => $lb,
+                           library_layout_config => 'PAIRED',
+                           library_seq_kit       => 'NEB ULTRA II',
+                           library_seq_protocol  => $lib_seq_protocol,
+                           force_biosamples      => \1, # JSON encode as true, Sanger-only Majora interaction
+                           biosamples            => \@biosample_info
+                         };
    $self->logger->debug("Sending call to update Majora for library $lb");
    $self->_use_majora_api('POST', $url, $data_to_encode);
   }
+
   # adding sequencing run
-  foreach my$rn(sort keys%r2l){
-    foreach my$lb(sort keys %{$r2l{$rn}}){
-      my $url = q(api/v2/process/sequencing/add/);
-      my $instrument_model= ($rn=~m{_MS}smx?q(MiSeq):q(NovaSeq));
+  $url = q(api/v2/process/sequencing/add/);
+
+  foreach my $runfolder_name (sort keys %r2l) {
+    foreach my $lb ( sort keys %{$r2l{$runfolder_name}} ) {
+      my $instrument_model = ($runfolder_name =~ m{_MS}smx ? q(MiSeq) : q(NovaSeq));
+      my @pipelines_info = @{$r2l{$runfolder_name}{$lb}};
+      my @pp_names = uniq map { keys %{$_} } @pipelines_info;
+      my $pp_name = q();
+      if (@pp_names == 1) {
+        $pp_name = $pp_names[0];
+        $pp_name or $self->logger->warn('No pp_name value retrieved');
+      } else {
+        my $m = 'Different values found for pp_name and pp_version. ' .
+                'Passing empty value';
+        $self->logger->warn($m);
+        carp $m;
+      }
+      my $pp_version = q();
+      if ($pp_name) {
+        my @pp_versions = uniq map { values %{$_} } @pipelines_info;
+        if (@pp_versions == 1) {
+          $pp_version = $pp_versions[0];
+          $pp_version or $self->logger->warn('No pp_version value retrieved');
+        } else {
+          my $m = 'Different values found for pp_version. Passing empty value';
+          $self->logger->warn($m);
+          carp $m;
+        }
+      }
       my $data_to_encode = {
-                            library_name=>$lb,
+                            library_name => $lb,
                             runs=> [{
-                                     run_name=>$rn,
-                                     instrument_make=>'ILLUMINA',
-                                     instrument_model=>$instrument_model,
+                                     run_name             => $runfolder_name,
+                                     instrument_make      => 'ILLUMINA',
+                                     instrument_model     => $instrument_model,
+                                     bioinfo_pipe_version => $pp_version,
+                                     bioinfo_pipe_name    => $pp_name
                                    }]
                            };
       $self->logger->debug("Sending call to update Majora for library $lb");
       $self->_use_majora_api('POST', $url, $data_to_encode);
     }
   }
- return;
+
+  return;
 }
 
 sub _use_majora_api{
-  my ($self,$method,$url_end,$data_to_encode) = @_;
+  my ($self, $method, $url_end, $data_to_encode) = @_;
+
   $data_to_encode = {%{$data_to_encode}};
   if (!defined $ENV{MAJORA_DOMAIN}){
     $self->logger->error('MAJORA_DOMAIN environment variable not set');
@@ -430,6 +490,7 @@ sub _use_majora_api{
   if ($res->is_error){
     $self->logger->error_die(q(Majora API returned a ).($res->code).qq( code. Content:\n).($res->decoded_content()).qq(\n));
   }
+
   return $res->decoded_content;
 }
 
@@ -544,6 +605,8 @@ Takes id_run as argument, to then call api to update Majora.
 =item MooseX::Getopt
 
 =item List::MoreUtils
+
+=item Carp
 
 =item npg_tracking::Schema
 
