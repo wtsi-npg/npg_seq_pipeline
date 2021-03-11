@@ -702,12 +702,8 @@ sub libqc_obj {
 
   $schema or croak 'qc schema argument is required';
 
-  my $libqc = $schema->resultset('MqcLibraryOutcomeEnt')
-                     ->search_via_composition([$self->composition])->next;
-  if ($libqc) {
-    return $libqc;
-  }
-  return;
+  return $schema->resultset('MqcLibraryOutcomeEnt')
+                ->search_via_composition([$self->composition])->next;
 }
 
 
@@ -754,11 +750,17 @@ __END__
 
 =head1 AUTHOR
 
-Marina Gourtovaia
+=over
+
+=item Marina Gourtovaia
+
+=item Fred Dodd
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2019,2020 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
