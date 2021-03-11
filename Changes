@@ -1,6 +1,14 @@
 LIST OF CHANGES
 ---------------
 
+ - Added an option of having a new boolean flag 'accept_undef_qc_outcome'
+   in the study configuration for a product for a particular archiver.
+   If this flag is set to a true value, the return value of the
+   has_qc_for_release method might return true in cases where previously
+   it would have returned false. This is done in order to allow for
+   archival of products which either passes QC or have never been through
+   manual or robo QC.
+
 release 59.1.0
  - More options for defining wr limit groups: allow an exact match
    to the last component of pipeline function class name.
