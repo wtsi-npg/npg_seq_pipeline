@@ -16,22 +16,22 @@ wget -qO - https://cpanmin.us | /usr/bin/perl - --sudo App::cpanminus #installin
 # install conda client
 wget "https://repo.continuum.io/miniconda/Miniconda2-4.6.14-Linux-x86_64.sh" -O miniconda.sh;
 chmod +x miniconda.sh;
-./miniconda.sh -b  -p /home/travis/miniconda;
-export PATH=/home/travis/miniconda/bin:$PATH;
+./miniconda.sh -b  -p $HOME/miniconda;
+export PATH=$HOME/miniconda/bin:$PATH;
 
 # install baton from our conda channel
-conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --channel default --mkdir --prefix /home/travis/miniconda/baton baton;
+conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --channel default --mkdir --prefix $HOME/miniconda/miniconda/baton baton;
 
 # install samtools from our conda channel
 # this is needed for our basic IRODS Perl wrapper to work
-conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --channel default --mkdir --prefix /home/travis/miniconda/samtools samtools;
+conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --channel default --mkdir --prefix $HOME/miniconda/miniconda/samtools samtools;
 echo "1:1 complete conda install"
 # The default build branch for all repositories. This defaults to
 # TRAVIS_BRANCH unless set in the Travis build environment.
 WTSI_NPG_BUILD_BRANCH=${WTSI_NPG_BUILD_BRANCH:=$TRAVIS_BRANCH} #TODO this is missing a value...current github branch to add here instead of travis
 
 # CPANM install and C compiler
-
+cpanm --local-lib=~/perl5 local::lib && eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
 cpanm --quiet --notest Alien::Tidyp # For npg_tracking
 cpanm --quiet --notest Module::Build
 cpanm --quiet --notest Net::SSLeay
@@ -62,7 +62,6 @@ do
 done
 
 echo "1:4 complete perl5lib export"
-
 for repo in $repos
 do
     cd $repo
@@ -71,7 +70,6 @@ do
     #wget -qO - https://cpanmin.us | /usr/bin/perl - --sudo App::cpanminus # try install cpan for each repo
     
     #cpanm UUID 2>&1 | tee tmp.log
-
     cpanm  --quiet --notest --installdeps .
     
     #perl -nle 'if (/failed/){ if ( m{(/home\S+/build.log)} ) { print $1; } }' tmp.log | xargs -r cat
@@ -90,7 +88,15 @@ do
     ./Build install
 done
 
-cd $TRAVIS_BUILD_DIR
+echo "this is current perl5lib: $PERL5LIB"
+
+cd
+echo "This is current locations: \n"
+pwd
+
+#seperate miniconda and perl
+#break up internal and external perl dependencies
+#cache conda + external perl 
 
 
 
