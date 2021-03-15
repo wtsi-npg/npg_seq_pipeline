@@ -719,7 +719,7 @@ sub _save_product_conf_to_analysis_dir {
     qr/[.][^.]*/xms
   );
   if ($filename ne 'product_release') {
-    $filename = 'product_release_'.$filename.$suffix;
+    $filename = 'product_release_'.$filename;
   }
   $filename = $filename.'_'.$self->random_string.$suffix;
 
