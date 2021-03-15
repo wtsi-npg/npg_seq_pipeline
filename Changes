@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - iRODS connections to be opened on-demand for validation
  - Added an option of having a new boolean flag 'accept_undef_qc_outcome'
    in the study configuration for a product for a particular archiver.
    If this flag is set to a true value, the return value of the
@@ -58,7 +59,7 @@ release 58.3.0
 release 58.2.0
  - enhancement of code for interaction with the Majora/COG-UK API
  - added analysis for Duplex-Seq libraries
- 
+
 release 58.1.0
  - added npg_climb2mlwh to update warehouse from uploaded
    climb data
