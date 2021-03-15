@@ -17,7 +17,7 @@ our $VERSION = '0';
 Readonly::Scalar my $TAG_LIST_FILE_HEADER      => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
 # For dual index runs add the expected i5 tag sequences for samples (e.g. phix) which have no i5 tag
 # I've extended these to 10 bases. For I5OPPOSITE final `GT` predicted from adapter documentation.
-Readonly::Scalar my $SPIKED_PHIX_TAG2        => q{TCTTTCCCTA};
+Readonly::Scalar my $SPIKED_PHIX_TAG2        => q{TCTTTCCCTACAC};
 Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_TAG2 => q{AGATCTCGGT};
 Readonly::Scalar my $TAG_SUFFIX => q{AT};
 Readonly::Scalar my $TAG2_SUFFIX => q{AC};
