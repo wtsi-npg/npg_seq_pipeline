@@ -1,10 +1,11 @@
 use strict;
 use warnings;
-use Test::More tests => 22;
+use Test::More tests => 23;
 use Test::Exception;
 use Cwd;
 use List::MoreUtils qw{any};
 use Log::Log4perl qw(:levels);
+use DateTime;
 
 use t::dbic_util;
 use t::util;
@@ -62,16 +63,42 @@ package main;
     q{generated command is correct});
   ok(!$runner->green_host, 'host is not in green datacentre');
 
-  $schema->resultset(q[Run])->find(2)->update_run_status('archival pending', 'pipeline');
-  $schema->resultset(q[Run])->find(3)->update_run_status('archival pending', 'pipeline');
+  my $status = 'archival pending';
+  $schema->resultset(q[Run])->find(2)->update_run_status($status, 'pipeline');
+  $schema->resultset(q[Run])->find(3)->update_run_status($status, 'pipeline');
   my @test_runs = ();
-  lives_ok { @test_runs = $runner->runs_with_status('archival pending') }
+  lives_ok { @test_runs = $runner->runs_with_status($status) }
     'can get runs with analysys pending status';
-  ok(scalar @test_runs >= 3, 'at least three runs are archival pending');
+  ok(scalar @test_runs >= 3, "at least three runs have status '$status'");
   foreach my $id (qw/2 3 1234/) {
-    ok((any {$_->id_run == $id} @test_runs), "run $id correctly identified as archival pending");
+    ok((any {$_->id_run == $id} @test_runs),
+    "run $id is correctly identified as having status '$status'");
   }
 }
+
+subtest 'identifying the number of runs recently submitted to archival' => sub {
+  plan tests => 3;
+
+  my $status = 'archival in progress';
+  $schema->resultset(q[Run])->find(3)->update_run_status($status, 'pipeline');
+  sleep 1;
+  $schema->resultset(q[Run])->find(2)->update_run_status($status, 'pipeline');
+  my $time = DateTime->now()->subtract(hours => 1);
+  my $runner = test_archival_runner->new(
+    npg_tracking_schema     => $schema
+  );
+  my @test_runs = $runner->runs_with_status($status, $time);
+  is ($test_runs[0]->id_run, 3,
+    "run 3 is correctly identified as getting status '$status' ".
+    'within last hour');
+  is ($test_runs[1]->id_run, 2, 
+    "run 2 is correctly identified as getting status '$status' ".
+    'within last hour');
+  $time->add(days => 1);
+  @test_runs = $runner->runs_with_status($status, $time);
+  is (scalar @test_runs, 0, "no runs got status '$status' withing an hour " .
+    'of a date which is 23 hours in future');
+};
 
 {
   $schema->resultset(q[Run])->find(2)->update({'folder_path_glob'=> 'sf26',});
@@ -79,6 +106,10 @@ package main;
     'run 2 updated to be in red room');
   is($schema->resultset(q[Run])->find(3)->folder_path_glob(), undef,
     'run 3 folder path glob undefined, will never match any host');
+
+  $schema->resultset(q[Run])->find(2)
+    ->update_run_status('archival pending', 'pipeline');
+
   my $runner = test_archival_runner->new(
     pipeline_script_name    => '/bin/true',
     npg_tracking_schema     => $schema
@@ -96,7 +127,7 @@ package main;
   is ($s2, 1, 'one run submittted on the second attempt');
 }
 
-subtest 'limiting number of NovaSeq runs being archived' => sub {
+subtest 'limiting number of runs being archived' => sub {
   plan tests => 8;
 
   my $runner = test_archival_runner->new(
@@ -104,31 +135,44 @@ subtest 'limiting number of NovaSeq runs being archived' => sub {
     npg_tracking_schema     => $schema
   );
 
-  my @id_runs_nv = sort { $a <=> $b } qw/26487 26486 25806 25751 25723 26671/;
-  my @runs = $schema->resultset('Run')->search({id_run => \@id_runs_nv}, {order_by => 'id_run'});
-  is (scalar @runs, scalar @id_runs_nv, 'correct runs in test db');
+  $schema->resultset(q[Run])->find(2)
+    ->update_run_status('archival in progress', 'pipeline');
+
+  my @id_runs = sort { $a <=> $b } qw/26487 26486 25806 25751 25723 26671/;
+  my @runs = $schema->resultset('Run')->search({id_run => \@id_runs}, {order_by => 'id_run'});
+  is (scalar @runs, scalar @id_runs, 'correct runs in test db');
   map { sleep 1; $_->update_run_status('archival pending', 'pipeline') } @runs;
 
+  my $status = 'archival in progress';
   my $s = $runner->run();
-  is ($s, 1, 'one run submitted');
-  $runs[0]->update_run_status('archival in progress', 'pipeline');
+  is ($s, 1, 'run submitted');
+  $runs[0]->update_run_status($status, 'pipeline');
   $s = $runner->run();
-  is ($s, 1, 'one run submitted');
-  $runs[1]->update_run_status('archival in progress', 'pipeline');
+  is ($s, 1, 'run submitted');
+  $runs[1]->update_run_status($status, 'pipeline');
   $s = $runner->run();
-  is ($s, 1, 'one run submitted');
-  $runs[2]->update_run_status('archival in progress', 'pipeline');
+  is ($s, 1, 'run submitted');
+  $runs[2]->update_run_status($status, 'pipeline');
+  # total number of recent runs in archival is now 5
+
   $s = $runner->run();
-  is ($s, 1, 'one run submitted');
-  $runs[3]->update_run_status('archival in progress', 'pipeline');
-  $s = $runner->run();
-  is ($s, 0, 'no runs submitted since four NovaSeq runs in archiva in progress');
+  is ($s, 0, "no runs submitted since 5 runs have recent '$status' status");
   $runs[0]->update_run_status('run archived', 'pipeline');
   $s = $runner->run();
-  is ($s, 1, 'one run submitted since the number of runs in archival dropped');
-  $runs[4]->update_run_status('archival in progress', 'pipeline');
+  is ($s, 1, 'run submitted since the number of runs in archival dropped');
+  $runs[4]->update_run_status($status, 'pipeline');
   $s = $runner->run();
-  is ($s, 0, 'no runs submitted since four NovaSeq runs in archiva in progress');
+  is ($s, 0, "no runs submitted since 5 runs have recent '$status' status");
+
+  my @run_statuses = $schema->resultset('RunStatus')
+            ->search({id_run => $runs[2]->id_run, iscurrent => 1})->all();
+  (@run_statuses == 1) or die 'inconsistent test data';
+  my $rst = $run_statuses[0];
+  ($rst->description eq $status) or die 'inconsistent test data';
+  $rst->update({'date' => DateTime->now()->subtract(hours => 2)});
+  $s = $runner->run();
+  is ($s, 1, 'run submitted since the number of runs recently submitted ' .
+             'to archival dropped');
 };
 
 subtest 'propagate failure of the command to run to the caller' => sub {

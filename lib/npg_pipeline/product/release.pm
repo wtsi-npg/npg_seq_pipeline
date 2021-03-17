@@ -130,52 +130,44 @@ sub has_qc_for_release {
 
   my $rpt  = $product->rpt_list();
   my $name = $product->file_name_root();
+  my $accept_undef_qc_outcome =
+    $self->accept_undef_qc_outcome($product,$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY);
 
   my @seqqc =  $product->seqqc_objs($self->$qc_db_accessor);
 
-  if (!@seqqc){#if seqqc outcome is undef
-    if ($self->accept_undef_qc_outcome($product,$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY)){
+  if (!@seqqc) {#if seqqc outcome is undef
+    if ($accept_undef_qc_outcome) {
       return 1;
-    }else{
+    } else {
       $self->logcroak('Seq QC is not defined');
     }
   }
 
   #if seqqc is not final
-  if (any {not $_->has_final_outcome} @seqqc){
+  if (any {not $_->has_final_outcome} @seqqc) {
     $self->logcroak("Product $name, $rpt are not all Final seq QC values");
-  }else{
-  #If seqqc is FINAL
-    # if any seqqc is FINAL REJECTED
-    if (any {$_->is_rejected} @seqqc){
-      return 0;
-    }else{ #seqqc is FINAL ACCEPTED
-
-    my $libqc_obj = $product->libqc_obj($self->$qc_db_accessor);# getting regular lib values
-    #checking if libqc is undef
-    $libqc_obj or $self->logcroak('lib QC is undefined');
-
-      if (not $libqc_obj->has_final_outcome ){# if libqc is not final
-        $self->logcroak("Product $name, $rpt is not Final lib QC value");
-      }else{
-      #libqc is final
-        if ( $libqc_obj->is_accepted ){#seqqc is Final accepted and libqc is Final accepted
-          return 1;
-        }
-        elsif( $libqc_obj->is_rejected ){#libqc is rejected
-          return 0;
-        }
-        elsif( $libqc_obj->is_undecided ){#libqc is undecided
-          if ($self->accept_undef_qc_outcome($product,$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY)){
-            return 1;
-          }else{
-            return 0;
-          }
-        }
-      }
-    }
   }
-  return 0;
+
+  #seqqc is FINAL from this point
+  #returning early if any seqqc is FINAL REJECTED
+  if (any {$_->is_rejected} @seqqc) {
+    return 0;
+  }
+
+  #seqqc is FINAL ACCEPTED from this point
+  my $libqc_obj = $product->libqc_obj($self->$qc_db_accessor);# getting regular lib values
+  #checking if libqc is undef
+  $libqc_obj or $self->logcroak('lib QC is undefined');
+
+  if (not $libqc_obj->has_final_outcome ) {# if libqc is not final
+    $self->logcroak("Product $name, $rpt is not Final lib QC value");
+  }
+
+  #libqc is final from this point
+  #if it's neither rejected nor accepted it's undecided
+  return $libqc_obj->is_accepted     ? 1
+         : ($libqc_obj->is_rejected  ? 0
+         : ($accept_undef_qc_outcome ? 1 : 0));
 }
 
 =head2  qc_outcome_matters
@@ -748,11 +740,17 @@ study:
 
 =head1 AUTHOR
 
-Keith James
+=over
+
+=item Keith James
+
+=item Fred Dodd
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2019,2020 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

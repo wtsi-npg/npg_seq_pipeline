@@ -315,7 +315,7 @@ subtest 'definition and manifest generation' => sub {
     'correct header line');
   my @line = (
     qw/AAMB-M4567 Standard nCoV-2019/,
-    "$pp_archive_path/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
+    "$pp_archive_path/plex1/ncov2019_artic_nf/v.3/*_{trimPrimerSequences/*.mapped.bam,makeConsensus/*.fa}",
     't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
     '{"components":[{"id_run":26291,"position":1,"tag_index":1},{"id_run":26291,"position":2,"tag_index":1}]}',
     "b65be328691835deeff44c4025fadecd9af6512c10044754dd2161d8a7c85000\n"
@@ -377,7 +377,7 @@ subtest 'definition and manifest generation' => sub {
   shift @lines;
   @line = (
     qw/AAMB-M4567  Standard nCoV-2019/,
-    "$pp_archive_path/lane1/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
+    "$pp_archive_path/lane1/plex1/ncov2019_artic_nf/v.3/*_{trimPrimerSequences/*.mapped.bam,makeConsensus/*.fa}",
     't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
     '{"components":[{"id_run":26291,"position":1,"tag_index":1}]}',
     "3709acf46bbedf27819413030709fb2f196ba5e8642b4d2b4319f7bddfa8c2c9\n");
@@ -455,7 +455,7 @@ subtest 'skip sample with consent withdrawn' => sub {
   shift @lines;
   my @line = (
     qw/AAMB-M4567 Standard nCoV-2019/,
-    "$pp_archive_path/lane2/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
+    "$pp_archive_path/lane2/plex1/ncov2019_artic_nf/v.3/*_{trimPrimerSequences/*.mapped.bam,makeConsensus/*.fa}",
     't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
     '{"components":[{"id_run":26291,"position":2,"tag_index":1}]}',
     "11c776e3a9791f1abeaba44c8ee673dacc844778397eca15719786ffae001b0b\n");

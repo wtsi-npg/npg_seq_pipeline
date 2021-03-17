@@ -1,6 +1,7 @@
 use strict;
 use warnings;
-use Test::More tests => 38;
+use Test::More tests => 53;
+use Test::Warn;
 use JSON;
 use t::dbic_util;
 use Test::Mock::LWP::UserAgent;
@@ -113,7 +114,6 @@ is($rs, 20, "correct number of rows in result set");
 
 my $json_string_no_fn = $majora->get_majora_data('2021FolderNameNotFound');
 my $Mock_args = $Mock_request->new_args;
-
 #expected args to pass
 my $request = 'HTTP::Request';
 my $method = 'POST';
@@ -284,4 +284,85 @@ my @ids_climb_undef_cog_set = $majora->get_id_runs_missing_data();
 
 is_deeply(\@ids_climb_undef_cog_set,\@empty, "no id_runs returned when climb_upload is undef and cog_sample_meta is 1");
 
+#Tests for Majora update sequence runs
+$init = {
+         _npg_tracking_schema    => $npg_tracking_schema,
+         _mlwh_schema            => $schema_for_fn,
+         user_agent              => $Mock_ua,
+        };
+
+$majora = npg_pipeline::product::heron::majora->new($init);
+
+#majora update --dummy response
+$Mock_resp->mock(content => sub {});
+#$Mock_resp->mock(decoded_content =>sub {});
+$Mock_resp->mock( code=> sub { 200 } );
+$Mock_resp->mock( is_error => sub { return; } );
+
+#updating Majora data for id_run (35340)
+$majora->update_majora($id_run);
+$Mock_args = $Mock_request->new_args;
+
+#expected args
+$request = 'HTTP::Request';
+$method = 'POST';
+$url = 'api/v2/process/sequencing/add/';
+$encoded_data = {
+                    library_name => 'LIBRARY NAME TEST',
+                    runs => [{
+                              run_name => '201102_A00950_0194_AHTJJKDRXX',
+                              instrument_make => 'ILLUMINA',
+                              instrument_model => 'NovaSeq',
+                              bioinfo_pipe_version => 'v0.10.0',
+                              bioinfo_pipe_name => 'ncov2019-artic-nf',
+                            }],
+                    token =>"DUMMYTOKEN",
+                    username => "DUMMYUSER",
+                   };
+
+
+$data_to_encode = {%{$encoded_data}};
+# checking args passed are correct
+is ($Mock_args->[0],$request, 'First argument is HTTP::Request');
+is ($Mock_args->[1],$method, 'method is POST');
+is ($Mock_args->[2],$ENV{MAJORA_DOMAIN}.$url, 'URL is correct');
+is_deeply($Mock_args->[3],$header, 'Header is correct');
+$Mock_decoded_data = decode_json($Mock_args->[4]);
+is_deeply($Mock_decoded_data->{runs},$encoded_data->{runs}, 'run_name is passed correctly');
+is($Mock_decoded_data->{username},$encoded_data->{username}, 'username is passed correctly');
+is($Mock_decoded_data->{token},$encoded_data->{token}, 'token is passed correctly');
+
+
+#Warning is returned when different values for pp_name and pp_version
+warning_like { $majora->update_majora(35348) }
+  qr/Different values found for pp_name and pp_version. Passing empty value/,
+  'warning of undef pp_name or pp_version values';
+$Mock_args = $Mock_request->new_args;
+
+#bioinfo_pipe_version and bioinfo_pipe_name should both have empty value when multiple values
+#found for version and analysis
+$encoded_data = {
+                    library_name => 'LIBRARY NAME TEST',
+                    runs => [{
+                              run_name => '201103_A00968_0145_AHTJMFDRXX',
+                              instrument_make => 'ILLUMINA',
+                              instrument_model => 'NovaSeq',
+                              bioinfo_pipe_version => '',
+                              bioinfo_pipe_name => '',
+                            }],
+                    token =>"DUMMYTOKEN",
+                    username => "DUMMYUSER",
+                   };
+
+$data_to_encode = {%{$encoded_data}};
+# checking args passed are correct
+is ($Mock_args->[0],$request, 'First argument is HTTP::Request');
+is ($Mock_args->[1],$method, 'method is POST');
+is ($Mock_args->[2],$ENV{MAJORA_DOMAIN}.$url, 'URL is correct');
+is_deeply($Mock_args->[3],$header, 'Header is correct');
+$Mock_decoded_data = decode_json($Mock_args->[4]);
+is_deeply($Mock_decoded_data->{runs},$encoded_data->{runs}, 'run_name is passed correctly');
+
+is($Mock_decoded_data->{username},$encoded_data->{username}, 'username is passed correctly');
+is($Mock_decoded_data->{token},$encoded_data->{token}, 'token is passed correctly');
 1;

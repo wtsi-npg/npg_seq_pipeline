@@ -1,6 +1,7 @@
 package npg_pipeline::daemon::archival;
 
 use Moose;
+use namespace::autoclean;
 use Readonly;
 use Try::Tiny;
 
@@ -11,7 +12,8 @@ our $VERSION = '0';
 Readonly::Scalar our $POST_QC_REVIEW_SCRIPT => q{npg_pipeline_post_qc_review};
 Readonly::Scalar our $ARCHIVAL_PENDING      => q{archival pending};
 Readonly::Scalar  my $ARCHIVAL_IN_PROGRESS  => q{archival in progress};
-Readonly::Scalar  my $MAX_NUMBER_NV_RUNS_IN_ARCHIVAL => 4;
+Readonly::Scalar  my $MAX_NUMBER_NEW_RUNS_IN_ARCHIVAL  => 5;
+Readonly::Scalar  my $NUM_HOURS_LOOK_BACK_FOR_NEW_RUNS => 1;
 
 sub build_pipeline_script_name {
   return $POST_QC_REVIEW_SCRIPT;
@@ -33,8 +35,7 @@ sub run {
         $self->info(qq{Already seen run $id_run, skipping...});
       } else {
         if ( $self->staging_host_match($run->folder_path_glob) &&
-             (!$self->_instrument_model_is_novaseq($run) || $self->_can_start_nv_archival()) ) {
-          $self->check_lims_link($run);
+             $self->_can_start_archival() ) {
           if ($self->run_command($id_run, $self->_generate_command($id_run))) {
             $self->info();
             $self->info(qq{Submitted run $id_run for archival});
@@ -60,26 +61,15 @@ sub _generate_command {
   return qq{export PATH=$path; $cmd};
 }
 
-sub _can_start_nv_archival {
+sub _can_start_archival {
   my $self = shift;
 
-  my @runs = $self->runs_with_status($ARCHIVAL_IN_PROGRESS);
-  if (scalar @runs < $MAX_NUMBER_NV_RUNS_IN_ARCHIVAL) {
-    return 1;
-  }
-  my $num_nv = scalar
-               grep { $self->_instrument_model_is_novaseq($_) }
-               @runs;
+  my $time = DateTime->now()
+             ->subtract(hours => $NUM_HOURS_LOOK_BACK_FOR_NEW_RUNS);
+  my $num_runs = $self->runs_with_status($ARCHIVAL_IN_PROGRESS, $time);
 
-  return ($num_nv < $MAX_NUMBER_NV_RUNS_IN_ARCHIVAL);
+  return ($num_runs < $MAX_NUMBER_NEW_RUNS_IN_ARCHIVAL);
 }
-
-sub _instrument_model_is_novaseq {
-  my ($self, $run) = @_;
-  return $run->instrument_format->model eq q[NovaSeq];
-}
-
-no Moose;
 
 __PACKAGE__->meta->make_immutable;
 
@@ -98,19 +88,24 @@ npg_pipeline::daemon::archival
 
 =head1 DESCRIPTION
 
-Daemon for invoking the archival pipeline.
+A daemon for invoking the archival pipeline.
 Inherits most of functionality, including the loop() method,
-from npg_pipeline::base.
+from the npg_pipeline::daemon class.
 
 =head1 SUBROUTINES/METHODS
 
 =head2 run
 
-Invokes the archival pipeline for runs with a status 'archival pending'.
+Invokes the archival pipeline for runs with the current status of
+'archival pending'. Returns after successfully invoking the archival
+pipeline for one run regardless of whether there are other runs that
+could have been considered for archival.
+
+The number of runs that can be archived concurrently is throttled, no
+more that five runs can be moved to archival in an hour between all
+archival daemons.
 
 =head2 build_pipeline_script_name
-
-=head2 sleep_time_between_runs
 
 =head1 DIAGNOSTICS
 
@@ -121,6 +116,8 @@ Invokes the archival pipeline for runs with a status 'archival pending'.
 =over
 
 =item Moose
+
+=item namespace::autoclean
 
 =item Try::Tiny
 
@@ -134,12 +131,17 @@ Invokes the archival pipeline for runs with a status 'archival pending'.
 
 =head1 AUTHOR
 
-Andy Brown
-Marina Gourtovaia
+=over
+
+=item Andy Brown
+
+=item Marina Gourtovaia
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd.
+Copyright (C) 2016,2017,2018,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
