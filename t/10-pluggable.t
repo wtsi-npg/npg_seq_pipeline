@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 13;
+use Test::More tests => 14;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
@@ -552,7 +552,7 @@ subtest 'log file name, directory and path' => sub {
   my $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
   );
   like ($p->log_file_name, $log_name_re, 'log file name is built correctly');
@@ -563,7 +563,7 @@ subtest 'log file name, directory and path' => sub {
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
       log_file_name    => 'custom.log'
   );
@@ -575,7 +575,7 @@ subtest 'log file name, directory and path' => sub {
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
       log_file_dir     => "$runfolder_path/custom"
   );
@@ -587,7 +587,7 @@ subtest 'log file name, directory and path' => sub {
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
       log_file_dir     => "$runfolder_path/custom",
       log_file_name    => 'custom.log'
@@ -601,11 +601,11 @@ subtest 'log file name, directory and path' => sub {
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
       log_file_dir     => "$runfolder_path/my_log",
       log_file_name    => 'custom.log',
-      log_file_path    => "$runfolder_path/custom/my.log" 
+      log_file_path    => "$runfolder_path/custom/my.log"
   );
   is ($p->log_file_name, 'custom.log', 'log file name as set');
   is ($p->log_file_dir, "$runfolder_path/my_log", 'log directory as set');
@@ -615,15 +615,57 @@ subtest 'log file name, directory and path' => sub {
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
-      log_file_path    => "$runfolder_path/custom/my.log" 
+      log_file_path    => "$runfolder_path/custom/my.log"
   );
   is ($p->log_file_name, 'my.log', 'log file name is derived from path');
-  is ($p->log_file_dir, "$runfolder_path/custom", 
+  is ($p->log_file_dir, "$runfolder_path/custom",
     'log directory is derived from path');
   is ($p->log_file_path, "$runfolder_path/custom/my.log",
-    'custom log file path as directly set'); 
+    'custom log file path as directly set');
+};
+
+subtest 'link log file and product_release config' => sub {
+  plan tests => 4;
+
+  my $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+      log_file_dir     => $test_dir,
+      log_file_name    => 'logfile',
+      product_conf_file_path => $product_config
+  );
+  $p->_copy_log_to_analysis_dir();
+  my $analysis_path = $p->analysis_path;
+  ok(-f -s $analysis_path.'/logfile', "Log file found in analysis path at $analysis_path");
+  my $copy = $p->_save_product_conf_to_analysis_dir();
+  ok(-f -s $analysis_path.'/'.$copy, 'Copy of product config is present');
+
+  # Set log file path to something false to show error behaviour is fine
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => '/nope',
+      timestamp        => '02122020',
+      log_file_dir     => $test_dir,
+      log_file_name    => 'logfile',
+      product_conf_file_path => $product_config
+  );
+  lives_ok {$p->_copy_log_to_analysis_dir()} 'Log copy to nonexistant runfolder does not die';
+
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+      log_file_dir     => '/nuthin',
+      log_file_name    => 'logfile',
+      product_conf_file_path => $product_config
+  );
+  lives_ok {$p->_copy_log_to_analysis_dir()} 'Log copy of nonexistant file does not die';
 };
 
 1;

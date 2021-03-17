@@ -417,7 +417,7 @@ sub main {
     untie *STDERR;
   }
 
-  $self->_link_log_to_analysis_dir($self->log_file_name);
+  $self->_copy_log_to_analysis_dir();
 
   $error and croak $error;
 
@@ -703,10 +703,10 @@ sub _run_spider {
 }
 
 # Attempts to link the pipeline log file to the analysis directory
-sub _link_log_to_analysis_dir {
+sub _copy_log_to_analysis_dir {
   my ($self) = @_;
   $self->_tolerant_persist_file_to_analysis_dir(
-    $self->log_file_path, $self->log_file_name, 1
+    $self->log_file_path, $self->log_file_name
   );
   return;
 }
@@ -727,15 +727,16 @@ sub _save_product_conf_to_analysis_dir {
     $self->product_conf_file_path,
     $filename
   );
-  return;
+  return $filename;
 }
 
-# Links or copies a file to analysis_path, and optionally
+# Copies a file to analysis_path, and optionally
 # renames the file in its destination
+# Errors are captured where possible to prevent job resubmission in the
+# automatic pipeline
 sub _tolerant_persist_file_to_analysis_dir {
-  my ($self, $source_file, $override_name, $link) = @_;
+  my ($self, $source_file, $override_name) = @_;
 
-  # Shouldn't this be an error?
   my $analysis_path = $self->analysis_path;
   (-e $analysis_path) or return;
   my $target_file;
@@ -744,18 +745,11 @@ sub _tolerant_persist_file_to_analysis_dir {
   } else {
     $target_file = catfile($analysis_path, $source_file);
   }
-  my $state;
-  if ($link) {
-    return if -e $target_file;
-    $state = link $source_file, $target_file;
-    $self->info("Created link to $target_file for the log file");
-    return if $state;
-  }
-  $state = copy $source_file, $target_file;
+  my $state = copy $source_file, $target_file;
   if (!$state) {
-    $self->warn("Failed to make a copy of $source_file at $target_file");
+    $self->error("Failed to make a copy of $source_file at $target_file");
   } else {
-    $self->info("Created copy of $source_file into $analysis_path");
+    $self->info("Created copy of $source_file into $target_file");
   }
   return;
 }
