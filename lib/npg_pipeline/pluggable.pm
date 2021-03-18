@@ -386,12 +386,14 @@ sub main {
   my $error = q{};
   my $when = q{initializing pipeline};
   try {
-    $self->_save_product_conf_to_analysis_dir();
+    # Adding new code above this line might have unintended consequences.
+    # Different run folder related paths might not be set correctly yet.
     $self->prepare();
     $when = q{running functions};
     $self->_schedule_functions();
     $when = q{saving definitions};
     $self->_save_function_definitions();
+    $self->_save_product_conf_to_analysis_dir();
     if ($self->execute()) {
       $self->info(sprintf q{***** Definitions will be submitted for execution to %s *****},
                           uc $self->executor_type());
