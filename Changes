@@ -11,7 +11,7 @@ LIST OF CHANGES
    the same time. Introduce a limit on the number of runs,
    irrespectively of the instrument type, which are moved to archival
    within the last hour.
- - Persist product_release.yml file to data directory to preserve run
+ - Persist product_release.yml file to analysis directory to preserve run
    conditions.
 
 release 59.0.0
