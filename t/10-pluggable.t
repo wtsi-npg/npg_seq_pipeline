@@ -626,8 +626,8 @@ subtest 'log file name, directory and path' => sub {
     'custom log file path as directly set');
 };
 
-subtest 'link log file and product_release config' => sub {
-  plan tests => 4;
+subtest 'Copy log file and product_release config' => sub {
+  plan tests => 7;
 
   my $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
@@ -640,7 +640,8 @@ subtest 'link log file and product_release config' => sub {
   );
   $p->_copy_log_to_analysis_dir();
   my $analysis_path = $p->analysis_path;
-  ok(-f -s $analysis_path.'/logfile', "Log file found in analysis path at $analysis_path");
+  my $default_log_copy = $analysis_path.'/logfile';
+  ok(-f -s $default_log_copy, "Log file found in analysis path at $analysis_path");
   my $copy = $p->_save_product_conf_to_analysis_dir();
   ok(-f -s $analysis_path.'/'.$copy, 'Copy of product config is present');
 
@@ -666,6 +667,15 @@ subtest 'link log file and product_release config' => sub {
       product_conf_file_path => $product_config
   );
   lives_ok {$p->_copy_log_to_analysis_dir()} 'Log copy of nonexistant file does not die';
+
+  # Test what happens when no log_file_name is provided
+  unlink $default_log_copy;
+  ok(! -e $default_log_copy, 'Any log copy removed');
+  lives_ok {
+    $p->_tolerant_persist_file_to_analysis_dir($test_dir.'/logfile', undef)
+  } 'missing argument defaults to using the original file name';
+  note 'Checking for logfile copy in '.$p->analysis_path.' copied from '.$test_dir;
+  ok (-f $default_log_copy, 'Log named with default when no other given');
 };
 
 1;

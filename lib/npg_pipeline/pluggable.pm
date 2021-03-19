@@ -250,7 +250,7 @@ sub _build_function_graph {
     my $jgraph = $self->_function_list_conf();
     foreach my $e (@{$jgraph->{'graph'}->{'edges'}}) {
       ($e->{'source'} and $e->{'target'}) or
-	$self->logcroak(q{Both source and target should be defined for an edge});
+        $self->logcroak(q{Both source and target should be defined for an edge});
       $g->add_edge($e->{'source'}, $e->{'target'});
     }
     @nodes = @{$jgraph->{'graph'}->{'nodes'}};
@@ -720,7 +720,7 @@ sub _save_product_conf_to_analysis_dir {
     $self->product_conf_file_path,
     qr/[.][^.]*/xms
   );
-  if ($filename ne 'product_release') {
+  if ($filename !~ /product_release/) {
     $filename = 'product_release_'.$filename;
   }
   $filename = $filename.'_'.$self->random_string.$suffix;
@@ -738,20 +738,19 @@ sub _save_product_conf_to_analysis_dir {
 # automatic pipeline
 sub _tolerant_persist_file_to_analysis_dir {
   my ($self, $source_file, $override_name) = @_;
+  if (! defined $override_name) {
+    ($override_name) = fileparse $source_file;
+  }
 
   my $analysis_path = $self->analysis_path;
   (-e $analysis_path) or return;
-  my $target_file;
-  if ($override_name) {
-    $target_file = catfile($analysis_path, $override_name);
-  } else {
-    $target_file = catfile($analysis_path, $source_file);
-  }
+
+  my $target_file = catfile($analysis_path, $override_name);
+
+  $self->info("Creating copy of $source_file into $target_file");
   my $state = copy $source_file, $target_file;
   if (!$state) {
     $self->error("Failed to make a copy of $source_file at $target_file");
-  } else {
-    $self->info("Created copy of $source_file into $target_file");
   }
   return;
 }
