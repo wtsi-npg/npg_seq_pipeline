@@ -16,13 +16,16 @@ release 59.1.0
  - An additional wr limit group - s3 - is configured.
  - The wait4path pipeline job does not have a log. To enable wr to
    recognise that these jobs are unique, echoing a random string
-   is added to the shell command. 
+   is added to the shell command.
  - Remove the limit on the number of NovaSeq runs being archived at
    the same time. Introduce a limit on the number of runs,
    irrespectively of the instrument type, which are moved to archival
    within the last hour.
  - Include pipeline version and name when sending sequencing run metadata
    to the majora service.
+ - Persist product_release.yml file to analysis directory to preserve run
+   conditions.
+
 
 release 59.0.0
  - Following a decision to send data to CLIMB regardless of artic
@@ -98,7 +101,7 @@ release 57.15.0
  - append autoqc generic result generation at the end of ncov2019_artic_nf
    portable pipeline
  - tests update following a change in the default behaviour of the
-   add_object method in WTSI::NPG::iRODS 
+   add_object method in WTSI::NPG::iRODS
 
 release 57.14.0
  - switch to sample control flag when determining eligibility for
@@ -127,7 +130,7 @@ release 57.13.0
 
 release 57.12.0
  - a new function definition class npg_pipeline::function::pp_archiver,
-   implementing two new pipeline functions - 'pp_archiver' and 
+   implementing two new pipeline functions - 'pp_archiver' and
    'pp_archiver_manifest'
 
 release 57.11.0
@@ -143,7 +146,7 @@ release 57.10.0
    after stage1 in parallel to seq_alignment
 
 release 57.9.0
- - small change to seq_alignment.pm so it does not error if 
+ - small change to seq_alignment.pm so it does not error if
    gbs_plex_name (primer_panel) is set but lib type incompatible
    with gbs analysis
  - when markdup_method is "none", add skip_markdup_metrics flag
@@ -156,12 +159,12 @@ release 57.8.0
    whether the autoqc check should be run:
      reduce run time by passing to the autoqc class instance,
      where appropriate, a lims object and fastq reference path;
-     explicitly pass product_conf_file_path to this instance 
+     explicitly pass product_conf_file_path to this instance
  - iRODS archival of non-products is driven by settings of products,
    i.e if all products in the lane should not be archived to iRODS,
    non-products (tag zero and spiked PhiX tag) will not be archived
    either
- - remove the old warehouse loader from the analysis function graph 
+ - remove the old warehouse loader from the analysis function graph
  - remove function for illumina qc analysis archival (old way of
    saving InterOp data to QC database)
 
@@ -186,7 +189,7 @@ release 57.6.0
    which gives an error if no header is present in a file
 
 release 57.5.1
- - bug fix - correct node id in splice (for GbS) 
+ - bug fix - correct node id in splice (for GbS)
 
 release 57.5.0
  - add BWA MEM2 support to seq_alignment function
@@ -209,7 +212,7 @@ release 57.4.0
    not for release (tag zero and control)
 
 release 57.3.0
- - add chromium libs (forced no target alignment) to bam prune skip 
+ - add chromium libs (forced no target alignment) to bam prune skip
    list in seq_alignment
  - archival pipeline function for deletion of intermediate files
  - script to generate receipts files to be used by npg_run_is_deletable
@@ -327,7 +330,7 @@ release 54.0
  - archival function graph includes publishing both to s3 and iRODS
  - a function graph for post 'run archived' small pipeline
  - no_s3_archival flag to switch off archival to s3 and notification by
-   a message, false by default, is automatically sey to true if the 
+   a message, false by default, is automatically sey to true if the
    local flag is set to true
  - per-product restart file for iRODS publisher
  - function definition for a job to wait to move from the analysis
@@ -518,7 +521,7 @@ release 51.12.0
  - travis build tweak for npg_qc
 
 release 51.11.3
- - seq_alignment: fixes for no target alignment and no target alignment+non-consented human split 
+ - seq_alignment: fixes for no target alignment and no target alignment+non-consented human split
 
 release 51.11.2
  - use align_intfile_opt=1 when aligning with star to produce intermediate bam file
@@ -526,7 +529,7 @@ release 51.11.2
 
 release 51.11.1
  - Handle dual indexes (create new format lane tag files)
- - remove remaining broken provisions for xml LIMs driver 
+ - remove remaining broken provisions for xml LIMs driver
  - use the new log publisher
  - now allows XA/Y-split with no target alignment
 
@@ -544,7 +547,7 @@ release 51.10.2
 
 release 51.10.1
  - Modified qc run function list, removed copy_interop and switched archive_to_irods to samplesheet
- 
+
 release 51.10
  - Chained execution of RNA-SeQC to the vtfp/viv alignment cmd for RNA-Seq libraries only:
      entries for qc check rna_seqc removed from central function and parallelisation.
@@ -809,7 +812,7 @@ release 47.8
      runs are not going to be progressed if it's impossible to fetch LIMs data for a flowcell;
      both analysis and archival daemon to pass runfolder path to the
      pipeline script;
-     if batch_id is available, pass it to the analysis pipeline script    
+     if batch_id is available, pass it to the analysis pipeline script
  - use appropriate driver for samplesheet generation (xml, warehouse, ml_warehouse)
  - GCLP compliance-related pipeline changes:
      get the flowcell barcode needed for
@@ -822,7 +825,7 @@ release 47.8
 release 47.7
  - switch seqchksum_comparator to cram, add new test data and updated tests
    convert all cram files to bam as current version of bamcat will not read cram
-   dropped one test as converting an empty bam file to cram produces a valid cram file 
+   dropped one test as converting an empty bam file to cram produces a valid cram file
  - More sanity checks: use of y split and nonconsented X and autosome split only with Homo
    sapiens reference, use of nonconsented human split only with non Homo sapiens reference.
  - always apply sanity checks (even when not running P4 based pipelines).
@@ -902,7 +905,7 @@ release 45.5
 release 45.4
  - omit PhiX sample name and study from strings generated for illumina2bam
    BAM RG record generation (lane/pool level)
- - ensure ref_match qc jobs run serially (to try to alleviate Lustre slow io 
+ - ensure ref_match qc jobs run serially (to try to alleviate Lustre slow io
    on simultaneous file read bug)
 
 release 45.3
@@ -916,7 +919,7 @@ release 45.2
 release 45.1
  - bug fixes and code improvements in a callback for file-based statuses
  - file-base status updates added to function order
- - ensure P4 pipelines in seq_alignment are aborted if required analysis is 
+ - ensure P4 pipelines in seq_alignment are aborted if required analysis is
    not yet supported
  - remove bam_alignment and rna_seq_alignment steps (having been replaced
    by seq_alignment)
@@ -929,7 +932,7 @@ release 45.0
 release 44.15
  - Use soft filtering instead of hard filtering for spatial_filter
  - generate bam_alignment autoqc json for RNAseq analyses
- - don't try per plex "seq_alignment" analysis  or upstream tag qc 
+ - don't try per plex "seq_alignment" analysis  or upstream tag qc
    if no indexing read
  - callbacks for functions saving run and lane statuses to file
 
@@ -983,7 +986,7 @@ release 44.5
 
 release 44.4
  - pool-level asset ids are not loaded from a samplesheet, creating problems in SeqQC;
-   warehouse loader not to take lims data from a cached samplesheet 
+   warehouse loader not to take lims data from a cached samplesheet
 
 release 44.3
  - pipeline's unused no_spider flag removed
@@ -1028,7 +1031,7 @@ release 43.2
  - added --tileviz option to spatial filter parameters in pb_cal_align command
  - changed default region size to 200 and dropped region_min_count
  - added a check for pools with only one non-phix tag and extended tests
- 
+
 release 43.1
  - remove unused cram file generation function
  - remove provisions for running daemons on the old lenny farm
@@ -1063,7 +1066,7 @@ release 42.6
  - turn off default PhiX based Qval calibration
  - hard code the memory rather than look in config file
  - remove mocked objects for qc tests and add explicit test for qc_adapter
- - separate test executables for lsadmin 
+ - separate test executables for lsadmin
 
 release 42.5
  - improvements to lsf_job module and its tests
@@ -1134,7 +1137,7 @@ release 41.1
 release 41.0
  - pipeline daemons settings to work under perl 5.14
    this set up requires that '/etc/bashrc' is sources in the user's
-   .bashrc 
+   .bashrc
  - perlcritic policy name printed when perlcritic errors are displayed
 
 release 40.6
@@ -1146,7 +1149,7 @@ release 40.5
 
 release 40.4
  - exclude archival of bam files to irods from the analysis pipeline -
-   temporary measure to tier over a whole day of irods maintenance 
+   temporary measure to tier over a whole day of irods maintenance
 
 release 40.3
  - following controlcentre-less deployment of daemons, irods path is lost
@@ -1289,7 +1292,7 @@ release 36.4
 
 release 36.3
  - ensure crashing analysis launch for one run does not affect others launching
- 
+
 release 36.2
  - use index_length method inherited from long_info role in create_lane_tag_file to avoid to rebuild
 
@@ -1400,7 +1403,7 @@ release-32.1
  - croak when no expected tag sequence or index given in sequencescape and don't create one based on the stardard illumina or sanger tag list
  - make sure harold_recalibration job submitted to creat bam file soft link when no_recalibration flag given
  - explicit arguments are given to the illumina analysis archival scripts to prevent future failures when rearrangements are made in the parents, see RT#243937
- 
+
 release-32.0
  - change to new BAM based pipeline for default analysis
  - suspended start of the pipeline
