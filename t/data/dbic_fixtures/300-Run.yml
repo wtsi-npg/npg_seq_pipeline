@@ -328,3 +328,16 @@
   is_paired: 0
   priority: 3
   team: A
+- actual_cycle_count: 438
+  batch_id: 78068
+  expected_cycle_count: 438
+  flowcell_id: HTJMFDRXX
+  folder_name: 201103_A00968_0145_AHTJMFDRXX
+  folder_path_glob: '/{export,nfs}/esa-sv-20200210-03/IL_seq_data/*/'
+  id_instrument: 164
+  id_instrument_format: 16
+  id_run: 35348
+  id_run_pair: ~
+  is_paired: 0
+  priority: 3
+  team: A 

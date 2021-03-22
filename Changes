@@ -1,6 +1,16 @@
 LIST OF CHANGES
 ---------------
 
+ - iRODS connections to be opened on-demand for validation
+ - Added an option of having a new boolean flag 'accept_undef_qc_outcome'
+   in the study configuration for a product for a particular archiver.
+   If this flag is set to a true value, the return value of the
+   has_qc_for_release method might return true in cases where previously
+   it would have returned false. This is done in order to allow for
+   archival of products which either passes QC or have never been through
+   manual or robo QC.
+
+release 59.1.0
  - More options for defining wr limit groups: allow an exact match
    to the last component of pipeline function class name.
  - An additional wr limit group - s3 - is configured.
@@ -11,8 +21,11 @@ LIST OF CHANGES
    the same time. Introduce a limit on the number of runs,
    irrespectively of the instrument type, which are moved to archival
    within the last hour.
+ - Include pipeline version and name when sending sequencing run metadata
+   to the majora service.
  - Persist product_release.yml file to analysis directory to preserve run
    conditions.
+
 
 release 59.0.0
  - Following a decision to send data to CLIMB regardless of artic

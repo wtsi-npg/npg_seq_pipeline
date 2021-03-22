@@ -243,7 +243,7 @@ subtest 'definition and manifest generation' => sub {
   
   $f = npg_pipeline::function::pp_archiver->new($init);
   throws_ok { $f->create }
-    qr/is not Final lib QC value/, 'qc outcomes are not set';
+    qr/lib QC is undefined/, 'qc outcomes are not set';
 
   my %dict = map { $_->short_desc => $_->id_mqc_library_outcome }
              $schema->resultset(q[MqcLibraryOutcomeDict])->search({})->all();
