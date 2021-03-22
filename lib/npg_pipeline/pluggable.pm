@@ -720,7 +720,7 @@ sub _save_product_conf_to_analysis_dir {
     $self->product_conf_file_path,
     qr/[.][^.]*/xms
   );
-  if ($filename !~ /product_release/) {
+  if ($filename !~ /product_release/xms) {
     $filename = 'product_release_'.$filename;
   }
   $filename = $filename.'_'.$self->random_string.$suffix;
