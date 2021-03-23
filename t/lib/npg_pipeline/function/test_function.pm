@@ -1,4 +1,4 @@
-package function::test_function;
+package npg_pipeline::function::test_function;
 
 use Moose;
 use npg_pipeline::function::definition;
