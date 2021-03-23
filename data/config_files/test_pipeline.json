@@ -1,0 +1,30 @@
+{
+    "graph": {
+        "edges": [
+            {
+                "relation": "dependsOn",
+                "source": "pipeline_start",
+                "target": "test_function"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "test_function",
+                "target": "pipeline_end"
+            }
+        ],
+        "nodes": [
+            {
+                "id": "pipeline_start",
+                "label": "pipeline_start"
+            },
+            {
+                "id": "test_function",
+                "label": "Test function"
+            },
+            {
+                "id": "pipeline_end",
+                "label": "pipeline_end"
+            }
+        ]
+    }
+}
