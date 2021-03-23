@@ -11,8 +11,8 @@ use npg_pipeline::pluggable::central;
 
 my $pipeline = npg_pipeline::pluggable::central->new_with_options();
 
-my $level   = $p->verbose() ? $DEBUG : $INFO;
-my $logfile = $p->log_file_path();
+my $level   = $pipeline->verbose() ? $DEBUG : $INFO;
+my $logfile = $pipeline->log_file_path();
 print {*STDERR} "Pipeline log file: ${logfile}\n";
 my $layout = '%d %-5p %c - %m%n';
 Log::Log4perl->easy_init({
@@ -27,7 +27,7 @@ $pipeline->_registry->_registry()->{test_function} = {
   'function::test_function' => 'test_run'
 };
 # Run test pipeline
-$p->redirect_stderr();
+$pipeline->redirect_stderr();
 $pipeline->main();
 
 0;
