@@ -4,8 +4,8 @@ use strict;
 use warnings;
 use Log::Log4perl qw(:levels);
 use FindBin qw($Bin);
-use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
-use lib ("$Bin/../t/lib");
+use lib ( -d "$Bin/../../lib/perl5" ? "$Bin/../../lib/perl5" : "$Bin/../../lib" );
+use lib ("$Bin/../lib");
 
 use npg_pipeline::pluggable::central;
 
@@ -24,7 +24,8 @@ Log::Log4perl->easy_init({
 
 # Inject adapter config for a test function to run in the pipeline
 $pipeline->_registry->_registry()->{test_function} = {
-  'function::test_function' => 'test_run'
+  method => 'test_run',
+  module => 'test_function'
 };
 # Run test pipeline
 $pipeline->redirect_stderr();
