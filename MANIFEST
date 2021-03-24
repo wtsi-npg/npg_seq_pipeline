@@ -20,12 +20,8 @@ Build.PL
 Changes
 data/config_files/function_list_central.json
 data/config_files/function_list_central.json.png
-data/config_files/function_list_central_qc_run.json
-data/config_files/function_list_central_qc_run.json.png
 data/config_files/function_list_post_qc_review.json
 data/config_files/function_list_post_qc_review.json.png
-data/config_files/function_list_post_run_archived.json
-data/config_files/function_list_post_run_archived.json.png
 data/config_files/general_values.ini
 data/config_files/lsf.ini
 data/config_files/wr.json

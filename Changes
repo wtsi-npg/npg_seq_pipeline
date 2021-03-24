@@ -12,6 +12,7 @@ LIST OF CHANGES
  - npg_majora_for_mlwh - dry_run option goes further in the processes,
    but avoids writes/updates
  - Use GitHub actions for CI in place of Travsi-CI
+ - Unused JSON files for function graphs are removed.
 
 release 59.1.0
  - More options for defining wr limit groups: allow an exact match
