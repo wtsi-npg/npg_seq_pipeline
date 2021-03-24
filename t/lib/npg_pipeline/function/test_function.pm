@@ -20,7 +20,9 @@ sub test_run {
     push @definitions, npg_pipeline::function::definition->new(
         job_name => join('_', $self->id_run, $self->timestamp),
         identifier => $self->label,
-        command => $command
+        command => $command,
+        created_by => 'me',
+        created_on => $self->timestamp
     );
   }
 
