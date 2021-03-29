@@ -108,13 +108,16 @@ Readonly::Array my @AUTOQC_FUNCTIONS =>
       qc_upstream_tags
       qc_spatial_filter
       qc_verify_bam_id
-      qc_review 
+      qc_review
     /;
 
 has '_registry' => (
   isa           => q{HashRef},
   is            => q{ro},
   lazy_build    => 1,
+  handles => {
+    add_task_resolver => 'set'
+  },
 );
 sub _build__registry {
   my $self = shift;
