@@ -23,9 +23,11 @@ Log::Log4perl->easy_init({
 });
 
 # Inject adapter config for a test function to run in the pipeline
-$pipeline->_registry->_registry()->{test_function} = {
-  method => 'test_run',
-  module => 'test_function'
+$pipeline->_registry->add_task_resolver()
+  test_function => {
+    method => 'test_run',
+    module => 'test_function',
+  }
 };
 # Run test pipeline
 $pipeline->redirect_stderr();
