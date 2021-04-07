@@ -9,6 +9,8 @@ LIST OF CHANGES
    it would have returned false. This is done in order to allow for
    archival of products which either passes QC or have never been through
    manual or robo QC.
+ - npg_majora_for_mlwh - dry_run option goes further in the processes,
+   but avoids writes/updates
 
 release 59.1.0
  - More options for defining wr limit groups: allow an exact match
