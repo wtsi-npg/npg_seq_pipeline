@@ -65,9 +65,11 @@ has 'days' => (
 );
 
 has 'update'  => (
+    metaclass => q{Getopt},
     isa     => q{Bool},
     is      => q{ro},
     default => 0,
+    cmd_aliases => q{update_majora},
 );
 
 has 'id_runs' => (
@@ -154,10 +156,6 @@ sub _build_logger {
 sub BUILD {
   my $self = shift;
 
-  if ($self->update and $self->dry_run){
-    $self->logger->error_die(
-      q{'update' and 'dry_run' attributes cannot be set at the same time});
-  }
   if (($self->_has_days) and $self->days <= 0){
     $self->logger->error_die(
       q{'days' attribute value should be a positive number});
@@ -184,7 +182,7 @@ sub run {
   my $self = shift;
 
   for my $id_run (@{$self->id_runs}){
-    if ($self->_majora_update_runs->{$id_run} and (not $self->dry_run)){
+    if ( $self->_majora_update_runs->{$id_run} ){
       $self->logger->info("Updating Majora for $id_run");
       $self->update_majora($id_run);
     }
@@ -197,10 +195,8 @@ sub run {
     $self->logger->debug('Converting the json returned from Majora to perl structure');
     my %ds = $self->json_to_structure($json_string,$fn);
 
-    if (not $self->dry_run){
-      $self->logger->info("Updating Metadata for $id_run");
-      $self->update_metadata($rs,\%ds);
-    }
+    $self->logger->info("Updating Metadata for $id_run");
+    $self->update_metadata($rs,\%ds);
   }
   return;
 }
@@ -252,6 +248,9 @@ sub json_to_structure {
 sub update_metadata {
   my ($self,$rs_iseq,$ds_ref) = @_;
   my %data_structure = %{$ds_ref};
+  if ( $self->dry_run() ) {
+    $self->logger->warn("Skipping mlwh updates in dry-run mode\n");
+  }
   while (my $row=$rs_iseq->next) {
     my $fc = $row->iseq_flowcell;
     $fc or next; #no LIMS data
@@ -268,7 +267,9 @@ sub update_metadata {
         $self->logger->info("setting $sample_meta for $sn");
       }
     }
-    $hm->update({cog_sample_meta=>$sample_meta});
+    if ( not $self->dry_run() ) {
+      $hm->update({cog_sample_meta=>$sample_meta});
+    }
   };
   return;
 }
@@ -485,13 +486,20 @@ sub _use_majora_api{
   my $ua =  $self->user_agent;
 
   my $r = HTTP::Request->new($method, $url, $header, $encoded_data);
-  my $res = $ua->request($r);
+  $self->logger->debug( "Request to Majora is:\n".$r->as_string(1) );
 
-  if ($res->is_error){
-    $self->logger->error_die(q(Majora API returned a ).($res->code).qq( code. Content:\n).($res->decoded_content()).qq(\n));
+  if ( $url_end=~m{/get/?\Z}smx or not $self->dry_run() ) {
+    my $res = $ua->request($r);
+
+    if ($res->is_error){
+      $self->logger->error_die(q(Majora API returned a ).($res->code).qq( code. Content:\n).($res->decoded_content()).qq(\n));
+    }
+
+    return $res->decoded_content;
+  } else {
+    $self->logger->warn("Skipping non /get/ request $url_end to Majora in dry-run mode\n");
   }
-
-  return $res->decoded_content;
+  return;
 }
 
 __PACKAGE__->meta->make_immutable;
