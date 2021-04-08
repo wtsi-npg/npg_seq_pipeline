@@ -118,7 +118,7 @@ has '_registry' => (
   handles => {
     add_task_resolver => 'set'
   },
-  traits => ['Hash']
+  traits => ['Hash'],
 );
 sub _build__registry {
   my $self = shift;
