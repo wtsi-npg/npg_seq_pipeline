@@ -15,15 +15,34 @@
         "nodes": [
             {
                 "id": "pipeline_start",
-                "label": "pipeline_start"
+                "label": "pipeline_start",
+                "metadata": {
+                    "description": "Beginning of pipeline",
+                    "resources": {}
+                }
             },
             {
                 "id": "test_function",
-                "label": "test_function"
+                "label": "test_function",
+                "metadata": {
+                    "description": "All the trappings of running a function",
+                    "resources": {
+                        "low_cpu": 6,
+                        "high_cpu": 8,
+                        "memory": 32,
+                        "db": [],
+                        "irods": 5,
+                        "fs_num_slots": 2
+                    }
+                }
             },
             {
                 "id": "pipeline_end",
-                "label": "pipeline_end"
+                "label": "pipeline_end",
+                "metadata": {
+                    "description": "End of the pipeline",
+                    "resources": {}
+                }
             }
         ]
     }
