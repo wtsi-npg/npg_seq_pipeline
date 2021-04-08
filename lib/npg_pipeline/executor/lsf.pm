@@ -18,7 +18,7 @@ use npg_pipeline::executor::lsf::job;
 use npg_pipeline::runfolder_scaffold;
 
 extends 'npg_pipeline::executor';
-with qw( 
+with qw(
          npg_pipeline::executor::options
          npg_tracking::util::pipeline_config
          MooseX::AttributeCloner
@@ -41,7 +41,10 @@ npg_pipeline::executor::lsf
 
 =head1 DESCRIPTION
 
-Submission of function definition for execution to LSF.
+Submits jobs to LSF via C<execute()>.
+
+The C<interactive> attribute can be set to ensure jobs are queued but not run.
+A manual LSF bresume command will be necessary to execute the work.
 
 =head1 SUBROUTINES/METHODS
 
@@ -71,7 +74,7 @@ Returns the fs_resource for the runfolder path or,
 if no_sf_resource attribute is true, an undefined
 value.
 
-=cut 
+=cut
 
 has 'fs_resource' => (
   is         => 'ro',
@@ -97,6 +100,10 @@ sub _build_fs_resource {
 =head2 execute
 
 Creates and submits LSF jobs for execution.
+
+Each node in a function graph is used to generate bsub commands. The commands
+are remembered in C<commands4jobs> and then saved to a file in JSON format.
+
 
 =cut
 
@@ -179,7 +186,7 @@ sub _execute_function {
     };
 
     # Do we have a composition attribute?
-    # Either all of a function's definitions have a composition or none do  
+    # Either all of a function's definitions have a composition or none do
     my $definition = $self->function_definitions->{$function}[0];
     if ( !$definition->has_composition ) {
       # If not our relationship is many to one or one to one and should be controlled by done(<job_id)
@@ -192,7 +199,7 @@ sub _execute_function {
 
       foreach my $prev_function ($g->predecessors($function)) {
         # If we do have one and our composition is the same keys as previous node(s)
-        # then they should be controlled by "done(<job_id>[*])"  
+        # then they should be controlled by "done(<job_id>[*])"
         my @a = map { _string_job_ids2list($_) }
                 $g->get_vertex_attribute($prev_function, $VERTEX_LSF_JOB_IDS_ATTR_NAME);
         if ((scalar @a > 1) || !$self->function_definitions->{$prev_function}[0]->has_composition) {
@@ -288,6 +295,19 @@ sub _kill_jobs {
   return;
 }
 
+=head2 _submit_function
+Unpacks multi-job definitions and generates bsub commands to run all jobs,
+e.g. aligners that require different memory depending on reference
+genome. Then submits
+
+Args:
+Pipeline function name [String] - see function_list_central.json
+Previous jobs [Hashref] - { 1 => $degree, 2 => $degree_2 }
+
+Return:
+List of LSF job IDs created
+=cut
+
 sub _submit_function {
   my ($self, $function_name, $depends_on) = @_;
 
@@ -310,18 +330,20 @@ sub _submit_function {
 
   my @lsf_ids = ();
   foreach my $da (values %{$definitions}) {
-    my %args = %{$self->_common_attrs()};
-    $args{'definitions'}      = $da;
-    $args{'upstream_job_ids'} = $depends_on;
-    $args{'fs_resource'}      = $self->fs_resource();
-    $args{'log_dir'}          = $log_dir;
-    my $job = npg_pipeline::executor::lsf::job->new(\%args);
+    my $job = npg_pipeline::executor::lsf::job->new(
+      %{$self->_common_attrs()},
+      definitions => $da,
+      upstream_job_ids => $depends_on,
+      fs_resource => $self->fs_resource,
+      log_dir => $log_dir
+    );
 
     my $file_path = $self->commands4jobs_file_path();
     if ($outgoing_flag) {
       $file_path = npg_pipeline::runfolder_scaffold->path_in_outgoing($file_path);
     }
 
+    # Define all job bsubs, hold the first job until later
     my $bsub_cmd =  sprintf q(bsub %s%s '%s'),
       (not keys %{$depends_on}) ? q[-H ] : q[],
       $job->params(),
@@ -331,6 +353,7 @@ sub _submit_function {
     my $lsf_job_id = $self->_execute_lsf_command($bsub_cmd);
     push @lsf_ids, $lsf_job_id;
 
+    # Annotate submitted jobs with their LSF IDs.
     $self->commands4jobs->{$function_name}->{$lsf_job_id} = $job->is_array()
                                      ? $job->commands()
                                      : (values %{$job->commands()})[0];
