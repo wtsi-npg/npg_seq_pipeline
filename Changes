@@ -8,7 +8,8 @@ LIST OF CHANGES
    has_qc_for_release method might return true in cases where previously
    it would have returned false. This is done in order to allow for
    archival of products which either passes QC or have never been through
-   manual or robo QC.
+   manual or robo QC. The data retention policy implementation is changed
+   to take into account the new flag.
  - npg_majora_for_mlwh - dry_run option goes further in the processes,
    but avoids writes/updates
  - Use GitHub actions for CI in place of Travsi-CI
