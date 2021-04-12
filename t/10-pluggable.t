@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 13;
+use Test::More tests => 14;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
@@ -52,7 +52,7 @@ subtest 'object with no function order set - simple methods' => sub {
 };
 
 subtest 'graph creation from jgf files' => sub {
-  plan tests => 3;
+  plan tests => 2;
 
   my $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
@@ -61,14 +61,6 @@ subtest 'graph creation from jgf files' => sub {
   );
   lives_ok {$obj->function_graph()}
    'no error creating a graph for default analysis';
-
-  $obj = npg_pipeline::pluggable->new(
-    id_run         => 1234,
-    runfolder_path => $test_dir,
-    function_list  => "$config_dir/function_list_central_qc_run.json"
-  );
-  lives_ok {  $obj->function_graph() }
-    'no error creating a graph for analysis of a qc run';
 
   $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
@@ -552,7 +544,7 @@ subtest 'log file name, directory and path' => sub {
   my $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
   );
   like ($p->log_file_name, $log_name_re, 'log file name is built correctly');
@@ -563,7 +555,7 @@ subtest 'log file name, directory and path' => sub {
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
       log_file_name    => 'custom.log'
   );
@@ -575,7 +567,7 @@ subtest 'log file name, directory and path' => sub {
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
       log_file_dir     => "$runfolder_path/custom"
   );
@@ -587,7 +579,7 @@ subtest 'log file name, directory and path' => sub {
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
       log_file_dir     => "$runfolder_path/custom",
       log_file_name    => 'custom.log'
@@ -601,11 +593,11 @@ subtest 'log file name, directory and path' => sub {
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
       log_file_dir     => "$runfolder_path/my_log",
       log_file_name    => 'custom.log',
-      log_file_path    => "$runfolder_path/custom/my.log" 
+      log_file_path    => "$runfolder_path/custom/my.log"
   );
   is ($p->log_file_name, 'custom.log', 'log file name as set');
   is ($p->log_file_dir, "$runfolder_path/my_log", 'log directory as set');
@@ -615,15 +607,67 @@ subtest 'log file name, directory and path' => sub {
   $p = npg_pipeline::pluggable->new(
       id_run           => 1234,
       run_folder       => q{123456_IL2_1234},
-      runfolder_path   => $runfolder_path,    
+      runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
-      log_file_path    => "$runfolder_path/custom/my.log" 
+      log_file_path    => "$runfolder_path/custom/my.log"
   );
   is ($p->log_file_name, 'my.log', 'log file name is derived from path');
-  is ($p->log_file_dir, "$runfolder_path/custom", 
+  is ($p->log_file_dir, "$runfolder_path/custom",
     'log directory is derived from path');
   is ($p->log_file_path, "$runfolder_path/custom/my.log",
-    'custom log file path as directly set'); 
+    'custom log file path as directly set');
+};
+
+subtest 'Copy log file and product_release config' => sub {
+  plan tests => 7;
+
+  my $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+      log_file_dir     => $test_dir,
+      log_file_name    => 'logfile',
+      product_conf_file_path => $product_config
+  );
+  $p->_copy_log_to_analysis_dir();
+  my $analysis_path = $p->analysis_path;
+  my $default_log_copy = $analysis_path.'/logfile';
+  ok(-f -s $default_log_copy, "Log file found in analysis path at $analysis_path");
+  my $copy = $p->_save_product_conf_to_analysis_dir();
+  ok(-f -s $analysis_path.'/'.$copy, 'Copy of product config is present');
+
+  # Set log file path to something false to show error behaviour is fine
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => '/nope',
+      timestamp        => '02122020',
+      log_file_dir     => $test_dir,
+      log_file_name    => 'logfile',
+      product_conf_file_path => $product_config
+  );
+  lives_ok {$p->_copy_log_to_analysis_dir()} 'Log copy to nonexistant runfolder does not die';
+
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+      log_file_dir     => '/nuthin',
+      log_file_name    => 'logfile',
+      product_conf_file_path => $product_config
+  );
+  lives_ok {$p->_copy_log_to_analysis_dir()} 'Log copy of nonexistant file does not die';
+
+  # Test what happens when no log_file_name is provided
+  unlink $default_log_copy;
+  ok(! -e $default_log_copy, 'Any log copy removed');
+  lives_ok {
+    $p->_tolerant_persist_file_to_analysis_dir($test_dir.'/logfile', undef)
+  } 'missing argument defaults to using the original file name';
+  note 'Checking for logfile copy in '.$p->analysis_path.' copied from '.$test_dir;
+  ok (-f $default_log_copy, 'Log named with default when no other given');
 };
 
 1;
