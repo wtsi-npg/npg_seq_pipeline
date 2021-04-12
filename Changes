@@ -16,7 +16,9 @@ release 59.2.0
  - Use GitHub actions for CI in place of Travsi-CI
  - Unused JSON files for function graphs are removed.
  - Per-study product configuration file product_release.yml, which is used
-   when creating jobs, is copied to the analysis directory.
+   when creating jobs, is copied to the analysis directory to preserve
+   run conditions
+ - CI: replace Travsi-CI with GitHub Actions
 
 release 59.1.0
  - More options for defining wr limit groups: allow an exact match
@@ -31,8 +33,6 @@ release 59.1.0
    within the last hour.
  - Include pipeline version and name when sending sequencing run metadata
    to the majora service.
- - Persist product_release.yml file to analysis directory to preserve run
-   conditions.
 
 
 release 59.0.0
