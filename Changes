@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 59.2.0
  - iRODS connections to be opened on-demand for validation
  - Added an option of having a new boolean flag 'accept_undef_qc_outcome'
    in the study configuration for a product for a particular archiver.
@@ -14,6 +15,8 @@ LIST OF CHANGES
    but avoids writes/updates
  - Use GitHub actions for CI in place of Travsi-CI
  - Unused JSON files for function graphs are removed.
+ - Per-study product configuration file product_release.yml, which is used
+   when creating jobs, is copied to the analysis directory.
 
 release 59.1.0
  - More options for defining wr limit groups: allow an exact match
