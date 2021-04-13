@@ -21,6 +21,13 @@ open my $fh1, '>', $exec or die 'failed to open file for writing';
 print $fh1 'echo "npg_upload2climb mock"' or warn 'failed to print';
 close $fh1 or warn 'failed to close file handle';
 chmod 755, $exec;
+
+my $exec2 = join q[/], $dir, 'npg_climb2mlwh';
+open $fh1, '>', $exec2 or die 'failed to open file for writing';
+print $fh1 'echo "npg_climb2mlwh mock"' or warn 'failed to print';
+close $fh1 or warn 'failed to close file handle';
+chmod 755, $exec2;
+
 local $ENV{PATH} = join q[:], $dir, $ENV{PATH};
 
 my $logfile = join q[/], $dir, 'logfile';
@@ -31,7 +38,8 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           utf8   => 1});
 
 # setup runfolder
-my $runfolder_path = join q[/], $dir, 'novaseq', '180709_A00538_0010_BH3FCMDRXX';
+my $run_folder = '180709_A00538_0010_BH3FCMDRXX';
+my $runfolder_path = join q[/], $dir, 'novaseq', $run_folder;
 my $bbc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20180805-013153';
 my $archive_path = join q[/], $bbc_path, 'no_cal/archive';
 my $no_archive_path = join q[/], $bbc_path, 'no_archive';
@@ -235,7 +243,7 @@ subtest 'definition and manifest generation' => sub {
   
   $f = npg_pipeline::function::pp_archiver->new($init);
   throws_ok { $f->create }
-    qr/is not Final lib QC value/, 'qc outcomes are not set';
+    qr/lib QC is undefined/, 'qc outcomes are not set';
 
   my %dict = map { $_->short_desc => $_->id_mqc_library_outcome }
              $schema->resultset(q[MqcLibraryOutcomeDict])->search({})->all();
@@ -290,7 +298,7 @@ subtest 'definition and manifest generation' => sub {
   is ($d->excluded, undef, 'function is not excluded');
   is ($d->composition, undef, 'composition is not defined');
   is ($d->job_name, "pp_archiver_$id_run", 'job name');
-  is ($d->command, "$exec $coptions --manifest $manifest_path", 'correct command');
+  is ($d->command, "$exec $coptions --manifest $manifest_path && $exec2 $coptions --run_folder $run_folder", 'correct command');
 
   ok ($f->merge_lanes, 'merge flag is true');
   my @data_products = @{$f->products->{'data_products'}};
@@ -307,7 +315,7 @@ subtest 'definition and manifest generation' => sub {
     'correct header line');
   my @line = (
     qw/AAMB-M4567 Standard nCoV-2019/,
-    "$pp_archive_path/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
+    "$pp_archive_path/plex1/ncov2019_artic_nf/v.3/*_{trimPrimerSequences/*.mapped.bam,makeConsensus/*.fa}",
     't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
     '{"components":[{"id_run":26291,"position":1,"tag_index":1},{"id_run":26291,"position":2,"tag_index":1}]}',
     "b65be328691835deeff44c4025fadecd9af6512c10044754dd2161d8a7c85000\n"
@@ -361,7 +369,7 @@ subtest 'definition and manifest generation' => sub {
   ok (!-e $manifest_path, 'manifest file does not exist');
   $ds = $f->create();
   is (scalar @{$ds}, 1, 'one definition is generated');
-  is ($ds->[0]->command, "$exec $coptions --manifest $manifest_path", 'correct command');
+  is ($ds->[0]->command, "$exec $coptions --manifest $manifest_path && $exec2 $coptions --run_folder $run_folder", 'correct command');
   ok (-e $manifest_path, 'manifest file exists');
   @lines = read_file($manifest_path);
   is (scalar @lines, 4, 'manifest contains 4 lines');
@@ -369,7 +377,7 @@ subtest 'definition and manifest generation' => sub {
   shift @lines;
   @line = (
     qw/AAMB-M4567  Standard nCoV-2019/,
-    "$pp_archive_path/lane1/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
+    "$pp_archive_path/lane1/plex1/ncov2019_artic_nf/v.3/*_{trimPrimerSequences/*.mapped.bam,makeConsensus/*.fa}",
     't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
     '{"components":[{"id_run":26291,"position":1,"tag_index":1}]}',
     "3709acf46bbedf27819413030709fb2f196ba5e8642b4d2b4319f7bddfa8c2c9\n");
@@ -447,7 +455,7 @@ subtest 'skip sample with consent withdrawn' => sub {
   shift @lines;
   my @line = (
     qw/AAMB-M4567 Standard nCoV-2019/,
-    "$pp_archive_path/lane2/plex1/ncov2019_artic_nf/v.3/qc_pass_climb_upload/*/*/*{am,fa}",
+    "$pp_archive_path/lane2/plex1/ncov2019_artic_nf/v.3/*_{trimPrimerSequences/*.mapped.bam,makeConsensus/*.fa}",
     't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
     '{"components":[{"id_run":26291,"position":2,"tag_index":1}]}',
     "11c776e3a9791f1abeaba44c8ee673dacc844778397eca15719786ffae001b0b\n");

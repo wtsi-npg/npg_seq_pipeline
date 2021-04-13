@@ -81,7 +81,7 @@ sub get_study_library_sample_names {
 
   my $library_aref = $elims->library_id ? [$elims->library_id] : [];
   my $href = {
-          study    => [keys %study_names_hash],
+          study    => [sort keys %study_names_hash],
           library  => $library_aref,
           sample   => $sample_names,
          };

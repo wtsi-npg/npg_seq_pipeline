@@ -32,33 +32,30 @@ npg_pipeline::validation::s3
   my $v = npg_pipeline::validation::s3->new(
     product_entities => $product_entities,
   );
-  my $deletable = $v->fully_archived;
+  my $deletable = $v->fully_archived();
   my @archived_entities = $v->eligible_product_entities();
 
 =head1 DESCRIPTION
 
-Validation of files present in a pre-configures s3 location
+Validation of files present in a pre-configures remote location
 against files present on staging. Only files that belong
-to products that should have been arcived to s3 are considered.
-Customer's receipts are used to confirm that data product
-files have been received by a customer. If no receipt is
-available for a data product, we expect that either the
-product has failed QC or it is a candidate for topping up.
-If neither of the latter assumtions is true, the product
-is not consided successfully archived.
+to products that should have been arcived to this location are
+considered. Customer's receipts are used to confirm that data
+product files have been received by a customer. If no receipt
+is available for a data product, we expect that either the
+product has failed QC or, where appropriate, it is a candidate
+for topping up. If neither of the latter assumtions is true, the
+product is not consided successfully archived.
 
-The validation is implemented as a 'lazy' evaluation of
-a number of conditions, i.e. if the earlier condition
-confirms the archival, the conditions following after it
-are not evaluated. The order of evaluation is as flollows:
-received by the customer, failed QC outcome, available in
-a merged component cache.
+The validation is implemented as an evaluation of a number of
+conditions, such as received by the customer, passed QC assessment,
+failed QC assessment, available in a merged component cache.
 
-Data product sent to the customer always have 'Accepted final'
-library QC outcome. We check that all products received by the
-customer still have this outcome. If not, we disregard the
-fact that the product had been received by the customer and
-progress to the next step of validation.
+The rules for the QC assessment are set in
+C<npg_pipeline:product::release>. If the QC assessmen is relevant
+for the study, checking it at the point of data deletion ensures
+that there has not been a change in the QC status of the product,
+which alters the way the product should have been archived.
 
 =head1 SUBROUTINES/METHODS
 
@@ -115,12 +112,21 @@ sub fully_archived {
   my $self = shift;
 
   my $archived = 1;
+  # No early return after the $archived flag is flipped to false.
+  # Looping over all products to give a full report in the log,
+  # retain the value of teh flag once it was flipped to false.
   foreach my $p (map { $_->target_product }
                  @{$self->eligible_product_entities}) {
-    ($self->_received_by_customer($p) and $self->_passed_mqc($p))
-    or $self->_failed_mqc($p)
-    or $self->_saved4topup($p)
-    or ($archived = 0);
+
+    my $received = $self->_received_by_customer($p);
+    my $passed   = $self->_passed_qc_assessment($p);
+
+    ( $received and $passed ) or
+    ( $self->accept_undef_qc_outcome($p, 's3')
+       ? (($received or $passed) and ($archived = 0))
+       : ($self->_failed_qc_assessment($p)
+          or $self->_saved4topup($p)
+          or ($archived = 0)) );
   }
 
   return $archived;
@@ -258,27 +264,20 @@ sub _received_by_customer {
   return $received;
 }
 
-sub _passed_mqc {
+sub _passed_qc_assessment {
   my ($self, $product) = @_;
 
-  #####
-  # This method will be called for products that are received
-  # by the customer. It ensures that when the QC outcome matters,
-  # it has not been reset after sending the product to the customer.
-  #
   my $passed = 1;
   if ($self->qc_outcome_matters($product, 's3')) {
-    my $desc = $product->composition->freeze();
-    my $libqc_obj = $product->final_libqc_obj($self->qc_schema);
-    $libqc_obj or $self->logcroak("Product $desc - not final lib QC outcome");
-    $passed = $libqc_obj->is_accepted;
-    $passed or $self->logwarn("Product $desc did not pass QC");
+    $passed = $self->has_qc_for_release($product);
+    $passed or $self->logwarn(sprintf 'Product %s failed QC assessment',
+                              $product->composition->freeze());
   }
 
   return $passed;
 }
 
-sub _failed_mqc {
+sub _failed_qc_assessment {
   my ($self, $product) = @_;
 
   my $failed = 0;
@@ -365,7 +364,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019,2020 Genome Research Ltd.
+Copyright (C) 2019,2020,2021 Genome Research Ltd.
 
 This file is part of NPG.
 
