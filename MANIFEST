@@ -1,4 +1,4 @@
-.travis.yml
+.github/workflows/testing_and_building_repo.yml
 bin/npg_climb2mlwh
 bin/npg_heron_metadata_upload
 bin/npg_pipeline_analysis_runner
@@ -89,8 +89,8 @@ lib/npg_tracking/daemon/archival.pm
 MANIFEST			This list of files
 README
 README.md
+scripts/install_npg_perl_dependencies.sh
 scripts/jgf2gml
-scripts/travis_install.sh
 t/00-critic.t
 t/00-distribution.t
 t/00-pod.t
