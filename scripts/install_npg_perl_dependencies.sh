@@ -7,8 +7,7 @@ set -e -x
 
 #setting environment variables
 WTSI_NPG_GITHUB_URL=$1
-WTSI_NPG_CONDA_REPO=$2
-WTSI_NPG_BUILD_BRANCH=$3
+WTSI_NPG_BUILD_BRANCH=$2
 
 eval $(perl -I ~/perl5ext/lib/perl5/ -Mlocal::lib=~/perl5ext)
 cpanm --quiet --notest Alien::Tidyp # For npg_tracking
