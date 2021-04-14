@@ -1,8 +1,9 @@
 use strict;
 use warnings;
-use Test::More tests => 14;
+use Test::More tests => 15;
 use Test::Exception;
 use Cwd;
+use List::Util qw(none any);
 use Log::Log4perl qw(:levels);
 use File::Copy qw(cp);
 use English;
@@ -86,6 +87,7 @@ subtest 'graph creation from explicitly given function list' => sub {
     id_run         => 1234,
     runfolder_path => $runfolder_path,
     function_order => ['my_function', 'your_function'],
+    function_list => "$config_dir/function_list_central.json"
   );
   ok($obj->has_function_order(), 'function order is set');
   is(join(q[ ], @{$obj->function_order}), 'my_function your_function',
@@ -121,7 +123,8 @@ subtest 'graph creation from explicitly given function list' => sub {
   $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
     function_order => [qw/pipeline_end/],
-    runfolder_path => $test_dir
+    runfolder_path => $test_dir,
+    function_list => "$config_dir/function_list_central.json"
   );
   throws_ok { $obj->function_graph() }
     qr/Graph is not DAG/,
@@ -131,7 +134,8 @@ subtest 'graph creation from explicitly given function list' => sub {
     id_run         => 1234,
     function_order => [qw/pipeline_start/],
     runfolder_path => $test_dir,
-    no_bsub        => 1
+    no_bsub        => 1,
+    function_list => "$config_dir/function_list_central.json"
   );
   throws_ok { $obj->function_graph() }
     qr/Graph is not DAG/,
@@ -196,7 +200,8 @@ subtest 'specifying functions via function_order' => sub {
     no_sf_resource        => 1,
     no_bsub               => 0,
     is_indexed            => 0,
-    product_conf_file_path => $product_config
+    product_conf_file_path => $product_config,
+    function_list => "$config_dir/function_list_central.json"
   );
   is($p->id_run, 1234, 'run id set correctly');
   is($p->is_indexed, 0, 'is not indexed');
@@ -213,7 +218,8 @@ subtest 'creating executor object' => sub {
     runfolder_path        => $runfolder_path,
     bam_basecall_path     => $runfolder_path,
     spider                => 0,
-    product_conf_file_path => $product_config
+    product_conf_file_path => $product_config,
+    function_list => "$config_dir/function_list_central.json"
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
@@ -260,6 +266,7 @@ subtest 'propagating options to the lsf executor' => sub {
     function_order        => \@functions_in_order,
     runfolder_path        => $runfolder_path,
     spider                => 0,
+    function_list => "$config_dir/function_list_central.json"
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
@@ -310,7 +317,8 @@ subtest 'running the pipeline (lsf executor)' => sub {
     execute        => 0,
     no_sf_resource => 1,
     is_indexed     => 0,
-    product_conf_file_path => $product_config
+    product_conf_file_path => $product_config,
+    function_list => "$config_dir/function_list_central.json"
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
@@ -370,6 +378,7 @@ subtest 'running the pipeline (wr executor)' => sub {
     executor_type  => 'wr',
     is_indexed     => 0,
     product_conf_file_path => $product_config,
+    function_list => "$config_dir/function_list_central.json"
   };
 
   # soft-link wr command to /bin/false so that it fails
@@ -420,7 +429,8 @@ subtest 'positions and spidering' => sub {
       id_flowcell_lims => 2015,
       run_folder       => q{123456_IL2_1234},
       runfolder_path   => $runfolder_path,
-      spider           => 0
+      spider           => 0,
+      function_list => "$config_dir/function_list_central.json"
   );
   ok(!$p->spider, 'spidering is off');
   is (join( q[ ], $p->positions), '1 2 3 4 5 6 7 8', 'positions array');
@@ -437,7 +447,8 @@ subtest 'positions and spidering' => sub {
       lanes            => [1,2],
       spider           => 0,
       no_sf_resource   => 1,
-      product_conf_file_path => $product_config
+      product_conf_file_path => $product_config,
+      function_list => "$config_dir/function_list_central.json"
   );
   is (join( q[ ], $p->positions), '1 2', 'positions array');
   ok(!$p->interactive, 'start job will be resumed');
@@ -454,7 +465,8 @@ subtest 'positions and spidering' => sub {
       interactive      => 1,
       spider           => 0,
       no_sf_resource   => 1,
-      product_conf_file_path => $product_config
+      product_conf_file_path => $product_config,
+      function_list => "$config_dir/function_list_central.json"
   );
   ok($p->interactive, 'start job will not be resumed');
   lives_ok { $p->main() } "running main for $function, interactively";
@@ -478,7 +490,8 @@ subtest 'positions and spidering' => sub {
       id_flowcell_lims => 2015,
       spider           => 0,
       no_sf_resource   => 1,
-      product_conf_file_path => $product_config
+      product_conf_file_path => $product_config,
+      function_list => "$config_dir/function_list_central.json"
   );
   mkdir $p->archive_path;
   is (join( q[ ], $p->positions), '4', 'positions array');
@@ -565,7 +578,7 @@ subtest 'log file name, directory and path' => sub {
       run_folder       => q{123456_IL2_1234},
       runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
-      log_file_name    => 'custom.log'
+      log_file_name    => 'custom.log',
   );
   is ($p->log_file_name, 'custom.log', 'log file name as set');
   is ($p->log_file_dir, $runfolder_path, 'default for the log directory');
@@ -577,7 +590,7 @@ subtest 'log file name, directory and path' => sub {
       run_folder       => q{123456_IL2_1234},
       runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
-      log_file_dir     => "$runfolder_path/custom"
+      log_file_dir     => "$runfolder_path/custom",
   );
   like ($p->log_file_name, $log_name_re, 'default log file name');
   is ($p->log_file_dir, "$runfolder_path/custom", 'log directory as set');
@@ -590,7 +603,7 @@ subtest 'log file name, directory and path' => sub {
       runfolder_path   => $runfolder_path,
       timestamp        => '02122020',
       log_file_dir     => "$runfolder_path/custom",
-      log_file_name    => 'custom.log'
+      log_file_name    => 'custom.log',
   );
   is ($p->log_file_name, 'custom.log', 'log file name as set');
   is ($p->log_file_dir, "$runfolder_path/custom" , 'log directory as set');
@@ -605,7 +618,7 @@ subtest 'log file name, directory and path' => sub {
       timestamp        => '02122020',
       log_file_dir     => "$runfolder_path/my_log",
       log_file_name    => 'custom.log',
-      log_file_path    => "$runfolder_path/custom/my.log"
+      log_file_path    => "$runfolder_path/custom/my.log",
   );
   is ($p->log_file_name, 'custom.log', 'log file name as set');
   is ($p->log_file_dir, "$runfolder_path/my_log", 'log directory as set');
@@ -678,4 +691,49 @@ subtest 'Copy log file and product_release config' => sub {
   ok (-f $default_log_copy, 'Log named with default when no other given');
 };
 
-1;
+subtest 'Check resource population from graph' => sub {
+  plan tests => 5;
+
+  my $p = npg_pipeline::pluggable->new(
+    id_run => 1234,
+    function_order => ['run_analysis_complete'],
+    function_list => "$config_dir/function_list_central.json"
+  );
+  my $graph = $p->function_graph;
+  cmp_ok($graph->vertices, '==', 3, 'Expected number of vertices');
+  my @attr_names = $graph->get_vertex_attribute_names('run_analysis_complete');
+  ok( (none { $_ eq 'metadata' } @attr_names), 'No metadata in boring node');
+  # my $metadata = $graph->get_vertex_attribute('run_analysis_complete', 'metadata');
+
+
+  $p = npg_pipeline::pluggable->new(
+    id_run => 1234,
+    function_order => ['test_function'],
+    function_list => "$config_dir/test_pipeline.json"
+  );
+  $graph = $p->function_graph;
+  cmp_ok($graph->vertices, '==', 3, 'Single-function graph has 3 nodes');
+  @attr_names = $graph->get_vertex_attribute_names('test_function');
+  ok((any { $_ eq 'resources' } @attr_names), 'Metadata loaded from test graph');
+
+  is_deeply(
+    $graph->get_vertex_attributes('test_function'),
+    {
+      label => 'test_function',
+      resources => {
+        default => {
+          low_cpu => 6,
+          high_cpu => 8,
+          memory => 32,
+          db => [],
+          irods => 5,
+          fs_num_slots => 2
+        },
+        special => {
+          memory => 38
+        }
+      }
+    },
+    'All attributes found in test_function'
+  );
+};

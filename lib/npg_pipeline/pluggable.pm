@@ -157,6 +157,10 @@ For example, the following works for archival pipeline
  npg_pipeline::pluggable->new_with_options(
    function_list => 'post_qc_review');
 
+Normally specified implicitly in the pipeline
+invocation, e.g. ./bin/npg_pipeline_central causes the loading of
+./data/config_files/function_list_central.json
+
 =cut
 
 has q{function_list} => (
@@ -207,6 +211,9 @@ around q{function_list} => sub {
 
 A Graph::Directed object representing the functions to be run
 as a directed acyclic graph (DAG).
+Each vertex has properties id, label and resources.
+Populated from the provided JGF file via $self->function_order or
+$self->_function_list_conf
 
 =cut
 
@@ -224,11 +231,11 @@ sub _build_function_graph {
   my @nodes;
 
   if ($self->has_function_order && @{$self->function_order}) {
-
     my @functions = @{$self->function_order};
     $self->info(q{Function order is set by the user: } .
                 join q[, ], @functions);
 
+    # Infer start and end of graph
     unshift @functions, $SUSPENDED_START_FUNCTION;
     push @functions, $END_FUNCTION;
     $self->info(q{Function order to be executed: } .
@@ -238,6 +245,7 @@ sub _build_function_graph {
     my $previous = 0;
     my $total = scalar @functions;
 
+    # Infer edges to connect the provided list of functions in order
     while ($current < $total) {
       if ($current != $previous) {
         $g->add_edge($functions[$previous], $functions[$current]);
@@ -245,7 +253,20 @@ sub _build_function_graph {
       }
       $current++;
     }
-    @nodes = map { {'id' => $_, 'label' => $_} } @functions;
+    # Infer resource properties by reading the related graph definition
+    my $jgraph = $self->_function_list_conf;
+    foreach my $function_name (@functions) {
+      # Find the named node in the graph config
+      my ($function_def) = grep {
+        $_->{id} eq $function_name
+      } @{$jgraph->{graph}{nodes}};
+      # and create a new graph node with the properties
+      push @nodes, {
+        id => $function_name,
+        label => $function_name,
+        metadata => $function_def->{metadata}
+      };
+    }
   } else {
     my $jgraph = $self->_function_list_conf();
     foreach my $e (@{$jgraph->{'graph'}->{'edges'}}) {
@@ -258,7 +279,7 @@ sub _build_function_graph {
 
   $g->edges()  or $self->logcroak(q{No edges});
   $g->is_dag() or $self->logcroak(q{Graph is not DAG});
-
+  # Add nodes to graph
   foreach my $n ( @nodes ) {
     ($n->{'id'} and $n->{'label'}) or
       $self->logcroak(q{Both id and label should be defined for a node});
@@ -267,6 +288,9 @@ sub _build_function_graph {
       $self->logcroak(qq{Vertex for node $id is missing});
     }
     $g->set_vertex_attribute($id, 'label', $n->{'label'});
+    if (exists $n->{metadata}) {
+      $g->set_vertex_attribute($id, 'resources', $n->{metadata}{resources});
+    }
   }
 
   return $g;

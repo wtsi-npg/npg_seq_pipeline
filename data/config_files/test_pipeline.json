@@ -27,12 +27,17 @@
                 "metadata": {
                     "description": "All the trappings of running a function",
                     "resources": {
-                        "low_cpu": 6,
-                        "high_cpu": 8,
-                        "memory": 32,
-                        "db": [],
-                        "irods": 5,
-                        "fs_num_slots": 2
+                        "default": {
+                            "low_cpu": 6,
+                            "high_cpu": 8,
+                            "memory": 32,
+                            "db": [],
+                            "irods": 5,
+                            "fs_num_slots": 2
+                        },
+                        "special": {
+                            "memory": 38
+                        }
                     }
                 }
             },
