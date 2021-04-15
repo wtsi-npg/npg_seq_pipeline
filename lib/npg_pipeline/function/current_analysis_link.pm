@@ -9,7 +9,7 @@ use File::Spec::Functions qw(abs2rel);
 
 use npg_pipeline::function::definition;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 
@@ -109,7 +109,7 @@ Function definition is created as a npg_pipeline::function::definition
 type object.
 
   my $def_array = $obj->create();
-  
+
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT

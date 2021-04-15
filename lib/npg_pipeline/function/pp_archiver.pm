@@ -13,7 +13,7 @@ use Perl6::Slurp;
 use npg_qc::Schema;
 use npg_pipeline::function::definition;
 
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 with qw/ npg_pipeline::product::release
          npg_pipeline::product::release::portable_pipeline /;
 with 'npg_common::roles::software_location' => { tools => [qw/npg_upload2climb npg_climb2mlwh/] };
@@ -173,7 +173,7 @@ sub create {
 =head2 generate_manifest
 
 Returns an array containing a single npg_pipeline::function::definition
-object, which has the 'excluded' attribute set to true. No command for 
+object, which has the 'excluded' attribute set to true. No command for
 later execution is generated. While this method is running, it creates
 a manifest file, listing the products due to be archived their location
 in the run folder.

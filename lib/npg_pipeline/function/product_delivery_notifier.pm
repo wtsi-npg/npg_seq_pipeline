@@ -18,7 +18,7 @@ use npg_pipeline::function::definition;
 use npg_tracking::util::config_constants qw{$NPG_CONF_DIR_NAME};
 use npg_qc::Schema;
 
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 
 with qw{npg_pipeline::product::release};
 

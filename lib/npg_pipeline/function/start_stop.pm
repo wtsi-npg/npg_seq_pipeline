@@ -8,7 +8,7 @@ use Math::Random::Secure qw(irand);
 use npg_pipeline::function::definition;
 use npg_pipeline::runfolder_scaffold;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 
@@ -51,7 +51,7 @@ sub pipeline_start {
 =head2 pipeline_end
 
 Last 'catch all' function that might be called by the pipeline.
-Creates and returns a token job definition. 
+Creates and returns a token job definition.
 
 =cut
 

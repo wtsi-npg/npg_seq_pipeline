@@ -9,7 +9,7 @@ use Readonly;
 use npg_pipeline::cache::reference;
 use npg_pipeline::function::definition;
 
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 with qw{ npg_pipeline::function::util
          npg_pipeline::product::release };
 with 'npg_common::roles::software_location' => { tools => [qw/gatk/] };
@@ -134,7 +134,7 @@ npg_pipeline::function::bqsr_calc
 =item namespace::autoclean
 
 =item Moose
- 
+
 =item MooseX::StrictConstructor
 
 =item Readonly

@@ -7,7 +7,7 @@ use Readonly;
 use npg_pipeline::function::definition;
 use npg_pipeline::runfolder_scaffold;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 

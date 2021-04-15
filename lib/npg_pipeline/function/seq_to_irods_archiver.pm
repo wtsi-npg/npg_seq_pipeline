@@ -6,7 +6,7 @@ use Readonly;
 
 use npg_pipeline::function::definition;
 
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 with    qw{npg_pipeline::function::util
            npg_pipeline::runfolder_scaffold
            npg_pipeline::product::release

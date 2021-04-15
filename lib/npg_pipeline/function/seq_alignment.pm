@@ -20,7 +20,7 @@ use npg_tracking::data::gbs_plex;
 use npg_pipeline::cache::reference;
 use npg_pipeline::function::definition;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 with    qw{ npg_pipeline::function::util
             npg_pipeline::product::release };
 
@@ -927,7 +927,7 @@ A path to Phix reference fasta file to split phiX spike-in reads
 
 This method is inherited from npg_pipeline::product role and
 changed to return a default value (biobambam) and duplexseq for
-the Duplex-Seq library type. 
+the Duplex-Seq library type.
 
 =head2 generate
 
@@ -942,7 +942,7 @@ single npg_pipeline::function::definition object where this function
 is flagged as excluded.
 
 Can be used to generate missing or replace corrupt composition.json
-files in an existing analysis directory. 
+files in an existing analysis directory.
 
 =head1 DIAGNOSTICS
 

@@ -10,7 +10,7 @@ use npg_qc::autoqc::qc_store;
 use npg_qc::illumina::interop::parser;
 use npg_pipeline::function::definition;
 
-extends qw{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 

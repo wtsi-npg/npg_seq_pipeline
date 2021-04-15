@@ -9,7 +9,7 @@ use Cwd;
 
 use npg_pipeline::function::definition;
 
-extends qw{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 
@@ -18,7 +18,7 @@ Readonly::Scalar my $SEQCHKSUM_SCRIPT => q{npg_pipeline_seqchksum_comparator};
 =head1 NAME
 
 npg_pipeline::function::seqchksum_comparator
-  
+
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION

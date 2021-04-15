@@ -15,7 +15,7 @@ use npg_qc::illumina::interop::parser;
 use npg_pipeline::cache::barcodes;
 use npg_pipeline::function::definition;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 with 'npg_pipeline::runfolder_scaffold' => {
         -excludes => [qw/create_top_level create_analysis_level/],
@@ -626,7 +626,7 @@ npg_pipeline::function::p4_stage1_analysis
 
 =head1 DESCRIPTION
 
-Definition for p4 flow which creates cram files from bcl files, including initial phiX alignment, 
+Definition for p4 flow which creates cram files from bcl files, including initial phiX alignment,
 spatial filtering and deplexing of pools where appropriate.
 
 =head1 SUBROUTINES/METHODS

@@ -8,7 +8,7 @@ use Readonly;
 
 use npg_pipeline::function::definition;
 
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 
 our $VERSION = '0';
 

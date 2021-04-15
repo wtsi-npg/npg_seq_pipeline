@@ -15,7 +15,7 @@ use npg_qc::autoqc::constants qw/
          $SAMTOOLS_SEC_QCFAIL_SUPPL_FILTER
                                 /;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 with q{npg_pipeline::function::util};
 
 our $VERSION = '0';
@@ -295,10 +295,10 @@ sub _generate_command {
     }
   }
   elsif(any { /$check/sm } qw( verify_bam_id pulldown_metrics )) {
-    $c .= qq{ --input_files=$bamfile_path}; # note: single bam file 
+    $c .= qq{ --input_files=$bamfile_path}; # note: single bam file
   }
   elsif(any { /$check/sm } qw( adapter bcfstats genotype )) {
-    $c .= qq{ --input_files=$cramfile_path}; # note: single cram file 
+    $c .= qq{ --input_files=$cramfile_path}; # note: single cram file
   }
   elsif($check eq q/upstream_tags/) {
     my $tagzerobamfile_path = $dp->file_path($recal_path) .

@@ -6,7 +6,7 @@ use Readonly;
 
 use npg_pipeline::function::definition;
 
-extends qw{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 
@@ -70,7 +70,7 @@ Creates and returns a single function definition as an array.
 Function definition is created as a npg_pipeline::function::definition
 type object.
 
-  my $definitions = $obj->create(); 
+  my $definitions = $obj->create();
 
 =head1 DIAGNOSTICS
 

@@ -8,7 +8,7 @@ use Readonly;
 
 use npg_pipeline::function::definition;
 
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 with qw{ npg_pipeline::function::util
          npg_pipeline::product::release };
 with 'npg_common::roles::software_location' => { tools => [qw/bcftools/] };
@@ -133,9 +133,9 @@ npg_pipeline::function::merge_recompress
 =item namespace::autoclean
 
 =item Moose
- 
+
 =item MooseX::StrictConstructor
- 
+
 =item Readonly
 
 =item npg_common::roles::software_location
