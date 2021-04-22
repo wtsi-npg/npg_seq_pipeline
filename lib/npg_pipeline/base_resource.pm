@@ -1,6 +1,7 @@
 package npg_pipeline::base_resource;
 
 use Moose;
+use npg_pipeline::function::definition;
 
 our $VERSION = '0';
 
@@ -28,12 +29,30 @@ has default_defaults => (
   is => 'ro',
   default => sub {{
     low_cpu => 1,
-    high_cpu => 1,
     memory => 2
   }},
   documentation => 'Basic resources that all jobs might need',
 );
 
+=head2 resource
+
+HashRef of resource requests for the function, e.g.
+{
+  low_cpu => 4,
+  high_cpu => 8,
+  memory => 10,
+  db => ['mlwh']
+}
+
+=cut
+
+has resource => (
+  isa => 'HashRef',
+  is => 'ro',
+  lazy => 1,
+  default => sub {{}},
+  documentation => 'Function-specific resource spec',
+);
 
 =head2 get_resources
 
@@ -46,14 +65,6 @@ Returntype:  HashRef of resources needed. Memory is in gigabytes
 Example:     $resources = $self->get_resources('bigmem');
 
 =cut
-
-has resource => (
-  isa => 'HashRef',
-  is => 'ro',
-  lazy => 1,
-  default => sub {{}},
-  documentation => 'Function-specific resource spec',
-);
 
 sub get_resources {
   my ($self, $special) = @_;
@@ -69,11 +80,57 @@ sub get_resources {
   }
   return {
     %{$self->default_defaults},
-    %{$self->resource->{default}},
+    (exists $self->resource->{default}) ? %{$self->resource->{default}} : (),
     (defined $special) ? %{$self->resource->{$special}} : ()
   }
 }
 
+
+=head2 create_definition
+
+Args [1]:    Hashref of specific requirements for this Function
+Args [2]:    String, optional. The name of a special resource spec in the graph
+Description: Takes custom properties and integrates resources defined for this
+             function and instantiates a definition object.
+             Some translation is made between resource spec and expectation
+             of the definition.
+Returntype:  npg_pipeline::function::definition instance
+Example:     my $definition = $self->create_definition({preexec => 'sleep 10'});
+
+=cut
+
+sub create_definition {
+  my ($self, $custom_args, $special_resource) = @_;
+
+  # Load combined resource requirements, and combine with any custom arguments
+  my $resources = $self->get_resources($special_resource);
+  $resources = { %{$resources}, %{$custom_args} };
+  my $num_cpus;
+  if (exists $resources->{high_cpu} && $resources->{low_cpu} != $resources->{high_cpu}) {
+    # Format discrete CPU values for definition ArrayRef
+    $num_cpus = [
+      delete $resources->{low_cpu},
+      delete $resources->{high_cpu}
+    ];
+  } else {
+    $num_cpus = [delete $resources->{low_cpu}];
+    delete $resources->{high_cpu} if exists $resources->{high_cpu};
+  }
+  # Scale up memory numbers to MB expected by definition
+  $resources->{memory} *= 1000;
+
+  # Delete any resource properties that are not accepted by the definition
+  # for my $for_show (qw//) {
+  #   delete $resources->{$for_show};
+  # }
+
+  return npg_pipeline::function::definition->new(
+    created_by => __PACKAGE__,
+    created_on => $self->timestamp(),
+    num_cpus => $num_cpus,
+    %{$resources}
+  );
+}
 
 __PACKAGE__->meta->make_immutable;
 
@@ -92,6 +149,8 @@ __END__
 =item Moose
 
 =item namespace::autoclean
+
+=item npg_pipeline::function::definition
 
 =back
 
