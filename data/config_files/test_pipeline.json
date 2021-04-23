@@ -28,8 +28,8 @@
                     "description": "All the trappings of running a function",
                     "resources": {
                         "default": {
-                            "low_cpu": 6,
-                            "high_cpu": 8,
+                            "minimum_cpu": 6,
+                            "maximum_cpu": 8,
                             "memory": 32,
                             "db": [],
                             "irods": 5,

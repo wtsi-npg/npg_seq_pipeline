@@ -28,7 +28,7 @@ has default_defaults => (
   isa => 'HashRef',
   is => 'ro',
   default => sub {{
-    low_cpu => 1,
+    minimum_cpu => 1,
     memory => 2
   }},
   documentation => 'Basic resources that all jobs might need',
@@ -38,8 +38,8 @@ has default_defaults => (
 
 HashRef of resource requests for the function, e.g.
 {
-  low_cpu => 4,
-  high_cpu => 8,
+  minimum_cpu => 4,
+  maximum_cpu => 8,
   memory => 10,
   db => ['mlwh']
 }
@@ -106,15 +106,15 @@ sub create_definition {
   my $resources = $self->get_resources($special_resource);
   $resources = { %{$resources}, %{$custom_args} };
   my $num_cpus;
-  if (exists $resources->{high_cpu} && $resources->{low_cpu} != $resources->{high_cpu}) {
+  if (exists $resources->{maximum_cpu} && $resources->{minimum_cpu} != $resources->{maximum_cpu}) {
     # Format discrete CPU values for definition ArrayRef
     $num_cpus = [
-      delete $resources->{low_cpu},
-      delete $resources->{high_cpu}
+      delete $resources->{minimum_cpu},
+      delete $resources->{maximum_cpu}
     ];
   } else {
-    $num_cpus = [delete $resources->{low_cpu}];
-    delete $resources->{high_cpu} if exists $resources->{high_cpu};
+    $num_cpus = [delete $resources->{minimum_cpu}];
+    delete $resources->{maximum_cpu} if exists $resources->{maximum_cpu};
   }
   # Scale up memory numbers to MB expected by definition
   $resources->{memory} *= 1000;

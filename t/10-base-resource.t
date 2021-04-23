@@ -19,7 +19,7 @@ subtest 'basics' => sub {
   is_deeply(
     $resources,
     {
-      low_cpu => 1,
+      minimum_cpu => 1,
       memory => 10
     },
     'Default values set by constructor are merged with global defaults'
@@ -29,7 +29,7 @@ subtest 'basics' => sub {
     resource => {
       default => {
         memory => 3,
-        high_cpu => 2
+        maximum_cpu => 2
       },
       special => {
         memory => 5
@@ -40,8 +40,8 @@ subtest 'basics' => sub {
   is_deeply(
     $resources,
     {
-      low_cpu => 1,
-      high_cpu => 2,
+      minimum_cpu => 1,
+      maximum_cpu => 2,
       memory => 3
     },
     'Ensure special resource specs do not pollute regular defaults'
@@ -51,8 +51,8 @@ subtest 'basics' => sub {
   is_deeply(
     $resources,
     {
-      low_cpu => 1,
-      high_cpu => 2,
+      minimum_cpu => 1,
+      maximum_cpu => 2,
       memory => 5
     },
     'Check special resource request contains both defaults'
