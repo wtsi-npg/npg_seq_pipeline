@@ -77,7 +77,7 @@ sub get_resources {
     $self->logcroak(
       sprintf 'Tried to get resource spec "%s" in %s but have %s',
       $special,
-      __PACKAGE__,
+      ref $self,
       join ', ', keys %{$self->resource}
     );
   }
@@ -105,30 +105,36 @@ Example:     my $definition = $self->create_definition({preexec => 'sleep 10'});
 sub create_definition {
   my ($self, $custom_args, $special_resource) = @_;
 
-  # Load combined resource requirements, and combine with any custom arguments
+  # Load combined resource requirements
   my $resources = $self->get_resources($special_resource);
-  $resources = { %{$resources}, %{$custom_args} };
-  my $num_cpus;
-  if (exists $resources->{maximum_cpu} && $resources->{minimum_cpu} != $resources->{maximum_cpu}) {
+  my $num_cpus = [1];
+  if (exists $custom_args->{num_cpus}) {
+    $num_cpus = $custom_args->{num_cpus};
+  } elsif (exists $resources->{maximum_cpu}
+      && $resources->{minimum_cpu} != $resources->{maximum_cpu}
+  ) {
     # Format discrete CPU values for definition ArrayRef
     $num_cpus = [
-      delete $resources->{minimum_cpu},
-      delete $resources->{maximum_cpu}
+      $resources->{minimum_cpu},
+      $resources->{maximum_cpu}
     ];
   } else {
-    $num_cpus = [delete $resources->{minimum_cpu}];
-    delete $resources->{maximum_cpu};
+    $num_cpus = [$resources->{minimum_cpu}];
   }
+  delete $resources->{minimum_cpu};
+  delete $resources->{maximum_cpu};
+
+  # and combine with any custom arguments
+  $resources = { %{$resources}, %{$custom_args} };
   # Scale up memory numbers to MB expected by definition
   $resources->{memory} *= $MB_TO_GB_CONVERSION;
-
   # Delete any resource properties that are not accepted by the definition
   # for my $for_show (qw//) {
   #   delete $resources->{$for_show};
   # }
 
   return npg_pipeline::function::definition->new(
-    created_by => __PACKAGE__,
+    created_by => ref $self,
     created_on => $self->timestamp(),
     num_cpus => $num_cpus,
     %{$resources}
