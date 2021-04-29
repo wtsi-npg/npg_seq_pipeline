@@ -640,12 +640,11 @@ sub _run_function {
   # create task definitions
 
   # Extract default properties from graphwide metadata
-  # my $jgraph = $self->_function_list_conf;
-  # my $resources = $jgraph->{graph}{metadata}{default_resources};
+  my $jgraph = $self->_function_list_conf;
+  my $resources = $jgraph->{graph}{metadata}{default_resources};
   # and get resource properties for this function invocation
   my $g = $self->function_graph;
   my $fn_resource = $g->get_vertex_attribute($function_name, 'resource');
-  my $resources = {};
   $attrs->{default_defaults} = $resources;
   $attrs->{resource} = $fn_resource // {};
 
