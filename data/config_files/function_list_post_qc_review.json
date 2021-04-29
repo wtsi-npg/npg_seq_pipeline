@@ -100,7 +100,7 @@
             "relation" : "dependsOn",
             "source" : "update_warehouse_post_qc_complete",
             "target" : "archive_logs"
-         },        
+         },
          {
             "relation" : "dependsOn",
             "source" : "update_ml_warehouse_post_qc_complete",
@@ -110,7 +110,7 @@
             "relation" : "dependsOn",
             "source" : "archive_logs",
             "target" : "pipeline_end"
-         }       
+         }
       ],
       "nodes" : [
          {
@@ -189,6 +189,12 @@
             "id" : "pipeline_end",
             "label" : "pipeline_end"
          }
-      ]
+      ],
+      "metadata": {
+         "default_resources": {
+            "minimum_cpu": 1,
+            "memory": 2
+        }
+      }
    }
 }

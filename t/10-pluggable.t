@@ -143,13 +143,17 @@ subtest 'graph creation from explicitly given function list' => sub {
 };
 
 subtest 'switching off functions' => sub {
-  plan tests => 8;
+  plan tests => 9;
 
   my $p = npg_pipeline::pluggable->new(
     runfolder_path      => $runfolder_path,
     no_irods_archival   => 1,
-    no_warehouse_update => 1
+    no_warehouse_update => 1,
+    function_list => "$config_dir/function_list_central.json"
   );
+
+  lives_ok { $p->function_graph } 'A graph!';
+
   ok(($p->_run_function('archive_to_irods_samplesheet')->[0]->excluded &&
       $p->_run_function('archive_to_irods_ml_warehouse')->[0]->excluded),
     'archival to irods switched off');
@@ -159,6 +163,7 @@ subtest 'switching off functions' => sub {
   $p = npg_pipeline::pluggable->new(
     runfolder_path => $runfolder_path,
     local          => 1,
+    function_list => "$config_dir/function_list_central.json"
   );
   ok(($p->_run_function('archive_to_irods_samplesheet')->[0]->excluded &&
       $p->_run_function('archive_to_irods_ml_warehouse')->[0]->excluded),
@@ -171,6 +176,7 @@ subtest 'switching off functions' => sub {
     runfolder_path      => $runfolder_path,
     local               => 1,
     no_warehouse_update => 0,
+    function_list => "$config_dir/function_list_central.json"
   );
   ok(($p->_run_function('archive_to_irods_samplesheet')->[0]->excluded &&
       $p->_run_function('archive_to_irods_ml_warehouse')->[0]->excluded),
@@ -501,10 +507,12 @@ subtest 'positions and spidering' => sub {
 subtest 'script name, pipeline name and function list' => sub {
   plan tests => 17;
 
-  my $base = npg_pipeline::pluggable->new();
+  my $base = npg_pipeline::pluggable->new(
+    function_list => "$config_dir/function_list_central.json"
+  );
   is ($base->_script_name, $PROGRAM_NAME, 'script name');
   is ($base->_pipeline_name, '10-pluggable.t', 'pipeline name');
-  throws_ok { $base->function_list }
+  throws_ok { npg_pipeline::pluggable->new()->function_list }
     qr/Bad function list name: 10-pluggable\.t/,
     'error when test name is used as function list name';
 

@@ -15,7 +15,9 @@ Log::Log4perl->easy_init({layout => $layout,
                           level  => $INFO,
                           utf8   => 1});
 
-npg_pipeline::function::cluster_count->new_with_options()->run_cluster_count_check();
+npg_pipeline::function::cluster_count->new_with_options(
+  default_defaults => { memory => 2, minimum_cpu => 1 }
+)->run_cluster_count_check();
 
 0;
 

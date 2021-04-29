@@ -52,7 +52,8 @@ my $bam_generator = npg_pipeline::function::p4_stage1_analysis->new(
     verbose                       => 0,
     id_run                        => 1234,
     _extra_tradis_transposon_read => 1,
-    bam_basecall_path             => $util->standard_bam_basecall_path()
+    bam_basecall_path             => $util->standard_bam_basecall_path(),
+    default_defaults              => {}
 );
 
 mkdir join(q[/], $bam_generator->bam_basecall_path(), 'metadata_cache_1234')
@@ -66,7 +67,7 @@ subtest 'basics' => sub {
   $bam_generator->_extra_tradis_transposon_read(0);
   is($bam_generator->_extra_tradis_transposon_read, 0, 'TraDIS not set');
   isa_ok($bam_generator->lims, 'st::api::lims', 'cached lims object');
-  
+
   my $alims = $bam_generator->lims->children_ia;
   my $position = 8;
   is($bam_generator->_get_number_of_plexes_excluding_control($alims->{$position}),
@@ -75,10 +76,10 @@ subtest 'basics' => sub {
 
 subtest 'check_save_arguments' => sub {
   plan tests => 29;
- 
+
   my $bbp = $bam_generator->bam_basecall_path;
   my $unique = $bam_generator->_job_id();
- 
+
   my $da = $bam_generator->generate();
   ok ($da && @{$da}==8, 'eight definitions returned');
   my $d = $da->[0];
@@ -192,14 +193,15 @@ $bam_generator = npg_pipeline::function::p4_stage1_analysis->new(
     id_run                        => 1234,
     bam_basecall_path             => $util->standard_bam_basecall_path(),
     p4s1_phix_alignment_method    => q{minimap2},
+    default_defaults              => {}
   );
 
 subtest 'check_save_arguments_minimap2' => sub {
   plan tests => 29;
- 
+
   my $bbp = $bam_generator->bam_basecall_path;
   my $unique = $bam_generator->_job_id();
- 
+
   my $da = $bam_generator->generate();
   ok ($da && @{$da}==8, 'eight definitions returned');
   my $d = $da->[0];
@@ -306,7 +308,7 @@ subtest 'check_save_arguments_minimap2' => sub {
 
 subtest 'check_duplex-seq' => sub {
   plan tests => 26;
- 
+
   my $rf_name = '210111_A00513_0447_AHJ55JDSXY';
   my $rfpath  = abs_path(getcwd) . qq{/t/data/novaseq/$rf_name};
   my $copy = join q[/], $dir, $rf_name;
@@ -327,10 +329,11 @@ subtest 'check_duplex-seq' => sub {
     verbose                       => 0,
     id_run                        => 36062,
     bam_basecall_path             => $bbp,
+    default_defaults              => {}
   );
 
   my $unique = $bam_generator->_job_id();
- 
+
   my $da = $bam_generator->generate();
   ok ($da && @{$da}==4, 'four definitions returned');
   my $d = $da->[0];

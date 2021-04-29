@@ -23,13 +23,14 @@ make_path($recalibrated_path);
       'creating summary link switched off');
     isa_ok ($ds->[0], 'npg_pipeline::function::definition');
   };
- 
+
   my $rfl;
   $rfl = npg_pipeline::function::current_analysis_link->new(
       run_folder        => q{123456_IL2_1234},
       runfolder_path    => $runfolder_path,
       recalibrated_path => $recalibrated_path,
-      no_summary_link   => 1
+      no_summary_link   => 1,
+      default_defaults => {}
   );
   $test->($rfl);
 
@@ -37,14 +38,16 @@ make_path($recalibrated_path);
       run_folder        => q{123456_IL2_1234},
       runfolder_path    => $runfolder_path,
       recalibrated_path => $recalibrated_path,
-      local             => 1
+      local             => 1,
+      default_defaults => {}
   );
   $test->($rfl);
 
   $rfl = npg_pipeline::function::current_analysis_link->new(
       run_folder        => q{123456_IL2_1234},
       runfolder_path    => $runfolder_path,
-      recalibrated_path => $recalibrated_path
+      recalibrated_path => $recalibrated_path,
+      default_defaults => {}
   );
   my $ds = $rfl->create();
   ok($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
@@ -61,7 +64,7 @@ make_path($recalibrated_path);
   is ($d->command, $command, 'command');
   is ($d->job_name, 'create_latest_summary_link_1234_123456_IL2_1234',
     'job name');
-  is ($d->queue, 'small', 'small queue');  
+  is ($d->queue, 'small', 'small queue');
 }
 
 {
@@ -72,8 +75,9 @@ make_path($recalibrated_path);
       run_folder        => q{123456_IL2_1234},
       runfolder_path    => $runfolder_path,
       recalibrated_path => $recalibrated_path,
+      default_defaults => {}
   );
-  
+
   lives_ok { $rfl->make_link(); } q{no croak creating link};
   ok(-l $link, 'link exists');
   is(readlink $link, $link_to, 'correct link target');
@@ -89,6 +93,7 @@ make_path($recalibrated_path);
     run_folder        => q{123456_IL2_1234},
     runfolder_path    => $runfolder_path,
     recalibrated_path => $recalibrated_path,
+    default_defaults => {}
   );
   lives_ok { $rfl->make_link();} q{no croak creating link in outgoing when it already exists};
   ok(-l $link, 'link exists');

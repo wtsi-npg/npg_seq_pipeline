@@ -229,6 +229,7 @@ sub _build_function_graph {
 
   my $g = Graph::Directed->new();
   my @nodes;
+  my $jgraph = $self->_function_list_conf;
 
   if ($self->has_function_order && @{$self->function_order}) {
     my @functions = @{$self->function_order};
@@ -254,7 +255,6 @@ sub _build_function_graph {
       $current++;
     }
     # Infer resource properties by reading the related graph definition
-    my $jgraph = $self->_function_list_conf;
     foreach my $function_name (@functions) {
       # Find the named node in the graph config
       my ($function_def) = grep {
@@ -268,7 +268,6 @@ sub _build_function_graph {
       };
     }
   } else {
-    my $jgraph = $self->_function_list_conf();
     foreach my $e (@{$jgraph->{'graph'}->{'edges'}}) {
       ($e->{'source'} and $e->{'target'}) or
         $self->logcroak(q{Both source and target should be defined for an edge});
@@ -635,6 +634,20 @@ sub _run_function {
   while (my ($key, $value) = each %{$params}) {
     $attrs->{$key} = $value;
   }
+
+  ####
+  # Bring in resource requirements that functions need in order to
+  # create task definitions
+
+  # Extract default properties from graphwide metadata
+  # my $jgraph = $self->_function_list_conf;
+  # my $resources = $jgraph->{graph}{metadata}{default_resources};
+  # and get resource properties for this function invocation
+  my $g = $self->function_graph;
+  my $fn_resource = $g->get_vertex_attribute($function_name, 'resource');
+  my $resources = {};
+  $attrs->{default_defaults} = $resources;
+  $attrs->{resource} = $fn_resource // {};
 
   #####
   # Instantiate the function implementor object, call on it the

@@ -54,12 +54,13 @@ subtest 'MiSeq run' => sub {
   my $restart_file = qr/${analysis_path}\/irods_publisher_restart_files\/publish_seq_data2irods_${id_run}_20181204-\d+_\w+\.restart_file\.json/;
 
   my $a = npg_pipeline::function::seq_to_irods_archiver->new(
-    run_folder     => $rf_name,
-     runfolder_path => $rfpath,
-    conf_path      => $config_dir,
-    id_run         => $id_run,
-    timestamp      => q{20181204}
-   );
+    run_folder       => $rf_name,
+    runfolder_path   => $rfpath,
+    conf_path        => $config_dir,
+    id_run           => $id_run,
+    timestamp        => q{20181204},
+    default_defaults => {}
+  );
   isa_ok($a, q{npg_pipeline::function::seq_to_irods_archiver}, q{object test});
   ok (!$a->no_irods_archival, 'no_irods_archival flag is unset');
 
@@ -96,11 +97,12 @@ subtest 'MiSeq run' => sub {
   write_file($pconfig, $pconfig_content);
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
-    run_folder     => $rf_name,
-    runfolder_path => $rfpath,
-    conf_path      => $config_dir,
-    id_run         => $id_run,
-    timestamp      => q{20181204}
+    run_folder       => $rf_name,
+    runfolder_path   => $rfpath,
+    conf_path        => $config_dir,
+    id_run           => $id_run,
+    timestamp        => q{20181204},
+    default_defaults => {}
   );
 
   $da = $a->create();
@@ -130,12 +132,13 @@ subtest 'MiSeq run' => sub {
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
-    run_folder     => $rf_name,
-    runfolder_path => $rfpath,
-    conf_path      => $config_dir,
-    id_run         => $id_run,
-    timestamp      => q{20181204},
-    is_indexed     => 0,
+    run_folder       => $rf_name,
+    runfolder_path   => $rfpath,
+    conf_path        => $config_dir,
+    id_run           => $id_run,
+    timestamp        => q{20181204},
+    is_indexed       => 0,
+    default_defaults => {}
   );
   $da = $a->create();
   ok ($da && @{$da} == 1, 'an array with one definition is returned');
@@ -149,10 +152,11 @@ subtest 'MiSeq run' => sub {
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder        => $rf_name,
     runfolder_path    => $rfpath,
-    conf_path         => $config_dir,  
+    conf_path         => $config_dir,
     id_run            => $id_run,
     timestamp         => q{20181204},
-    no_irods_archival => 1
+    no_irods_archival => 1,
+    default_defaults  => {}
   );
   ok ($a->no_irods_archival, 'no_irods_archival flag is set');
   $da = $a->create();
@@ -167,7 +171,8 @@ subtest 'MiSeq run' => sub {
     conf_path      => $config_dir,
     id_run         => $id_run,
     timestamp      => q{20181204},
-    local          => 1
+    local          => 1,
+    default_defaults  => {}
   );
   ok ($a->no_irods_archival, 'no_irods_archival flag is set');
   $da = $a->create();
@@ -181,7 +186,8 @@ subtest 'MiSeq run' => sub {
     conf_path        => $config_dir,
     id_run           => $id_run,
     timestamp        => q{20181204},
-    id_flowcell_lims => q{1023456789111}
+    id_flowcell_lims => q{1023456789111},
+    default_defaults  => {}
   );
   $da = $a->create();
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
@@ -193,10 +199,11 @@ subtest 'MiSeq run' => sub {
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder       => $rf_name,
     runfolder_path   => $rfpath,
-    conf_path        => $config_dir,  
+    conf_path        => $config_dir,
     id_run           => $id_run,
     timestamp        => q{20181204},
-    lims_driver_type => 'samplesheet'
+    lims_driver_type => 'samplesheet',
+    default_defaults  => {}
   );
   $da = $a->create();
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
@@ -221,42 +228,45 @@ subtest 'NovaSeq run' => sub {
     qq{$bbc_path/metadata_cache_26291/samplesheet_26291.csv};
 
   my $a  = npg_pipeline::function::seq_to_irods_archiver->new(
-    run_folder     => $rf_name,
-    runfolder_path => $rfpath,
-    analysis_path  => $bbc_path,
-    conf_path      => $config_dir,  
-    id_run         => $id_run,
-    timestamp      => q{20181204}
+    run_folder       => $rf_name,
+    runfolder_path   => $rfpath,
+    analysis_path    => $bbc_path,
+    conf_path        => $config_dir,
+    id_run           => $id_run,
+    timestamp        => q{20181204},
+    default_defaults => {}
   );
   my $da = $a->create();
   ok ($da && @{$da} == 1, 'an array with one definitions is returned');
   my $d = $da->[0];
   isa_ok($d, q{npg_pipeline::function::definition});
-  ok ($d->excluded, 'step is excluded'); 
+  ok ($d->excluded, 'step is excluded');
 
   $a  = npg_pipeline::function::seq_to_irods_archiver->new(
-    run_folder     => $rf_name,
-    runfolder_path => $rfpath,
-    conf_path      => $config_dir,
-    id_run         => $id_run,
-    timestamp      => q{20181204}, 
-    lanes          => [2]
+    run_folder       => $rf_name,
+    runfolder_path   => $rfpath,
+    conf_path        => $config_dir,
+    id_run           => $id_run,
+    timestamp        => q{20181204},
+    lanes            => [2],
+    default_defaults => {}
   );
   $da = $a->create();
   ok ($da && @{$da} == 1, 'an array with one definition is returned');
   $d = $da->[0];
   isa_ok($d, q{npg_pipeline::function::definition});
-  ok ($d->excluded, 'step is excluded'); 
+  ok ($d->excluded, 'step is excluded');
 
   $a  = npg_pipeline::function::seq_to_irods_archiver->new(
-    run_folder     => $rf_name,
-    runfolder_path => $rfpath,
-    conf_path      => $config_dir,
-    id_run         => $id_run,
-    timestamp      => q{20181204},
-    lanes          => [2],
-    merge_lanes    => 0,
-    is_indexed     => 0,
+    run_folder       => $rf_name,
+    runfolder_path   => $rfpath,
+    conf_path        => $config_dir,
+    id_run           => $id_run,
+    timestamp        => q{20181204},
+    lanes            => [2],
+    merge_lanes      => 0,
+    is_indexed       => 0,
+    default_defaults => {}
   );
   $da = $a->create();
   ok ($da && @{$da} == 1, 'an array with one definition is returned');

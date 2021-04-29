@@ -14,22 +14,28 @@ mkdir $run_folder_path;
 my $status_dir = join q[/], $run_folder_path, 'status';
 my $log_dir = join q[/], $status_dir, 'log';
 
+my %init = (
+  id_run            => 1234,
+  run_folder        => 'myfolder',
+  runfolder_path    => $run_folder_path,
+  bam_basecall_path => $run_folder_path,
+  default_defaults  => {}
+);
+
 {
   throws_ok {
     npg_pipeline::function::status->new(
       id_run     => 1234,
       run_folder => 'myfolder',
+      default_defaults => {}
     );
   } qr/Attribute \(status\) is required/, q{error on missing status attribute};
 
   my $sr;
   lives_ok {
     $sr = npg_pipeline::function::status->new(
+      %init,
       status            => 'run archived',
-      id_run            => 1234,
-      run_folder        => 'myfolder',
-      runfolder_path    => $run_folder_path,
-      bam_basecall_path => $run_folder_path,
       timestamp         => q{20090709-123456},
     )
   } 'status runner object created';
@@ -59,12 +65,9 @@ my $log_dir = join q[/], $status_dir, 'log';
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
   $sr = npg_pipeline::function::status->new(
-      status            => 'qc complete',
-      id_run            => 1234,
-      run_folder        => 'myfolder',
-      runfolder_path    => $run_folder_path,
-      bam_basecall_path => $run_folder_path,
-      timestamp         => q{20090709-123456},
+    %init,
+    status            => 'qc complete',
+    timestamp         => q{20090709-123456},
   );
   my $ostatus_dir = $status_dir;
   my $olog_dir = $log_dir;
@@ -80,14 +83,11 @@ my $log_dir = join q[/], $status_dir, 'log';
     'command is correct');
 
   $sr = npg_pipeline::function::status->new(
-      status            => 'analysis in progress',
-      lane_status_flag  => 1,
-      id_run            => 1234,
-      run_folder        => 'myfolder',
-      runfolder_path    => $run_folder_path,
-      bam_basecall_path => $run_folder_path,
-      timestamp         => q{20090709-123456},
-      lanes             => [3 .. 5],
+    %init,
+    status            => 'analysis in progress',
+    lane_status_flag  => 1,
+    timestamp         => q{20090709-123456},
+    lanes             => [3 .. 5],
   );
 
   $da = $sr->create();
@@ -101,13 +101,10 @@ my $log_dir = join q[/], $status_dir, 'log';
     'command is correct');
 
   $sr = npg_pipeline::function::status->new(
-      status            => 'analysis in progress',
-      lane_status_flag  => 1,
-      id_run            => 1234,
-      run_folder        => 'myfolder',
-      runfolder_path    => $run_folder_path,
-      bam_basecall_path => $run_folder_path,
-      timestamp         => q{20090709-123456},
+    %init,
+    status            => 'analysis in progress',
+    lane_status_flag  => 1,
+    timestamp         => q{20090709-123456},
   );
 
   $da = $sr->create();

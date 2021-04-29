@@ -10,7 +10,7 @@ use Try::Tiny;
 use npg_pipeline::function::definition;
 use npg_pipeline::function::stage2pp;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 with qw{ npg_pipeline::function::util
          npg_pipeline::product::release
          npg_pipeline::product::release::portable_pipeline };
@@ -42,7 +42,7 @@ of this class. The way these functions are scheduled is determined
 by the function graph.
 
 Tag zero and spiked controls are normally not considered. The autoqc
-check scan be invoked on any appropriate entity - a product or a pool. 
+check scan be invoked on any appropriate entity - a product or a pool.
 
 =head1 SUBROUTINES/METHODS
 

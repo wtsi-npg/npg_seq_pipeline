@@ -18,6 +18,7 @@ subtest 'start and stop functions' => sub {
   my $ss = npg_pipeline::function::start_stop->new(
     id_run         => 1234,
     runfolder_path => $runfolder_path,
+    default_defaults => {}
   );
   isa_ok ($ss, 'npg_pipeline::function::start_stop');
   is ($ss->label, '1234', 'label');
@@ -26,14 +27,16 @@ subtest 'start and stop functions' => sub {
     id_run         => 1234,
     runfolder_path => $runfolder_path,
     label          => 'my_label',
+    default_defaults => {}
   );
 
   my $ss2 = npg_pipeline::function::start_stop->new(
     runfolder_path   => $runfolder_path,
     product_rpt_list => '123:4:5;124:3:6',
     label            => 'your_label',
+    default_defaults => {}
   );
-  
+
   foreach my $m (qw/pipeline_start pipeline_end/) {
 
     my $ds = $ss->$m('pipeline_name');
@@ -67,11 +70,12 @@ subtest 'wait4path function' => sub {
   my $f = npg_pipeline::function::start_stop->new(
     id_run         => 1234,
     runfolder_path => $runfolder_path,
+    default_defaults => {}
   );
 
   my $path = $runfolder_path;
   $path =~ s/analysis/outgoing/;
-  ok ($path =~ /outgoing/, 'future path is in outgoing'); 
+  ok ($path =~ /outgoing/, 'future path is in outgoing');
 
   my $ds = $f->pipeline_wait4path();
   ok ($ds && scalar @{$ds} == 1, 'one definition is created');
@@ -101,6 +105,7 @@ subtest 'wait4path function' => sub {
   $f = npg_pipeline::function::start_stop->new(
     label          => 'my_label',
     runfolder_path => $path,
+    default_defaults => {}
   );
   $ds = $f->pipeline_wait4path();
   $d = $ds->[0];

@@ -50,5 +50,11 @@
                 }
             }
         ]
+    },
+    "metadata": {
+        "default_resources": {
+            "minimum_cpu": 1,
+            "memory": 2
+        }
     }
 }

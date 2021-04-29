@@ -44,7 +44,7 @@ make_path $bwa_dir;
 
 # setup primer panel repository
 my $pp_repository = join q[/],$dir,'primer_panel', 'nCoV-2019';
-my @dirs = map { join q[/], $pp_repository, $_ } qw/default V2 V3/; 
+my @dirs = map { join q[/], $pp_repository, $_ } qw/default V2 V3/;
 @dirs = map {join q[/], $_, 'SARS-CoV-2/MN908947.3'} @dirs;
 for (@dirs) {
   make_path $_;
@@ -74,6 +74,16 @@ my $timestamp = q[20180701-123456];
 my $repo_dir = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a];
 my $product_conf = qq[$repo_dir/product_release.yml];
 
+my %init = (
+  product_conf_file_path => $product_conf,
+  archive_path           => $archive_path,
+  runfolder_path         => $runfolder_path,
+  id_run                 => 26291,
+  timestamp              => $timestamp,
+  repository             => $dir,
+  default_defaults       => {}
+);
+
 subtest 'error on missing data in LIMS' => sub {
   plan tests => 2;
 
@@ -84,15 +94,11 @@ subtest 'error on missing data in LIMS' => sub {
   my $text1 = $text;
   $text1 =~ s/SARS-CoV-2\ \(MN908947\.3\)//g;
   write_file($file, $text1);
-  
+
   my $ppd = npg_pipeline::function::stage2pp->new(
-    product_conf_file_path => $product_conf,
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir);
-  throws_ok { $ppd->create } 
+    %init
+  );
+  throws_ok { $ppd->create }
     qr/bwa reference is not found for/,
     'error if reference is not defined for one of the products';
 
@@ -101,13 +107,9 @@ subtest 'error on missing data in LIMS' => sub {
   write_file($file, $text1);
 
   $ppd = npg_pipeline::function::stage2pp->new(
-    product_conf_file_path => $product_conf,
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir);
-  throws_ok { $ppd->create } 
+    %init
+  );
+  throws_ok { $ppd->create }
     qr/Bed file is not found for/,
     'error if primer panel is not defined for one of the products';
 };
@@ -122,12 +124,8 @@ subtest 'definition generation, ncov2019-artic-nf pp' => sub {
   map { ok (!(-e $_), "output dir $_ does not exists") } @out_dirs;
 
   my $ppd = npg_pipeline::function::stage2pp->new(
-    product_conf_file_path => $product_conf,
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir);
+    %init
+  );
 
   is ($ppd->pipeline_type, 'stage2pp', 'default pipeline type');
 
@@ -145,7 +143,7 @@ subtest 'definition generation, ncov2019-artic-nf pp' => sub {
     '--illumina --cram --prefix 26291',
     "--ref $bwa_dir/MN908947.3.fa",
     "--bed $pp_repository/default/SARS-CoV-2/MN908947.3/nCoV-2019.bed";
-  
+
   my $c = join q[ ], $command,
                      "--directory $no_archive_path/plex1/stage1",
                      "--outdir $out_dirs[0]";
@@ -169,14 +167,10 @@ subtest 'definition generation, ncov2019-artic-nf pp' => sub {
   is ($ds->[2]->command, $c, 'correct command for plex 3');
 
   $ppd = npg_pipeline::function::stage2pp->new(
-    product_conf_file_path => $product_conf,
+    %init,
     pipeline_type          => 'stage2pp',
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
     merge_lanes            => 0,
-    timestamp              => $timestamp,
-    repository             => $dir);
+  );
   $ds = $ppd->create;
   is (scalar @{$ds}, 6, '6 definitions are returned');
   my $out_dir = qq[$pp_archive_path/lane1/plex1/ncov2019_artic_nf/cf01166c42a];
@@ -187,13 +181,10 @@ subtest 'definition generation, ncov2019-artic-nf pp' => sub {
 
   $c =~ s{/lane1}{}gsmx;
   $ppd = npg_pipeline::function::stage2pp->new(
+    %init,
     product_conf_file_path => qq[$repo_dir/../v.3/product_release_two_pps.yml],
     pipeline_type          => 'stage2pp',
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir);
+  );
   $ds = $ppd->create;
   is (scalar @{$ds}, 6, '6 definitions are returned');
   is ($ds->[0]->command, $c, 'correct command for plex 1');
@@ -207,12 +198,9 @@ subtest 'step skipped' => sub {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
 
   my $ppd = npg_pipeline::function::stage2pp->new(
+    %init,
     product_conf_file_path => qq[$repo_dir/product_release_no_pp.yml],
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir);
+  );
 
   my $ds = $ppd->create;
   is (scalar @{$ds}, 1, 'one definition is returned');
@@ -220,12 +208,9 @@ subtest 'step skipped' => sub {
   is ($ds->[0]->excluded, 1, 'function is excluded');
 
  $ppd = npg_pipeline::function::stage2pp->new(
+    %init,
     product_conf_file_path => qq[$repo_dir/product_release_no_study.yml],
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir);
+  );
 
   $ds = $ppd->create;
   is (scalar @{$ds}, 1, 'one definition is returned');
@@ -237,12 +222,9 @@ subtest 'skip unknown pipeline' => sub {
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
   my $ppd = npg_pipeline::function::stage2pp->new(
+    %init,
     product_conf_file_path => qq[$repo_dir/product_release_unknown_pp.yml],
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir);
+  );
 
   my $ds;
   lives_ok { $ds = $ppd->create }
@@ -256,14 +238,9 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
 
   my $ppd = npg_pipeline::function::stage2pp->new(
-    product_conf_file_path => $product_conf,
+    %init,
     pipeline_type          => 'stage2App',
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    merge_lanes            => 1,
-    timestamp              => $timestamp,
-    repository             => $dir);
+  );
 
   is ($ppd->pipeline_type, 'stage2App', 'pipeline type');
 
@@ -282,7 +259,7 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
     my @s = @astats_sections;
     $count == 3 and pop @s;
     my $sections = join q[ ], map { q[--ampstats_section ] . $_ } @s;
- 
+
     my $pp_path = qq(${pp_archive_path}/lane${p}) .
       qq(/ncov2019_artic_nf_ampliconstats/0.1/);
     my $glob = $pp_archive_path . qq(/lane${p}) .
@@ -312,21 +289,17 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
   @commands = map { [(split q[ ])] } @commands;
 
   ok (!-e $replacement_files[0], 'replacement file for lane 1 does not exist');
-  ok (!-e $replacement_files[1], 'replacement file for lane 2 does not exist');  
+  ok (!-e $replacement_files[1], 'replacement file for lane 2 does not exist');
 
   $ppd = npg_pipeline::function::stage2pp->new(
-    product_conf_file_path => $product_conf,
+    %init,
     pipeline_type          => 'stage2App',
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
     merge_lanes            => 0,
-    timestamp              => $timestamp,
-    repository             => $dir);
+  );
 
   $ds = $ppd->create;
   is (@{$ds}, 2, 'two definitions are returned');
-  
+
   my $d = $ds->[0];
   isa_ok ($d, 'npg_pipeline::function::definition');
   ok (!$d->excluded, 'the function is not excluded');
@@ -334,7 +307,7 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
   is ($d->composition->num_components, 1, 'composition is for one component');
   my $component = $d->composition->get_component(0);
   ok ((($component->position == 1) and not defined $component->tag_index),
-    'definition for lane 1 job'); 
+    'definition for lane 1 job');
   is_deeply ([(split q[ ], $d->command)], $commands[0], 'correct command for lane 1');
   ok (-f $replacement_files[0], 'lane 1 replacement file created');
   is (read_file($replacement_files[0]), join(qq[\n] ,
@@ -364,14 +337,11 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
   is_deeply ($d->num_cpus, [2], 'number of CPUs');
 
   $ppd = npg_pipeline::function::stage2pp->new(
+    %init,
     product_conf_file_path => qq[$repo_dir/product_release_explicit_astats_depth.yml],
     pipeline_type          => 'stage2App',
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
     merge_lanes            => 0,
-    timestamp              => $timestamp,
-    repository             => $dir);
+  );
 
   $ds = $ppd->create;
   is (@{$ds}, 2, 'two definitions are returned');

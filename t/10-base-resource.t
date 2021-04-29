@@ -8,6 +8,9 @@ use_ok(q{npg_pipeline::base_resource});
 subtest 'basics' => sub {
   plan tests => 4;
   my $function = npg_pipeline::base_resource->new(
+    default_defaults => {
+      minimum_cpu => 1
+    },
     resource => {
       default => {
         memory => 10
@@ -26,6 +29,9 @@ subtest 'basics' => sub {
   );
 
   $function = npg_pipeline::base_resource->new(
+    default_defaults => {
+      minimum_cpu => 1
+    },
     resource => {
       default => {
         memory => 3,
@@ -67,7 +73,12 @@ subtest 'basics' => sub {
 subtest 'Definition creation' => sub {
   plan tests => 6;
 
-  my $function = npg_pipeline::base_resource->new();
+  my $function = npg_pipeline::base_resource->new(
+    default_defaults => {
+      minimum_cpu => 1,
+      memory => 2
+    }
+  );
   my $definition = $function->create_definition({
     command => 'echo',
     job_name => 'test',

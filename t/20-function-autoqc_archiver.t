@@ -20,6 +20,7 @@ my $arpath = $rfh->{'archive_path'};
     merge_lanes    => 0,
     is_indexed     => 0,
     timestamp      => q{20090709-123456},
+    default_defaults => {}
   );
   isa_ok($aqc_archiver, q{npg_pipeline::function::autoqc_archiver});
 
@@ -53,6 +54,7 @@ my $arpath = $rfh->{'archive_path'};
     merge_lanes    => 0,
     is_indexed     => 0,
     timestamp      => q{20090709-123456},
+    default_defaults => {}
   );
   $da = $aqc_archiver->create();
   is ($da->[0]->command,
@@ -68,6 +70,7 @@ my $arpath = $rfh->{'archive_path'};
     archive_path     => $arpath,
     product_rpt_list => '1234:1',
     timestamp        => q{20090709-123456},
+    default_defaults => {}
   );
   my $da = $aqc_archiver->create();
   ok ($da && @{$da} == 1, 'one definition returned');

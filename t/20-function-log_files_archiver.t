@@ -37,9 +37,10 @@ subtest 'MiSeq run' => sub {
 
   my $a  = npg_pipeline::function::log_files_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
     timestamp         => q{20181204},
+    default_defaults => {}
   );
   isa_ok ($a , q{npg_pipeline::function::log_files_archiver});
 
@@ -69,10 +70,11 @@ subtest 'MiSeq run' => sub {
 
   $a  = npg_pipeline::function::log_files_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
     timestamp         => q{20181204},
-    no_irods_archival => 1
+    no_irods_archival => 1,
+    default_defaults => {}
   );
 
   ok ($a->no_irods_archival, q{archival switched off});
@@ -88,10 +90,11 @@ subtest 'MiSeq run' => sub {
 
   $a  = npg_pipeline::function::log_files_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
     timestamp         => q{20181204},
-    local             => 1
+    local             => 1,
+    default_defaults => {}
   );
   ok ($a->no_irods_archival, q{archival switched off});
   $da = $a->create();
@@ -114,8 +117,9 @@ subtest 'NovaSeq run' => sub {
 
   my $a  = npg_pipeline::function::log_files_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
+    default_defaults => {}
   );
 
   my $da = $a->create();
@@ -134,11 +138,12 @@ subtest 'pipeline for a product' => sub {
   my $a  = npg_pipeline::function::log_files_archiver->new(
     runfolder_path   => q{t/data/novaseq},
     label            => 'my_label',
-    product_rpt_list => '123:4:5'
+    product_rpt_list => '123:4:5',
+    default_defaults => {}
   );
   throws_ok { $a->create() }
     qr/Not implemented for individual products/,
-    'functionality for individual products not implemented - error'; 
+    'functionality for individual products not implemented - error';
 };
 
 1;

@@ -422,6 +422,12 @@
             "id" : "pipeline_end",
             "label" : "pipeline_end"
          }
-      ]
+      ],
+      "metadata": {
+         "default_resources": {
+            "minimum_cpu": 1,
+            "memory": 2
+        }
+      }
    }
 }

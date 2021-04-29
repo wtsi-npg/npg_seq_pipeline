@@ -51,7 +51,9 @@ subtest 'local and no_cache_merge_component' => sub {
      id_run         => 26291,
      timestamp      => $timestamp,
      qc_schema      => $qc,
-     local          => 1);
+     local          => 1,
+     default_defaults => {}
+    );
   ok($cacher->no_cache_merge_component, 'no_cache_merge_component flag is set to true');
   my $ds = $cacher->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
@@ -64,7 +66,8 @@ subtest 'local and no_cache_merge_component' => sub {
      id_run         => 26291,
      timestamp      => $timestamp,
      qc_schema      => $qc,
-     no_cache_merge_component => 1);
+     no_cache_merge_component => 1,
+     default_defaults => {});
   ok(!$cacher->local, 'local flag is false');
   $ds = $cacher->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
@@ -83,7 +86,8 @@ subtest 'create' => sub {
        runfolder_path => $runfolder_path,
        id_run         => 26291,
        timestamp      => $timestamp,
-       qc_schema      => $qc);
+       qc_schema      => $qc,
+       default_defaults => {});
   } 'cacher created ok';
 
   throws_ok {$cacher->create}
@@ -97,7 +101,7 @@ subtest 'create' => sub {
       my $shift = $row->is_undecided ? 1 : 2;
       $row->update({id_mqc_outcome => $row->id_mqc_outcome + $shift});
     }
-  }  
+  }
 
   my @defs = @{$cacher->create};
   my $num_defs_observed = scalar @defs;
@@ -147,7 +151,8 @@ subtest 'abort_on_missing_files' => sub {
        runfolder_path => $runfolder_path,
        id_run         => 26291,
        timestamp      => $timestamp,
-       qc_schema      => $qc);
+       qc_schema      => $qc,
+       default_defaults => {});
   } 'cacher created ok';
 
   my $to_move = "$runfolder_path/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12.cram";
@@ -172,7 +177,8 @@ subtest 'abort_on_missing_lib_qc' => sub {
        runfolder_path => $runfolder_path,
        id_run         => 26291,
        timestamp      => $timestamp,
-       qc_schema      => $qc);
+       qc_schema      => $qc,
+       default_defaults => {});
   } 'cacher created ok';
 
   dies_ok {
@@ -188,7 +194,8 @@ subtest 'no_cache_study' => sub {
      runfolder_path => $runfolder_path,
      id_run         => 26291,
      timestamp      => $timestamp,
-     qc_schema      => $qc);
+     qc_schema      => $qc,
+     default_defaults => {});
 
   my @defs = @{$cacher->create};
   my $num_defs_observed = scalar @defs;
@@ -212,7 +219,8 @@ subtest 'create_with_failed_lane' => sub {
        runfolder_path => $runfolder_path,
        id_run         => 26291,
        timestamp      => $timestamp,
-       qc_schema      => $qc);
+       qc_schema      => $qc,
+       default_defaults => {});
   } 'cacher created ok';
 
   my @defs = @{$cacher->create};
@@ -220,7 +228,7 @@ subtest 'create_with_failed_lane' => sub {
   my $num_defs_expected = 1; # single "excluded"
   cmp_ok($num_defs_observed, '==', $num_defs_expected,
          "create returns $num_defs_expected definitions when caching");
-  ok($defs[0] && $defs[0]->excluded, "excluded") 
+  ok($defs[0] && $defs[0]->excluded, "excluded")
 };
 
 subtest 'abort_on_missing_seq_qc' => sub {
@@ -234,7 +242,8 @@ subtest 'abort_on_missing_seq_qc' => sub {
        runfolder_path => $runfolder_path,
        id_run         => 26291,
        timestamp      => $timestamp,
-       qc_schema      => $qc);
+       qc_schema      => $qc,
+       default_defaults => {});
   } 'cacher created ok';
 
   dies_ok {

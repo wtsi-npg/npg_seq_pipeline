@@ -1,7 +1,11 @@
 package npg_pipeline::base_resource;
 
 use Moose;
+use MooseX::Getopt::Meta::Attribute::Trait::NoGetopt;
+use Readonly;
 use npg_pipeline::function::definition;
+
+Readonly::Scalar my $MB_TO_GB_CONVERSION => 1000; # 1024? Not in original code
 
 our $VERSION = '0';
 
@@ -27,11 +31,9 @@ set of properties for a Portable Pipeline
 has default_defaults => (
   isa => 'HashRef',
   is => 'ro',
-  default => sub {{
-    minimum_cpu => 1,
-    memory => 2
-  }},
+  required => 1,
   documentation => 'Basic resources that all jobs might need',
+  metaclass  => 'NoGetopt',
 );
 
 =head2 resource
@@ -52,6 +54,7 @@ has resource => (
   lazy => 1,
   default => sub {{}},
   documentation => 'Function-specific resource spec',
+  metaclass  => 'NoGetopt',
 );
 
 =head2 get_resources
@@ -114,10 +117,10 @@ sub create_definition {
     ];
   } else {
     $num_cpus = [delete $resources->{minimum_cpu}];
-    delete $resources->{maximum_cpu} if exists $resources->{maximum_cpu};
+    delete $resources->{maximum_cpu};
   }
   # Scale up memory numbers to MB expected by definition
-  $resources->{memory} *= 1000;
+  $resources->{memory} *= $MB_TO_GB_CONVERSION;
 
   # Delete any resource properties that are not accepted by the definition
   # for my $for_show (qw//) {

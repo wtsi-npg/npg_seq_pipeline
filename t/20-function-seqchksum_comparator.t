@@ -27,18 +27,23 @@ my $bam_basecall_path = $analysis_runfolder_path . "/Data/Intensities/BAM_baseca
 my $recalibrated_path = $analysis_runfolder_path. "/Data/Intensities/BAM_basecalls_$timestamp/no_cal";
 my $archive_path = $recalibrated_path . q{/archive};
 
+my %init = (
+  run_folder        => q{123456_IL2_1234},
+  runfolder_path    => $analysis_runfolder_path,
+  archive_path      => $archive_path,
+  bam_basecall_path => $bam_basecall_path,
+  id_run            => 1234,
+  is_indexed        => 0,
+  default_defaults  => {}
+);
+
 {
   my $object;
   lives_ok {
     $object = npg_pipeline::function::seqchksum_comparator->new(
-      run_folder        => q{123456_IL2_1234},
-      runfolder_path    => $analysis_runfolder_path,
-      archive_path      => $archive_path,
-      bam_basecall_path => $bam_basecall_path,
-      id_run            => 1234,
+      %init,
       timestamp         => $timestamp,
       lanes             => [1,2],
-      is_indexed        => 0,
     );
   } q{object ok};
 
@@ -67,7 +72,7 @@ my $archive_path = $recalibrated_path . q{/archive};
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
   throws_ok{$object->do_comparison()} qr/Failed to change directory/,
-    q{Doing a comparison with no files throws an exception}; 
+    q{Doing a comparison with no files throws an exception};
 
 #############
 #############
@@ -84,30 +89,30 @@ my $archive_path = $recalibrated_path . q{/archive};
 ## 1#2 all 15956214    504ab7d8  28428e9b  643c096e  3cbf1e96
 ## 1#2 pass  15956214    504ab7d8  28428e9b  643c096e  3cbf1e96};
 ## END1
-## 
+##
 ##   system "mkdir -p $archive_path/lane1";
 ##   system "cp -p t/data/runfolder/archive/lane1/1234_1#15.cram $archive_path/lane1";
-## 
+##
 ##   system "mkdir -p $archive_path/lane2";
 ##   system "cp -p t/data/runfolder/archive/lane1/1234_1#15.cram $archive_path/lane2/1234_2#15.cram";
 ##   system "cp -p t/data/runfolder/archive/lane1/1234_1#15.seqchksum $archive_path/lane2/1234_2#15.seqchksum";
-## 
+##
 ##   open my $seqchksum_fh1, '>', "$bam_basecall_path/1234_1.post_i2b.seqchksum" or die "Cannot open file for writing";
 ##   print $seqchksum_fh1 $seqchksum_contents1 or die $!;
 ##   close $seqchksum_fh1 or die $!;
-## 
+##
 ##   SKIP: {
 ##     skip 'no tools', 2 if ((not $ENV{TOOLS_INSTALLED}) and (system(q(which bamseqchksum)) or system(q(which scramble))));
 ##     TODO: { local $TODO= q(scramble doesn't through an exception when converting an empty bam file to cram it just writes a cram files with a @PG ID:scramble .. line);
-##       throws_ok{$object->do_comparison()} qr/Failed to run command bamcat /, q{Doing a comparison with empty bam files throws an exception}; 
+##       throws_ok{$object->do_comparison()} qr/Failed to run command bamcat /, q{Doing a comparison with empty bam files throws an exception};
 ##     }
-## 
+##
 ##     system "cp -p t/data/seqchksum/sorted.cram $archive_path/lane1/1234_1#15.cram";
 ##     system "cp -p t/data/seqchksum/sorted.cram $archive_path/lane2/1234_2#15.cram";
-## 
+##
 ##     throws_ok { $object->do_comparison() }
 ##       qr/seqchksum for post_i2b and product are different/,
-##       q{Doing a comparison with different bam files throws an exception}; 
+##       q{Doing a comparison with different bam files throws an exception};
 ##   }
 #############
 #############
@@ -117,24 +122,14 @@ my $archive_path = $recalibrated_path . q{/archive};
 
 {
   my $object = npg_pipeline::function::seqchksum_comparator->new(
-    run_folder        => q{123456_IL2_1234},
-    runfolder_path    => $analysis_runfolder_path,
-    bam_basecall_path => $bam_basecall_path,
-    archive_path      => $archive_path,
-    id_run            => 1234,
+    %init,
     lanes             => [1],
-    is_indexed        => 0,
   );
   my $da = $object->create();
   ok ($da && @{$da} == 1, 'an array with one definitions is returned');
 
   $object = npg_pipeline::function::seqchksum_comparator->new(
-    run_folder        => q{123456_IL2_1234},
-    runfolder_path    => $analysis_runfolder_path,
-    bam_basecall_path => $bam_basecall_path,
-    archive_path      => $archive_path,
-    id_run            => 1234,
-    is_indexed        => 0,
+    %init
   );
   $da = $object->create();
   # seqchksum_comparator is now a run-level function, so only one definition returned

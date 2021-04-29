@@ -40,9 +40,10 @@ subtest 'MiSeq run' => sub {
 
   my $a = npg_pipeline::function::run_data_to_irods_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
-    timestamp         => q{20181204}
+    timestamp         => q{20181204},
+    default_defaults  => {}
   );
   isa_ok($a, q{npg_pipeline::function::run_data_to_irods_archiver}, q{object test});
   ok (!$a->no_irods_archival, 'no_irods_archival flag is unset');
@@ -75,10 +76,11 @@ subtest 'MiSeq run' => sub {
 
   $a = npg_pipeline::function::run_data_to_irods_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
     timestamp         => q{20181204},
-    no_irods_archival => 1
+    no_irods_archival => 1,
+    default_defaults  => {}
   );
   ok ($a->no_irods_archival, 'no_irods_archival flag is set');
   $da = $a->create();
@@ -89,10 +91,11 @@ subtest 'MiSeq run' => sub {
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
     timestamp         => q{20181204},
-    local              => 1
+    local             => 1,
+    default_defaults  => {}
   );
   ok ($a->no_irods_archival, 'no_irods_archival flag is set');
   $da = $a->create();
@@ -116,9 +119,10 @@ subtest 'NovaSeq run' => sub {
 
   my $a  = npg_pipeline::function::run_data_to_irods_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
-    timestamp         => q{20181204}
+    timestamp         => q{20181204},
+    default_defaults  => {}
   );
   my $da = $a->create();
   ok ($da && @{$da} == 1, 'an array with one definition is returned');
