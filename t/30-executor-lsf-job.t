@@ -119,7 +119,7 @@ subtest 'run level job' => sub {
   my $d = npg_pipeline::function::definition->thaw($json);
   my $j = npg_pipeline::executor::lsf::job->new(
                   log_dir          => $ld, 
-                  upstream_job_ids => [{40 => 1}, {50 => 0}],
+                  upstream_job_ids => {40 => 1, 50 => 0},
                   definitions      => [$d],
                   fs_resource      => $fs_resource,
                   lsf_conf         => $conf);
@@ -166,7 +166,7 @@ subtest 'arrays' => sub {
   my $d = npg_pipeline::function::definition->thaw($json);
   my $j = npg_pipeline::executor::lsf::job->new(
                   log_dir          => $ld,
-                  upstream_job_ids => [],
+                  upstream_job_ids => {},
                   definitions      => [$d],
                   fs_resource      => $fs_resource,
                   lsf_conf         => $conf);
@@ -177,7 +177,7 @@ subtest 'arrays' => sub {
 
   $j = npg_pipeline::executor::lsf::job->new(
                   log_dir          => $ld,
-                  upstream_job_ids => [],
+                  upstream_job_ids => {},
                   definitions      => [$d],
                   fs_resource      => $fs_resource,
                   lsf_conf         => $conf);
@@ -189,7 +189,7 @@ subtest 'arrays' => sub {
 
   $j = npg_pipeline::executor::lsf::job->new(
                   log_dir            => $ld,
-                  upstream_job_ids   => [],
+                  upstream_job_ids   => {},
                   definitions        => [$d],
                   no_array_cpu_limit => 1,
                   lsf_conf           => $conf,
@@ -202,7 +202,7 @@ subtest 'arrays' => sub {
   delete $conf->{'array_cpu_limit'};
   $j = npg_pipeline::executor::lsf::job->new(
                   log_dir          => $ld,
-                  upstream_job_ids => [],
+                  upstream_job_ids => {},
                   definitions      => [$d],
                   lsf_conf         => $conf,
                   fs_resource      => undef,
@@ -245,7 +245,7 @@ subtest 'arrays' => sub {
 
   $j = npg_pipeline::executor::lsf::job->new(
                   log_dir          => $ld,
-                  upstream_job_ids => [],
+                  upstream_job_ids => {},
                   definitions      => [$d, $d1],
                   lsf_conf         => $conf,
                   fs_resource      => undef);

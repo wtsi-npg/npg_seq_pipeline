@@ -41,7 +41,7 @@ Readonly::Array my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                lane_count
                                                expected_cycle_count
                                                run_flowcell
-                                               local_bin
+                                               qc_path
                                               /;
 
 =head1 NAME
@@ -58,6 +58,22 @@ within npg_pipeline package
 =head1 SUBROUTINES/METHODS
 
 =head2 npg_tracking_schema
+
+=head2 qc_schema
+
+An attribute caching a connection to a QC database.
+The attribute is allowed to be undefined and is implicitly undefined
+since no default or build method is provided. This is done in order
+to prevent the automatic connection to a database in child classes.
+
+=cut
+
+has 'qc_schema' => (
+  metaclass  => 'NoGetopt',
+  isa        => 'Maybe[npg_qc::Schema]',
+  is         => 'ro',
+  required   => 0,
+);
 
 =head2 flowcell_id
 
@@ -110,11 +126,13 @@ defaults to the value of the id_run attribute.
 =cut
 
 has q{label} => (
-  isa        => q{Str},
-  is         => q{ro},
-  predicate  => q{has_label},
-  required   => 1,
-  lazy_build => 1,
+  isa           => q{Str},
+  is            => q{ro},
+  predicate     => q{has_label},
+  required      => 1,
+  lazy_build    => 1,
+  documentation => 'A custom label which will be used in log ' .
+                   'file names, job names, etc. instead of run id',
 );
 sub _build_label {
   my $self = shift;
@@ -406,7 +424,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Ltd
+Copyright (C) 2014,2015,2016,2017,2018,2019,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -62,7 +62,7 @@ subtest 'start and stop functions' => sub {
 };
 
 subtest 'wait4path function' => sub {
-  plan tests => 15;
+  plan tests => 17;
 
   my $f = npg_pipeline::function::start_stop->new(
     id_run         => 1234,
@@ -84,13 +84,19 @@ subtest 'wait4path function' => sub {
   ok ($d->has_num_cpus, 'number of cpus is set');
   is ($d->command_preexec, qq{[ -d '$path' ]}, 'preexec command');
   is_deeply ($d->num_cpus, [0], 'zero cpus');
-  my $command = q{bash -c '}
-    . qq{COUNTER=0; NUM_ITERATIONS=20; DIR=$path; STIME=60; }
+
+  my $command =
+      qq{ COUNTER=0; NUM_ITERATIONS=20; DIR=$path; STIME=60; }
     .  q{while [ $COUNTER -lt $NUM_ITERATIONS ] && ! [ -d $DIR ] ; }
     .  q{do echo $DIR not available; COUNTER=$(($COUNTER+1)); sleep $STIME; done; }
     .  q{EXIT_CODE=0; if [ $COUNTER == $NUM_ITERATIONS ] ; then EXIT_CODE=1; fi; exit $EXIT_CODE;}
     .  q{'};
-  is ($d->command, $command, 'command is correct');
+  my @command_components = split q[;], $d->command;
+  my $start = shift @command_components;
+  my $start_re = qr/bash -c 'echo \d+/;
+  like ($start, $start_re, 'first part of the command is correct');
+  is (join(q[;], @command_components), $command,
+    'second part of the command is correct');
 
   $f = npg_pipeline::function::start_stop->new(
     label          => 'my_label',
@@ -98,7 +104,11 @@ subtest 'wait4path function' => sub {
   );
   $ds = $f->pipeline_wait4path();
   $d = $ds->[0];
-  is ($d->command, $command, 'command is correct');
+  @command_components = split q[;], $d->command;
+  $start = shift @command_components;
+  like ($start, $start_re, 'first part of the command is correct');
+  is (join(q[;], @command_components), $command,
+    'second part of the command is correct');
   is ($d->command_preexec, qq{[ -d '$path' ]}, 'preexec command');
   is ($d->job_name, 'wait4path_in_outgoing_my_label', 'job name');
   is ($d->identifier, 'my_label', 'identifier set to the value of label');

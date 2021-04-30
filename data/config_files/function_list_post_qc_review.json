@@ -9,16 +9,6 @@
          {
             "relation" : "dependsOn",
             "source" : "run_archival_in_progress",
-            "target" : "upload_illumina_analysis_to_qc_database"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "upload_illumina_analysis_to_qc_database",
-            "target" : "update_ml_warehouse"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_archival_in_progress",
             "target" : "upload_auto_qc_to_qc_database"
          },
          {
@@ -43,8 +33,18 @@
          },
          {
             "relation" : "dependsOn",
+            "source" : "update_ml_warehouse",
+            "target" : "pp_archiver"
+         },
+         {
+            "relation" : "dependsOn",
             "source" : "archive_run_data_to_irods",
             "target" : "archive_to_irods_ml_warehouse"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "archive_to_irods_ml_warehouse",
+            "target" : "archive_pp_data_to_irods"
          },
          {
             "relation" : "dependsOn",
@@ -53,12 +53,17 @@
          },
          {
             "relation" : "dependsOn",
-            "source" : "archive_to_irods_ml_warehouse",
+            "source" : "archive_pp_data_to_irods",
             "target" : "run_run_archived"
          },
          {
             "relation" : "dependsOn",
             "source" : "cache_merge_component",
+            "target" : "run_run_archived"
+         },
+         {
+            "relation" : "dependsOn",
+            "source" : "pp_archiver",
             "target" : "run_run_archived"
          },
          {
@@ -125,6 +130,10 @@
             "label" : "archive_to_irods_ml_warehouse"
          },
          {
+            "id" : "archive_pp_data_to_irods",
+            "label" : "archive_pp_data_to_irods"
+         },
+         {
             "id" : "archive_run_data_to_irods",
             "label" : "archive_run_data_to_irods"
          },
@@ -137,12 +146,12 @@
             "label" : "cache_merge_component"
          },
          {
-            "id" : "notify_product_delivery",
-            "label" : "notify_product_delivery"
+            "id" : "pp_archiver",
+            "label" : "pp_archiver"
          },
          {
-            "id" : "upload_illumina_analysis_to_qc_database",
-            "label" : "upload_illumina_analysis_to_qc_database"
+            "id" : "notify_product_delivery",
+            "label" : "notify_product_delivery"
          },
          {
             "id" : "upload_auto_qc_to_qc_database",

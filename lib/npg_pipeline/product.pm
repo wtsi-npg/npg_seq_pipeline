@@ -20,6 +20,7 @@ Readonly::Scalar my $QC_DIR_NAME                => q[qc];
 Readonly::Scalar my $CHUNK_DIR_NAME             => q[chunk];
 Readonly::Scalar my $SHORT_FILES_CACHE_DIR_NAME => q[.npg_cache_10000];
 Readonly::Scalar my $TILEVIZ_DIR_NAME_PREFIX    => q[tileviz];
+Readonly::Scalar my $STAGE1_OUT_DIR_NAME        => q[stage1];
 
 =head1 NAME
 
@@ -316,12 +317,24 @@ sub chunk_out_path {
   return File::Spec->catdir($self->path($dir), $CHUNK_DIR_NAME);
 }
 
+=head2 stage1_out_path
+ 
+ Returns path for an unaligned *.cram for this product taking
+ argument directory path as a base.
+ 
+=cut
+
+sub stage1_out_path {
+  my ($self, $dir) = @_;
+  return File::Spec->catdir($self->path($dir), $STAGE1_OUT_DIR_NAME);
+}
+
 =head2 existing_qc_out_path
 
 Returns path for qc output directory for this product taking
 argument directory path as a base. Uses existing_path method
 of this object to find the product path. If either the product
-path or the qc_path does not exist, an error is reised.
+path or the qc_path does not exist, an error is raised.
  
 =cut
 
@@ -449,21 +462,43 @@ a list of one lane object. For a product that is itself a lane or a
 composition of lanes, returns objects corresponding to component lanes.
 
 The subset information is not retained in the returned objects.
-The lims attribute of the returned objects is not set.
+The lims attribute of the returned objects is not set unless a true flag
+is passed to the method as a single argument.
+
+ my @lane_products = $product->lanes_as_products();
+ defined $lane_products[0]->lims; # false
+ my $with_lims = 1;
+ @lane_products = $product->lanes_as_products($with_lims);
+ defined $lane_products[0]->lims; # true
 
 =cut
 
 sub lanes_as_products {
-  my $self = shift;
+  my ($self, $with_lims) = @_;
+
+  if ($with_lims && !$self->has_lims) {
+    croak 'In order to use with_lims option this product should have ' .
+	  'lims attribute set';
+  }
   ##no critic (BuiltinFunctions::ProhibitComplexMappings)
-  return map {
-    __PACKAGE__->new(selected_lanes => $self->selected_lanes, rpt_list => $_)
-             }
-    map { npg_tracking::glossary::rpt->deflate_rpt($_) }
+  my @lane_hashes =
     map { delete $_->{'subset'}; delete $_->{'tag_index'}; $_ }
     map { npg_tracking::glossary::rpt->inflate_rpt($_) }
     map { $_->freeze2rpt() }
     $self->composition->components_list();
+
+  my @lane_products = ();
+  foreach my $lane_hash (@lane_hashes) {
+    my $list = npg_tracking::glossary::rpt->deflate_rpt($lane_hash);
+    my $ref = {selected_lanes => $self->selected_lanes, rpt_list => $list};
+    if ($with_lims) {
+      $ref->{lims} = $self->lims->create_lane_object(
+                     $lane_hash->{id_run}, $lane_hash->{position});
+    }
+    push @lane_products, __PACKAGE__->new($ref);
+  }
+
+  return  @lane_products;
 }
 
 =head2 subset_as_product
@@ -594,10 +629,39 @@ sub final_seqqc_objs {
   return @seqqc;
 }
 
+=head2 seqqc_objs
+
+  Returns a list of  DBIx row objects representing a sequencing QC outcomes
+  for component lanes of this product, even if not all outcomes are final.
+
+  npg_qc::Schema object argument is required.
+
+    use List::MoreUtils qw/all any/;
+    my @seq_qc_objs = $p->seqqc_objs($schema);
+    #these may or may not be final outcomes
+    my $passed = @seq_qc_objs && (all { $_->is_accepted } @seq_qc_objs);
+    my $failed = !@seq_qc_objs || (any { $_->is_rejected } @seq_qc_objs);
+
+=cut
+
+sub seqqc_objs {
+  my ($self, $schema) = @_;
+
+  $schema or croak 'qc schema argument is required';
+
+  my @lp = $self->lanes_as_products;
+  my @seqqc = $schema->resultset('MqcOutcomeEnt')
+              ->search_via_composition([map{$_->composition}@lp])->all;
+  if (@lp != @seqqc) {
+    return;
+  }
+  return @seqqc;
+}
+
 =head2 final_libqc_obj
 
   Returns a DBIx row object representing a final library QC outcome.
-  Returns an undefined value if the the final library QC outcome is
+  Returns an undefined value if the final library QC outcome is
   not available for this product.
 
   npg_qc::Schema object argument is required.
@@ -620,6 +684,29 @@ sub final_libqc_obj {
 
   return;
 }
+
+=head2 libqc_obj
+
+  Returns a DBIx row object representing the library QC outcome.
+  Returns an undefined value if the library QC outcome is
+  not available for this product.
+
+  npg_qc::Schema object argument is required.
+
+    my $lib_qc_obj = $p->libqc_obj($schema);
+
+=cut
+
+sub libqc_obj {
+  my ($self, $schema) = @_;
+
+  $schema or croak 'qc schema argument is required';
+
+  return $schema->resultset('MqcLibraryOutcomeEnt')
+                ->search_via_composition([$self->composition])->next;
+}
+
+
 
 __PACKAGE__->meta->make_immutable;
 
@@ -663,11 +750,17 @@ __END__
 
 =head1 AUTHOR
 
-Marina Gourtovaia
+=over
+
+=item Marina Gourtovaia
+
+=item Fred Dodd
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018, 2019 Genome Research Ltd
+Copyright (C) 2018,2019,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

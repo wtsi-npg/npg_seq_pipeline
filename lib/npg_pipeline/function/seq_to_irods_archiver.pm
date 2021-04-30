@@ -17,6 +17,12 @@ our $VERSION = '0';
 Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
 Readonly::Scalar my $NUM_MAX_ERRORS      => 20;
 
+has 'lims_driver_type' => (
+  required => 0,
+  isa      => 'Str',
+  is       => 'ro',
+);
+
 sub create {
   my $self = shift;
 
@@ -32,11 +38,7 @@ sub create {
       $PUBLISH_SCRIPT_NAME,
       q{--max_errors},     $self->num_max_errors();
 
-    if ($self->qc_run) {
-      $command .= q{ --alt_process qc_run};
-    }
-
-    if($self->has_lims_driver_type) {
+    if($self->lims_driver_type) {
       $command .= q{ --driver-type } . $self->lims_driver_type;
     }
 
@@ -44,8 +46,6 @@ sub create {
     foreach my $product (@{$self->products->{'data_products'}}) {
       if ($self->is_for_irods_release($product)) {
         my %dref = %{$ref};
-        $dref{'array_cpu_limit'}       = 1; # One job at a time
-        $dref{'apply_array_cpu_limit'} = 1;
         $dref{'composition'}           = $product->composition;
         $dref{'command'} = sprintf '%s --restart_file %s --collection %s --source_directory %s',
           $command,
@@ -152,6 +152,11 @@ studies might be configured not to publish their products ti iRODS.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 lims_driver_type
+
+An optional attribute, the name of the lims driver to pass to the
+iRODS loader script.
+
 =head2 create
 
 Creates and returns a single function definition as an array.
@@ -205,12 +210,17 @@ restart file.
 
 =head1 AUTHOR
 
-Guoying Qi
-Marina Gourtovaia
+=over
+
+=item Guoying Qi
+
+=item Marina Gourtovaia
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

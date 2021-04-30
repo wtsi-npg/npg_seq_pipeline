@@ -10,6 +10,7 @@ use MooseX::StrictConstructor;
 use Readonly;
 
 use npg_pipeline::function::definition;
+use npg_qc::Schema;
 
 extends 'npg_pipeline::base';
 
@@ -20,6 +21,14 @@ Readonly::Scalar my $ARCHIVE_EXECUTABLE => 'gsutil';
 # gsutil
 
 our $VERSION = '0';
+
+has '+qc_schema' => (
+  lazy       => 1,
+  builder    => '_build_qc_schema',
+);
+sub _build_qc_schema {
+  return npg_qc::Schema->connect();
+}
 
 =head2 create
 
@@ -195,6 +204,8 @@ product_release.yml, see npg_pipeline::product::release.
 
 =item Readonly
 
+=item npg_qc::Schema
+
 =back
 
 =head1 AUTHOR
@@ -203,7 +214,7 @@ Keith James
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018, 2019 Genome Research Ltd.
+Copyright (C) 2018,2019,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

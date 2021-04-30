@@ -27,7 +27,7 @@ Log::Log4perl->easy_init({level  => $INFO,
                           file   => join(q[/], $tmp_dir, 'logfile')});
 
 subtest 'MiSeq run' => sub {
-  plan tests => 46;
+  plan tests => 44;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/miseq/samplesheet_16850.csv};
   my $pconfig_content = read_file $pconfig;
@@ -127,8 +127,6 @@ subtest 'MiSeq run' => sub {
   is ($d->queue, 'lowload', 'queue');
   is ($d->fs_slots_num, 1, 'one fs slot is set');
   ok ($d->reserve_irods_slots, 'iRODS slots to be reserved');
-  is ($d->array_cpu_limit, 1, 'array cpu limit is 1');
-  ok ($d->apply_array_cpu_limit, 'apply array cpu limit is set');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -189,7 +187,7 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --max_errors 10 --alt_process qc_run --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
     'command is correct for qc run');
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -209,7 +207,7 @@ subtest 'MiSeq run' => sub {
 };
 
 subtest 'NovaSeq run' => sub {
-  plan tests => 16;
+  plan tests => 9;
 
   my $id_run  = 26291;
   my $rf_name = '180709_A00538_0010_BH3FCMDRXX';
@@ -231,20 +229,10 @@ subtest 'NovaSeq run' => sub {
     timestamp      => q{20181204}
   );
   my $da = $a->create();
-  ok ($da && @{$da} == 2, 'an array with two definitions is returned');
-
-  my $d = $da->[1];
+  ok ($da && @{$da} == 1, 'an array with one definitions is returned');
+  my $d = $da->[0];
   isa_ok($d, q{npg_pipeline::function::definition});
-  is ($d->composition->get_component(0)->tag_index, 0, 'tag index 0 job');
-  like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col\/plex0 --source_directory $archive_path\/plex0\Z/,
-    'command is correct for plex 0 merged');
-
-  $d = $da->[0];
-  is ($d->composition->get_component(0)->tag_index, 888, 'tag index 888 job');
-  like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col\/plex888 --source_directory $archive_path\/plex888\Z/,
-    'command is correct for plex 888 merged');
+  ok ($d->excluded, 'step is excluded'); 
 
   $a  = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder     => $rf_name,
@@ -255,37 +243,10 @@ subtest 'NovaSeq run' => sub {
     lanes          => [2]
   );
   $da = $a->create();
-  ok ($da && @{$da} == 2, 'an array with two definitions is returned');
-
-  $d = $da->[1];
-  like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col\/lane2\/plex0 --source_directory $archive_path\/lane2\/plex0\Z/,
-    'command is correct for plex 0 unmerged (single lane)');
-
+  ok ($da && @{$da} == 1, 'an array with one definition is returned');
   $d = $da->[0];
-  like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col\/lane2\/plex888 --source_directory $archive_path\/lane2\/plex888\Z/,
-    'command is correct for plex 888 unmerged (single lane)');
-
-  $a  = npg_pipeline::function::seq_to_irods_archiver->new(
-    run_folder     => $rf_name,
-    runfolder_path => $rfpath,
-    conf_path      => $config_dir,
-    id_run         => $id_run,
-    timestamp      => q{20181204}, 
-    is_indexed     => 0,
-  );
-  $da = $a->create();
-  TODO: {
-    local $TODO = 'is_indexed FALSE flag is not understood for merged products';
-    ok ($da && @{$da} == 1, 'an array with one definition is returned');
-    $d = $da->[0];
-    is ($d->composition->num_components, 1, 'one component');
-    is ($d->composition->get_component(0)->tag_index, undef, 'tag index is undefined');
-    like ($d->command,
-      qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col\/lane2\/plex0 --source_directory $archive_path\/lane1_2/,
-      'command is correct for merged lanes');
-  }
+  isa_ok($d, q{npg_pipeline::function::definition});
+  ok ($d->excluded, 'step is excluded'); 
 
   $a  = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder     => $rf_name,

@@ -56,10 +56,10 @@ An attribute, defaults to an empty array.
 =cut
 
 has 'upstream_job_ids' => (
-  isa      => 'ArrayRef',
+  isa      => 'HashRef',
   is       => 'ro',
   required => 1,
-  default  => sub {return [];},
+  default  => sub {return {};},
 );
 
 =head2 lsf_conf
@@ -325,27 +325,17 @@ sub _dependencies {
   my $self = shift;
 
   my @deps = ();
-  my $seen = {};
-
   # Sorting is done for convenience of human users.
   # Ensuring that a job is listed only once is important mostly
   # for tests.
-
-  foreach my $job_id ( sort { (keys %{$a})[0] <=> (keys %{$b})[0] }
-                       @{$self->upstream_job_ids()} ) {
-
-    my ($id, $is_same_degree) = each %{$job_id};
-    if (!exists $seen->{$id}) {
-      push @deps, (sprintf 'done(%i%s)',
-                   $id, $is_same_degree ? q([*]) : q());
-    } else {
-      ($seen->{$id} == $is_same_degree) or croak
-        "Inconsistent job info for job $id";
-    }
-    $seen->{$id} = $is_same_degree;
+  while (my ($id, $is_same_degree) = each %{$self->upstream_job_ids()} ) {
+    $id or croak 'Indefined or zero upstream job id';
+    push @deps, (sprintf 'done(%i%s)',
+                 $id, $is_same_degree ? q([*]) : q());
   }
 
   if (@deps) {
+    @deps = sort @deps;
     return q{-w'}.(join q{ && }, @deps).q{'};
   }
 

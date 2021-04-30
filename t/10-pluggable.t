@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 12;
+use Test::More tests => 14;
 use Test::Exception;
 use Cwd;
 use Log::Log4perl qw(:levels);
@@ -29,6 +29,7 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $test_dir, 'logfile'),
                           utf8   => 1});
 
+my $product_config = q[t/data/release/config/archive_on/product_release.yml];
 my $config_dir = 'data/config_files';
 my $runfolder_path = $util->analysis_runfolder_path;
 $util->create_analysis();
@@ -51,7 +52,7 @@ subtest 'object with no function order set - simple methods' => sub {
 };
 
 subtest 'graph creation from jgf files' => sub {
-  plan tests => 3;
+  plan tests => 2;
 
   my $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
@@ -60,14 +61,6 @@ subtest 'graph creation from jgf files' => sub {
   );
   lives_ok {$obj->function_graph()}
    'no error creating a graph for default analysis';
-
-  $obj = npg_pipeline::pluggable->new(
-    id_run         => 1234,
-    runfolder_path => $test_dir,
-    function_list  => "$config_dir/function_list_central_qc_run.json"
-  );
-  lives_ok {  $obj->function_graph() }
-    'no error creating a graph for analysis of a qc run';
 
   $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
@@ -194,7 +187,8 @@ subtest 'specifying functions via function_order' => sub {
     spider                => 0,
     no_sf_resource        => 1,
     no_bsub               => 0,
-    is_indexed            => 0
+    is_indexed            => 0,
+    product_conf_file_path => $product_config
   );
   is($p->id_run, 1234, 'run id set correctly');
   is($p->is_indexed, 0, 'is not indexed');
@@ -211,6 +205,7 @@ subtest 'creating executor object' => sub {
     runfolder_path        => $runfolder_path,
     bam_basecall_path     => $runfolder_path,
     spider                => 0,
+    product_conf_file_path => $product_config
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
@@ -307,6 +302,7 @@ subtest 'running the pipeline (lsf executor)' => sub {
     execute        => 0,
     no_sf_resource => 1,
     is_indexed     => 0,
+    product_conf_file_path => $product_config
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
@@ -365,6 +361,7 @@ subtest 'running the pipeline (wr executor)' => sub {
     execute        => 0,
     executor_type  => 'wr',
     is_indexed     => 0,
+    product_conf_file_path => $product_config,
   };
 
   # soft-link wr command to /bin/false so that it fails
@@ -432,6 +429,7 @@ subtest 'positions and spidering' => sub {
       lanes            => [1,2],
       spider           => 0,
       no_sf_resource   => 1,
+      product_conf_file_path => $product_config
   );
   is (join( q[ ], $p->positions), '1 2', 'positions array');
   ok(!$p->interactive, 'start job will be resumed');
@@ -448,6 +446,7 @@ subtest 'positions and spidering' => sub {
       interactive      => 1,
       spider           => 0,
       no_sf_resource   => 1,
+      product_conf_file_path => $product_config
   );
   ok($p->interactive, 'start job will not be resumed');
   lives_ok { $p->main() } "running main for $function, interactively";
@@ -471,9 +470,9 @@ subtest 'positions and spidering' => sub {
       id_flowcell_lims => 2015,
       spider           => 0,
       no_sf_resource   => 1,
+      product_conf_file_path => $product_config
   );
   mkdir $p->archive_path;
-  mkdir $p->qc_path;
   is (join( q[ ], $p->positions), '4', 'positions array');
   lives_ok { $p->main() } q{running main for three qc functions};
 };
@@ -535,6 +534,140 @@ subtest 'script name, pipeline name and function list' => sub {
   throws_ok { $base->function_list }
     qr/Bad function list name: some\+other:/,
     'error when function list name contains illegal characters';
+};
+
+subtest 'log file name, directory and path' => sub {
+  plan tests => 18;
+
+  my $log_name_re = qr/t_10-pluggable\.t_1234_02122020-\d+\.log/;
+
+  my $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+  );
+  like ($p->log_file_name, $log_name_re, 'log file name is built correctly');
+  is ($p->log_file_dir, $runfolder_path, 'default for the log directory');
+  is ($p->log_file_path, join(q[/], $p->log_file_dir, $p->log_file_name),
+    'default log file path');
+
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+      log_file_name    => 'custom.log'
+  );
+  is ($p->log_file_name, 'custom.log', 'log file name as set');
+  is ($p->log_file_dir, $runfolder_path, 'default for the log directory');
+  is ($p->log_file_path, join(q[/], $p->log_file_dir, $p->log_file_name),
+    'custom log file path');
+
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+      log_file_dir     => "$runfolder_path/custom"
+  );
+  like ($p->log_file_name, $log_name_re, 'default log file name');
+  is ($p->log_file_dir, "$runfolder_path/custom", 'log directory as set');
+  is ($p->log_file_path, join(q[/], "$runfolder_path/custom", $p->log_file_name),
+    'custom log file path');
+
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+      log_file_dir     => "$runfolder_path/custom",
+      log_file_name    => 'custom.log'
+  );
+  is ($p->log_file_name, 'custom.log', 'log file name as set');
+  is ($p->log_file_dir, "$runfolder_path/custom" , 'log directory as set');
+  is ($p->log_file_path, "$runfolder_path/custom/custom.log",
+    'custom log file path');
+
+  # setting all three does not make sense, but is not prohibited either
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+      log_file_dir     => "$runfolder_path/my_log",
+      log_file_name    => 'custom.log',
+      log_file_path    => "$runfolder_path/custom/my.log"
+  );
+  is ($p->log_file_name, 'custom.log', 'log file name as set');
+  is ($p->log_file_dir, "$runfolder_path/my_log", 'log directory as set');
+  is ($p->log_file_path, "$runfolder_path/custom/my.log",
+    'custom log file path as directly set');
+
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+      log_file_path    => "$runfolder_path/custom/my.log"
+  );
+  is ($p->log_file_name, 'my.log', 'log file name is derived from path');
+  is ($p->log_file_dir, "$runfolder_path/custom",
+    'log directory is derived from path');
+  is ($p->log_file_path, "$runfolder_path/custom/my.log",
+    'custom log file path as directly set');
+};
+
+subtest 'Copy log file and product_release config' => sub {
+  plan tests => 7;
+
+  my $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+      log_file_dir     => $test_dir,
+      log_file_name    => 'logfile',
+      product_conf_file_path => $product_config
+  );
+  $p->_copy_log_to_analysis_dir();
+  my $analysis_path = $p->analysis_path;
+  my $default_log_copy = $analysis_path.'/logfile';
+  ok(-f -s $default_log_copy, "Log file found in analysis path at $analysis_path");
+  my $copy = $p->_save_product_conf_to_analysis_dir();
+  ok(-f -s $analysis_path.'/'.$copy, 'Copy of product config is present');
+
+  # Set log file path to something false to show error behaviour is fine
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => '/nope',
+      timestamp        => '02122020',
+      log_file_dir     => $test_dir,
+      log_file_name    => 'logfile',
+      product_conf_file_path => $product_config
+  );
+  lives_ok {$p->_copy_log_to_analysis_dir()} 'Log copy to nonexistant runfolder does not die';
+
+  $p = npg_pipeline::pluggable->new(
+      id_run           => 1234,
+      run_folder       => q{123456_IL2_1234},
+      runfolder_path   => $runfolder_path,
+      timestamp        => '02122020',
+      log_file_dir     => '/nuthin',
+      log_file_name    => 'logfile',
+      product_conf_file_path => $product_config
+  );
+  lives_ok {$p->_copy_log_to_analysis_dir()} 'Log copy of nonexistant file does not die';
+
+  # Test what happens when no log_file_name is provided
+  unlink $default_log_copy;
+  ok(! -e $default_log_copy, 'Any log copy removed');
+  lives_ok {
+    $p->_tolerant_persist_file_to_analysis_dir($test_dir.'/logfile', undef)
+  } 'missing argument defaults to using the original file name';
+  note 'Checking for logfile copy in '.$p->analysis_path.' copied from '.$test_dir;
+  ok (-f $default_log_copy, 'Log named with default when no other given');
 };
 
 1;

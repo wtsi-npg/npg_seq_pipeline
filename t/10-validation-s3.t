@@ -418,38 +418,38 @@ subtest 'product failed mqc' => sub {
   my $p = $ets[10]->target_product; # plex 10, Rejected final
   push @ps, $p;
   my $failed;
-   warning_like { $failed = $v->_failed_mqc($p) } qr/failed QC/,
+   warning_like { $failed = $v->_failed_qc_assessment($p) } qr/failed QC/,
     'warning about failing qc';
   ok ($failed, 'failed mqc with lib qc "Rejected final"');
 
   $p = $ets[9]->target_product; # plex 9, Rejected final
   push @ps, $p;
-  warning_like { $failed = $v->_failed_mqc($p) } qr/did not fail QC/,
+  warning_like { $failed = $v->_failed_qc_assessment($p) } qr/did not fail QC/,
     'warning about not failing qc';
   ok (!$failed, 'did not fail mqc with lib qc "Accepted final"');
 
   $p = $ets[6]->target_product; # plex 6, Undecided final
   push @ps, $p;
-  warning_like { $failed = $v->_failed_mqc($p) } qr/did not fail QC/,
+  warning_like { $failed = $v->_failed_qc_assessment($p) } qr/did not fail QC/,
     'warning about not failing qc';
   ok (!$failed, 'did not fail mqc with lib qc "Undecided final"');
 
   $p = $ets[2]->target_product; # plex 2, Rejected preliminary
   push @ps, $p;
-  throws_ok { $v->_failed_mqc($p) } qr/not final lib QC outcome/,
+  throws_ok { $v->_failed_qc_assessment($p) } qr/not final lib QC outcome/,
     'not final library qc outcome - error';
 
   my $lane2 = $qc_schema->resultset('MqcOutcomeEnt')->search({id_run => 26291, position => 2});
   $lane2->update({id_mqc_outcome => 4}); # Rejected final
-  ok ((4 == scalar grep { $_ } map { trap { $v->_failed_mqc($_) } } @ps), 
+  ok ((4 == scalar grep { $_ } map { trap { $v->_failed_qc_assessment($_) } } @ps), 
    'all products now considered as failed mqc');
   $lane2->update({id_mqc_outcome => 2}); # Rejected preliminary
-  throws_ok { $v->_failed_mqc($ps[0]) } qr/not all final seq QC outcomes/,
+  throws_ok { $v->_failed_qc_assessment($ps[0]) } qr/not all final seq QC outcomes/,
    'not all lanes have final seq outcome - error';
 };
 
 subtest 's3 fully archived' => sub {
-  plan tests => 16;
+  plan tests => 22;
 
     SKIP: {
       skip 'bzcat executable not available', 12 unless which('bzcat');
@@ -504,9 +504,25 @@ END_CONTENT
     conf_path         => $config_dir,
     qc_schema         => $qc_schema
   );
+
+  my $hp = LoadFile('t/data/release/config/undef_qc_accept/product_release.yml');
+  $hp->{study}->[0]->{s3}->{receipts} = $receipts_dir;
+  my $pfile = join q[/], $config_dir, 'product_release_undef_qc_accept.yml';
+  open my $fhp, '>', $pfile or die "Failed to open file $pfile for writing";
+  print $fhp (Dump $hp) or die "Failed to write to $pfile";
+  close $fhp or warn "Failed to close file handle to $pfile";
+
+  my $v2 = npg_pipeline::validation::s3->new(
+    product_entities  => \@ets,
+    logger            => $logger,
+    file_extension    => 'cram',
+    product_conf_file_path => $pfile,
+    qc_schema         => $qc_schema
+  );
+
   is (@{$v->product_entities} - @{$v->eligible_product_entities}, 2,
     'eligible product entities contain fewer objects');
-  throws_ok { $v->fully_archived() } qr/not final lib QC outcome/,
+  throws_ok { $v->fully_archived() } qr/not Final lib QC value/,
     'all qc outcomes should be final';
 
   my @compositions = map {$_->target_product->composition}
@@ -515,16 +531,19 @@ END_CONTENT
     ->search_via_composition(\@compositions)
     ->update({id_mqc_outcome => 3}); # make all libs Accepted final
   ok($v->fully_archived(), 'archived - all products acknowledged');
+  ok($v2->fully_archived(), 'archived');
 
   $qc_schema->resultset('MqcLibraryOutcomeEnt')
     ->search_via_composition([$compositions[0]])
     ->update({id_mqc_outcome => 6}); # make one lib Undecided final
   my $archived;
   warnings_like { $archived = $v->fully_archived() }
-    [qr/did not pass QC/, qr/did not fail QC/, qr/not found/],
+    [qr/failed QC assessment/, qr/did not fail QC/, qr/not found/],
     'warning about qc not passed';
   ok(!$archived,
     'no archived - all received, one undecided, not in the cache');
+  ok($v2->fully_archived(), 'archived');
+  
   $qc_schema->resultset('MqcLibraryOutcomeEnt')
     ->search_via_composition([$compositions[0]])
     ->update({id_mqc_outcome => 3}); # make it back Accepted final
@@ -553,9 +572,26 @@ END_CONTENT
     conf_path         => $config_dir,
     qc_schema         => $qc_schema
   );
+
+  $v2 = npg_pipeline::validation::s3->new(
+    product_entities  => \@ets,
+    logger            => $logger,
+    file_extension    => 'cram',
+    product_conf_file_path => $pfile,
+    qc_schema         => $qc_schema
+  );
+
   warnings_like { $archived = $v->fully_archived() }
-    [ qr/No receipt for file 26291\#10\.cram/, qr/failed QC/ ],
+    [ qr/No receipt for file 26291\#10\.cram/,
+      qr/failed QC assessment/,
+      qr/failed QC/ ],
     'warning about no receipt and failed qc';
+  ok($archived, 'archived - one failed mqc, others are acknowledged');
+
+  warnings_like { $archived = $v2->fully_archived() }
+    [ qr/No receipt for file 26291\#10\.cram/,
+      qr/failed QC assessment/ ],
+    'warning about no receipt';
   ok($archived, 'archived - one failed mqc, others are acknowledged');
 
   my $p = $ets[10]->target_product; # plex 10, Rejected final
@@ -566,11 +602,17 @@ END_CONTENT
   ok (!$v->merge_component_cache_dir($p), 'merge_component_cache_dir is not set');
   warnings_like { $archived = $v->fully_archived() }
     [ qr/No receipt for file 26291\#10\.cram/,
+      qr/failed QC assessment/,
       qr/did not fail QC/,
       qr/product cache directory not configured/ ],
-    'warnings about no receipt, not failin qc, no product cache dir';
+    'warnings about no receipt, not failing qc, no product cache dir';
   ok (!$archived,
     'not archived - is not acknowledged, undecided, no top-up dir configured');
+
+  warnings_like { $archived = $v2->fully_archived() }
+    [ qr/No receipt for file 26291\#10\.cram/ ],
+    'warnings about no receipt, not failin qc, no product cache dir';
+  ok (!$archived, 'not archived - is not acknowledged, undecided');
 
   $file = join q[/], $config_dir, 'product_release.yml';
   $h = LoadFile($file);
@@ -596,6 +638,7 @@ END_CONTENT
   close $fh1 or warn "Failed to close file handle to $file";  
   warnings_like { $archived = $v->fully_archived() }
     [ qr/No receipt for file 26291\#10\.cram/,
+      qr/failed QC assessment/,
       qr/did not fail QC/,
       qr/cached file $product_cache\/26291\#10\.cram not found/ ],
     'warnings about no receipt, not failing qc, not found in cache dir';
@@ -608,6 +651,7 @@ END_CONTENT
 
   warnings_like { $archived = $v->fully_archived() }
     [ qr/No receipt for file 26291\#10\.cram/,
+      qr/failed QC assessment/,
       qr/did not fail QC/,
       qr/cached file $product_cache\/26291\#10\.cram found/ ],
     'warnings about no receipt, not failing qc, found in cache dir';

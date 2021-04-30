@@ -35,6 +35,10 @@ Readonly::Array  my @ENV_VARS_TO_PROPAGATE => qw/ PATH
                                                   NPG_REPOSITORY_ROOT
                                                   IRODS_ENVIRONMENT_FILE /;
 
+Readonly::Scalar my $WR_LIMIT_GROUPS_OPTION        => q[limit_grps];
+Readonly::Hash   my %LIMIT_GROUPS2DEFINITION_ATTRS =>
+                    ('irods' => 'reserve_irods_slots',);
+
 =head1 NAME
 
 npg_pipeline::executor::wr
@@ -104,6 +108,43 @@ override 'execute' => sub {
 ##################################################################
 ############## Private attributes and methods ####################
 ##################################################################
+
+has '_attributes2limit_groups' => (
+  isa        => 'HashRef',
+  is         => 'ro',
+  lazy_build => 1,
+);
+sub _build__attributes2limit_groups {
+  my $self = shift;
+  my $h = {};
+  for my $group (@{$self->_limit_groups}) {
+    $h->{$group} = exists $LIMIT_GROUPS2DEFINITION_ATTRS{$group}
+                   ? $LIMIT_GROUPS2DEFINITION_ATTRS{$group}
+                   : $group;
+  }
+  return $h;
+}
+
+has '_limit_groups' => (
+  isa        => 'ArrayRef',
+  is         => 'ro',
+  lazy_build => 1,
+);
+sub _build__limit_groups {
+  my $self = shift;
+
+  my $groups = $self->wr_conf->{$WR_LIMIT_GROUPS_OPTION};
+  $groups ||= [];
+  if (@{$groups}) {
+    $groups = [(sort @{$groups})];
+    $self->info(q[The following groups might be subject to limits: ] .
+                join q[, ], @{$groups});
+  } else {
+    $self->logwarn(q[No limit groups are configured]);
+  }
+
+  return $groups;
+}
 
 has '_dependencies' => (
   isa        => 'HashRef[HashRef]',
@@ -212,6 +253,11 @@ sub _definition4job {
     }
   }
 
+  my @limit_groups = $self->_limit_groups4job($d);
+  if (@limit_groups) {
+    $def->{$WR_LIMIT_GROUPS_OPTION} = [(sort @limit_groups)];
+  }
+
   my $log_file = sub {
     #####
     # Explicit exclusion for now. In future, if we end up using this function,
@@ -239,6 +285,35 @@ sub _definition4job {
   $def->{'cmd'} = $command;
 
   return $def;
+}
+
+sub _limit_groups4job {
+  my ($self, $d) = @_;
+
+  my @limit_groups = ();
+  for my $group ( keys %{$self->_attributes2limit_groups} ) {
+    my $method = $self->_attributes2limit_groups->{$group};
+    my $set_limit = 0;
+    if ($group ne $method) {
+      $d->can($method) or $self->logcroak(
+        "Limit group '$group' does not map to an existing " .
+        'definition object method'
+      );
+      $set_limit = $d->$method;
+    } else {
+      if ($d->can($method)) {
+        # Have a method that exactly matches the group? - Use it.
+        $set_limit = $d->can($method);
+      } else {
+        # Does the group name match the name of the class that created
+        # this definition?
+        $set_limit = ($d->created_by =~ /$group/smx);
+      }
+    }
+    $set_limit and push @limit_groups, $group;
+  }
+
+  return @limit_groups;
 }
 
 sub _wr_add_command {
@@ -336,7 +411,7 @@ __END__
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
