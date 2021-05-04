@@ -1,433 +1,650 @@
 {
-   "graph" : {
-      "edges" : [
-         {
-            "relation" : "dependsOn",
-            "source" : "pipeline_start",
-            "target" : "create_summary_link_analysis"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "create_summary_link_analysis",
-            "target" : "lane_analysis_in_progress"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "lane_analysis_in_progress",
-            "target" : "run_analysis_in_progress"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_in_progress",
-            "target" : "qc_interop"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_in_progress",
-            "target" : "p4_stage1_analysis"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_interop",
-            "target" : "update_ml_warehouse_1"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
-            "target" : "update_ml_warehouse_1"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse_1",
-            "target" : "run_secondary_analysis_in_progress"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_secondary_analysis_in_progress",
-            "target" : "stage2pp"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "stage2pp",
-            "target" : "archive_pp_data_to_irods"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "archive_pp_data_to_irods",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "stage2pp",
-            "target" : "stage2App"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "stage2pp",
-            "target" : "qc_generic_artic"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "stage2App",
-            "target" : "qc_generic_ampliconstats"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_secondary_analysis_in_progress",
-            "target" : "seq_alignment"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_qX_yield"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_adapter"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_insert_size"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_sequence_error"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_gc_fraction"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_ref_match"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_spatial_filter",
-            "target" : "bam_cluster_counter_check"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "seqchksum_comparator"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_bcfstats"
-         },
-
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_pulldown_metrics"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_genotype"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_spatial_filter"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_verify_bam_id"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_qX_yield",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_adapter",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_insert_size",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_sequence_error",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_gc_fraction",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_ref_match",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seqchksum_comparator",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "bam_cluster_counter_check",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_generic_artic",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_generic_ampliconstats",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_bcfstats",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_pulldown_metrics",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_genotype",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_verify_bam_id",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_review",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse_2",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_complete",
-            "target" : "update_ml_warehouse_3"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse_3",
-            "target" : "pipeline_end"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_complete",
-            "target" : "archive_to_irods_samplesheet"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "bqsr_calc"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "bqsr_calc",
-            "target" : "haplotype_caller"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "haplotype_caller",
-            "target" : "merge_recompress"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_complete",
-            "target" : "run_qc_review_pending"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "merge_recompress",
-            "target" : "pipeline_end"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_qc_review_pending",
-            "target" : "pipeline_end"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "archive_to_irods_samplesheet",
-            "target" : "pipeline_end"
-         }
-      ],
-      "nodes" : [
-         {
-            "id" : "pipeline_start",
-            "label" : "pipeline_start"
-         },
-         {
-            "id" : "create_summary_link_analysis",
-            "label" : "create_summary_link_analysis"
-         },
-         {
-            "id" : "run_analysis_in_progress",
-            "label" : "run_analysis_in_progress"
-         },
-         {
-            "id" : "lane_analysis_in_progress",
-            "label" : "lane_analysis_in_progress"
-         },
-         {
-            "id" : "qc_interop",
-            "label" : "qc_interop"
-         },
-         {
-            "id" : "p4_stage1_analysis",
-            "label" : "p4_stage1_analysis"
-         },
-         {
-            "id" : "stage2pp",
-            "label" : "stage2pp"
-         },
-         {
-            "id" : "stage2App",
-            "label" : "stage2App"
-         },
-         {
-            "id" : "update_ml_warehouse_1",
-            "label" : "update_ml_warehouse"
-         },
-         {
-            "id" : "update_ml_warehouse_2",
-            "label" : "update_ml_warehouse"
-         },
-         {
-            "id" : "update_ml_warehouse_3",
-            "label" : "update_ml_warehouse"
-         },
-         {
-            "id" : "run_secondary_analysis_in_progress",
-            "label" : "run_secondary_analysis_in_progress"
-         },
-         {
-            "id" : "qc_generic_artic",
-            "label" : "qc_generic_artic"
-         },
-         {
-            "id" : "qc_generic_ampliconstats",
-            "label" : "qc_generic_ampliconstats"
-         },
-         {
-            "id" : "qc_qX_yield",
-            "label" : "qc_qX_yield"
-         },
-         {
-            "id" : "qc_adapter",
-            "label" : "qc_adapter"
-         },
-         {
-            "id" : "qc_insert_size",
-            "label" : "qc_insert_size"
-         },
-         {
-            "id" : "qc_sequence_error",
-            "label" : "qc_sequence_error"
-         },
-         {
-            "id" : "qc_gc_fraction",
-            "label" : "qc_gc_fraction"
-         },
-         {
-            "id" : "qc_ref_match",
-            "label" : "qc_ref_match"
-         },
-         {
-            "id" : "seq_alignment",
-            "label" : "seq_alignment"
-         },
-         {
-            "id" : "bam_cluster_counter_check",
-            "label" : "bam_cluster_counter_check"
-         },
-         {
-            "id" : "seqchksum_comparator",
-            "label" : "seqchksum_comparator"
-         },
-         {
-            "id" : "qc_bcfstats",
-            "label" : "qc_bcfstats"
-         },
-         {
-            "id" : "qc_pulldown_metrics",
-            "label" : "qc_pulldown_metrics"
-         },
-         {
-            "id" : "qc_genotype",
-            "label" : "qc_genotype"
-         },
-         {
-            "id" : "qc_spatial_filter",
-            "label" : "qc_spatial_filter"
-         },
-         {
-            "id" : "qc_verify_bam_id",
-            "label" : "qc_verify_bam_id"
-         },
-         {
-            "id" : "qc_review",
-            "label" : "qc_review"
-         },
-         {
-            "id" : "run_analysis_complete",
-            "label" : "run_analysis_complete"
-         },
-         {
-            "id" : "archive_pp_data_to_irods",
-            "label" : "archive_pp_data_to_irods"
-         },
-         {
-            "id" : "archive_to_irods_samplesheet",
-            "label" : "archive_to_irods_samplesheet"
-         },
-         {
-            "id" : "bqsr_calc",
-            "label" : "bqsr_calc"
-         },
-         {
-            "id" : "haplotype_caller",
-            "label" : "haplotype_caller"
-         },
-         {
-            "id" : "merge_recompress",
-            "label" : "merge_recompress"
-         },
-         {
-            "id" : "run_qc_review_pending",
-            "label" : "run_qc_review_pending"
-         },
-         {
-            "id" : "pipeline_end",
-            "label" : "pipeline_end"
-         }
-      ],
-      "metadata": {
-         "default_resources": {
-            "minimum_cpu": 1,
-            "memory": 2
+    "graph": {
+        "edges": [
+            {
+                "relation": "dependsOn",
+                "source": "pipeline_start",
+                "target": "create_summary_link_analysis"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "create_summary_link_analysis",
+                "target": "lane_analysis_in_progress"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "lane_analysis_in_progress",
+                "target": "run_analysis_in_progress"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_analysis_in_progress",
+                "target": "qc_interop"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_analysis_in_progress",
+                "target": "p4_stage1_analysis"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_interop",
+                "target": "update_ml_warehouse_1"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "p4_stage1_analysis",
+                "target": "update_ml_warehouse_1"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_ml_warehouse_1",
+                "target": "run_secondary_analysis_in_progress"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_secondary_analysis_in_progress",
+                "target": "stage2pp"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "stage2pp",
+                "target": "archive_pp_data_to_irods"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "archive_pp_data_to_irods",
+                "target": "update_ml_warehouse_2"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "stage2pp",
+                "target": "stage2App"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "stage2pp",
+                "target": "qc_generic_artic"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "stage2App",
+                "target": "qc_generic_ampliconstats"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_secondary_analysis_in_progress",
+                "target": "seq_alignment"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_qX_yield"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_adapter"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_insert_size"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_sequence_error"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_gc_fraction"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_ref_match"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_spatial_filter",
+                "target": "bam_cluster_counter_check"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "seqchksum_comparator"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_bcfstats"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_pulldown_metrics"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_genotype"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_spatial_filter"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_verify_bam_id"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_qX_yield",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_adapter",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_insert_size",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_sequence_error",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_gc_fraction",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_ref_match",
+                "target": "run_analysis_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seqchksum_comparator",
+                "target": "run_analysis_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "bam_cluster_counter_check",
+                "target": "run_analysis_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_generic_artic",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_generic_ampliconstats",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_bcfstats",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_pulldown_metrics",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_genotype",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_verify_bam_id",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_review",
+                "target": "update_ml_warehouse_2"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_ml_warehouse_2",
+                "target": "run_analysis_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_analysis_complete",
+                "target": "update_ml_warehouse_3"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_ml_warehouse_3",
+                "target": "pipeline_end"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_analysis_complete",
+                "target": "archive_to_irods_samplesheet"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "bqsr_calc"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "bqsr_calc",
+                "target": "haplotype_caller"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "haplotype_caller",
+                "target": "merge_recompress"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_analysis_complete",
+                "target": "run_qc_review_pending"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "merge_recompress",
+                "target": "pipeline_end"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_qc_review_pending",
+                "target": "pipeline_end"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "archive_to_irods_samplesheet",
+                "target": "pipeline_end"
+            }
+        ],
+        "nodes": [
+            {
+                "id": "pipeline_start",
+                "label": "pipeline_start",
+                "metadata": {
+                    "description": "Beginning of pipeline",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "create_summary_link_analysis",
+                "label": "create_summary_link_analysis",
+                "metadata": {
+                    "description": "Makes a symlink to the analysis results",
+                    "resources": {
+                        "default": {
+                            "queue": "small"
+                        }
+                    }
+                }
+            },
+            {
+                "id": "run_analysis_in_progress",
+                "label": "run_analysis_in_progress",
+                "metadata": {
+                    "description": "Writes a progress marker to the file system",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "lane_analysis_in_progress",
+                "label": "lane_analysis_in_progress",
+                "metadata": {
+                    "description": "Marks the beginning of per-lane analysis for the pipeline",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "qc_interop",
+                "label": "qc_interop",
+                "metadata": {
+                    "description": "AutoQC interop check",
+                    "resources": {
+                        "defaults": {
+                            "minimum_cpu": 8,
+                            "memory": 2
+                        }
+                    }
+                }
+            },
+            {
+                "id": "p4_stage1_analysis",
+                "label": "p4_stage1_analysis",
+                "metadata": {
+                    "description": "Create CRAM files including initial phiX alignment, spatial filtering and deplexing of pools where appropriate.",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 8,
+                            "maximum_cpu": 16,
+                            "memory": 12,
+                            "fs_slots_num": 4,
+                            "queue": "p4stage1"
+                        }
+                    }
+                }
+            },
+            {
+                "id": "stage2pp",
+                "label": "stage2pp",
+                "metadata": {
+                    "description": "Create file system scaffold and definitions for stage 2 portable pipelines",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "stage2App",
+                "label": "stage2App",
+                "metadata": {
+                    "description": "Create file system scaffold and definitions for stage 2A portable pipelines",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "update_ml_warehouse_1",
+                "label": "update_ml_warehouse",
+                "metadata": {
+                    "description": "Update run data in the multi-LIMS warehouse after stage 1 analysis",
+                    "resources": {
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": "update_ml_warehouse_2",
+                "label": "update_ml_warehouse",
+                "metadata": {
+                    "description": "Update run data in the multi-LIMS warehouse after stage 2 analysis",
+                    "resources": {
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": "update_ml_warehouse_3",
+                "label": "update_ml_warehouse",
+                "metadata": {
+                    "description": "Update run data in the multi-LIMS warehouse after QC completed",
+                    "resources": {
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": "run_secondary_analysis_in_progress",
+                "label": "run_secondary_analysis_in_progress",
+                "metadata": {
+                    "description": "Marks the beginning of second stage analysis",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "qc_generic_artic",
+                "label": "qc_generic_artic",
+                "metadata": {
+                    "description": "Run ncov2019 artic NextFlow pipeline",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 4,
+                            "memory": 5
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_generic_ampliconstats",
+                "label": "qc_generic_ampliconstats",
+                "metadata": {
+                    "description": "Create ampliconstats via artic NextFlow pipeline",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 2,
+                            "memory": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_qX_yield",
+                "label": "qc_qX_yield",
+                "metadata": {
+                    "description": "Use samtools stats to compute number of bases at a number of quality values",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "qc_adapter",
+                "label": "qc_adapter",
+                "metadata": {
+                    "description": "Check for adapter contamination",
+                    "resources": {
+                        "default": {
+                            "memory": 1.5,
+                            "minimum_cpu": 3
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_insert_size",
+                "label": "qc_insert_size",
+                "metadata": {
+                    "description": "Perform a paired-end alignment to find insert size",
+                    "resources": {
+                        "default": {
+                            "memory": 8
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_sequence_error",
+                "label": "qc_sequence_error",
+                "metadata": {
+                    "description": "Align forward and reverse random reads to identify common error patterns",
+                    "resource": {}
+                }
+            },
+            {
+                "id": "qc_gc_fraction",
+                "label": "qc_gc_fraction",
+                "metadata": {
+                    "description": "Calculate GC ratio in sequence",
+                    "resource": {}
+                }
+            },
+            {
+                "id": "qc_ref_match",
+                "label": "qc_ref_match",
+                "metadata": {
+                    "description": "Look for species contamination of a sample, based on alignment against reference genomes",
+                    "resources": {
+                        "default": {
+                            "memory": 6,
+                            "maximum_cpu": 8,
+                            "array_cpu_limit": 8
+                        }
+                    }
+                }
+            },
+            {
+                "id": "seq_alignment",
+                "label": "seq_alignment",
+                "metadata": {
+                    "description": "Align all reads against a reference stipulated by study or sample",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 12,
+                            "maximum_cpu": 16,
+                            "memory": 32,
+                            "fs_slots_num": 4
+                        },
+                        "star": {
+                            "memory": 38
+                        }
+                    }
+                }
+            },
+            {
+                "id": "bam_cluster_counter_check",
+                "label": "bam_cluster_counter_check",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "seqchksum_comparator",
+                "label": "seqchksum_comparator",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "qc_bcfstats",
+                "label": "qc_bcfstats",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "qc_pulldown_metrics",
+                "label": "qc_pulldown_metrics",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "qc_genotype",
+                "label": "qc_genotype",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "qc_spatial_filter",
+                "label": "qc_spatial_filter",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "qc_verify_bam_id",
+                "label": "qc_verify_bam_id",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "qc_review",
+                "label": "qc_review",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "run_analysis_complete",
+                "label": "run_analysis_complete",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "archive_pp_data_to_irods",
+                "label": "archive_pp_data_to_irods",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "archive_to_irods_samplesheet",
+                "label": "archive_to_irods_samplesheet",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "bqsr_calc",
+                "label": "bqsr_calc",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "haplotype_caller",
+                "label": "haplotype_caller",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "merge_recompress",
+                "label": "merge_recompress",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "run_qc_review_pending",
+                "label": "run_qc_review_pending",
+                "metadata": {
+                    "description": "",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "pipeline_end",
+                "label": "pipeline_end",
+                "metadata": {
+                    "description": "The end of all jobs",
+                    "resources": {}
+                }
+            }
+        ],
+        "metadata": {
+            "default_resources": {
+                "minimum_cpu": 1,
+                "memory": 2
+            }
         }
-      }
-   }
+    }
 }
