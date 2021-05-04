@@ -54,9 +54,7 @@ sub make_link {
 sub create {
   my $self = shift;
 
-  my $ref = { 'created_by' => __PACKAGE__,
-              'created_on' => $self->timestamp(),
-              'identifier' => $self->id_run() };
+  my $ref = { 'identifier' => $self->id_run() };
 
   if ($self->no_summary_link()) {
     $self->info(q{Summary link creation turned off});
@@ -68,11 +66,10 @@ sub create {
     $ref->{'command'} = qq{$MAKE_LINK_SCRIPT --run_folder $run_folder}
                        . q{ --runfolder_path } . $self->runfolder_path()
                        . q{ --recalibrated_path } . $self->recalibrated_path();
-    $ref->{'queue'} =
-      $npg_pipeline::function::definition::SMALL_QUEUE;
+    $ref->{'queue'} = $npg_pipeline::function::definition::SMALL_QUEUE;
   }
 
-  return [npg_pipeline::function::definition->new($ref)];
+  return [$self->create_definition($ref)];
 }
 
 __PACKAGE__->meta->make_immutable;

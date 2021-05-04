@@ -81,7 +81,10 @@ my %init = (
   id_run                 => 26291,
   timestamp              => $timestamp,
   repository             => $dir,
-  default_defaults       => {}
+  default_defaults       => {
+    minimum_cpu => 1,
+    memory => 2
+  }
 );
 
 subtest 'error on missing data in LIMS' => sub {
@@ -124,7 +127,13 @@ subtest 'definition generation, ncov2019-artic-nf pp' => sub {
   map { ok (!(-e $_), "output dir $_ does not exists") } @out_dirs;
 
   my $ppd = npg_pipeline::function::stage2pp->new(
-    %init
+    %init,
+    resource => {
+      default => {
+        minimum_cpu => 4,
+        memory => 5
+      }
+    }
   );
 
   is ($ppd->pipeline_type, 'stage2pp', 'default pipeline type');
@@ -295,6 +304,12 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
     %init,
     pipeline_type          => 'stage2App',
     merge_lanes            => 0,
+    resource => {
+      default => {
+        minimum_cpu => 2,
+        memory => 1
+      }
+    }
   );
 
   $ds = $ppd->create;
@@ -341,6 +356,12 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
     product_conf_file_path => qq[$repo_dir/product_release_explicit_astats_depth.yml],
     pipeline_type          => 'stage2App',
     merge_lanes            => 0,
+    resource => {
+      default => {
+        minimum_cpu => 2,
+        memory => 2
+      }
+    }
   );
 
   $ds = $ppd->create;

@@ -12,29 +12,34 @@ my $runfolder_path = $util->analysis_runfolder_path();
 
 use_ok('npg_pipeline::function::start_stop');
 
+my %init = (
+  runfolder_path => $runfolder_path,
+  default_defaults => {
+    memory => 2,
+    minimum_cpu => 1
+  }
+);
+
 subtest 'start and stop functions' => sub {
   plan tests => 30;
 
   my $ss = npg_pipeline::function::start_stop->new(
     id_run         => 1234,
-    runfolder_path => $runfolder_path,
-    default_defaults => {}
+    %init
   );
   isa_ok ($ss, 'npg_pipeline::function::start_stop');
   is ($ss->label, '1234', 'label');
 
   my $ss1 = npg_pipeline::function::start_stop->new(
     id_run         => 1234,
-    runfolder_path => $runfolder_path,
     label          => 'my_label',
-    default_defaults => {}
+    %init
   );
 
   my $ss2 = npg_pipeline::function::start_stop->new(
-    runfolder_path   => $runfolder_path,
     product_rpt_list => '123:4:5;124:3:6',
     label            => 'your_label',
-    default_defaults => {}
+    %init
   );
 
   foreach my $m (qw/pipeline_start pipeline_end/) {
@@ -69,8 +74,7 @@ subtest 'wait4path function' => sub {
 
   my $f = npg_pipeline::function::start_stop->new(
     id_run         => 1234,
-    runfolder_path => $runfolder_path,
-    default_defaults => {}
+    %init
   );
 
   my $path = $runfolder_path;

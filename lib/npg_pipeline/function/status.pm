@@ -34,16 +34,13 @@ sub create {
     $status_with_underscores,
     $self->timestamp();
 
-  my $d = npg_pipeline::function::definition->new(
-    created_by    => __PACKAGE__,
-    created_on    => $self->timestamp(),
+  my $d = $self->create_definition({
     identifier    => $self->id_run(),
     job_name      => $job_name,
     command       => $self->_command($status_files_path),
     num_cpus      => [0],
-    queue         =>
-      $npg_pipeline::function::definition::SMALL_QUEUE,
-  );
+    queue         => $npg_pipeline::function::definition::SMALL_QUEUE,
+  });
 
   return [$d];
 }

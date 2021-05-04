@@ -16,9 +16,10 @@ ok($validator, 'Instantiated validator with JGF schema');
 my $graph = decode_json slurp $Bin.'/../data/config_files/function_list_central.json';
 ok($graph, 'Loaded central pipeline def');
 my @errors = $validator->validate($graph);
-
 cmp_ok(@errors, '==', 0, 'Central pipeline graph validated');
-
+if (@errors) {
+    diag (join "\n", @errors);
+}
 $graph = decode_json slurp $Bin.'/../data/config_files/function_list_post_qc_review.json';
 ok($graph, 'Post-QC review graph loaded');
 @errors = $validator->validate($graph);

@@ -92,6 +92,7 @@ sub get_resources {
 =head2 create_definition
 
 Args [1]:    Hashref of specific requirements for this Function
+             NOTE: If setting cpus, set in arrayref form: [1,2]
 Args [2]:    String, optional. The name of a special resource spec in the graph
 Description: Takes custom properties and integrates resources defined for this
              function and instantiates a definition object.
@@ -106,24 +107,7 @@ sub create_definition {
   my ($self, $custom_args, $special_resource) = @_;
 
   # Load combined resource requirements
-  my $resources = $self->get_resources($special_resource);
-  my $num_cpus = [1];
-  if (exists $custom_args->{num_cpus}) {
-    $num_cpus = $custom_args->{num_cpus};
-  } elsif (exists $resources->{maximum_cpu}
-      && $resources->{minimum_cpu} != $resources->{maximum_cpu}
-  ) {
-    # Format discrete CPU values for definition ArrayRef
-    $num_cpus = [
-      $resources->{minimum_cpu},
-      $resources->{maximum_cpu}
-    ];
-  } else {
-    $num_cpus = [$resources->{minimum_cpu}];
-  }
-  delete $resources->{minimum_cpu};
-  delete $resources->{maximum_cpu};
-
+  my $resources = $self->_get_massaged_resources($special_resource);
   # and combine with any custom arguments
   $resources = { %{$resources}, %{$custom_args} };
   # Scale up memory numbers to MB expected by definition
@@ -136,9 +120,33 @@ sub create_definition {
   return npg_pipeline::function::definition->new(
     created_by => ref $self,
     created_on => $self->timestamp(),
-    num_cpus => $num_cpus,
     %{$resources}
   );
+}
+
+=head2 _get_massaged_resources
+
+Args [1]:    String, optional. The name of a special resource spec in the graph
+Description: Converts a minimum and maximum cpu specification and returns
+             the resource definition with the change
+Returntype:  HashRef containing a compute resource specification
+=cut
+
+sub _get_massaged_resources {
+  my ($self, $special_resource) = @_;
+
+  my $resources = $self->get_resources($special_resource);
+  if (! exists $resources->{minimum_cpu}) {
+    $self->logcroak(sprintf 'Resource spec for %s must specify minimum_cpu', ref $self);
+  }
+  my @num_cpus = ($resources->{minimum_cpu});
+  if (exists $resources->{maximum_cpu}) {
+    push @num_cpus, $resources->maximum_cpu;
+  }
+  delete $resources->{minimum_cpu};
+  delete $resources->{maximum_cpu};
+  $resources->{num_cpus} = \@num_cpus;
+  return $resources;
 }
 
 __PACKAGE__->meta->make_immutable;

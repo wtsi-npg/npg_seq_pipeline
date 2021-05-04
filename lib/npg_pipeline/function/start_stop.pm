@@ -68,16 +68,14 @@ sub _token_job {
   $pipeline_name ||= q[];
   my $job_name = join q{_}, $subroutine_name, $self->label(), $pipeline_name;
 
-  my $d = npg_pipeline::function::definition->new(
-    created_by    => __PACKAGE__,
-    created_on    => $self->timestamp(),
+  my $d = $self->create_definition({
     identifier    => $self->label(),
     job_name      => $job_name,
     command       => '/bin/true',
     num_cpus      => [0],
     queue         =>
       $npg_pipeline::function::definition::SMALL_QUEUE,
-  );
+  });
 
   return [$d];
 }

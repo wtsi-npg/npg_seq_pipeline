@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 28;
+use Test::More tests => 27;
 use Test::Exception;
 use File::Temp qw{ tempdir };
 
@@ -19,7 +19,7 @@ my %init = (
   run_folder        => 'myfolder',
   runfolder_path    => $run_folder_path,
   bam_basecall_path => $run_folder_path,
-  default_defaults  => {}
+  default_defaults  => { memory => 2, minimum_cpu => 1 }
 );
 
 {
@@ -60,7 +60,6 @@ my %init = (
   ok (!$d->excluded, 'step not excluded');
   ok ($d->has_num_cpus, 'number of cpus is set');
   is_deeply ($d->num_cpus, [0], 'zero cpus');
-  ok (!$d->has_memory,'memory is not set');
   is ($d->queue, 'small', 'small queue');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 

@@ -24,8 +24,6 @@ with 'npg_common::roles::software_location' =>
 
 Readonly::Scalar my $DEFAULT_PIPELINE_TYPE => q[stage2pp];
 
-Readonly::Scalar my $DEFAULT_MEMORY_MB => 300;
-Readonly::Scalar my $DEFAULT_NUM_CPUS  => 1;
 Readonly::Hash   my %PER_PP_REQS   => (
   ncov2019_artic_nf => {memory_mb => 5000, num_cpus => 4},
   ncov2019_artic_nf_ampliconstats => {memory_mb => 1000, num_cpus => 2},
@@ -133,12 +131,10 @@ sub create {
     npg_pipeline::runfolder_scaffold->make_dir(@{$self->_output_dirs});
   } else {
     $self->debug('no stage2pp enabled data products, skipping');
-    push @definitions, npg_pipeline::function::definition->new(
-                         created_by => __PACKAGE__,
-                         created_on => $self->timestamp(),
-                         identifier => $self->label,
-                         excluded   => 1
-                       );
+    push @definitions, $self->create_definition({
+      identifier => $self->label,
+      excluded   => 1
+    });
   }
 
   return \@definitions;
@@ -195,16 +191,6 @@ sub _canonical_name {
   return $self->_names_map->{$name};
 }
 
-sub _memory {
-  my $req = shift;
-  return $req->{memory_mb} || $DEFAULT_MEMORY_MB;
-}
-
-sub _num_cpus {
-  my $req = shift;
-  return $req->{num_cpus} || $DEFAULT_NUM_CPUS;
-}
-
 sub _primer_bed_file {
   my ($self,$product) = @_;
   my $bed_file = npg_pipeline::cache::reference->instance()
@@ -226,12 +212,8 @@ sub _job_name {
 
 sub _job_attrs {
   my ($self, $product, $pp, $reqs) = @_;
-  return {'created_by'  => __PACKAGE__,
-          'created_on'  => $self->timestamp(),
-          'identifier'  => $self->label,
+  return {'identifier'  => $self->label,
           'job_name'    => $self->_job_name($pp),
-          'num_cpus'    => [_num_cpus($reqs)],
-          'memory'      => _memory($reqs),
           'composition' => $product->composition()};
 }
 
@@ -265,7 +247,7 @@ sub _ncov2019_artic_nf_create {
     "--directory $in_dir_path",
     "--outdir $out_dir_path";
 
-  return npg_pipeline::function::definition->new($job_attrs);
+  return $self->create_definition($job_attrs);
 }
 
 has '_lane_counter4ampliconstats' => (
@@ -334,7 +316,7 @@ sub _ncov2019_artic_nf_ampliconstats_create {
              @{$self->_generate_replacement_map($lane_product)});
 
   my $job_attrs = $self->_job_attrs($lane_product, $pp, $reqs);
-  my $num_cpus = $job_attrs->{num_cpus}->[0];
+  my $num_cpus = $self->_get_massaged_resources()->{num_cpus}[0];
   my $sta_cpus_option = $num_cpus > 1 ? q[-@] . ($num_cpus - 1) : q[];
 
   # Use samtools to produce ampliconstats - one file per lane.
@@ -380,7 +362,7 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   # Set lane flag so that we skip the next product for this lane.
   $self->_lane_counter4ampliconstats->{$position} = 1;
 
-  return npg_pipeline::function::definition->new($job_attrs);
+  return $self->create_definition($job_attrs);
 }
 
 __PACKAGE__->meta->make_immutable;

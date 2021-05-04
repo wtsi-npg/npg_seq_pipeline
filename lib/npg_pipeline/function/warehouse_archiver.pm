@@ -95,12 +95,10 @@ sub _update_warehouse_command {
   my $d;
   if ($m) {
     $self->warn($m);
-    $d = npg_pipeline::function::definition->new(
-      created_by   => __PACKAGE__,
-      created_on   => $self->timestamp(),
+    $d = $self->create_definition({
       identifier   => $self->label,
       excluded     => 1
-    );
+    });
   } else {
     $pipeline_name ||= q[];
     my $job_name = join q{_}, $loader_name, $self->label, $pipeline_name;
@@ -120,16 +118,13 @@ sub _update_warehouse_command {
       }
     }
 
-    $d = npg_pipeline::function::definition->new(
-      created_by => __PACKAGE__,
-      created_on => $self->timestamp(),
+    $d = $self->create_definition({
       identifier => $self->label,
       command    => $command,
       num_cpus   => [0],
       job_name   => $job_name,
-      queue      =>
-        $npg_pipeline::function::definition::LOWLOAD_QUEUE
-    );
+      queue      => $npg_pipeline::function::definition::LOWLOAD_QUEUE
+    });
   }
 
   return [$d];

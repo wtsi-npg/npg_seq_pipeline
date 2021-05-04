@@ -26,7 +26,7 @@ subtest 'warehouse updates' => sub {
     run_folder          => q{123456_IL2_1234},
     runfolder_path      => $runfolder_path,
     recalibrated_path   => $runfolder_path,
-    default_defaults    => {}
+    default_defaults    => { minimum_cpu => 1, memory => 2}
   );
   isa_ok ($c, 'npg_pipeline::function::warehouse_archiver');
 
@@ -81,14 +81,14 @@ subtest 'warehouse updates disabled' => sub {
     my $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path      => $runfolder_path,
       no_warehouse_update => 1,
-      default_defaults    => {}
+      default_defaults    => { minimum_cpu => 1, memory => 2 }
     );
     $test_method->($c, $m, 'off');
 
     $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path    => $runfolder_path,
       local             => 1,
-      default_defaults  => {}
+      default_defaults  => { minimum_cpu => 1, memory => 2 }
     );
     $test_method->($c, $m, 'off');
 
@@ -96,7 +96,7 @@ subtest 'warehouse updates disabled' => sub {
       runfolder_path      => $runfolder_path,
       local               => 1,
       no_warehouse_update => 0,
-      default_defaults    => {}
+      default_defaults    => { minimum_cpu => 1, memory => 2 }
     );
     $test_method->($c, $m, 'on');
   }
@@ -109,7 +109,7 @@ subtest 'mlwh updates for a product' => sub {
     runfolder_path    => $runfolder_path,
     label             => 'my_label',
     product_rpt_list  => '123:4:5',
-    default_defaults  => {}
+    default_defaults  => { minimum_cpu => 1, memory => 2 }
   );
 
   my $ds = $wa->update_ml_warehouse('pname');
