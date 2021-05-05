@@ -1,4 +1,4 @@
-.travis.yml
+.github/workflows/testing_and_building_repo.yml
 bin/npg_climb2mlwh
 bin/npg_heron_metadata_upload
 bin/npg_pipeline_analysis_runner
@@ -20,12 +20,8 @@ Build.PL
 Changes
 data/config_files/function_list_central.json
 data/config_files/function_list_central.json.png
-data/config_files/function_list_central_qc_run.json
-data/config_files/function_list_central_qc_run.json.png
 data/config_files/function_list_post_qc_review.json
 data/config_files/function_list_post_qc_review.json.png
-data/config_files/function_list_post_run_archived.json
-data/config_files/function_list_post_run_archived.json.png
 data/config_files/general_values.ini
 data/config_files/lsf.ini
 data/config_files/wr.json
@@ -93,8 +89,8 @@ lib/npg_tracking/daemon/archival.pm
 MANIFEST			This list of files
 README
 README.md
+scripts/install_npg_perl_dependencies.sh
 scripts/jgf2gml
-scripts/travis_install.sh
 t/00-critic.t
 t/00-distribution.t
 t/00-pod.t

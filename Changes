@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 59.2.0
  - iRODS connections to be opened on-demand for validation
  - Added an option of having a new boolean flag 'accept_undef_qc_outcome'
    in the study configuration for a product for a particular archiver.
@@ -8,7 +9,16 @@ LIST OF CHANGES
    has_qc_for_release method might return true in cases where previously
    it would have returned false. This is done in order to allow for
    archival of products which either passes QC or have never been through
-   manual or robo QC.
+   manual or robo QC. The data retention policy implementation is changed
+   to take into account the new flag.
+ - npg_majora_for_mlwh - dry_run option goes further in the processes,
+   but avoids writes/updates
+ - Use GitHub actions for CI in place of Travsi-CI
+ - Unused JSON files for function graphs are removed.
+ - Per-study product configuration file product_release.yml, which is used
+   when creating jobs, is copied to the analysis directory to preserve
+   run conditions
+ - CI: replace Travsi-CI with GitHub Actions
 
 release 59.1.0
  - More options for defining wr limit groups: allow an exact match
@@ -23,8 +33,6 @@ release 59.1.0
    within the last hour.
  - Include pipeline version and name when sending sequencing run metadata
    to the majora service.
- - Persist product_release.yml file to analysis directory to preserve run
-   conditions.
 
 
 release 59.0.0

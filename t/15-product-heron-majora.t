@@ -35,14 +35,14 @@ my $npg_tracking_schema=t::dbic_util->new()->test_schema('t/data/dbic_fixtures/'
 my $schema_for_fn=t::dbic_util->new()->test_schema_mlwh('t/data/fixtures/mlwh-majora');
 
 ## adding MAJORA_DOMAIN environment variable
-$ENV{MAJORA_DOMAIN} = 'https://covid.majora.ironowl.it/';
-$ENV{MAJORA_USER} = 'DUMMYUSER';
-$ENV{MAJORA_TOKEN} = 'DUMMYTOKEN';
+local $ENV{MAJORA_DOMAIN} = 'https://covid.majora.ironowl.it/';
+local $ENV{MAJORA_USER} = 'DUMMYUSER';
+local $ENV{MAJORA_TOKEN} = 'DUMMYTOKEN';
 
 #testing input options
 
-throws_ok { npg_pipeline::product::heron::majora->new(update=>1, dry_run=>1) }  qr/'update' and 'dry_run' attributes cannot be set at the same time/,
-'error when both update and dry_run attrs are set';
+lives_ok { npg_pipeline::product::heron::majora->new(update=>1, dry_run=>1) }
+  'no error when both update and dry_run attrs are set';
 
 throws_ok { npg_pipeline::product::heron::majora->new(days=>0) }  qr/'days' attribute value should be a positive number/,
 'error when days attribute is set to 0';
@@ -92,14 +92,14 @@ is_deeply($majora->_majora_update_runs,{35340 =>1,35355=>1,35348=>1,35356=>1}, '
 is_deeply(sort $majora->id_runs,[35340,35348,35355,35356], "id_runs with only update is set, are correct");
 
 #JSON returned when no folder name is found
-#{"errors": 0, "warnings": 1, "messages": [], "tasks": [], "new": [],"updated": [], "ignored": ['2021FolderNameNotFound'],"request": "1a89b394-d0a4-48c9-84ed-0060fb425f5c", "get": {}, "success": true});
 my $mock_json_response = qq({"errors": 0, "warnings": 1, "messages": [], "tasks": [], "new": [],"updated": [], "ignored": ["2021FolderNameNotFound"],"request": "1a89b394-d0a4-48c9-84ed-0060fb425f5c", "get": {}, "success": true});
 
-#setting Mock response content
-$Mock_resp->mock(content => sub {$mock_json_response});
-$Mock_resp->mock(decoded_content =>sub {$mock_json_response});
-$Mock_resp->mock( code=> sub { 200 } );
-
+#setting Mock request and response
+$Mock_request->mock( as_string    => sub { return q();} );
+$Mock_resp->mock( content         => sub {$mock_json_response});
+$Mock_resp->mock( decoded_content => sub {$mock_json_response});
+$Mock_resp->mock( code            => sub { 200 } );
+$Mock_resp->mock( is_error        => sub { return; } );
 $init = {
   _npg_tracking_schema    => $npg_tracking_schema,
   _mlwh_schema            => $schema_for_fn,
@@ -294,9 +294,8 @@ $init = {
 $majora = npg_pipeline::product::heron::majora->new($init);
 
 #majora update --dummy response
-$Mock_resp->mock(content => sub {});
-#$Mock_resp->mock(decoded_content =>sub {});
-$Mock_resp->mock( code=> sub { 200 } );
+$Mock_resp->mock( content  => sub {});
+$Mock_resp->mock( code     => sub { 200 } );
 $Mock_resp->mock( is_error => sub { return; } );
 
 #updating Majora data for id_run (35340)

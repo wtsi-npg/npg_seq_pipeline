@@ -53,7 +53,7 @@ subtest 'object with no function order set - simple methods' => sub {
 };
 
 subtest 'graph creation from jgf files' => sub {
-  plan tests => 3;
+  plan tests => 2;
 
   my $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
@@ -62,14 +62,6 @@ subtest 'graph creation from jgf files' => sub {
   );
   lives_ok {$obj->function_graph()}
    'no error creating a graph for default analysis';
-
-  $obj = npg_pipeline::pluggable->new(
-    id_run         => 1234,
-    runfolder_path => $test_dir,
-    function_list  => "$config_dir/function_list_central_qc_run.json"
-  );
-  lives_ok {  $obj->function_graph() }
-    'no error creating a graph for analysis of a qc run';
 
   $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
