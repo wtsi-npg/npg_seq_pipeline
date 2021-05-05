@@ -614,7 +614,7 @@
                     "description": "Use GATK Haplotype_caller on products",
                     "resources": {
                         "default": {
-                            "fs_num_slots": 2,
+                            "fs_slots_num": 2,
                             "memory": 8,
                             "minimum_cpu": 4
                         }
@@ -625,8 +625,12 @@
                 "id": "merge_recompress",
                 "label": "merge_recompress",
                 "metadata": {
-                    "description": "",
-                    "resources": {}
+                    "description": "Chunk VCF files with bcftools and rebuild indexes",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 2
+                        }
+                    }
                 }
             },
             {

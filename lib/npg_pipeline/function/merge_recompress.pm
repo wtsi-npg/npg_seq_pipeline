@@ -18,12 +18,6 @@ Readonly::Scalar my $FUNCTION_NAME => 'merge_recompress';
 Readonly::Scalar my $BCFTOOLS_TOOL_NAME => 'concat';
 Readonly::Scalar my $BCFTOOLS_INDEX_NAME => 'tabix';
 
-Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
-Readonly::Scalar my $MEMORY                       => q{2000}; # memory in megabytes
-Readonly::Scalar my $CPUS                         => 1;
-Readonly::Scalar my $NUM_HOSTS                    => 1;
-
-
 our $VERSION = '0';
 
 =head2 bcftools_cmd
@@ -73,26 +67,19 @@ sub create {
 
     $self->debug("Adding command '$command'");
 
-    push @definitions,
-      npg_pipeline::function::definition->new
-        ('created_by'   => __PACKAGE__,
-         'created_on'   => $self->timestamp(),
-         'identifier'   => $label,
-         'job_name'     => $job_name,
-         'command'      => $command,
-         'fs_slots_num' => $FS_NUM_SLOTS,
-         'num_hosts'    => $NUM_HOSTS,
-         'num_cpus'     => [$CPUS],
-         'memory'       => $MEMORY,
-         'composition'  => $unchunked_product->composition());
+    push @definitions, $self->create_definition({
+      'identifier'   => $label,
+      'job_name'     => $job_name,
+      'command'      => $command,
+      'composition'  => $unchunked_product->composition()
+    });
   }
 
   if (not @definitions) {
-    push @definitions, npg_pipeline::function::definition->new
-      ('created_by' => __PACKAGE__,
-       'created_on' => $self->timestamp(),
-       'identifier' => $label,
-       'excluded'   => 1);
+    push @definitions, $self->create_definition({
+      'identifier' => $label,
+      'excluded'   => 1
+    });
   }
 
   return \@definitions;

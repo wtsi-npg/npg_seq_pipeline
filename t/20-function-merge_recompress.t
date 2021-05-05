@@ -44,7 +44,11 @@ my %common_args = (
   archive_path        => $archive_path,
   runfolder_path      => $runfolder_path,
   id_run              => 26291,
-  default_defaults => {}
+  default_defaults    => {
+    minimum_cpu => 1,
+    memory => 2,
+    fs_slots_num => 2
+  }
 );
 
 subtest 'no_haplotype_caller flag' => sub {
@@ -77,7 +81,7 @@ subtest 'no_haplotype_caller flag unset' => sub {
 };
 
 subtest 'run merge_recompress' => sub {
-  plan tests => 18;
+  plan tests => 17;
 
   my $mr = npg_pipeline::function::merge_recompress->new(
     %common_args,
@@ -111,7 +115,6 @@ subtest 'run merge_recompress' => sub {
   is ($d->command_preexec, undef);
   is ($d->queue, 'default', 'default queue');
   is_deeply ($d->num_cpus, [1], 'range of cpu numbers');
-  is ($d->num_hosts, 1, 'one host');
   is ($d->fs_slots_num, 2, 'two sf slots');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 };
