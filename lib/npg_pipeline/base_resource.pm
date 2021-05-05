@@ -141,11 +141,19 @@ sub _get_massaged_resources {
   }
   my @num_cpus = ($resources->{minimum_cpu});
   if (exists $resources->{maximum_cpu}) {
-    push @num_cpus, $resources->maximum_cpu;
+    push @num_cpus, $resources->{maximum_cpu};
   }
   delete $resources->{minimum_cpu};
   delete $resources->{maximum_cpu};
   $resources->{num_cpus} = \@num_cpus;
+
+  # Ensure any and all multithreading automatically is constrained to a
+  # single host
+  if ($num_cpus[-1] > 1) {
+    $resources->{num_hosts} = 1;
+  }
+
+
   return $resources;
 }
 

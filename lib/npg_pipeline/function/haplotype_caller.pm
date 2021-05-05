@@ -19,13 +19,6 @@ Readonly::Scalar my $FUNCTION_NAME   => 'haplotype_caller';
 Readonly::Scalar my $GATK_TOOL_NAME  => 'HaplotypeCaller';
 Readonly::Scalar my $GATK_BQSR_TOOL_NAME  => 'ApplyBQSR';
 
-
-Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
-Readonly::Scalar my $MEMORY                       => q{8000}; # memory in megabytes
-Readonly::Scalar my $CPUS                         => 4;
-Readonly::Scalar my $NUM_HOSTS                    => 1;
-
-
 our $VERSION = '0';
 
 =head2 gatk_cmd
@@ -122,19 +115,13 @@ sub create {
 
       $self->debug("Adding command '$command'");
 
-      push @definitions,
-        npg_pipeline::function::definition->new
-          ('created_by'   => __PACKAGE__,
-           'created_on'   => $self->timestamp(),
-           'identifier'   => $self->label,
-           'job_name'     => $job_name,
-           'command'      => $command,
-           'fs_slots_num' => $FS_NUM_SLOTS,
-           'num_hosts'    => $NUM_HOSTS,
-           'num_cpus'     => [$CPUS],
-           'memory'       => $MEMORY,
-           'composition'  => $product->composition(),
-           'chunk'        => $product->chunk);
+      push @definitions, $self->create_definition({
+        'identifier'   => $self->label,
+        'job_name'     => $job_name,
+        'command'      => $command,
+        'composition'  => $product->composition(),
+        'chunk'        => $product->chunk
+      });
     }
   }
 
@@ -142,11 +129,10 @@ sub create {
     my @errors = npg_pipeline::runfolder_scaffold->make_dir(@out_dirs);
     @errors and $self->logcroak(join qq[\n], @errors);
   } else {
-    push @definitions, npg_pipeline::function::definition->new
-      ('created_by' => __PACKAGE__,
-       'created_on' => $self->timestamp(),
-       'identifier' => $self->label,
-       'excluded'   => 1);
+    push @definitions, $self->create_definition({
+      'identifier' => $self->label,
+      'excluded'   => 1
+    });
   }
 
   return \@definitions;
