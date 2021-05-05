@@ -15,8 +15,16 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 
 use_ok('npg_pipeline::function::log_files_archiver');
 
+my $defaults = {
+  minimum_cpu => 1,
+  memory => 2,
+  reserve_irods_slots => 1,
+  queue => 'lowload',
+  fs_slots_num => 1
+};
+
 subtest 'MiSeq run' => sub {
-  plan tests => 32;
+  plan tests => 30;
 
   my $id_run  = 16850;
   my $rf_name = '150710_MS2_16850_A_MS3014507-500V2';
@@ -40,7 +48,7 @@ subtest 'MiSeq run' => sub {
     runfolder_path    => $rfpath,
     id_run            => $id_run,
     timestamp         => q{20181204},
-    default_defaults => {}
+    default_defaults  => $defaults
   );
   isa_ok ($a , q{npg_pipeline::function::log_files_archiver});
 
@@ -61,8 +69,6 @@ subtest 'MiSeq run' => sub {
     'command is correct');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->has_num_cpus, 'number of cpus is not set');
-  ok (!$d->has_memory,'memory is not set');
   is ($d->queue, 'lowload', 'queue');
   is ($d->fs_slots_num, 1, 'one fs slot is set');
   ok ($d->reserve_irods_slots, 'iRODS slots to be reserved');
@@ -74,7 +80,7 @@ subtest 'MiSeq run' => sub {
     id_run            => $id_run,
     timestamp         => q{20181204},
     no_irods_archival => 1,
-    default_defaults => {}
+    default_defaults  => $defaults
   );
 
   ok ($a->no_irods_archival, q{archival switched off});
@@ -94,7 +100,7 @@ subtest 'MiSeq run' => sub {
     id_run            => $id_run,
     timestamp         => q{20181204},
     local             => 1,
-    default_defaults => {}
+    default_defaults  => $defaults
   );
   ok ($a->no_irods_archival, q{archival switched off});
   $da = $a->create();
@@ -119,7 +125,7 @@ subtest 'NovaSeq run' => sub {
     run_folder        => $rf_name,
     runfolder_path    => $rfpath,
     id_run            => $id_run,
-    default_defaults => {}
+    default_defaults  => $defaults
   );
 
   my $da = $a->create();
@@ -139,7 +145,7 @@ subtest 'pipeline for a product' => sub {
     runfolder_path   => q{t/data/novaseq},
     label            => 'my_label',
     product_rpt_list => '123:4:5',
-    default_defaults => {}
+    default_defaults => $defaults
   );
   throws_ok { $a->create() }
     qr/Not implemented for individual products/,

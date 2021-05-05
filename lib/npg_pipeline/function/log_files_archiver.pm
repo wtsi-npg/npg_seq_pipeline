@@ -31,7 +31,7 @@ override 'create' => sub {
       q{--id_run},         $self->id_run();
   }
 
-  return [npg_pipeline::function::definition->new($ref)];
+  return [$self->create_definition($ref)];
 };
 
 override 'irods_destination_collection' => sub {

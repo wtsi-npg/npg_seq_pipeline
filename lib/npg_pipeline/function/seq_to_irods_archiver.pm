@@ -4,8 +4,6 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
-
 extends 'npg_pipeline::base_resource';
 with    qw{npg_pipeline::function::util
            npg_pipeline::runfolder_scaffold
@@ -46,14 +44,14 @@ sub create {
     foreach my $product (@{$self->products->{'data_products'}}) {
       if ($self->is_for_irods_release($product)) {
         my %dref = %{$ref};
-        $dref{'composition'}           = $product->composition;
+        $dref{'composition'} = $product->composition;
         $dref{'command'} = sprintf '%s --restart_file %s --collection %s --source_directory %s',
           $command,
           $self->restart_file_path($job_name_prefix, $product),
           $self->irods_product_destination_collection($run_collection, $product),
-	  $product->path($self->archive_path());
+          $product->path($self->archive_path());
         $self->assign_common_definition_attrs(\%dref, $job_name_prefix);
-        push @definitions, npg_pipeline::function::definition->new(\%dref);
+        push @definitions, $self->create_definition(\%dref);
       }
     }
 
@@ -63,7 +61,7 @@ sub create {
     }
   }
 
-  return @definitions ? \@definitions : [npg_pipeline::function::definition->new($ref)];
+  return @definitions ? \@definitions : [$self->create_definition($ref)];
 }
 
 sub basic_definition_init_hash {
@@ -74,9 +72,7 @@ sub basic_definition_init_hash {
   }
 
   my $ref = {
-    'created_by' => ref $self,
-    'created_on' => $self->timestamp(),
-    'identifier' => $self->label(),
+    identifier => $self->label()
   };
 
   if ($self->no_irods_archival) {
@@ -91,9 +87,6 @@ sub assign_common_definition_attrs {
   my ($self, $ref, $job_name_prefix) = @_;
 
   $ref->{'job_name'}  = join q{_}, $job_name_prefix, $self->timestamp();
-  $ref->{'fs_slots_num'} = 1;
-  $ref->{'reserve_irods_slots'} = 1;
-  $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
   $ref->{'command_preexec'} =
     qq{npg_pipeline_script_must_be_unique_runner -job_name="$job_name_prefix"};
 
