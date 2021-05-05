@@ -37,7 +37,7 @@ override 'create' => sub {
     $ref->{'command'} = $command;
   }
 
-  return [npg_pipeline::function::definition->new($ref)];
+  return [$self->create_definition($ref)];
 };
 
 __PACKAGE__->meta->make_immutable;
