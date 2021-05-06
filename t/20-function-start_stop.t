@@ -14,9 +14,11 @@ use_ok('npg_pipeline::function::start_stop');
 
 my %init = (
   runfolder_path => $runfolder_path,
-  default_defaults => {
-    memory => 2,
-    minimum_cpu => 1
+  resource => {
+    default => {
+      memory => 2,
+      minimum_cpu => 1
+    }
   }
 );
 
@@ -109,7 +111,6 @@ subtest 'wait4path function' => sub {
   $f = npg_pipeline::function::start_stop->new(
     label          => 'my_label',
     runfolder_path => $path,
-    default_defaults => {}
   );
   $ds = $f->pipeline_wait4path();
   $d = $ds->[0];

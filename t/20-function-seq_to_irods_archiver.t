@@ -27,11 +27,13 @@ Log::Log4perl->easy_init({level  => $INFO,
                           file   => join(q[/], $tmp_dir, 'logfile')});
 
 my $defaults = {
-  minimum_cpu => 1,
-  memory => 2,
-  reserve_irods_slots => 1,
-  queue => 'lowload',
-  fs_slots_num => 1
+  default => {
+    minimum_cpu => 1,
+    memory => 2,
+    reserve_irods_slots => 1,
+    queue => 'lowload',
+    fs_slots_num => 1
+  }
 };
 
 
@@ -68,7 +70,7 @@ subtest 'MiSeq run' => sub {
     conf_path        => $config_dir,
     id_run           => $id_run,
     timestamp        => q{20181204},
-    default_defaults => $defaults
+    resource         => $defaults
   );
   isa_ok($a, q{npg_pipeline::function::seq_to_irods_archiver}, q{object test});
   ok (!$a->no_irods_archival, 'no_irods_archival flag is unset');
@@ -111,7 +113,7 @@ subtest 'MiSeq run' => sub {
     conf_path        => $config_dir,
     id_run           => $id_run,
     timestamp        => q{20181204},
-    default_defaults => $defaults
+    resource         => $defaults
   );
 
   $da = $a->create();
@@ -145,7 +147,7 @@ subtest 'MiSeq run' => sub {
     id_run           => $id_run,
     timestamp        => q{20181204},
     is_indexed       => 0,
-    default_defaults => $defaults
+    resource         => $defaults
   );
   $da = $a->create();
   ok ($da && @{$da} == 1, 'an array with one definition is returned');
@@ -163,7 +165,7 @@ subtest 'MiSeq run' => sub {
     id_run            => $id_run,
     timestamp         => q{20181204},
     no_irods_archival => 1,
-    default_defaults  => $defaults
+    resource          => $defaults
   );
   ok ($a->no_irods_archival, 'no_irods_archival flag is set');
   $da = $a->create();
@@ -179,7 +181,7 @@ subtest 'MiSeq run' => sub {
     id_run         => $id_run,
     timestamp      => q{20181204},
     local          => 1,
-    default_defaults  => $defaults
+    resource          => $defaults
   );
   ok ($a->no_irods_archival, 'no_irods_archival flag is set');
   $da = $a->create();
@@ -194,7 +196,7 @@ subtest 'MiSeq run' => sub {
     id_run           => $id_run,
     timestamp        => q{20181204},
     id_flowcell_lims => q{1023456789111},
-    default_defaults  => $defaults
+    resource          => $defaults
   );
   $da = $a->create();
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
@@ -210,7 +212,7 @@ subtest 'MiSeq run' => sub {
     id_run           => $id_run,
     timestamp        => q{20181204},
     lims_driver_type => 'samplesheet',
-    default_defaults  => $defaults
+    resource          => $defaults
   );
   $da = $a->create();
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
@@ -241,7 +243,7 @@ subtest 'NovaSeq run' => sub {
     conf_path        => $config_dir,
     id_run           => $id_run,
     timestamp        => q{20181204},
-    default_defaults => $defaults
+    resource         => $defaults
   );
   my $da = $a->create();
   ok ($da && @{$da} == 1, 'an array with one definitions is returned');
@@ -256,7 +258,7 @@ subtest 'NovaSeq run' => sub {
     id_run           => $id_run,
     timestamp        => q{20181204},
     lanes            => [2],
-    default_defaults => $defaults
+    resource         => $defaults
   );
   $da = $a->create();
   ok ($da && @{$da} == 1, 'an array with one definition is returned');
@@ -273,7 +275,7 @@ subtest 'NovaSeq run' => sub {
     lanes            => [2],
     merge_lanes      => 0,
     is_indexed       => 0,
-    default_defaults => $defaults
+    resource         => $defaults
   );
   $da = $a->create();
   ok ($da && @{$da} == 1, 'an array with one definition is returned');

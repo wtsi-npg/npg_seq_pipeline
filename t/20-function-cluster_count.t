@@ -41,7 +41,6 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       is_indexed        => 0,
       bfs_fofp_name => q{},
       sf_fofp_name => q{},
-      default_defaults => {}
     );
   } q{obtain object ok};
 
@@ -96,7 +95,6 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       bfs_paths    => [ qq[$archive_path/lane1/qc] ],
       bfs_fofp_name => q{},
       sf_fofp_name => q{},
-      default_defaults => {}
     );
   } q{obtain object ok};
 
@@ -154,7 +152,6 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       sf_paths     => [ qq{$archive_path/lane1/qc} ],
       bfs_fofp_name => q{},
       sf_fofp_name => q{},
-      default_defaults => {}
     );
   } q{obtain object ok};
 

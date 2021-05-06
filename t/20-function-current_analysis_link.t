@@ -30,9 +30,11 @@ make_path($recalibrated_path);
       runfolder_path    => $runfolder_path,
       recalibrated_path => $recalibrated_path,
       no_summary_link   => 1,
-      default_defaults => {
-        minimum_cpu => 1,
-        memory => 1
+      resource => {
+        default => {
+          minimum_cpu => 1,
+          memory => 1
+        }
       }
   );
   $test->($rfl);
@@ -42,9 +44,11 @@ make_path($recalibrated_path);
       runfolder_path    => $runfolder_path,
       recalibrated_path => $recalibrated_path,
       local             => 1,
-      default_defaults => {
-        minimum_cpu => 1,
-        memory => 1
+      resource => {
+        default => {
+          minimum_cpu => 1,
+          memory => 1
+        }
       }
   );
   $test->($rfl);
@@ -53,9 +57,11 @@ make_path($recalibrated_path);
       run_folder        => q{123456_IL2_1234},
       runfolder_path    => $runfolder_path,
       recalibrated_path => $recalibrated_path,
-      default_defaults => {
-        minimum_cpu => 1,
-        memory => 1
+      resource => {
+        default => {
+          minimum_cpu => 1,
+          memory => 1
+        }
       }
   );
   my $ds = $rfl->create();
@@ -84,9 +90,11 @@ make_path($recalibrated_path);
       run_folder        => q{123456_IL2_1234},
       runfolder_path    => $runfolder_path,
       recalibrated_path => $recalibrated_path,
-      default_defaults => {
-        minimum_cpu => 1,
-        memory => 1
+      resource => {
+        default => {
+          minimum_cpu => 1,
+          memory => 1
+        }
       }
   );
 
@@ -105,7 +113,6 @@ make_path($recalibrated_path);
     run_folder        => q{123456_IL2_1234},
     runfolder_path    => $runfolder_path,
     recalibrated_path => $recalibrated_path,
-    default_defaults => {}
   );
   lives_ok { $rfl->make_link();} q{no croak creating link in outgoing when it already exists};
   ok(-l $link, 'link exists');

@@ -53,7 +53,6 @@ my $bam_generator = npg_pipeline::function::p4_stage1_analysis->new(
     id_run                        => 1234,
     _extra_tradis_transposon_read => 1,
     bam_basecall_path             => $util->standard_bam_basecall_path(),
-    default_defaults              => {}
 );
 
 mkdir join(q[/], $bam_generator->bam_basecall_path(), 'metadata_cache_1234')
@@ -193,7 +192,6 @@ $bam_generator = npg_pipeline::function::p4_stage1_analysis->new(
     id_run                        => 1234,
     bam_basecall_path             => $util->standard_bam_basecall_path(),
     p4s1_phix_alignment_method    => q{minimap2},
-    default_defaults              => {}
   );
 
 subtest 'check_save_arguments_minimap2' => sub {
@@ -329,7 +327,6 @@ subtest 'check_duplex-seq' => sub {
     verbose                       => 0,
     id_run                        => 36062,
     bam_basecall_path             => $bbp,
-    default_defaults              => {}
   );
 
   my $unique = $bam_generator->_job_id();

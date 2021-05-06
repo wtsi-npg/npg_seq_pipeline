@@ -81,9 +81,11 @@ my %init = (
   id_run                 => 26291,
   timestamp              => $timestamp,
   repository             => $dir,
-  default_defaults       => {
-    minimum_cpu => 1,
-    memory => 2
+  resource               => {
+    default => {
+      minimum_cpu => 1,
+      memory => 2
+    }
   }
 );
 

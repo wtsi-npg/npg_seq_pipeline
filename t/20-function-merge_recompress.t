@@ -44,10 +44,12 @@ my %common_args = (
   archive_path        => $archive_path,
   runfolder_path      => $runfolder_path,
   id_run              => 26291,
-  default_defaults    => {
-    minimum_cpu => 1,
-    memory => 2,
-    fs_slots_num => 2
+  resource            => {
+    default => {
+      minimum_cpu => 1,
+      memory => 2,
+      fs_slots_num => 2
+    }
   }
 );
 

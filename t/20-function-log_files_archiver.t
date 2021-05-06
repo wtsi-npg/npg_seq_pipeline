@@ -16,11 +16,13 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 use_ok('npg_pipeline::function::log_files_archiver');
 
 my $defaults = {
-  minimum_cpu => 1,
-  memory => 2,
-  reserve_irods_slots => 1,
-  queue => 'lowload',
-  fs_slots_num => 1
+  default => {
+    minimum_cpu => 1,
+    memory => 2,
+    reserve_irods_slots => 1,
+    queue => 'lowload',
+    fs_slots_num => 1
+  }
 };
 
 subtest 'MiSeq run' => sub {
@@ -48,7 +50,7 @@ subtest 'MiSeq run' => sub {
     runfolder_path    => $rfpath,
     id_run            => $id_run,
     timestamp         => q{20181204},
-    default_defaults  => $defaults
+    resource          => $defaults
   );
   isa_ok ($a , q{npg_pipeline::function::log_files_archiver});
 
@@ -80,7 +82,7 @@ subtest 'MiSeq run' => sub {
     id_run            => $id_run,
     timestamp         => q{20181204},
     no_irods_archival => 1,
-    default_defaults  => $defaults
+    resource          => $defaults
   );
 
   ok ($a->no_irods_archival, q{archival switched off});
@@ -100,7 +102,7 @@ subtest 'MiSeq run' => sub {
     id_run            => $id_run,
     timestamp         => q{20181204},
     local             => 1,
-    default_defaults  => $defaults
+    resource          => $defaults
   );
   ok ($a->no_irods_archival, q{archival switched off});
   $da = $a->create();
@@ -125,7 +127,7 @@ subtest 'NovaSeq run' => sub {
     run_folder        => $rf_name,
     runfolder_path    => $rfpath,
     id_run            => $id_run,
-    default_defaults  => $defaults
+    resource          => $defaults
   );
 
   my $da = $a->create();
@@ -145,7 +147,7 @@ subtest 'pipeline for a product' => sub {
     runfolder_path   => q{t/data/novaseq},
     label            => 'my_label',
     product_rpt_list => '123:4:5',
-    default_defaults => $defaults
+    resource         => $defaults
   );
   throws_ok { $a->create() }
     qr/Not implemented for individual products/,

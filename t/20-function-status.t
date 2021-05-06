@@ -19,7 +19,12 @@ my %init = (
   run_folder        => 'myfolder',
   runfolder_path    => $run_folder_path,
   bam_basecall_path => $run_folder_path,
-  default_defaults  => { memory => 2, minimum_cpu => 1 }
+  resource          => {
+    default => {
+      memory => 2,
+      minimum_cpu => 1
+    }
+  }
 );
 
 {
@@ -27,7 +32,6 @@ my %init = (
     npg_pipeline::function::status->new(
       id_run     => 1234,
       run_folder => 'myfolder',
-      default_defaults => {}
     );
   } qr/Attribute \(status\) is required/, q{error on missing status attribute};
 

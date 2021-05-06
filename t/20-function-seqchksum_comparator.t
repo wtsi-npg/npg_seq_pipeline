@@ -34,7 +34,6 @@ my %init = (
   bam_basecall_path => $bam_basecall_path,
   id_run            => 1234,
   is_indexed        => 0,
-  default_defaults  => {}
 );
 
 {

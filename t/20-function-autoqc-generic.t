@@ -61,7 +61,6 @@ subtest 'definition generation, artic spec' => sub {
     merge_lanes            => 0,
     spec                   => 'artic',
     portable_pipeline_name => 'ncov2019-artic-nf',
-    default_defaults => {}
   );
   my $ds = $ag->create;
   is (scalar @{$ds}, 2, '2 definitions are returned');
@@ -103,7 +102,6 @@ subtest 'step skipped' => sub {
     merge_lanes            => 0,
     spec                   => 'artic',
     portable_pipeline_name => 'ncov2019_artic_nf',
-    default_defaults => {}
   );
   my $ds = $ag->create;
   is (scalar @{$ds}, 1, 'one definition is returned');
@@ -119,7 +117,6 @@ subtest 'step skipped' => sub {
     merge_lanes            => 0,
     spec                   => 'artic',
     portable_pipeline_name => 'ncov2019_artic_nf',
-    default_defaults => {}
   );
   $ds = $ag->create;
   is (scalar @{$ds}, 1, 'one definition is returned');
@@ -134,7 +131,6 @@ subtest 'step skipped' => sub {
     merge_lanes            => 0,
     spec                   => 'artic',
     portable_pipeline_name => 'ncov2019_artic_nf',
-    default_defaults => {}
   );
 
   $ag = npg_pipeline::function::autoqc::generic->new(
@@ -146,7 +142,6 @@ subtest 'step skipped' => sub {
     merge_lanes            => 0,
     spec                   => 'artic',
     portable_pipeline_name => 'ncov2019_artic_nf',
-    default_defaults => {}
   );
   $ds = $ag->create;
   is (scalar @{$ds}, 1, 'one definition is returned');
@@ -167,7 +162,6 @@ subtest 'definition generation, ampliconstats spec' => sub {
     timestamp              => $timestamp,
     spec                   => 'ampliconstats',
     portable_pipeline_name => 'ncov2019-artic-nf ampliconstats',
-    default_defaults => {}
   );
   my $ds = $ag->create;
   is (scalar @{$ds}, 2, 'two definitions are returned');

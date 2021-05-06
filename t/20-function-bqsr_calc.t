@@ -65,7 +65,6 @@ subtest 'no config' => sub {
     runfolder_path      => $runfolder_path,
     id_run              => 26291,
     timestamp           => $timestamp,
-    default_defaults    => {}
   );
   my $ds = $hc->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
@@ -83,7 +82,6 @@ subtest 'bqsr study specific defaulted on' => sub {
     id_run              => 26291,
     timestamp           => $timestamp,
     repository          => $dir,
-    default_defaults    => {}
   );
   my $ds = $hc->create;
   is(scalar @{$ds}, 12, '12 definitions are returned');
@@ -104,7 +102,6 @@ subtest 'create function definitions' => sub {
     timestamp         => $timestamp,
     verbose           => 0,
     repository        => $dir,
-    default_defaults => {}
   )
   } 'no error creating an object';
 
@@ -144,7 +141,6 @@ subtest 'rep repos root from env' => sub {
     id_run            => 26291,
     timestamp         => $timestamp,
     verbose           => 0,
-    default_defaults => {}
   );
   my $da = $bqsr_gen->create();
   is ($da->[3]->command, $command, 'correct command for tag 4');

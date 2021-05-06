@@ -468,7 +468,7 @@
                 "label": "qc_sequence_error",
                 "metadata": {
                     "description": "Align forward and reverse random reads to identify common error patterns",
-                    "resource": {}
+                    "resources": {}
                 }
             },
             {
@@ -476,7 +476,7 @@
                 "label": "qc_gc_fraction",
                 "metadata": {
                     "description": "Calculate GC ratio in sequence",
-                    "resource": {}
+                    "resources": {}
                 }
             },
             {

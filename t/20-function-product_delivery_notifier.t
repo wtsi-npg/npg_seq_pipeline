@@ -62,7 +62,6 @@ my %init = (
   runfolder_path   => $runfolder_path,
   id_run           => $id_run,
   timestamp        => $timestamp,
-  default_defaults => {},
   qc_schema        => $qc
 );
 

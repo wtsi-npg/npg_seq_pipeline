@@ -52,7 +52,6 @@ subtest 'local and no_cache_merge_component' => sub {
      timestamp      => $timestamp,
      qc_schema      => $qc,
      local          => 1,
-     default_defaults => {}
     );
   ok($cacher->no_cache_merge_component, 'no_cache_merge_component flag is set to true');
   my $ds = $cacher->create;
@@ -67,7 +66,7 @@ subtest 'local and no_cache_merge_component' => sub {
      timestamp      => $timestamp,
      qc_schema      => $qc,
      no_cache_merge_component => 1,
-     default_defaults => {});
+    );
   ok(!$cacher->local, 'local flag is false');
   $ds = $cacher->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
@@ -87,7 +86,7 @@ subtest 'create' => sub {
        id_run         => 26291,
        timestamp      => $timestamp,
        qc_schema      => $qc,
-       default_defaults => {});
+      );
   } 'cacher created ok';
 
   throws_ok {$cacher->create}
@@ -152,7 +151,7 @@ subtest 'abort_on_missing_files' => sub {
        id_run         => 26291,
        timestamp      => $timestamp,
        qc_schema      => $qc,
-       default_defaults => {});
+      );
   } 'cacher created ok';
 
   my $to_move = "$runfolder_path/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex12/26291#12.cram";
@@ -178,7 +177,7 @@ subtest 'abort_on_missing_lib_qc' => sub {
        id_run         => 26291,
        timestamp      => $timestamp,
        qc_schema      => $qc,
-       default_defaults => {});
+      );
   } 'cacher created ok';
 
   dies_ok {
@@ -195,7 +194,7 @@ subtest 'no_cache_study' => sub {
      id_run         => 26291,
      timestamp      => $timestamp,
      qc_schema      => $qc,
-     default_defaults => {});
+    );
 
   my @defs = @{$cacher->create};
   my $num_defs_observed = scalar @defs;
@@ -220,7 +219,7 @@ subtest 'create_with_failed_lane' => sub {
        id_run         => 26291,
        timestamp      => $timestamp,
        qc_schema      => $qc,
-       default_defaults => {});
+      );
   } 'cacher created ok';
 
   my @defs = @{$cacher->create};
@@ -243,7 +242,7 @@ subtest 'abort_on_missing_seq_qc' => sub {
        id_run         => 26291,
        timestamp      => $timestamp,
        qc_schema      => $qc,
-       default_defaults => {});
+      );
   } 'cacher created ok';
 
   dies_ok {

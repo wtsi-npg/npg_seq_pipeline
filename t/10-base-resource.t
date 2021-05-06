@@ -8,11 +8,9 @@ use_ok(q{npg_pipeline::base_resource});
 subtest 'basics' => sub {
   plan tests => 4;
   my $function = npg_pipeline::base_resource->new(
-    default_defaults => {
-      minimum_cpu => 1
-    },
     resource => {
       default => {
+        minimum_cpu => 1,
         memory => 10
       }
     }
@@ -29,12 +27,10 @@ subtest 'basics' => sub {
   );
 
   $function = npg_pipeline::base_resource->new(
-    default_defaults => {
-      minimum_cpu => 1
-    },
     resource => {
       default => {
         memory => 3,
+        minimum_cpu => 1,
         maximum_cpu => 2
       },
       special => {
@@ -74,9 +70,11 @@ subtest 'Definition creation' => sub {
   plan tests => 6;
 
   my $function = npg_pipeline::base_resource->new(
-    default_defaults => {
-      minimum_cpu => 1,
-      memory => 2
+    resource => {
+      default => {
+        minimum_cpu => 1,
+        memory => 2
+      }
     }
   );
   my $definition = $function->create_definition({
@@ -105,10 +103,12 @@ subtest 'Multithread definition creation' => sub {
   plan tests => 2;
 
   my $function = npg_pipeline::base_resource->new(
-    default_defaults => {
-      minimum_cpu => 2,
-      maximum_cpu => 4,
-      memory => 2
+    resource => {
+      default =>{
+        minimum_cpu => 2,
+        maximum_cpu => 4,
+        memory => 2
+      }
     }
   );
 
@@ -119,5 +119,5 @@ subtest 'Multithread definition creation' => sub {
   });
 
   is_deeply($definition->num_cpus, [2,4], 'Multithread cpu resources');
-  cmp_ok($definition->num_hosts, '==', 1, 'Single host encouraged');
+  cmp_ok($definition->num_hosts, '==', 1, 'Single host encouraged automatically');
 };

@@ -85,7 +85,6 @@ subtest 'archiver is not configured: function skipped and an empty manifest gene
     repository             => $dir,
     qc_schema              => undef,
     _manifest_path         => $mpath,
-    default_defaults       => {}
   };
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
@@ -119,7 +118,6 @@ subtest 'manifest path and using a pre-set path' => sub {
     timestamp              => $timestamp,
     repository             => $dir,
     qc_schema              => undef,
-    default_defaults       => {}
   };
 
   my $f = npg_pipeline::function::pp_archiver->new($init);
@@ -171,7 +169,6 @@ subtest 'product config for pp archival validation' => sub {
     timestamp              => $timestamp,
     repository             => $dir,
     qc_schema              => undef,
-    default_defaults       => {}
   );
   throws_ok { $f->create }
     qr/Multiple external archives are not supported/,
@@ -186,7 +183,6 @@ subtest 'product config for pp archival validation' => sub {
     timestamp              => $timestamp,
     repository             => $dir,
     qc_schema              => undef,
-    default_defaults       => {}
   );
   throws_ok { $f->_pipeline_config }
     qr/pp_staging_root is not defined/,
@@ -205,7 +201,6 @@ subtest 'product config for pp archival validation' => sub {
     timestamp              => $timestamp,
     repository             => $dir,
     qc_schema              => undef,
-    default_defaults       => {}
   );
   throws_ok { $f->_pipeline_config }
     qr/$staging does not exist or is not a directory/,
@@ -229,7 +224,6 @@ subtest 'definition and manifest generation' => sub {
     timestamp              => $timestamp,
     repository             => $dir,
     qc_schema              => undef,
-    default_defaults       => {}
   };
 
   my $f = npg_pipeline::function::pp_archiver->new($init);
@@ -441,7 +435,6 @@ subtest 'skip sample with consent withdrawn' => sub {
     repository             => $dir,
     qc_schema              => $schema,
     merge_lanes            => 0,
-    default_defaults       => {}
   };
 
   my $f = npg_pipeline::function::pp_archiver->new($init);
@@ -488,7 +481,6 @@ subtest 'error on unset sample supplier name' => sub {
     repository             => $dir,
     qc_schema              => $schema,
     merge_lanes            => 0,
-    default_defaults       => {}
   };
   throws_ok { npg_pipeline::function::pp_archiver->new($init)->create() }
     qr/Supplier sample name is not set/,
@@ -513,7 +505,6 @@ subtest 'samples from different studies' => sub {
     repository             => $dir,
     qc_schema              => $schema,
     merge_lanes            => 0,
-    default_defaults       => {}
   };
 
   my $f = npg_pipeline::function::pp_archiver->new($init);
@@ -546,7 +537,6 @@ subtest 'skip unknown pipeline' => sub {
     timestamp              => $timestamp,
     repository             => $dir,
     qc_schema              => undef,
-    default_defaults       => {}
   );
 
   my $ds = $f->create();

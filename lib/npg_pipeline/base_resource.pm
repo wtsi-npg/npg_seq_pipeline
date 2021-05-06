@@ -28,14 +28,6 @@ set of properties for a Portable Pipeline
 =head1 SUBROUTINES/METHODS
 =cut
 
-has default_defaults => (
-  isa => 'HashRef',
-  is => 'ro',
-  required => 1,
-  documentation => 'Basic resources that all jobs might need',
-  metaclass  => 'NoGetopt',
-);
-
 =head2 resource
 
 HashRef of resource requests for the function, e.g.
@@ -82,7 +74,6 @@ sub get_resources {
     );
   }
   return {
-    %{$self->default_defaults},
     (exists $self->resource->{default}) ? %{$self->resource->{default}} : (),
     (defined $special) ? %{$self->resource->{$special}} : ()
   }

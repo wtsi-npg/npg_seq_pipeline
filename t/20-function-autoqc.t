@@ -54,7 +54,7 @@ subtest 'errors' => sub {
   throws_ok { npg_pipeline::function::autoqc->new(
       id_run     => 14353,
       qc_to_run  => 'some_check',
-      default_defaults => {})->create();
+    )->create();
   } qr/Can\'t locate npg_qc\/autoqc\/checks\/some_check\.pm/,
     'non-existing check name - error';
 };
@@ -72,7 +72,6 @@ subtest 'adapter' => sub {
       qc_to_run         => q{adapter},
       timestamp         => q{20090709-123456},
       is_indexed        => 0,
-      default_defaults => {}
     );
   } q{no croak on new, as required params provided};
 
@@ -119,7 +118,6 @@ subtest 'adapter' => sub {
     lanes             => [1],
     timestamp         => q{20090709-123456},
     is_indexed        => 1,
-    default_defaults => {}
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 4), 'five definitions returned - plexes only');
@@ -138,7 +136,6 @@ subtest 'spatial_filter' => sub {
     qc_to_run         => q{spatial_filter},
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
-    default_defaults => {}
   );
 
   my $da = $aqc->create();
@@ -162,7 +159,6 @@ subtest 'spatial_filter' => sub {
     lanes             => [(1 .. 6)],
     timestamp         => q{20090709-123456},
     is_indexed        => 1,
-    default_defaults => {}
   );
 
   my %expected_tags = (
@@ -197,7 +193,6 @@ subtest 'qX_yield' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
     is_paired_read    => 1,
-    default_defaults => {}
   );
   my $da = $aqc->create();
   ok ($da && (@{$da} == 8), 'eight definitions returned');
@@ -230,7 +225,6 @@ subtest 'qX_yield' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
     is_paired_read    => 0,
-    default_defaults => {}
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
@@ -247,7 +241,6 @@ subtest 'qX_yield' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 1,
     is_paired_read    => 1,
-    default_defaults => {}
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned - lane is not a pool');
@@ -265,7 +258,6 @@ subtest 'qX_yield' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 1,
     is_paired_read    => 0,
-    default_defaults => {}
   );
 
   $da = $aqc->create();
@@ -298,7 +290,6 @@ subtest 'ref_match' => sub {
     repository        => 't/data/sequence',
     is_indexed        => 1,
     is_paired_read    => 1,
-    default_defaults => {}
   );
   my $da = $aqc->create();
   ok ($da && (@{$da} == 3), 'three definitions returned - lane is a pool');
@@ -345,7 +336,6 @@ subtest 'insert_size and sequence error' => sub {
     timestamp         => q{20090709-123456},
     repository        => 't/data/sequence',
     is_indexed        => 1,
-    default_defaults => {}
   );
 
   my $da = $aqc->create();
@@ -361,7 +351,6 @@ subtest 'insert_size and sequence error' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
     repository        => 't/data/sequence',
-    default_defaults => {}
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
@@ -375,7 +364,6 @@ subtest 'insert_size and sequence error' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
     repository        => 't/data/sequence',
-    default_defaults => {}
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
@@ -396,7 +384,6 @@ subtest 'tag_metrics' => sub {
       lanes             => [1],
       runfolder_path    => $rf_path,
       timestamp         => q{20090709-123456},
-      default_defaults => {}
     );
   } q{no croak on new, as required params provided};
 
@@ -432,7 +419,6 @@ subtest 'tag_metrics' => sub {
       runfolder_path => $rf_path,
       qc_to_run      => 'tag_metrics',
       is_indexed     => 0,
-      default_defaults => {}
     );
   } q{no croak on new, as required params provided};
 
@@ -471,7 +457,6 @@ subtest 'genotype and gc_fraction and bcfstats' => sub {
     is_indexed        => 1,
     repository        => 't',
     qc_to_run         => q[genotype],
-    default_defaults => {}
   };
 
   my $qc = npg_pipeline::function::autoqc->new($init);
@@ -556,7 +541,10 @@ subtest 'memory_requirements' => sub {
       id_run            => 1234,
       runfolder_path    => $rf_path,
       qc_to_run         => $name,
-      default_defaults  => { memory => 2 }
+      resource          => {
+        minimum_cpu => 1,
+        memory => 2
+      }
     )->_create_definition_object($p, 'qc');
     ok ($d->has_memory, "memory is set for $name");
     is ($d->memory, $mem_req, "memory is set correctly for $name");
@@ -575,7 +563,6 @@ subtest 'review' => sub {
     runfolder_path    => $rf_path,
     timestamp         => q{today},
     conf_path         => q{t/data/release/config/archive_on},
-    default_defaults => {}
   );
   my $da = $qc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
@@ -588,7 +575,6 @@ subtest 'review' => sub {
     runfolder_path    => $rf_path,
     timestamp         => q{today},
     conf_path         => q{t/data/release/config/qc_review},
-    default_defaults => {}
   );
 
   $da = $qc->create();
@@ -628,7 +614,6 @@ subtest 'interop' => sub {
     runfolder_path    => $rf_path,
     timestamp         => q{today},
     conf_path         => q{t/data/release/config/archive_on},
-    default_defaults => {}
   );
   my $da = $qc->create();
   ok ($da && (@{$da} == 1), 'one interop definition returned');

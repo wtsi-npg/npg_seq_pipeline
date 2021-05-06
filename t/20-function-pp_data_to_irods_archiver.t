@@ -21,7 +21,6 @@ my %init = (
   conf_path => 't/data/release/config/pp_archival',
   id_run => 34576,
   runfolder_path => $runfolder_path,
-  default_defaults => {}
 );
 
 
