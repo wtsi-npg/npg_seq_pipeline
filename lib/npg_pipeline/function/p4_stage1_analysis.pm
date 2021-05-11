@@ -460,7 +460,7 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
 
   $p4_params{split_threads_val} = $self->general_values_conf()->{'p4_stage1_split_threads_count'} || $DEFAULT_SPLIT_THREADS_COUNT;
 
-  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->_num_cpus->[0];
+  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->get_resources->{minimum_cpu};
   my $name_root = $id_run . q{_} . $position;
   # allow specification of thread number for some processes in config file. Note: these threads are being drawn from the same pool. Unless
   #  they appear in the config file, their values will be derived from what LSF assigns the job based on the -n value supplied to the bsub
