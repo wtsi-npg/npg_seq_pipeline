@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 17;
+use Test::More tests => 18;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -1496,6 +1496,116 @@ subtest 'BWA MEM 2 test' => sub {
   my $l = st::api::lims->new(id_run => 24135, position => 1, tag_index => 2);
   my $analysis = $ms_gen->_analysis($l->reference_genome, '24135:1:2');
   ok ($analysis eq "bwa_mem2", 'run 24135 lane 1 tag 2 Analysis is BWA MEM 2');
+};
+
+# test that bwa mem flags are added when HiC libraries are detected
+subtest 'HiC_flags' => sub {
+  plan tests => 5;
+
+  my $runfolder = q{210415_A00971_0162_AHNNTMDSXY};
+  my $runfolder_path = join q[/], $dir, $runfolder;
+  my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20210417-080715/no_cal';
+  `mkdir -p $bc_path/lane1`;
+
+  copy('t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/37416_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/37416_RunParameters.xml', "$runfolder_path/RunParameters.xml") or die 'Copy failed';
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/samplesheet_37416.csv];
+
+  my $HiC_flags_gen;
+  lives_ok {
+    $HiC_flags_gen = npg_pipeline::function::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2021},
+      repository        => $dir,
+      verbose           => 1,
+      conf_path         => 't/data/release/config/seq_alignment',
+    )
+  } 'no error creating an object';
+
+  is ($HiC_flags_gen->id_run, 37416, 'id_run inferred correctly');
+  make_path "$bc_path/archive/tileviz";
+  apply_all_roles($HiC_flags_gen, 'npg_pipeline::runfolder_scaffold');
+  $HiC_flags_gen->create_product_level();
+
+  my $da = $HiC_flags_gen->generate('analysis_pipeline');
+
+  my $qc_in  = qq{$bc_path/archive/lane2/plex1};
+  my $qc_out = qq{$qc_in/qc};
+  my $unique_string = $HiC_flags_gen->_job_id();
+  my $tmp_dir = qq{$bc_path/archive/tmp_} . $unique_string;
+  my $plex_temp_dir = $tmp_dir . q{/37416_2#1};
+
+  my $command = qq{bash -c ' mkdir -p $plex_temp_dir ; cd $plex_temp_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/37416_2#1_p4s2_pv_in.json -export_param_vals 37416_2#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_37416_2#1.json && viv.pl -s -x -v 3 -o viv_37416_2#1.log run_37416_2#1.json } .
+    qq{ && qc --check bam_flagstats --filename_root 37416_2#1 --qc_in $qc_in --qc_out $qc_out --rpt_list "37416:2:1" --input_files $dir/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/no_cal/archive/lane2/plex1/37416_2#1.cram} .
+    qq{ && qc --check bam_flagstats --filename_root 37416_2#1_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "37416:2:1" --subset phix --input_files $dir/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/no_cal/archive/lane2/plex1/37416_2#1.cram --skip_markdups_metrics} .
+     q{ && qc --check alignment_filter_metrics --filename_root 37416_2#1 --qc_in $PWD --qc_out } .$qc_out.q{ --rpt_list "37416:2:1" --input_files 37416_2#1_bam_alignment_filter_metrics.json}.
+     q{ '};
+
+  my $d = _find($da, 2, 1);
+
+  is ($d->command, $command, 'command for run 37416 lane 2 tag 1');
+
+  ## check json file for lane 2 tag 1
+  my $json_file = qq{$bc_path/37416_2#1_p4s2_pv_in.json};
+  ok (-e $json_file, 'json params file exists for run 37416 lane 2 tag 1');
+  my $h = from_json(slurp($json_file));
+
+  my $bbd = $dir . q[/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715];
+  my $expected = {
+    'assign' => [
+      {
+        'spatial_filter_file' => 'DUMMY',
+        'recal_dir' => join(q[/], $bbd, 'no_cal'),
+        'reference_genome_fasta' => join(q[/], $dir, 'references/Mus_musculus/GRCm38/all/fasta/Mus_musculus.GRCm38.68.dna.toplevel.fa'),
+        'spatial_filter_rg_value' => '37416_2#1',
+        'run_lane_ss_fq1' => join(q[/], $bbd, 'no_cal/archive/lane2/plex1/.npg_cache_10000/37416_2#1_1.fastq'),
+        'alignment_reference_genome' => join(q[/], $dir, 'references/Mus_musculus/GRCm38/all/bwa0_6/Mus_musculus.GRCm38.68.dna.toplevel.fa'),
+        's2_id_run' => 37416,
+        's2_filter_files' => join(q[/], $bbd, 'no_cal/37416_2.spatial_filter'),
+        'af_metrics' => '37416_2#1_bam_alignment_filter_metrics.json',
+        'bwa_executable' => 'bwa0_6',
+        'markdup_method' => 'biobambam',
+        's2_se_pe' => 'pe',
+        'rpt' => '37416_2#1',
+        's2_tag_index' => 1,
+        'markdup_optical_distance_value' => '2500',
+        'alignment_method' => 'bwa_mem',
+        'phix_reference_genome_fasta' => join(q[/], $dir, 'references/PhiX/Illumina/all/fasta/phix-illumina.fa'),
+        'seqchksum_orig_file' => join(q[/], $bbd, 'no_cal/archive/lane2/plex1/37416_2#1.orig.seqchksum'),
+        'subsetsubpath' => '.npg_cache_10000/',
+        's2_input_format' => 'cram',
+        's2_position' => 'POSITION',
+        'incrams' => [
+          join(q[/], $bbd, 'no_cal/37416_2#1.cram')
+        ],
+        'reference_dict' => join(q[/], $dir, 'references/Mus_musculus/GRCm38/all/picard/Mus_musculus.GRCm38.68.dna.toplevel.fa.dict'),
+        'outdatadir' => join(q[/], $bbd, 'no_cal/archive/lane2/plex1'),
+        'run_lane_ss_fq2' => join(q[/], $bbd, 'no_cal/archive/lane2/plex1/.npg_cache_10000/37416_2#1_2.fastq'),
+        'tag_metrics_files' => join(q[/], $bbd, 'no_cal/archive/lane2/qc/37416_2.tag_metrics.json'),
+        'samtools_executable' => 'samtools',
+        'is_HiC_lib' => 1,
+        'bwa_mem_5_flag' => 'on',
+        'bwa_mem_S_flag' => 'on',
+        'bwa_mem_P_flag' => 'on',
+        'bwa_mem_B_value' => '5',
+      },
+    ],
+    'ops' => {
+      'prune' => [
+        'fop.*_bmd_multiway:calibration_pu-',
+        'fop.*samtools_stats_F0.*_target.*-',
+        'fop.*samtools_stats_F0.*00_bait.*-'
+      ],
+      'splice' => []
+    },
+    'assign_local' => {}
+  };
+
+  is_deeply($h, $expected, 'correct json file content for run 37416 lane 2 tag 1 p4 parameters');
+
 };
 
 1;
