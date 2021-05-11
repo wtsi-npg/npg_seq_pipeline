@@ -32,10 +32,12 @@ set of properties for a Portable Pipeline
 
 HashRef of resource requests for the function, e.g.
 {
-  minimum_cpu => 4,
-  maximum_cpu => 8,
-  memory => 10,
-  db => ['mlwh']
+  default => {
+    minimum_cpu => 4,
+    maximum_cpu => 8,
+    memory => 10,
+    db => ['mlwh']
+  }
 }
 
 =cut
@@ -43,7 +45,6 @@ HashRef of resource requests for the function, e.g.
 has resource => (
   isa => 'HashRef',
   is => 'ro',
-  lazy => 1,
   default => sub {{}},
   documentation => 'Function-specific resource spec',
   metaclass  => 'NoGetopt',
