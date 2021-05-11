@@ -330,8 +330,7 @@
                     "resources": {
                         "default": {
                             "minimum_cpu": 8,
-                            "maximum_cpu": 16,
-                            "memory": 12,
+                            "memory": 20,
                             "fs_slots_num": 4,
                             "queue": "p4stage1"
                         }
