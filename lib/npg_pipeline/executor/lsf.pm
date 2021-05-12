@@ -304,8 +304,6 @@ sub _kill_jobs {
 # $function_name examples can be found in function_list_central.json
 # $depends_on  { 1 => $degree, 2 => $degree_2 }
 
-=cut
-
 sub _submit_function {
   my ($self, $function_name, $depends_on) = @_;
 
