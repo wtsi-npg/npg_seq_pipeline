@@ -44,7 +44,8 @@ npg_pipeline::executor::lsf
 Submits jobs to LSF via C<execute()>.
 
 The C<interactive> attribute can be set to ensure jobs are queued but not run.
-A manual LSF bresume command will be necessary to execute the work.
+A manual LSF bresume command for the pipeline_start job will be necessary to
+trigger running of jobs
 
 =head1 SUBROUTINES/METHODS
 
@@ -295,17 +296,14 @@ sub _kill_jobs {
   return;
 }
 
-=head2 _submit_function
-Unpacks multi-job definitions and generates bsub commands to run all jobs,
-e.g. aligners that require different memory depending on reference
-genome. Then submits
+#####
+# Unpacks multi-job definitions and generates bsub commands to run all jobs,
+# e.g. aligners that require different memory depending on reference
+# genome. Then submits jobs and returns a list of job IDs
+#
+# $function_name examples can be found in function_list_central.json
+# $depends_on  { 1 => $degree, 2 => $degree_2 }
 
-Args:
-Pipeline function name [String] - see function_list_central.json
-Previous jobs [Hashref] - { 1 => $degree, 2 => $degree_2 }
-
-Return:
-List of LSF job IDs created
 =cut
 
 sub _submit_function {
