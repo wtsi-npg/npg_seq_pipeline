@@ -21,6 +21,15 @@ my %init = (
   conf_path => 't/data/release/config/pp_archival',
   id_run => 34576,
   runfolder_path => $runfolder_path,
+  resource => {
+    default => {
+      minimum_cpu => 1,
+      memory => 2,
+      queue => 'lowload',
+      fs_slots_num => 1,
+      reserve_irods_slots => 1
+    }
+  }
 );
 
 
@@ -29,7 +38,7 @@ subtest 'local flag' => sub {
 
   my $archiver = $pkg->new(
     %init,
-    local => 1
+    local => 1,
   );
 
   my $ds = $archiver->create;
