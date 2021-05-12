@@ -2,6 +2,7 @@ package npg_pipeline::base_resource;
 
 use Moose;
 use MooseX::Getopt::Meta::Attribute::Trait::NoGetopt;
+use namespace::autoclean;
 use Readonly;
 use npg_pipeline::function::definition;
 
@@ -105,26 +106,19 @@ sub create_definition {
   $resources = { %{$resources}, %{$custom_args} };
   # Scale up memory numbers to MB expected by definition
   $resources->{memory} *= $GB_TO_MB_CONVERSION;
-  # Delete any resource properties that are not accepted by the definition
-  # for my $for_show (qw//) {
-  #   delete $resources->{$for_show};
-  # }
 
   return npg_pipeline::function::definition->new(
     created_by => ref $self,
     created_on => $self->timestamp(),
+    identifier => $self->label(),
     %{$resources}
   );
 }
 
-=head2 _get_massaged_resources
-
-Args [1]:    String, optional. The name of a special resource spec in the graph
-Description: Converts a minimum and maximum cpu specification and returns
-             the resource definition with the change
-Returntype:  HashRef containing a compute resource specification
-=cut
-
+# Converts a minimum and maximum cpu specification and returns
+# the resource definition with cpus as an arrayref.
+# Optionally accepts a name of a special resource spec in the graph
+# to use specific resources
 sub _get_massaged_resources {
   my ($self, $special_resource) = @_;
 
@@ -145,7 +139,6 @@ sub _get_massaged_resources {
   if ($num_cpus[-1] > 1) {
     $resources->{num_hosts} = 1;
   }
-
 
   return $resources;
 }
@@ -170,6 +163,10 @@ __END__
 
 =item npg_pipeline::function::definition
 
+=item Readonly
+
+=item MooseX::Getopt::Meta::Attribute::Trait::NoGetopt
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -177,6 +174,8 @@ __END__
 =head1 BUGS AND LIMITATIONS
 
 =head1 AUTHOR
+
+Kieron Taylor
 
 =head1 LICENSE AND COPYRIGHT
 

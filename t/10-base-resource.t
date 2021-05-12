@@ -75,12 +75,13 @@ subtest 'Definition creation' => sub {
         minimum_cpu => 1,
         memory => 2
       }
-    }
+    },
+    id_run => 26291
   );
   my $definition = $function->create_definition({
     command => 'echo',
     job_name => 'test',
-    identifier => '1234'
+    identifier => '1234',
   });
 
   ok($definition, 'Default resources produced a meaningful definition');
@@ -93,7 +94,7 @@ subtest 'Definition creation' => sub {
     command => 'sleep 1',
     job_name => 'test2',
     identifier => '2345',
-    memory => 15
+    memory => 15,
   });
 
   cmp_ok($definition->memory, '==', 15000, 'Resource override from calling code operates');
@@ -109,13 +110,14 @@ subtest 'Multithread definition creation' => sub {
         maximum_cpu => 4,
         memory => 2
       }
-    }
+    },
+    id_run => 26291
   );
 
   my $definition = $function->create_definition({
     command => 'echo "again"',
     job_name => 'test_host_localisation',
-    identifier => '3456'
+    identifier => '3456',
   });
 
   is_deeply($definition->num_cpus, [2,4], 'Multithread cpu resources');
