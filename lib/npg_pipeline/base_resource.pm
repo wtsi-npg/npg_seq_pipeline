@@ -100,6 +100,7 @@ sub create_definition {
 
   # Load combined resource requirements
   my $resources = $self->_get_massaged_resources($special_resource);
+  $custom_args //= {};
   # and combine with any custom arguments
   $resources = { %{$resources}, %{$custom_args} };
   # Scale up memory numbers to MB expected by definition
