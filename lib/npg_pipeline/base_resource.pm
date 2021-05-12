@@ -5,7 +5,7 @@ use MooseX::Getopt::Meta::Attribute::Trait::NoGetopt;
 use Readonly;
 use npg_pipeline::function::definition;
 
-Readonly::Scalar my $MB_TO_GB_CONVERSION => 1000; # 1024? Not in original code
+Readonly::Scalar my $GB_TO_MB_CONVERSION => 1000; # 1024? Not in original code
 
 our $VERSION = '0';
 
@@ -104,7 +104,7 @@ sub create_definition {
   # and combine with any custom arguments
   $resources = { %{$resources}, %{$custom_args} };
   # Scale up memory numbers to MB expected by definition
-  $resources->{memory} *= $MB_TO_GB_CONVERSION;
+  $resources->{memory} *= $GB_TO_MB_CONVERSION;
   # Delete any resource properties that are not accepted by the definition
   # for my $for_show (qw//) {
   #   delete $resources->{$for_show};
