@@ -8,7 +8,6 @@ use Readonly;
 
 use npg_qc::autoqc::qc_store;
 use npg_qc::illumina::interop::parser;
-use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base_resource};
 
@@ -88,13 +87,11 @@ sub create {
   }
 
   return [
-      npg_pipeline::function::definition->new(
-      created_by   => __PACKAGE__,
-      created_on   => $self->timestamp(),
-      identifier   => $id_run,
-      job_name     => $job_name,
-      command      => $command,
-    )
+      $self->create_definition({
+        identifier   => $id_run,
+        job_name     => $job_name,
+        command      => $command,
+      })
   ];
 }
 

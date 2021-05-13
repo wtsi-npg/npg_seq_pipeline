@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use English qw{-no_match_vars};
-use Test::More tests => 29;
+use Test::More tests => 27;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use File::Copy qw(cp);
@@ -27,6 +27,14 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
 
 `touch $recalibrated_path/1234_bfs_fofn.txt`;
 `touch $recalibrated_path/1234_sf_fofn.txt`;
+
+my $default = {
+  default => {
+    minimum_cpu => 1,
+    memory => 2
+  }
+};
+
 {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
 
@@ -41,6 +49,7 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       is_indexed        => 0,
       bfs_fofp_name => q{},
       sf_fofp_name => q{},
+      resource => $default
     );
   } q{obtain object ok};
 
@@ -55,8 +64,6 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
   is ($d->created_on, $object->timestamp, 'created_on is correct');
   is ($d->identifier, 1234, 'identifier is set correctly');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->has_num_cpus, 'number of cpus is not set');
-  ok (!$d->has_memory,'memory is not set');
   ok (!$d->has_composition, 'composition is not set');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
@@ -95,6 +102,7 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       bfs_paths    => [ qq[$archive_path/lane1/qc] ],
       bfs_fofp_name => q{},
       sf_fofp_name => q{},
+      resource => $default
     );
   } q{obtain object ok};
 
@@ -115,7 +123,7 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       bfs_paths    => [ qq{$archive_path/lane3/qc} ],
       bfs_fofp_name => q{},
       sf_fofp_name => q{},
-      default_defaults => {}
+      resource => $default
     );
   } q{obtain object ok};
 
@@ -152,6 +160,7 @@ cp 't/data/run_params/runParameters.miseq.xml',  "$analysis_runfolder_path/runPa
       sf_paths     => [ qq{$archive_path/lane1/qc} ],
       bfs_fofp_name => q{},
       sf_fofp_name => q{},
+      resource => $default
     );
   } q{obtain object ok};
 
