@@ -42,6 +42,13 @@ $runfolder_path = $copy;
 
 my $timestamp      = '20180701-123456';
 
+my $default = {
+  default => {
+    minimum_cpu => 1,
+    memory => 2
+  }
+};
+
 subtest 'local and no_cache_merge_component' => sub {
   plan tests => 7;
 
@@ -52,6 +59,7 @@ subtest 'local and no_cache_merge_component' => sub {
      timestamp      => $timestamp,
      qc_schema      => $qc,
      local          => 1,
+     resource       => $default
     );
   ok($cacher->no_cache_merge_component, 'no_cache_merge_component flag is set to true');
   my $ds = $cacher->create;
@@ -66,6 +74,7 @@ subtest 'local and no_cache_merge_component' => sub {
      timestamp      => $timestamp,
      qc_schema      => $qc,
      no_cache_merge_component => 1,
+     resource       => $default
     );
   ok(!$cacher->local, 'local flag is false');
   $ds = $cacher->create;
@@ -86,6 +95,7 @@ subtest 'create' => sub {
        id_run         => 26291,
        timestamp      => $timestamp,
        qc_schema      => $qc,
+       resource       => $default
       );
   } 'cacher created ok';
 
@@ -151,6 +161,7 @@ subtest 'abort_on_missing_files' => sub {
        id_run         => 26291,
        timestamp      => $timestamp,
        qc_schema      => $qc,
+       resource       => $default
       );
   } 'cacher created ok';
 
@@ -177,6 +188,7 @@ subtest 'abort_on_missing_lib_qc' => sub {
        id_run         => 26291,
        timestamp      => $timestamp,
        qc_schema      => $qc,
+       resource       => $default
       );
   } 'cacher created ok';
 
@@ -194,6 +206,7 @@ subtest 'no_cache_study' => sub {
      id_run         => 26291,
      timestamp      => $timestamp,
      qc_schema      => $qc,
+     resource       => $default
     );
 
   my @defs = @{$cacher->create};
@@ -219,6 +232,7 @@ subtest 'create_with_failed_lane' => sub {
        id_run         => 26291,
        timestamp      => $timestamp,
        qc_schema      => $qc,
+       resource       => $default
       );
   } 'cacher created ok';
 
@@ -242,6 +256,7 @@ subtest 'abort_on_missing_seq_qc' => sub {
        id_run         => 26291,
        timestamp      => $timestamp,
        qc_schema      => $qc,
+       resource       => $default
       );
   } 'cacher created ok';
 

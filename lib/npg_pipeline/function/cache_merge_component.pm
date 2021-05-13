@@ -59,22 +59,19 @@ sub create {
     my $command = join q{ && }, qq(mkdir -p $destdir), reverse @commands;
     $self->debug("Adding command '$command'");
 
-    push @definitions,
-      npg_pipeline::function::definition->new
-        ('created_by'  => __PACKAGE__,
-         'created_on'  => $self->timestamp(),
-         'identifier'  => $id_run,
-         'job_name'    => $job_name,
-         'command'     => $command,
-         'composition' => $product->composition());
+    push @definitions, $self->create_definition({
+      identifier => $id_run,
+      job_name   => $job_name,
+      command    => $command,
+      composition => $product->composition()
+    })
   }
 
   if (not @definitions) {
-    push @definitions, npg_pipeline::function::definition->new
-      ('created_by' => __PACKAGE__,
-       'created_on' => $self->timestamp(),
-       'identifier' => $id_run,
-       'excluded'   => 1);
+    push @definitions, $self->create_definition({
+      identifier => $id_run,
+      excluded => 1
+    });
   }
 
   return \@definitions;
