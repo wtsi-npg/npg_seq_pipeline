@@ -7,7 +7,6 @@ use MooseX::StrictConstructor;
 use Readonly;
 
 use npg_pipeline::cache::reference;
-use npg_pipeline::function::definition;
 
 extends 'npg_pipeline::base_resource';
 with qw{ npg_pipeline::function::util
@@ -74,26 +73,18 @@ sub create {
 
     $self->debug("Adding command '$command'");
 
-    push @definitions,
-      npg_pipeline::function::definition->new
-        ('created_by'   => __PACKAGE__,
-         'created_on'   => $self->timestamp(),
-         'identifier'   => $label,
-         'job_name'     => $job_name,
-         'command'      => $command,
-         'fs_slots_num' => $FS_NUM_SLOTS,
-         'num_hosts'    => $NUM_HOSTS,
-         'num_cpus'     => [$CPUS],
-         'memory'       => $MEMORY,
-         'composition'  => $product->composition());
+    push @definitions, $self->create_definition({
+      identifier => $label,
+      job_name => $job_name,
+      command => $command,
+      composition => $product->composition()
+    });
   }
 
   if (not @definitions) {
-    push @definitions, npg_pipeline::function::definition->new
-      ('created_by' => __PACKAGE__,
-       'created_on' => $self->timestamp(),
-       'identifier' => $label,
-       'excluded'   => 1);
+    push @definitions, $self->create_definition({
+      excluded => 1
+    });
   }
 
   return \@definitions;

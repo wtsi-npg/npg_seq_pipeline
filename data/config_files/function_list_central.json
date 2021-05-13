@@ -664,7 +664,13 @@
                 "label": "bqsr_calc",
                 "metadata": {
                     "description": "",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 2,
+                            "memory": 6,
+                            "minimum_cpu": 1
+                        }
+                    }
                 }
             },
             {
