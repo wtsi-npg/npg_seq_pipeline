@@ -13,7 +13,6 @@ use open q(:encoding(UTF8));
 
 use npg_qc::illumina::interop::parser;
 use npg_pipeline::cache::barcodes;
-use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base_resource};
 

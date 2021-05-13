@@ -6,8 +6,6 @@ use Moose;
 use MooseX::StrictConstructor;
 use Readonly;
 
-use npg_pipeline::function::definition;
-
 extends 'npg_pipeline::base_resource';
 
 our $VERSION = '0';
@@ -54,13 +52,11 @@ sub create {
   my $command = sprintf q[rm -fv %s/*.cram], $recal_path;
 
   return [
-      npg_pipeline::function::definition->new(
-      created_by   => ref $self,
-      created_on   => $self->timestamp(),
+    $self->create_definition({
       identifier   => $id_run,
       job_name     => $job_name,
       command      => $command,
-    )
+    })
   ];
 }
 

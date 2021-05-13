@@ -5,7 +5,6 @@ use Moose;
 use MooseX::StrictConstructor;
 use Readonly;
 
-use npg_pipeline::function::definition;
 use npg_pipeline::cache::reference;
 use npg_pipeline::runfolder_scaffold;
 

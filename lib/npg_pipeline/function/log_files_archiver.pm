@@ -4,7 +4,6 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
 use npg_pipeline::runfolder_scaffold;
 
 extends qw{npg_pipeline::function::seq_to_irods_archiver};

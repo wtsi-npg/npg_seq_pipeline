@@ -62,7 +62,13 @@ my %init = (
   runfolder_path   => $runfolder_path,
   id_run           => $id_run,
   timestamp        => $timestamp,
-  qc_schema        => $qc
+  qc_schema        => $qc,
+  resource         => {
+    default => {
+      minimum_cpu => 1,
+      memory => 2
+    }
+  }
 );
 
 subtest 'local and no_s3_archival flag' => sub {

@@ -11,7 +11,6 @@ use Try::Tiny;
 use Perl6::Slurp;
 
 use npg_qc::Schema;
-use npg_pipeline::function::definition;
 
 extends 'npg_pipeline::base_resource';
 with qw/ npg_pipeline::product::release

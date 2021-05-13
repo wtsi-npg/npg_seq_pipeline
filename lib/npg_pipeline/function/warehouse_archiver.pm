@@ -4,7 +4,6 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
 use npg_pipeline::runfolder_scaffold;
 
 extends q{npg_pipeline::base_resource};
@@ -119,11 +118,9 @@ sub _update_warehouse_command {
     }
 
     $d = $self->create_definition({
-      identifier => $self->label,
       command    => $command,
       num_cpus   => [0],
       job_name   => $job_name,
-      queue      => $npg_pipeline::function::definition::LOWLOAD_QUEUE
     });
   }
 

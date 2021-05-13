@@ -111,6 +111,7 @@ subtest 'wait4path function' => sub {
   $f = npg_pipeline::function::start_stop->new(
     label          => 'my_label',
     runfolder_path => $path,
+    %init
   );
   $ds = $f->pipeline_wait4path();
   $d = $ds->[0];

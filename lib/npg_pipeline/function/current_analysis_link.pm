@@ -7,8 +7,6 @@ use English qw(-no_match_vars);
 use Readonly;
 use File::Spec::Functions qw(abs2rel);
 
-use npg_pipeline::function::definition;
-
 extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';

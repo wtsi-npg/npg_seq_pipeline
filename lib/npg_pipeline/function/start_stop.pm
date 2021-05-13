@@ -111,17 +111,14 @@ sub pipeline_wait4path {
     .  q{'};
 
   my $job_name = join q{_}, 'wait4path_in_outgoing', $self->label();
-  my $d = npg_pipeline::function::definition->new(
-    created_by    => __PACKAGE__,
-    created_on    => $self->timestamp(),
-    identifier    => $self->label(),
+  my $d = $self->create_definition({
     job_name      => $job_name,
     command       => $command,
     num_cpus      => [0],
     command_preexec => "[ -d '$path' ]",
     queue           =>
       $npg_pipeline::function::definition::SMALL_QUEUE,
-  );
+  });
 
   return [$d];
 }

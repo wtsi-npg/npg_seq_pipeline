@@ -363,7 +363,8 @@
                         "default": {
                             "db": [
                                 "mlwh"
-                            ]
+                            ],
+                            "queue": "lowload"
                         }
                     }
                 }
@@ -377,7 +378,8 @@
                         "default": {
                             "db": [
                                 "mlwh"
-                            ]
+                            ],
+                            "queue": "lowload"
                         }
                     }
                 }
@@ -391,7 +393,8 @@
                         "default": {
                             "db": [
                                 "mlwh"
-                            ]
+                            ],
+                            "queue": "lowload"
                         }
                     }
                 }

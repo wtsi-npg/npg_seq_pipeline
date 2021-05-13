@@ -182,11 +182,33 @@
             },
             {
                 "id": "update_ml_warehouse_post_qc_complete",
-                "label": "update_ml_warehouse_post_qc_complete"
+                "label": "update_ml_warehouse_post_qc_complete",
+                "metadata": {
+                    "description": "",
+                    "resources": {
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ],
+                            "queue": "lowload"
+                        }
+                    }
+                }
             },
             {
                 "id": "update_warehouse_post_qc_complete",
-                "label": "update_warehouse_post_qc_complete"
+                "label": "update_warehouse_post_qc_complete",
+                "metadata": {
+                    "description": "",
+                    "resources": {
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ],
+                            "queue": "lowload"
+                        }
+                    }
+                }
             },
             {
                 "id": "archive_logs",

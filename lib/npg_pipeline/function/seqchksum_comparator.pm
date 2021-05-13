@@ -7,8 +7,6 @@ use File::Slurp;
 use Readonly;
 use Cwd;
 
-use npg_pipeline::function::definition;
-
 extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
@@ -79,13 +77,11 @@ sub create {
 
   my @definitions = ();
 
-  push @definitions, npg_pipeline::function::definition->new(
-    created_by   => __PACKAGE__,
-    created_on   => $self->timestamp(),
+  push @definitions, $self->create_definition({
     identifier   => $self->id_run(),
     job_name     => $job_name,
     command      => $command,
-  );
+  });
 
   return \@definitions;
 }

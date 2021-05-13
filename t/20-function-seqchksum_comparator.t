@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 19;
+use Test::More tests => 17;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use t::util;
@@ -34,6 +34,12 @@ my %init = (
   bam_basecall_path => $bam_basecall_path,
   id_run            => 1234,
   is_indexed        => 0,
+  resource          => {
+    default => {
+      minimum_cpu => 1,
+      memory => 2
+    }
+  }
 );
 
 {
@@ -65,8 +71,6 @@ my %init = (
     qq{ --input_fofg_name=$rp/1234_input_fofn.txt},
     'command is correct');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->has_num_cpus, 'number of cpus is not set');
-  ok (!$d->has_memory,'memory is not set');
   is ($d->queue, 'default', 'default queue');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 

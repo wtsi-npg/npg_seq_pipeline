@@ -22,7 +22,8 @@ use_ok('npg_pipeline::function::warehouse_archiver');
 my $default = {
   default => {
     minimum_cpu => 1,
-    memory => 2
+    memory => 2,
+    queue => 'lowload'
   }
 };
 

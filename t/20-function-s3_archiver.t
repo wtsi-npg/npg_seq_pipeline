@@ -47,6 +47,12 @@ my %init = (
   id_run => 26291,
   timestamp => $timestamp,
   qc_schema => $qc,
+  resource => {
+    default => {
+      minimum_cpu => 1,
+      memory => 2
+    }
+  }
 );
 
 subtest 'local and no_s3_archival flag' => sub {

@@ -7,8 +7,6 @@ use File::Slurp;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
-
 extends 'npg_pipeline::function::seq_to_irods_archiver';
 
 our $VERSION = '0';

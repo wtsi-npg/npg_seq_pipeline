@@ -6,8 +6,6 @@ use Moose;
 use MooseX::StrictConstructor;
 use Readonly;
 
-use npg_pipeline::function::definition;
-
 extends 'npg_pipeline::base_resource';
 with qw{ npg_pipeline::function::util
          npg_pipeline::product::release };

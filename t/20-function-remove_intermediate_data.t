@@ -8,6 +8,12 @@ my $o=npg_pipeline::function::remove_intermediate_data->new(
   id_run => q[26291],
   recalibrated_path => q[/a/recalibrated/path/no_cal],
   timestamp         => q{2019},
+  resource => {
+    default => {
+      minimum_cpu => 1,
+      memory => 2
+    }
+  }
 );
 my $defs = $o->create;
 

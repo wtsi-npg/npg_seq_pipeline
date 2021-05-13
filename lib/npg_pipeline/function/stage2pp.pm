@@ -9,7 +9,6 @@ use Try::Tiny;
 use File::Spec::Functions;
 use File::Slurp;
 
-use npg_pipeline::function::definition;
 use npg_pipeline::cache::reference;
 use npg_pipeline::runfolder_scaffold;
 
