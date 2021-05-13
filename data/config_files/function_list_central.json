@@ -317,7 +317,8 @@
                     "resources": {
                         "defaults": {
                             "minimum_cpu": 8,
-                            "memory": 2
+                            "memory": 2,
+                            "fs_slots_num": 1
                         }
                     }
                 }
@@ -411,7 +412,9 @@
                     "resources": {
                         "default": {
                             "minimum_cpu": 4,
-                            "memory": 5
+                            "memory": 5,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
                         }
                     }
                 }
@@ -424,7 +427,9 @@
                     "resources": {
                         "default": {
                             "minimum_cpu": 2,
-                            "memory": 1
+                            "memory": 1,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
                         }
                     }
                 }
@@ -434,7 +439,14 @@
                 "label": "qc_qX_yield",
                 "metadata": {
                     "description": "Use samtools stats to compute number of bases at a number of quality values",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "memory": 2,
+                            "array_cpu_limit": 8,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
                 }
             },
             {
@@ -445,7 +457,9 @@
                     "resources": {
                         "default": {
                             "memory": 1.5,
-                            "minimum_cpu": 3
+                            "minimum_cpu": 3,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
                         }
                     }
                 }
@@ -457,7 +471,9 @@
                     "description": "Perform a paired-end alignment to find insert size",
                     "resources": {
                         "default": {
-                            "memory": 8
+                            "memory": 8,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
                         }
                     }
                 }
@@ -467,7 +483,13 @@
                 "label": "qc_sequence_error",
                 "metadata": {
                     "description": "Align forward and reverse random reads to identify common error patterns",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "memory": 8,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
                 }
             },
             {
@@ -475,7 +497,12 @@
                 "label": "qc_gc_fraction",
                 "metadata": {
                     "description": "Calculate GC ratio in sequence",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
                 }
             },
             {
@@ -486,8 +513,10 @@
                     "resources": {
                         "default": {
                             "memory": 6,
-                            "maximum_cpu": 8,
-                            "array_cpu_limit": 8
+                            "minimum_cpu": 1,
+                            "array_cpu_limit": 8,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
                         }
                     }
                 }
@@ -531,7 +560,13 @@
                 "label": "qc_bcfstats",
                 "metadata": {
                     "description": "",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "memory": 4,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
                 }
             },
             {
@@ -539,7 +574,13 @@
                 "label": "qc_pulldown_metrics",
                 "metadata": {
                     "description": "",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "memory": 6,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
                 }
             },
             {
@@ -547,7 +588,12 @@
                 "label": "qc_genotype",
                 "metadata": {
                     "description": "",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
                 }
             },
             {
@@ -555,7 +601,12 @@
                 "label": "qc_spatial_filter",
                 "metadata": {
                     "description": "",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
                 }
             },
             {
@@ -563,7 +614,12 @@
                 "label": "qc_verify_bam_id",
                 "metadata": {
                     "description": "",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
                 }
             },
             {
@@ -571,7 +627,12 @@
                 "label": "qc_review",
                 "metadata": {
                     "description": "",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
                 }
             },
             {
