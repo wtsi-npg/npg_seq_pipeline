@@ -9,8 +9,6 @@ use MooseX::StrictConstructor;
 use Readonly;
 use List::Util qw(all);
 
-use npg_pipeline::function::definition;
-
 extends 'npg_pipeline::base_resource';
 
 with qw{npg_pipeline::product::cache_merge};
