@@ -18,7 +18,6 @@ use npg_tracking::data::transcriptome;
 use npg_tracking::data::bait;
 use npg_tracking::data::gbs_plex;
 use npg_pipeline::cache::reference;
-use npg_pipeline::function::definition;
 
 extends q{npg_pipeline::base_resource};
 with    qw{ npg_pipeline::function::util
@@ -26,11 +25,6 @@ with    qw{ npg_pipeline::function::util
 
 our $VERSION  = '0';
 
-Readonly::Scalar my $NUM_SLOTS                    => q(12,16);
-Readonly::Scalar my $FS_NUM_SLOTS                 => 4;
-Readonly::Scalar my $NUM_HOSTS                    => 1;
-Readonly::Scalar my $MEMORY                       => q{32000}; # memory in megabytes
-Readonly::Scalar my $MEMORY_FOR_STAR              => q{38000}; # idem
 Readonly::Scalar my $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
 Readonly::Scalar my $QC_SCRIPT_NAME               => q{qc};
 Readonly::Scalar my $DEFAULT_SJDB_OVERHANG        => q{74};
@@ -97,16 +91,6 @@ sub _build__job_id {
   return $self->random_string();
 }
 
-has '_num_cpus' => ( isa        => 'ArrayRef',
-                     is         => 'ro',
-                     lazy_build => 1,
-                   );
-sub _build__num_cpus {
-  my $self = shift;
-  return $self->num_cpus2array(
-    $self->general_values_conf()->{'seq_alignment_slots'} || $NUM_SLOTS);
-}
-
 has '_js_scripts_dir' => ( isa        => 'Str',
                            is         => 'ro',
                            required   => 0,
@@ -125,6 +109,14 @@ has '_do_gbs_plex_analysis' => ( isa     => 'Bool',
                                  default => 0,
                                );
 
+# Used to cache the analysis type determined in _alignment_command for
+# later use
+has '_rna_analysis' => (
+  isa => 'Str',
+  is => 'rw'
+);
+
+
 sub generate {
   my ($self, $pipeline_name, $dry_run) = @_;
 
@@ -132,7 +124,6 @@ sub generate {
 
   for my $dp (@{$self->products->{data_products}}) {
     my $ref = {};
-    $ref->{'memory'} = $MEMORY;
     my $subsets = [];
     $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets, $dry_run);
     $self->_save_compositions($dp, $subsets);
@@ -153,12 +144,10 @@ sub generate_compositions {
   # as a second argument to generate().
   my $dry_run = 1;
   $self->generate($pipeline_name, $dry_run);
-  return [npg_pipeline::function::definition->new(
-            created_by => __PACKAGE__,
-            created_on => $self->timestamp(),
-            identifier => $self->id_run(),
-            excluded   => 1
-          )];
+  return [$self->create_definition({
+    identifier => $self->id_run(),
+    excluded   => 1
+  })];
 }
 
 sub _save_compositions {
@@ -176,18 +165,17 @@ sub _save_compositions {
 sub _create_definition {
   my ($self, $ref, $dp) = @_;
 
-  $ref->{'created_by'}      = __PACKAGE__;
-  $ref->{'created_on'}      = $self->timestamp();
   $ref->{'identifier'}      = $self->id_run();
   $ref->{'job_name'}        = join q{_}, q{seq_alignment},$self->id_run(),$self->timestamp();
-  $ref->{'fs_slots_num'}    = $FS_NUM_SLOTS ;
-  $ref->{'num_hosts'}       = $NUM_HOSTS;
-  $ref->{'num_cpus'}        = $self->_num_cpus();
-  $ref->{'memory'}          = $ref->{'memory'} ? $ref->{'memory'} : $MEMORY;
   $ref->{'command_preexec'} = $self->repos_pre_exec_string();
   $ref->{'composition'}     = $dp->composition;
 
-  return npg_pipeline::function::definition->new($ref);
+  my $special_resource_type;
+  if ($self->_rna_analysis && $self->_rna_analysis eq 'star') {
+    $special_resource_type = $self->_rna_analysis;
+  }
+
+  return $self->create_definition($ref, $special_resource_type);
 }
 
 sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
@@ -500,6 +488,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
         $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
         $rna_analysis = $DEFAULT_RNA_ANALYSIS;
     }
+    $self->_rna_analysis($rna_analysis);
     my $p4_reference_genome_index = $rna_analysis eq q[tophat2] ?
                                     $self->_ref($dp, q(bowtie2)) : $self->_ref($dp, $rna_analysis);
     if($rna_analysis eq q[star]) {
@@ -508,8 +497,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $p4_param_vals->{star_executable} = q[star];
       # STAR uses the name of the directory where the index resides only
       $p4_reference_genome_index = dirname($p4_reference_genome_index);
-      # STAR jobs require more memory
-      $ref->{'memory'} = $MEMORY_FOR_STAR;
     } elsif ($rna_analysis eq q[tophat2]) {
       $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
       $p4_param_vals->{transcriptome_val} = $self->_transcriptome($rpt_list, q(tophat2))->transcriptome_index_name();
@@ -622,7 +609,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                spike_tag                   => $spike_tag,
                nonconsented_humansplit     => $nchs,
                do_gbs_plex                 => $do_gbs_plex,
-	       do_rna                      => $do_rna,
+               do_rna                      => $do_rna,
              );
   while (my ($text, $value) = each %info) {
     $self->info(qq[  $text is ] . ($value ? q[true] : q[false]));
@@ -634,7 +621,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->info(q[  p4 parameters written to ] . $param_vals_fname);
   $self->info(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
-  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->_num_cpus->[0];
+  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->_get_massaged_resources()->{num_cpus}[0];
   my $id = $self->_job_id();
   return join q( ),
     q(bash -c '),
