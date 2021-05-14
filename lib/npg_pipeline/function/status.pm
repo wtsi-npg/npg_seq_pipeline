@@ -4,8 +4,6 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
-
 extends q{npg_pipeline::base_resource};
 with q{npg_pipeline::runfolder_scaffold};
 
@@ -39,7 +37,6 @@ sub create {
     job_name      => $job_name,
     command       => $self->_command($status_files_path),
     num_cpus      => [0],
-    queue         => $npg_pipeline::function::definition::SMALL_QUEUE,
   });
 
   return [$d];

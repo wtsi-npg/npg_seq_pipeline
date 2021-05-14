@@ -5,7 +5,6 @@ use namespace::autoclean;
 use Readonly;
 use Math::Random::Secure qw(irand);
 
-use npg_pipeline::function::definition;
 use npg_pipeline::runfolder_scaffold;
 
 extends q{npg_pipeline::base_resource};
@@ -73,8 +72,6 @@ sub _token_job {
     job_name      => $job_name,
     command       => '/bin/true',
     num_cpus      => [0],
-    queue         =>
-      $npg_pipeline::function::definition::SMALL_QUEUE,
   });
 
   return [$d];
@@ -116,8 +113,6 @@ sub pipeline_wait4path {
     command       => $command,
     num_cpus      => [0],
     command_preexec => "[ -d '$path' ]",
-    queue           =>
-      $npg_pipeline::function::definition::SMALL_QUEUE,
   });
 
   return [$d];

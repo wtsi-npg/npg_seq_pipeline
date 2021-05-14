@@ -115,11 +115,27 @@
         "nodes": [
             {
                 "id": "pipeline_start",
-                "label": "pipeline_start"
+                "label": "pipeline_start",
+                "metadata": {
+                    "description": "",
+                    "resources": {
+                        "default": {
+                            "queue": "small"
+                        }
+                    }
+                }
             },
             {
                 "id": "run_archival_in_progress",
-                "label": "run_archival_in_progress"
+                "label": "run_archival_in_progress",
+                "metadata": {
+                    "description": "",
+                    "resources": {
+                        "default": {
+                            "queue": "small"
+                        }
+                    }
+                }
             },
             {
                 "id": "update_ml_warehouse",
@@ -166,7 +182,15 @@
             },
             {
                 "id": "run_run_archived",
-                "label": "run_run_archived"
+                "label": "run_run_archived",
+                "metadata": {
+                    "description": "",
+                    "resources": {
+                        "default": {
+                            "queue": "small"
+                        }
+                    }
+                }
             },
             {
                 "id": "remove_intermediate_data",
@@ -174,7 +198,15 @@
             },
             {
                 "id": "run_qc_complete",
-                "label": "run_qc_complete"
+                "label": "run_qc_complete",
+                "metadata": {
+                    "description": "",
+                    "resources": {
+                        "default": {
+                            "queue": "small"
+                        }
+                    }
+                }
             },
             {
                 "id": "pipeline_wait4path",
@@ -216,13 +248,23 @@
             },
             {
                 "id": "pipeline_end",
-                "label": "pipeline_end"
+                "label": "pipeline_end",
+                "metadata": {
+                    "description": "",
+                    "resources": {
+                        "default": {
+                            "queue": "small"
+                        }
+                    }
+                }
             }
         ],
         "metadata": {
             "default_resources": {
                 "minimum_cpu": 1,
-                "memory": 2
+                "memory": 2,
+                "array_cpu_limit": 64,
+                "nfs_token": 1
             }
         }
     }
