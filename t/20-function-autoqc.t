@@ -309,6 +309,7 @@ subtest 'ref_match' => sub {
     default => {
       minimum_cpu => 1,
       array_cpu_limit => 8,
+      apply_array_cpu_limit => 1,
       fs_slots_num => 1,
       memory => 6
     }

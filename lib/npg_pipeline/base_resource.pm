@@ -140,6 +140,15 @@ sub _get_massaged_resources {
     $resources->{num_hosts} = 1;
   }
 
+  # Clean out array size limits if there's no apply_array_limit attribute
+  if (! exists $resources->{apply_array_cpu_limit}) {
+    delete $resources->{array_cpu_limit};
+  }
+  # Remove any items that are not accepted by definition
+  foreach my $incompatible (qw/nfs_token db/) {
+    delete $resources->{$incompatible};
+  }
+
   return $resources;
 }
 

@@ -45,6 +45,14 @@ my $timestamp = q[20180701-123456];
 my $repo_dir = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a];
 my $product_conf = qq[$repo_dir/product_release.yml];
 
+my $default = {
+  default => {
+    minimum_cpu => 4,
+    memory => 5,
+    fs_slots_num => 1
+  }
+};
+
 use_ok('npg_pipeline::function::autoqc::generic');
 
 subtest 'definition generation, artic spec' => sub {
@@ -61,6 +69,7 @@ subtest 'definition generation, artic spec' => sub {
     merge_lanes            => 0,
     spec                   => 'artic',
     portable_pipeline_name => 'ncov2019-artic-nf',
+    resource               => $default
   );
   my $ds = $ag->create;
   is (scalar @{$ds}, 2, '2 definitions are returned');
@@ -102,6 +111,7 @@ subtest 'step skipped' => sub {
     merge_lanes            => 0,
     spec                   => 'artic',
     portable_pipeline_name => 'ncov2019_artic_nf',
+    resource               => $default
   );
   my $ds = $ag->create;
   is (scalar @{$ds}, 1, 'one definition is returned');
@@ -117,6 +127,7 @@ subtest 'step skipped' => sub {
     merge_lanes            => 0,
     spec                   => 'artic',
     portable_pipeline_name => 'ncov2019_artic_nf',
+    resource               => $default
   );
   $ds = $ag->create;
   is (scalar @{$ds}, 1, 'one definition is returned');
@@ -131,6 +142,7 @@ subtest 'step skipped' => sub {
     merge_lanes            => 0,
     spec                   => 'artic',
     portable_pipeline_name => 'ncov2019_artic_nf',
+    resource               => $default
   );
 
   $ag = npg_pipeline::function::autoqc::generic->new(
@@ -142,6 +154,7 @@ subtest 'step skipped' => sub {
     merge_lanes            => 0,
     spec                   => 'artic',
     portable_pipeline_name => 'ncov2019_artic_nf',
+    resource               => $default
   );
   $ds = $ag->create;
   is (scalar @{$ds}, 1, 'one definition is returned');
@@ -162,6 +175,7 @@ subtest 'definition generation, ampliconstats spec' => sub {
     timestamp              => $timestamp,
     spec                   => 'ampliconstats',
     portable_pipeline_name => 'ncov2019-artic-nf ampliconstats',
+    resource               => $default
   );
   my $ds = $ag->create;
   is (scalar @{$ds}, 2, 'two definitions are returned');
