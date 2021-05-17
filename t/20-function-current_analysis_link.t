@@ -60,7 +60,8 @@ make_path($recalibrated_path);
       resource => {
         default => {
           minimum_cpu => 1,
-          memory => 1
+          memory => 1,
+          queue => 'small'
         }
       }
   );

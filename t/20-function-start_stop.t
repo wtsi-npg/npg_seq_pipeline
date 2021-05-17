@@ -17,7 +17,8 @@ my %init = (
   resource => {
     default => {
       memory => 2,
-      minimum_cpu => 1
+      minimum_cpu => 1,
+      queue => 'small'
     }
   }
 );
