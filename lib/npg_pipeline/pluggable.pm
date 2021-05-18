@@ -258,12 +258,19 @@ sub _build_function_graph {
     foreach my $function_name (@functions) {
       # Find the named node in the graph config
       my ($function_def) = grep {
-        $_->{id} eq $function_name
+        $_->{label} eq $function_name
       } @{$jgraph->{graph}{nodes}};
+      if (! $function_def) {
+        $self->logcroak(
+          sprintf 'Function %s cannot be found in the graph %s',
+            $function_name,
+            $self->function_list
+        );
+      }
       # and create a new graph node with the properties
       push @nodes, {
         id => $function_name,
-        label => $function_name,
+        label => $function_def->{label},
         metadata => $function_def->{metadata}
       };
     }

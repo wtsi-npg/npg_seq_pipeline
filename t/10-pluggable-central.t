@@ -69,7 +69,7 @@ my $runfolder_path = $util->analysis_runfolder_path();
   $util->create_run_info();
   my $config_dir = 'data/config_files';
   my $init = {
-      function_order   => [qw{qc_qX_yield qc_adapter update_warehouse qc_insert_size}],
+      function_order   => [qw{qc_qX_yield qc_adapter update_ml_warehouse qc_insert_size}],
       lanes            => [4],
       runfolder_path   => $runfolder_path,
       function_list => "$config_dir/function_list_central.json",

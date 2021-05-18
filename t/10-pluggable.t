@@ -78,35 +78,32 @@ subtest 'graph creation from explicitly given function list' => sub {
   my $obj = npg_pipeline::pluggable->new(
     id_run         => 1234,
     runfolder_path => $runfolder_path,
-    function_order => ['my_function', 'your_function'],
+    function_order => [qw/run_analysis_in_progress lane_analysis_in_progress/],
     function_list => "$config_dir/function_list_central.json"
   );
   ok($obj->has_function_order(), 'function order is set');
-  is(join(q[ ], @{$obj->function_order}), 'my_function your_function',
+  is(join(q[ ], @{$obj->function_order}), 'run_analysis_in_progress lane_analysis_in_progress',
    'function order as set');
   lives_ok {  $obj->function_graph() }
     'no error creating a graph for a preset function order list';
-  throws_ok { $obj->_schedule_functions() }
-    qr/Handler for 'my_function' is not registered/,
-    'cannot schedule non-existing function';
 
   my $g = $obj->function_graph();
   is($g->vertices(), 4, 'four graph nodes');
 
-  my @p = $g->predecessors('my_function');
+  my @p = $g->predecessors('run_analysis_in_progress');
   is (scalar @p, 1, 'one predecessor');
-  is ($p[0], 'pipeline_start', 'pipeline_start is before my_function');
+  is ($p[0], 'pipeline_start', 'pipeline_start is before run_analysis_in_progress');
   ok ($g->is_source_vertex('pipeline_start'), 'pipeline_start is source vertex');
-  my @s = $g->successors('my_function');
+  my @s = $g->successors('run_analysis_in_progress');
   is (scalar @s, 1, 'one successor');
-  is ($s[0], 'your_function', 'your_function is after my_function');
+  is ($s[0], 'lane_analysis_in_progress', 'lane_analysis_in_progress is after run_analysis_in_progress');
 
-  @p = $g->predecessors('your_function');
+  @p = $g->predecessors('lane_analysis_in_progress');
   is (scalar @p, 1, 'one predecessor');
-  is ($p[0], 'my_function', 'my_function is before your_function');
-  @s = $g->successors('your_function');
+  is ($p[0], 'run_analysis_in_progress', 'run_analysis_in_progress is before lane_analysis_in_progress');
+  @s = $g->successors('lane_analysis_in_progress');
   is (scalar @s, 1, 'one successor');
-  is ($s[0], 'pipeline_end', 'your_function is before pipeline_end');
+  is ($s[0], 'pipeline_end', 'lane_analysis_in_progress is before pipeline_end');
 
   ok ($g->is_sink_vertex('pipeline_end'), 'pipeline_end is sink vertex');
   @p = $g->predecessors('pipeline_end');
@@ -132,6 +129,15 @@ subtest 'graph creation from explicitly given function list' => sub {
   throws_ok { $obj->function_graph() }
     qr/Graph is not DAG/,
     'pipeline_start cannot be specified in function order';
+
+  $obj = npg_pipeline::pluggable->new(
+    id_run         => 1234,
+    function_order => ['invalid_function'],
+    runfolder_path => $test_dir,
+    function_list => "$config_dir/function_list_central.json"
+  );
+  throws_ok {$obj->function_graph()}
+    qr/Function invalid_function cannot be found in the graph/;
 };
 
 subtest 'switching off functions' => sub {
@@ -199,7 +205,7 @@ subtest 'specifying functions via function_order' => sub {
     no_bsub               => 0,
     is_indexed            => 0,
     product_conf_file_path => $product_config,
-    function_list => "$config_dir/function_list_central.json"
+    function_list => "$config_dir/function_list_post_qc_review.json"
   );
   is($p->id_run, 1234, 'run id set correctly');
   is($p->is_indexed, 0, 'is not indexed');
@@ -217,7 +223,7 @@ subtest 'creating executor object' => sub {
     bam_basecall_path     => $runfolder_path,
     spider                => 0,
     product_conf_file_path => $product_config,
-    function_list => "$config_dir/function_list_central.json"
+    function_list => "$config_dir/function_list_post_qc_review.json"
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
@@ -264,7 +270,7 @@ subtest 'propagating options to the lsf executor' => sub {
     function_order        => \@functions_in_order,
     runfolder_path        => $runfolder_path,
     spider                => 0,
-    function_list => "$config_dir/function_list_central.json"
+    function_list => "$config_dir/function_list_post_qc_review.json"
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
@@ -316,7 +322,7 @@ subtest 'running the pipeline (lsf executor)' => sub {
     no_sf_resource => 1,
     is_indexed     => 0,
     product_conf_file_path => $product_config,
-    function_list => "$config_dir/function_list_central.json"
+    function_list => "$config_dir/function_list_post_qc_review.json"
   };
 
   my $p = npg_pipeline::pluggable->new($ref);
@@ -376,7 +382,7 @@ subtest 'running the pipeline (wr executor)' => sub {
     executor_type  => 'wr',
     is_indexed     => 0,
     product_conf_file_path => $product_config,
-    function_list => "$config_dir/function_list_central.json"
+    function_list => "$config_dir/function_list_post_qc_review.json"
   };
 
   # soft-link wr command to /bin/false so that it fails
