@@ -80,6 +80,6 @@ If resources are supplied, there *must* be something under a *default* block
 - minimum_cpu - the fewest CPUs this job can run with
 - nfs_token - the number of NFS tokens required by the job
 - queue - [small, default, lowload, ...] defining which queue the scheduler should use
-- reserve_irods_slots - the number of Irods tokens required by the job
+- reserve_irods_slots - the number of iRODS tokens required by the job
 
-Note the number of settings that are required to protect assets from being overloaded with requests. Irods and NFS in particular are vulnerable to saturation that leads to complicated pipeline failures.
+Note the number of settings that are required to protect assets from being overloaded with requests. iRODS and NFS in particular are vulnerable to saturation that leads to complicated pipeline failures.
