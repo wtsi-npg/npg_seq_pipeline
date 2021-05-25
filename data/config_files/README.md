@@ -33,7 +33,7 @@ Pipeline-wide parameters can be set here
 
 All nodes must be connected via edges. We cannot handle disjoint graphs. Additionally the graph shape should not include cycles and must begin with a "pipeline_start" and end with a "pipeline_end" node.
 
-A node represents a single class of job and the pipeline may create many jobs from a single node. The number of jobs of a given class is defined by the input data.
+A node represents a single class of job and the pipeline may create many jobs from a single node. The number of jobs of a given class is defined by the input data. If data precludes the need for a particular function, the node will be automatically removed from the graph at runtime so that no futile jobs are submitted to the scheduler.
 
     "metadata": {
         "default_resources": {
