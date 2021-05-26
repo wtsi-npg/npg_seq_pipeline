@@ -23,10 +23,6 @@ with 'npg_common::roles::software_location' =>
 
 Readonly::Scalar my $DEFAULT_PIPELINE_TYPE => q[stage2pp];
 
-Readonly::Hash   my %PER_PP_REQS   => (
-  ncov2019_artic_nf => {memory_mb => 5000, num_cpus => 4},
-  ncov2019_artic_nf_ampliconstats => {memory_mb => 1000, num_cpus => 2},
-                                      );
 Readonly::Array  my @DEFAULT_AMPLICONSTATS_DEPTH  => qw(1 10 20 100);
 Readonly::Scalar my $AMPLICONSTATS_OPTIONS        => q[-t 50];
 
@@ -111,7 +107,7 @@ sub create {
       if ($self->can($method)) {
         # Definition factory method might return an undefined
         # value, which will be filtered out later.
-        push @definitions, $self->$method($product, $pp, $PER_PP_REQS{$cname} || {});
+        push @definitions, $self->$method($product, $pp);
       } else {
         $self->error(sprintf
           '"%s" portable pipeline is not implemented, method %s is not available',
@@ -210,9 +206,8 @@ sub _job_name {
 }
 
 sub _job_attrs {
-  my ($self, $product, $pp, $reqs) = @_;
-  return {'identifier'  => $self->label,
-          'job_name'    => $self->_job_name($pp),
+  my ($self, $product, $pp) = @_;
+  return {'job_name'    => $self->_job_name($pp),
           'composition' => $product->composition()};
 }
 
@@ -222,7 +217,7 @@ sub _pp_name_arg {
 }
 
 sub _ncov2019_artic_nf_create {
-  my ($self, $product, $pp, $reqs) = @_;
+  my ($self, $product, $pp) = @_;
 
   my $in_dir_path  = $product->stage1_out_path($self->no_archive_path());
   my $out_dir_path = $self->pp_archive4product($product, $pp, $self->pp_archive_path());
@@ -235,7 +230,7 @@ sub _ncov2019_artic_nf_create {
   $ref_path or $self->logcroak(
     'bwa reference is not found for ' . $product->composition->freeze());
 
-  my $job_attrs = $self->_job_attrs($product, $pp, $reqs);
+  my $job_attrs = $self->_job_attrs($product, $pp);
 
   $job_attrs->{'command'} = join q[ ],
     $self->nextflow_cmd(), 'run', $self->pp_deployment_dir($pp),
@@ -272,7 +267,7 @@ sub _generate_replacement_map {
 }
 
 sub _ncov2019_artic_nf_ampliconstats_create {
-  my ($self, $product, $pp, $reqs) = @_;
+  my ($self, $product, $pp) = @_;
 
   my $pp_name = $self->pp_name($pp);
 
@@ -314,7 +309,7 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   write_file($replacement_map_file, join qq[\n],
              @{$self->_generate_replacement_map($lane_product)});
 
-  my $job_attrs = $self->_job_attrs($lane_product, $pp, $reqs);
+  my $job_attrs = $self->_job_attrs($lane_product, $pp);
   my $num_cpus = $self->_get_massaged_resources()->{num_cpus}[0];
   my $sta_cpus_option = $num_cpus > 1 ? q[-@] . ($num_cpus - 1) : q[];
 

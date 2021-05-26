@@ -78,7 +78,6 @@ sub create {
   my @definitions = ();
 
   push @definitions, $self->create_definition({
-    identifier   => $self->id_run(),
     job_name     => $job_name,
     command      => $command,
   });

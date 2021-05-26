@@ -120,7 +120,8 @@
                     "description": "A token job, which always succeeds; the start node of the both functions and jobs directed graphs.",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -132,7 +133,8 @@
                     "description": "Writes a serialized representation of the 'archival in progress' run status to the file system",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -147,7 +149,8 @@
                             "db": [
                                 "mlwh"
                             ],
-                            "queue": "lowload"
+                            "queue": "lowload",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -226,7 +229,8 @@
                     "description": "",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -250,7 +254,8 @@
                     "description": "",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -260,7 +265,11 @@
                 "label": "pipeline_wait4path",
                 "metadata": {
                     "description": "Watches the run folder location; exits with an error if the run folder does not appear in the outgoing parent directory within a preset time interval",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 0
+                        }
+                    }
                 }
             },
             {
@@ -273,7 +282,8 @@
                             "db": [
                                 "mlwh"
                             ],
-                            "queue": "lowload"
+                            "queue": "lowload",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -288,7 +298,8 @@
                             "db": [
                                 "mlwh"
                             ],
-                            "queue": "lowload"
+                            "queue": "lowload",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -308,7 +319,8 @@
                     "description": "A token job, which always succeeds; the end node of the both functions and jobs directed graphs.",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }

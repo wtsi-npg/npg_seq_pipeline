@@ -165,7 +165,6 @@ sub _save_compositions {
 sub _create_definition {
   my ($self, $ref, $dp) = @_;
 
-  $ref->{'identifier'}      = $self->id_run();
   $ref->{'job_name'}        = join q{_}, q{seq_alignment},$self->id_run(),$self->timestamp();
   $ref->{'command_preexec'} = $self->repos_pre_exec_string();
   $ref->{'composition'}     = $dp->composition;

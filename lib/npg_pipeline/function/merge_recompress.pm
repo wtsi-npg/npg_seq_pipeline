@@ -66,7 +66,6 @@ sub create {
     $self->debug("Adding command '$command'");
 
     push @definitions, $self->create_definition({
-      'identifier'   => $label,
       'job_name'     => $job_name,
       'command'      => $command,
       'composition'  => $unchunked_product->composition()
@@ -75,7 +74,6 @@ sub create {
 
   if (not @definitions) {
     push @definitions, $self->create_definition({
-      'identifier' => $label,
       'excluded'   => 1
     });
   }

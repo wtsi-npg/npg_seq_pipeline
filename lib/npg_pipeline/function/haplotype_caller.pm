@@ -115,7 +115,6 @@ sub create {
       $self->debug("Adding command '$command'");
 
       push @definitions, $self->create_definition({
-        'identifier'   => $self->label,
         'job_name'     => $job_name,
         'command'      => $command,
         'composition'  => $product->composition(),
@@ -129,7 +128,6 @@ sub create {
     @errors and $self->logcroak(join qq[\n], @errors);
   } else {
     push @definitions, $self->create_definition({
-      'identifier' => $self->label,
       'excluded'   => 1
     });
   }

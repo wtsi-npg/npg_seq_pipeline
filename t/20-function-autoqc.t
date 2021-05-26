@@ -45,7 +45,8 @@ my $default = {
   default => {
     minimum_cpu => 3,
     memory => 1.5,
-    fs_slots_num => 1
+    fs_slots_num => 1,
+    apply_array_cpu_limit => 1
   }
 };
 
@@ -204,7 +205,8 @@ subtest 'qX_yield' => sub {
     default => {
       memory => 2,
       fs_slots_num => 1,
-      minimum_cpu => 1
+      minimum_cpu => 1,
+      apply_array_cpu_limit => 1
     }
   };
 

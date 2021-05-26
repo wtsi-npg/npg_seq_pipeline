@@ -68,10 +68,8 @@ sub _token_job {
   my $job_name = join q{_}, $subroutine_name, $self->label(), $pipeline_name;
 
   my $d = $self->create_definition({
-    identifier    => $self->label(),
     job_name      => $job_name,
     command       => '/bin/true',
-    num_cpus      => [0],
   });
 
   return [$d];
@@ -111,7 +109,6 @@ sub pipeline_wait4path {
   my $d = $self->create_definition({
     job_name      => $job_name,
     command       => $command,
-    num_cpus      => [0],
     command_preexec => "[ -d '$path' ]",
   });
 

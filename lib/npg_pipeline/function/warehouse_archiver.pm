@@ -95,7 +95,6 @@ sub _update_warehouse_command {
   if ($m) {
     $self->warn($m);
     $d = $self->create_definition({
-      identifier   => $self->label,
       excluded     => 1
     });
   } else {
@@ -119,7 +118,6 @@ sub _update_warehouse_command {
 
     $d = $self->create_definition({
       command    => $command,
-      num_cpus   => [0],
       job_name   => $job_name,
     });
   }

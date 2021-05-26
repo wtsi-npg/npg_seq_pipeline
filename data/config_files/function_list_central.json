@@ -280,7 +280,8 @@
                     "description": "A token job, which always succeeds; the start node of the both functions and jobs directed graphs.",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -304,7 +305,8 @@
                     "description": "Writes a serialized representation of the 'analysis in progress' run status to the file system",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -316,7 +318,8 @@
                     "description": "Writes a serialized representation of the 'analysis in progress' lane status to the file system for all lanes under analysis",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -376,7 +379,8 @@
                             "db": [
                                 "mlwh"
                             ],
-                            "queue": "lowload"
+                            "queue": "lowload",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -391,7 +395,8 @@
                             "db": [
                                 "mlwh"
                             ],
-                            "queue": "lowload"
+                            "queue": "lowload",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -406,7 +411,8 @@
                             "db": [
                                 "mlwh"
                             ],
-                            "queue": "lowload"
+                            "queue": "lowload",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -418,7 +424,8 @@
                     "description": "Writes a serialized representation of the 'secondary analysis in progress' run status to the file system",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -661,7 +668,8 @@
                     "description": "Writes a serialized representation of the 'analysis complete' run status to the file system",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -738,7 +746,8 @@
                     "description": "Writes a serialized representation of the 'qc review pending' run status to the file system",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }
@@ -750,7 +759,8 @@
                     "description": "A token job, which always succeeds; the end node of the both functions and jobs directed graphs.",
                     "resources": {
                         "default": {
-                            "queue": "small"
+                            "queue": "small",
+                            "minimum_cpu": 0
                         }
                     }
                 }

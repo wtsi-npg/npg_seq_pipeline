@@ -201,15 +201,9 @@ sub _create_definition_object {
   $ref->{'composition'}     = $product->composition;
   $ref->{'command'}         = $command;
 
-  if ($qc_to_run eq q[adapter]) {
-    $ref->{num_cpus} = [$self->general_values_conf()->{'qc_adapter_cpu'}] || [1];
-  }
-
   if ($qc_to_run eq q[upstream_tags]) {
     $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
   }
-
-  $ref->{'apply_array_cpu_limit'} = 1;
 
   if ( ($qc_to_run eq 'adapter') || $self->_check_uses_refrepos() ) {
     $ref->{'command_preexec'} = $self->repos_pre_exec_string();

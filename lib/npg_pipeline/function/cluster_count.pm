@@ -53,7 +53,7 @@ sub create {
   my $id_run = $self->id_run;
 
   my $job_name = join q[_], $CLUSTER_COUNT_SCRIPT,
-                            $self->id_run(), $self->timestamp;
+                            $id_run, $self->timestamp;
 
   my $command = $CLUSTER_COUNT_SCRIPT;
   $command .= q{ --id_run=}            . $id_run;
@@ -88,7 +88,6 @@ sub create {
 
   return [
       $self->create_definition({
-        identifier   => $id_run,
         job_name     => $job_name,
         command      => $command,
       })

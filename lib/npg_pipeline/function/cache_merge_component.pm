@@ -58,7 +58,6 @@ sub create {
     $self->debug("Adding command '$command'");
 
     push @definitions, $self->create_definition({
-      identifier => $id_run,
       job_name   => $job_name,
       command    => $command,
       composition => $product->composition()
@@ -67,7 +66,6 @@ sub create {
 
   if (not @definitions) {
     push @definitions, $self->create_definition({
-      identifier => $id_run,
       excluded => 1
     });
   }

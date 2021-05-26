@@ -53,7 +53,6 @@ sub create {
 
   return [
     $self->create_definition({
-      identifier   => $id_run,
       job_name     => $job_name,
       command      => $command,
     })
