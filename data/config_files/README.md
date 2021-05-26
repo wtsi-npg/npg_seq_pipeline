@@ -40,7 +40,6 @@ A node represents a single class of job and the pipeline may create many jobs fr
                 "minimum_cpu": 1,
                 "memory": 2,
                 "array_cpu_limit": 64,
-                "nfs_token": 1
             }
     }
 
@@ -78,7 +77,6 @@ If resources are supplied, there *must* be something under a *default* block
 - maximum_cpu - the most CPUs this job can run with. Depends on the real CPU core counts in the hardware
 - memory - maximum memory required in Gibibytes (GiB).
 - minimum_cpu - the fewest CPUs this job can run with
-- nfs_token - the number of NFS tokens required by the job
 - queue - [small, default, lowload, ...] defining which queue the scheduler should use
 - reserve_irods_slots - the number of iRODS tokens required by the job
 
