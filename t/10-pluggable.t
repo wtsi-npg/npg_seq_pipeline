@@ -698,7 +698,7 @@ subtest 'Copy log file and product_release config' => sub {
 };
 
 subtest 'Check resource population from graph' => sub {
-  plan tests => 5;
+  plan tests => 2;
 
   my $p = npg_pipeline::pluggable->new(
     id_run => 1234,
@@ -708,6 +708,5 @@ subtest 'Check resource population from graph' => sub {
   my $graph = $p->function_graph;
   cmp_ok($graph->vertices, '==', 3, 'Expected number of vertices');
   my @attr_names = $graph->get_vertex_attribute_names('run_analysis_complete');
-  ok( (none { $_ eq 'metadata' } @attr_names), 'No metadata in boring node');
-  # my $metadata = $graph->get_vertex_attribute('run_analysis_complete', 'metadata');
+  ok ( any { $_ eq 'resources' } @attr_names, 'Resources loaded');
 };
