@@ -115,10 +115,6 @@ has '_registry' => (
   isa           => q{HashRef},
   is            => q{ro},
   lazy_build    => 1,
-  handles => {
-    add_task_resolver => 'set'
-  },
-  traits => ['Hash'],
 );
 sub _build__registry {
   my $self = shift;
