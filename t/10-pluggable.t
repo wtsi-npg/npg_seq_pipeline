@@ -710,3 +710,4 @@ subtest 'Check resource population from graph' => sub {
   my @attr_names = $graph->get_vertex_attribute_names('run_analysis_complete');
   ok( (none { $_ eq 'metadata' } @attr_names), 'No metadata in boring node');
   # my $metadata = $graph->get_vertex_attribute('run_analysis_complete', 'metadata');
+};
