@@ -710,36 +710,3 @@ subtest 'Check resource population from graph' => sub {
   my @attr_names = $graph->get_vertex_attribute_names('run_analysis_complete');
   ok( (none { $_ eq 'metadata' } @attr_names), 'No metadata in boring node');
   # my $metadata = $graph->get_vertex_attribute('run_analysis_complete', 'metadata');
-
-
-  $p = npg_pipeline::pluggable->new(
-    id_run => 1234,
-    function_order => ['test_function'],
-    function_list => "$config_dir/test_pipeline.json"
-  );
-  $graph = $p->function_graph;
-  cmp_ok($graph->vertices, '==', 3, 'Single-function graph has 3 nodes');
-  @attr_names = $graph->get_vertex_attribute_names('test_function');
-  ok((any { $_ eq 'resources' } @attr_names), 'Metadata loaded from test graph');
-
-  is_deeply(
-    $graph->get_vertex_attributes('test_function'),
-    {
-      label => 'test_function',
-      resources => {
-        default => {
-          minimum_cpu => 6,
-          maximum_cpu => 8,
-          memory => 32,
-          db => [],
-          irods => 5,
-          fs_num_slots => 2
-        },
-        special => {
-          memory => 38
-        }
-      }
-    },
-    'All attributes found in test_function'
-  );
-};
