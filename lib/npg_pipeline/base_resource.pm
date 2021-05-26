@@ -145,7 +145,7 @@ sub _get_massaged_resources {
     delete $resources->{array_cpu_limit};
   }
   # Remove any items that are not accepted by definition
-  foreach my $incompatible (qw/nfs_token db/) {
+  foreach my $incompatible (qw/db/) {
     delete $resources->{$incompatible};
   }
 

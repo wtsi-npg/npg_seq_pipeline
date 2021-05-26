@@ -354,8 +354,7 @@
             "default_resources": {
                 "minimum_cpu": 1,
                 "memory": 2,
-                "array_cpu_limit": 64,
-                "nfs_token": 1
+                "array_cpu_limit": 64
             }
         }
     }
