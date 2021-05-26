@@ -725,7 +725,8 @@
                     "description": " Merge chunked VCF files and also recompress to achieve better compression",
                     "resources": {
                         "default": {
-                            "fs_slots_num": 2
+                            "fs_slots_num": 2,
+                            "memory": 2
                         }
                     }
                 }
