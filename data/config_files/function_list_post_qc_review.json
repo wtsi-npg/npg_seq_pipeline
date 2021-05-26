@@ -160,7 +160,14 @@
                 "label": "archive_to_irods_ml_warehouse",
                 "metadata": {
                     "description": "Archival of the output of the main analysis pipelines to the iRODS repository; the ml warehouse LIMS data are used",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "reserve_irods_slots": 1,
+                            "db": [
+                                "mlwh"
+                            ]
+                        }
+                    }
                 }
             },
             {
@@ -168,7 +175,11 @@
                 "label": "archive_pp_data_to_irods",
                 "metadata": {
                     "description": "Archival of the output of portable pipelines to a non-default iRODS connection (if configured)",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "reserve_irods_slots": 1
+                        }
+                    }
                 }
             },
             {
@@ -176,7 +187,11 @@
                 "label": "archive_run_data_to_irods",
                 "metadata": {
                     "description": "Archival of Illumina InterOps, Run Parameter(s).xml and RunInfo.xml files to the default  iRODS run collection",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "reserve_irods_slots": 1
+                        }
+                    }
                 }
             },
             {
@@ -217,8 +232,13 @@
                 "metadata": {
                     "description": "Loads QC results into the database",
                     "resources": {
-                        "fs_slots_num": 1,
-                        "queue": "lowload"
+                        "default": {
+                            "fs_slots_num": 1,
+                            "queue": "lowload",
+                            "db": [
+                                "qc"
+                            ]
+                        }
                     }
                 }
             },
@@ -309,7 +329,11 @@
                 "label": "archive_logs",
                 "metadata": {
                     "description": "Finds all pipeline logs, puts them into a compressed archive and uploads the archive to the default iRODS run collection",
-                    "resources": {}
+                    "resources": {
+                        "default": {
+                            "reserve_irods_slots": 1
+                        }
+                    }
                 }
             },
             {
