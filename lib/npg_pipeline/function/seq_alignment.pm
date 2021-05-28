@@ -145,7 +145,6 @@ sub generate_compositions {
   my $dry_run = 1;
   $self->generate($pipeline_name, $dry_run);
   return [$self->create_definition({
-    identifier => $self->id_run(),
     excluded   => 1
   })];
 }

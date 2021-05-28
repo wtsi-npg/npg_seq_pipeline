@@ -68,7 +68,6 @@ sub create {
     $self->debug("Adding command '$command'");
 
     push @definitions, $self->create_definition({
-      identifier => $label,
       job_name => $job_name,
       command => $command,
       composition => $product->composition()

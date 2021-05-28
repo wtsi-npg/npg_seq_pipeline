@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Exception;
 use File::Temp qw/tempdir/;
 use File::Path qw/make_path/;
@@ -82,12 +82,43 @@ my %init = (
   timestamp              => $timestamp,
   repository             => $dir,
   resource               => {
-    default => {
+    'default' => {},
+    'ncov2019-artic-nf' => {
       minimum_cpu => 1,
       memory => 2
     }
   }
 );
+
+subtest 'error on missing special resource definition' => sub {
+  plan tests => 2;
+  
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
+  my %init_test = (
+    product_conf_file_path => $product_conf,
+    archive_path           => $archive_path,
+    runfolder_path         => $runfolder_path,
+    id_run                 => 26291,
+    timestamp              => $timestamp,
+    repository             => $dir,
+    resource               => {
+      'default' => {
+        minimum_cpu => 1,
+        memory => 2
+      }
+    }
+  );
+
+  my $ppd = npg_pipeline::function::stage2pp->new(%init_test);
+  throws_ok {$ppd->create()} qr/Tried to get resource spec/,
+    'error when special resource is not defined';
+
+  $init_test{'resource'}{'ncov2019_artic_nf'} =
+    {minimum_cpu => 4, memory => 5};
+  $ppd = npg_pipeline::function::stage2pp->new(%init_test);
+  throws_ok {$ppd->create()} qr/Tried to get resource spec/,
+    'error when the correct special resource is not defined';
+};
 
 subtest 'error on missing data in LIMS' => sub {
   plan tests => 2;
@@ -131,7 +162,8 @@ subtest 'definition generation, ncov2019-artic-nf pp' => sub {
   my $ppd = npg_pipeline::function::stage2pp->new(
     %init,
     resource => {
-      default => {
+      default => {},
+      'ncov2019-artic-nf'=> {
         minimum_cpu => 4,
         memory => 5
       }
@@ -248,8 +280,13 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
 
+  my $itest = \%init;
+  delete $itest->{resource}->{'ncov2019-artic-nf'};
+  $itest->{resource}->{'ncov2019-artic-nf ampliconstats'} =
+    {minimum_cpu => 2, memory => 1};
+  my %init_test = %{$itest};
   my $ppd = npg_pipeline::function::stage2pp->new(
-    %init,
+    %init_test,
     pipeline_type          => 'stage2App',
   );
 
@@ -303,15 +340,9 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
   ok (!-e $replacement_files[1], 'replacement file for lane 2 does not exist');
 
   $ppd = npg_pipeline::function::stage2pp->new(
-    %init,
+    %init_test,
     pipeline_type          => 'stage2App',
     merge_lanes            => 0,
-    resource => {
-      default => {
-        minimum_cpu => 2,
-        memory => 1
-      }
-    }
   );
 
   $ds = $ppd->create;
@@ -354,16 +385,10 @@ subtest q(definition generation, 'ncov2019_artic_nf ampliconstats' pp) => sub {
   is_deeply ($d->num_cpus, [2], 'number of CPUs');
 
   $ppd = npg_pipeline::function::stage2pp->new(
-    %init,
+    %init_test,
     product_conf_file_path => qq[$repo_dir/product_release_explicit_astats_depth.yml],
     pipeline_type          => 'stage2App',
     merge_lanes            => 0,
-    resource => {
-      default => {
-        minimum_cpu => 2,
-        memory => 2
-      }
-    }
   );
 
   $ds = $ppd->create;

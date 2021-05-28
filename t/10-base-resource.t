@@ -67,7 +67,7 @@ subtest 'basics' => sub {
 };
 
 subtest 'Definition creation' => sub {
-  plan tests => 6;
+  plan tests => 16;
 
   my $function = npg_pipeline::base_resource->new(
     resource => {
@@ -89,15 +89,34 @@ subtest 'Definition creation' => sub {
   is($definition->command, 'echo', 'Pass through of options');
   is_deeply($definition->num_cpus, [1], 'Default cpu option flattened to single value');
   cmp_ok($definition->memory, '==', 2000, 'Default memory is converted from GB to MB');
+  is($definition->identifier, '1234', 'identifier override');
 
   $definition = $function->create_definition({
     command => 'sleep 1',
     job_name => 'test2',
-    identifier => '2345',
     memory => 15,
   });
 
   cmp_ok($definition->memory, '==', 15000, 'Resource override from calling code operates');
+  is($definition->identifier, '26291', 'default identifier from run id');  
+
+  $definition = $function->create_definition({
+    minimum_cpu => 2,
+    memory => 15,
+    excluded => 1,
+  });
+  ok (!defined $definition->memory, 'memory is not defined');
+  ok (!defined $definition->num_cpus, 'number of cpus is not defined');
+  ok ($definition->excluded, 'job is excluded');
+  is($definition->identifier, '26291', 'default identifier from run id');
+
+  $definition = $function->create_definition({
+    excluded => 1,
+  });
+  ok (!defined $definition->memory, 'memory is not defined');
+  ok (!defined $definition->num_cpus, 'number of cpus is not defined');
+  ok ($definition->excluded, 'job is excluded');
+  is($definition->identifier, '26291', 'default identifier from run id');
 };
 
 subtest 'Multithread definition creation' => sub {

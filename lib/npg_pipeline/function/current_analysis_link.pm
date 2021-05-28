@@ -52,7 +52,7 @@ sub make_link {
 sub create {
   my $self = shift;
 
-  my $ref = { 'identifier' => $self->id_run() };
+  my $ref = {};
 
   if ($self->no_summary_link()) {
     $self->info(q{Summary link creation turned off});

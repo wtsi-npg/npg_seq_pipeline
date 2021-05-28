@@ -9,7 +9,6 @@ use File::Spec::Functions qw{catdir};
 use Try::Tiny;
 
 use npg_pipeline::cache::reference;
-use npg_pipeline::function::definition;
 use npg_qc::autoqc::constants qw/
          $SAMTOOLS_NO_FILTER
          $SAMTOOLS_SEC_QCFAIL_SUPPL_FILTER

@@ -33,10 +33,8 @@ sub create {
     $self->timestamp();
 
   my $d = $self->create_definition({
-    identifier    => $self->id_run(),
     job_name      => $job_name,
     command       => $self->_command($status_files_path),
-    num_cpus      => [0],
   });
 
   return [$d];

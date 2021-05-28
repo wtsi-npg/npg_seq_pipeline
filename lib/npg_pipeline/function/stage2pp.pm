@@ -127,7 +127,6 @@ sub create {
   } else {
     $self->debug('no stage2pp enabled data products, skipping');
     push @definitions, $self->create_definition({
-      identifier => $self->label,
       excluded   => 1
     });
   }
@@ -241,7 +240,7 @@ sub _ncov2019_artic_nf_create {
     "--directory $in_dir_path",
     "--outdir $out_dir_path";
 
-  return $self->create_definition($job_attrs);
+  return $self->create_definition($job_attrs, $self->pp_name($pp));
 }
 
 has '_lane_counter4ampliconstats' => (
@@ -310,7 +309,7 @@ sub _ncov2019_artic_nf_ampliconstats_create {
              @{$self->_generate_replacement_map($lane_product)});
 
   my $job_attrs = $self->_job_attrs($lane_product, $pp);
-  my $num_cpus = $self->_get_massaged_resources()->{num_cpus}[0];
+  my $num_cpus = $self->_get_massaged_resources($pp_name)->{num_cpus}[0];
   my $sta_cpus_option = $num_cpus > 1 ? q[-@] . ($num_cpus - 1) : q[];
 
   # Use samtools to produce ampliconstats - one file per lane.
@@ -356,7 +355,7 @@ sub _ncov2019_artic_nf_ampliconstats_create {
   # Set lane flag so that we skip the next product for this lane.
   $self->_lane_counter4ampliconstats->{$position} = 1;
 
-  return $self->create_definition($job_attrs);
+  return $self->create_definition($job_attrs, $pp_name);
 }
 
 __PACKAGE__->meta->make_immutable;

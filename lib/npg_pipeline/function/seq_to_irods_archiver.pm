@@ -71,16 +71,12 @@ sub basic_definition_init_hash {
     $self->logcroak(q{Not implemented for individual products});
   }
 
-  my $ref = {
-    identifier => $self->label()
-  };
-
   if ($self->no_irods_archival) {
     $self->info(q{Archival to iRODS is switched off.});
-    $ref->{'excluded'} = 1;
+    return {'excluded' => 1};
   }
 
-  return $ref;
+  return {};
 }
 
 sub assign_common_definition_attrs {

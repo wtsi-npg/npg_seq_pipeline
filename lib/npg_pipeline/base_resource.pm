@@ -99,13 +99,18 @@ Example:     my $definition = $self->create_definition({preexec => 'sleep 10'});
 sub create_definition {
   my ($self, $custom_args, $special_resource) = @_;
 
-  # Load combined resource requirements
-  my $resources = $self->_get_massaged_resources($special_resource);
   $custom_args //= {};
-  # and combine with any custom arguments
-  $resources = { %{$resources}, %{$custom_args} };
-  # Scale up memory numbers to MB expected by definition
-  $resources->{memory} *= $GB_TO_MB_CONVERSION;
+  my $resources;
+  if ($custom_args->{'excluded'}) {
+    $resources = {'excluded' => 1};
+  } else {
+    # Load combined resource requirements
+    $resources = $self->_get_massaged_resources($special_resource);
+    # and combine with any custom arguments
+    $resources = { %{$resources}, %{$custom_args} };
+    # Scale up memory numbers to MB expected by definition
+    $resources->{memory} *= $GB_TO_MB_CONVERSION;
+  }
 
   return npg_pipeline::function::definition->new(
     created_by => ref $self,

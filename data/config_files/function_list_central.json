@@ -358,7 +358,13 @@
                 "label": "stage2pp",
                 "metadata": {
                     "description": "Creates file system scaffold and job definitions for external pipelines, which use the output of the primary analysis as their input.",
-                    "resources": {}
+                    "resources": {
+                        "default": {},
+                        "ncov2019-artic-nf": {
+                            "minimum_cpu": 4,
+                            "memory": 5
+                        }
+                    }
                 }
             },
             {
@@ -366,7 +372,14 @@
                 "label": "stage2App",
                 "metadata": {
                     "description": "Creates file system scaffold and job definitions for external pipelines, which depend for their input on the output of the external pipelines run by the stage2pp function",
-                    "resources": {}
+                    "resources": {
+                        "default": {},
+                        "ncov2019-artic-nf_ampliconstats": {
+                            "minimum_cpu": 2,
+                            "memory": 1
+                        }
+
+                    }
                 }
             },
             {

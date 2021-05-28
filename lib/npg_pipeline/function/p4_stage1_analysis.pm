@@ -171,7 +171,6 @@ sub _create_definition {
   my ($self, $composition, $command) = @_;
 
   return $self->create_definition({
-    identifier      => $self->id_run(),
     job_name        => (join q{_}, q{p4_stage1_analysis},$self->id_run(),$self->timestamp()),
     command         => $command,
     command_preexec => $self->repos_pre_exec_string(),
