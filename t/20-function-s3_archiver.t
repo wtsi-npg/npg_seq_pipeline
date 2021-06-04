@@ -60,8 +60,8 @@ subtest 'local and no_s3_archival flag' => sub {
 
   my $archiver = $pkg->new(
     %init,
-    conf_path      => "t/data/release/config/archive_on",
-    local          => 1
+    conf_path => "t/data/release/config/archive_on",
+    local     => 1
   );
   ok($archiver->no_s3_archival, 'no_s3_archival flag is set to true');
   my $ds = $archiver->create;
@@ -87,7 +87,7 @@ subtest 'create for a run' => sub {
   lives_ok {
     $archiver = $pkg->new(
       %init,
-      conf_path      => "t/data/release/config/archive_on",
+      conf_path => "t/data/release/config/archive_on",
     );
   } 'archiver created ok';
 
@@ -146,8 +146,8 @@ subtest 'string to add, or not, MD5 to upload command' => sub {
   my $file_path = qq($runfolder_path/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex3/26291#3.cram);
   my $archiver = $pkg->new(
     %init,
-    conf_path      => "t/data/release/config/archive_on",
-    local          => 1
+    conf_path => "t/data/release/config/archive_on",
+    local     => 1
   );
   is($archiver->_base64_encoded_md5_gsutil_arg($file_path), q(-h Content-MD5:1B2M2Y8AsgTpgAmY7PhCfg==), 'MD5 header added when md5 available');
   is($archiver->_base64_encoded_md5_gsutil_arg($file_path.q(.crai)), undef, 'MD5 header NOT added when md5 not available');
@@ -160,9 +160,9 @@ subtest 'create for a product' => sub {
   # Using a standard run folder structure.
   my $archiver = $pkg->new(
     %init,
-    conf_path           => 't/data/release/config/archive_on',
-    label               => 'my_label',
-    product_rpt_list    => '26291:1:3;26291:2:3',
+    conf_path        => 't/data/release/config/archive_on',
+    label            => 'my_label',
+    product_rpt_list => '26291:1:3;26291:2:3',
   );
 
   my @defs = @{$archiver->create};
@@ -194,10 +194,10 @@ subtest 'create for a product' => sub {
 
   $archiver = $pkg->new(
     %init,
-    conf_path           => 't/data/release/config/archive_on',
-    label               => 'my_label',
-    product_rpt_list    => '26291:1:3;26291:2:3',
-    archive_path        => $archive,
+    conf_path        => 't/data/release/config/archive_on',
+    label            => 'my_label',
+    product_rpt_list => '26291:1:3;26291:2:3',
+    archive_path     => $archive,
   );
   @defs = @{$archiver->create};
   is (scalar @defs, 1, 'one definition returned');
@@ -205,11 +205,11 @@ subtest 'create for a product' => sub {
 
   $archiver = $pkg->new(
     %init,
-    conf_path           => 't/data/release/config/disregard_qc_outcome',
-    label               => 'my_label',
-    product_rpt_list    => '26291:1:3;26291:2:3',
-    archive_path        => $archive,
-    qc_schema           => undef
+    conf_path        => 't/data/release/config/disregard_qc_outcome',
+    label            => 'my_label',
+    product_rpt_list => '26291:1:3;26291:2:3',
+    archive_path     => $archive,
+    qc_schema        => undef
   );
   @defs = @{$archiver->create};
   is (scalar @defs, 1,
@@ -225,7 +225,7 @@ subtest 'configure_date_binning' => sub {
   lives_ok {
     $archiver = $pkg->new(
       %init,
-      conf_path       => "t/data/release/config/date_binning",
+      conf_path => "t/data/release/config/date_binning",
     );
   } 'archiver created ok';
 
@@ -256,7 +256,7 @@ subtest 'no alignments in product' => sub {
   lives_ok {
     $archiver = $pkg->new(
       %init,
-      conf_path       => "t/data/release/config/archive_on",
+      conf_path => "t/data/release/config/archive_on",
     );
   } 'archiver created ok';
 
