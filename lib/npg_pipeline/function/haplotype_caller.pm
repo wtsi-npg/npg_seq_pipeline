@@ -127,9 +127,7 @@ sub create {
     my @errors = npg_pipeline::runfolder_scaffold->make_dir(@out_dirs);
     @errors and $self->logcroak(join qq[\n], @errors);
   } else {
-    push @definitions, $self->create_definition({
-      'excluded'   => 1
-    });
+    push @definitions, $self->create_excluded_definition();
   }
 
   return \@definitions;

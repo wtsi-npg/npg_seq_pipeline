@@ -126,9 +126,7 @@ sub create {
     npg_pipeline::runfolder_scaffold->make_dir(@{$self->_output_dirs});
   } else {
     $self->debug('no stage2pp enabled data products, skipping');
-    push @definitions, $self->create_definition({
-      excluded   => 1
-    });
+    push @definitions, $self->create_excluded_definition();
   }
 
   return \@definitions;

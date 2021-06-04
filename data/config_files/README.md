@@ -13,11 +13,11 @@ Pipeline-wide parameters can be set here
 
 - general_values.ini
 
-  Settings for the pipeline in general that constrain global behaviour, e.g. how many Irods errors to tolerate before stopping execution
+  Settings for the pipeline in general that constrain global behaviour, e.g. how many iRODS errors to tolerate before stopping execution
 
 - wr.json
 
-  A configuration file specifically for the WR scheduler. WR is used in an Openstack environment so it needs to know what VM flavours it can use.
+  A configuration file specifically for the WR scheduler. WR is used in an OpenStack environment and allows the specification of instance flavour per job type. Available flavourts are declared when starting the manager.
 
 - lsf.ini
 
@@ -80,4 +80,4 @@ If resources are supplied, there *must* be something under a *default* block
 - queue - [small, default, lowload, ...] defining which queue the scheduler should use
 - reserve_irods_slots - the number of iRODS tokens required by the job
 
-Note the number of settings that are required to protect assets from being overloaded with requests. iRODS and NFS in particular are vulnerable to saturation that leads to complicated pipeline failures.
+Note the settings required to protect assets from being overloaded with requests. iRODS and NFS in particular are vulnerable to saturation that leads to complicated pipeline failures.

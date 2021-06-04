@@ -190,16 +190,14 @@ sub create {
       $SEND_MESSAGE_SCRIPT, $self->message_config(), $msg_file;
 
     push @definitions, $self->create_definition({
-      job_name   => $job_name,
-      command    => $command,
+      job_name    => $job_name,
+      command     => $command,
       composition => $product->composition()
     });
   }
 
   if (not @definitions) {
-    push @definitions, $self->create_definition({
-      excluded   => 1
-    });
+    push @definitions, $self->create_excluded_definition();
   }
 
   return \@definitions;

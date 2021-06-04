@@ -227,7 +227,7 @@
                 "id": "notify_product_delivery",
                 "label": "notify_product_delivery",
                 "metadata": {
-                    "description": "Notification of product delivery to a customer to an in-house MQ (if configured)",
+                    "description": "Notification of product delivery to a customer using an in-house message queue (if configured)",
                     "resources": {}
                 }
             },
@@ -251,7 +251,7 @@
                 "id": "run_run_archived",
                 "label": "run_run_archived",
                 "metadata": {
-                    "description": "",
+                    "description": "Writes a serialized representation of the 'run archived' run status to the file system",
                     "resources": {
                         "default": {
                             "queue": "small",
@@ -276,7 +276,7 @@
                 "id": "run_qc_complete",
                 "label": "run_qc_complete",
                 "metadata": {
-                    "description": "",
+                    "description": "Writes a serialized representation of the 'qc complete' run status to the file system",
                     "resources": {
                         "default": {
                             "queue": "small",

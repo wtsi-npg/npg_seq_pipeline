@@ -53,8 +53,8 @@ sub create {
 
   return [
     $self->create_definition({
-      job_name     => $job_name,
-      command      => $command,
+      job_name => $job_name,
+      command  => $command,
     })
   ];
 }

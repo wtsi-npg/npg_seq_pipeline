@@ -342,7 +342,7 @@
                 "id": "p4_stage1_analysis",
                 "label": "p4_stage1_analysis",
                 "metadata": {
-                    "description": "Primary analysis of the data (bcl files) coming from the Illumina instrument producing unaligned CRAM files for individual samples",
+                    "description": "Primary analysis of the data (bcl/cbcl files) coming from the Illumina instrument producing unaligned CRAM files for individual samples",
                     "resources": {
                         "default": {
                             "minimum_cpu": 8,

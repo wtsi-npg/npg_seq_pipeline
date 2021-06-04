@@ -112,7 +112,7 @@ subtest 'create function definitions' => sub {
     timestamp         => $timestamp,
     verbose           => 0,
     repository        => $dir,
-    resource            => $default
+    resource          => $default
   )
   } 'no error creating an object';
 

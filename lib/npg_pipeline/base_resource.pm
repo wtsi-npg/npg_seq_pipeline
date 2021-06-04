@@ -120,6 +120,21 @@ sub create_definition {
   );
 }
 
+=head2 create_excluded_definition
+
+Description: Creates a definition object with the 'excluded' attribute set.
+             Excluded tells the pipeline executor that it can ignore the
+             node in the graph
+Returntype:  npg_pipeline::function::definition
+
+=cut
+
+sub create_excluded_definition {
+  my ($self) = @_;
+  return $self->create_definition({excluded => 1});
+}
+
+
 # Converts a minimum and maximum cpu specification and returns
 # the resource definition with cpus as an arrayref.
 # Optionally accepts a name of a special resource spec in the graph

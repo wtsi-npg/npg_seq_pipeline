@@ -282,8 +282,8 @@ subtest 'no_message_study' => sub {
 
   my $notifier = $pkg->new(
     %init,
-    conf_path => "t/data/release/config/notify_off",
-    message_config      => $message_config,
+    conf_path      => "t/data/release/config/notify_off",
+    message_config => $message_config,
   );
 
   my @defs = @{$notifier->create};

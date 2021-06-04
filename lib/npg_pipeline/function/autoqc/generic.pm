@@ -117,9 +117,7 @@ sub create {
   @definitions = grep { $_ } @definitions;
 
   if (!@definitions) {
-    my $ref = {};
-    $ref->{'excluded'} = 1;
-    push @definitions, $self->create_definition($ref);
+    push @definitions, $self->create_excluded_definition();
   }
 
   return \@definitions;

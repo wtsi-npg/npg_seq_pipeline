@@ -594,8 +594,8 @@ npg_pipeline::function::p4_stage1_analysis
 
 =head1 DESCRIPTION
 
-Definition for p4 flow which creates cram files from bcl files, including initial phiX alignment,
-spatial filtering and deplexing of pools where appropriate.
+Definition for p4 flow which creates cram files from bcl/cbcl files, including initial PhiX
+alignment, spatial filtering and deplexing of pools where appropriate.
 
 =head1 SUBROUTINES/METHODS
 

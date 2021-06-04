@@ -73,9 +73,7 @@ sub create {
   }
 
   if (not @definitions) {
-    push @definitions, $self->create_definition({
-      'excluded'   => 1
-    });
+    push @definitions, $self->create_excluded_definition();
   }
 
   return \@definitions;

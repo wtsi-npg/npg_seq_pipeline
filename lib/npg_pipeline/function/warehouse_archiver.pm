@@ -94,9 +94,7 @@ sub _update_warehouse_command {
   my $d;
   if ($m) {
     $self->warn($m);
-    $d = $self->create_definition({
-      excluded     => 1
-    });
+    $d = $self->create_excluded_definition();
   } else {
     $pipeline_name ||= q[];
     my $job_name = join q{_}, $loader_name, $self->label, $pipeline_name;

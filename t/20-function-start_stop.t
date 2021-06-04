@@ -27,15 +27,15 @@ subtest 'start and stop functions' => sub {
   plan tests => 30;
 
   my $ss = npg_pipeline::function::start_stop->new(
-    id_run         => 1234,
+    id_run => 1234,
     %init
   );
   isa_ok ($ss, 'npg_pipeline::function::start_stop');
   is ($ss->label, '1234', 'label');
 
   my $ss1 = npg_pipeline::function::start_stop->new(
-    id_run         => 1234,
-    label          => 'my_label',
+    id_run => 1234,
+    label  => 'my_label',
     %init
   );
 
@@ -76,7 +76,7 @@ subtest 'wait4path function' => sub {
   plan tests => 17;
 
   my $f = npg_pipeline::function::start_stop->new(
-    id_run         => 1234,
+    id_run => 1234,
     %init
   );
 

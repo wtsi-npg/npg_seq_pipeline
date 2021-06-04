@@ -67,7 +67,7 @@ subtest 'basics' => sub {
 };
 
 subtest 'Definition creation' => sub {
-  plan tests => 16;
+  plan tests => 20;
 
   my $function = npg_pipeline::base_resource->new(
     resource => {
@@ -98,7 +98,7 @@ subtest 'Definition creation' => sub {
   });
 
   cmp_ok($definition->memory, '==', 15000, 'Resource override from calling code operates');
-  is($definition->identifier, '26291', 'default identifier from run id');  
+  is($definition->identifier, '26291', 'default identifier from run id');
 
   $definition = $function->create_definition({
     minimum_cpu => 2,
@@ -113,6 +113,12 @@ subtest 'Definition creation' => sub {
   $definition = $function->create_definition({
     excluded => 1,
   });
+  ok (!defined $definition->memory, 'memory is not defined');
+  ok (!defined $definition->num_cpus, 'number of cpus is not defined');
+  ok ($definition->excluded, 'job is excluded');
+  is($definition->identifier, '26291', 'default identifier from run id');
+
+  $definition = $function->create_excluded_definition();
   ok (!defined $definition->memory, 'memory is not defined');
   ok (!defined $definition->num_cpus, 'number of cpus is not defined');
   ok ($definition->excluded, 'job is excluded');

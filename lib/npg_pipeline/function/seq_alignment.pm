@@ -144,9 +144,7 @@ sub generate_compositions {
   # as a second argument to generate().
   my $dry_run = 1;
   $self->generate($pipeline_name, $dry_run);
-  return [$self->create_definition({
-    excluded   => 1
-  })];
+  return [$self->create_excluded_definition()];
 }
 
 sub _save_compositions {
