@@ -648,6 +648,12 @@ sub _run_function {
 
   # Extract default properties from graphwide metadata
   my $jgraph = $self->_function_list_conf;
+
+  if (!exists $jgraph->{graph}{metadata}{default_resources}) {
+    $self->logcroak(
+      'No default resources defined in function graph under /graph/metadata/default_resources'
+    );
+  }
   my $resource = $jgraph->{graph}{metadata}{default_resources};
   # and get resource properties for this function invocation
   my $g = $self->function_graph;

@@ -617,7 +617,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->info(q[  p4 parameters written to ] . $param_vals_fname);
   $self->info(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
-  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->_get_massaged_resources()->{num_cpus}[0];
+  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->get_massaged_resources()->{num_cpus}[0];
   my $id = $self->_job_id();
   return join q( ),
     q(bash -c '),

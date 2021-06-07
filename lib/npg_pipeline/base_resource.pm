@@ -105,7 +105,7 @@ sub create_definition {
     $resources = {'excluded' => 1};
   } else {
     # Load combined resource requirements
-    $resources = $self->_get_massaged_resources($special_resource);
+    $resources = $self->get_massaged_resources($special_resource);
     # and combine with any custom arguments
     $resources = { %{$resources}, %{$custom_args} };
     # Scale up memory numbers to MB expected by definition
@@ -134,12 +134,17 @@ sub create_excluded_definition {
   return $self->create_definition({excluded => 1});
 }
 
+=head2 get_massaged_resources
 
-# Converts a minimum and maximum cpu specification and returns
-# the resource definition with cpus as an arrayref.
-# Optionally accepts a name of a special resource spec in the graph
-# to use specific resources
-sub _get_massaged_resources {
+Args [1]   : Optionally accepts a name of a special resource spec in the graph
+             to use specific resources
+Description: Converts a minimum and maximum cpu specification and returns
+             the resource definition with cpus as an arrayref.
+Returntype : Hashref containing definition-compatible keys
+
+=cut
+
+sub get_massaged_resources {
   my ($self, $special_resource) = @_;
 
   my $resources = $self->get_resources($special_resource);

@@ -307,7 +307,7 @@ sub _ncov2019_artic_nf_ampliconstats_create {
              @{$self->_generate_replacement_map($lane_product)});
 
   my $job_attrs = $self->_job_attrs($lane_product, $pp);
-  my $num_cpus = $self->_get_massaged_resources($pp_name)->{num_cpus}[0];
+  my $num_cpus = $self->get_massaged_resources($pp_name)->{num_cpus}[0];
   my $sta_cpus_option = $num_cpus > 1 ? q[-@] . ($num_cpus - 1) : q[];
 
   # Use samtools to produce ampliconstats - one file per lane.
