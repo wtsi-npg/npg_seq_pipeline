@@ -619,7 +619,7 @@ sub _common_attributes {
 }
 
 sub _run_function {
-  my ($self, $function_name) = @_;
+  my ($self, $function_name, $function_id) = @_;
 
   my $implementor = $self->_registry()->get_function_implementor($function_name);
   my $module = join q[::], 'npg_pipeline', 'function', $implementor->{'module'};
@@ -642,10 +642,21 @@ sub _run_function {
     $attrs->{$key} = $value;
   }
 
-  ####
-  # Bring in resource requirements that functions need in order to
-  # create task definitions
+  $attrs->{resource} = $self->_function_resource_requirements($function_id);
 
+  #####
+  # Instantiate the function implementor object, call on it the
+  # method whose name we received from the registry, return
+  # the result.
+  #
+  return $module->new($attrs)->$method_name($self->_pipeline_name);
+}
+
+####
+# Bring in resource requirements that functions need in order to
+# create task definitions
+sub _function_resource_requirements {
+  my ($self, $function_id) = @_;
   # Extract default properties from graphwide metadata
   my $jgraph = $self->_function_list_conf;
 
@@ -657,7 +668,7 @@ sub _run_function {
   my $resource = $jgraph->{graph}{metadata}{default_resources};
   # and get resource properties for this function invocation
   my $g = $self->function_graph;
-  my $fn_resource = $g->get_vertex_attribute($function_name, 'resources');
+  my $fn_resource = $g->get_vertex_attribute($function_id, 'resources');
 
   # merge global defaults with resource spec defaults
   for my $key (keys %{$resource}) {
@@ -665,15 +676,9 @@ sub _run_function {
       $fn_resource->{default}{$key} = $resource->{$key};
     }
   }
-  $attrs->{resource} = $fn_resource // {};
-
-  #####
-  # Instantiate the function implementor object, call on it the
-  # method whose name we received from the registry, return
-  # the result.
-  #
-  return $module->new($attrs)->$method_name($self->_pipeline_name);
+  return $fn_resource // {};
 }
+
 
 sub _schedule_functions {
   my $self = shift;
@@ -702,7 +707,7 @@ sub _schedule_functions {
       $self->logcroak(qq{No label for vertex $function});
     }
     $self->info(qq{***** Processing $function *****});
-    my $definitions = $self->_run_function($function_name);
+    my $definitions = $self->_run_function($function_name, $function);
     if (!$definitions || !@{$definitions}) {
       $self->logcroak(q{At least one definition should be returned});
     }

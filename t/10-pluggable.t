@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 15;
+use Test::More tests => 16;
 use Test::Exception;
 use Cwd;
 use List::Util qw(none any);
@@ -709,4 +709,45 @@ subtest 'Check resource population from graph' => sub {
   cmp_ok($graph->vertices, '==', 3, 'Expected number of vertices');
   my @attr_names = $graph->get_vertex_attribute_names('run_analysis_complete');
   ok ( any { $_ eq 'resources' } @attr_names, 'Resources loaded');
+};
+
+subtest 'Checking resources are assigned correctly from graph' => sub {
+  plan tests => 2;
+  # Check resources for functions are correctly merged with pipeline-wide settings
+  my $p = npg_pipeline::pluggable->new(
+    id_run => 1234,
+    function_list => "$config_dir/function_list_central.json"
+  );
+  my $resources = $p->_function_resource_requirements('update_ml_warehouse_1');
+  is_deeply(
+    $resources,
+    {
+      default => {
+        minimum_cpu => 0,
+        memory => 2,
+        array_cpu_limit => 64, # this will be removed when create_definition() is called
+        queue => 'lowload',
+        db => [
+          'mlwh'
+        ]
+      }
+    }
+  );
+
+  $p = npg_pipeline::pluggable->new(
+    id_run => 1234,
+    function_list => "$config_dir/function_list_post_qc_review.json"
+  );
+  $resources = $p->_function_resource_requirements('run_run_archived');
+  is_deeply(
+    $resources,
+    {
+      default => {
+        minimum_cpu => 0,
+        queue => 'small',
+        memory => 2,
+        array_cpu_limit => 64
+      }
+    }
+  )
 };
