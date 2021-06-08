@@ -70,7 +70,7 @@ has q{_is_lane_level_check4indexed_lane} => (
                                 lazy_build => 1,);
 sub _build__is_lane_level_check4indexed_lane {
   my $self = shift;
-  return $self->qc_to_run() =~ /^ tag_metrics | upstream_tags $/smx;
+  return $self->qc_to_run() =~ /^ tag_metrics $/smx;
 }
 
 has q{_is_check4target_file} => (
@@ -198,10 +198,6 @@ sub _create_definition_object {
   $ref->{'composition'}     = $product->composition;
   $ref->{'command'}         = $command;
 
-  if ($qc_to_run eq q[upstream_tags]) {
-    $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
-  }
-
   if ( ($qc_to_run eq 'adapter') || $self->_check_uses_refrepos() ) {
     $ref->{'command_preexec'} = $self->repos_pre_exec_string();
   }
@@ -258,13 +254,6 @@ sub _generate_command {
   }
   elsif(any { /$check/sm } qw( adapter bcfstats genotype )) {
     $c .= qq{ --input_files=$cramfile_path}; # note: single cram file
-  }
-  elsif($check eq q/upstream_tags/) {
-    my $tagzerobamfile_path = $dp->file_path($recal_path) .
-                              q[#0.] . $self->s1_s2_intfile_format;
-    $c .= qq{ --tag0_bam_file=$tagzerobamfile_path}; # note: single bam/cram file
-    $c .= qq{ --archive_qc_path=$qc_out_path}; # find locally produced tag metrics results
-    $c .= qq{ --cal_path=$recal_path};
   }
   elsif($check eq q/spatial_filter/) {
 
