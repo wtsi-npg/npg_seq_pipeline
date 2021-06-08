@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 17;
+use Test::More tests => 16;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -1371,53 +1371,6 @@ subtest 'miseq_primer_panel_only' => sub {
 
   my $d = _find($da, 1, 1);
   is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 1');
-};
-
-
-subtest 'generate compositions only' => sub {
-  plan tests => 8;
-
-  my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
-  my $runfolder_path = join q[/], $dir, 'compositions', $runfolder;
-  my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/no_cal';
-  make_path $bc_path;
-  my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/metadata_cache_24135';
-  make_path $cache_dir;
-  make_path "$bc_path/lane1";
-  make_path "$bc_path/archive/tileviz";
-
-  copy('t/data/miseq/24135_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
-    or die 'Copy failed';
-
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135.csv];
-
-  my $ms_gen = npg_pipeline::function::seq_alignment->new(
-    run_folder        => $runfolder,
-    runfolder_path    => $runfolder_path,
-    recalibrated_path => $bc_path,
-    timestamp         => q{2017},
-    repository        => $dir,
-    conf_path         => 't/data/release/config/seq_alignment',
-    resource          => $default
-  );
-  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
-  $ms_gen->create_product_level();
-
-  my $da = $ms_gen->generate_compositions('finishing_pipeline');
-  ok (($da and (@{$da} == 1)), 'one definition returned');
-  ok ($da->[0], 'function is excluded');
-
-  my $base = "$bc_path/archive/lane1";
-  my @files = ('plex1/24135_1#1_phix.composition.json',
-               'plex1/24135_1#1.composition.json',
-               'plex2/24135_1#2_phix.composition.json',
-               'plex2/24135_1#2.composition.json',
-               'plex0/24135_1#0_phix.composition.json',
-               'plex0/24135_1#0.composition.json');
-  for my $f (@files) {
-    ok (-f "$base/$f", "file $f exists");
-  }
 };
 
 subtest 'product_release_tests' => sub {

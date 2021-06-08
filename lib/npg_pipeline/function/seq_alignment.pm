@@ -135,18 +135,6 @@ sub generate {
   return \@definitions;
 }
 
-sub generate_compositions {
-  my ($self, $pipeline_name)  = @_;
-
-  #####
-  # Pipeline name is always passed by the calling function.
-  # If we want to use an extra flag, it should be passed
-  # as a second argument to generate().
-  my $dry_run = 1;
-  $self->generate($pipeline_name, $dry_run);
-  return [$self->create_excluded_definition()];
-}
-
 sub _save_compositions {
   my ($self, $dp, $subsets) = @_;
   my @products = map { $dp->subset_as_product($_) } @{$subsets};
@@ -916,16 +904,6 @@ the Duplex-Seq library type.
 
 Creates and returns an array of npg_pipeline::function::definition
 objects for all entities of the run eligible for alignment and split.
-
-=head2 generate_compositions
-
-Does just enough to figure out what .composition.json files have
-to be created and creates them. Returns an array consisting of a
-single npg_pipeline::function::definition object where this function
-is flagged as excluded.
-
-Can be used to generate missing or replace corrupt composition.json
-files in an existing analysis directory.
 
 =head1 DIAGNOSTICS
 
