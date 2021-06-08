@@ -56,6 +56,14 @@ copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunInfo.xml', "$runfolder_pat
 copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunParameters.xml', "$runfolder_path/runParameters.xml")
 or die 'Copy failed';
 
+my $default = {
+  default => {
+    fs_slots_num => 2,
+    memory => 6,
+    minimum_cpu => 1
+  }
+};
+
 subtest 'no config' => sub {
   plan tests => 3;
 
@@ -64,7 +72,9 @@ subtest 'no config' => sub {
     archive_path        => $archive_path,
     runfolder_path      => $runfolder_path,
     id_run              => 26291,
-    timestamp           => $timestamp);
+    timestamp           => $timestamp,
+    resource            => $default
+  );
   my $ds = $hc->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
   isa_ok($ds->[0], 'npg_pipeline::function::definition');
@@ -80,7 +90,9 @@ subtest 'bqsr study specific defaulted on' => sub {
     archive_path        => $archive_path,
     id_run              => 26291,
     timestamp           => $timestamp,
-    repository          => $dir);
+    repository          => $dir,
+    resource            => $default
+  );
   my $ds = $hc->create;
   is(scalar @{$ds}, 12, '12 definitions are returned');
   isa_ok($ds->[0], 'npg_pipeline::function::definition');
@@ -88,7 +100,7 @@ subtest 'bqsr study specific defaulted on' => sub {
 };
 
 subtest 'create function definitions' => sub {
-  plan tests => 20;
+  plan tests => 19;
 
   my $bqsr_gen;
   lives_ok {
@@ -99,7 +111,8 @@ subtest 'create function definitions' => sub {
     id_run            => 26291,
     timestamp         => $timestamp,
     verbose           => 0,
-    repository        => $dir
+    repository        => $dir,
+    resource          => $default
   )
   } 'no error creating an object';
 
@@ -124,7 +137,6 @@ subtest 'create function definitions' => sub {
   is ($d->command_preexec, undef);
   is ($d->queue, 'default', 'default queue');
   is_deeply ($d->num_cpus, [1], 'range of cpu numbers');
-  is ($d->num_hosts, 1, 'one host');
   is ($d->fs_slots_num, 2, 'two sf slots');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 };
@@ -138,7 +150,8 @@ subtest 'rep repos root from env' => sub {
     runfolder_path    => $runfolder_path,
     id_run            => 26291,
     timestamp         => $timestamp,
-    verbose           => 0
+    verbose           => 0,
+    resource          => $default
   );
   my $da = $bqsr_gen->create();
   is ($da->[3]->command, $command, 'correct command for tag 4');

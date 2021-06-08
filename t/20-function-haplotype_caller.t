@@ -56,6 +56,14 @@ copy('t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunParameters.xml', "$runfold
 or die 'Copy failed';
 
 
+my $defaults = {
+  default => {
+    fs_slots_num => 2,
+    memory => 8,
+    minimum_cpu => 4
+  }
+};
+
 subtest 'no_haplotype_caller flag' => sub {
   plan tests => 4;
 
@@ -65,7 +73,8 @@ subtest 'no_haplotype_caller flag' => sub {
     runfolder_path      => $runfolder_path,
     id_run              => 26291,
     timestamp           => $timestamp,
-    no_haplotype_caller => 1);
+    no_haplotype_caller => 1,
+    resource            => $defaults);
   ok($hc->no_haplotype_caller, 'no_haplotype_caller flag is set to true');
   my $ds = $hc->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
@@ -82,7 +91,8 @@ subtest 'no_haplotype_caller flag unset' => sub {
     runfolder_path      => $runfolder_path,
     id_run              => 26291,
     timestamp           => $timestamp,
-    repository          => $dir);
+    repository          => $dir,
+    resource            => $defaults);
   ok($hc->no_haplotype_caller == 0, 'no_haplotype_caller flag is set to false');
   my $ds = $hc->create;
   is(scalar @{$ds}, 288, '288 definitions are returned');
@@ -99,7 +109,8 @@ subtest 'no_haplotype_caller flag unset and no study settings' => sub {
     runfolder_path      => $runfolder_path,
     id_run              => 26291,
     timestamp           => $timestamp,
-    repository          => $dir);
+    repository          => $dir,
+    resource            => $defaults);
   ok($hc->no_haplotype_caller == 0, 'no_haplotype_caller flag is set to false');
   my $ds = $hc->create;
   is(scalar @{$ds}, 1, '1 definitions are returned');
@@ -116,7 +127,8 @@ subtest 'no_haplotype_caller flag unset and study reference settings' => sub {
     runfolder_path      => $runfolder_path,
     id_run              => 26291,
     timestamp           => $timestamp,
-    repository          => $dir);
+    repository          => $dir,
+    resource            => $defaults);
   ok($hc->no_haplotype_caller == 0, 'no_haplotype_caller flag is set to false');
   my $ds = $hc->create;
   is(scalar @{$ds}, 288, '288 definitions are returned');
@@ -133,7 +145,8 @@ subtest 'no_haplotype_caller flag unset and study wrong reference settings' => s
     runfolder_path      => $runfolder_path,
     id_run              => 26291,
     timestamp           => $timestamp,
-    repository          => $dir);
+    repository          => $dir,
+    resource            => $defaults);
   ok($hc->no_haplotype_caller == 0, 'no_haplotype_caller flag is set to false');
   my $ds = $hc->create;
   is(scalar @{$ds}, 1, '1 definitions are returned');
@@ -152,7 +165,8 @@ subtest 'run hc' => sub {
       runfolder_path    => $runfolder_path,
       id_run            => 26291,
       timestamp         => $timestamp,
-      repository        => $dir
+      repository        => $dir,
+      resource          => $defaults
     )
   } 'no error creating an object';
 
@@ -195,8 +209,9 @@ subtest 'run hc with bqsr' => sub {
       runfolder_path    => $runfolder_path,
       id_run            => 26291,
       timestamp         => $timestamp,
-      repository        => $dir
-    )
+      repository        => $dir,
+      resource          => $defaults
+    );
   } 'no error creating an object';
 
   my $da = $hc_gen->create();
@@ -243,7 +258,8 @@ subtest 'rep repos root from env' => sub {
     archive_path      => $archive_path,
     runfolder_path    => $runfolder_path,
     id_run            => 26291,
-    timestamp         => $timestamp
+    timestamp         => $timestamp,
+    resource          => $defaults
   );
   my $da = $hc_gen->create();
   is ($da->[72]->command, $command, 'correct command for tag 4');

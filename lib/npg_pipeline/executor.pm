@@ -31,7 +31,7 @@ npg_pipeline::executor
   package npg_pipeline::executor::exotic;
   use Moose;
   extends 'pg_pipeline::executor';
-  
+
   override 'execute' => sub {
     my $self = shift;
     $self->info('Child implementation');
@@ -67,7 +67,7 @@ npg_pipeline::executor
     analysis_path        => '/tmp/analysis'
   );
   print $e2->commands4jobs_file_path();
-  $e2->execute(); 
+  $e2->execute();
 
 =head1 DESCRIPTION
 
@@ -207,7 +207,7 @@ sub _build_function_graph4jobs {
     # Find all closest ancestors that represent functions that will be
     # submitted for execution, bypassing the skipped functions.
     #
-    # For each returned predecessor create an edge from the redecessor function
+    # For each returned predecessor create an edge from the predecessor function
     # to this function. Adding an edge implicitly add its vertices. Adding
     # a vertex is by default idempotent. Setting a vertex attribute creates
     # a vertex if it does not already exists.
@@ -316,7 +316,7 @@ sub dependencies {
   return @dependencies;
 }
 
-=head2 save_commands4jobs 
+=head2 save_commands4jobs
 
 Saves a list of commands to a file defined by the commands4jobs_file_path
 attribute.
@@ -335,7 +335,7 @@ sub save_commands4jobs {
   return write_file($file, map { $_ . qq[\n] } @commands);
 }
 
-=head2 log_dir4function 
+=head2 log_dir4function
 
 Ensures a log directory for the argument function exists and return its path.
 

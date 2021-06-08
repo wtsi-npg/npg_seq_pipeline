@@ -19,16 +19,25 @@ my @wh_methods = qw/update_warehouse update_ml_warehouse/;
 
 use_ok('npg_pipeline::function::warehouse_archiver');
 
+my $default = {
+  default => {
+    minimum_cpu => 0,
+    memory => 2,
+    queue => 'lowload'
+  }
+};
+
 subtest 'warehouse updates' => sub {
   plan tests => 37;
 
   my $c = npg_pipeline::function::warehouse_archiver->new(
     run_folder          => q{123456_IL2_1234},
     runfolder_path      => $runfolder_path,
-    recalibrated_path   => $runfolder_path
+    recalibrated_path   => $runfolder_path,
+    resource            => $default
   );
   isa_ok ($c, 'npg_pipeline::function::warehouse_archiver');
-  
+
   my $recalibrated_path = $c->recalibrated_path();
   my $recalibrated_path_in_outgoing = $recalibrated_path;
   $recalibrated_path_in_outgoing =~ s{/analysis/}{/outgoing/}smx;
@@ -38,11 +47,11 @@ subtest 'warehouse updates' => sub {
 
     my $postqcc  = $m =~ /$pqq_suffix/smx;
     my $ml       = $m =~ /_ml_/smx;
-    my $command  = $ml ? 'npg_runs2mlwarehouse' : 'warehouse_loader';    
+    my $command  = $ml ? 'npg_runs2mlwarehouse' : 'warehouse_loader';
     my $job_name = $command . '_1234_pname';
     if ($postqcc) {
       $job_name .= '_postqccomplete';
-    }  
+    }
     $command    .= ' --verbose --id_run 1234';
     if (!$ml) {
       $command  .= ' --lims_driver_type ' . ($postqcc ?
@@ -53,7 +62,7 @@ subtest 'warehouse updates' => sub {
     ok ($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
       'update to warehouse is enabled');
     my $d = $ds->[0];
-    isa_ok ($d, 'npg_pipeline::function::definition');    
+    isa_ok ($d, 'npg_pipeline::function::definition');
 
     is ($d->identifier, '1234', 'identifier set to run id');
     is ($d->created_by, 'npg_pipeline::function::warehouse_archiver', 'created_by');
@@ -79,20 +88,23 @@ subtest 'warehouse updates disabled' => sub {
   foreach my $m (@wh_methods) {
     my $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path      => $runfolder_path,
-      no_warehouse_update => 1
+      no_warehouse_update => 1,
+      resource            => $default
     );
     $test_method->($c, $m, 'off');
 
     $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path    => $runfolder_path,
       local             => 1,
+      resource          => $default
     );
-    $test_method->($c, $m, 'off');    
+    $test_method->($c, $m, 'off');
 
     $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path      => $runfolder_path,
       local               => 1,
       no_warehouse_update => 0,
+      resource            => $default
     );
     $test_method->($c, $m, 'on');
   }
@@ -104,14 +116,15 @@ subtest 'mlwh updates for a product' => sub {
   my $wa = npg_pipeline::function::warehouse_archiver->new(
     runfolder_path    => $runfolder_path,
     label             => 'my_label',
-    product_rpt_list  => '123:4:5'
+    product_rpt_list  => '123:4:5',
+    resource          => $default
   );
 
   my $ds = $wa->update_ml_warehouse('pname');
   ok ($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
     'update to warehouse is enabled');
   my $d = $ds->[0];
-  isa_ok ($d, 'npg_pipeline::function::definition');    
+  isa_ok ($d, 'npg_pipeline::function::definition');
   is ($d->identifier, 'my_label', 'identifier set to the label value');
   is ($d->command,
     "npg_products2mlwarehouse --verbose --rpt_list '123:4:5'", 'command');

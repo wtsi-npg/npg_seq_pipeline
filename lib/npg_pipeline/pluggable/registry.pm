@@ -108,7 +108,7 @@ Readonly::Array my @AUTOQC_FUNCTIONS =>
       qc_upstream_tags
       qc_spatial_filter
       qc_verify_bam_id
-      qc_review 
+      qc_review
     /;
 
 has '_registry' => (

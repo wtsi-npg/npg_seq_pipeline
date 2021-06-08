@@ -12,28 +12,39 @@ my $runfolder_path = $util->analysis_runfolder_path();
 
 use_ok('npg_pipeline::function::start_stop');
 
+my %init = (
+  runfolder_path => $runfolder_path,
+  resource => {
+    default => {
+      memory => 2,
+      minimum_cpu => 0,
+      queue => 'small'
+    }
+  }
+);
+
 subtest 'start and stop functions' => sub {
   plan tests => 30;
 
   my $ss = npg_pipeline::function::start_stop->new(
-    id_run         => 1234,
-    runfolder_path => $runfolder_path,
+    id_run => 1234,
+    %init
   );
   isa_ok ($ss, 'npg_pipeline::function::start_stop');
   is ($ss->label, '1234', 'label');
 
   my $ss1 = npg_pipeline::function::start_stop->new(
-    id_run         => 1234,
-    runfolder_path => $runfolder_path,
-    label          => 'my_label',
+    id_run => 1234,
+    label  => 'my_label',
+    %init
   );
 
   my $ss2 = npg_pipeline::function::start_stop->new(
-    runfolder_path   => $runfolder_path,
     product_rpt_list => '123:4:5;124:3:6',
     label            => 'your_label',
+    %init
   );
-  
+
   foreach my $m (qw/pipeline_start pipeline_end/) {
 
     my $ds = $ss->$m('pipeline_name');
@@ -65,13 +76,13 @@ subtest 'wait4path function' => sub {
   plan tests => 17;
 
   my $f = npg_pipeline::function::start_stop->new(
-    id_run         => 1234,
-    runfolder_path => $runfolder_path,
+    id_run => 1234,
+    %init
   );
 
   my $path = $runfolder_path;
   $path =~ s/analysis/outgoing/;
-  ok ($path =~ /outgoing/, 'future path is in outgoing'); 
+  ok ($path =~ /outgoing/, 'future path is in outgoing');
 
   my $ds = $f->pipeline_wait4path();
   ok ($ds && scalar @{$ds} == 1, 'one definition is created');
@@ -101,6 +112,7 @@ subtest 'wait4path function' => sub {
   $f = npg_pipeline::function::start_stop->new(
     label          => 'my_label',
     runfolder_path => $path,
+    %init
   );
   $ds = $f->pipeline_wait4path();
   $d = $ds->[0];

@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 19;
+use Test::More tests => 17;
 use Test::Exception;
 use t::util;
 
@@ -13,6 +13,15 @@ my $util = t::util->new();
 my $rfh = $util->create_runfolder(undef, {'analysis_path' => 'BAM_basecalls_3445'});
 my $arpath = $rfh->{'archive_path'};
 
+my $default = {
+  default => {
+    minimum_cpu => 1,
+    fs_slots_num => 1,
+    queue => 'lowload',
+    memory => 2
+  }
+};
+
 {
   my $aqc_archiver = npg_pipeline::function::autoqc_archiver->new(
     id_run         => 1234,
@@ -20,6 +29,7 @@ my $arpath = $rfh->{'archive_path'};
     merge_lanes    => 0,
     is_indexed     => 0,
     timestamp      => q{20090709-123456},
+    resource       => $default
   );
   isa_ok($aqc_archiver, q{npg_pipeline::function::autoqc_archiver});
 
@@ -40,8 +50,6 @@ my $arpath = $rfh->{'archive_path'};
     'command is correct');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->has_num_cpus, 'number of cpus is not set');
-  ok (!$d->has_memory,'memory is not set');
   is ($d->queue, 'lowload', 'queue');
   is ($d->fs_slots_num, 1, 'one fs slot is set');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
@@ -53,6 +61,7 @@ my $arpath = $rfh->{'archive_path'};
     merge_lanes    => 0,
     is_indexed     => 0,
     timestamp      => q{20090709-123456},
+    resource       => $default
   );
   $da = $aqc_archiver->create();
   is ($da->[0]->command,
@@ -68,6 +77,7 @@ my $arpath = $rfh->{'archive_path'};
     archive_path     => $arpath,
     product_rpt_list => '1234:1',
     timestamp        => q{20090709-123456},
+    resource         => $default
   );
   my $da = $aqc_archiver->create();
   ok ($da && @{$da} == 1, 'one definition returned');

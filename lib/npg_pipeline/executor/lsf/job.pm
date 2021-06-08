@@ -23,7 +23,9 @@ npg_pipeline::executor::lsf::job
 
 =head1 DESCRIPTION
 
-LSF job definition factory.
+LSF job definition. It knows about a list of related operations
+that may be submitted to LSF as a batch, or singly in the event
+of a simple definition.
 
 =head1 SUBROUTINES/METHODS
 
@@ -167,7 +169,7 @@ be executed by the LSF job.
 
 Each array member represents a full definition, ie
 both the bsub command option and its value separated
-by a white space. 
+by a white space.
 
 As a minimum, the parameters contain the job name,
 including array definition if necessary, and log
@@ -186,7 +188,7 @@ sub _build_params {
   my @params = grep { defined }   # filter out undefined results
                map  { $self->$_ } # apply method
                map  { q(_) . $_ } # generate private method name
-               qw/ 
+               qw/
                    priority
                    dependencies
                    queue

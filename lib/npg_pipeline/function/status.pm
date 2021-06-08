@@ -4,9 +4,7 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
-
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 with q{npg_pipeline::runfolder_scaffold};
 
 our $VERSION = '0';
@@ -34,16 +32,10 @@ sub create {
     $status_with_underscores,
     $self->timestamp();
 
-  my $d = npg_pipeline::function::definition->new(
-    created_by    => __PACKAGE__,
-    created_on    => $self->timestamp(),
-    identifier    => $self->id_run(),
+  my $d = $self->create_definition({
     job_name      => $job_name,
     command       => $self->_command($status_files_path),
-    num_cpus      => [0],
-    queue         =>
-      $npg_pipeline::function::definition::SMALL_QUEUE,
-  );
+  });
 
   return [$d];
 }
@@ -103,7 +95,7 @@ Creates and returns a single function definition as an array.
 Function definition is created as a npg_pipeline::function::definition
 type object.
 
-  my $definitions = $obj->create(); 
+  my $definitions = $obj->create();
 
 =head1 DIAGNOSTICS
 

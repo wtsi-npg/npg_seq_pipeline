@@ -11,9 +11,8 @@ use Try::Tiny;
 use Perl6::Slurp;
 
 use npg_qc::Schema;
-use npg_pipeline::function::definition;
 
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 with qw/ npg_pipeline::product::release
          npg_pipeline::product::release::portable_pipeline /;
 with 'npg_common::roles::software_location' => { tools => [qw/npg_upload2climb npg_climb2mlwh/] };
@@ -147,9 +146,7 @@ considered.
 sub create {
   my $self = shift;
 
-  my $ref =  {created_by => __PACKAGE__,
-              created_on => $self->timestamp(),
-              identifier => $self->label};
+  my $ref =  {};
 
   # Create and write out the manifest.
   my $num_samples = $self->_generate_manifest4archiver();
@@ -167,13 +164,13 @@ sub create {
     $ref->{'excluded'} = 1;
   }
 
-  return [npg_pipeline::function::definition->new($ref)];
+  return [$self->create_definition($ref)];
 }
 
 =head2 generate_manifest
 
 Returns an array containing a single npg_pipeline::function::definition
-object, which has the 'excluded' attribute set to true. No command for 
+object, which has the 'excluded' attribute set to true. No command for
 later execution is generated. While this method is running, it creates
 a manifest file, listing the products due to be archived their location
 in the run folder.
@@ -190,11 +187,7 @@ sub generate_manifest {
 
   # No need to create a job, the only purpose of this function is
   # to generate the manifest.
-  return [ npg_pipeline::function::definition->new(
-              created_by => __PACKAGE__,
-              created_on => $self->timestamp(),
-              identifier => $self->label,
-              excluded   => 1) ];
+  return [ $self->create_definition({excluded => 1}) ];
 }
 
 sub _generate_manifest4archiver {
@@ -231,7 +224,6 @@ sub _generate_manifest4archiver {
     $num_samples = @lines;
     # add header
     unshift @lines, \@COLUMN_NAMES;
-
     $self->info('Writing manifest to ' . $self->_manifest_path);
     csv(in => \@lines, out => $self->_manifest_path, @CSV_PARSER_OPTIONS);
   }
@@ -342,7 +334,7 @@ sub _build__staging_archive_path {
   return catdir($self->pp_staging_root($self->_pipeline_config),
                 $self->id_run,
                 $dir_name,
-		$self->run_folder);
+                $self->run_folder);
 }
 
 has '_manifest_path' => (

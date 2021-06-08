@@ -9,35 +9,22 @@ use File::Spec::Functions qw{catdir};
 use Try::Tiny;
 
 use npg_pipeline::cache::reference;
-use npg_pipeline::function::definition;
 use npg_qc::autoqc::constants qw/
          $SAMTOOLS_NO_FILTER
          $SAMTOOLS_SEC_QCFAIL_SUPPL_FILTER
                                 /;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 with q{npg_pipeline::function::util};
 
 our $VERSION = '0';
 
 Readonly::Scalar my $QC_SCRIPT_NAME           => q{qc};
-Readonly::Scalar my $REFMATCH_ARRAY_CPU_LIMIT => 8;
 Readonly::Array  my @CHECKS_NEED_PAIREDNESS_INFO => qw/
                                                  insert_size
                                                  gc_fraction
                                                  qX_yield
                                                       /;
-
-# Memory requirements, MB
-Readonly::Scalar my $MEMORY_REQ_DEFAULT       => 2000;
-Readonly::Hash   my %MEMORY_REQUIREMENTS      => (
-                        insert_size      => 8000,
-                        sequence_error   => 8000,
-                        ref_match        => 6000,
-                        pulldown_metrics => 6000,
-                        bcfstats         => 4000,
-                        adapter          => 1500,
-                                                 );
 
 has q{qc_to_run}       => (isa      => q{Str},
                            is       => q{ro},
@@ -149,9 +136,7 @@ sub create {
   }
 
   if (!@definitions) {
-    my $ref = $self->_basic_attrs();
-    $ref->{'excluded'} = 1;
-    push @definitions, npg_pipeline::function::definition->new($ref);
+    push @definitions, $self->create_excluded_definition();
   }
 
   return \@definitions;
@@ -166,13 +151,6 @@ sub _create_definition {
   }
 
   return;
-}
-
-sub _basic_attrs {
-  my $self = shift;
-  return { 'created_by' => __PACKAGE__,
-           'created_on' => $self->timestamp(),
-           'identifier' => $self->id_run() };
 }
 
 sub _job_name {
@@ -193,7 +171,7 @@ sub _create_definition4interop {
   my $run_composition =
     npg_tracking::glossary::composition->new(components => \@lane_components);
 
-  my $ref = $self->_basic_attrs();
+  my $ref = {};
   $ref->{'job_name'} = $self->_job_name();
   my $c = sprintf '%s --check=%s --rpt_list="%s" --qc_in=%s',
                   $QC_SCRIPT_NAME,
@@ -207,35 +185,18 @@ sub _create_definition4interop {
 
   $ref->{'command'}  = $c;
 
-  return npg_pipeline::function::definition->new($ref);
+  return $self->create_definition($ref);
 }
 
 sub _create_definition_object {
   my ($self, $product, $command) = @_;
 
-  my $ref = $self->_basic_attrs();
+  my $ref = {};
   my $qc_to_run = $self->qc_to_run;
 
   $ref->{'job_name'}        = $self->_job_name();
-  $ref->{'fs_slots_num'}    = 1;
   $ref->{'composition'}     = $product->composition;
   $ref->{'command'}         = $command;
-
-  if ($qc_to_run eq q[adapter]) {
-    $ref->{'num_cpus'}      = [$self->general_values_conf()->{'qc_adapter_cpu'} || 1];
-    if ($ref->{'num_cpus'} > 1) {
-      $ref->{'num_hosts'}   = 1;
-    }
-  }
-
-  $ref->{'apply_array_cpu_limit'} = 1;
-  #####
-  # Lower value for ref_match to try to alleviate Lustre client multiple
-  # simulaneous access bug (ensure elements only run eight at a time).
-  #
-  if ($qc_to_run eq 'ref_match') {
-    $ref->{'array_cpu_limit'} = $REFMATCH_ARRAY_CPU_LIMIT;
-  }
 
   if ($qc_to_run eq q[upstream_tags]) {
     $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
@@ -245,9 +206,7 @@ sub _create_definition_object {
     $ref->{'command_preexec'} = $self->repos_pre_exec_string();
   }
 
-  $ref->{'memory'} = $MEMORY_REQUIREMENTS{$qc_to_run} || $MEMORY_REQ_DEFAULT;
-
-  return npg_pipeline::function::definition->new($ref);
+  return $self->create_definition($ref);
 }
 
 sub _generate_command {
@@ -295,10 +254,10 @@ sub _generate_command {
     }
   }
   elsif(any { /$check/sm } qw( verify_bam_id pulldown_metrics )) {
-    $c .= qq{ --input_files=$bamfile_path}; # note: single bam file 
+    $c .= qq{ --input_files=$bamfile_path}; # note: single bam file
   }
   elsif(any { /$check/sm } qw( adapter bcfstats genotype )) {
-    $c .= qq{ --input_files=$cramfile_path}; # note: single cram file 
+    $c .= qq{ --input_files=$cramfile_path}; # note: single cram file
   }
   elsif($check eq q/upstream_tags/) {
     my $tagzerobamfile_path = $dp->file_path($recal_path) .

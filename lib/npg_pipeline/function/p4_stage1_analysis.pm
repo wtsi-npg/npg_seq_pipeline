@@ -13,9 +13,8 @@ use open q(:encoding(UTF8));
 
 use npg_qc::illumina::interop::parser;
 use npg_pipeline::cache::barcodes;
-use npg_pipeline::function::definition;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 with 'npg_pipeline::runfolder_scaffold' => {
         -excludes => [qw/create_top_level create_analysis_level/],
@@ -24,10 +23,6 @@ with 'npg_pipeline::runfolder_scaffold' => {
 
 our $VERSION  = '0';
 
-Readonly::Scalar my $NUM_SLOTS                    => q(8,16);
-Readonly::Scalar my $NUM_HOSTS                    => 1;
-Readonly::Scalar my $MEMORY                       => q{12000}; # memory in megabytes
-Readonly::Scalar my $FS_RESOURCE                  => 4; # LSF resource counter to control access to staging area file system
 Readonly::Scalar my $DEFAULT_I2B_THREAD_COUNT     => 3; # value passed to bambi i2b --threads flag
 Readonly::Scalar my $DEFAULT_SPLIT_THREADS_COUNT  => 0; # value passed to samtools split --threads flag
 
@@ -114,17 +109,6 @@ sub _build_p4_stage1_errlog_paths {
   return \%p4_stage1_errlog_paths;
 }
 
-has '_num_cpus'               => (
-                           isa        => 'ArrayRef',
-                           is         => 'ro',
-                           lazy_build => 1,
-                         );
-sub _build__num_cpus {
-  my $self = shift;
-  return $self->num_cpus2array(
-    $self->general_values_conf()->{'p4_stage1_slots'} || $NUM_SLOTS);
-}
-
 has '_job_id' => ( isa        => 'Str',
                    is         => 'ro',
                    lazy_build => 1,
@@ -186,20 +170,12 @@ sub _build_phix_alignment_reference {
 sub _create_definition {
   my ($self, $composition, $command) = @_;
 
-  return npg_pipeline::function::definition->new(
-    created_by      => __PACKAGE__,
-    created_on      => $self->timestamp(),
-    identifier      => $self->id_run(),
+  return $self->create_definition({
     job_name        => (join q{_}, q{p4_stage1_analysis},$self->id_run(),$self->timestamp()),
-    fs_slots_num    => $self->general_values_conf()->{'p4_stage1_fs_resource'} || $FS_RESOURCE,
-    num_hosts       => $NUM_HOSTS,
-    num_cpus        => $self->_num_cpus(),
-    memory          => $self->general_values_conf()->{'p4_stage1_memory'} || $MEMORY,
-    queue           => $npg_pipeline::function::definition::P4_STAGE1_QUEUE,
     command         => $command,
     command_preexec => $self->repos_pre_exec_string(),
     composition     => $composition
-  );
+  });
 }
 
 sub _create_p4_stage1_dirs {
@@ -482,11 +458,11 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
 
   $p4_params{split_threads_val} = $self->general_values_conf()->{'p4_stage1_split_threads_count'} || $DEFAULT_SPLIT_THREADS_COUNT;
 
-  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->_num_cpus->[0];
+  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->get_resources->{minimum_cpu};
   my $name_root = $id_run . q{_} . $position;
   # allow specification of thread number for some processes in config file. Note: these threads are being drawn from the same pool. Unless
   #  they appear in the config file, their values will be derived from what LSF assigns the job based on the -n value supplied to the bsub
-  #  command (see $num_slots in _default_resources()).
+  #  command.
   my $aligner_slots = $self->general_values_conf()->{'p4_stage1_aligner_slots'} || qq[`$num_threads_expression --exclude -2 --divide 3`];
   my $samtobam_slots = $self->general_values_conf()->{'p4_stage1_samtobam_slots'} || qq[`$num_threads_expression --exclude -1 --divide 3`];
   my $bamsormadup_slots = $self->general_values_conf()->{'p4_stage1_bamsort_slots'} || qq[`$num_threads_expression --divide 3`];
@@ -510,14 +486,6 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
                            q(');
 
   return ($command, \%p4_params, \%p4_ops);
-}
-
-sub _default_resources {
-  my ( $self ) = @_;
-  my $hosts = 1;
-  my $mem = $self->general_values_conf()->{'p4_stage1_memory'} || $MEMORY;
-  my $num_slots = $self->general_values_conf()->{'p4_stage1_slots'} || $NUM_SLOTS;
-  return (join q[ ], npg_pipeline::lsf_job->new(memory => $mem)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$num_slots");
 }
 
 sub _get_library_sample_study_names {
@@ -626,8 +594,8 @@ npg_pipeline::function::p4_stage1_analysis
 
 =head1 DESCRIPTION
 
-Definition for p4 flow which creates cram files from bcl files, including initial phiX alignment, 
-spatial filtering and deplexing of pools where appropriate.
+Definition for p4 flow which creates cram files from bcl/cbcl files, including initial PhiX
+alignment, spatial filtering and deplexing of pools where appropriate.
 
 =head1 SUBROUTINES/METHODS
 

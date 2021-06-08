@@ -5,10 +5,9 @@ use namespace::autoclean;
 use Readonly;
 use Math::Random::Secure qw(irand);
 
-use npg_pipeline::function::definition;
 use npg_pipeline::runfolder_scaffold;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 
@@ -51,7 +50,7 @@ sub pipeline_start {
 =head2 pipeline_end
 
 Last 'catch all' function that might be called by the pipeline.
-Creates and returns a token job definition. 
+Creates and returns a token job definition.
 
 =cut
 
@@ -68,16 +67,10 @@ sub _token_job {
   $pipeline_name ||= q[];
   my $job_name = join q{_}, $subroutine_name, $self->label(), $pipeline_name;
 
-  my $d = npg_pipeline::function::definition->new(
-    created_by    => __PACKAGE__,
-    created_on    => $self->timestamp(),
-    identifier    => $self->label(),
+  my $d = $self->create_definition({
     job_name      => $job_name,
     command       => '/bin/true',
-    num_cpus      => [0],
-    queue         =>
-      $npg_pipeline::function::definition::SMALL_QUEUE,
-  );
+  });
 
   return [$d];
 }
@@ -113,17 +106,11 @@ sub pipeline_wait4path {
     .  q{'};
 
   my $job_name = join q{_}, 'wait4path_in_outgoing', $self->label();
-  my $d = npg_pipeline::function::definition->new(
-    created_by    => __PACKAGE__,
-    created_on    => $self->timestamp(),
-    identifier    => $self->label(),
+  my $d = $self->create_definition({
     job_name      => $job_name,
     command       => $command,
-    num_cpus      => [0],
     command_preexec => "[ -d '$path' ]",
-    queue           =>
-      $npg_pipeline::function::definition::SMALL_QUEUE,
-  );
+  });
 
   return [$d];
 }

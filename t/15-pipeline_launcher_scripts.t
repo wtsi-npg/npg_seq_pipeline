@@ -44,7 +44,7 @@ my $product_config = q[t/data/release/config/archive_on/product_release.yml];
 
   my $out = `$bin/npg_pipeline_central --product_conf_file_path $product_config --no-spider --no_bsub --no_sf_resource --runfolder_path $rf --bam_basecall_path $bbp --function_order dodo 2>&1`;
   like($out,
-  qr/Handler for 'dodo' is not registered/,
+  qr/Function dodo cannot be found in the graph/,
   'error when function does not exist');
 }
 
@@ -57,7 +57,7 @@ my $product_config = q[t/data/release/config/archive_on/product_release.yml];
   for (@files) {
     copy $_, $config_dir;
   }
-  
+
   lives_ok { qx{
     $bin/npg_pipeline_post_qc_review --no_bsub --no_sf_resource --runfolder_path $rf --bam_basecall_path $bbp --conf_path $config_dir};}
     q{ran bin/npg_pipeline_post_qc_review};

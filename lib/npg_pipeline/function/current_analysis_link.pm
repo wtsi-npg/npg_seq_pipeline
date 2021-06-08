@@ -7,9 +7,7 @@ use English qw(-no_match_vars);
 use Readonly;
 use File::Spec::Functions qw(abs2rel);
 
-use npg_pipeline::function::definition;
-
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 
@@ -54,9 +52,7 @@ sub make_link {
 sub create {
   my $self = shift;
 
-  my $ref = { 'created_by' => __PACKAGE__,
-              'created_on' => $self->timestamp(),
-              'identifier' => $self->id_run() };
+  my $ref = {};
 
   if ($self->no_summary_link()) {
     $self->info(q{Summary link creation turned off});
@@ -68,11 +64,9 @@ sub create {
     $ref->{'command'} = qq{$MAKE_LINK_SCRIPT --run_folder $run_folder}
                        . q{ --runfolder_path } . $self->runfolder_path()
                        . q{ --recalibrated_path } . $self->recalibrated_path();
-    $ref->{'queue'} =
-      $npg_pipeline::function::definition::SMALL_QUEUE;
   }
 
-  return [npg_pipeline::function::definition->new($ref)];
+  return [$self->create_definition($ref)];
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -109,7 +103,7 @@ Function definition is created as a npg_pipeline::function::definition
 type object.
 
   my $def_array = $obj->create();
-  
+
 =head1 DIAGNOSTICS
 
 =head1 CONFIGURATION AND ENVIRONMENT

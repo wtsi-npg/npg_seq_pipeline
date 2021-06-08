@@ -70,26 +70,35 @@ sub _test_manifest {
   unlink $mpath;
 }
 
+my %default = (
+  product_conf_file_path => $product_conf,
+  archive_path           => $archive_path,
+  runfolder_path         => $runfolder_path,
+  id_run                 => 26291,
+  timestamp              => $timestamp,
+  repository             => $dir,
+  qc_schema              => undef,
+  resource               => {
+    default => {
+      memory => 2,
+      minimum_cpu => 1
+    }
+  }
+);
+
+
 subtest 'archiver is not configured: function skipped and an empty manifest generation' => sub {
   plan tests => 14;
 
   my $mpath = join q[/], $dir, 'manifest_test1';
   ok (!-e $mpath, 'prereq - manifest file does not exist');
 
-  my $init = {
-    product_conf_file_path => $product_conf,
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir,
-    qc_schema              => undef,
-    _manifest_path         => $mpath
-  };
-
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
 
-  my $f = npg_pipeline::function::pp_archiver->new($init);
+  my $f = npg_pipeline::function::pp_archiver->new(
+    %default,
+    '_manifest_path' => $mpath
+  );
   my $ds = $f->create();
   is (scalar @{$ds}, 1, '1 definition is returned');
   isa_ok ($ds->[0], 'npg_pipeline::function::definition');
@@ -97,7 +106,10 @@ subtest 'archiver is not configured: function skipped and an empty manifest gene
   ok (-e $mpath, 'manifest file exists');
   _test_manifest($mpath);
 
-  $f = npg_pipeline::function::pp_archiver->new($init);
+  $f = npg_pipeline::function::pp_archiver->new(
+    %default,
+    _manifest_path => $mpath
+  );
   $ds = $f->generate_manifest();
   is (scalar @{$ds}, 1, '1 definition is returned');
   isa_ok ($ds->[0], 'npg_pipeline::function::definition');
@@ -109,16 +121,8 @@ subtest 'manifest path and using a pre-set path' => sub {
   plan tests => 17;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
- 
-  my $init = { product_conf_file_path => $product_conf,
-               archive_path           => $archive_path,
-               runfolder_path         => $runfolder_path,
-               id_run                 => 26291,
-               timestamp              => $timestamp,
-               repository             => $dir,
-               qc_schema              => undef, };
 
-  my $f = npg_pipeline::function::pp_archiver->new($init);
+  my $f = npg_pipeline::function::pp_archiver->new(%default);
   my $mpath = $f->_manifest_path;
   like ($mpath, qr/\A$bbc_path\/manifest4pp_upload_26291_20180701-123456-\d+.tsv\Z/,
     'generated manifest path is in the analysis directory');
@@ -132,7 +136,7 @@ subtest 'manifest path and using a pre-set path' => sub {
   (not -e $mpath) or die "unexpectedly found existing $mpath";
   local $ENV{NPG_MANIFEST4PP_FILE} = $mpath;
 
-  $f = npg_pipeline::function::pp_archiver->new($init);
+  $f = npg_pipeline::function::pp_archiver->new(%default);
   is ($f->_manifest_path, $mpath, 'manifest path as pre-set');
   is ($f->_generate_manifest4archiver(), 0, 'an empty manifest is generated');
   is ($ENV{NPG_MANIFEST4PP_FILE}, $mpath, 'env var is set');
@@ -140,16 +144,16 @@ subtest 'manifest path and using a pre-set path' => sub {
 
   my $text = 'existing manifest test';
   write_file($mpath, $text);
-  
-  $f = npg_pipeline::function::pp_archiver->new($init);
+
+  $f = npg_pipeline::function::pp_archiver->new(%default);
   is ($f->_manifest_path, $mpath, 'manifest path as pre-set');
   is ($f->_generate_manifest4archiver(), 0, 'manifest has no samples');
   is ($ENV{NPG_MANIFEST4PP_FILE}, $mpath, 'env var is set');
   is (read_file($mpath), $text, 'preset manifets has not changed');
 
   write_file($mpath, q[]);
-  
-  $f = npg_pipeline::function::pp_archiver->new($init);
+
+  $f = npg_pipeline::function::pp_archiver->new(%default);
   throws_ok { $f->_generate_manifest4archiver() }
     qr/No content in $mpath/, 'error if the manifest file is empty';
 };
@@ -160,29 +164,19 @@ subtest 'product config for pp archival validation' => sub {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_33990.csv];
   my $pc = 't/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_two_pps.yml';
   my $f = npg_pipeline::function::pp_archiver->new(
+    %default,
     product_conf_file_path => $pc,
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir,
-    qc_schema              => undef,
   );
-  throws_ok { $f->create } 
+  throws_ok { $f->create }
     qr/Multiple external archives are not supported/,
     'error when two versions of the pipeline are marked for archival';
-  
+
   $pc = 't/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_no_staging_root.yml';
   $f = npg_pipeline::function::pp_archiver->new(
+    %default,
     product_conf_file_path => $pc,
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir,
-    qc_schema              => undef,
   );
-  throws_ok { $f->_pipeline_config } 
+  throws_ok { $f->_pipeline_config }
     qr/pp_staging_root is not defined/,
     'error when the staging root is not defined for a pp which is marked for archival';
 
@@ -192,13 +186,8 @@ subtest 'product config for pp archival validation' => sub {
   write_file($new_pc, {append => 1}, "        pp_staging_root: $staging");
 
   $f = npg_pipeline::function::pp_archiver->new(
+    %default,
     product_conf_file_path => $new_pc,
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir,
-    qc_schema              => undef,
   );
   throws_ok { $f->_pipeline_config }
     qr/$staging does not exist or is not a directory/,
@@ -215,13 +204,9 @@ subtest 'definition and manifest generation' => sub {
     q[t/data/portable_pipelines/samplesheet4archival_all_controls.csv];
 
   my $init = {
+    %default,
     product_conf_file_path => $product_conf,
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
     id_run                 => $id_run,
-    timestamp              => $timestamp,
-    repository             => $dir,
-    qc_schema              => undef,
   };
 
   my $f = npg_pipeline::function::pp_archiver->new($init);
@@ -231,7 +216,7 @@ subtest 'definition and manifest generation' => sub {
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
     q[t/data/portable_pipelines/samplesheet4archival_none_controls.csv];
-  
+
   $f = npg_pipeline::function::pp_archiver->new($init);
   throws_ok { $f->create }
     qr/qc_schema connection should be defined/, 'db access is required';
@@ -240,7 +225,7 @@ subtest 'definition and manifest generation' => sub {
   $mqc_rs->delete(); # ensure no data
 
   $init->{qc_schema} = $schema;
-  
+
   $f = npg_pipeline::function::pp_archiver->new($init);
   throws_ok { $f->create }
     qr/lib QC is undefined/, 'qc outcomes are not set';
@@ -271,7 +256,7 @@ subtest 'definition and manifest generation' => sub {
                  $schema->resultset(q[MqcOutcomeDict])->search({})->all();
   my $smqc_rs = $schema->resultset(q[MqcOutcomeEnt]);
   $smqc_rs->delete(); # ensure no data
-   
+
   for my $p ((1, 2)) {
     my $c = npg_tracking::glossary::composition->new(components => [
       $cclass->new(id_run => $id_run, position => $p)
@@ -284,7 +269,7 @@ subtest 'definition and manifest generation' => sub {
                       modified_by        => 'dog',
                       last_modified      => $time
                     });
-  }  
+  }
 
   $f = npg_pipeline::function::pp_archiver->new($init);
   my $manifest_path = $f->_manifest_path;
@@ -360,8 +345,8 @@ subtest 'definition and manifest generation' => sub {
                                   last_modified              => $time
                                 });
     }
-  } 
-  
+  }
+
   $init->{merge_lanes } = 0;
 
   $f = npg_pipeline::function::pp_archiver->new($init);
@@ -384,7 +369,7 @@ subtest 'definition and manifest generation' => sub {
   is ((shift @lines), join(qq[\t], @line), 'correct line for unmerged plex 1');
   like ((shift @lines), qr{/lane1/plex2/}, 'correct line for unmerged plex 2');
   like ((shift @lines), qr{/lane1/plex3/}, 'correct line for unmerged plex 3');
-  
+
   $rows->{1}->{1}->update({id_mqc_outcome => $dict{'Rejected final'}});
   $rows->{1}->{2}->update({id_mqc_outcome => $dict{'Undecided final'}});
 
@@ -399,7 +384,7 @@ subtest 'definition and manifest generation' => sub {
   is (scalar @data_products, 10, '10 data products');
   is (scalar(grep { $f->is_release_data($_) } @data_products), 6,
     '6 products for release');
-  
+
   @lines = read_file($manifest_path);
   is (scalar @lines, 4, 'manifest contains 4 lines');
   unlink $manifest_path;
@@ -425,14 +410,10 @@ subtest 'skip sample with consent withdrawn' => sub {
   my $product_conf =
     q[t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release.yml];
   my $init = {
+    %default,
     product_conf_file_path => $product_conf,
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir,
     qc_schema              => $schema,
-    merge_lanes            => 0,
+    merge_lanes            => 0
   };
 
   my $f = npg_pipeline::function::pp_archiver->new($init);
@@ -459,7 +440,7 @@ subtest 'skip sample with consent withdrawn' => sub {
     't/data/26291/BAM_basecalls_20180805-013153/180709_A00538_0010_BH3FCMDRXX',
     '{"components":[{"id_run":26291,"position":2,"tag_index":1}]}',
     "11c776e3a9791f1abeaba44c8ee673dacc844778397eca15719786ffae001b0b\n");
-  is ((shift @lines), join(qq[\t], @line), 'concented plex 1 is listed');
+  is ((shift @lines), join(qq[\t], @line), 'consented plex 1 is listed');
 };
 
 subtest 'error on unset sample supplier name' => sub {
@@ -471,12 +452,8 @@ subtest 'error on unset sample supplier name' => sub {
     q[t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release.yml];
 
   my $init = {
+    %default,
     product_conf_file_path => $product_conf,
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir,
     qc_schema              => $schema,
     merge_lanes            => 0,
   };
@@ -495,12 +472,8 @@ subtest 'samples from different studies' => sub {
   my $product_conf =
     q[t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_two_studies.yml];
   my $init = {
+    %default,
     product_conf_file_path => $product_conf,
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir,
     qc_schema              => $schema,
     merge_lanes            => 0,
   };
@@ -528,13 +501,8 @@ subtest 'skip unknown pipeline' => sub {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
     q[t/data/portable_pipelines/samplesheet4archival_none_controls.csv];
   my $f = npg_pipeline::function::pp_archiver->new(
+    %default,
     product_conf_file_path => qq[$repo_dir/product_release_unknown_pp.yml],
-    archive_path           => $archive_path,
-    runfolder_path         => $runfolder_path,
-    id_run                 => 26291,
-    timestamp              => $timestamp,
-    repository             => $dir,
-    qc_schema              => undef,
   );
 
   my $ds = $f->create();

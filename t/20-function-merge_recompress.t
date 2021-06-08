@@ -39,15 +39,27 @@ or die 'Copy failed';
 
 my $conf_path = 't/data/release/config/haplotype_caller_on_study_specific';
 
+my %common_args = (
+  conf_path           => $conf_path,
+  archive_path        => $archive_path,
+  runfolder_path      => $runfolder_path,
+  id_run              => 26291,
+  resource            => {
+    default => {
+      minimum_cpu => 1,
+      memory => 2,
+      fs_slots_num => 2
+    }
+  }
+);
+
 subtest 'no_haplotype_caller flag' => sub {
   plan tests => 4;
 
   my $mr = npg_pipeline::function::merge_recompress->new(
-    conf_path           => $conf_path,
-    archive_path        => $archive_path,
-    runfolder_path      => $runfolder_path,
-    id_run              => 26291,
-    no_haplotype_caller => 1);
+    %common_args,
+    no_haplotype_caller => 1,
+  );
   ok($mr->no_haplotype_caller, 'no_haplotype_caller flag is set to true');
   my $ds = $mr->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
@@ -59,12 +71,10 @@ subtest 'no_haplotype_caller flag unset' => sub {
   plan tests => 4;
 
   my $mr = npg_pipeline::function::merge_recompress->new(
-    conf_path           => $conf_path,
-    archive_path        => $archive_path,
-    runfolder_path      => $runfolder_path,
-    id_run              => 26291,
-    timestamp           => $timestamp,
-    repository          => $dir);
+    %common_args,
+    timestamp => $timestamp,
+    repository => $dir
+  );
   ok($mr->no_haplotype_caller == 0, 'no_haplotype_caller flag is set to false');
   my $ds = $mr->create;
   is(scalar @{$ds}, 12, '12 definitions are returned');
@@ -73,14 +83,11 @@ subtest 'no_haplotype_caller flag unset' => sub {
 };
 
 subtest 'run merge_recompress' => sub {
-  plan tests => 18;
+  plan tests => 17;
 
   my $mr = npg_pipeline::function::merge_recompress->new(
-    conf_path         => $conf_path,
-    archive_path      => $archive_path,
-    runfolder_path    => $runfolder_path,
-    id_run            => 26291,
-    timestamp         => $timestamp,
+    %common_args,
+    timestamp => $timestamp,
   );
 
   my $da = $mr->create();
@@ -110,7 +117,6 @@ subtest 'run merge_recompress' => sub {
   is ($d->command_preexec, undef);
   is ($d->queue, 'default', 'default queue');
   is_deeply ($d->num_cpus, [1], 'range of cpu numbers');
-  is ($d->num_hosts, 1, 'one host');
   is ($d->fs_slots_num, 2, 'two sf slots');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 };
