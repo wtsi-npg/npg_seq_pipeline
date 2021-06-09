@@ -118,18 +118,16 @@ has '_rna_analysis' => (
 
 
 sub generate {
-  my ($self, $pipeline_name, $dry_run) = @_;
+  my ($self, $pipeline_name) = @_;
 
   my @definitions = ();
 
   for my $dp (@{$self->products->{data_products}}) {
     my $ref = {};
     my $subsets = [];
-    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets, $dry_run);
+    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets);
     $self->_save_compositions($dp, $subsets);
-    if (!$dry_run) {
-      push @definitions, $self->_create_definition($ref, $dp);
-    }
+    push @definitions, $self->_create_definition($ref, $dp);
   }
 
   return \@definitions;
@@ -163,7 +161,7 @@ sub _create_definition {
 }
 
 sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
-  my ( $self, $dp, $ref, $subsets, $dry_run) = @_;
+  my ( $self, $dp, $ref, $subsets ) = @_;
 
   ########################################################
   # derive base parameters from supplied data_product (dp)
@@ -570,9 +568,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($nchs) {
     push @{$subsets}, 'human';
   }
-                      ##############################################
-  return if $dry_run; # Early return, we only need a list of subsets
-                      ##############################################
 
   # write p4 parameters to file
   my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path(q[POSITION]),
