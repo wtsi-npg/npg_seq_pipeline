@@ -1250,7 +1250,7 @@ subtest 'chromium' => sub {
 };
 
 subtest 'miseq' => sub {
-  plan tests => 11;
+  plan tests => 17;
 
   my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
@@ -1264,7 +1264,7 @@ subtest 'miseq' => sub {
   copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
     or die 'Copy failed';
 
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135.csv];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135_gbs.csv];
 
   my $ms_gen;
   lives_ok {
@@ -1291,6 +1291,10 @@ subtest 'miseq' => sub {
                'plex1/24135_1#1.composition.json',
                'plex2/24135_1#2_phix.composition.json',
                'plex2/24135_1#2.composition.json',
+               'plex3/24135_1#3_phix.composition.json',
+               'plex3/24135_1#3.composition.json',
+               'plex4/24135_1#4_phix.composition.json',
+               'plex4/24135_1#4.composition.json',
                'plex0/24135_1#0_phix.composition.json',
                'plex0/24135_1#0.composition.json');
   for my $f (@files) {
@@ -1306,7 +1310,7 @@ subtest 'miseq' => sub {
   my $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/24135_1#1_p4s2_pv_in.json -export_param_vals 24135_1#1_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#1.json && viv.pl -s -x -v 3 -o viv_24135_1#1.log run_24135_1#1.json  && qc --check bam_flagstats --filename_root 24135_1#1 --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:1" --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex1/24135_1#1.cram --skip_markdups_metrics && qc --check bam_flagstats --filename_root 24135_1#1_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:1" --subset phix --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex1/24135_1#1.cram --skip_markdups_metrics && qc --check alignment_filter_metrics --filename_root 24135_1#1 --qc_in \$PWD --qc_out $qc_out --rpt_list "24135:1:1" --input_files 24135_1#1_bam_alignment_filter_metrics.json && qc --check genotype_call --filename_root 24135_1#1 --qc_in $qc_in --qc_out $qc_out} . q{ --rpt_list "24135:1:1" '};
 
   my $d = _find($da, 1, 1);
-  is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 1');
+  is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 1 - gbs pipeline allowed');
 
   $qc_in  = qq{$bc_path/archive/lane1/plex0};
   $qc_out = qq{$qc_in/qc};
@@ -1314,7 +1318,7 @@ subtest 'miseq' => sub {
   $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/24135_1#0_p4s2_pv_in.json -export_param_vals 24135_1#0_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#0.json && viv.pl -s -x -v 3 -o viv_24135_1#0.log run_24135_1#0.json  && qc --check bam_flagstats --filename_root 24135_1#0 --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:0" --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex0/24135_1#0.cram --skip_markdups_metrics && qc --check bam_flagstats --filename_root 24135_1#0_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:0" --subset phix --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex0/24135_1#0.cram --skip_markdups_metrics && qc --check alignment_filter_metrics --filename_root 24135_1#0 --qc_in \$PWD --qc_out $qc_out --rpt_list "24135:1:0" --input_files 24135_1#0_bam_alignment_filter_metrics.json '};
 
   $d = _find($da, 1, 0);
-  is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 0');
+  is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 0 - gbs pipeline allowed');
 
   $qc_in  = qq{$bc_path/archive/lane1/plex2};
   $qc_out = qq{$qc_in/qc};
@@ -1323,6 +1327,23 @@ subtest 'miseq' => sub {
 
   $d = _find($da, 1, 2);
   is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 2');
+
+  $qc_in  = qq{$bc_path/archive/lane1/plex3};
+  $qc_out = qq{$qc_in/qc};
+  $tmp_plex_dir = $tmp_dir . '/24135_1#3';
+  $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/24135_1#3_p4s2_pv_in.json -export_param_vals 24135_1#3_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#3.json && viv.pl -s -x -v 3 -o viv_24135_1#3.log run_24135_1#3.json  && qc --check bam_flagstats --filename_root 24135_1#3 --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:3" --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex3/24135_1#3.cram && qc --check bam_flagstats --filename_root 24135_1#3_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:3" --subset phix --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex3/24135_1#3.cram --skip_markdups_metrics && qc --check alignment_filter_metrics --filename_root 24135_1#3 --qc_in \$PWD --qc_out $qc_out --rpt_list "24135:1:3" --input_files 24135_1#3_bam_alignment_filter_metrics.json '};
+
+  $d = _find($da, 1, 3);
+  is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 3 - gbs pipeline not allowed');
+
+  $qc_in  = qq{$bc_path/archive/lane1/plex4};
+  $qc_out = qq{$qc_in/qc};
+  $tmp_plex_dir = $tmp_dir . '/24135_1#4';
+  $command = qq{bash -c ' mkdir -p $tmp_plex_dir ; cd $tmp_plex_dir && vtfp.pl -template_path \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib -param_vals $bc_path/24135_1#4_p4s2_pv_in.json -export_param_vals 24135_1#4_p4s2_pv_out_$unique_string.json -keys cfgdatadir -vals \$(dirname \$(readlink -f \$(which vtfp.pl)))/../data/vtlib/ -keys aligner_numthreads -vals `npg_pipeline_job_env_to_threads --num_threads 12` -keys br_numthreads_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 1 --divide 2` -keys b2c_mt_val -vals `npg_pipeline_job_env_to_threads --num_threads 12 --exclude 2 --divide 2` \$(dirname \$(dirname \$(readlink -f \$(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_template.json > run_24135_1#4.json && viv.pl -s -x -v 3 -o viv_24135_1#4.log run_24135_1#4.json  && qc --check bam_flagstats --filename_root 24135_1#4 --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:4" --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex4/24135_1#4.cram --skip_markdups_metrics && qc --check bam_flagstats --filename_root 24135_1#4_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "24135:1:4" --subset phix --input_files $dir/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex4/24135_1#4.cram --skip_markdups_metrics && qc --check alignment_filter_metrics --filename_root 24135_1#4 --qc_in \$PWD --qc_out $qc_out --rpt_list "24135:1:4" --input_files 24135_1#4_bam_alignment_filter_metrics.json && qc --check genotype_call --filename_root 24135_1#4 --qc_in $qc_in --qc_out $qc_out} . q{ --rpt_list "24135:1:4" '};
+
+  $d = _find($da, 1, 4);
+  is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 4 - gbs default config');
+
 };
 
 subtest 'miseq_primer_panel_only' => sub {

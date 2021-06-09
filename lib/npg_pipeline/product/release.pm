@@ -649,6 +649,27 @@ sub staging_deletion_delay {
   return $self->find_study_config($product)->{'data_deletion'}->{'staging_deletion_delay'};
 }
 
+=head2 can_run_gbs
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->can_run_gbs($product)
+ Description: Return true if the product is allowed to be diverted down the gbs pipeline
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub can_run_gbs {
+  my ($self, $product) = @_;
+
+  my $study_config = (ref $product eq 'npg_pipeline::product')
+                   ? $self->find_study_config($product)
+                   : $self->study_config($product);
+
+  return $study_config->{gbs_pipeline}->{allowed};
+}
+
 1;
 
 __END__
