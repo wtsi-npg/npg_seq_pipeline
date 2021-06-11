@@ -59,6 +59,10 @@ sub _command {
     }
   }
 
+  if (not $self->no_db_status_update) {
+    $command .= q[ --db_save];
+  }
+
   return $command;
 }
 
@@ -77,6 +81,9 @@ npg_pipeline::function::status
 =head1 DESCRIPTION
 
 Launches a job for saving run and lane statuses to a file.
+If saving of statuses to the database is not disabled (C<--no_db_status_update>
+pipeline option is not set explicitly or via setting the C<--local> option),
+the job will also save the statuses to the tracking database. 
 
 =head1 SUBROUTINES/METHODS
 
@@ -123,7 +130,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

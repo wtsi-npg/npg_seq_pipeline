@@ -104,6 +104,22 @@ has q{no_warehouse_update} => (
   documentation => q{Switches off updating the NPG warehouse.},
 );
 
+=head2 no_db_status_update
+
+Switches off creating a database run and lane status record during the status
+update job execution. False by default. Is automatically set to true when the
+C<local> flag is set to true. 
+
+=cut
+
+has q{no_db_status_update} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  lazy          => 1,
+  builder       => '_default_to_local',
+  documentation => q{Switches off updating database run and lane statuses.},
+);
+
 =head2 local
 
 Sets the default for no_irods_archival, no_warehouse_update and
