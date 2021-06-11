@@ -9,7 +9,7 @@ with q{npg_pipeline::runfolder_scaffold};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $STATUS_SCRIPT => q{npg_status2file};
+Readonly::Scalar my $STATUS_SCRIPT => q{npg_status_save};
 
 has q{status}           => (isa      => q{Str},
                             is       => q{ro},

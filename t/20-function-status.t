@@ -60,7 +60,7 @@ subtest 'no_db_status_update option is false (default)' => sub {
   is ($d->job_name, 'save_run_status_1234_run_archived_20090709-123456',
     'job_name is correct');
   is ($d->command,
-    'npg_status2file --id_run 1234 --status "run archived" --dir_out '
+    'npg_status_save --id_run 1234 --status "run archived" --dir_out '
     . $status_dir . q[ --db_save],
     'command is correct');
   ok (!$d->has_composition, 'composition not set');
@@ -83,7 +83,7 @@ subtest 'no_db_status_update option is false (default)' => sub {
   is ($d->job_name, 'save_run_status_1234_qc_complete_20090709-123456',
     'job_name is correct');
   is ($d->command,
-    'npg_status2file --id_run 1234 --status "qc complete" --dir_out '
+    'npg_status_save --id_run 1234 --status "qc complete" --dir_out '
     . $ostatus_dir . q[ --db_save],
     'command is correct');
 
@@ -100,7 +100,7 @@ subtest 'no_db_status_update option is false (default)' => sub {
   is ($d->job_name, 'save_lane_status_1234_analysis_in_progress_20090709-123456',
     'job_name is correct');
   is ($d->command,
-    'npg_status2file --id_run 1234 --status "analysis in progress" --dir_out '
+    'npg_status_save --id_run 1234 --status "analysis in progress" --dir_out '
     . $status_dir .  q' --lanes 3 --lanes 4 --lanes 5 --db_save',
     'command is correct');
 
@@ -116,7 +116,7 @@ subtest 'no_db_status_update option is false (default)' => sub {
   is ($d->job_name, 'save_lane_status_1234_analysis_in_progress_20090709-123456',
     'job_name is correct');
   is ($d->command,
-    'npg_status2file --id_run 1234 --status "analysis in progress" --dir_out '
+    'npg_status_save --id_run 1234 --status "analysis in progress" --dir_out '
     . $status_dir .
     ' --lanes 1 --lanes 2 --lanes 3 --lanes 4 --lanes 5' .
     ' --lanes 6 --lanes 7 --lanes 8 --db_save',
@@ -128,7 +128,7 @@ subtest 'no_db_status_update option is true' => sub {
 
   my $status = 'run archived';
   my $expected_command = sprintf
-    'npg_status2file --id_run 1234 --status "%s" --dir_out %s',
+    'npg_status_save --id_run 1234 --status "%s" --dir_out %s',
     $status, $status_dir;
 
   my $sr = npg_pipeline::function::status->new(
