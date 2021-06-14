@@ -1529,6 +1529,7 @@ subtest 'HiC_flags' => sub {
       repository        => $dir,
       verbose           => 1,
       conf_path         => 't/data/release/config/seq_alignment',
+      resource          => $default,
     )
   } 'no error creating an object';
 
