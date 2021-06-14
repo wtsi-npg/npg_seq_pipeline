@@ -25,6 +25,15 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $new;
 local $ENV{'http_proxy'} = 'http://wibble.com';
 local $ENV{'no_proxy'} = q{};
 
+my $default = {
+  default => {
+    minimum_cpu => 8,
+    memory => 20,
+    fs_slots_num => 4,
+    queue => "p4stage1"
+  }
+};
+
 #################################
 # mock references
 #################################
@@ -52,7 +61,8 @@ my $bam_generator = npg_pipeline::function::p4_stage1_analysis->new(
     verbose                       => 0,
     id_run                        => 1234,
     _extra_tradis_transposon_read => 1,
-    bam_basecall_path             => $util->standard_bam_basecall_path()
+    bam_basecall_path             => $util->standard_bam_basecall_path(),
+    resource                      => $default
 );
 
 mkdir join(q[/], $bam_generator->bam_basecall_path(), 'metadata_cache_1234')
@@ -66,7 +76,7 @@ subtest 'basics' => sub {
   $bam_generator->_extra_tradis_transposon_read(0);
   is($bam_generator->_extra_tradis_transposon_read, 0, 'TraDIS not set');
   isa_ok($bam_generator->lims, 'st::api::lims', 'cached lims object');
-  
+
   my $alims = $bam_generator->lims->children_ia;
   my $position = 8;
   is($bam_generator->_get_number_of_plexes_excluding_control($alims->{$position}),
@@ -75,10 +85,9 @@ subtest 'basics' => sub {
 
 subtest 'check_save_arguments' => sub {
   plan tests => 29;
- 
+
   my $bbp = $bam_generator->bam_basecall_path;
   my $unique = $bam_generator->_job_id();
- 
   my $da = $bam_generator->generate();
   ok ($da && @{$da}==8, 'eight definitions returned');
   my $d = $da->[0];
@@ -129,38 +138,38 @@ subtest 'check_save_arguments' => sub {
   my $no_cal_path = $intensities_dir . '/BAM_basecalls_09-07-2009/no_cal';
 
   $expected = {
-     'assign' => [
+    'assign' => [
         {
-	  'i2b_thread_count' => 8,
-	  'seqchksum_file' => $intensities_dir . '/BAM_basecalls_09-07-2009/1234_1.post_i2b.seqchksum',
-	  'scramble_reference_fasta' => $dir . '/srpipe_references/references/PhiX/default/all/fasta/phix_unsnipped_short_no_N.fa',
-	  'i2b_rg' => '1234_1',
-	  'i2b_pu' => '123456_IL2_1234_1',
+          'i2b_thread_count' => 8,
+          'seqchksum_file' => $intensities_dir . '/BAM_basecalls_09-07-2009/1234_1.post_i2b.seqchksum',
+          'scramble_reference_fasta' => $dir . '/srpipe_references/references/PhiX/default/all/fasta/phix_unsnipped_short_no_N.fa',
+          'i2b_rg' => '1234_1',
+          'i2b_pu' => '123456_IL2_1234_1',
           'tileviz_dir' => $no_cal_path . '/archive/lane1/tileviz',
           'reference_phix' => $dir . "/srpipe_references/references/PhiX/default/all/bwa0_6/phix_unsnipped_short_no_N.fa",
-	  'unfiltered_cram_file' => $no_cal_path . '/1234_1.unfiltered.cram',
-	  'qc_check_qc_out_dir' => $no_cal_path . '/archive/lane1/qc',
-	  'i2b_lane' => '1',
-	  'bwa_executable' => 'bwa0_6',
-	  'filtered_bam' => $no_cal_path . '/1234_1.bam',
-	  'samtools_executable' => 'samtools',
-	  'i2b_library_name' => '51021',
-	  'outdatadir' => $no_cal_path,
+          'unfiltered_cram_file' => $no_cal_path . '/1234_1.unfiltered.cram',
+          'qc_check_qc_out_dir' => $no_cal_path . '/archive/lane1/qc',
+          'i2b_lane' => '1',
+          'bwa_executable' => 'bwa0_6',
+          'filtered_bam' => $no_cal_path . '/1234_1.bam',
+          'samtools_executable' => 'samtools',
+          'i2b_library_name' => '51021',
+          'outdatadir' => $no_cal_path,
           'subsetsubpath' => $no_cal_path . '/archive/lane1/.npg_cache_10000',
-	  'i2b_run_path' => $dir . q[/nfs/sf45/IL2/analysis/123456_IL2_1234],
-	  'teepot_tempdir' => '.',
-	  'split_prefix' => $no_cal_path,
-	  'i2b_intensity_dir' => $intensities_dir,
-	  'i2b_sample_aliases' => 'SRS000147',
-	  'phix_alignment_method' => 'bwa_aln_se',
-	  'md5filename' => $no_cal_path . '/1234_1.bam.md5',
-	  'teepot_mval' => '2G',
-	  'i2b_runfolder' => '123456_IL2_1234',
-	  'i2b_study_name' => '"SRP000031: 1000Genomes Project Pilot 1"',
-	  'i2b_basecalls_dir' => $intensities_dir . '/BaseCalls',
-	  'teepot_wval' => '500',
-	  'qc_check_qc_in_dir' => $intensities_dir . '/BAM_basecalls_09-07-2009',
-	  'qc_check_id_run' => '1234',
+          'i2b_run_path' => $dir . q[/nfs/sf45/IL2/analysis/123456_IL2_1234],
+          'teepot_tempdir' => '.',
+          'split_prefix' => $no_cal_path,
+          'i2b_intensity_dir' => $intensities_dir,
+          'i2b_sample_aliases' => 'SRS000147',
+          'phix_alignment_method' => 'bwa_aln_se',
+          'md5filename' => $no_cal_path . '/1234_1.bam.md5',
+          'teepot_mval' => '2G',
+          'i2b_runfolder' => '123456_IL2_1234',
+          'i2b_study_name' => '"SRP000031: 1000Genomes Project Pilot 1"',
+          'i2b_basecalls_dir' => $intensities_dir . '/BaseCalls',
+          'teepot_wval' => '500',
+          'qc_check_qc_in_dir' => $intensities_dir . '/BAM_basecalls_09-07-2009',
+          'qc_check_id_run' => '1234',
           'cluster_count' => '500077065',
           'seed_frac' => '1234.00002000',
           'split_threads_val' => 4,
@@ -192,14 +201,15 @@ $bam_generator = npg_pipeline::function::p4_stage1_analysis->new(
     id_run                        => 1234,
     bam_basecall_path             => $util->standard_bam_basecall_path(),
     p4s1_phix_alignment_method    => q{minimap2},
+    resource                      => $default
   );
 
 subtest 'check_save_arguments_minimap2' => sub {
   plan tests => 29;
- 
+
   my $bbp = $bam_generator->bam_basecall_path;
   my $unique = $bam_generator->_job_id();
- 
+
   my $da = $bam_generator->generate();
   ok ($da && @{$da}==8, 'eight definitions returned');
   my $d = $da->[0];
@@ -252,36 +262,36 @@ subtest 'check_save_arguments_minimap2' => sub {
   $expected = {
      'assign' => [
         {
-	  'i2b_thread_count' => 8,
-	  'seqchksum_file' => $intensities_dir . '/BAM_basecalls_09-07-2009/1234_1.post_i2b.seqchksum',
-	  'scramble_reference_fasta' => $dir . '/srpipe_references/references/PhiX/default/all/fasta/phix_unsnipped_short_no_N.fa',
-	  'i2b_rg' => '1234_1',
-	  'i2b_pu' => '123456_IL2_1234_1',
+          'i2b_thread_count' => 8,
+          'seqchksum_file' => $intensities_dir . '/BAM_basecalls_09-07-2009/1234_1.post_i2b.seqchksum',
+          'scramble_reference_fasta' => $dir . '/srpipe_references/references/PhiX/default/all/fasta/phix_unsnipped_short_no_N.fa',
+          'i2b_rg' => '1234_1',
+          'i2b_pu' => '123456_IL2_1234_1',
           'tileviz_dir' => $no_cal_path . '/archive/lane1/tileviz',
           'reference_phix' => $dir . '/srpipe_references/references/PhiX/default/all/minimap2/phix_unsnipped_short_no_N.fa.mmi',
-	  'unfiltered_cram_file' => $no_cal_path . '/1234_1.unfiltered.cram',
-	  'qc_check_qc_out_dir' => $no_cal_path . '/archive/lane1/qc',
-	  'i2b_lane' => '1',
-	  'bwa_executable' => 'bwa0_6',
-	  'filtered_bam' => $no_cal_path . '/1234_1.bam',
-	  'samtools_executable' => 'samtools',
-	  'i2b_library_name' => '51021',
-	  'outdatadir' => $no_cal_path,
+          'unfiltered_cram_file' => $no_cal_path . '/1234_1.unfiltered.cram',
+          'qc_check_qc_out_dir' => $no_cal_path . '/archive/lane1/qc',
+          'i2b_lane' => '1',
+          'bwa_executable' => 'bwa0_6',
+          'filtered_bam' => $no_cal_path . '/1234_1.bam',
+          'samtools_executable' => 'samtools',
+          'i2b_library_name' => '51021',
+          'outdatadir' => $no_cal_path,
           'subsetsubpath' => $no_cal_path . '/archive/lane1/.npg_cache_10000',
-	  'i2b_run_path' => $dir . q[/nfs/sf45/IL2/analysis/123456_IL2_1234],
-	  'teepot_tempdir' => '.',
-	  'split_prefix' => $no_cal_path,
-	  'i2b_intensity_dir' => $intensities_dir,
-	  'i2b_sample_aliases' => 'SRS000147',
-	  'phix_alignment_method' => 'minimap2',
-	  'md5filename' => $no_cal_path . '/1234_1.bam.md5',
-	  'teepot_mval' => '2G',
-	  'i2b_runfolder' => '123456_IL2_1234',
-	  'i2b_study_name' => '"SRP000031: 1000Genomes Project Pilot 1"',
-	  'i2b_basecalls_dir' => $intensities_dir . '/BaseCalls',
-	  'teepot_wval' => '500',
-	  'qc_check_qc_in_dir' => $intensities_dir . '/BAM_basecalls_09-07-2009',
-	  'qc_check_id_run' => '1234',
+          'i2b_run_path' => $dir . q[/nfs/sf45/IL2/analysis/123456_IL2_1234],
+          'teepot_tempdir' => '.',
+          'split_prefix' => $no_cal_path,
+          'i2b_intensity_dir' => $intensities_dir,
+          'i2b_sample_aliases' => 'SRS000147',
+          'phix_alignment_method' => 'minimap2',
+          'md5filename' => $no_cal_path . '/1234_1.bam.md5',
+          'teepot_mval' => '2G',
+          'i2b_runfolder' => '123456_IL2_1234',
+          'i2b_study_name' => '"SRP000031: 1000Genomes Project Pilot 1"',
+          'i2b_basecalls_dir' => $intensities_dir . '/BaseCalls',
+          'teepot_wval' => '500',
+          'qc_check_qc_in_dir' => $intensities_dir . '/BAM_basecalls_09-07-2009',
+          'qc_check_id_run' => '1234',
           'cluster_count' => '500077065',
           'seed_frac' => '1234.00002000',
           'split_threads_val' => 4,
@@ -306,7 +316,7 @@ subtest 'check_save_arguments_minimap2' => sub {
 
 subtest 'check_duplex-seq' => sub {
   plan tests => 26;
- 
+
   my $rf_name = '210111_A00513_0447_AHJ55JDSXY';
   my $rfpath  = abs_path(getcwd) . qq{/t/data/novaseq/$rf_name};
   my $copy = join q[/], $dir, $rf_name;
@@ -327,10 +337,11 @@ subtest 'check_duplex-seq' => sub {
     verbose                       => 0,
     id_run                        => 36062,
     bam_basecall_path             => $bbp,
+    resource                      => $default
   );
 
   my $unique = $bam_generator->_job_id();
- 
+
   my $da = $bam_generator->generate();
   ok ($da && @{$da}==4, 'four definitions returned');
   my $d = $da->[0];

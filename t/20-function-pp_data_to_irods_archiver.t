@@ -17,14 +17,29 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = join q[/], $bbc_path,
 my $pkg = 'npg_pipeline::function::pp_data_to_irods_archiver';
 use_ok($pkg);
 
+my %init = (
+  conf_path => 't/data/release/config/pp_archival',
+  id_run => 34576,
+  runfolder_path => $runfolder_path,
+  resource => {
+    default => {
+      minimum_cpu => 1,
+      memory => 2,
+      queue => 'lowload',
+      fs_slots_num => 1,
+      reserve_irods_slots => 1
+    }
+  }
+);
+
+
 subtest 'local flag' => sub {
   plan tests => 3;
 
-  my $archiver = $pkg->new
-      (conf_path      => 't/data/release/config/pp_archival',
-       id_run         => 34576,
-       runfolder_path => $runfolder_path,
-       local          => 1);
+  my $archiver = $pkg->new(
+    %init,
+    local => 1,
+  );
 
   my $ds = $archiver->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
@@ -35,11 +50,10 @@ subtest 'local flag' => sub {
 subtest 'no_irods_archival flag' => sub {
   plan tests => 3;
 
-  my $archiver = $pkg->new
-    (conf_path         => 't/data/release/config/pp_archival',
-     id_run            => 34576,
-     runfolder_path    => $runfolder_path,
-     no_irods_archival => 1);
+  my $archiver = $pkg->new(
+    %init,
+    no_irods_archival => 1
+  );
   my $ds = $archiver->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
   isa_ok($ds->[0], 'npg_pipeline::function::definition');
@@ -53,11 +67,10 @@ subtest 'create job definition' => sub {
   # seed the random number generator.
   srand('1x4y5z8k');
 
-  my $archiver = $pkg->new
-    (conf_path         => 't/data/release/config/pp_archival',
-     id_run            => 34576,
-     timestamp         => '20200806-130730',
-     runfolder_path    => $runfolder_path);
+  my $archiver = $pkg->new(
+    %init,
+    timestamp => '20200806-130730',
+  );
   my $ds = $archiver->create;
 
   my $num_expected = 407;
@@ -82,7 +95,7 @@ subtest 'create job definition' => sub {
     q(pp_data_to_irods_archiver_34576_20200806-130730-2065184135_) .
     q(d28ec931b99c952007283973d380111784f69ed3215cffb2783a9fb878961798.metadata.json);
 
-  is ($d->command, 'npg_publish_tree.pl' . 
+  is ($d->command, 'npg_publish_tree.pl' .
     q( --collection /seq/illumina/pp/runs/34/34576/lane1/plex1) .
     q( --source ) . $bbc_path . q(/pp_archive/lane1/plex1) .
     q( --group 'ss_6187#seq') .

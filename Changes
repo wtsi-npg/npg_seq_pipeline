@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - Change seq_alignment to observe gbs pipeline allowed or not in product 
+   release study config.
+
 release 59.2.0
  - iRODS connections to be opened on-demand for validation
  - Added an option of having a new boolean flag 'accept_undef_qc_outcome'
