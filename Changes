@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - when HiC library type detected in seq_alignment, set appropriate flag values for bwa mem alignment
  - Change seq_alignment to observe gbs pipeline allowed or not in product 
    release study config.
 
