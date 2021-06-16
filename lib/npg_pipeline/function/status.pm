@@ -59,11 +59,13 @@ sub _command {
     }
   }
 
-  if (not $self->no_db_status_update) {
-    $command .= q[ --db_save];
+  if ($self->no_db_status_update) {
+    return $command;
+  } else {
+    return $command . q[ --db_save];
   }
 
-  return $command;
+  return;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -80,10 +82,9 @@ npg_pipeline::function::status
 
 =head1 DESCRIPTION
 
-Launches a job for saving run and lane statuses to a file.
-If saving of statuses to the database is not disabled (C<--no_db_status_update>
-pipeline option is not set explicitly or via setting the C<--local> option),
-the job will also save the statuses to the tracking database. 
+Creates a definition for a job that saves run and lane statuses to a file.
+The job will also save the statuses to the tracking database unless
+C<--no_db_status_update> or C<--local> options are used. 
 
 =head1 SUBROUTINES/METHODS
 

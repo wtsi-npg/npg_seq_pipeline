@@ -117,13 +117,13 @@ has q{no_db_status_update} => (
   is            => q{ro},
   lazy          => 1,
   builder       => '_default_to_local',
-  documentation => q{Switches off updating database run and lane statuses.},
+  documentation => q{Switches off run and lane status updates to the database},
 );
 
 =head2 local
 
-Sets the default for no_irods_archival, no_warehouse_update and
-no_summary_link to true.
+Sets the default for no_irods_archival, no_warehouse_update, no_db_status_update
+and no_summary_link attributes to true.
 Defaults to the value of no_bsub flag if no_bsub flag is available.
 
 =cut
