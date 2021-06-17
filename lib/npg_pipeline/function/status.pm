@@ -9,7 +9,7 @@ with q{npg_pipeline::runfolder_scaffold};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $STATUS_SCRIPT => q{npg_status2file};
+Readonly::Scalar my $STATUS_SCRIPT => q{npg_status_save};
 
 has q{status}           => (isa      => q{Str},
                             is       => q{ro},
@@ -59,7 +59,13 @@ sub _command {
     }
   }
 
-  return $command;
+  if ($self->no_db_status_update) {
+    return $command;
+  } else {
+    return $command . q[ --db_save];
+  }
+
+  return;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -76,7 +82,9 @@ npg_pipeline::function::status
 
 =head1 DESCRIPTION
 
-Launches a job for saving run and lane statuses to a file.
+Creates a definition for a job that saves run and lane statuses to a file.
+The job will also save the statuses to the tracking database unless
+C<--no_db_status_update> or C<--local> options are used. 
 
 =head1 SUBROUTINES/METHODS
 
@@ -123,7 +131,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
