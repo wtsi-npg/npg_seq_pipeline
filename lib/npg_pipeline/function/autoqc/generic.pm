@@ -218,13 +218,20 @@ sub _command {
 
   my $quote_me = sub { q['] . shift . q[']};
 
-  return join q{ }, $self->qc_cmd,
+  my @common_args = (
+    $self->qc_cmd,
     '--check', $AUTOQC_CHECK_NAME,
     '--spec', $self->spec,
     '--rpt_list', $rpt_list,
     '--pp_name', $quote_me->($self->portable_pipeline_name),
     '--pp_version', $quote_me->($self->pp_version($pp)),
-    @args;
+                    );
+  my $url = $self->pp_repo_url($pp);
+  if ($url) {
+    push @common_args, '--pp_repo_url', $quote_me->($url);
+  }
+
+  return join q[ ], @common_args, @args;
 }
 
 sub _job_name {
