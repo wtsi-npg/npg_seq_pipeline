@@ -82,8 +82,9 @@ sub pp_name {
 
 =head2 pp_version
 
-Given a configurationn hash for the portable pipeline,
-returns its version.
+Given a configuration hash for the portable pipeline, returns its version.
+In practice, if git used as Version Control System, either a tag or
+a commit SHA can be used.
 
 =cut
 
@@ -95,7 +96,7 @@ sub pp_version {
 
 =head2 pp_repo_url
 
-Given a configurationn hash for the portable pipeline,
+Given a configuration hash for the portable pipeline,
 returns the URL for its code version control repository.
 
 =cut
