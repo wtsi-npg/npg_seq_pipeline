@@ -80,6 +80,7 @@ subtest 'definition generation, artic spec' => sub {
     my $command = "$dir/qc --check generic --spec artic " .
       "--rpt_list 26291:$p " .
       q[--pp_name 'ncov2019-artic-nf' --pp_version 'cf01166c42a' ] .
+      q[--pp_repo_url 'https://github.com/connor-lab/ncov2019-artic-nf' ] .
       "--tm_json_file '$archive_path/lane$p/qc/26291_$p.tag_metrics.json' " .
       "--input_files_glob '$pp_archive_path/lane$p/plex*/" .
         q[ncov2019_artic_nf/cf01166c42a/*.qc.csv' ] .
