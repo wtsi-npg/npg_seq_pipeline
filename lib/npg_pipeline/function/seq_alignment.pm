@@ -34,6 +34,7 @@ Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
 Readonly::Scalar my $PFC_MARKDUP_OPT_DIST         => q{2500};  # distance in pixels for optical duplicate detection on patterned flowcells
 Readonly::Scalar my $NON_PFC_MARKDUP_OPT_DIST     => q{100};   # distance in pixels for optical duplicate detection on non-patterned flowcells
+Readonly::Scalar my $BWA_MEM_MISMATCH_PENALTY     => q{5};
 
 around 'markdup_method' => sub {
     my $orig = shift;
@@ -537,6 +538,15 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $p4_param_vals->{bwa_executable} = q[bwa-mem2];
     } else {
       $p4_param_vals->{bwa_executable} = q[bwa0_6];
+    }
+
+    my $is_hic_lib = $l->library_type && ($l->library_type =~ /Hi-C/smx);
+    if($is_hic_lib) {
+      $p4_param_vals->{is_HiC_lib} = 1;
+      $p4_param_vals->{bwa_mem_5_flag} = q[on];
+      $p4_param_vals->{bwa_mem_S_flag} = q[on];
+      $p4_param_vals->{bwa_mem_P_flag} = q[on];
+      $p4_param_vals->{bwa_mem_B_value} = $BWA_MEM_MISMATCH_PENALTY;
     }
 
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $aligner); }
