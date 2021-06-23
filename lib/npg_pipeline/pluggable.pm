@@ -157,6 +157,10 @@ For example, the following works for archival pipeline
  npg_pipeline::pluggable->new_with_options(
    function_list => 'post_qc_review');
 
+Normally specified implicitly in the pipeline
+invocation, e.g. ./bin/npg_pipeline_central causes the loading of
+./data/config_files/function_list_central.json
+
 =cut
 
 has q{function_list} => (
@@ -207,6 +211,9 @@ around q{function_list} => sub {
 
 A Graph::Directed object representing the functions to be run
 as a directed acyclic graph (DAG).
+Each vertex has properties id, label and resources.
+Populated from the provided JGF file via $self->function_order or
+$self->_function_list_conf
 
 =cut
 
@@ -222,13 +229,14 @@ sub _build_function_graph {
 
   my $g = Graph::Directed->new();
   my @nodes;
+  my $jgraph = $self->_function_list_conf;
 
   if ($self->has_function_order && @{$self->function_order}) {
-
     my @functions = @{$self->function_order};
     $self->info(q{Function order is set by the user: } .
                 join q[, ], @functions);
 
+    # Infer start and end of graph
     unshift @functions, $SUSPENDED_START_FUNCTION;
     push @functions, $END_FUNCTION;
     $self->info(q{Function order to be executed: } .
@@ -238,6 +246,7 @@ sub _build_function_graph {
     my $previous = 0;
     my $total = scalar @functions;
 
+    # Infer edges to connect the provided list of functions in order
     while ($current < $total) {
       if ($current != $previous) {
         $g->add_edge($functions[$previous], $functions[$current]);
@@ -245,9 +254,27 @@ sub _build_function_graph {
       }
       $current++;
     }
-    @nodes = map { {'id' => $_, 'label' => $_} } @functions;
+    # Infer resource properties by reading the related graph definition
+    foreach my $function_name (@functions) {
+      # Find the named node in the graph config
+      my ($function_def) = grep {
+        $_->{label} eq $function_name
+      } @{$jgraph->{graph}{nodes}};
+      if (! $function_def) {
+        $self->logcroak(
+          sprintf 'Function %s cannot be found in the graph %s',
+            $function_name,
+            $self->function_list
+        );
+      }
+      # and create a new graph node with the properties
+      push @nodes, {
+        id => $function_name,
+        label => $function_def->{label},
+        metadata => $function_def->{metadata}
+      };
+    }
   } else {
-    my $jgraph = $self->_function_list_conf();
     foreach my $e (@{$jgraph->{'graph'}->{'edges'}}) {
       ($e->{'source'} and $e->{'target'}) or
         $self->logcroak(q{Both source and target should be defined for an edge});
@@ -258,7 +285,7 @@ sub _build_function_graph {
 
   $g->edges()  or $self->logcroak(q{No edges});
   $g->is_dag() or $self->logcroak(q{Graph is not DAG});
-
+  # Add nodes to graph
   foreach my $n ( @nodes ) {
     ($n->{'id'} and $n->{'label'}) or
       $self->logcroak(q{Both id and label should be defined for a node});
@@ -267,6 +294,9 @@ sub _build_function_graph {
       $self->logcroak(qq{Vertex for node $id is missing});
     }
     $g->set_vertex_attribute($id, 'label', $n->{'label'});
+    if (exists $n->{metadata}) {
+      $g->set_vertex_attribute($id, 'resources', $n->{metadata}{resources});
+    }
   }
 
   return $g;
@@ -589,7 +619,7 @@ sub _common_attributes {
 }
 
 sub _run_function {
-  my ($self, $function_name) = @_;
+  my ($self, $function_name, $function_id) = @_;
 
   my $implementor = $self->_registry()->get_function_implementor($function_name);
   my $module = join q[::], 'npg_pipeline', 'function', $implementor->{'module'};
@@ -612,6 +642,8 @@ sub _run_function {
     $attrs->{$key} = $value;
   }
 
+  $attrs->{resource} = $self->_function_resource_requirements($function_id);
+
   #####
   # Instantiate the function implementor object, call on it the
   # method whose name we received from the registry, return
@@ -619,6 +651,34 @@ sub _run_function {
   #
   return $module->new($attrs)->$method_name($self->_pipeline_name);
 }
+
+####
+# Bring in resource requirements that functions need in order to
+# create task definitions
+sub _function_resource_requirements {
+  my ($self, $function_id) = @_;
+  # Extract default properties from graphwide metadata
+  my $jgraph = $self->_function_list_conf;
+
+  if (!exists $jgraph->{graph}{metadata}{default_resources}) {
+    $self->logcroak(
+      'No default resources defined in function graph under /graph/metadata/default_resources'
+    );
+  }
+  my $resource = $jgraph->{graph}{metadata}{default_resources};
+  # and get resource properties for this function invocation
+  my $g = $self->function_graph;
+  my $fn_resource = $g->get_vertex_attribute($function_id, 'resources');
+
+  # merge global defaults with resource spec defaults
+  for my $key (keys %{$resource}) {
+    if (! exists $fn_resource->{default}{$key}) {
+      $fn_resource->{default}{$key} = $resource->{$key};
+    }
+  }
+  return $fn_resource // {};
+}
+
 
 sub _schedule_functions {
   my $self = shift;
@@ -647,7 +707,7 @@ sub _schedule_functions {
       $self->logcroak(qq{No label for vertex $function});
     }
     $self->info(qq{***** Processing $function *****});
-    my $definitions = $self->_run_function($function_name);
+    my $definitions = $self->_run_function($function_name, $function);
     if (!$definitions || !@{$definitions}) {
       $self->logcroak(q{At least one definition should be returned});
     }

@@ -7,8 +7,6 @@ use File::Slurp;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
-
 extends 'npg_pipeline::function::seq_to_irods_archiver';
 
 our $VERSION = '0';
@@ -71,7 +69,7 @@ sub create {
       $dref{'composition'} = $product->composition;
       $dref{'command'}     = join q[ ], $PUBLISH_SCRIPT_NAME, @args;
       $self->assign_common_definition_attrs(\%dref, $job_name);
-      push @definitions, npg_pipeline::function::definition->new(\%dref);
+      push @definitions, $self->create_definition(\%dref);
     }
 
     if (not @definitions) {
@@ -82,7 +80,7 @@ sub create {
 
   return @definitions
          ? \@definitions
-         : [npg_pipeline::function::definition->new($ref)];
+         : [$self->create_definition($ref)];
 };
 
 sub _create_metadata_file {
@@ -97,7 +95,7 @@ sub _create_metadata_file {
     $meta_hash{sample_supplier_name} = $ssn;
   }
 
-  # Convert to baton format.  
+  # Convert to baton format.
   my @meta_list = ();
   foreach my $aname (sort keys %meta_hash) {
     push @meta_list,

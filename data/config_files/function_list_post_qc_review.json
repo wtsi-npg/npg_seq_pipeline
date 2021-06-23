@@ -1,194 +1,369 @@
 {
-   "graph" : {
-      "edges" : [
-         {
-            "relation" : "dependsOn",
-            "source" : "pipeline_start",
-            "target" : "run_archival_in_progress"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_archival_in_progress",
-            "target" : "upload_auto_qc_to_qc_database"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "upload_auto_qc_to_qc_database",
-            "target" : "update_ml_warehouse"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse",
-            "target" : "archive_run_data_to_irods"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse",
-            "target" : "archive_to_s3"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse",
-            "target" : "cache_merge_component"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse",
-            "target" : "pp_archiver"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "archive_run_data_to_irods",
-            "target" : "archive_to_irods_ml_warehouse"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "archive_to_irods_ml_warehouse",
-            "target" : "archive_pp_data_to_irods"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "archive_to_s3",
-            "target" : "notify_product_delivery"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "archive_pp_data_to_irods",
-            "target" : "run_run_archived"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "cache_merge_component",
-            "target" : "run_run_archived"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "pp_archiver",
-            "target" : "run_run_archived"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "notify_product_delivery",
-            "target" : "run_run_archived"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_run_archived",
-            "target" : "remove_intermediate_data"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "remove_intermediate_data",
-            "target" : "run_qc_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_qc_complete",
-            "target" : "pipeline_wait4path"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "pipeline_wait4path",
-            "target" : "update_ml_warehouse_post_qc_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "pipeline_wait4path",
-            "target" : "update_warehouse_post_qc_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_warehouse_post_qc_complete",
-            "target" : "archive_logs"
-         },        
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse_post_qc_complete",
-            "target" : "archive_logs"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "archive_logs",
-            "target" : "pipeline_end"
-         }       
-      ],
-      "nodes" : [
-         {
-            "id" : "pipeline_start",
-            "label" : "pipeline_start"
-         },
-         {
-            "id" : "run_archival_in_progress",
-            "label" : "run_archival_in_progress"
-         },
-         {
-            "id" : "update_ml_warehouse",
-            "label" : "update_ml_warehouse"
-         },
-         {
-            "id" : "archive_to_irods_ml_warehouse",
-            "label" : "archive_to_irods_ml_warehouse"
-         },
-         {
-            "id" : "archive_pp_data_to_irods",
-            "label" : "archive_pp_data_to_irods"
-         },
-         {
-            "id" : "archive_run_data_to_irods",
-            "label" : "archive_run_data_to_irods"
-         },
-         {
-            "id" : "archive_to_s3",
-            "label" : "archive_to_s3"
-         },
-         {
-            "id" : "cache_merge_component",
-            "label" : "cache_merge_component"
-         },
-         {
-            "id" : "pp_archiver",
-            "label" : "pp_archiver"
-         },
-         {
-            "id" : "notify_product_delivery",
-            "label" : "notify_product_delivery"
-         },
-         {
-            "id" : "upload_auto_qc_to_qc_database",
-            "label" : "upload_auto_qc_to_qc_database"
-         },
-         {
-            "id" : "run_run_archived",
-            "label" : "run_run_archived"
-         },
-         {
-            "id" : "remove_intermediate_data",
-            "label" : "remove_intermediate_data"
-         },
-         {
-            "id" : "run_qc_complete",
-            "label" : "run_qc_complete"
-         },
-         {
-            "id" : "pipeline_wait4path",
-            "label" : "pipeline_wait4path"
-         },
-         {
-            "id" : "update_ml_warehouse_post_qc_complete",
-            "label" : "update_ml_warehouse_post_qc_complete"
-         },
-         {
-            "id" : "update_warehouse_post_qc_complete",
-            "label" : "update_warehouse_post_qc_complete"
-         },
-         {
-            "id" : "archive_logs",
-            "label" : "archive_logs"
-         },
-         {
-            "id" : "pipeline_end",
-            "label" : "pipeline_end"
-         }
-      ]
-   }
+    "graph": {
+        "edges": [
+            {
+                "relation": "dependsOn",
+                "source": "pipeline_start",
+                "target": "run_archival_in_progress"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_archival_in_progress",
+                "target": "upload_auto_qc_to_qc_database"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "upload_auto_qc_to_qc_database",
+                "target": "update_ml_warehouse"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_ml_warehouse",
+                "target": "archive_run_data_to_irods"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_ml_warehouse",
+                "target": "archive_to_s3"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_ml_warehouse",
+                "target": "cache_merge_component"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_ml_warehouse",
+                "target": "pp_archiver"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "archive_run_data_to_irods",
+                "target": "archive_to_irods_ml_warehouse"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "archive_to_irods_ml_warehouse",
+                "target": "archive_pp_data_to_irods"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "archive_to_s3",
+                "target": "notify_product_delivery"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "archive_pp_data_to_irods",
+                "target": "run_run_archived"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "cache_merge_component",
+                "target": "run_run_archived"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "pp_archiver",
+                "target": "run_run_archived"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "notify_product_delivery",
+                "target": "run_run_archived"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_run_archived",
+                "target": "remove_intermediate_data"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "remove_intermediate_data",
+                "target": "run_qc_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_qc_complete",
+                "target": "pipeline_wait4path"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "pipeline_wait4path",
+                "target": "update_ml_warehouse_post_qc_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "pipeline_wait4path",
+                "target": "update_warehouse_post_qc_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_warehouse_post_qc_complete",
+                "target": "archive_logs"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_ml_warehouse_post_qc_complete",
+                "target": "archive_logs"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "archive_logs",
+                "target": "pipeline_end"
+            }
+        ],
+        "nodes": [
+            {
+                "id": "pipeline_start",
+                "label": "pipeline_start",
+                "metadata": {
+                    "description": "A token job, which always succeeds; the start node of the both functions and jobs directed graphs.",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "run_archival_in_progress",
+                "label": "run_archival_in_progress",
+                "metadata": {
+                    "description": "Writes a serialized representation of the 'archival in progress' run status to the file system",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "update_ml_warehouse",
+                "label": "update_ml_warehouse",
+                "metadata": {
+                    "description": "Creates run, lane and product level data in the multi-LIMS warehouse using the QC metrics available after the primary analysis",
+                    "resources": {
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ],
+                            "queue": "lowload",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "archive_to_irods_ml_warehouse",
+                "label": "archive_to_irods_ml_warehouse",
+                "metadata": {
+                    "description": "Archival of the output of the main analysis pipelines to the iRODS repository; the ml warehouse LIMS data are used",
+                    "resources": {
+                        "default": {
+                            "reserve_irods_slots": 1,
+                            "db": [
+                                "mlwh"
+                            ],
+                            "queue": "lowload",
+                            "fs_slots_num": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "archive_pp_data_to_irods",
+                "label": "archive_pp_data_to_irods",
+                "metadata": {
+                    "description": "Archival of the output of portable pipelines to a non-default iRODS connection (if configured)",
+                    "resources": {
+                        "default": {
+                            "reserve_irods_slots": 1,
+                            "queue": "lowload",
+                            "fs_slots_num": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "archive_run_data_to_irods",
+                "label": "archive_run_data_to_irods",
+                "metadata": {
+                    "description": "Archival of Illumina InterOps, Run Parameter(s).xml and RunInfo.xml files to the default  iRODS run collection",
+                    "resources": {
+                        "default": {
+                            "reserve_irods_slots": 1,
+                            "queue": "lowload",
+                            "fs_slots_num": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "archive_to_s3",
+                "label": "archive_to_s3",
+                "metadata": {
+                    "description": "Upload of the main pipeline products to a cloud location (if configured)",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "cache_merge_component",
+                "label": "cache_merge_component",
+                "metadata": {
+                    "description": "Cached products that are due for a top-up in a directory outside the run folder (if configured)",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "pp_archiver",
+                "label": "pp_archiver",
+                "metadata": {
+                    "description": " Upload or archival of the output of portable pipelines to a location specified by the customer (if configured)",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "notify_product_delivery",
+                "label": "notify_product_delivery",
+                "metadata": {
+                    "description": "Notification of product delivery to a customer using an in-house message queue (if configured)",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "upload_auto_qc_to_qc_database",
+                "label": "upload_auto_qc_to_qc_database",
+                "metadata": {
+                    "description": "Loads QC results into the database",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "queue": "lowload",
+                            "db": [
+                                "qc"
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": "run_run_archived",
+                "label": "run_run_archived",
+                "metadata": {
+                    "description": "Writes a serialized representation of the 'run archived' run status to the file system",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "remove_intermediate_data",
+                "label": "remove_intermediate_data",
+                "metadata": {
+                    "description": "Remove intermediate analysis data",
+                    "resources": {
+                        "default": {
+                            "queue": "small"
+                        }
+                    }
+                }
+            },
+            {
+                "id": "run_qc_complete",
+                "label": "run_qc_complete",
+                "metadata": {
+                    "description": "Writes a serialized representation of the 'qc complete' run status to the file system",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "pipeline_wait4path",
+                "label": "pipeline_wait4path",
+                "metadata": {
+                    "description": "Watches the run folder location; exits with an error if the run folder does not appear in the outgoing parent directory within a preset time interval",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "update_ml_warehouse_post_qc_complete",
+                "label": "update_ml_warehouse_post_qc_complete",
+                "metadata": {
+                    "description": "Multi-LIMS warehouse update in order to capture the 'qc complete' run status timestamp",
+                    "resources": {
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ],
+                            "queue": "lowload",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "update_warehouse_post_qc_complete",
+                "label": "update_warehouse_post_qc_complete",
+                "metadata": {
+                    "description": "Old warehouse update",
+                    "resources": {
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ],
+                            "queue": "lowload",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "archive_logs",
+                "label": "archive_logs",
+                "metadata": {
+                    "description": "Finds all pipeline logs, puts them into a compressed archive and uploads the archive to the default iRODS run collection",
+                    "resources": {
+                        "default": {
+                            "reserve_irods_slots": 1,
+                            "queue": "lowload",
+                            "fs_slots_num": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "pipeline_end",
+                "label": "pipeline_end",
+                "metadata": {
+                    "description": "A token job, which always succeeds; the end node of the both functions and jobs directed graphs.",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            }
+        ],
+        "metadata": {
+            "default_resources": {
+                "minimum_cpu": 1,
+                "memory": 2,
+                "array_cpu_limit": 64
+            }
+        }
+    }
 }

@@ -44,7 +44,7 @@ this class to a JSON string.
 
 =head2 thaw
 
-Inherited from MooseX::Storage. Creates an instant of this
+Inherited from MooseX::Storage. Creates an instance of this
 class from a JSON serialization.
 
 =head2 TO_JSON
@@ -208,7 +208,7 @@ has 'num_hosts' => (
 
 =head2 memory
 
-Memory in MB. If not set, less that 2Gb are required. 
+Memory in MB. If not set, less that 2Gb are required.
 
 =cut
 
@@ -256,7 +256,7 @@ has 'reserve_irods_slots' => (
 
 =head2 array_cpu_limit
 
-The value of the array cpu limit, unset by default. 
+The value of the array cpu limit, unset by default.
 
 =cut
 
@@ -366,7 +366,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018,2019,2020,2021 Genome Research Ltd
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

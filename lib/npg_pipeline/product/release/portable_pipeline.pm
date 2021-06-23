@@ -11,6 +11,7 @@ with 'npg_tracking::util::pipeline_config';
 Readonly::Scalar my $STUDY_CONFIG_SECTION_NAME => q[portable_pipelines];
 Readonly::Scalar my $PP_NAME_KEY               => q[pp_name];
 Readonly::Scalar my $PP_VERSION_KEY            => q[pp_version];
+Readonly::Scalar my $PP_REPO_URL_KEY           => q[pp_repo_url];
 Readonly::Scalar my $PP_TYPE_KEY               => q[pp_type];
 Readonly::Scalar my $PP_ROOT_KEY               => q[pp_root];
 Readonly::Scalar my $PP_ARCHIVAL_FLAG_KEY      => q[pp_archival_flag];
@@ -81,8 +82,9 @@ sub pp_name {
 
 =head2 pp_version
 
-Given a configurationn hash for the portable pipeline,
-returns its version.
+Given a configuration hash for the portable pipeline, returns its version.
+In practice, if git used as Version Control System, either a tag or
+a commit SHA can be used.
 
 =cut
 
@@ -90,6 +92,19 @@ sub pp_version {
   my ($self, $pp_conf) = @_;
   $pp_conf or croak 'pp config should be defined';
   return $pp_conf->{$PP_VERSION_KEY};
+}
+
+=head2 pp_repo_url
+
+Given a configuration hash for the portable pipeline,
+returns the URL for its code version control repository.
+
+=cut
+
+sub pp_repo_url {
+  my ($self, $pp_conf) = @_;
+  $pp_conf or croak 'pp config should be defined';
+  return $pp_conf->{$PP_REPO_URL_KEY};
 }
 
 =head2 pps_config4lims_entity

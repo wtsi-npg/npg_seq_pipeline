@@ -1,4 +1,4 @@
-.travis.yml
+.github/workflows/testing_and_building_repo.yml
 bin/npg_climb2mlwh
 bin/npg_heron_metadata_upload
 bin/npg_pipeline_analysis_runner
@@ -89,8 +89,8 @@ lib/npg_tracking/daemon/archival.pm
 MANIFEST			This list of files
 README
 README.md
+scripts/install_npg_perl_dependencies.sh
 scripts/jgf2gml
-scripts/travis_install.sh
 t/00-critic.t
 t/00-distribution.t
 t/00-pod.t
@@ -260,6 +260,7 @@ t/data/miseq/samplesheet_16866.csv
 t/data/miseq/samplesheet_20990.csv
 t/data/miseq/samplesheet_24135.csv
 t/data/miseq/samplesheet_24135_bwa_mem2.csv
+t/data/miseq/samplesheet_24135_gbs.csv
 t/data/miseq/samplesheet_24135_V2.csv
 t/data/no_reads.cram
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv
@@ -1049,6 +1050,13 @@ t/data/novaseq/210111_A00513_0447_AHJ55JDSXY/RunParameters.xml
 t/data/novaseq/35843_RunInfo.xml
 t/data/novaseq/35843_RunParameters.xml
 t/data/novaseq/samplesheet_35843.csv
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/37416_RunInfo.xml
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/37416_RunParameters.xml
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/lane_1.taglist
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/lane_2.taglist
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/lane_3.taglist
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/lane_4.taglist
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/samplesheet_37416.csv`
 t/data/p4_stage1_analysis/1234_samplesheet.csv
 t/data/p4_stage1_analysis/TileMetricsOut.bin
 t/data/portable_pipelines/samplesheet4archival_all_controls.csv

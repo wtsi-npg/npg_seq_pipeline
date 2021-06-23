@@ -1,6 +1,57 @@
 LIST OF CHANGES
 ---------------
 
+release 60.0.0
+
+ - When HiC library type detected in seq_alignment, set appropriate flag values
+   for bwa mem alignment.
+
+ - Change seq_alignment to observe gbs pipeline allowed or not in product 
+   release study config.
+
+ - Configure status change jobs to optionally save statuses to a database.
+   Use an updated script name in the job - npg_status_save.
+   Saving to the database is disabled when either the 'local' or
+   'no_db_status_update' attributes are set to true. The description of the new
+   option appears in help. Using --local option is recommended in SOP when
+   testing the pipeline, which will automatically prevent the new version of
+   the job from saving statuses to the database. --local flag ensures that the
+   directory with the new analysis is not visible to the production daemons,
+   including the status daemon. Thus, before this change one of the
+   consequences of using the --local flag was the new statuses not appearing
+   in the database; this will continue to be the case.
+
+ - Pass the portable pipeline repository URL to the autoqc generic job.
+   pp_repo_url parameter is read from the study configuration for a
+   portable pipeline and, if defined, is passed to the autoqc generic job
+   so that the URL can be captured in the information about the autoqc
+   generic check, which is saved by the generic result object.
+
+ - Reimplement management of resources in the pipeline.
+   -- Declaration of resources is moved to the input JSON function graphs, see
+      https://github.com/wtsi-npg/npg_seq_pipeline/blob/devel/data/config_files/README.md
+      for details.
+   -- All pre-existing definition of resources (number of CPUs, memory, etc),
+      either in other configuration files or hardcoded in the code, are removed.
+   -- A new parent class npg_pipeline::base_resource for classes in the
+      npg_pipeline::finction namespace, which are responsible for job
+      definition generation. The new class has a factory function
+      create_definition() for generating npg_pipeline::function::definition
+      type objects. This class is also responsible for correct interpretation
+      of resources specified in the input JSON function graph.
+   -- Extension of the npg_pipeline::pluggable class to parse resource
+      definitions from the JSON input graph and to pass this to the function
+      implementor.
+   -- Functions, which can be executed by using the --function_order pipeline
+      argument, are restricted to the ones that are defined in the JSON
+      function graph, which is used by the pipeline.
+
+ - Remove provisions for generate_compositions function as it is no longer
+   used.
+
+ - Remove provisions for the upstream_tags autoqc check as it is no longer run
+   in production as part of the analysis pipeline.
+
 release 59.2.0
  - iRODS connections to be opened on-demand for validation
  - Added an option of having a new boolean flag 'accept_undef_qc_outcome'

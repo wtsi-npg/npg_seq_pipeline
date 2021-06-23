@@ -45,7 +45,15 @@ my $timestamp = q[20180701-123456];
 my $repo_dir = q[t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a];
 my $product_conf = qq[$repo_dir/product_release.yml];
 
-use_ok('npg_pipeline::function::autoqc::generic'); 
+my $default = {
+  default => {
+    minimum_cpu => 4,
+    memory => 5,
+    fs_slots_num => 1
+  }
+};
+
+use_ok('npg_pipeline::function::autoqc::generic');
 
 subtest 'definition generation, artic spec' => sub {
   plan tests => 19;
@@ -60,7 +68,9 @@ subtest 'definition generation, artic spec' => sub {
     timestamp              => $timestamp,
     merge_lanes            => 0,
     spec                   => 'artic',
-    portable_pipeline_name => 'ncov2019-artic-nf');
+    portable_pipeline_name => 'ncov2019-artic-nf',
+    resource               => $default
+  );
   my $ds = $ag->create;
   is (scalar @{$ds}, 2, '2 definitions are returned');
   for my $p ((1,2)) {
@@ -70,6 +80,7 @@ subtest 'definition generation, artic spec' => sub {
     my $command = "$dir/qc --check generic --spec artic " .
       "--rpt_list 26291:$p " .
       q[--pp_name 'ncov2019-artic-nf' --pp_version 'cf01166c42a' ] .
+      q[--pp_repo_url 'https://github.com/connor-lab/ncov2019-artic-nf' ] .
       "--tm_json_file '$archive_path/lane$p/qc/26291_$p.tag_metrics.json' " .
       "--input_files_glob '$pp_archive_path/lane$p/plex*/" .
         q[ncov2019_artic_nf/cf01166c42a/*.qc.csv' ] .
@@ -100,7 +111,9 @@ subtest 'step skipped' => sub {
     timestamp              => $timestamp,
     merge_lanes            => 0,
     spec                   => 'artic',
-    portable_pipeline_name => 'ncov2019_artic_nf');
+    portable_pipeline_name => 'ncov2019_artic_nf',
+    resource               => $default
+  );
   my $ds = $ag->create;
   is (scalar @{$ds}, 1, 'one definition is returned');
   isa_ok ($ds->[0], 'npg_pipeline::function::definition');
@@ -114,11 +127,13 @@ subtest 'step skipped' => sub {
     timestamp              => $timestamp,
     merge_lanes            => 0,
     spec                   => 'artic',
-    portable_pipeline_name => 'ncov2019_artic_nf');
+    portable_pipeline_name => 'ncov2019_artic_nf',
+    resource               => $default
+  );
   $ds = $ag->create;
   is (scalar @{$ds}, 1, 'one definition is returned');
   is ($ds->[0]->excluded, 1, 'function is excluded');
-  
+
   $ag = npg_pipeline::function::autoqc::generic->new(
     product_conf_file_path => $product_conf,
     archive_path           => $archive_path,
@@ -127,7 +142,9 @@ subtest 'step skipped' => sub {
     timestamp              => $timestamp,
     merge_lanes            => 0,
     spec                   => 'artic',
-    portable_pipeline_name => 'ncov2019_artic_nf');
+    portable_pipeline_name => 'ncov2019_artic_nf',
+    resource               => $default
+  );
 
   $ag = npg_pipeline::function::autoqc::generic->new(
     product_conf_file_path => qq[$repo_dir/product_release_no_study.yml],
@@ -137,7 +154,9 @@ subtest 'step skipped' => sub {
     timestamp              => $timestamp,
     merge_lanes            => 0,
     spec                   => 'artic',
-    portable_pipeline_name => 'ncov2019_artic_nf');
+    portable_pipeline_name => 'ncov2019_artic_nf',
+    resource               => $default
+  );
   $ds = $ag->create;
   is (scalar @{$ds}, 1, 'one definition is returned');
   is ($ds->[0]->excluded, 1, 'function is excluded');
@@ -156,7 +175,9 @@ subtest 'definition generation, ampliconstats spec' => sub {
     merge_lanes            => 0,
     timestamp              => $timestamp,
     spec                   => 'ampliconstats',
-    portable_pipeline_name => 'ncov2019-artic-nf ampliconstats');
+    portable_pipeline_name => 'ncov2019-artic-nf ampliconstats',
+    resource               => $default
+  );
   my $ds = $ag->create;
   is (scalar @{$ds}, 2, 'two definitions are returned');
   for my $p ((1, 2)) {

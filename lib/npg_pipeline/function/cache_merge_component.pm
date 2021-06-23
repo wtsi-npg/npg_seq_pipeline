@@ -9,9 +9,7 @@ use MooseX::StrictConstructor;
 use Readonly;
 use List::Util qw(all);
 
-use npg_pipeline::function::definition;
-
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 
 with qw{npg_pipeline::product::cache_merge};
 
@@ -59,22 +57,15 @@ sub create {
     my $command = join q{ && }, qq(mkdir -p $destdir), reverse @commands;
     $self->debug("Adding command '$command'");
 
-    push @definitions,
-      npg_pipeline::function::definition->new
-        ('created_by'  => __PACKAGE__,
-         'created_on'  => $self->timestamp(),
-         'identifier'  => $id_run,
-         'job_name'    => $job_name,
-         'command'     => $command,
-         'composition' => $product->composition());
+    push @definitions, $self->create_definition({
+      job_name    => $job_name,
+      command     => $command,
+      composition => $product->composition()
+    })
   }
 
   if (not @definitions) {
-    push @definitions, npg_pipeline::function::definition->new
-      ('created_by' => __PACKAGE__,
-       'created_on' => $self->timestamp(),
-       'identifier' => $id_run,
-       'excluded'   => 1);
+    push @definitions, $self->create_excluded_definition();
   }
 
   return \@definitions;

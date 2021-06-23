@@ -4,10 +4,9 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
 use npg_pipeline::runfolder_scaffold;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 
@@ -95,12 +94,7 @@ sub _update_warehouse_command {
   my $d;
   if ($m) {
     $self->warn($m);
-    $d = npg_pipeline::function::definition->new(
-      created_by   => __PACKAGE__,
-      created_on   => $self->timestamp(),
-      identifier   => $self->label,
-      excluded     => 1
-    );
+    $d = $self->create_excluded_definition();
   } else {
     $pipeline_name ||= q[];
     my $job_name = join q{_}, $loader_name, $self->label, $pipeline_name;
@@ -120,16 +114,10 @@ sub _update_warehouse_command {
       }
     }
 
-    $d = npg_pipeline::function::definition->new(
-      created_by => __PACKAGE__,
-      created_on => $self->timestamp(),
-      identifier => $self->label,
+    $d = $self->create_definition({
       command    => $command,
-      num_cpus   => [0],
       job_name   => $job_name,
-      queue      =>
-        $npg_pipeline::function::definition::LOWLOAD_QUEUE
-    );
+    });
   }
 
   return [$d];

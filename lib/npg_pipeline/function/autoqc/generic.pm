@@ -7,10 +7,9 @@ use Readonly;
 use File::Spec::Functions qw{catdir catfile};
 use Try::Tiny;
 
-use npg_pipeline::function::definition;
 use npg_pipeline::function::stage2pp;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 with qw{ npg_pipeline::function::util
          npg_pipeline::product::release
          npg_pipeline::product::release::portable_pipeline };
@@ -42,7 +41,7 @@ of this class. The way these functions are scheduled is determined
 by the function graph.
 
 Tag zero and spiked controls are normally not considered. The autoqc
-check scan be invoked on any appropriate entity - a product or a pool. 
+check scan be invoked on any appropriate entity - a product or a pool.
 
 =head1 SUBROUTINES/METHODS
 
@@ -118,9 +117,7 @@ sub create {
   @definitions = grep { $_ } @definitions;
 
   if (!@definitions) {
-    my $ref = $self->_basic_attrs();
-    $ref->{'excluded'} = 1;
-    push @definitions, npg_pipeline::function::definition->new($ref);
+    push @definitions, $self->create_excluded_definition();
   }
 
   return \@definitions;
@@ -208,12 +205,12 @@ sub _create_lane_level_definition {
   my $lane_p = ($product->lanes_as_products)[0];
   my @args = map { m{\A--}xms ? $_ : q['] . $_ . q['] }
              $args_generator->($lane_p);
-  my $ref = $self->_basic_attrs();
+  my $ref = {};
   $ref->{'composition'} = $lane_p->composition();
   $ref->{'job_name'}    = $self->_job_name('artic');
   $ref->{'command'} = $self->_command($lane_p->rpt_list, $pp, @args);
 
-  return npg_pipeline::function::definition->new($ref);
+  return $self->create_definition($ref);
 }
 
 sub _command {
@@ -221,20 +218,20 @@ sub _command {
 
   my $quote_me = sub { q['] . shift . q[']};
 
-  return join q{ }, $self->qc_cmd,
+  my @common_args = (
+    $self->qc_cmd,
     '--check', $AUTOQC_CHECK_NAME,
     '--spec', $self->spec,
     '--rpt_list', $rpt_list,
     '--pp_name', $quote_me->($self->portable_pipeline_name),
     '--pp_version', $quote_me->($self->pp_version($pp)),
-    @args;
-}
+                    );
+  my $url = $self->pp_repo_url($pp);
+  if ($url) {
+    push @common_args, '--pp_repo_url', $quote_me->($url);
+  }
 
-sub _basic_attrs {
-  my $self = shift;
-  return { 'created_by' => __PACKAGE__,
-           'created_on' => $self->timestamp(),
-           'identifier' => $self->label() };
+  return join q[ ], @common_args, @args;
 }
 
 sub _job_name {

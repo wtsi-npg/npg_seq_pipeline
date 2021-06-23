@@ -8,9 +8,8 @@ use Readonly;
 
 use npg_qc::autoqc::qc_store;
 use npg_qc::illumina::interop::parser;
-use npg_pipeline::function::definition;
 
-extends qw{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 
@@ -54,7 +53,7 @@ sub create {
   my $id_run = $self->id_run;
 
   my $job_name = join q[_], $CLUSTER_COUNT_SCRIPT,
-                            $self->id_run(), $self->timestamp;
+                            $id_run, $self->timestamp;
 
   my $command = $CLUSTER_COUNT_SCRIPT;
   $command .= q{ --id_run=}            . $id_run;
@@ -88,13 +87,10 @@ sub create {
   }
 
   return [
-      npg_pipeline::function::definition->new(
-      created_by   => __PACKAGE__,
-      created_on   => $self->timestamp(),
-      identifier   => $id_run,
-      job_name     => $job_name,
-      command      => $command,
-    )
+      $self->create_definition({
+        job_name => $job_name,
+        command  => $command,
+      })
   ];
 }
 
