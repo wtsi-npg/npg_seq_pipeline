@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+  - GBS - block tag 0 from GBS pipeline and extra tests.
+
 release 60.0.0
 
  - When HiC library type detected in seq_alignment, set appropriate flag values
