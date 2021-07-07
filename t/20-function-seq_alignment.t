@@ -1607,7 +1607,9 @@ subtest 'HiC_flags' => sub {
         'fop.*samtools_stats_F0.*_target.*-',
         'fop.*samtools_stats_F0.*00_bait.*-'
       ],
-      'splice' => []
+      'splice' => [
+        'crammerge:-ssfqc_tee_ssfqc:'
+      ]
     },
     'assign_local' => {}
   };
