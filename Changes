@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - When NovaSeq platform detected in seq_alignment, add splice to p4 parameters
+   to skip spatial filter application
+
 release 60.0.0
 
  - When HiC library type detected in seq_alignment, set appropriate flag values
