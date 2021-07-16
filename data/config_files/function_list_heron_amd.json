@@ -1,0 +1,164 @@
+{
+    "graph": {
+        "edges": [
+            {
+                "relation": "dependsOn",
+                "source": "pipeline_start",
+                "target": "p4_stage1_analysis"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "p4_stage1_analysis",
+                "target": "stage2pp"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "stage2pp",
+                "target": "archive_pp_data_to_irods"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "stage2pp",
+                "target": "qc_generic_artic"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "archive_pp_data_to_irods",
+                "target": "remove_intermediate_data"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_generic_artic",
+                "target": "remove_intermediate_data"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "remove_intermediate_data",
+                "target": "run_analysis_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_analysis_complete",
+                "target": "pipeline_end"
+            }
+        ],
+        "nodes": [
+            {
+                "id": "pipeline_start",
+                "label": "pipeline_start",
+                "metadata": {
+                    "description": "A token job, which always succeeds; the start node of the both functions and jobs directed graphs.",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "p4_stage1_analysis",
+                "label": "p4_stage1_analysis",
+                "metadata": {
+                    "description": "Primary analysis of the data (bcl/cbcl files) coming from the Illumina instrument producing unaligned CRAM files for individual samples",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 8,
+                            "memory": 20,
+                            "fs_slots_num": 4,
+                            "queue": "p4stage1"
+                        }
+                    }
+                }
+            },
+            {
+                "id": "stage2pp",
+                "label": "stage2pp",
+                "metadata": {
+                    "description": "Creates file system scaffold and job definitions for external pipelines, which use the output of the primary analysis as their input.",
+                    "resources": {
+                        "default": {},
+                        "ncov2019-artic-nf": {
+                            "minimum_cpu": 4,
+                            "memory": 5
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_generic_artic",
+                "label": "qc_generic_artic",
+                "metadata": {
+                    "description": "A QC check that ingests the QC summary of ncov2019 artic external pipeline in combination with results of some other QC checks run by the main pipeline",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 4,
+                            "memory": 5,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "run_analysis_complete",
+                "label": "run_analysis_complete",
+                "metadata": {
+                    "description": "Writes a serialized representation of the 'analysis complete' run status to the file system",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "archive_pp_data_to_irods",
+                "label": "archive_pp_data_to_irods",
+                "metadata": {
+                    "description": "Archival of the output of external pipelines to the iRODS repository",
+                    "resources": {
+                        "default": {
+                            "reserve_irods_slots": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "remove_intermediate_data",
+                "label": "remove_intermediate_data",
+                "metadata": {
+                    "description": "Remove intermediate analysis data",
+                    "resources": {
+                        "default": {
+                            "queue": "small"
+                        }
+                    }
+                }
+            },
+            {
+                "id": "pipeline_end",
+                "label": "pipeline_end",
+                "metadata": {
+                    "description": "A token job, which always succeeds; the end node of the both functions and jobs directed graphs.",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            }
+        ],
+        "metadata": {
+            "description": "A directed graph of functions for reanalysis of
+Heron runs to produce an additional consensus file",
+            "default_resources": {
+                "minimum_cpu": 1,
+                "memory": 2,
+                "array_cpu_limit": 64
+            }
+        }
+    }
+}
