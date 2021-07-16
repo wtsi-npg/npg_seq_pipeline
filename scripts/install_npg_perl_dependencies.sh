@@ -17,7 +17,7 @@ cpanm --quiet --notest https://github.com/chapmanb/vcftools-cpan/archive/v0.953.
 
 # WTSI NPG Perl repo dependencies
 repos=""
-for repo in perl-dnap-utilities perl-irods-wrap ml_warehouse npg_ml_warehouse npg_tracking npg_seq_common npg_qc; do
+for repo in perl-dnap-utilities perl-irods-wrap ml_warehouse npg_ml_warehouse npg_tracking npg_seq_common npg_qc npg_irods; do
     cd /tmp
     # Always clone master when using depth 1 to get current tag
     git clone --branch master --depth 1 ${WTSI_NPG_GITHUB_URL}/${repo}.git ${repo}.git
@@ -34,7 +34,7 @@ done
 
 for repo in $repos
 do
-    export PERL5LIB=$repo/blib/lib:$PERL5LIB:$repo/lib
+    export PERL5LIB=$repo:$repo/blib/lib:$PERL5LIB:$repo/lib
 done
   
 for repo in $repos
