@@ -4,9 +4,7 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
-
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 with    qw{npg_pipeline::function::util
            npg_pipeline::runfolder_scaffold
            npg_pipeline::product::release
@@ -16,6 +14,12 @@ our $VERSION = '0';
 
 Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_illumina_run.pl};
 Readonly::Scalar my $NUM_MAX_ERRORS      => 20;
+
+has 'lims_driver_type' => (
+  required => 0,
+  isa      => 'Str',
+  is       => 'ro',
+);
 
 sub create {
   my $self = shift;
@@ -32,11 +36,7 @@ sub create {
       $PUBLISH_SCRIPT_NAME,
       q{--max_errors},     $self->num_max_errors();
 
-    if ($self->qc_run) {
-      $command .= q{ --alt_process qc_run};
-    }
-
-    if($self->has_lims_driver_type) {
+    if($self->lims_driver_type) {
       $command .= q{ --driver-type } . $self->lims_driver_type;
     }
 
@@ -44,14 +44,14 @@ sub create {
     foreach my $product (@{$self->products->{'data_products'}}) {
       if ($self->is_for_irods_release($product)) {
         my %dref = %{$ref};
-        $dref{'composition'}           = $product->composition;
+        $dref{'composition'} = $product->composition;
         $dref{'command'} = sprintf '%s --restart_file %s --collection %s --source_directory %s',
           $command,
           $self->restart_file_path($job_name_prefix, $product),
           $self->irods_product_destination_collection($run_collection, $product),
-	  $product->path($self->archive_path());
+          $product->path($self->archive_path());
         $self->assign_common_definition_attrs(\%dref, $job_name_prefix);
-        push @definitions, npg_pipeline::function::definition->new(\%dref);
+        push @definitions, $self->create_definition(\%dref);
       }
     }
 
@@ -61,7 +61,7 @@ sub create {
     }
   }
 
-  return @definitions ? \@definitions : [npg_pipeline::function::definition->new($ref)];
+  return @definitions ? \@definitions : [$self->create_definition($ref)];
 }
 
 sub basic_definition_init_hash {
@@ -71,27 +71,18 @@ sub basic_definition_init_hash {
     $self->logcroak(q{Not implemented for individual products});
   }
 
-  my $ref = {
-    'created_by' => ref $self,
-    'created_on' => $self->timestamp(),
-    'identifier' => $self->label(),
-  };
-
   if ($self->no_irods_archival) {
     $self->info(q{Archival to iRODS is switched off.});
-    $ref->{'excluded'} = 1;
+    return {'excluded' => 1};
   }
 
-  return $ref;
+  return {};
 }
 
 sub assign_common_definition_attrs {
   my ($self, $ref, $job_name_prefix) = @_;
 
   $ref->{'job_name'}  = join q{_}, $job_name_prefix, $self->timestamp();
-  $ref->{'fs_slots_num'} = 1;
-  $ref->{'reserve_irods_slots'} = 1;
-  $ref->{'queue'} = $npg_pipeline::function::definition::LOWLOAD_QUEUE;
   $ref->{'command_preexec'} =
     qq{npg_pipeline_script_must_be_unique_runner -job_name="$job_name_prefix"};
 
@@ -150,6 +141,11 @@ studies might be configured not to publish their products ti iRODS.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 lims_driver_type
+
+An optional attribute, the name of the lims driver to pass to the
+iRODS loader script.
+
 =head2 create
 
 Creates and returns a single function definition as an array.
@@ -203,12 +199,17 @@ restart file.
 
 =head1 AUTHOR
 
-Guoying Qi
-Marina Gourtovaia
+=over
+
+=item Guoying Qi
+
+=item Marina Gourtovaia
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

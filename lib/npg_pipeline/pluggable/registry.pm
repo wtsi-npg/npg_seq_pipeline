@@ -18,7 +18,9 @@ npg_pipeline::pluggable::registry
 
 =head1 DESCRIPTION
 
-Mapping from function names to modules implementing them.
+Mapping from function names to classes implementing them and to
+arguments and values which have to be passed to the objects'
+constructors at run time.
 
 =head1 SUBROUTINES/METHODS
 
@@ -40,9 +42,11 @@ Readonly::Hash my %REGISTRY => (
   'create_summary_link_analysis' => {'current_analysis_link' => 'create'},
 
   'p4_stage1_analysis'      => {'p4_stage1_analysis' => 'generate'},
-  'stage2pp'                => {'stage2pp'           => 'create'},
+  'stage2pp'                => {'stage2pp' =>
+    {method => 'create', pipeline_type => 'stage2pp'}},
+  'stage2App'                => {'stage2pp' =>
+    {method => 'create', pipeline_type => 'stage2App'}},
   'seq_alignment'           => {'seq_alignment' => 'generate'},
-  'generate_compositions'   => {'seq_alignment' => 'generate_compositions'},
   'bqsr_calc'               => {'bqsr_calc' => 'create'},
   'haplotype_caller'        => {'haplotype_caller' => 'create'},
   'merge_recompress'        => {'merge_recompress' => 'create'},
@@ -53,12 +57,24 @@ Readonly::Hash my %REGISTRY => (
   'remove_intermediate_data'       => {'remove_intermediate_data' => 'create'},
   'pp_archiver'                    => {'pp_archiver' => 'create'},
   'pp_archiver_manifest'           => {'pp_archiver' => 'generate_manifest'},
+  'archive_pp_data_to_irods'       => {'pp_data_to_irods_archiver' => 'create'},
 
   'bam_cluster_counter_check'=> {'cluster_count' => 'create'},
   'seqchksum_comparator'     => {'seqchksum_comparator' => 'create'},
   'archive_to_s3'            => {'s3_archiver' => 'create'},
   'notify_product_delivery'  => {'product_delivery_notifier' => 'create'},
   'cache_merge_component'    => {'cache_merge_component' => 'create'},
+
+  'archive_to_irods_samplesheet' => {'seq_to_irods_archiver' =>
+     {method => 'create', lims_driver_type =>'samplesheet'}},
+  'archive_to_irods_ml_warehouse' => {'seq_to_irods_archiver' =>
+     {method => 'create', lims_driver_type =>'ml_warehouse_fc_cache'}},
+
+  'qc_generic_artic' => {'autoqc::generic' => {method => 'create',
+    spec => 'artic', portable_pipeline_name => 'ncov2019-artic-nf'}},
+  'qc_generic_ampliconstats' => {'autoqc::generic' => {
+    method => 'create', spec => 'ampliconstats',
+    portable_pipeline_name => 'ncov2019-artic-nf_ampliconstats'}},
 );
 
 Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>
@@ -88,10 +104,9 @@ Readonly::Array my @AUTOQC_FUNCTIONS =>
       qc_rna_seqc
       qc_sequence_error
       qc_tag_metrics
-      qc_upstream_tags
       qc_spatial_filter
       qc_verify_bam_id
-      qc_review 
+      qc_review
     /;
 
 has '_registry' => (
@@ -107,7 +122,17 @@ sub _build__registry {
   while (my ($function_name, $definition) = each %REGISTRY) {
     my $new_definition = {};
     $new_definition->{'module'} = (keys   %{$definition})[0];
-    $new_definition->{'method'} = (values %{$definition})[0];
+    my $details = (values %{$definition})[0];
+    my $type = ref $details;
+    if (not $type) {
+      $new_definition->{'method'} = $details;
+    } elsif ($type eq 'HASH') {
+      my %details_hash = %{$details};
+      $new_definition->{'method'} = delete $details_hash{'method'};
+      $new_definition->{'params'} = \%details_hash;
+    } else {
+      croak "Unexpected type $type";
+    }
     $r->{$function_name} = $new_definition;
   }
 
@@ -135,17 +160,6 @@ sub _build__registry {
     $definition->{'method'} = 'create';
     $definition->{'params'} = {'status'           => $status,
                                'lane_status_flag' => $lane_status};
-    $r->{$function_name} = $definition;
-  }
-
-  foreach my $function_name (qw(archive_to_irods_samplesheet 
-                                archive_to_irods_ml_warehouse)) {
-    my $definition = {};
-    $definition->{'module'} = 'seq_to_irods_archiver';
-    $definition->{'method'} = 'create';
-    my $driver_type = $function_name =~ /samplesheet\Z/xms ?
-	              'samplesheet' : 'ml_warehouse_fc_cache';
-    $definition->{'params'} = {'lims_driver_type'  => $driver_type};
     $r->{$function_name} = $definition;
   }
 

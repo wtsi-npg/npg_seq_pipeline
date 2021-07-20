@@ -13,9 +13,8 @@ use open q(:encoding(UTF8));
 
 use npg_qc::illumina::interop::parser;
 use npg_pipeline::cache::barcodes;
-use npg_pipeline::function::definition;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 
 with 'npg_pipeline::runfolder_scaffold' => {
         -excludes => [qw/create_top_level create_analysis_level/],
@@ -24,12 +23,11 @@ with 'npg_pipeline::runfolder_scaffold' => {
 
 our $VERSION  = '0';
 
-Readonly::Scalar my $NUM_SLOTS                    => q(8,16);
-Readonly::Scalar my $NUM_HOSTS                    => 1;
-Readonly::Scalar my $MEMORY                       => q{12000}; # memory in megabytes
-Readonly::Scalar my $FS_RESOURCE                  => 4; # LSF resource counter to control access to staging area file system
 Readonly::Scalar my $DEFAULT_I2B_THREAD_COUNT     => 3; # value passed to bambi i2b --threads flag
 Readonly::Scalar my $DEFAULT_SPLIT_THREADS_COUNT  => 0; # value passed to samtools split --threads flag
+
+Readonly::Scalar my $DUPLEXSEQ_TAG_LENGTH         => 3; # length of Duplex-Seq tag at start of read
+Readonly::Scalar my $DUPLEXSEQ_SKIP_LENGTH        => 4; # Number of bases to skip after the Duplex-Seq tag
 
 sub generate {
   my $self = shift;
@@ -111,17 +109,6 @@ sub _build_p4_stage1_errlog_paths {
   return \%p4_stage1_errlog_paths;
 }
 
-has '_num_cpus'               => (
-                           isa        => 'ArrayRef',
-                           is         => 'ro',
-                           lazy_build => 1,
-                         );
-sub _build__num_cpus {
-  my $self = shift;
-  return $self->num_cpus2array(
-    $self->general_values_conf()->{'p4_stage1_slots'} || $NUM_SLOTS);
-}
-
 has '_job_id' => ( isa        => 'Str',
                    is         => 'ro',
                    lazy_build => 1,
@@ -183,20 +170,12 @@ sub _build_phix_alignment_reference {
 sub _create_definition {
   my ($self, $composition, $command) = @_;
 
-  return npg_pipeline::function::definition->new(
-    created_by      => __PACKAGE__,
-    created_on      => $self->timestamp(),
-    identifier      => $self->id_run(),
+  return $self->create_definition({
     job_name        => (join q{_}, q{p4_stage1_analysis},$self->id_run(),$self->timestamp()),
-    fs_slots_num    => $self->general_values_conf()->{'p4_stage1_fs_resource'} || $FS_RESOURCE,
-    num_hosts       => $NUM_HOSTS,
-    num_cpus        => $self->_num_cpus(),
-    memory          => $self->general_values_conf()->{'p4_stage1_memory'} || $MEMORY,
-    queue           => $npg_pipeline::function::definition::P4_STAGE1_QUEUE,
     command         => $command,
     command_preexec => $self->repos_pre_exec_string(),
     composition     => $composition
-  );
+  });
 }
 
 sub _create_p4_stage1_dirs {
@@ -242,7 +221,7 @@ sub _get_index_lengths {
 # Determine parameters for the lane from LIMS information and create the hash from which the p4 stage1
 #  analysis param_vals file will be generated. Generate the vtfp/viv commands using this param_vals file.
 #########################################################################################################
-sub _generate_command_params {
+sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexity)
   my ($self, $lane_lims, $tag_list_file, $lane_product) = @_;
   my %p4_params = (
                     samtools_executable => q{samtools},
@@ -365,6 +344,74 @@ sub _generate_command_params {
     }
   }
 
+  if($self->_is_duplexseq($lane_lims)) {
+    $self->info(q{P4 stage1 analysis of a Duplex-Seq lane});
+
+    if (!$self->is_paired_read) {
+      $self->logcroak('A Duplex-Seq lane should be paired ', $position);
+    }
+
+    # The first $DUPLEXSEQ_TAG_LENGTH bases(quality values) and the next $DUPLEXSEQ_SKIP_LENGTH bases(quality values) are removed and
+    # placed in tags rb(qr) and br(bq). This is done on both the forward and reverse reads with the tags created on the corresponding
+    # read. The rb(qr) tags on each read are duplicated on the paired read but the tags are re-named mb(mq).
+
+    my @i2b_bc_read = ();
+    my @i2b_first_0 = ();
+    my @i2b_final_0 = ();
+    my @i2b_first_index_0 = ();
+    my @i2b_final_index_0 = ();
+    my @i2b_bc_seq_val = ();
+    my @i2b_bc_qual_val = ();
+
+    # read 1
+    my($first, $final) = $self->read1_cycle_range();
+    push @i2b_bc_read, q{1},q{2},q{1};
+    push @i2b_first_index_0, qq{$first},qq{$first},$first+$DUPLEXSEQ_TAG_LENGTH;
+    push @i2b_final_index_0, $first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH-1;
+    push @i2b_bc_seq_val, q{rb},q{mb},q{br};
+    push @i2b_bc_qual_val, q{rq},q{mq},q{bq};
+    push @i2b_first_0, $first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH;
+    push @i2b_final_0, qq{$final};
+
+    # index read(s)
+    if($self->is_indexed()) {
+      # the first index read
+      ($first, $final) = $self->index_read1_cycle_range();
+      push @i2b_bc_read, q{1};
+      push @i2b_first_index_0, qq{$first};
+      push @i2b_final_index_0, qq{$final};
+      push @i2b_bc_seq_val, q{BC};
+      push @i2b_bc_qual_val, q{QT};
+      if($self->is_dual_index()) {
+        # the second index read
+        ($first, $final) = $self->index_read2_cycle_range();
+        push @i2b_bc_read, q{1};
+        push @i2b_first_index_0, qq{$first};
+        push @i2b_final_index_0, qq{$final};
+        push @i2b_bc_seq_val, q{BC};
+        push @i2b_bc_qual_val, q{QT};
+      }
+    }
+
+    # read 2
+    ($first, $final) = $self->read2_cycle_range();
+    push @i2b_bc_read, q{2},q{1},q{2};
+    push @i2b_first_index_0, qq{$first},qq{$first},$first+$DUPLEXSEQ_TAG_LENGTH;
+    push @i2b_final_index_0, $first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH-1;
+    push @i2b_bc_seq_val, q{rb},q{mb},q{br};
+    push @i2b_bc_qual_val, q{rq},q{mq},q{bq};
+    push @i2b_first_0, $first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH;
+    push @i2b_final_0, qq{$final};
+
+    $p4_params{i2b_bc_read}       = join q{,}, @i2b_bc_read;
+    $p4_params{i2b_first_0}       = join q{,}, @i2b_first_0;
+    $p4_params{i2b_final_0}       = join q{,}, @i2b_final_0;
+    $p4_params{i2b_first_index_0} = join q{,}, @i2b_first_index_0;
+    $p4_params{i2b_final_index_0} = join q{,}, @i2b_final_index_0;
+    $p4_params{i2b_bc_seq_val}    = join q{,}, @i2b_bc_seq_val;
+    $p4_params{i2b_bc_qual_val}   = join q{,}, @i2b_bc_qual_val;
+  }
+
   ###  TODO: remove this read length comparison if biobambam will handle this case. Check clip reinsertion.
   if($self->is_paired_read() && !$lane_lims->inline_index_exists) {
     # omit BamAdapterFinder for inline index
@@ -411,11 +458,11 @@ sub _generate_command_params {
 
   $p4_params{split_threads_val} = $self->general_values_conf()->{'p4_stage1_split_threads_count'} || $DEFAULT_SPLIT_THREADS_COUNT;
 
-  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->_num_cpus->[0];
+  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->get_resources->{minimum_cpu};
   my $name_root = $id_run . q{_} . $position;
   # allow specification of thread number for some processes in config file. Note: these threads are being drawn from the same pool. Unless
   #  they appear in the config file, their values will be derived from what LSF assigns the job based on the -n value supplied to the bsub
-  #  command (see $num_slots in _default_resources()).
+  #  command.
   my $aligner_slots = $self->general_values_conf()->{'p4_stage1_aligner_slots'} || qq[`$num_threads_expression --exclude -2 --divide 3`];
   my $samtobam_slots = $self->general_values_conf()->{'p4_stage1_samtobam_slots'} || qq[`$num_threads_expression --exclude -1 --divide 3`];
   my $bamsormadup_slots = $self->general_values_conf()->{'p4_stage1_bamsort_slots'} || qq[`$num_threads_expression --divide 3`];
@@ -439,14 +486,6 @@ sub _generate_command_params {
                            q(');
 
   return ($command, \%p4_params, \%p4_ops);
-}
-
-sub _default_resources {
-  my ( $self ) = @_;
-  my $hosts = 1;
-  my $mem = $self->general_values_conf()->{'p4_stage1_memory'} || $MEMORY;
-  my $num_slots = $self->general_values_conf()->{'p4_stage1_slots'} || $NUM_SLOTS;
-  return (join q[ ], npg_pipeline::lsf_job->new(memory => $mem)->memory_spec(), "-R 'span[hosts=$hosts]'", "-n$num_slots");
 }
 
 sub _get_library_sample_study_names {
@@ -527,6 +566,16 @@ sub _build__extra_tradis_transposon_read {
   return ($num_extra > 0) ? 1 : 0;
 }
 
+sub _is_duplexseq {
+  my ( $self, $lane_lims ) = @_;
+
+  # I've restricted this to library_types which exactly match Duplex-Seq to exclude the old library_type Bidirectional Duplex-seq
+  my $is_duplexseq = any {$_->library_type && $_->library_type eq q[Duplex-Seq]}
+                  $lane_lims->descendants();
+
+  return $is_duplexseq;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -545,8 +594,8 @@ npg_pipeline::function::p4_stage1_analysis
 
 =head1 DESCRIPTION
 
-Definition for p4 flow which creates cram files from bcl files, including initial phiX alignment, 
-spatial filtering and deplexing of pools where appropriate.
+Definition for p4 flow which creates cram files from bcl/cbcl files, including initial PhiX
+alignment, spatial filtering and deplexing of pools where appropriate.
 
 =head1 SUBROUTINES/METHODS
 

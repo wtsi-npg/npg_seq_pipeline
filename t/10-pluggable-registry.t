@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 34;
+use Test::More tests => 40;
 use Test::Exception;
 
 use_ok('npg_pipeline::pluggable::registry');
@@ -66,5 +66,15 @@ $i = $r->get_function_implementor('archive_to_irods_ml_warehouse');
 is ($i->{'module'}, 'seq_to_irods_archiver', 'module name');
 is ($i->{'method'}, 'create', 'method name');
 is_deeply ($i->{'params'}, {'lims_driver_type' => 'ml_warehouse_fc_cache'}, 'params');
+
+$i = $r->get_function_implementor('stage2pp');
+is ($i->{'module'}, 'stage2pp', 'module name');
+is ($i->{'method'}, 'create', 'method name');
+is_deeply ($i->{'params'}, {'pipeline_type' => 'stage2pp'}, 'params');
+
+$i = $r->get_function_implementor('stage2App');
+is ($i->{'module'}, 'stage2pp', 'module name');
+is ($i->{'method'}, 'create', 'method name');
+is_deeply ($i->{'params'}, {'pipeline_type' => 'stage2App'}, 'params');
 
 1;

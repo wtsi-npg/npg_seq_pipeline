@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 16;
+use Test::More tests => 15;
 use Test::Exception;
 use File::Path qw/make_path/;
 use File::Copy::Recursive qw/fcopy dircopy/;
@@ -41,19 +41,31 @@ my $rf_path     = $hiseq_rf->{'runfolder_path'};
 fcopy('t/data/run_params/runParameters.hiseq.xml', "$rf_path/runParameters.xml")
   or die 'Fail to copy run param file';
 
+my $default = {
+  default => {
+    minimum_cpu => 3,
+    memory => 1.5,
+    fs_slots_num => 1,
+    apply_array_cpu_limit => 1
+  }
+};
+
+
 subtest 'errors' => sub {
   plan tests => 2;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/samplesheet_14353.csv';
 
   throws_ok {
-    npg_pipeline::function::autoqc->new(id_run => 14353)
+    npg_pipeline::function::autoqc->new(id_run => 14353, resource => $default)
   } qr/Attribute \(qc_to_run\) is required/,
   q{error creating object as no qc_to_run provided};
 
   throws_ok { npg_pipeline::function::autoqc->new(
       id_run     => 14353,
-      qc_to_run  => 'some_check')->create();
+      qc_to_run  => 'some_check',
+      resource   => $default
+    )->create();
   } qr/Can\'t locate npg_qc\/autoqc\/checks\/some_check\.pm/,
     'non-existing check name - error';
 };
@@ -62,7 +74,7 @@ subtest 'adapter' => sub {
   plan tests => 32;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_1234.csv';
- 
+
   my $aqc;
   lives_ok {
     $aqc = npg_pipeline::function::autoqc->new(
@@ -71,12 +83,13 @@ subtest 'adapter' => sub {
       qc_to_run         => q{adapter},
       timestamp         => q{20090709-123456},
       is_indexed        => 0,
+      resource          => $default
     );
   } q{no croak on new, as required params provided};
 
   my $da = $aqc->create();
   ok ($da && (@{$da} == 8), 'eight definitions returned');
-  
+
   my $d = $da->[0];
   isa_ok ($d, 'npg_pipeline::function::definition');
   is ($d->created_by, 'npg_pipeline::function::autoqc', 'created by');
@@ -117,6 +130,7 @@ subtest 'adapter' => sub {
     lanes             => [1],
     timestamp         => q{20090709-123456},
     is_indexed        => 1,
+    resource          => $default
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 4), 'five definitions returned - plexes only');
@@ -135,6 +149,7 @@ subtest 'spatial_filter' => sub {
     qc_to_run         => q{spatial_filter},
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
+    resource          => $default
   );
 
   my $da = $aqc->create();
@@ -158,6 +173,7 @@ subtest 'spatial_filter' => sub {
     lanes             => [(1 .. 6)],
     timestamp         => q{20090709-123456},
     is_indexed        => 1,
+    resource          => $default
   );
 
   my %expected_tags = (
@@ -177,13 +193,22 @@ subtest 'spatial_filter' => sub {
     is ($de->command, sprintf('qc --check=spatial_filter --rpt_list=%s --filename_root=%s --qc_out=%s --qc_in=%s',
                                  qq["8747:${p}"], "8747_${p}", "$archive_dir/lane${p}/qc", $archive_dir),
     "spatial filter check command for lane $p, lane is indexed");
-  }   
+  }
 };
 
 subtest 'qX_yield' => sub {
-  plan tests => 26;
+  plan tests => 24;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_1234.csv';
+
+  my $resource = {
+    default => {
+      memory => 2,
+      fs_slots_num => 1,
+      minimum_cpu => 1,
+      apply_array_cpu_limit => 1
+    }
+  };
 
   my $aqc = npg_pipeline::function::autoqc->new(
     runfolder_path    => $rf_path,
@@ -192,6 +217,7 @@ subtest 'qX_yield' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
     is_paired_read    => 1,
+    resource          => $resource
   );
   my $da = $aqc->create();
   ok ($da && (@{$da} == 8), 'eight definitions returned');
@@ -203,8 +229,6 @@ subtest 'qX_yield' => sub {
   ok ($d->apply_array_cpu_limit, 'array_cpu_limit should be applied');
   ok (!$d->has_array_cpu_limit, 'array_cpu_limit not set');
   is ($d->fs_slots_num, 1, 'one sf slots');
-  ok (!$d->has_num_cpus, 'num cpus is not set');
-  ok (!$d->has_num_hosts, 'num hosts is not set');
   ok (!$d->has_command_preexec, 'preexec command is not set');
 
   foreach my $de (@{$da}) {
@@ -224,6 +248,7 @@ subtest 'qX_yield' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
     is_paired_read    => 0,
+    resource          => $resource
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
@@ -240,10 +265,11 @@ subtest 'qX_yield' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 1,
     is_paired_read    => 1,
+    resource          => $resource
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned - lane is not a pool');
- 
+
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/1234_samplesheet_amended.csv';
 
   fcopy('t/data/run_params/runParameters.miseq.xml', "$rf_path/runParameters.xml")
@@ -257,6 +283,7 @@ subtest 'qX_yield' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 1,
     is_paired_read    => 0,
+    resource          => $resource
   );
 
   $da = $aqc->create();
@@ -274,11 +301,21 @@ subtest 'qX_yield' => sub {
   fcopy('t/data/run_params/runParameters.hiseq.xml', "$rf_path/runParameters.xml")
     or die 'Fail to copy run param file';
 };
-  
+
 subtest 'ref_match' => sub {
-  plan tests => 15;
+  plan tests => 12;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/qc/1234_samplesheet_amended.csv';
+
+  my $resource = {
+    default => {
+      minimum_cpu => 1,
+      array_cpu_limit => 8,
+      apply_array_cpu_limit => 1,
+      fs_slots_num => 1,
+      memory => 6
+    }
+  };
 
   my $aqc = npg_pipeline::function::autoqc->new(
     runfolder_path    => $rf_path,
@@ -289,6 +326,7 @@ subtest 'ref_match' => sub {
     repository        => 't/data/sequence',
     is_indexed        => 1,
     is_paired_read    => 1,
+    resource          => $resource
   );
   my $da = $aqc->create();
   ok ($da && (@{$da} == 3), 'three definitions returned - lane is a pool');
@@ -300,13 +338,10 @@ subtest 'ref_match' => sub {
   ok (!$d->has_num_hosts, 'number of hosts not set');
   ok ($d->apply_array_cpu_limit, 'apply array_cpu_limit');
   is ($d->array_cpu_limit, 8, '8 - array_cpu_limit');
-  ok (!$d->has_num_cpus, 'num cpus is not set');
   is ($d->memory, 6000, 'memory');
   is ($d->command_preexec,
     'npg_pipeline_preexec_references --repository t/data/sequence',
     'preexec command');
-  ok (!$d->has_num_cpus, 'num cpus is not set');
-  ok (!$d->has_num_hosts, 'num hosts is not set');
 
   my @plexes = grep { defined $_->composition->get_component(0)->tag_index} @{$da};
   is (@plexes, 2, 'two definitions for a plexes');
@@ -322,6 +357,14 @@ subtest 'ref_match' => sub {
 subtest 'insert_size and sequence error' => sub {
   plan tests => 5;
 
+  my $resource = {
+    default => {
+      minimum_cpu => 1,
+      memory => 8,
+      fs_slots_num => 1
+    }
+  };
+
   fcopy('t/data/hiseq/16756_RunInfo.xml', "$rf_path/RunInfo.xml")
     or die 'Fail to copy run info file';
 
@@ -335,6 +378,7 @@ subtest 'insert_size and sequence error' => sub {
     timestamp         => q{20090709-123456},
     repository        => 't/data/sequence',
     is_indexed        => 1,
+    resource          => $resource
   );
 
   my $da = $aqc->create();
@@ -350,6 +394,7 @@ subtest 'insert_size and sequence error' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
     repository        => 't/data/sequence',
+    resource          => $resource
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
@@ -363,6 +408,7 @@ subtest 'insert_size and sequence error' => sub {
     timestamp         => q{20090709-123456},
     is_indexed        => 0,
     repository        => 't/data/sequence',
+    resource          => $resource
   );
   $da = $aqc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
@@ -383,6 +429,7 @@ subtest 'tag_metrics' => sub {
       lanes             => [1],
       runfolder_path    => $rf_path,
       timestamp         => q{20090709-123456},
+      resource          => $default
     );
   } q{no croak on new, as required params provided};
 
@@ -417,7 +464,8 @@ subtest 'tag_metrics' => sub {
       lanes          => [8],
       runfolder_path => $rf_path,
       qc_to_run      => 'tag_metrics',
-      is_indexed     => 0
+      is_indexed     => 0,
+      resource       => $default
     );
   } q{no croak on new, as required params provided};
 
@@ -443,7 +491,7 @@ subtest 'genotype and gc_fraction and bcfstats' => sub {
           write_file("$d1/study.bcf", qw/some data/);
           write_file("$d1/study.bcf.csi", qw/some data/);
           my $d2 =  $geno_refset . '/study'. $study .'/'. $ref .'/bcftools';
-          make_path($d2); 
+          make_path($d2);
           write_file("$d2/study.annotation.vcf", qw/some data/);
       }
   }
@@ -456,6 +504,7 @@ subtest 'genotype and gc_fraction and bcfstats' => sub {
     is_indexed        => 1,
     repository        => 't',
     qc_to_run         => q[genotype],
+    resource          => $default
   };
 
   my $qc = npg_pipeline::function::autoqc->new($init);
@@ -524,28 +573,6 @@ subtest 'genotype and gc_fraction and bcfstats' => sub {
     'bcfstats check cannot run for a spiked phix tag');
 };
 
-subtest 'memory_requirements' => sub {
-  plan tests => 14;
-
-  my %checks2mem = ( insert_size      => 8000,
-                     sequence_error   => 8000,
-                     ref_match        => 6000,
-                     pulldown_metrics => 6000,
-                     bcfstats         => 4000,
-                     adapter          => 1500,
-                     samtools_stats   => 2000 );
-  my $p = npg_pipeline::product->new(rpt_list => '44:1');
-  while (my ($name, $mem_req) = each %checks2mem) {
-    my $d = npg_pipeline::function::autoqc->new(
-      id_run            => 1234,
-      runfolder_path    => $rf_path,
-      qc_to_run         => $name,
-    )->_create_definition_object($p, 'qc');
-    ok ($d->has_memory, "memory is set for $name");
-    is ($d->memory, $mem_req, "memory is set correctly for $name"); 
-  }
-};
-
 subtest 'review' => sub {
   plan tests => 6;
 
@@ -557,7 +584,8 @@ subtest 'review' => sub {
     id_run            => 8747,
     runfolder_path    => $rf_path,
     timestamp         => q{today},
-    conf_path         => q{t/data/release/config/archive_on}
+    conf_path         => q{t/data/release/config/archive_on},
+    resource          => $default
   );
   my $da = $qc->create();
   ok ($da && (@{$da} == 1), 'one definition returned');
@@ -569,15 +597,16 @@ subtest 'review' => sub {
     id_run            => 8747,
     runfolder_path    => $rf_path,
     timestamp         => q{today},
-    conf_path         => q{t/data/release/config/qc_review}
+    conf_path         => q{t/data/release/config/qc_review},
+    resource          => $default
   );
 
   $da = $qc->create();
   ok ($da && (@{$da} == 11), '11 definitions returned');
   my %definitions = map { $_->composition->freeze2rpt => $_ } @{$da};
-  my @expected_rpt_lists = qw/ 8747:1:1  8747:1:2  8747:1:3 
+  my @expected_rpt_lists = qw/ 8747:1:1  8747:1:2  8747:1:3
                                8747:2:4  8747:2:5  8747:2:6
-                               8747:3:7  8747:3:8  8747:3:9 
+                               8747:3:7  8747:3:8  8747:3:9
                                8747:7
                                8747:8 /;
   is_deeply ([sort keys %definitions], \@expected_rpt_lists,
@@ -608,7 +637,8 @@ subtest 'interop' => sub {
     label             => 'myrun',
     runfolder_path    => $rf_path,
     timestamp         => q{today},
-    conf_path         => q{t/data/release/config/archive_on}
+    conf_path         => q{t/data/release/config/archive_on},
+    resource          => $default
   );
   my $da = $qc->create();
   ok ($da && (@{$da} == 1), 'one interop definition returned');
@@ -617,7 +647,7 @@ subtest 'interop' => sub {
   ok (!$d->composition, 'composition is not set');
   is ($d->job_name, 'qc_interop_myrun_today', 'interop job name');
   my $adir = "${rf_path}/Data/Intensities/BAM_basecalls_20180802/no_cal/archive";
-  is ($d->command, 'qc --check=interop --rpt_list=' . 
+  is ($d->command, 'qc --check=interop --rpt_list=' .
       q["] . join(q{;}, map { '8747:' . $_ } (1 .. 8)) . q["] .
       " --qc_in=${rf_path}/InterOp" .
       join( q[], map { " --qc_out=${adir}/lane". $_ . '/qc'  } (1 .. 8) ),

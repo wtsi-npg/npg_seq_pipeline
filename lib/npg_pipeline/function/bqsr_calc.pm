@@ -7,9 +7,8 @@ use MooseX::StrictConstructor;
 use Readonly;
 
 use npg_pipeline::cache::reference;
-use npg_pipeline::function::definition;
 
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 with qw{ npg_pipeline::function::util
          npg_pipeline::product::release };
 with 'npg_common::roles::software_location' => { tools => [qw/gatk/] };
@@ -17,12 +16,6 @@ with 'npg_common::roles::software_location' => { tools => [qw/gatk/] };
 Readonly::Scalar my $FUNCTION_NAME => 'bqsr_calc';
 
 Readonly::Scalar my $GATK_TOOL_NAME => 'BaseRecalibrator';
-
-Readonly::Scalar my $FS_NUM_SLOTS                 => 2;
-Readonly::Scalar my $MEMORY                       => q{6000}; # memory in megabytes
-Readonly::Scalar my $CPUS                         => 1;
-Readonly::Scalar my $NUM_HOSTS                    => 1;
-
 
 our $VERSION = '0';
 
@@ -74,26 +67,15 @@ sub create {
 
     $self->debug("Adding command '$command'");
 
-    push @definitions,
-      npg_pipeline::function::definition->new
-        ('created_by'   => __PACKAGE__,
-         'created_on'   => $self->timestamp(),
-         'identifier'   => $label,
-         'job_name'     => $job_name,
-         'command'      => $command,
-         'fs_slots_num' => $FS_NUM_SLOTS,
-         'num_hosts'    => $NUM_HOSTS,
-         'num_cpus'     => [$CPUS],
-         'memory'       => $MEMORY,
-         'composition'  => $product->composition());
+    push @definitions, $self->create_definition({
+      job_name => $job_name,
+      command => $command,
+      composition => $product->composition()
+    });
   }
 
   if (not @definitions) {
-    push @definitions, npg_pipeline::function::definition->new
-      ('created_by' => __PACKAGE__,
-       'created_on' => $self->timestamp(),
-       'identifier' => $label,
-       'excluded'   => 1);
+    push @definitions, $self->create_excluded_definition();
   }
 
   return \@definitions;
@@ -134,7 +116,7 @@ npg_pipeline::function::bqsr_calc
 =item namespace::autoclean
 
 =item Moose
- 
+
 =item MooseX::StrictConstructor
 
 =item Readonly

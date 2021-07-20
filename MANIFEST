@@ -1,4 +1,5 @@
-.travis.yml
+.github/workflows/testing_and_building_repo.yml
+bin/npg_climb2mlwh
 bin/npg_heron_metadata_upload
 bin/npg_pipeline_analysis_runner
 bin/npg_pipeline_archival_runner
@@ -19,12 +20,8 @@ Build.PL
 Changes
 data/config_files/function_list_central.json
 data/config_files/function_list_central.json.png
-data/config_files/function_list_central_qc_run.json
-data/config_files/function_list_central_qc_run.json.png
 data/config_files/function_list_post_qc_review.json
 data/config_files/function_list_post_qc_review.json.png
-data/config_files/function_list_post_run_archived.json
-data/config_files/function_list_post_run_archived.json.png
 data/config_files/general_values.ini
 data/config_files/lsf.ini
 data/config_files/wr.json
@@ -43,6 +40,7 @@ lib/npg_pipeline/executor/lsf/job.pm
 lib/npg_pipeline/executor/options.pm
 lib/npg_pipeline/executor/wr.pm
 lib/npg_pipeline/function/autoqc.pm
+lib/npg_pipeline/function/autoqc/generic.pm
 lib/npg_pipeline/function/autoqc_archiver.pm
 lib/npg_pipeline/function/bqsr_calc.pm
 lib/npg_pipeline/function/cache_merge_component.pm
@@ -55,6 +53,7 @@ lib/npg_pipeline/function/merge_recompress.pm
 lib/npg_pipeline/function/p4_stage1_analysis.pm
 lib/npg_pipeline/function/stage2pp.pm
 lib/npg_pipeline/function/pp_archiver.pm
+lib/npg_pipeline/function/pp_data_to_irods_archiver.pm
 lib/npg_pipeline/function/product_delivery_notifier.pm
 lib/npg_pipeline/function/run_data_to_irods_archiver.pm
 lib/npg_pipeline/function/s3_archiver.pm
@@ -71,6 +70,7 @@ lib/npg_pipeline/pluggable/registry.pm
 lib/npg_pipeline/product.pm
 lib/npg_pipeline/product/cache_merge.pm
 lib/npg_pipeline/product/chunk.pm
+lib/npg_pipeline/product/heron/upload/climb2mlwh.pm
 lib/npg_pipeline/product/heron/upload/library.pm
 lib/npg_pipeline/product/heron/upload/metadata_client.pm
 lib/npg_pipeline/product/heron/upload/run.pm
@@ -89,8 +89,8 @@ lib/npg_tracking/daemon/archival.pm
 MANIFEST			This list of files
 README
 README.md
+scripts/install_npg_perl_dependencies.sh
 scripts/jgf2gml
-scripts/travis_install.sh
 t/00-critic.t
 t/00-distribution.t
 t/00-pod.t
@@ -111,9 +111,11 @@ t/10-validation-irods.t
 t/10-validation-s3.t
 t/10-validation.t
 t/15-pipeline_launcher_scripts.t
+t/15-product-climb2mlwh.t
 t/15-product-heron-upload-metadata.t
 t/15-product-release.t
 t/20-function-autoqc.t
+t/20-function-autoqc-generic.t
 t/20-function-autoqc_archiver.t
 t/20-function-bqsr_calc.t
 t/20-function-cache_merge_component.t
@@ -126,6 +128,7 @@ t/20-function-merge_recompress.t
 t/20-function-p4_stage1_analysis.t
 t/20-function-stage2pp.t
 t/20-function-pp_archiver.t
+t/20-function-pp_data_to_irods_archiver.t
 t/20-function-product_delivery_notifier.t
 t/20-function-run_data_to_irods_archiver.t
 t/20-function-s3_archiver.t
@@ -236,9 +239,6 @@ t/data/fixtures/mlwh/000-Sample.yml
 t/data/fixtures/mlwh/000-Study.yml
 t/data/fixtures/mlwh/100-IseqFlowcell.yml
 t/data/fixtures/mlwh/100-StudyUser.yml
-t/data/fixtures/wh/CurrentAliquot.yml
-t/data/fixtures/wh/CurrentLibraryTube.yml
-t/data/fixtures/wh/CurrentSampleTube.yml
 t/data/hiseq/16756_RunInfo.xml
 t/data/hiseq/16803_RunInfo.xml
 t/data/hiseq/16807_RunInfo.xml
@@ -260,6 +260,7 @@ t/data/miseq/samplesheet_16866.csv
 t/data/miseq/samplesheet_20990.csv
 t/data/miseq/samplesheet_24135.csv
 t/data/miseq/samplesheet_24135_bwa_mem2.csv
+t/data/miseq/samplesheet_24135_gbs.csv
 t/data/miseq/samplesheet_24135_V2.csv
 t/data/no_reads.cram
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv
@@ -1042,12 +1043,32 @@ t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_2018
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/BAM_basecalls_20180805-013153/no_cal/archive/plex9/qc/26291#9_phix_F0xB00.samtools_stats.json
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunInfo.xml
 t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/RunParameters.xml
+t/data/novaseq/210111_A00513_0447_AHJ55JDSXY/InterOp/TileMetricsOut.bin
+t/data/novaseq/210111_A00513_0447_AHJ55JDSXY/RunInfo.xml
+t/data/novaseq/210111_A00513_0447_AHJ55JDSXY/Data/Intensities/BAM_basecalls_20210113-092146/metadata_cache_36062/samplesheet_36062.csv
+t/data/novaseq/210111_A00513_0447_AHJ55JDSXY/RunParameters.xml
+t/data/novaseq/35843_RunInfo.xml
+t/data/novaseq/35843_RunParameters.xml
+t/data/novaseq/samplesheet_35843.csv
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/37416_RunInfo.xml
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/37416_RunParameters.xml
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/lane_1.taglist
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/lane_2.taglist
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/lane_3.taglist
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/lane_4.taglist
+t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/samplesheet_37416.csv`
 t/data/p4_stage1_analysis/1234_samplesheet.csv
 t/data/p4_stage1_analysis/TileMetricsOut.bin
+t/data/portable_pipelines/samplesheet4archival_all_controls.csv
+t/data/portable_pipelines/samplesheet4archival_none_controls.csv
+t/data/portable_pipelines/samplesheet4archival_none_controls_cons_wthdr.csv
+t/data/portable_pipelines/samplesheet4archival_none_controls_diff_study.csv
+t/data/portable_pipelines/samplesheet4archival_none_controls_no_suppl_name.csv
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release.yml
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_no_pp.yml
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_no_study.yml
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_unknown_pp.yml
+t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_explicit_astats_depth.yml
 t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_no_staging_root.yml
 t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_two_pps.yml
 t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_two_studies.yml
@@ -1085,6 +1106,7 @@ t/data/release/config/notify_off/product_release.yml
 t/data/release/config/notify_on/npg_message_queue.conf
 t/data/release/config/notify_on/product_release.yml
 t/data/release/config/qc_review/product_release.yml
+t/data/release/config/undef_qc_accept/product_release.yml
 t/data/rna_seq/12597_RunInfo.xml
 t/data/rna_seq/13066_RunInfo.xml
 t/data/rna_seq/17550_RunInfo.xml

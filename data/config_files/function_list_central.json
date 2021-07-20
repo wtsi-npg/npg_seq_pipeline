@@ -1,377 +1,793 @@
 {
-   "graph" : {
-      "edges" : [
-         {
-            "relation" : "dependsOn",
-            "source" : "pipeline_start",
-            "target" : "create_summary_link_analysis"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "create_summary_link_analysis",
-            "target" : "lane_analysis_in_progress"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "lane_analysis_in_progress",
-            "target" : "run_analysis_in_progress"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_in_progress",
-            "target" : "qc_interop"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_in_progress",
-            "target" : "p4_stage1_analysis"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_interop",
-            "target" : "update_ml_warehouse_1"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
-            "target" : "update_ml_warehouse_1"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse_1",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "p4_stage1_analysis",
-            "target" : "run_secondary_analysis_in_progress"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_secondary_analysis_in_progress",
-            "target" : "stage2pp"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_secondary_analysis_in_progress",
-            "target" : "seq_alignment"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_qX_yield"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_adapter"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_insert_size"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_sequence_error"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_gc_fraction"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_ref_match"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_spatial_filter",
-            "target" : "bam_cluster_counter_check"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "seqchksum_comparator"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_bcfstats"
-         },
+    "graph": {
+        "edges": [
+            {
+                "relation": "dependsOn",
+                "source": "pipeline_start",
+                "target": "create_summary_link_analysis"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "create_summary_link_analysis",
+                "target": "lane_analysis_in_progress"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "lane_analysis_in_progress",
+                "target": "run_analysis_in_progress"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_analysis_in_progress",
+                "target": "qc_interop"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_analysis_in_progress",
+                "target": "p4_stage1_analysis"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_interop",
+                "target": "update_ml_warehouse_1"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "p4_stage1_analysis",
+                "target": "update_ml_warehouse_1"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_ml_warehouse_1",
+                "target": "run_secondary_analysis_in_progress"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_secondary_analysis_in_progress",
+                "target": "stage2pp"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "stage2pp",
+                "target": "archive_pp_data_to_irods"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "archive_pp_data_to_irods",
+                "target": "update_ml_warehouse_2"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "stage2pp",
+                "target": "stage2App"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "stage2pp",
+                "target": "qc_generic_artic"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "stage2App",
+                "target": "qc_generic_ampliconstats"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_secondary_analysis_in_progress",
+                "target": "seq_alignment"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_qX_yield"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_adapter"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_insert_size"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_sequence_error"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_gc_fraction"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_ref_match"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_spatial_filter",
+                "target": "bam_cluster_counter_check"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "seqchksum_comparator"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_bcfstats"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_pulldown_metrics"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_genotype"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_spatial_filter"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "qc_verify_bam_id"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_qX_yield",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_adapter",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_insert_size",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_sequence_error",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_gc_fraction",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_ref_match",
+                "target": "run_analysis_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seqchksum_comparator",
+                "target": "run_analysis_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "bam_cluster_counter_check",
+                "target": "run_analysis_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_generic_artic",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_generic_ampliconstats",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_bcfstats",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_pulldown_metrics",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_genotype",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_verify_bam_id",
+                "target": "qc_review"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "qc_review",
+                "target": "update_ml_warehouse_2"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_ml_warehouse_2",
+                "target": "run_analysis_complete"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_analysis_complete",
+                "target": "update_ml_warehouse_3"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "update_ml_warehouse_3",
+                "target": "pipeline_end"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_analysis_complete",
+                "target": "archive_to_irods_samplesheet"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "seq_alignment",
+                "target": "bqsr_calc"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "bqsr_calc",
+                "target": "haplotype_caller"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "haplotype_caller",
+                "target": "merge_recompress"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_analysis_complete",
+                "target": "run_qc_review_pending"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "merge_recompress",
+                "target": "pipeline_end"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "run_qc_review_pending",
+                "target": "pipeline_end"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "archive_to_irods_samplesheet",
+                "target": "pipeline_end"
+            }
+        ],
+        "nodes": [
+            {
+                "id": "pipeline_start",
+                "label": "pipeline_start",
+                "metadata": {
+                    "description": "A token job, which always succeeds; the start node of the both functions and jobs directed graphs.",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "create_summary_link_analysis",
+                "label": "create_summary_link_analysis",
+                "metadata": {
+                    "description": "Creates or resets a symlink to the directory with the current analysis results. The symlink is created in the run folder",
+                    "resources": {
+                        "default": {
+                            "queue": "small"
+                        }
+                    }
+                }
+            },
+            {
+                "id": "run_analysis_in_progress",
+                "label": "run_analysis_in_progress",
+                "metadata": {
+                    "description": "Writes a serialized representation of the 'analysis in progress' run status to the file system",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "lane_analysis_in_progress",
+                "label": "lane_analysis_in_progress",
+                "metadata": {
+                    "description": "Writes a serialized representation of the 'analysis in progress' lane status to the file system for all lanes under analysis",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_interop",
+                "label": "qc_interop",
+                "metadata": {
+                    "description": "A QC check that wraps around selected Illumina InterOps data",
+                    "resources": {
+                        "defaults": {
+                            "minimum_cpu": 8,
+                            "memory": 2,
+                            "fs_slots_num": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "p4_stage1_analysis",
+                "label": "p4_stage1_analysis",
+                "metadata": {
+                    "description": "Primary analysis of the data (bcl/cbcl files) coming from the Illumina instrument producing unaligned CRAM files for individual samples",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 8,
+                            "memory": 20,
+                            "fs_slots_num": 4,
+                            "queue": "p4stage1"
+                        }
+                    }
+                }
+            },
+            {
+                "id": "stage2pp",
+                "label": "stage2pp",
+                "metadata": {
+                    "description": "Creates file system scaffold and job definitions for external pipelines, which use the output of the primary analysis as their input.",
+                    "resources": {
+                        "default": {},
+                        "ncov2019-artic-nf": {
+                            "minimum_cpu": 4,
+                            "memory": 5
+                        }
+                    }
+                }
+            },
+            {
+                "id": "stage2App",
+                "label": "stage2App",
+                "metadata": {
+                    "description": "Creates file system scaffold and job definitions for external pipelines, which depend for their input on the output of the external pipelines run by the stage2pp function",
+                    "resources": {
+                        "default": {},
+                        "ncov2019-artic-nf_ampliconstats": {
+                            "minimum_cpu": 2,
+                            "memory": 1
+                        }
 
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_pulldown_metrics"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_genotype"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_spatial_filter"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "qc_verify_bam_id"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "stage2pp",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_qX_yield",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_adapter",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_insert_size",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_sequence_error",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_gc_fraction",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_ref_match",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seqchksum_comparator",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "bam_cluster_counter_check",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_bcfstats",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_pulldown_metrics",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_genotype",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_verify_bam_id",
-            "target" : "qc_review"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "qc_review",
-            "target" : "run_analysis_complete"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_complete",
-            "target" : "update_ml_warehouse_2"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "update_ml_warehouse_2",
-            "target" : "pipeline_end"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_complete",
-            "target" : "archive_to_irods_samplesheet"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "seq_alignment",
-            "target" : "bqsr_calc"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "bqsr_calc",
-            "target" : "haplotype_caller"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "haplotype_caller",
-            "target" : "merge_recompress"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_analysis_complete",
-            "target" : "run_qc_review_pending"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "merge_recompress",
-            "target" : "pipeline_end"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "run_qc_review_pending",
-            "target" : "pipeline_end"
-         },
-         {
-            "relation" : "dependsOn",
-            "source" : "archive_to_irods_samplesheet",
-            "target" : "pipeline_end"
-         }
-      ],
-      "nodes" : [
-         {
-            "id" : "pipeline_start",
-            "label" : "pipeline_start"
-         },
-         {
-            "id" : "create_summary_link_analysis",
-            "label" : "create_summary_link_analysis"
-         },
-         {
-            "id" : "run_analysis_in_progress",
-            "label" : "run_analysis_in_progress"
-         },
-         {
-            "id" : "lane_analysis_in_progress",
-            "label" : "lane_analysis_in_progress"
-         },
-         {
-            "id" : "qc_interop",
-            "label" : "qc_interop"
-         },
-         {
-            "id" : "p4_stage1_analysis",
-            "label" : "p4_stage1_analysis"
-         },
-         {
-            "id" : "stage2pp",
-            "label" : "stage2pp"
-         },
-         {
-            "id" : "update_ml_warehouse_1",
-            "label" : "update_ml_warehouse"
-         },
-         {
-            "id" : "run_secondary_analysis_in_progress",
-            "label" : "run_secondary_analysis_in_progress"
-         },
-         {
-            "id" : "qc_qX_yield",
-            "label" : "qc_qX_yield"
-         },
-         {
-            "id" : "qc_adapter",
-            "label" : "qc_adapter"
-         },
-         {
-            "id" : "qc_insert_size",
-            "label" : "qc_insert_size"
-         },
-         {
-            "id" : "qc_sequence_error",
-            "label" : "qc_sequence_error"
-         },
-         {
-            "id" : "qc_gc_fraction",
-            "label" : "qc_gc_fraction"
-         },
-         {
-            "id" : "qc_ref_match",
-            "label" : "qc_ref_match"
-         },
-         {
-            "id" : "seq_alignment",
-            "label" : "seq_alignment"
-         },
-         {
-            "id" : "update_ml_warehouse_2",
-            "label" : "update_ml_warehouse"
-         },
-         {
-            "id" : "bam_cluster_counter_check",
-            "label" : "bam_cluster_counter_check"
-         },
-         {
-            "id" : "seqchksum_comparator",
-            "label" : "seqchksum_comparator"
-         },
-         {
-            "id" : "qc_bcfstats",
-            "label" : "qc_bcfstats"
-         },
-         {
-            "id" : "qc_pulldown_metrics",
-            "label" : "qc_pulldown_metrics"
-         },
-         {
-            "id" : "qc_genotype",
-            "label" : "qc_genotype"
-         },
-         {
-            "id" : "qc_spatial_filter",
-            "label" : "qc_spatial_filter"
-         },
-         {
-            "id" : "qc_verify_bam_id",
-            "label" : "qc_verify_bam_id"
-         },
-         {
-            "id" : "qc_review",
-            "label" : "qc_review"
-         },
-         {
-            "id" : "run_analysis_complete",
-            "label" : "run_analysis_complete"
-         },
-         {
-            "id" : "archive_to_irods_samplesheet",
-            "label" : "archive_to_irods_samplesheet"
-         },
-         {
-            "id" : "bqsr_calc",
-            "label" : "bqsr_calc"
-         },
-         {
-            "id" : "haplotype_caller",
-            "label" : "haplotype_caller"
-         },
-         {
-            "id" : "merge_recompress",
-            "label" : "merge_recompress"
-         },
-         {
-            "id" : "run_qc_review_pending",
-            "label" : "run_qc_review_pending"
-         },
-         {
-            "id" : "pipeline_end",
-            "label" : "pipeline_end"
-         }
-      ]
-   }
+                    }
+                }
+            },
+            {
+                "id": "update_ml_warehouse_1",
+                "label": "update_ml_warehouse",
+                "metadata": {
+                    "description": "Creates run, lane and product level data in the multi-LIMS warehouse using the QC metrics available after the primary analysis",
+                    "resources": {
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ],
+                            "queue": "lowload",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "update_ml_warehouse_2",
+                "label": "update_ml_warehouse",
+                "metadata": {
+                    "description": "Update run data in the multi-LIMS warehouse after stage 2 analysis",
+                    "resources": {
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ],
+                            "queue": "lowload",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "update_ml_warehouse_3",
+                "label": "update_ml_warehouse",
+                "metadata": {
+                    "description": "Updates lane and product level data in the multi-LIMS warehouse on completion of all secondary analysis jobs",
+                    "resources": {
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ],
+                            "queue": "lowload",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "run_secondary_analysis_in_progress",
+                "label": "run_secondary_analysis_in_progress",
+                "metadata": {
+                    "description": "Writes a serialized representation of the 'secondary analysis in progress' run status to the file system",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_generic_artic",
+                "label": "qc_generic_artic",
+                "metadata": {
+                    "description": "A QC check that ingests the QC summary of ncov2019 artic external pipeline in combination with results of some other QC checks run by the main pipeline",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 4,
+                            "memory": 5,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_generic_ampliconstats",
+                "label": "qc_generic_ampliconstats",
+                "metadata": {
+                    "description": "A QC check that captures per-sample ampliconstats results",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 2,
+                            "memory": 1,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_qX_yield",
+                "label": "qc_qX_yield",
+                "metadata": {
+                    "description": "A QC check that captures per lane or per sample number of bases at a preset quality thresholds using the samtools stats output as a source",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "memory": 2,
+                            "array_cpu_limit": 8,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_adapter",
+                "label": "qc_adapter",
+                "metadata": {
+                    "description": "A QC check that identifies per lane or per sample adapter contamination scanning against an existing database of adapters with blat.",
+                    "resources": {
+                        "default": {
+                            "memory": 1.5,
+                            "minimum_cpu": 3,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_insert_size",
+                "label": "qc_insert_size",
+                "metadata": {
+                    "description": "A QC check that determines the insert size using ~10,000 random reads from lane or sample data and evaluates it against the expected insert size for the library",
+                    "resources": {
+                        "default": {
+                            "memory": 8,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_sequence_error",
+                "label": "qc_sequence_error",
+                "metadata": {
+                    "description": "A QC check that uses single alignment to identify common error patterns and the average error and flags potential problems",
+                    "resources": {
+                        "default": {
+                            "memory": 8,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_gc_fraction",
+                "label": "qc_gc_fraction",
+                "metadata": {
+                    "description": "Calculate GC ratio in sequence",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_ref_match",
+                "label": "qc_ref_match",
+                "metadata": {
+                    "description": "A QC check that runs a lane or sample level contamination screen by performing noncompetitive alignment of the first 36 bases of the ~10,000 randomly chosen forward reads to a full set of genomes in the reference repository",
+                    "resources": {
+                        "default": {
+                            "memory": 6,
+                            "minimum_cpu": 1,
+                            "array_cpu_limit": 8,
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "seq_alignment",
+                "label": "seq_alignment",
+                "metadata": {
+                    "description": "A complex step performing per sample alignment, duplicate marking, splitting out reads belonging to a spiked control and, optionally, unconsented human as dictated by the sample or study settings and library type.",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 12,
+                            "maximum_cpu": 16,
+                            "memory": 32,
+                            "fs_slots_num": 4
+                        },
+                        "star": {
+                            "memory": 38
+                        }
+                    }
+                }
+            },
+            {
+                "id": "bam_cluster_counter_check",
+                "label": "bam_cluster_counter_check",
+                "metadata": {
+                    "description": "A data integrity check to ensure that the total number of reads in all output files equals to the total number of pf clusters on the flowcell",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "seqchksum_comparator",
+                "label": "seqchksum_comparator",
+                "metadata": {
+                    "description": "generates an order independent checksums of all primary reads in lane level cram files that are generated by the primary analysis, compares with combined checksums of all the cram files written to disk at the end of the pipeline",
+                    "resources": {}
+                }
+            },
+            {
+                "id": "qc_bcfstats",
+                "label": "qc_bcfstats",
+                "metadata": {
+                    "description": "A QC check that runs samtools stats against a known set of SNP to calculate discordance",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "memory": 4,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_pulldown_metrics",
+                "label": "qc_pulldown_metrics",
+                "metadata": {
+                    "description": "A QC check that examines coverage within regions that should be present for a particular bait and overall on-target coverage",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "memory": 6,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_genotype",
+                "label": "qc_genotype",
+                "metadata": {
+                    "description": "A QC check that calls SNPs for a particular array used and compares actual values to expected for a known sample genotype",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_spatial_filter",
+                "label": "qc_spatial_filter",
+                "metadata": {
+                    "description": "A lane level QC check that examines the output of the spatial filter program to capture the number of reads that failed filtering criteria",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_verify_bam_id",
+                "label": "qc_verify_bam_id",
+                "metadata": {
+                    "description": "A QC check that runs VerifyBamID in sequence only mode to estimate if the reads are contaminated as a mixture of two human samples.",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "qc_review",
+                "label": "qc_review",
+                "metadata": {
+                    "description": "A product-level overall QC assessment using criteria specified in the study configuration",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 1,
+                            "apply_array_cpu_limit": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "run_analysis_complete",
+                "label": "run_analysis_complete",
+                "metadata": {
+                    "description": "Writes a serialized representation of the 'analysis complete' run status to the file system",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "archive_pp_data_to_irods",
+                "label": "archive_pp_data_to_irods",
+                "metadata": {
+                    "description": "Archival of the output of external pipelines to the iRODS repository",
+                    "resources": {
+                        "default": {
+                            "reserve_irods_slots": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "archive_to_irods_samplesheet",
+                "label": "archive_to_irods_samplesheet",
+                "metadata": {
+                    "description": "Archival of the output of the main analysis pipelines to the iRODS repository; the samplesheet used during the analysis is a source of LIMS data",
+                    "resources": {
+                        "default": {
+                            "reserve_irods_slots": 1,
+                            "fs_slots_num": 1,
+                            "queue": "lowload"
+                        }
+                    }
+                }
+            },
+            {
+                "id": "bqsr_calc",
+                "label": "bqsr_calc",
+                "metadata": {
+                    "description": "Run GATKs Base Quality Score Recalibration to consistently re-estimate the accuracy of each base call in sequence reads.",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 2,
+                            "memory": 6,
+                            "minimum_cpu": 1
+                        }
+                    }
+                }
+            },
+            {
+                "id": "haplotype_caller",
+                "label": "haplotype_caller",
+                "metadata": {
+                    "description": " Run GATKs HaplotypeCaller to generate single sample Genome GVF (GVCF) files",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 2,
+                            "memory": 8,
+                            "minimum_cpu": 4
+                        }
+                    }
+                }
+            },
+            {
+                "id": "merge_recompress",
+                "label": "merge_recompress",
+                "metadata": {
+                    "description": " Merge chunked VCF files and also recompress to achieve better compression",
+                    "resources": {
+                        "default": {
+                            "fs_slots_num": 2,
+                            "memory": 2
+                        }
+                    }
+                }
+            },
+            {
+                "id": "run_qc_review_pending",
+                "label": "run_qc_review_pending",
+                "metadata": {
+                    "description": "Writes a serialized representation of the 'qc review pending' run status to the file system",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "pipeline_end",
+                "label": "pipeline_end",
+                "metadata": {
+                    "description": "A token job, which always succeeds; the end node of the both functions and jobs directed graphs.",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            }
+        ],
+        "metadata": {
+            "description": "A generic directed graph of functions (job types) for WSI pipeline for the analysis of raw Illumina sequencing data",
+            "default_resources": {
+                "minimum_cpu": 1,
+                "memory": 2,
+                "array_cpu_limit": 64
+            }
+        }
+    }
 }

@@ -14,11 +14,10 @@ use Readonly;
 use Try::Tiny;
 use UUID qw{uuid};
 
-use npg_pipeline::function::definition;
 use npg_tracking::util::config_constants qw{$NPG_CONF_DIR_NAME};
 use npg_qc::Schema;
 
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 
 with qw{npg_pipeline::product::release};
 
@@ -190,22 +189,15 @@ sub create {
     my $command = sprintf q{%s --config %s %s},
       $SEND_MESSAGE_SCRIPT, $self->message_config(), $msg_file;
 
-    push @definitions,
-      npg_pipeline::function::definition->new
-        ('created_by'  => __PACKAGE__,
-         'created_on'  => $self->timestamp(),
-         'identifier'  => $self->label,
-         'job_name'    => $job_name,
-         'command'     => $command,
-         'composition' => $product->composition());
+    push @definitions, $self->create_definition({
+      job_name    => $job_name,
+      command     => $command,
+      composition => $product->composition()
+    });
   }
 
   if (not @definitions) {
-    push @definitions, npg_pipeline::function::definition->new
-      ('created_by' => __PACKAGE__,
-       'created_on' => $self->timestamp(),
-       'identifier' => $self->label,
-       'excluded'   => 1);
+    push @definitions, $self->create_excluded_definition();
   }
 
   return \@definitions;

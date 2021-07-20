@@ -18,19 +18,13 @@ use npg_tracking::data::transcriptome;
 use npg_tracking::data::bait;
 use npg_tracking::data::gbs_plex;
 use npg_pipeline::cache::reference;
-use npg_pipeline::function::definition;
 
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 with    qw{ npg_pipeline::function::util
             npg_pipeline::product::release };
 
 our $VERSION  = '0';
 
-Readonly::Scalar my $NUM_SLOTS                    => q(12,16);
-Readonly::Scalar my $FS_NUM_SLOTS                 => 4;
-Readonly::Scalar my $NUM_HOSTS                    => 1;
-Readonly::Scalar my $MEMORY                       => q{32000}; # memory in megabytes
-Readonly::Scalar my $MEMORY_FOR_STAR              => q{38000}; # idem
 Readonly::Scalar my $FORCE_BWAMEM_MIN_READ_CYCLES => q{101};
 Readonly::Scalar my $QC_SCRIPT_NAME               => q{qc};
 Readonly::Scalar my $DEFAULT_SJDB_OVERHANG        => q{74};
@@ -40,13 +34,25 @@ Readonly::Scalar my $DEFAULT_RNA_ANALYSIS         => q{tophat2};
 Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
 Readonly::Scalar my $PFC_MARKDUP_OPT_DIST         => q{2500};  # distance in pixels for optical duplicate detection on patterned flowcells
 Readonly::Scalar my $NON_PFC_MARKDUP_OPT_DIST     => q{100};   # distance in pixels for optical duplicate detection on non-patterned flowcells
-Readonly::Scalar my $MARKDUP_DEFAULT              => q{biobambam};
+Readonly::Scalar my $BWA_MEM_MISMATCH_PENALTY     => q{5};
 
-=head2 phix_reference
+around 'markdup_method' => sub {
+    my $orig = shift;
+    my $self = shift;
 
-A path to Phix reference fasta file to split phiX spike-in reads
+    my $product = shift;
+    $product or $self->logcroak('Product object argument is required');
+    my $lims = $product->lims;
+    $lims or $self->logcroak('lims object is not defined for a product');
+    my $lt = $lims->library_type;
+    $lt ||= q[];
+    # I've restricted this to library_types which exactly match Duplex-Seq
+    # to exclude the old library_type 'Bidirectional Duplex-seq'.
+    my $mdm =  ($lt eq q[Duplex-Seq]) ? q(duplexseq) : $self->$orig($product);
+    $mdm or $self->logcroak('markdup method is not defined for a product');
 
-=cut
+    return $mdm;
+};
 
 has 'phix_reference' => (isa        => 'Str',
                          is         => 'ro',
@@ -86,16 +92,6 @@ sub _build__job_id {
   return $self->random_string();
 }
 
-has '_num_cpus' => ( isa        => 'ArrayRef',
-                     is         => 'ro',
-                     lazy_build => 1,
-                   );
-sub _build__num_cpus {
-  my $self = shift;
-  return $self->num_cpus2array(
-    $self->general_values_conf()->{'seq_alignment_slots'} || $NUM_SLOTS);
-}
-
 has '_js_scripts_dir' => ( isa        => 'Str',
                            is         => 'ro',
                            required   => 0,
@@ -114,40 +110,28 @@ has '_do_gbs_plex_analysis' => ( isa     => 'Bool',
                                  default => 0,
                                );
 
+# Used to cache the analysis type determined in _alignment_command for
+# later use
+has '_rna_analysis' => (
+  isa => 'Str',
+  is => 'rw'
+);
+
+
 sub generate {
-  my ($self, $pipeline_name, $dry_run) = @_;
+  my ($self, $pipeline_name) = @_;
 
   my @definitions = ();
 
   for my $dp (@{$self->products->{data_products}}) {
     my $ref = {};
-    $ref->{'memory'} = $MEMORY;
     my $subsets = [];
-    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets, $dry_run);
+    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets);
     $self->_save_compositions($dp, $subsets);
-    if (!$dry_run) {
-      push @definitions, $self->_create_definition($ref, $dp);
-    }
+    push @definitions, $self->_create_definition($ref, $dp);
   }
 
   return \@definitions;
-}
-
-sub generate_compositions {
-  my ($self, $pipeline_name)  = @_;
-
-  #####
-  # Pipeline name is always passed by the calling function.
-  # If we want to use an extra flag, it should be passed
-  # as a second argument to generate().
-  my $dry_run = 1;
-  $self->generate($pipeline_name, $dry_run);
-  return [npg_pipeline::function::definition->new(
-            created_by => __PACKAGE__,
-            created_on => $self->timestamp(),
-            identifier => $self->id_run(),
-            excluded   => 1
-          )];
 }
 
 sub _save_compositions {
@@ -165,22 +149,20 @@ sub _save_compositions {
 sub _create_definition {
   my ($self, $ref, $dp) = @_;
 
-  $ref->{'created_by'}      = __PACKAGE__;
-  $ref->{'created_on'}      = $self->timestamp();
-  $ref->{'identifier'}      = $self->id_run();
   $ref->{'job_name'}        = join q{_}, q{seq_alignment},$self->id_run(),$self->timestamp();
-  $ref->{'fs_slots_num'}    = $FS_NUM_SLOTS ;
-  $ref->{'num_hosts'}       = $NUM_HOSTS;
-  $ref->{'num_cpus'}        = $self->_num_cpus();
-  $ref->{'memory'}          = $ref->{'memory'} ? $ref->{'memory'} : $MEMORY;
   $ref->{'command_preexec'} = $self->repos_pre_exec_string();
   $ref->{'composition'}     = $dp->composition;
 
-  return npg_pipeline::function::definition->new($ref);
+  my $special_resource_type;
+  if ($self->_rna_analysis && $self->_rna_analysis eq 'star') {
+    $special_resource_type = $self->_rna_analysis;
+  }
+
+  return $self->create_definition($ref, $special_resource_type);
 }
 
 sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
-  my ( $self, $dp, $ref, $subsets, $dry_run) = @_;
+  my ( $self, $dp, $ref, $subsets ) = @_;
 
   ########################################################
   # derive base parameters from supplied data_product (dp)
@@ -308,9 +290,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   my $do_rna = $self->_do_rna_analysis($dp);
 
-  # Reference for target alignment will be overridden where gbs_plex exists.
-  # Also any human split will be overriden and alignments will be forced.
-  my $do_gbs_plex = $self->_do_gbs_plex_analysis($self->_has_gbs_plex($dp));
+  # Reference for target alignment will be overridden where gbs_plex exists 
+  # and the study is not disable the gbs pipeline in the product release config.
+  # In the gbs pipeline any human split will be overridden and alignments will be forced.
+  my $do_gbs_plex = $self->_do_gbs_plex_analysis($self->_has_gbs_plex($dp) && $self->can_run_gbs($dp));
 
   my $hs_bwa = $self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se';
   # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp)
@@ -426,8 +409,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{reference_dict} = $self->_ref($dp, q(picard)) . q(.dict);
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
-
-    $p4_param_vals->{markdup_method} = ($self->markdup_method($dp) or $MARKDUP_DEFAULT);
+    $p4_param_vals->{markdup_method} = $self->markdup_method($dp);
     $p4_param_vals->{markdup_optical_distance_value} = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
 
     if($p4_param_vals->{markdup_method} eq q[none]) {
@@ -490,6 +472,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
         $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
         $rna_analysis = $DEFAULT_RNA_ANALYSIS;
     }
+    $self->_rna_analysis($rna_analysis);
     my $p4_reference_genome_index = $rna_analysis eq q[tophat2] ?
                                     $self->_ref($dp, q(bowtie2)) : $self->_ref($dp, $rna_analysis);
     if($rna_analysis eq q[star]) {
@@ -498,8 +481,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $p4_param_vals->{star_executable} = q[star];
       # STAR uses the name of the directory where the index resides only
       $p4_reference_genome_index = dirname($p4_reference_genome_index);
-      # STAR jobs require more memory
-      $ref->{'memory'} = $MEMORY_FOR_STAR;
     } elsif ($rna_analysis eq q[tophat2]) {
       $p4_param_vals->{library_type} = ( $l->library_type =~ /dUTP/smx ? q(fr-firststrand) : q(fr-unstranded) );
       $p4_param_vals->{transcriptome_val} = $self->_transcriptome($rpt_list, q(tophat2))->transcriptome_index_name();
@@ -559,6 +540,15 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $p4_param_vals->{bwa_executable} = q[bwa0_6];
     }
 
+    my $is_hic_lib = $l->library_type && ($l->library_type =~ /Hi-C/smx);
+    if($is_hic_lib) {
+      $p4_param_vals->{is_HiC_lib} = 1;
+      $p4_param_vals->{bwa_mem_5_flag} = q[on];
+      $p4_param_vals->{bwa_mem_S_flag} = q[on];
+      $p4_param_vals->{bwa_mem_P_flag} = q[on];
+      $p4_param_vals->{bwa_mem_B_value} = $BWA_MEM_MISMATCH_PENALTY;
+    }
+
     if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $aligner); }
     if(exists $ref_suffix{$aligner}) {
       $p4_param_vals->{alignment_reference_genome} .= $ref_suffix{$aligner};
@@ -589,9 +579,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($nchs) {
     push @{$subsets}, 'human';
   }
-                      ##############################################
-  return if $dry_run; # Early return, we only need a list of subsets
-                      ##############################################
 
   # write p4 parameters to file
   my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path(q[POSITION]),
@@ -612,7 +599,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                spike_tag                   => $spike_tag,
                nonconsented_humansplit     => $nchs,
                do_gbs_plex                 => $do_gbs_plex,
-	       do_rna                      => $do_rna,
+               do_rna                      => $do_rna,
              );
   while (my ($text, $value) = each %info) {
     $self->info(qq[  $text is ] . ($value ? q[true] : q[false]));
@@ -624,7 +611,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->info(q[  p4 parameters written to ] . $param_vals_fname);
   $self->info(q[  Using p4 template alignment_wtsi_stage2_] . $nchs_template_label . q[template.json]);
 
-  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->_num_cpus->[0];
+  my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->get_massaged_resources()->{num_cpus}[0];
   my $id = $self->_job_id();
   return join q( ),
     q(bash -c '),
@@ -909,20 +896,20 @@ and some QC checks.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 phix_reference
+
+A path to Phix reference fasta file to split phiX spike-in reads
+
+=head2 markdup_method
+
+This method is inherited from npg_pipeline::product role and
+changed to return a default value (biobambam) and duplexseq for
+the Duplex-Seq library type.
+
 =head2 generate
 
 Creates and returns an array of npg_pipeline::function::definition
 objects for all entities of the run eligible for alignment and split.
-
-=head2 generate_compositions
-
-Does just enough to figure out what .composition.json files have
-to be created and creates them. Returns an array consisting of a
-single npg_pipeline::function::definition object where this function
-is flagged as excluded.
-
-Can be used to generate missing or replace corrupt composition.json
-files in an existing analysis directory. 
 
 =head1 DIAGNOSTICS
 
@@ -974,7 +961,7 @@ David K. Jackson (david.jackson@sanger.ac.uk)
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018, 2019 Genome Research Ltd
+Copyright (C) 2018,2019,2020 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

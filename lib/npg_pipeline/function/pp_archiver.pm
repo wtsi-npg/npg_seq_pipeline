@@ -11,20 +11,15 @@ use Try::Tiny;
 use Perl6::Slurp;
 
 use npg_qc::Schema;
-use npg_pipeline::function::definition;
 
-extends 'npg_pipeline::base';
+extends 'npg_pipeline::base_resource';
 with qw/ npg_pipeline::product::release
          npg_pipeline::product::release::portable_pipeline /;
-with 'npg_common::roles::software_location' => { tools => [qw/npg_upload2climb/] };
+with 'npg_common::roles::software_location' => { tools => [qw/npg_upload2climb npg_climb2mlwh/] };
 
 our $VERSION = '0';
 
 ################# Package-level constants ###################
-
-# Supplier sample name pattern for external samples. Negative look back in the
-# second part of the expression to exclude names starting with CGAP.
-Readonly::Scalar our $SAMPLE_NAME_PATTERN  => qr/\A [[:upper:]]{4}- (?<!CGAP-) /xms;
 
 Readonly::Array  our @CSV_PARSER_OPTIONS   => ( strict      => 1,
                                                 sep_char    => qq[\t],
@@ -43,8 +38,9 @@ Readonly::Scalar my $MANIFEST_PREFIX       => q[manifest4pp_upload];
 Readonly::Scalar my $PP_NAME               => q[ncov2019-artic-nf];
 Readonly::Scalar my $CLIMB_ARCHIVAL_KEY    => q[climb_archival];
 Readonly::Array  my @CLIMB_ARCHIVAL_CREDENTIALS_KEYS => qw/user host pkey_file/;
-Readonly::Scalar my $PP_DATA_GLOB          =>
-                    catfile(q[qc_pass_climb_upload], q[*], q[*], q[*{am,fa}]);
+Readonly::Scalar my $PP_DATA_GLOB => q[*_{] .
+                q[trimPrimerSequences/*.mapped.bam,makeConsensus/*.fa] .
+				       q[}];
 
 Readonly::Array  my @COLUMN_NAMES          => (
                                            $SAMPLE_NAME_COLUMN_NAME,
@@ -80,7 +76,7 @@ generate_manifest(), which can serve as callbacks to
 for pipeline's functions. Please refer to the methods'
 documentation for their functionality.
 
-The class is meant to set the sceen for the upload of data,
+The class is meant to set the scene for the upload of data,
 which are produced by portable pipelines, to third-party archives.
 
 The current implementation is not generic, it focuses on
@@ -150,9 +146,7 @@ considered.
 sub create {
   my $self = shift;
 
-  my $ref =  {created_by => __PACKAGE__,
-              created_on => $self->timestamp(),
-              identifier => $self->label};
+  my $ref =  {};
 
   # Create and write out the manifest.
   my $num_samples = $self->_generate_manifest4archiver();
@@ -161,19 +155,22 @@ sub create {
     $ref->{'job_name'} = join q[_], 'pp_archiver', $self->label();
     $ref->{'command'}  = join q[ ], $self->npg_upload2climb_cmd,
                                     $self->_climb_archival_options(),
-                                    '--manifest', $self->_manifest_path;
+                                    '--manifest', $self->_manifest_path,
+                                    q[&&], $self->npg_climb2mlwh_cmd,
+                                    $self->_climb_archival_options(),
+                                    '--run_folder', $self->run_folder;
   } else { # An 'empty' manifest has been generated.
     $self->debug('No pp data to archive, skipping');
     $ref->{'excluded'} = 1;
   }
 
-  return [npg_pipeline::function::definition->new($ref)];
+  return [$self->create_definition($ref)];
 }
 
 =head2 generate_manifest
 
 Returns an array containing a single npg_pipeline::function::definition
-object, which has the 'excluded' attribute set to true. No command for 
+object, which has the 'excluded' attribute set to true. No command for
 later execution is generated. While this method is running, it creates
 a manifest file, listing the products due to be archived their location
 in the run folder.
@@ -190,11 +187,7 @@ sub generate_manifest {
 
   # No need to create a job, the only purpose of this function is
   # to generate the manifest.
-  return [ npg_pipeline::function::definition->new(
-              created_by => __PACKAGE__,
-              created_on => $self->timestamp(),
-              identifier => $self->label,
-              excluded   => 1) ];
+  return [ $self->create_definition({excluded => 1}) ];
 }
 
 sub _generate_manifest4archiver {
@@ -231,7 +224,6 @@ sub _generate_manifest4archiver {
     $num_samples = @lines;
     # add header
     unshift @lines, \@COLUMN_NAMES;
-
     $self->info('Writing manifest to ' . $self->_manifest_path);
     csv(in => \@lines, out => $self->_manifest_path, @CSV_PARSER_OPTIONS);
   }
@@ -253,12 +245,14 @@ sub _build__samples4upload {
 
   foreach my $product ( @{$self->_products4upload} ) {
 
-    my $sname = $product->lims->sample_supplier_name;
-
     # Skips
-    ($sname and ($sname =~ $SAMPLE_NAME_PATTERN)) or next;
+    $product->lims->sample_is_control and next;
     $product->lims->sample_consent_withdrawn and next;
     $self->has_qc_for_release($product) or next;
+
+    my $sname = $product->lims->sample_supplier_name;
+    $sname or $self->logcroak('Supplier sample name is not set for ' .
+      $product->composition->freeze());
 
     # First come basis for choosing one of the duplicates.
     if ($products4archive->{$sname}) {
@@ -340,7 +334,7 @@ sub _build__staging_archive_path {
   return catdir($self->pp_staging_root($self->_pipeline_config),
                 $self->id_run,
                 $dir_name,
-		$self->run_folder);
+                $self->run_folder);
 }
 
 has '_manifest_path' => (
@@ -425,7 +419,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2020 Genome Research Ltd.
+Copyright (C) 2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

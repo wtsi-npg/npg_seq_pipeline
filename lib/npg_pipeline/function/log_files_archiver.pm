@@ -4,7 +4,6 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
 use npg_pipeline::runfolder_scaffold;
 
 extends qw{npg_pipeline::function::seq_to_irods_archiver};
@@ -31,7 +30,7 @@ override 'create' => sub {
       q{--id_run},         $self->id_run();
   }
 
-  return [npg_pipeline::function::definition->new($ref)];
+  return [$self->create_definition($ref)];
 };
 
 override 'irods_destination_collection' => sub {

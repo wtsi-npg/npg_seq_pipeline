@@ -1,0 +1,87 @@
+name: testing_and_building_repo
+on: [push, pull_request]
+jobs:
+  build: 
+    strategy:
+      matrix:
+        os: ['ubuntu-18.04']
+        
+    runs-on: ${{matrix.os}} 
+    name: Distribution Perl on ${{ matrix.os }} 
+    steps:
+    - uses: actions/checkout@v2 
+    
+    # Caching conda
+    - name: Cache conda
+      id: minicondaCache
+      uses: actions/cache@v2
+      with:
+        path: $HOME/miniconda
+        key: ${{ matrix.os}}-build-miniconda
+    
+   # Caching cpanm external modules
+    - name: Cache cpanm external modules
+      id: cpanmCache
+      uses: actions/cache@v2
+      with:
+        path: ~/perl5ext  
+        key: ${{ matrix.os}}-build-cpanm-external
+ 
+    #install libgd-dev and uuid-dev
+    - name: install libgd-dev and uuid-dev 
+      run:
+          sudo apt-get install -y libgd-dev uuid-dev 
+      
+    - name: install conda client, baton,samtools
+      if: steps.minicondaCache.outputs.cache-hit != 'true' # if no cache for conda found
+      run: |
+          wget "https://repo.continuum.io/miniconda/Miniconda2-4.6.14-Linux-x86_64.sh" -O miniconda.sh;
+          chmod +x miniconda.sh;
+          ./miniconda.sh -b  -p $HOME/miniconda;
+          export PATH=$HOME/miniconda/bin:$PATH;
+ 
+          # install baton from our conda channel
+          conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --channel default --mkdir --prefix $HOME/miniconda/miniconda/baton baton;
+ 
+          # install samtools from our conda channel
+          # this is needed for our basic IRODS Perl wrapper to work
+          conda install --yes --channel ${WTSI_NPG_CONDA_REPO} --channel default --mkdir --prefix $HOME/miniconda/miniconda/samtools samtools
+      env:  
+        WTSI_NPG_CONDA_REPO: https://dnap.cog.sanger.ac.uk/npg/conda/prod/generic
+  
+    - name: install cpanm 
+      run: |
+          #installing cpanm
+          wget -qO - https://cpanmin.us | /usr/bin/perl - --sudo App::cpanminus
+
+    #run the perl install script
+    - name: install NPG Perl dependencies, and their CPAN dependencies
+      run: |
+          echo "$HOME/miniconda/samtools/bin" >> $GITHUB_PATH
+          cpanm --local-lib=~/perl5ext local::lib && eval $(perl -I ~/perl5ext/lib/perl5/ -Mlocal::lib)
+          ${GITHUB_WORKSPACE}/scripts/install_npg_perl_dependencies.sh $WTSI_NPG_GITHUB_URL $WTSI_NPG_BUILD_BRANCH
+      env:
+        WTSI_NPG_GITHUB_URL: https://github.com/wtsi-npg
+        WTSI_NPG_BUILD_BRANCH: ${GITHUB_HEAD_REF} #getting name of current github branch
+      
+    - name: install cpanm dependencies
+      run: |
+          eval $(perl -I ~/perl5ext/lib/perl5/ -Mlocal::lib=~/perl5npg)
+          eval $(perl -I ~/perl5ext/lib/perl5/ -Mlocal::lib=~/perl5ext)
+          cpanm --installdeps .
+
+    - name: run Build.PL and ./Build   
+      run: |
+          eval $(perl -I ~/perl5ext/lib/perl5/ -Mlocal::lib=~/perl5ext)
+          eval $(perl -I ~/perl5ext/lib/perl5/ -Mlocal::lib=~/perl5npg)
+          export TEST_AUTHOR=1
+          perl Build.PL && ./Build test --verbose && ./Build install
+
+    # Archive logs if failure
+    - name: Archive CPAN logs
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: cpan_log
+        path: /home/runner/.cpanm/work/*/build.log
+        retention-days: 5

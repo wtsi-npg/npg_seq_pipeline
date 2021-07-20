@@ -16,8 +16,18 @@ my $tmp_dir = $util->temp_directory();
 my $script = q{npg_publish_illumina_run.pl};
 my $includes = qr/--include 'RunInfo\.xml' --include '\[Rr\]unParameters\.xml' --include InterOp/;
 
+my $defaults = {
+  default => {
+    minimum_cpu => 1,
+    memory => 2,
+    reserve_irods_slots => 1,
+    fs_slots_num => 1,
+    queue => 'lowload'
+  }
+};
+
 subtest 'MiSeq run' => sub {
-  plan tests => 27;
+  plan tests => 25;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/miseq/samplesheet_16850.csv};
 
@@ -40,9 +50,10 @@ subtest 'MiSeq run' => sub {
 
   my $a = npg_pipeline::function::run_data_to_irods_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
-    timestamp         => q{20181204}
+    timestamp         => q{20181204},
+    resource          => $defaults
   );
   isa_ok($a, q{npg_pipeline::function::run_data_to_irods_archiver}, q{object test});
   ok (!$a->no_irods_archival, 'no_irods_archival flag is unset');
@@ -66,8 +77,7 @@ subtest 'MiSeq run' => sub {
     'preexec command is correct');
   ok (!$d->has_composition, 'composition not set');
   ok (!$d->excluded, 'step not excluded');
-  ok (!$d->has_num_cpus, 'number of cpus is not set');
-  ok (!$d->has_memory,'memory is not set');
+
   is ($d->queue, 'lowload', 'queue');
   is ($d->fs_slots_num, 1, 'one fs slot is set');
   ok ($d->reserve_irods_slots, 'iRODS slots to be reserved');
@@ -75,10 +85,11 @@ subtest 'MiSeq run' => sub {
 
   $a = npg_pipeline::function::run_data_to_irods_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
     timestamp         => q{20181204},
-    no_irods_archival => 1
+    no_irods_archival => 1,
+    resource          => $defaults
   );
   ok ($a->no_irods_archival, 'no_irods_archival flag is set');
   $da = $a->create();
@@ -89,10 +100,11 @@ subtest 'MiSeq run' => sub {
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
     timestamp         => q{20181204},
-    local              => 1
+    local             => 1,
+    resource          => $defaults
   );
   ok ($a->no_irods_archival, 'no_irods_archival flag is set');
   $da = $a->create();
@@ -116,9 +128,10 @@ subtest 'NovaSeq run' => sub {
 
   my $a  = npg_pipeline::function::run_data_to_irods_archiver->new(
     run_folder        => $rf_name,
-    runfolder_path    => $rfpath,  
+    runfolder_path    => $rfpath,
     id_run            => $id_run,
-    timestamp         => q{20181204}
+    timestamp         => q{20181204},
+    resource          => $defaults
   );
   my $da = $a->create();
   ok ($da && @{$da} == 1, 'an array with one definition is returned');

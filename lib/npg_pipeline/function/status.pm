@@ -4,14 +4,12 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
-
-extends q{npg_pipeline::base};
+extends q{npg_pipeline::base_resource};
 with q{npg_pipeline::runfolder_scaffold};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $STATUS_SCRIPT => q{npg_status2file};
+Readonly::Scalar my $STATUS_SCRIPT => q{npg_status_save};
 
 has q{status}           => (isa      => q{Str},
                             is       => q{ro},
@@ -34,16 +32,10 @@ sub create {
     $status_with_underscores,
     $self->timestamp();
 
-  my $d = npg_pipeline::function::definition->new(
-    created_by    => __PACKAGE__,
-    created_on    => $self->timestamp(),
-    identifier    => $self->id_run(),
+  my $d = $self->create_definition({
     job_name      => $job_name,
     command       => $self->_command($status_files_path),
-    num_cpus      => [0],
-    queue         =>
-      $npg_pipeline::function::definition::SMALL_QUEUE,
-  );
+  });
 
   return [$d];
 }
@@ -67,7 +59,13 @@ sub _command {
     }
   }
 
-  return $command;
+  if ($self->no_db_status_update) {
+    return $command;
+  } else {
+    return $command . q[ --db_save];
+  }
+
+  return;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -84,7 +82,9 @@ npg_pipeline::function::status
 
 =head1 DESCRIPTION
 
-Launches a job for saving run and lane statuses to a file.
+Creates a definition for a job that saves run and lane statuses to a file.
+The job will also save the statuses to the tracking database unless
+C<--no_db_status_update> or C<--local> options are used. 
 
 =head1 SUBROUTINES/METHODS
 
@@ -103,7 +103,7 @@ Creates and returns a single function definition as an array.
 Function definition is created as a npg_pipeline::function::definition
 type object.
 
-  my $definitions = $obj->create(); 
+  my $definitions = $obj->create();
 
 =head1 DIAGNOSTICS
 
@@ -131,7 +131,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2018,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

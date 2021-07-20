@@ -11,10 +11,14 @@ with 'npg_tracking::util::pipeline_config';
 Readonly::Scalar my $STUDY_CONFIG_SECTION_NAME => q[portable_pipelines];
 Readonly::Scalar my $PP_NAME_KEY               => q[pp_name];
 Readonly::Scalar my $PP_VERSION_KEY            => q[pp_version];
+Readonly::Scalar my $PP_REPO_URL_KEY           => q[pp_repo_url];
 Readonly::Scalar my $PP_TYPE_KEY               => q[pp_type];
 Readonly::Scalar my $PP_ROOT_KEY               => q[pp_root];
 Readonly::Scalar my $PP_ARCHIVAL_FLAG_KEY      => q[pp_archival_flag];
 Readonly::Scalar my $PP_STAGING_ROOT_KEY       => q[pp_staging_root];
+Readonly::Scalar my $PP_INPUT_GLOB_KEY         => q[pp_input_glob];
+Readonly::Scalar my $PP_QC_SUMMARY_KEY         => q[pp_qc_summary];
+Readonly::Scalar my $PP_AUTOQC_FLAG_KEY        => q[pp_autoqc_flag];
 Readonly::Scalar my $JOB_NAME_SUBSTR_LENGTH    => 5;
 
 our $VERSION = '0';
@@ -78,8 +82,9 @@ sub pp_name {
 
 =head2 pp_version
 
-Given a configurationn hash for the portable pipeline,
-returns its version.
+Given a configuration hash for the portable pipeline, returns its version.
+In practice, if git used as Version Control System, either a tag or
+a commit SHA can be used.
 
 =cut
 
@@ -87,6 +92,19 @@ sub pp_version {
   my ($self, $pp_conf) = @_;
   $pp_conf or croak 'pp config should be defined';
   return $pp_conf->{$PP_VERSION_KEY};
+}
+
+=head2 pp_repo_url
+
+Given a configuration hash for the portable pipeline,
+returns the URL for its code version control repository.
+
+=cut
+
+sub pp_repo_url {
+  my ($self, $pp_conf) = @_;
+  $pp_conf or croak 'pp config should be defined';
+  return $pp_conf->{$PP_REPO_URL_KEY};
 }
 
 =head2 pps_config4lims_entity
@@ -281,6 +299,59 @@ sub pp_staging_root {
     "$PP_STAGING_ROOT_KEY $root does not exist or is not a directory";
 
   return $root
+}
+
+=head2 pp_input_glob
+
+Returns an input glob expression if it is set, undefined
+value if it is not set. Can be used as a class method.
+
+  my $staging_root = $obj->pp_input_glob($pp_conf);
+
+=cut
+
+sub pp_input_glob {
+  my ($self, $pp_conf) = @_;
+  $pp_conf or croak 'pp config should be defined';
+  return  $pp_conf->{$PP_INPUT_GLOB_KEY};
+}
+
+=head2 pp_qc_summary
+
+Returns pp_qc_summary value if it is set, undefined
+value if it is not set. Can be used as a class method.
+
+  my $staging_root = $obj->pp_qc_summary($pp_conf);
+
+=cut
+
+sub pp_qc_summary {
+  my ($self, $pp_conf) = @_;
+  $pp_conf or croak 'pp config should be defined';
+  return  $pp_conf->{$PP_QC_SUMMARY_KEY};
+}
+
+=head2 pp_autoqc_flag
+
+Returns the value of the autoqc flag for this pipeline. Can be used as a
+class method.
+
+If this flag is set to a true value, a relevant autoqc check should be
+invoked on the output of this pipeline. Different versions of the same
+pipeline can be configured to run in parallel because their output is
+written to different directories. The destination for autoqc results
+does not have this flexibility, therefore, only one version of each kind
+of a portable pipeline can be flagged for downstream autoqc result computation.
+
+  my $flag = $obj->pp_autoqc_flag($pp_conf);
+
+=cut
+
+sub pp_autoqc_flag {
+  my ($self, $pp_conf) = @_;
+  $pp_conf or croak 'pp config should be defined';
+
+  return  $pp_conf->{$PP_AUTOQC_FLAG_KEY};
 }
 
 =head2 canonical_name

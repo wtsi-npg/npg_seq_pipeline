@@ -4,8 +4,6 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::function::definition;
-
 extends qw{npg_pipeline::function::seq_to_irods_archiver};
 
 our $VERSION = '0';
@@ -37,7 +35,7 @@ override 'create' => sub {
     $ref->{'command'} = $command;
   }
 
-  return [npg_pipeline::function::definition->new($ref)];
+  return [$self->create_definition($ref)];
 };
 
 __PACKAGE__->meta->make_immutable;

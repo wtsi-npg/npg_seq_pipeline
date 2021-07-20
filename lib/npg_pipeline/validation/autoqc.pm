@@ -27,7 +27,6 @@ Readonly::Array  my @LANE_LEVELCHECKS      => qw/ spatial_filter
                                                 /;
 
 Readonly::Array  my @LANE_LEVELCHECKS4POOL => qw/ tag_metrics
-                                                  upstream_tags
                                                 /;
 
 Readonly::Array  my @WITH_SUBSET_CHECKS    => qw/ bam_flagstats

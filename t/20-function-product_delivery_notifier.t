@@ -57,29 +57,37 @@ my $msg_routing_key = 'test_msg_routing_key';
 my $config_path    = 't/data/release/config/notify_on';
 my $message_config = "$config_path/npg_message_queue.conf";
 
+my %init = (
+  conf_path        => "t/data/release/config/notify_on",
+  runfolder_path   => $runfolder_path,
+  id_run           => $id_run,
+  timestamp        => $timestamp,
+  qc_schema        => $qc,
+  resource         => {
+    default => {
+      minimum_cpu => 1,
+      memory => 2
+    }
+  }
+);
+
 subtest 'local and no_s3_archival flag' => sub {
   plan tests => 7;
 
-  my $archiver = $pkg->new
-    (conf_path      => "t/data/release/config/notify_on",
-     runfolder_path => $runfolder_path,
-     id_run         => $id_run,
-     timestamp      => $timestamp,
-     qc_schema      => $qc,
-     local          => 1);
+  my $archiver = $pkg->new(
+    %init,
+    local => 1
+  );
   ok($archiver->no_s3_archival, 'no_s3_archival flag is set to true');
   my $ds = $archiver->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
   isa_ok($ds->[0], 'npg_pipeline::function::definition');
   is($ds->[0]->excluded, 1, 'function is excluded');
 
-  $archiver = $pkg->new
-    (conf_path      => "t/data/release/config/notify_on",
-     runfolder_path => $runfolder_path,
-     id_run         => $id_run,
-     timestamp      => $timestamp,
-     qc_schema      => $qc,
-     no_s3_archival => 1);
+  $archiver = $pkg->new(
+    %init,
+    no_s3_archival => 1
+  );
   ok(!$archiver->local, 'local flag is false');
   $ds = $archiver->create;
   is(scalar @{$ds}, 1, 'one definition is returned');
@@ -89,12 +97,9 @@ subtest 'local and no_s3_archival flag' => sub {
 subtest 'message_config' => sub {
   plan tests => 1;
 
-  my $notifier = $pkg->new
-    (conf_path           => "t/data/release/config/notify_on",
-     id_run              => $id_run,
-     runfolder_path      => $runfolder_path,
-     timestamp           => $timestamp,
-     qc_schema           => $qc);
+  my $notifier = $pkg->new(
+    %init,
+  );
 
   my $expected_config = sprintf q{%s/.npg/psd_production_events.conf},
     $ENV{HOME};
@@ -107,12 +112,9 @@ subtest 'message_config' => sub {
 subtest 'message_dir' => sub {
   plan tests => 1;
 
-  my $notifier = $pkg->new
-    (conf_path           => "t/data/release/config/notify_on",
-     id_run              => $id_run,
-     runfolder_path      => $runfolder_path,
-     timestamp           => $timestamp,
-     qc_schema           => $qc);
+  my $notifier = $pkg->new(
+    %init,
+  );
 
   my $expected_default_dir = join q[/], abs_path(getcwd()), $runfolder_path,
     'Data/Intensities/BAM_basecalls_20180805-013153/messages';
@@ -129,14 +131,11 @@ subtest 'create for a run' => sub {
 
   my $notifier;
   lives_ok {
-    $notifier = $pkg->new
-      (conf_path           => $config_path,
-       id_run              => $id_run,
-       message_config      => $message_config,
-       message_dir         => $message_dir,
-       runfolder_path      => $runfolder_path,
-       timestamp           => $timestamp,
-       qc_schema           => $qc);
+    $notifier = $pkg->new(
+      %init,
+      message_config      => $message_config,
+      message_dir         => $message_dir,
+    );
   } 'notifier created ok';
 
   dies_ok {$notifier->create} 'preliminary results present - error';
@@ -148,7 +147,7 @@ subtest 'create for a run' => sub {
       my $shift = $row->is_undecided ? 1 : ($row->is_accepted ? 3 : 2);
       $row->update({id_mqc_outcome => $row->id_mqc_outcome + $shift});
     }
-  }  
+  }
 
   my @defs = @{$notifier->create};
   my @notified_rpts = _get_rpts(@defs);
@@ -193,14 +192,11 @@ subtest 'create for a run' => sub {
       'Data/Intensities/BAM_basecalls_20180805-013153/' .
       'metadata_cache_26291/samplesheet_26291_updated.csv';
 
-    $notifier = $pkg->new
-      (conf_path           => $config_path,
-       id_run              => $id_run,
-       message_config      => $message_config,
-       message_dir         => $message_dir,
-       runfolder_path      => $runfolder_path,
-       timestamp           => $timestamp,
-       qc_schema           => $qc);
+    $notifier = $pkg->new(
+      %init,
+      message_config      => $message_config,
+      message_dir         => $message_dir,
+    );
 
     my @updated_defs = @{$notifier->create};
     # Only 1 manual qc passed sample was updated; tag index 3
@@ -226,15 +222,13 @@ subtest 'create for a product' => sub {
   my $dir = File::Temp->newdir()->dirname;
 
   # Using a standard run folder structure.
-  my $notifier = $pkg->new
-      (conf_path           => $config_path,
-       label               => 'my_label',
-       product_rpt_list    => '26291:1:3;26291:2:3',
-       message_config      => $message_config,
-       message_dir         => $dir,
-       runfolder_path      => $runfolder_path,
-       timestamp           => $timestamp,
-       qc_schema           => $qc);
+  my $notifier = $pkg->new(
+    %init,
+    label               => 'my_label',
+    product_rpt_list    => '26291:1:3;26291:2:3',
+    message_config      => $message_config,
+    message_dir         => $dir,
+  );
 
   my @defs = @{$notifier->create};
   is (scalar @defs, 1, 'one definition returned');
@@ -265,22 +259,20 @@ subtest 'create for a product' => sub {
 
   my $mdir = join q[/], $dir, 'messages1';
   mkdir $mdir;
-  $notifier = $pkg->new
-      (conf_path           => $config_path,
-       label               => 'my_label',
-       product_rpt_list    => '26291:1:3;26291:2:3',
-       message_config      => $message_config,
-       message_dir         => $mdir,
-       runfolder_path      => $dir,
-       archive_path        => $archive,
-       timestamp           => $timestamp,
-       qc_schema           => $qc);  
+  $notifier = $pkg->new(
+    %init,
+    label               => 'my_label',
+    product_rpt_list    => '26291:1:3;26291:2:3',
+    message_config      => $message_config,
+    message_dir         => $mdir,
+    archive_path        => $archive,
+  );
   @defs = @{$notifier->create};
   is (scalar @defs, 1, 'one definition returned');
   @notified_rpts = _get_rpts(@defs);
   is_deeply(\@notified_rpts,
             [[[26291, 1, 3], [26291, 2, 3]]],
-            'Only "26291:1:3;26291:2:3" is notified');  
+            'Only "26291:1:3;26291:2:3" is notified');
 
   remove_tree($dir);
 };
@@ -288,13 +280,11 @@ subtest 'create for a product' => sub {
 subtest 'no_message_study' => sub {
   plan tests => 2;
 
-  my $notifier = $pkg->new
-    (conf_path           => "t/data/release/config/notify_off",
-     id_run              => $id_run,
-     message_config      => $message_config,
-     runfolder_path      => $runfolder_path,
-     timestamp           => $timestamp,
-     qc_schema           => $qc);
+  my $notifier = $pkg->new(
+    %init,
+    conf_path      => "t/data/release/config/notify_off",
+    message_config => $message_config,
+  );
 
   my @defs = @{$notifier->create};
   my $num_defs_observed = scalar @defs;

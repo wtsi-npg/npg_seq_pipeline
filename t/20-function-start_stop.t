@@ -12,28 +12,39 @@ my $runfolder_path = $util->analysis_runfolder_path();
 
 use_ok('npg_pipeline::function::start_stop');
 
+my %init = (
+  runfolder_path => $runfolder_path,
+  resource => {
+    default => {
+      memory => 2,
+      minimum_cpu => 0,
+      queue => 'small'
+    }
+  }
+);
+
 subtest 'start and stop functions' => sub {
   plan tests => 30;
 
   my $ss = npg_pipeline::function::start_stop->new(
-    id_run         => 1234,
-    runfolder_path => $runfolder_path,
+    id_run => 1234,
+    %init
   );
   isa_ok ($ss, 'npg_pipeline::function::start_stop');
   is ($ss->label, '1234', 'label');
 
   my $ss1 = npg_pipeline::function::start_stop->new(
-    id_run         => 1234,
-    runfolder_path => $runfolder_path,
-    label          => 'my_label',
+    id_run => 1234,
+    label  => 'my_label',
+    %init
   );
 
   my $ss2 = npg_pipeline::function::start_stop->new(
-    runfolder_path   => $runfolder_path,
     product_rpt_list => '123:4:5;124:3:6',
     label            => 'your_label',
+    %init
   );
-  
+
   foreach my $m (qw/pipeline_start pipeline_end/) {
 
     my $ds = $ss->$m('pipeline_name');
@@ -62,16 +73,16 @@ subtest 'start and stop functions' => sub {
 };
 
 subtest 'wait4path function' => sub {
-  plan tests => 15;
+  plan tests => 17;
 
   my $f = npg_pipeline::function::start_stop->new(
-    id_run         => 1234,
-    runfolder_path => $runfolder_path,
+    id_run => 1234,
+    %init
   );
 
   my $path = $runfolder_path;
   $path =~ s/analysis/outgoing/;
-  ok ($path =~ /outgoing/, 'future path is in outgoing'); 
+  ok ($path =~ /outgoing/, 'future path is in outgoing');
 
   my $ds = $f->pipeline_wait4path();
   ok ($ds && scalar @{$ds} == 1, 'one definition is created');
@@ -84,21 +95,32 @@ subtest 'wait4path function' => sub {
   ok ($d->has_num_cpus, 'number of cpus is set');
   is ($d->command_preexec, qq{[ -d '$path' ]}, 'preexec command');
   is_deeply ($d->num_cpus, [0], 'zero cpus');
-  my $command = q{bash -c '}
-    . qq{COUNTER=0; NUM_ITERATIONS=20; DIR=$path; STIME=60; }
+
+  my $command =
+      qq{ COUNTER=0; NUM_ITERATIONS=20; DIR=$path; STIME=60; }
     .  q{while [ $COUNTER -lt $NUM_ITERATIONS ] && ! [ -d $DIR ] ; }
     .  q{do echo $DIR not available; COUNTER=$(($COUNTER+1)); sleep $STIME; done; }
     .  q{EXIT_CODE=0; if [ $COUNTER == $NUM_ITERATIONS ] ; then EXIT_CODE=1; fi; exit $EXIT_CODE;}
     .  q{'};
-  is ($d->command, $command, 'command is correct');
+  my @command_components = split q[;], $d->command;
+  my $start = shift @command_components;
+  my $start_re = qr/bash -c 'echo \d+/;
+  like ($start, $start_re, 'first part of the command is correct');
+  is (join(q[;], @command_components), $command,
+    'second part of the command is correct');
 
   $f = npg_pipeline::function::start_stop->new(
     label          => 'my_label',
     runfolder_path => $path,
+    %init
   );
   $ds = $f->pipeline_wait4path();
   $d = $ds->[0];
-  is ($d->command, $command, 'command is correct');
+  @command_components = split q[;], $d->command;
+  $start = shift @command_components;
+  like ($start, $start_re, 'first part of the command is correct');
+  is (join(q[;], @command_components), $command,
+    'second part of the command is correct');
   is ($d->command_preexec, qq{[ -d '$path' ]}, 'preexec command');
   is ($d->job_name, 'wait4path_in_outgoing_my_label', 'job name');
   is ($d->identifier, 'my_label', 'identifier set to the value of label');

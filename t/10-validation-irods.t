@@ -43,8 +43,6 @@ my $test_area_created = ($env_file && $have_irods_execs) ? create_irods_test_are
 Log::Log4perl::init_once('./t/log4perl_test.conf');
 my $logger = Log::Log4perl->get_logger(q[]);
 
-my $irods = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger => $logger);
-
 my $irrelevant_entity =  npg_pipeline::validation::entity->new(
   staging_archive_root => q[t],
   target_product       => npg_pipeline::product->new(rpt_list => q[5174:1:0])
@@ -69,35 +67,46 @@ END {
 }
 
 subtest 'object construction, file extensions, file names' => sub {
-  plan tests => 6;
+  my $num_tests = 6;
+  plan tests => $num_tests;
 
-  my $ref = {
-    irods_destination_collection => "${IRODS_TEST_AREA1}",
-    product_entities  => [$irrelevant_entity],
-    staging_files     => {'5174:1:0' => ['5174_1#0.cram', '5174_1#0.cram.crai']},
-    logger            => $logger,
-    irods             => $irods,
-    file_extension    => 'cram'
+  SKIP: {
+    skip 'Test iRODS not available (WTSI_NPG_iRODS_Test_IRODS_ENVIRONMENT_FILE not set?)',
+      $num_tests unless $test_area_created;
+
+    my $irods = WTSI::NPG::iRODS->new(strict_baton_version => 0,
+                                      logger               => $logger);
+
+    my $ref = {
+      irods_destination_collection => "${IRODS_TEST_AREA1}",
+      product_entities             => [ $irrelevant_entity ],
+      staging_files                => { '5174:1:0' => [ '5174_1#0.cram', '5174_1#0.cram.crai' ] },
+      irods                        => $irods,
+      logger                       => $logger,
+      file_extension               => 'cram'
+    };
+
+    my $v = npg_pipeline::validation::irods->new($ref);
+    is($v->index_file_extension, 'crai', 'index file extension is crai');
+    is($v->index_file_path('5174_1#0.cram'), '5174_1#0.cram.crai',
+      'index file name for a cram file');
+    is($v->index_path2seq_path('/tmp/5174_1#0.cram.crai'), '/tmp/5174_1#0.cram',
+      'sequence file path from index file path');
+
+    $ref->{file_extension} = 'bam';
+    $v = npg_pipeline::validation::irods->new($ref);
+    is($v->index_file_extension, 'bai', 'index file extension is bai');
+    is($v->index_file_path('5174_1#0.bam'), '5174_1#0.bai',
+      'index file name for a bam file');
+    is($v->index_path2seq_path('/tmp/5174_1#0.bai'), '/tmp/5174_1#0.bam',
+      'sequence file path from index file path');
   };
-
-  my $v = npg_pipeline::validation::irods->new($ref);
-  is( $v->index_file_extension, 'crai', 'index file extension is crai');
-  is( $v->index_file_path('5174_1#0.cram'), '5174_1#0.cram.crai',
-    'index file name for a cram file');
-  is($v->index_path2seq_path('/tmp/5174_1#0.cram.crai'), '/tmp/5174_1#0.cram',
-   'sequence file path from index file path');
-
-  $ref->{file_extension} = 'bam';
-  $v = npg_pipeline::validation::irods->new($ref);
-  is( $v->index_file_extension, 'bai', 'index file extension is bai');
-  is( $v->index_file_path('5174_1#0.bam'), '5174_1#0.bai',
-    'index file name for a bam file');
-  is($v->index_path2seq_path('/tmp/5174_1#0.bai'), '/tmp/5174_1#0.bam',
-   'sequence file path from index file path');
 };
 
 subtest 'eligible product entities' => sub {
-  plan tests => 4;
+  my $num_tests = 4;
+  my $num_irods_tests = 3;
+  plan tests => $num_tests;
 
   my $config_dir = join q[/], $dir, 'config';
   mkdir $config_dir or die "Failed to create $config_dir";
@@ -106,71 +115,79 @@ subtest 'eligible product entities' => sub {
 
   my $pconfig_content = read_file join(q[/], $config_dir, 'product_release.yml');
   my $study_id = 3573;
-  ok ($pconfig_content !~ /study_id: \"$study_id\"/xms,
+  ok($pconfig_content !~ /study_id: \"$study_id\"/xms,
     'no product release config for this run study');
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/miseq/samplesheet_16850.csv};
 
-  my $v = npg_pipeline::validation::irods->new(
-    irods_destination_collection => "${IRODS_TEST_AREA1}",
-    product_entities  => [],
-    staging_files     => {'16850:1:0' => ['16850_1#0.cram', '16850_1#0.cram.crai']},
-    logger            => $logger,
-    irods             => $irods,
-    file_extension    => 'cram',
-    conf_path         => $config_dir,
-  );
-  throws_ok { $v->eligible_product_entities() }
-    qr/product_entities array cannot be empty/,
-    'error if product entities array is empty';
+  SKIP: {
+    skip 'Test iRODS not available (WTSI_NPG_iRODS_Test_IRODS_ENVIRONMENT_FILE not set?)',
+      $num_irods_tests unless $test_area_created;
 
-  my @ets = map {
-    npg_pipeline::validation::entity->new(
-      staging_archive_root => q[t],
-      target_product => npg_pipeline::product->new(
-        rpt_list => $_,
-        lims     => st::api::lims->new(rpt_list => $_)
+    my $irods = WTSI::NPG::iRODS->new(strict_baton_version => 0,
+      logger                                               => $logger);
+
+    my $v = npg_pipeline::validation::irods->new(
+      irods_destination_collection => "${IRODS_TEST_AREA1}",
+      product_entities             => [],
+      staging_files                => { '16850:1:0' => [ '16850_1#0.cram', '16850_1#0.cram.crai' ] },
+      irods                        => $irods,
+      logger                       => $logger,
+      file_extension               => 'cram',
+      conf_path                    => $config_dir,
+    );
+    throws_ok {$v->eligible_product_entities()}
+      qr/product_entities array cannot be empty/,
+      'error if product entities array is empty';
+
+    my @ets = map {
+      npg_pipeline::validation::entity->new(
+        staging_archive_root => q[t],
+        target_product       => npg_pipeline::product->new(
+          rpt_list => $_,
+          lims     => st::api::lims->new(rpt_list => $_)
+        )
       )
-    )
-  } map { qq[16850:1:$_] } (0 .. 2);
+    } map {qq[16850:1:$_]} (0 .. 2);
 
-  $v = npg_pipeline::validation::irods->new(
-    irods_destination_collection => "${IRODS_TEST_AREA1}",
-    product_entities  => \@ets,
-    staging_files     => {'16850:1:0' => ['16850_1#0.cram', '16850_1#0.cram.crai']},
-    logger            => $logger,
-    irods             => $irods,
-    file_extension    => 'cram',
-    conf_path         => $config_dir,
-  );
-  is (scalar @ets, scalar @{$v->eligible_product_entities},
-    'all product entities are eligible for archival to iRODS');
+    $v = npg_pipeline::validation::irods->new(
+      irods_destination_collection => "${IRODS_TEST_AREA1}",
+      product_entities             => \@ets,
+      staging_files                => { '16850:1:0' => [ '16850_1#0.cram', '16850_1#0.cram.crai' ] },
+      irods                        => $irods,
+      logger                       => $logger,
+      file_extension               => 'cram',
+      conf_path                    => $config_dir,
+    );
+    is(scalar @ets, scalar @{$v->eligible_product_entities},
+      'all product entities are eligible for archival to iRODS');
 
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
-    q{t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/} .
-    q{BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv};
+    local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+      q{t/data/novaseq/180709_A00538_0010_BH3FCMDRXX/Data/Intensities/} .
+        q{BAM_basecalls_20180805-013153/metadata_cache_26291/samplesheet_26291.csv};
 
-  @ets = map {
-    npg_pipeline::validation::entity->new(
-      staging_archive_root => q[t],
-      target_product => npg_pipeline::product->new(
-        rpt_list => $_,
-        lims     => st::api::lims->new(rpt_list => $_)
+    @ets = map {
+      npg_pipeline::validation::entity->new(
+        staging_archive_root => q[t],
+        target_product       => npg_pipeline::product->new(
+          rpt_list => $_,
+          lims     => st::api::lims->new(rpt_list => $_)
+        )
       )
-    )
-  } map { qq[26291:1:$_;26291:2:$_] } (0 .. 12,888);  
+    } map {qq[26291:1:$_;26291:2:$_]} (0 .. 12, 888);
 
-  $v = npg_pipeline::validation::irods->new(
-    irods_destination_collection => "${IRODS_TEST_AREA1}",
-    product_entities  => \@ets,
-    staging_files     => {'26291:0' => ['26291#0.cram', '26291#0.cram.crai']},
-    logger            => $logger,
-    irods             => $irods,
-    file_extension    => 'cram',
-    conf_path         => $config_dir,
-  );
+    $v = npg_pipeline::validation::irods->new(
+      irods_destination_collection => "${IRODS_TEST_AREA1}",
+      product_entities             => \@ets,
+      staging_files                => { '26291:0' => [ '26291#0.cram', '26291#0.cram.crai' ] },
+      irods                        => $irods,
+      logger                       => $logger,
+      file_extension               => 'cram',
+      conf_path                    => $config_dir,
+    );
 
-  is (scalar @{$v->eligible_product_entities}, 0, 'no entities to archive to iRODS');
+    is(scalar @{$v->eligible_product_entities}, 0, 'no entities to archive to iRODS');
+  };
 };
 
 subtest 'deletable or not' => sub {
@@ -183,14 +200,15 @@ subtest 'deletable or not' => sub {
   SKIP: {
     skip 'Test iRODS not available (WTSI_NPG_iRODS_Test_IRODS_ENVIRONMENT_FILE not set?)',
          $num_tests unless $test_area_created;
-
+  my $irods = WTSI::NPG::iRODS->new(strict_baton_version => 0, logger =>
+  $logger);
    my $ref = {
       irods_destination_collection => "${IRODS_TEST_AREA1}",
       product_entities  => [$irrelevant_entity],
       staging_files     => {},
       eligible_product_entities => [],
-      logger            => $logger,
       irods             => $irods,
+      logger            => $logger,
       file_extension    => 'cram'
     };
 
@@ -229,7 +247,7 @@ subtest 'deletable or not' => sub {
         my $md5_path = $p . q[.md5];
         write_file($md5_path, md5_hex($content));
         my $ipath = join q[/], $IRODS_TEST_AREA1, $file_name;
-        $irods->add_object($p, $ipath);
+        $irods->add_object($p, $ipath,$WTSI::NPG::iRODS::CALC_CHECKSUM);
       } 
     }
 
@@ -253,8 +271,8 @@ subtest 'deletable or not' => sub {
       product_entities  => \@p_entities ,
       staging_files     => $staging_files,
       eligible_product_entities => [],
-      logger            => $logger,
       irods             => $irods,
+      logger            => $logger,
       file_extension    => 'cram'
     };
     $v = npg_pipeline::validation::irods->new($ref);
@@ -281,7 +299,7 @@ subtest 'deletable or not' => sub {
       qr/$trpath is not in iRODS/, 'warning - cram file missing in iRODS';
     is($result, 0, 'not deletable - cram file missing in iRODS');
     # Restore previously removed file
-    $irods->add_object($trpath, $ito_remove);
+    $irods->add_object($trpath, $ito_remove, $WTSI::NPG::iRODS::CALC_CHECKSUM);
 
     $v = npg_pipeline::validation::irods->new($ref);
     is($v->archived_for_deletion(), 1, 'deletable');
@@ -313,7 +331,7 @@ subtest 'deletable or not' => sub {
 
     # Create an extra cram file in iRODS
     my $extra = join q[/], $IRODS_TEST_AREA1, 'extra.cram';
-    $irods->add_object($trpath, $extra);
+    $irods->add_object($trpath, $extra, $WTSI::NPG::iRODS::CALC_CHECKSUM);
     $v = npg_pipeline::validation::irods->new($ref);
     warning_like { $result = $v->archived_for_deletion() }
       qr/$extra is in iRODS, but not on staging/, 'warning - unexpected file in iRODS';

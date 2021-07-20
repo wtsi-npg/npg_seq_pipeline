@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use Data::Dump qw{pp};
 use Moose::Role;
-use List::Util qw{all};
+use List::Util qw{all any};
 use Readonly;
 
 with qw{WTSI::DNAP::Utilities::Loggable
@@ -12,7 +12,12 @@ with qw{WTSI::DNAP::Utilities::Loggable
 
 our $VERSION = '0';
 
+Readonly::Scalar our $S3_RELEASE                      => q{s3};
+Readonly::Scalar our $IRODS_RELEASE                   => q{irods};
+Readonly::Scalar our $IRODS_PP_RELEASE                => q{irods_pp};
+
 Readonly::Scalar my $QC_OUTCOME_MATTERS_KEY           => q{qc_outcome_matters};
+Readonly::Scalar my $ACCEPT_UNDEF_QC_OUTCOME_KEY      => q{accept_undef_qc_outcome};
 Readonly::Scalar my $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY => q{s3};
 
 =head1 SUBROUTINES/METHODS
@@ -125,26 +130,44 @@ sub has_qc_for_release {
 
   my $rpt  = $product->rpt_list();
   my $name = $product->file_name_root();
+  my $accept_undef_qc_outcome =
+    $self->accept_undef_qc_outcome($product,$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY);
 
-  my @seqqc = $product->final_seqqc_objs($self->$qc_db_accessor);
-  @seqqc or $self->logcroak("Product $name, $rpt are not all Final seq QC values");
+  my @seqqc =  $product->seqqc_objs($self->$qc_db_accessor);
 
-  if(not all { $_->is_accepted }  @seqqc) {
-    $self->info("Product $name, $rpt are not all Final Accepted seq QC values");
+  if (!@seqqc) {#if seqqc outcome is undef
+    if ($accept_undef_qc_outcome) {
+      return 1;
+    } else {
+      $self->logcroak('Seq QC is not defined');
+    }
+  }
+
+  #if seqqc is not final
+  if (any {not $_->has_final_outcome} @seqqc) {
+    $self->logcroak("Product $name, $rpt are not all Final seq QC values");
+  }
+
+  #seqqc is FINAL from this point
+  #returning early if any seqqc is FINAL REJECTED
+  if (any {$_->is_rejected} @seqqc) {
     return 0;
   }
-  my $libqc_obj = $product->final_libqc_obj($self->$qc_db_accessor);
-  # Lib outcomes are not available for full lane libraries, so the code below
-  # might give an error when absence of QC outcome is legitimate.
-  $libqc_obj or $self->logcroak("Product $name, $rpt is not Final lib QC value");
-  if ($libqc_obj->is_accepted) {
-    $self->info("Product $name, $rpt is for release (passed manual QC)");
-    return 1;
+
+  #seqqc is FINAL ACCEPTED from this point
+  my $libqc_obj = $product->libqc_obj($self->$qc_db_accessor);# getting regular lib values
+  #checking if libqc is undef
+  $libqc_obj or $self->logcroak('lib QC is undefined');
+
+  if (not $libqc_obj->has_final_outcome ) {# if libqc is not final
+    $self->logcroak("Product $name, $rpt is not Final lib QC value");
   }
 
-  $self->info("Product $name, $rpt is NOT for release (did not pass manual QC)");
-
-  return 0;
+  #libqc is final from this point
+  #if it's neither rejected nor accepted it's undecided
+  return $libqc_obj->is_accepted     ? 1
+         : ($libqc_obj->is_rejected  ? 0
+         : ($accept_undef_qc_outcome ? 1 : 0));
 }
 
 =head2  qc_outcome_matters
@@ -167,6 +190,28 @@ sub qc_outcome_matters {
   $archiver or $self->logconfess('An archiver argument is required');
   return $self->find_study_config($product)->{$archiver}->{$QC_OUTCOME_MATTERS_KEY};
 }
+
+=head2  accept_undef_qc_outcome
+
+  Arg [1]    : npg_pipeline::product
+  Arg [2]    : Str
+
+  Example    : $obj->accept_undef_qc_outcome($product, q[s3])
+  Description: Returns a boolean value indicating whether or not QC outcome
+               can be undefined for the product to be archived by an archiver given
+               by the second argument.
+
+  Returntype : Bool
+
+=cut
+
+sub accept_undef_qc_outcome {
+  my ($self, $product,$archiver) = @_;
+  $product  or $self->logconfess('A product argument is required');
+  $archiver or $self->logconfess('An archiver argument is required');
+  return $self->find_study_config($product)->{$archiver}->{$ACCEPT_UNDEF_QC_OUTCOME_KEY};
+}
+
 
 =head2 customer_name
 
@@ -232,6 +277,17 @@ sub receipts_location {
 
 sub is_for_release {
   my ($self, $product, $type_of_release) = @_;
+
+  my @rtypes = ($IRODS_RELEASE, $IRODS_PP_RELEASE, $S3_RELEASE);
+
+  $type_of_release or
+      $self->logcroak(q[A defined type_of_release argument is required, ],
+                      q[expected one of: ], pp(\@rtypes));
+
+  any { $type_of_release eq $_ } @rtypes or
+      $self->logcroak("Unknown release type '$type_of_release', ",
+                      q[expected one of: ], pp(\@rtypes));
+
   my $study_config = (ref $product eq 'npg_pipeline::product')
                    ? $self->find_study_config($product)
                    : $self->study_config($product); # the last one is for lims objects
@@ -593,6 +649,27 @@ sub staging_deletion_delay {
   return $self->find_study_config($product)->{'data_deletion'}->{'staging_deletion_delay'};
 }
 
+=head2 can_run_gbs
+ 
+ Arg [1]    : npg_pipeline::product
+ 
+ Example    : $obj->can_run_gbs($product)
+ Description: Return true if the product is allowed to be diverted down the gbs pipeline
+ 
+ Returntype : Bool
+ 
+=cut
+
+sub can_run_gbs {
+  my ($self, $product) = @_;
+
+  my $study_config = (ref $product eq 'npg_pipeline::product')
+                   ? $self->find_study_config($product)
+                   : $self->study_config($product);
+
+  return $study_config->{gbs_pipeline}->{allowed};
+}
+
 1;
 
 __END__
@@ -684,11 +761,17 @@ study:
 
 =head1 AUTHOR
 
-Keith James
+=over
+
+=item Keith James
+
+=item Fred Dodd
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2019,2020 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

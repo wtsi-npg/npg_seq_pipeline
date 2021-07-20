@@ -7,6 +7,8 @@ use Carp;
 use Try::Tiny;
 use Graph::Directed;
 use File::Spec::Functions qw{catfile splitpath};
+use File::Basename;
+use File::Copy;
 use Class::Load qw{load_class};
 use File::Slurp;
 use JSON qw{from_json};
@@ -39,62 +41,93 @@ npg_pipeline::pluggable
 
 =head1 SUBROUTINES/METHODS
 
+=cut
+
 ##################################################################
-################## Public attributes #############################
+################## Public attributes, ############################
 ###### which will be available as script arguments ###############
-########## unless their metaclass is NoGetopt ####################
+########## unless their metaclass is NoGetopt, ###################
+##################################################################
+################## and public methods ############################
 ##################################################################
 
-############## Boolean flags #####################################
+############## All about the main pipeline log ###################
 
-=head2 spider
+=head2 log_file_name
 
-Toggles spider (creating/reusing cached LIMs data), true by default
-
-=cut
-
-has q{spider} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  default       => 1,
-  documentation => q{Toggles creating/reusing cached LIMs data, true by default},
-);
-
-=head2 executor_type
-
-Executor type. By default commands will be submitted to LSF.
-Can be specified in the general configuration file.
+The name for the log file of this pipeline script.
 
 =cut
 
-has q{executor_type} => (
-  isa           => q{Str},
-  is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{Executor type, defaults to lsf},
+has q{log_file_name} => (
+  isa        => q{Str},
+  is         => q{ro},
+  lazy_build => 1,
+  documentation =>
+  q{The name for the log file of this pipeline script.},
 );
-sub _build_executor_type {
+sub _build_log_file_name {
   my $self = shift;
-  my $et = $self->general_values_conf()->{'executor_type'};
-  return $et ? $et : $DEFAULT_EXECUTOR_TYPE;
+
+  my $name;
+  if ($self->_has_log_file_path) {
+    ($name) = fileparse $self->log_file_path;
+  } else {
+    $name = $self->_output_file_name_root() . q{.log};
+  }
+
+  return $name;
 }
 
-=head2 execute
+=head2 log_file_dir
 
-A boolean flag turning on/off transferring the graph to the executor,
-true by default.
+The directory for the log file of this pipeline script.
 
 =cut
 
-has q{execute} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  default       => 1,
+has q{log_file_dir} => (
+  isa        => q{Str},
+  is         => q{ro},
+  lazy_build => 1,
   documentation =>
-  q{A flag turning on/off execution, true by default},
+  q{The directory for the log file of this pipeline script.},
 );
+sub _build_log_file_dir {
+  my $self = shift;
 
-############## End of flags #####################################
+  my $dir;
+  if ($self->_has_log_file_path) {
+    my $name;
+    ($name, $dir) = fileparse $self->log_file_path;
+    $dir =~ s{/\Z}{}smx;
+  } else {
+    $dir = $self->runfolder_path();
+  }
+
+  return $dir;
+}
+
+=head2 log_file_path
+
+The full path for the log file of this pipeline script.
+Computed from log_file_dir and log_file_name.
+
+=cut
+
+has q{log_file_path} => (
+  isa           => q{Str},
+  is            => q{ro},
+  predicate     => '_has_log_file_path',
+  lazy_build    => 1,
+  documentation =>
+  q{The full path for the log file of this pipeline script.},
+);
+sub _build_log_file_path {
+  my $self = shift;
+  return catfile($self->log_file_dir(), $self->log_file_name);
+}
+
+############## All about functions ###############################
 
 =head2 function_order
 
@@ -114,7 +147,7 @@ has q{function_order} => (
 
 =head2 function_list
 
-A lazy-build attribute with a wrapper around it. Is set to an 
+A lazy-build attribute with a wrapper around it. Is set to an
 absolute path to a JSON file where the function graph is defined.
 Can be supplied as a hint for finding the file, will be resolved to
 an absolute path.
@@ -123,6 +156,10 @@ For example, the following works for archival pipeline
 
  npg_pipeline::pluggable->new_with_options(
    function_list => 'post_qc_review');
+
+Normally specified implicitly in the pipeline
+invocation, e.g. ./bin/npg_pipeline_central causes the loading of
+./data/config_files/function_list_central.json
 
 =cut
 
@@ -174,6 +211,9 @@ around q{function_list} => sub {
 
 A Graph::Directed object representing the functions to be run
 as a directed acyclic graph (DAG).
+Each vertex has properties id, label and resources.
+Populated from the provided JGF file via $self->function_order or
+$self->_function_list_conf
 
 =cut
 
@@ -189,13 +229,14 @@ sub _build_function_graph {
 
   my $g = Graph::Directed->new();
   my @nodes;
+  my $jgraph = $self->_function_list_conf;
 
   if ($self->has_function_order && @{$self->function_order}) {
-
     my @functions = @{$self->function_order};
     $self->info(q{Function order is set by the user: } .
                 join q[, ], @functions);
 
+    # Infer start and end of graph
     unshift @functions, $SUSPENDED_START_FUNCTION;
     push @functions, $END_FUNCTION;
     $self->info(q{Function order to be executed: } .
@@ -205,6 +246,7 @@ sub _build_function_graph {
     my $previous = 0;
     my $total = scalar @functions;
 
+    # Infer edges to connect the provided list of functions in order
     while ($current < $total) {
       if ($current != $previous) {
         $g->add_edge($functions[$previous], $functions[$current]);
@@ -212,12 +254,30 @@ sub _build_function_graph {
       }
       $current++;
     }
-    @nodes = map { {'id' => $_, 'label' => $_} } @functions;
+    # Infer resource properties by reading the related graph definition
+    foreach my $function_name (@functions) {
+      # Find the named node in the graph config
+      my ($function_def) = grep {
+        $_->{label} eq $function_name
+      } @{$jgraph->{graph}{nodes}};
+      if (! $function_def) {
+        $self->logcroak(
+          sprintf 'Function %s cannot be found in the graph %s',
+            $function_name,
+            $self->function_list
+        );
+      }
+      # and create a new graph node with the properties
+      push @nodes, {
+        id => $function_name,
+        label => $function_def->{label},
+        metadata => $function_def->{metadata}
+      };
+    }
   } else {
-    my $jgraph = $self->_function_list_conf();
     foreach my $e (@{$jgraph->{'graph'}->{'edges'}}) {
       ($e->{'source'} and $e->{'target'}) or
-	$self->logcroak(q{Both source and target should be defined for an edge});
+        $self->logcroak(q{Both source and target should be defined for an edge});
       $g->add_edge($e->{'source'}, $e->{'target'});
     }
     @nodes = @{$jgraph->{'graph'}->{'nodes'}};
@@ -225,7 +285,7 @@ sub _build_function_graph {
 
   $g->edges()  or $self->logcroak(q{No edges});
   $g->is_dag() or $self->logcroak(q{Graph is not DAG});
-
+  # Add nodes to graph
   foreach my $n ( @nodes ) {
     ($n->{'id'} and $n->{'label'}) or
       $self->logcroak(q{Both id and label should be defined for a node});
@@ -234,6 +294,9 @@ sub _build_function_graph {
       $self->logcroak(qq{Vertex for node $id is missing});
     }
     $g->set_vertex_attribute($id, 'label', $n->{'label'});
+    if (exists $n->{metadata}) {
+      $g->set_vertex_attribute($id, 'resources', $n->{metadata}{resources});
+    }
   }
 
   return $g;
@@ -253,6 +316,42 @@ has q{function_definitions} => (
   default    => sub {return {};},
   metaclass  => q{NoGetopt},
 );
+
+############## All about job execution ###########################
+
+=head2 execute
+
+A boolean flag turning on/off transferring the graph to the executor,
+true by default.
+
+=cut
+
+has q{execute} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 1,
+  documentation =>
+  q{A flag turning on/off execution, true by default},
+);
+
+=head2 executor_type
+
+Executor type. By default commands will be submitted to LSF.
+Can be specified in the general configuration file.
+
+=cut
+
+has q{executor_type} => (
+  isa           => q{Str},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{Executor type, defaults to lsf},
+);
+sub _build_executor_type {
+  my $self = shift;
+  my $et = $self->general_values_conf()->{'executor_type'};
+  return $et ? $et : $DEFAULT_EXECUTOR_TYPE;
+}
 
 =head2 executor
 
@@ -290,6 +389,8 @@ sub _build_executor {
   return $module->new($attrs);
 }
 
+############## Everything else ##################################
+
 =head2 BUILD
 
 Called by Moose at the end of object instantiation.
@@ -303,13 +404,9 @@ sub BUILD {
   return;
 }
 
-##################################################################
-############## Public methods ####################################
-##################################################################
-
 =head2 main
 
- Runs the pipeline.
+Runs the pipeline.
 
 =cut
 
@@ -319,11 +416,14 @@ sub main {
   my $error = q{};
   my $when = q{initializing pipeline};
   try {
+    # Adding new code above this line might have unintended consequences.
+    # Different run folder related paths might not be set correctly yet.
     $self->prepare();
     $when = q{running functions};
     $self->_schedule_functions();
     $when = q{saving definitions};
     $self->_save_function_definitions();
+    $self->_save_product_conf_to_analysis_dir();
     if ($self->execute()) {
       $self->info(sprintf q{***** Definitions will be submitted for execution to %s *****},
                           uc $self->executor_type());
@@ -344,20 +444,37 @@ sub main {
     # this script's log, which might be a file.
     # We currently tie STDERR so output to standard error
     # goes to this script's log file. Hence the need to
-    # untie. Dies not cause an error if STDERR has not been
-    # tied. 
+    # untie. Does not cause an error if STDERR has not been
+    # tied.
     untie *STDERR;
-    croak($error);
   }
+
+  $self->_copy_log_to_analysis_dir();
+
+  $error and croak $error;
+
   return;
 }
 
+=head2 spider
+
+Toggles spider (creating/reusing cached LIMs data), true by default.
+
+=cut
+
+has q{spider} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 1,
+  documentation => q{Toggles creating/reusing cached LIMs data, true by default},
+);
+
 =head2 prepare
 
- Actions that have to be performed by the pipeline before the functions
- can be called, for example, creation of pipeline-specific directories.
- In this module some envronment variables are printed to the log by this
- method, then, if spider functionality is enabled, LIMs data are cached.
+Actions that have to be performed by the pipeline before the functions
+can be called, for example, creation of pipeline-specific directories.
+In this module some envronment variables are printed to the log by this
+method, then, if spider functionality is enabled, LIMs data are cached.
 
 =cut
 
@@ -382,17 +499,6 @@ sub prepare {
     $self->info('Not running spider');
   }
   return;
-}
-
-=head2 log_file_path
-
-Suggested log file full path.
-
-=cut
-
-sub log_file_path {
-  my $self = shift;
-  return catfile($self->runfolder_path(), $self->_log_file_name);
 }
 
 ##################################################################
@@ -444,16 +550,6 @@ sub _build__output_file_name_root {
   # If $self->script_name includes a directory path, change / to _
   $name =~ s{/}{_}gmxs;
   return $name;
-}
-
-has q{_log_file_name} => (
-  isa        => q{Str},
-  is         => q{ro},
-  lazy_build => 1,
-);
-sub _build__log_file_name {
-  my $self = shift;
-  return $self->_output_file_name_root() . q{.log};
 }
 
 has q{_cloned_attributes} => (
@@ -523,7 +619,7 @@ sub _common_attributes {
 }
 
 sub _run_function {
-  my ($self, $function_name) = @_;
+  my ($self, $function_name, $function_id) = @_;
 
   my $implementor = $self->_registry()->get_function_implementor($function_name);
   my $module = join q[::], 'npg_pipeline', 'function', $implementor->{'module'};
@@ -541,18 +637,48 @@ sub _run_function {
   #####
   # Use some function-specific attributes that we received
   # from the registry.
-  #  
+  #
   while (my ($key, $value) = each %{$params}) {
     $attrs->{$key} = $value;
   }
+
+  $attrs->{resource} = $self->_function_resource_requirements($function_id);
 
   #####
   # Instantiate the function implementor object, call on it the
   # method whose name we received from the registry, return
   # the result.
-  #    
+  #
   return $module->new($attrs)->$method_name($self->_pipeline_name);
 }
+
+####
+# Bring in resource requirements that functions need in order to
+# create task definitions
+sub _function_resource_requirements {
+  my ($self, $function_id) = @_;
+  # Extract default properties from graphwide metadata
+  my $jgraph = $self->_function_list_conf;
+
+  if (!exists $jgraph->{graph}{metadata}{default_resources}) {
+    $self->logcroak(
+      'No default resources defined in function graph under /graph/metadata/default_resources'
+    );
+  }
+  my $resource = $jgraph->{graph}{metadata}{default_resources};
+  # and get resource properties for this function invocation
+  my $g = $self->function_graph;
+  my $fn_resource = $g->get_vertex_attribute($function_id, 'resources');
+
+  # merge global defaults with resource spec defaults
+  for my $key (keys %{$resource}) {
+    if (! exists $fn_resource->{default}{$key}) {
+      $fn_resource->{default}{$key} = $resource->{$key};
+    }
+  }
+  return $fn_resource // {};
+}
+
 
 sub _schedule_functions {
   my $self = shift;
@@ -562,13 +688,13 @@ sub _schedule_functions {
   #####
   # Topological ordering of a directed graph is a linear ordering of
   # its vertices such that for every directed edge uv from vertex u
-  # to vertex v, u comes before v in the ordering, see 
+  # to vertex v, u comes before v in the ordering, see
   # https://en.wikipedia.org/wiki/Topological_sorting
   #
   # We need to run some of the functions in the very beginning since
   # they create the analysis directory structure the rest of the job
   # submission code relies on. The graph should be defined in a way
-  # that guarantees that topological sort returns functions in 
+  # that guarantees that topological sort returns functions in
   # correct order.
   #
   my @functions = $g->topological_sort();
@@ -581,7 +707,7 @@ sub _schedule_functions {
       $self->logcroak(qq{No label for vertex $function});
     }
     $self->info(qq{***** Processing $function *****});
-    my $definitions = $self->_run_function($function_name);
+    my $definitions = $self->_run_function($function_name, $function);
     if (!$definitions || !@{$definitions}) {
       $self->logcroak(q{At least one definition should be returned});
     }
@@ -627,9 +753,7 @@ sub _run_spider {
       'id_run'           => $self->id_run,
       'set_env_vars'     => 1,
       'cache_dir_path'   => $self->metadata_cache_dir_path(),
-      'lims_driver_type' => $self->lims_driver_type,
       'id_flowcell_lims' => $self->id_flowcell_lims,
-      'flowcell_barcode' => $self->flowcell_id
     );
     $cache->setup();
     $self->info(join qq[\n], @{$cache->messages});
@@ -637,6 +761,57 @@ sub _run_spider {
     $self->logcroak(qq[Error while spidering: $_]);
   };
 
+  return;
+}
+
+# Attempts to link the pipeline log file to the analysis directory
+sub _copy_log_to_analysis_dir {
+  my ($self) = @_;
+  $self->_tolerant_persist_file_to_analysis_dir(
+    $self->log_file_path, $self->log_file_name
+  );
+  return;
+}
+
+sub _save_product_conf_to_analysis_dir {
+  my ($self) = @_;
+  # First check for unusual file names:
+  my ($filename, $dirs, $suffix) = fileparse(
+    $self->product_conf_file_path,
+    qr/[.][^.]*/xms
+  );
+  if ($filename !~ /product_release/xms) {
+    $filename = 'product_release_'.$filename;
+  }
+  $filename = $filename.'_'.$self->random_string.$suffix;
+
+  $self->_tolerant_persist_file_to_analysis_dir(
+    $self->product_conf_file_path,
+    $filename
+  );
+  return $filename;
+}
+
+# Copies a file to analysis_path, and optionally
+# renames the file in its destination
+# Errors are captured where possible to prevent job resubmission in the
+# automatic pipeline
+sub _tolerant_persist_file_to_analysis_dir {
+  my ($self, $source_file, $override_name) = @_;
+  if (! defined $override_name) {
+    ($override_name) = fileparse $source_file;
+  }
+
+  my $analysis_path = $self->analysis_path;
+  (-e $analysis_path) or return;
+
+  my $target_file = catfile($analysis_path, $override_name);
+
+  $self->info("Creating copy of $source_file into $target_file");
+  my $state = copy $source_file, $target_file;
+  if (!$state) {
+    $self->error("Failed to make a copy of $source_file at $target_file");
+  }
   return;
 }
 
@@ -670,6 +845,10 @@ __END__
 
 =item File::Spec::Functions
 
+=item File::Basename
+
+=item File::Copy
+
 =item Readonly
 
 =item Try:Tiny
@@ -692,12 +871,17 @@ __END__
 
 =head1 AUTHOR
 
-Andy Brown
-Marina Gourtovaia
+=over
+
+=item Andy Brown
+
+=item Marina Gourtovaia
+
+=back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018 Genome Research Ltd
+Copyright (C) 2014,2015,2016,2017,2018,2019,2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
