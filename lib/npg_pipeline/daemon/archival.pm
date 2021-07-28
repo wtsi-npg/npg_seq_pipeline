@@ -36,10 +36,12 @@ sub run {
       } else {
         if ( $self->staging_host_match($run->folder_path_glob) &&
              $self->_can_start_archival() ) {
-          if ($self->run_command($id_run, $self->_generate_command($id_run))) {
-            $self->info();
-            $self->info(qq{Submitted run $id_run for archival});
-            $submitted += 1;
+          if (!$run->is_tag_set('no_auto') && !$run->is_tag_set('no_auto_archive')) {
+            if ($self->run_command($id_run, $self->_generate_command($id_run))) {
+              $self->info();
+              $self->info(qq{Submitted run $id_run for archival});
+              $submitted += 1;
+            }
           }
         }
       }

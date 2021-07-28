@@ -33,6 +33,8 @@ local $ENV{PATH} = join q[:], $temp_directory, $current_dir.'/t/bin', $ENV{PATH}
 
 my $dbic_util = t::dbic_util->new();
 my $schema = $dbic_util->test_schema();
+my $test_run_1235 = $schema->resultset(q[Run])->find(1235);
+$test_run_1235->update_run_status('analysis pending', 'pipeline',);
 my $test_run = $schema->resultset(q[Run])->find(1234);
 $test_run->update_run_status('analysis pending', 'pipeline',);
 is($test_run->current_run_status_description,

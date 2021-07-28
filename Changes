@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - Support no_auto, no_auto_archive and no_auto_analysis tags for daemons
+
 release 60.0.0
 
  - When HiC library type detected in seq_alignment, set appropriate flag values

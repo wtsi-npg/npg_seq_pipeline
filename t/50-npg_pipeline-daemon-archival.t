@@ -171,7 +171,7 @@ subtest 'limiting number of runs being archived' => sub {
   ($rst->description eq $status) or die 'inconsistent test data';
   $rst->update({'date' => DateTime->now()->subtract(hours => 2)});
   $s = $runner->run();
-  is ($s, 1, 'run submitted since the number of runs recently submitted ' .
+  is ($s, 0, 'run submitted since the number of runs recently submitted ' .
              'to archival dropped');
 };
 
