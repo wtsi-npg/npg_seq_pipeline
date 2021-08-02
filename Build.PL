@@ -26,6 +26,7 @@ my $builder = $class->new(
           'Carp'                         => 1.04,
           'Cwd'                          => 0,
           'Class::Load'                  => 0,
+          'Compress::Raw::Bzip2'         => 2.101,
           'Config::Any'                  => 0,
           'Data::Dump'                   => 0,
           'Date::Format'                 => 0,
