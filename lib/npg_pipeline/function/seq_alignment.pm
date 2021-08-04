@@ -293,7 +293,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   # Reference for target alignment will be overridden where gbs_plex exists 
   # and the study is not disable the gbs pipeline in the product release config.
   # In the gbs pipeline any human split will be overridden and alignments will be forced.
-  my $do_gbs_plex = $self->_do_gbs_plex_analysis($self->_has_gbs_plex($dp) && $self->can_run_gbs($dp));
+  my $do_gbs_plex = $self->_do_gbs_plex_analysis(!$is_tag_zero_product && $self->can_run_gbs($dp) && $self->_has_gbs_plex($dp));
 
   my $hs_bwa = $self->is_paired_read ? 'bwa_aln' : 'bwa_aln_se';
   # continue to use the "aln" algorithm from bwa for these older chemistries (where read length <= 100bp)
