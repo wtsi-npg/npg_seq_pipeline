@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 23;
+use Test::More tests => 24;
 use Test::Exception;
 use Cwd;
 use List::MoreUtils qw{any};
@@ -187,6 +187,26 @@ subtest 'propagate failure of the command to run to the caller' => sub {
   $id_run = 33;
   is ($runner->run_command($id_run, $command), 0, 'command failed');
   ok (!$runner->seen->{$id_run}, 'run not cached');
+};
+
+subtest 'no_auto tag' => sub {
+  plan tests => 1;
+  local $ENV{PATH} = join q[:], $temp_directory, $current_dir.'/t/bin/red', $ENV{PATH};
+
+  $test_run = $schema->resultset(q[Run])->find(1234);
+  $test_run->update_run_status('archival pending', 'pipeline',);
+  $test_run = $schema->resultset(q[Run])->find(1236);
+  $test_run->update_run_status('archival pending', 'pipeline',);
+  $test_run = $schema->resultset(q[Run])->find(1237);
+  $test_run->update_run_status('archival pending', 'pipeline',);
+
+  my $runner = test_archival_runner->new(
+    pipeline_script_name    => '/bin/true',
+    npg_tracking_schema     => $schema
+  );
+
+  $runner->run();
+  is (join(q[ ],sort {$a <=> $b} keys %{$runner->seen}), '1234', 'correct list of seen runs');
 };
 
 1;

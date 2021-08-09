@@ -55,7 +55,33 @@
   id_run_pair: 0
   is_paired: 0
   priority: 1
-  folder_name: 123456_IL2_1234_A_80B5TABXX 
+  folder_name: 123456_IL2_1235_A_80B5TABXX 
+  folder_path_glob: /{export,nfs}/sf33/ILorHSany_sf33/*/
+  team: '"RAD"'
+- actual_cycle_count: 57
+  batch_id: 55
+  expected_cycle_count: 66
+  flowcell_id: dummy_flowcell1
+  id_instrument: 48
+  id_instrument_format: 7
+  id_run: 1236
+  id_run_pair: 0
+  is_paired: 0
+  priority: 1
+  folder_name: 123456_IL2_1236_A_80B5TABXX 
+  folder_path_glob: /{export,nfs}/sf33/ILorHSany_sf33/*/
+  team: '"RAD"'
+- actual_cycle_count: 57
+  batch_id: 55
+  expected_cycle_count: 66
+  flowcell_id: dummy_flowcell1
+  id_instrument: 48
+  id_instrument_format: 7
+  id_run: 1237
+  id_run_pair: 0
+  is_paired: 0
+  priority: 1
+  folder_name: 123456_IL2_1237_A_80B5TABXX 
   folder_path_glob: /{export,nfs}/sf33/ILorHSany_sf33/*/
   team: '"RAD"'
 - actual_cycle_count: 120
