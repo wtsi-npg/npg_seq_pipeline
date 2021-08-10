@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 38;
+use Test::More tests => 34;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use npg_pipeline::cache::barcodes2;
@@ -11,10 +11,10 @@ use_ok(q{npg_pipeline::cache::barcodes2});
 my $I5_TAG_PAD = q(AC);
 
 #padding for i5 opposite
-my $I5_TAG_OPP_PAD = q();
+my $I5_TAG_OPP_PAD = q(GT);
 
 #i7 pad
-my $I7_TAG_PAD = q(AT);    # check padding is correct
+my $I7_TAG_PAD = q(ATCTC);    # check padding is correct
 
 # mock lims data #
 # single sample, no control
@@ -28,7 +28,7 @@ my $lims_data1 = {
 
 #single sample , control
 my $lims_data2 = {
-    888 => { phix_control => 1, i5_expected_seq => 'ACAACGCA' },
+    888 => { phix_control => 1, i7_expected_seq => 'ACAACGCAATC' },
     1   => {
         phix_control    => 0,
         i5_expected_seq => 'CTCCAGGC',
@@ -88,7 +88,7 @@ my $lims_data3 = {
 
 # copy of lims_data3 with a control sequence
 my $lims_data4 = {
-    888 => { phix_control => 1, i5_expected_seq => 'ACAACGCA' },
+    888 => { phix_control => 1, i7_expected_seq => 'ACAACGCAATC' },
     1   => {
         phix_control    => 0,
         i5_expected_seq => 'CTCCAG',
@@ -162,7 +162,7 @@ my $lims_data5 = {
 
 # just 6 and 8's with control
 my $lims_data6 = {
-    888 => { phix_control => 1, i5_expected_seq => 'ACAACGCA' },
+    888 => { phix_control => 1, i7_expected_seq => 'ACAACGCAATC' },
     1   => {
         phix_control    => 0,
         i5_expected_seq => 'CTCCAG',
@@ -185,77 +185,40 @@ my $lims_data6 = {
     },
 };
 
-# common tags, have no way of distinguishing sample - should fail
-my $lims_data_fail1 = {
+# just 6 and 8's with dual-index control
+my $lims_data7 = {
     888 => {
-        phix_control    => 1,
-        i5_expected_seq => 'ACGTACGT',
-        i7_expected_seq => 'ACGTACGT'
+        phix_control => 1,
+        i7_expected_seq => 'TGTGCAGC',
+        i7_expected_seq => 'ACTGATGT'
     },
-    1 => {
+    1   => {
         phix_control    => 0,
-        i5_expected_seq => 'ACGTACGT',
-        i7_expected_seq => 'ACGTACGT'
-    }
-};
-
-# test data for common suffixes
-my $lims_data_cmn_sffx_after_trunc = {
-    888 => {
-        phix_control    => 1,
-        i5_expected_seq => 'ACGTCCTA',
-        i7_expected_seq => 'AAATGG'
-    },
-    1 => {
-        phix_control    => 0,
-        i5_expected_seq => 'ACGTCCAT',
-        i7_expected_seq => 'AAACGG'
+        i5_expected_seq => 'CTCCAG',
+        i7_expected_seq => 'GCATGA'
     },
     2 => {
         phix_control    => 0,
-        i5_expected_seq => 'ACGTCCTT',
-        i7_expected_seq => 'AAACGG'
+        i5_expected_seq => 'GATTAG',
+        i7_expected_seq => 'ACAAGGAC'
     },
     3 => {
         phix_control    => 0,
-        i5_expected_seq => 'ACGTCCGT',
-        i7_expected_seq => 'AAACGG'
-    }
+        i5_expected_seq => 'TCCTATCT',
+        i7_expected_seq => 'TCCGAC'
+    },
+    4 => {
+        phix_control    => 0,
+        i5_expected_seq => 'TTTGCTCG',
+        i7_expected_seq => 'CCCATGAC'
+    },
 };
 
-# lims data to when i5 and i7 is padded (with AC and AT respectively) all reads have a common suffix of length 3
-# When read length is 8 for both i5 and i7
-
-my $lims_data_cmn_sffx_after_pad_fail =
-  {    # change first 3 of lims data see if it fails
+my $lims_data_cmn_sffx_after_pad = {
     888 => {
         phix_control    => 1,
-        i5_expected_seq => 'TTTTGGAC',
-        i7_expected_seq => 'CCCTGG'
-    },
-    1 => {
-        phix_control    => 0,
-        i5_expected_seq => 'TTTGGGAC',
-        i7_expected_seq => 'CCCGGGAT'
-    },
-    2 => {
-        phix_control    => 0,
-        i5_expected_seq => 'TATGGG',
-        i7_expected_seq => 'CACGGG'
-    },
-    3 => {
-        phix_control    => 0,
-        i5_expected_seq => 'ATAGGG',
-        i7_expected_seq => 'ACAGGG'
-    }
-  };
-
-my $lims_data_cmn_sffx_after_pad =
-  {    # change first 3 of lims data see if it fails
-    888 => {
-        phix_control    => 1,
-        i5_expected_seq => 'CCCTGGAC',
-        i7_expected_seq => 'TTTTGG'
+        i5_expected_seq => 'ACTGATGT',
+        i7_expected_seq => 'TGTGCAGC'
     },
     1 => {
         phix_control    => 0,
@@ -275,7 +238,6 @@ my $lims_data_cmn_sffx_after_pad =
   };
 
 #testing truncation#
-
 my $lane = npg_pipeline::cache::barcodes2->new(
 
 # got from lims
@@ -312,13 +274,13 @@ is_deeply(
 $lane = npg_pipeline::cache::barcodes2->new(
     lims_data => $lims_data2,
 
-    i5_read_length => 6,
-    i7_read_length => 8,
+    i7_read_length => 6,
+    i5_read_length => 8,
     i5_opposite    => 0,
 );
 
-$i5_reads = { 888 => 'ACAACGCA', 1 => 'CTCCAGGC' };
-$i7_reads = { 1   => 'GCATGATA' };
+$i7_reads = { 888 => 'ACAACGCA', 1 => 'CTCCAGGC' };
+$i5_reads = { 1   => 'GCATGATA' };
 
 $deplexed_i5 =
   npg_pipeline::cache::barcodes2::_truncate_and_pad( $i5_reads, 888,
@@ -328,14 +290,14 @@ $deplexed_i7 =
     $lane->{i7_read_length}, $I7_TAG_PAD );
 
 is_deeply(
-    $deplexed_i5,
+    $deplexed_i7,
     { 1 => 'CTCCAG', 888 => 'ACAACG' },
-    'Two i5, one control.truncated and padded correctly.'
+    'Two i7, one control.truncated and padded correctly.'
 );
 is_deeply(
-    $deplexed_i7,
+    $deplexed_i5,
     { 1 => 'GCATGATA' },
-    'Single i7, no control.truncated and padded correctly. No padding necessary'
+    'Single i5, no control.truncated and padded correctly. No padding necessary'
 );
 
 #multiple sample no control, different lengths
@@ -424,8 +386,7 @@ $i5_reads = {
     6   => 'TACGGTAG',
     7   => 'GCCATTCCTTGA',
     8   => 'TGGGTTTGTGTA',
-    9   => 'AGATCGTCCAAG',
-    888 => 'ACAACGCA'
+    9   => 'AGATCGTCCAAG'
 };
 $i7_reads = {
     1 => 'GCATGA',
@@ -436,7 +397,8 @@ $i7_reads = {
     6 => 'TCGATCCATGAA',
     7 => 'CTCCCA',
     8 => 'ATGGTTTA',
-    9 => 'CAGGTACAGGTA'
+    9 => 'CAGGTACAGGTA',
+    888 => 'ACAACGCAATC'
 };
 
 $deplexed_i5 =
@@ -458,7 +420,6 @@ is_deeply(
         7   => 'GCCATT',
         8   => 'TGGGTT',
         9   => 'AGATCG',
-        888 => 'ACAACG'
     },
 'Multiple i5, with control. Truncated and padded correctly (no padding necessary).'
 );
@@ -473,7 +434,8 @@ is_deeply(
         6 => 'TCGATCCA',
         7 => 'CTCCCAAT',
         8 => 'ATGGTTTA',
-        9 => 'CAGGTACA'
+        9 => 'CAGGTACA',
+        888 => 'ACAACGCA'
     },
     'Multiple i7, with control. Truncated and padded correctly'
 );
@@ -496,8 +458,7 @@ $i5_reads = {
     6   => 'TACGGTAG',
     7   => 'GCCATTCCTTGA',
     8   => 'TGGGTTTGTGTA',
-    9   => 'AGATCGTCCAAG',
-    888 => 'ACAACGCA'
+    9   => 'AGATCGTCCAAG'
 };
 $i7_reads = {
     1 => 'GCATGA',
@@ -508,7 +469,8 @@ $i7_reads = {
     6 => 'TCGATCCATGAA',
     7 => 'CTCCCA',
     8 => 'ATGGTTTA',
-    9 => 'CAGGTACAGGTA'
+    9 => 'CAGGTACAGGTA',
+    888 => 'ACAACGCAATC'
 };
 
 $deplexed_i5 =
@@ -527,10 +489,9 @@ is_deeply(
         6   => 'TACGGT',
         7   => 'GCCATT',
         8   => 'TGGGTT',
-        9   => 'AGATCG',
-        888 => 'ACAACG'
+        9   => 'AGATCG'
     },
-'Multiple i5, with control. Truncated and padded correctly (no padding necessary). i5 opposite.'
+'Multiple i5, no control. Truncated and padded correctly (no padding necessary). i5 opposite.'
 );
 $deplexed_i7 =
   npg_pipeline::cache::barcodes2::_truncate_and_pad( $i7_reads, 888,
@@ -548,9 +509,10 @@ is_deeply(
         '7' => 'CTCCCAAT',
         '8' => 'ATGGTTTA',
         '8' => 'ATGGTTTA',
-        '9' => 'CAGGTACA'
+        '9' => 'CAGGTACA',
+        '888' => 'ACAACGCA'
     },
-    'Multiple i7. no control. Truncated and padded correctly.'
+    'Multiple i7. with control. Truncated and padded correctly.'
 );
 
 # checking when read length is 8 for i5 and 6 for i7 with i5 opposite
@@ -585,13 +547,13 @@ is_deeply(
 $lane = npg_pipeline::cache::barcodes2->new(
     lims_data => $lims_data5,
 
-    i5_read_length => 8,
+    i5_read_length => 10,
     i7_read_length => 6,
     i5_opposite    => 1,
 );
 
-$i5_reads = { 1 => 'CTCCAG', 2 => 'GATTAG', 3 => 'TCCTATCT', 4 => 'TTTGCTCG' };
-$i7_reads = { 1 => 'GCATGA', 2 => 'ACAAGGAC', 3 => 'TCCGAC', 4 => 'CCCATGAC' };
+$i5_reads = { 1 => 'CTCCAG', 2 => 'GATTAG', 3 => 'TCCTATCT', 4 => 'TTTGCTCGGT' };
+$i7_reads = { 1 => 'GCATGA', 2 => 'ACAAGGAC', 3 => 'TCCGAC', 4 => 'CCCATGACAT' };
 
 throws_ok {
     npg_pipeline::cache::barcodes2::_truncate_and_pad( $i5_reads, '',
@@ -601,12 +563,42 @@ throws_ok {
 qr/Cannot extend for more bases than in padding sequence/,
   'Throws when padding needed is longer than length of padding sequence';
 
-$deplexed_i7 = npg_pipeline::cache::barcodes2::_truncate_and_pad( $i7_reads, '',
+#i5 opposite with lims data 6
+$lane = npg_pipeline::cache::barcodes2->new(
+    lims_data => $lims_data6,
+
+    i5_read_length => 10,
+    i7_read_length => 6,
+    i5_opposite    => 1,
+);
+
+$i5_reads = {
+    1   => 'CTCCAG',
+    2   => 'GATTAG',
+    3   => 'TCCTATCT',
+    4   => 'TTTGCTCG'
+};
+$i7_reads = {
+    888 => 'ACAACGCAATC',
+    1   => 'GCATGA',
+    2   => 'ACAAGGAC',
+    3   => 'TCCGAC',
+    4   => 'CCCATGAC' };
+
+$deplexed_i5 = npg_pipeline::cache::barcodes2::_truncate_and_pad( $i7_reads, 888,
+    $lane->{i5_read_length}, $I5_TAG_OPP_PAD );
+is_deeply(
+    $deplexed_i5,
+    { 888 => 'ACAACGCA', 1 => 'GCATGAGT', 2 => 'ACAAGGAC', 3 => 'TCCGACGT', 4 => 'CCCATGAC' },
+'Multiple i5. Truncated and padded correctly'
+);
+
+$deplexed_i7 = npg_pipeline::cache::barcodes2::_truncate_and_pad( $i7_reads, 888,
     $lane->{i7_read_length}, $I7_TAG_PAD );
 is_deeply(
     $deplexed_i7,
-    { 1 => 'GCATGA', 2 => 'ACAAGG', 3 => 'TCCGAC', 4 => 'CCCATG' },
-'Multiple i7. no control. Truncated and padded correctly. (no padding needed).'
+    { 888 => 'ACAACG', 1 => 'GCATGA', 2 => 'ACAAGG', 3 => 'TCCGAC', 4 => 'CCCATG' },
+'Multiple i7. Truncated and padded correctly. (no padding needed).'
 );
 
 #lims_data6
@@ -619,70 +611,34 @@ $lane = npg_pipeline::cache::barcodes2->new(
 );
 
 $i5_reads = {
-    888 => 'ACAACGCA',
     1   => 'CTCCAG',
     2   => 'GATTAG',
     3   => 'TCCTATCT',
     4   => 'TTTGCTCG'
 };
-$i7_reads = { 1 => 'GCATGA', 2 => 'ACAAGGAC', 3 => 'TCCGAC', 4 => 'CCCATGAC' };
+$i7_reads = { 888 => 'ACAACGCAATC', 1 => 'GCATGA', 2 => 'ACAAGGAC', 3 => 'TCCGAC', 4 => 'CCCATGAC' };
 
 $deplexed_i5 =
   npg_pipeline::cache::barcodes2::_truncate_and_pad( $i5_reads, 888,
     $lane->{i5_read_length}, $I5_TAG_PAD );
-$deplexed_i7 =
-  npg_pipeline::cache::barcodes2::_truncate_and_pad( $i7_reads, 888,
-    $lane->{i7_read_length}, $I7_TAG_PAD );
 
 is_deeply(
     $deplexed_i5,
     {
-        888 => 'ACAACGCA',
         1   => 'CTCCAGAC',
         2   => 'GATTAGAC',
         3   => 'TCCTATCT',
         4   => 'TTTGCTCG'
     },
-'Multiple i5. With control. Truncated and padded correctly. i5_read_length 8.'
+'Multiple i5. No control. Truncated and padded correctly. i5_read_length 8.'
 );
-is_deeply(
-    $deplexed_i7,
-    { 1 => 'GCATGA', 2 => 'ACAAGG', 3 => 'TCCGAC', 4 => 'CCCATG' },
-'Multiple i7. no control. Truncated and padded correctly. (no padding needed).'
-);
-
-#i5 opposite with lims data 6
-$lane = npg_pipeline::cache::barcodes2->new(
-    lims_data => $lims_data6,
-
-    i5_read_length => 8,
-    i7_read_length => 6,
-    i5_opposite    => 1,
-);
-
-$i5_reads = {
-    888 => 'ACAACGCA',
-    1   => 'CTCCAG',
-    2   => 'GATTAG',
-    3   => 'TCCTATCT',
-    4   => 'TTTGCTCG'
-};
-$i7_reads = { 1 => 'GCATGA', 2 => 'ACAAGGAC', 3 => 'TCCGAC', 4 => 'CCCATGAC' };
-
-throws_ok {
-    npg_pipeline::cache::barcodes2::_truncate_and_pad( $i5_reads, 888,
-        $lane->{i5_read_length},
-        $I5_TAG_OPP_PAD )
-}
-qr/Cannot extend for more bases than in padding sequence/,
-  'Throws when padding needed is longer than length of padding sequence';
 
 $deplexed_i7 =
   npg_pipeline::cache::barcodes2::_truncate_and_pad( $i7_reads, 888,
     $lane->{i7_read_length}, $I7_TAG_PAD );
 is_deeply(
     $deplexed_i7,
-    { 1 => 'GCATGA', 2 => 'ACAAGG', 3 => 'TCCGAC', 4 => 'CCCATG' },
+    { 888 => 'ACAACG', 1 => 'GCATGA', 2 => 'ACAAGG', 3 => 'TCCGAC', 4 => 'CCCATG' },
 'Multiple i7. no control. Truncated and padded correctly (no padding neccesary)'
 );
 
@@ -692,21 +648,18 @@ my $common_suffix_1c = {
     1   => 'ACGTAA'
 };
 
-throws_ok {
+$deplexed_i7 =
     npg_pipeline::cache::barcodes2::_remove_common_suffixes( $common_suffix_1c,
-        888 )
-}
-qr/Only one non-control seq/,
-  'Throws when trying to remove common suffix when only one seq available';
+        888 );
+is_deeply($deplexed_i7, $common_suffix_1c,
+'One control and one non-control seq no common suffix removed');
 
 my $common_suffix_1 = { 1 => 'ACGTAA' };
 
-throws_ok {
-    npg_pipeline::cache::barcodes2::_remove_common_suffixes( $common_suffix_1,
-        "" )
-}
-qr/Only one non-control seq/,
-  'Throws when trying to remove common suffix when only one seq available';
+$deplexed_i7 =
+    npg_pipeline::cache::barcodes2::_remove_common_suffixes( $common_suffix_1);
+is_deeply($deplexed_i7, $common_suffix_1,
+'No control and one non-control seq no common suffix removed');
 
 my $common_suffix_control = {
     888 => 'ACGTTCAG',
@@ -742,77 +695,51 @@ is_deeply(
     'Common suffix of CCAG is removed from all. No control.'
 );
 
-my $common_suffix_no_control_all_same = {
+my $common_suffix_all_same = {
     1 => 'AAACCCAG',
     2 => 'AAACCCAG',
     3 => 'AAACCCAG',
     4 => 'AAACCCAG',
 };
-throws_ok {
-    npg_pipeline::cache::barcodes2::_remove_common_suffixes(
-        $common_suffix_no_control_all_same, 888 )
-}
-qr/Common tags - have no way of distinguishing sample/,
-  'Throws when no control tag and tags all have the same sequence';
-
-my $common_suffix_control_all_same = {
-    888 => 'ACGTACTT',
-    1   => 'ACGTACGT',
-    2   => 'ACGTACGT',
-};
-
-throws_ok {
-    npg_pipeline::cache::barcodes2::_remove_common_suffixes(
-        $common_suffix_control_all_same, 888 )
-}
-qr/Common tags - have no way of distinguishing sample/,
-  'Throws when control tag exists and all tags have the same sequence';
-
-my $common_suffix_control_two_same = {
-    888 => 'ACGTACTT',
-    1   => 'ACGTACGT',
-    2   => 'ACGTACGT',
-    3   => 'GATCAGAT',
-    4   => 'TATATATA',
-};
-
-throws_ok {
-    npg_pipeline::cache::barcodes2::_remove_common_suffixes(
-        $common_suffix_control_two_same, 888 )
-}
-qr/Common tags - have no way of distinguishing sample/,
-  'Throws with control tag and two non-control tags have the same sequence';
+my $removed_suffix_seq_all_same =
+  npg_pipeline::cache::barcodes2::_remove_common_suffixes(
+    $common_suffix_all_same, "" );
+is_deeply(
+    $removed_suffix_seq_all_same,
+    { 1 => '', 2 => '', 3 => '', 4 => '' },
+    'Common suffix of AAACCCAG is removed from all. No control.'
+);
 
 #testing whole run
-$lane = npg_pipeline::cache::barcodes2->new(
+lives_ok {
+  $lane = npg_pipeline::cache::barcodes2->new(
     lims_data => $lims_data1,
 
     i5_read_length => 8,
     i7_read_length => 6,
     i5_opposite    => 0,
-);
+  );
+} q{only one sample no control ok};
 
-throws_ok { $lane->run() } qr/Only one non-control seq/,
-  'Throws run when only one non-control sequence';
-
-$lane = npg_pipeline::cache::barcodes2->new(
+lives_ok {
+  $lane = npg_pipeline::cache::barcodes2->new(
     lims_data => $lims_data2,
 
-    i5_read_length => 6,
-    i7_read_length => 8,
+    i5_read_length => 8,
+    i7_read_length => 6,
     i5_opposite    => 0,
-);
+  );
+} q{only one sample control ok};
 
-throws_ok { $lane->run() } qr/Only one non-control seq/,
-  'Throws run when only one non-control sequence';
-
-$lane = npg_pipeline::cache::barcodes2->new(
+lives_ok {
+  $lane = npg_pipeline::cache::barcodes2->new(
     lims_data => $lims_data3,
 
     i5_read_length => 6,
     i7_read_length => 8,
     i5_opposite    => 0,
-);
+  );
+} q{multiple samples no control ok};
 
 my $expected_deplexed_reads = {
     '1' => {
@@ -876,53 +803,54 @@ $lane = npg_pipeline::cache::barcodes2->new(
 
 $expected_deplexed_reads = {
     '1' => {
+        'phix_control' => 0,
         'i5_read'      => 'CTCCAG',
         'i7_read'      => 'GCATGAAT',
-        'phix_control' => 0
     },
     '2' => {
-        'i5_read'      => 'GATTAG',
         'phix_control' => 0,
-        'i7_read'      => 'ACAAGGAC'
+        'i5_read'      => 'GATTAG',
+        'i7_read'      => 'ACAAGGAC',
     },
     '3' => {
         'phix_control' => 0,
+        'i5_read'      => 'ACGCCG',
         'i7_read'      => 'GATGCCGG',
-        'i5_read'      => 'ACGCCG'
     },
     '4' => {
+        'phix_control' => 0,
         'i5_read'      => 'TCCTAT',
         'i7_read'      => 'TCCGACAT',
-        'phix_control' => 0
     },
     '5' => {
+        'phix_control' => 0,
         'i5_read'      => 'TTTGCT',
         'i7_read'      => 'CCCATGAC',
-        'phix_control' => 0
     },
     '6' => {
-        'i7_read'      => 'TCGATCCA',
         'phix_control' => 0,
         'i5_read'      => 'TACGGT',
+        'i7_read'      => 'TCGATCCA',
     },
     '7' => {
-        'i5_read'      => 'GCCATT',
         'phix_control' => 0,
-        'i7_read'      => 'CTCCCAAT'
+        'i5_read'      => 'GCCATT',
+        'i7_read'      => 'CTCCCAAT',
     },
     '8' => {
         'phix_control' => 0,
+        'i5_read'      => 'TGGGTT',
         'i7_read'      => 'ATGGTTTA',
-        'i5_read'      => 'TGGGTT'
     },
     '9' => {
         'phix_control' => 0,
+        'i5_read'      => 'AGATCG',
         'i7_read'      => 'CAGGTACA',
-        'i5_read'      => 'AGATCG'
     },
     '888' => {
         'phix_control' => 1,
-        'i5_read'      => 'ACAACG'
+        'i5_read'      => 'TCTTTC',
+        'i7_read'      => 'ACAACGCA',
     }
 };
 
@@ -940,24 +868,24 @@ $lane = npg_pipeline::cache::barcodes2->new(
 
 $expected_deplexed_reads = {
     '1' => {
+        'phix_control' => 0,
         'i7_read'      => 'GCATGAAT',
         'i5_read'      => 'CTCCAG',
-        'phix_control' => 0
     },
     '2' => {
         'phix_control' => 0,
         'i5_read'      => 'GATTAG',
-        'i7_read'      => 'ACAAGGAC'
+        'i7_read'      => 'ACAAGGAC',
     },
     '3' => {
-        'i5_read'      => 'ACGCCG',
         'phix_control' => 0,
-        'i7_read'      => 'GATGCCGG'
+        'i5_read'      => 'ACGCCG',
+        'i7_read'      => 'GATGCCGG',
     },
     '4' => {
+        'phix_control' => 0,
         'i7_read'      => 'TCCGACAT',
         'i5_read'      => 'TCCTAT',
-        'phix_control' => 0
     },
     '5' => {
         'phix_control' => 0,
@@ -965,28 +893,29 @@ $expected_deplexed_reads = {
         'i7_read'      => 'CCCATGAC'
     },
     '6' => {
-        'i7_read'      => 'TCGATCCA',
         'phix_control' => 0,
-        'i5_read'      => 'TACGGT'
+        'i5_read'      => 'TACGGT',
+        'i7_read'      => 'TCGATCCA',
     },
     '7' => {
-        'i7_read'      => 'CTCCCAAT',
         'phix_control' => 0,
-        'i5_read'      => 'GCCATT'
+        'i5_read'      => 'GCCATT',
+        'i7_read'      => 'CTCCCAAT',
     },
     '8' => {
-        'i5_read'      => 'TGGGTT',
         'phix_control' => 0,
-        'i7_read'      => 'ATGGTTTA'
+        'i5_read'      => 'TGGGTT',
+        'i7_read'      => 'ATGGTTTA',
     },
     '9' => {
         'phix_control' => 0,
         'i5_read'      => 'AGATCG',
-        'i7_read'      => 'CAGGTACA'
+        'i7_read'      => 'CAGGTACA',
     },
     '888' => {
         'phix_control' => 1,
-        'i5_read'      => 'ACAACG'
+        'i5_read'      => 'AGATCT',
+        'i7_read'      => 'ACAACGCA',
     }
 };
 
@@ -1066,9 +995,9 @@ is_deeply( $deplexed_reads, $expected_deplexed_reads,
     'whole run on lims data with i5 padding' );
 
 $lane = npg_pipeline::cache::barcodes2->new(
-    lims_data => $lims_data5,
+    lims_data => $lims_data4,
 
-    i5_read_length => 8,
+    i5_read_length => 10,
     i7_read_length => 6,
     i5_opposite    => 1,
 );
@@ -1106,7 +1035,8 @@ $expected_deplexed_reads = {
         'i5_read'      => 'TTTGCT'
     },
     '888' => {
-        'i5_read'      => 'ACAACG',
+        'i7_read'      => 'ACAACGCA',
+        'i5_read'      => 'TCTTTC',
         'phix_control' => 1
     },
 };
@@ -1114,32 +1044,6 @@ $expected_deplexed_reads = {
 $deplexed_reads = $lane->run();
 is_deeply( $deplexed_reads, $expected_deplexed_reads,
     'whole run on lims data with i7 padding' );
-
-# devise a test where truncation, padding and removing of suffix is needed...
-
-$lane = npg_pipeline::cache::barcodes2->new(
-    lims_data => $lims_data_cmn_sffx_after_trunc,
-
-    i5_read_length => 6,
-    i7_read_length => 8,
-    i5_opposite    => 0,
-);
-
-throws_ok { $lane->run() }
-qr/Common tags - have no way of distinguishing sample/,
-  'whole run croaks when all reads are the same after truncation';
-
-$lane = npg_pipeline::cache::barcodes2->new(
-    lims_data => $lims_data_cmn_sffx_after_pad_fail,
-
-    i5_read_length => 8,
-    i7_read_length => 8,
-    i5_opposite    => 0,
-);
-
-throws_ok { $lane->run() }
-qr/After removing common suffix, control has a matching real sample/,
-'Throws run after removing suffixes if the control read matches a real sample ';
 
 $lane = npg_pipeline::cache::barcodes2->new(
     lims_data => $lims_data_cmn_sffx_after_pad,
@@ -1166,8 +1070,8 @@ $expected_deplexed_reads = {
         'phix_control' => 0
     },
     '888' => {
-        'i5_read'      => 'CCC',
-        'i7_read'      => 'TTT',
+        'i5_read'      => 'ACT',
+        'i7_read'      => 'TGT',
         'phix_control' => 1
     },
 };
