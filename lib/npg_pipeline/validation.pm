@@ -127,7 +127,8 @@ has q{ignore_autoqc} => (
   isa           => q{Bool},
   is            => q{ro},
   documentation =>
-  q{Toggles ignoring mismatch in number/attribution of autoqc results, false by default},
+  q{Toggles ignoring mismatch in number/attribution of autoqc results, } .
+  q{false by default},
 );
 
 =head2 ignore_irods
@@ -200,13 +201,11 @@ has q{+no_s3_archival} => (
   q{Toggles an option to check for data in s3, false by default},
 );
 
-############## Other public attributes #####################################
-
+############## Other public attributes ###########################
 
 #####
-# Amend inherited attributes which we do not want to show up as scripts' arguments.
-# This is in addition to what is done in the parent class.
-#
+# Amend inherited attributes which we do not want to show up as
+# scripts' arguments. This is in addition to what is done in the parent class.
 has [map {q[+] . $_ }  @NO_SCRIPT_ARG_ATTRS] => (metaclass => 'NoGetopt',);
 
 =head2 archive_path
@@ -253,6 +252,12 @@ sub _build_file_extension {
 
 Integer attribute, minimum number of days to keep the run folder.
 
+If not set by the caller, the attribute will be computed.
+If the run has status 'run cancelled' or 'data discarded', the attribute is
+set to 14 days, examination of products is not performed to avoid accessing
+non-local sources of LIMS data. For all other run statuses the attribute is
+set to the longest deletion time among all applicable products.
+
 =cut
 
 has q{min_keep_days} => (
@@ -263,9 +268,12 @@ has q{min_keep_days} => (
 );
 sub _build_min_keep_days {
   my $self = shift;
-  my @delays = map  { $self->staging_deletion_delay($_) || $MIN_KEEP_DAYS }
-               grep { $self->is_release_data($_) }
-               @{$self->products->{'data_products'}};
+  my @delays;
+  if (not $self->_is_unconditionally_deletable()) {
+    @delays = map  { $self->staging_deletion_delay($_) || $MIN_KEEP_DAYS }
+              grep { $self->is_release_data($_) }
+              @{$self->products->{'data_products'}};
+  }
   return @delays ? max @delays : $MIN_KEEP_DAYS;
 }
 
@@ -390,7 +398,7 @@ sub _build_qc_schema {
   return npg_qc::Schema->connect();
 }
 
-############## Public methods ###################################################
+############## Public methods ####################################
 
 =head2 build_eligible_product_entities
 
@@ -461,7 +469,7 @@ sub run {
   return $deletable;
 }
 
-############## Private attributes and methods #########################################
+############## Private attributes and methods ####################
 
 #####
 # A hash reference containing two entries. One, under the key 'seq', is a
@@ -524,7 +532,20 @@ has q{_run_status_obj} => (
 );
 sub _build__run_status_obj {
   my $self = shift;
-  return $self->tracking_run->current_run_status;
+  my $obj = $self->tracking_run->current_run_status;
+  $obj or $self->logcroak('Current run status is undefined.');
+  return $obj;
+}
+
+has q{_is_unconditionally_deletable} => (
+  isa        => q{Bool},
+  is         => q{ro},
+  lazy_build => 1,
+);
+sub _build__is_unconditionally_deletable {
+  my $self = shift;
+  my $crsd = $self->_run_status_obj->description;
+  return any { $_ eq $crsd } @NPG_DELETABLE_UNCOND;
 }
 
 sub _flagged_as_not_deletable {
@@ -576,7 +597,8 @@ sub _time_limit_deletable {
   my $deletable = $delta_days >= $self->min_keep_days;
   my $m = sprintf
     'Time limit (min %i): %i last status change was %i days ago, %sdeletable.',
-    $self->min_keep_days, $self->id_run, $delta_days, $deletable ? q[] : q[NOT ];
+    $self->min_keep_days, $self->id_run, $delta_days, $deletable ?
+    q[] : q[NOT ];
   $self->info($m);
 
   return $deletable;
@@ -597,8 +619,8 @@ sub _npg_tracking_deletable {
   my $deletable;
 
   if ( $unconditional ) {
-    $deletable = ( any { $_ eq $crsd } @NPG_DELETABLE_UNCOND ) &&
-                 ( $self->ignore_time_limit || $self->_time_limit_deletable() );
+    $deletable = $self->_is_unconditionally_deletable() &&
+                 ($self->ignore_time_limit || $self->_time_limit_deletable());
     if ($deletable) {
       $self->info(qq[$message unconditionally deletable.]);
     }
