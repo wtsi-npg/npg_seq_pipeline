@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
 
  - Support no_auto, no_auto_archive and no_auto_analysis tags for daemons
+ - GBS - block tag 0 from GBS pipeline and extra tests.
 
 release 60.0.0
 
