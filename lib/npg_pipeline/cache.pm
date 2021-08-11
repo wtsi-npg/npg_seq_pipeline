@@ -45,7 +45,9 @@ Integer run id, required.
 
 =head2 id_flowcell_lims
 
-LIMs specific flowcell id, required.
+LIMS specific flowcell id, an optional attribute for creating an instance
+of the object, will be required for a lazy-build of the C<lims> attribute
+of the run.
 
 =head2 mlwh_schema
  
@@ -172,9 +174,10 @@ has 'messages'  => (isa        => 'ArrayRef[Str]',
 =head2 setup
 
 Generates cached data. If an existing directory with cached data found,
-unless reuse_cache flag is false, will not generate a new cache.
-If set_env_vars is true (false by default), will set the relevant env.
-variables in the global scope.
+will not generate a new cache.
+
+If set_env_vars is true (false by default), will set the relevant
+environment variables in the global scope.
 
 =cut
 sub setup {
@@ -193,9 +196,9 @@ sub setup {
         my $moved = join q[_], $cache_path, 'moved', $ts;
         if (rename $cache_path, $moved) {
           $self->_add_message(qq[Renamed existing $cache_path to $moved]);
-	} else {
+        } else {
           croak qq[Failed to rename existing $cache_path to $moved];
-	}
+        }
       }
       if (copy($given, $cache_path)) {
         $self->_add_message(qq[Copied $given to $cache_path]);
@@ -240,7 +243,7 @@ sub _samplesheet {
     npg::samplesheet->new(id_run => $self->id_run,
                           lims   => $self->lims,
                           extend => 1,
-		          output => $self->samplesheet_file_path,
+                          output => $self->samplesheet_file_path,
                          )->process();
     $self->_add_message(q(Samplesheet created at ).$self->samplesheet_file_path);
   }
