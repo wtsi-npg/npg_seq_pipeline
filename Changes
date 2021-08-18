@@ -3,6 +3,11 @@ LIST OF CHANGES
 
  - When generating lane taglist files truncate and pad i7 and i5 tags independently
 
+release 60.1.0
+  - GBS - block tag 0 from GBS pipeline and extra tests.
+  - Update docs for samplesheet generation
+  - Function graph for a reduced Heron pipeline
+
 release 60.0.0
 
  - When HiC library type detected in seq_alignment, set appropriate flag values
