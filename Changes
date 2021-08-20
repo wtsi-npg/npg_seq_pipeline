@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - Support no_auto, no_auto_archive and no_auto_analysis tags for daemons
  - npg_run_is_deletable - delete runs with status 'run cancelled' and
    'data discarded' after 14 days of the status date irrespectively of
    what study the samples belong to. The samplesheet is not available for
