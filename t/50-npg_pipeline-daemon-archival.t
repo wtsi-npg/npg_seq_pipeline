@@ -201,8 +201,8 @@ subtest 'no_auto tag' => sub {
   $test_run->update_run_status('archival pending', 'pipeline',);
 
   my $runner = test_archival_runner->new(
-    pipeline_script_name    => '/bin/true',
-    npg_tracking_schema     => $schema
+    pipeline_script_name => '/bin/true',
+    npg_tracking_schema  => $schema
   );
 
   $runner->run();

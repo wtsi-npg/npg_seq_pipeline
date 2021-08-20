@@ -250,7 +250,7 @@ subtest 'no_auto' => sub {
     pipeline_script_name => '/bin/true',
     npg_tracking_schema  => $schema,
   );
-  
+
   $runner->run();
 
   is (join(q[ ],sort keys %{$runner->seen}), '1234', 'runs with no_auto and no_auto_analysis not seen');
