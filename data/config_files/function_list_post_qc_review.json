@@ -93,16 +93,6 @@
             },
             {
                 "relation": "dependsOn",
-                "source": "pipeline_wait4path",
-                "target": "update_warehouse_post_qc_complete"
-            },
-            {
-                "relation": "dependsOn",
-                "source": "update_warehouse_post_qc_complete",
-                "target": "archive_logs"
-            },
-            {
-                "relation": "dependsOn",
                 "source": "update_ml_warehouse_post_qc_complete",
                 "target": "archive_logs"
             },
@@ -303,22 +293,6 @@
                 "label": "update_ml_warehouse_post_qc_complete",
                 "metadata": {
                     "description": "Multi-LIMS warehouse update in order to capture the 'qc complete' run status timestamp",
-                    "resources": {
-                        "default": {
-                            "db": [
-                                "mlwh"
-                            ],
-                            "queue": "lowload",
-                            "minimum_cpu": 0
-                        }
-                    }
-                }
-            },
-            {
-                "id": "update_warehouse_post_qc_complete",
-                "label": "update_warehouse_post_qc_complete",
-                "metadata": {
-                    "description": "Old warehouse update",
                     "resources": {
                         "default": {
                             "db": [

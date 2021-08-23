@@ -9,9 +9,12 @@ LIST OF CHANGES
    source of LIMS data (XML LIMS API) to get information about the study.
    This change also helps to go around very long deletion times which
    are set for some studies. 
-  - Create class/package level methods in npg_pipeline::product::release::irods
-    to allow for reusing the logic about run and product iRODS collections
-    paths in the code outside of this package. 
+ - Create class/package level methods in npg_pipeline::product::release::irods
+   to allow for reusing the logic about run and product iRODS collections
+   paths in the code outside of this package. 
+ - Stop loading data to the old warehouse. Remove
+   the update_ml_warehouse_post_qc_complete function from the archival
+   pipeline graph.
 
 release 60.1.0
   - GBS - block tag 0 from GBS pipeline and extra tests.
