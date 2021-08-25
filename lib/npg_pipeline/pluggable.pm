@@ -620,6 +620,9 @@ sub _common_attributes {
 
 sub _run_function {
   my ($self, $function_name, $function_id) = @_;
+  if (!($function_name && $function_id)) {
+    croak 'Function run requires both label/name and id';
+  }
 
   my $implementor = $self->_registry()->get_function_implementor($function_name);
   my $module = join q[::], 'npg_pipeline', 'function', $implementor->{'module'};
@@ -641,7 +644,6 @@ sub _run_function {
   while (my ($key, $value) = each %{$params}) {
     $attrs->{$key} = $value;
   }
-
   $attrs->{resource} = $self->_function_resource_requirements($function_id);
 
   #####

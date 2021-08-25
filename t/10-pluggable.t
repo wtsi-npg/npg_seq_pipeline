@@ -152,10 +152,15 @@ subtest 'switching off functions' => sub {
 
   lives_ok { $p->function_graph } 'A graph!';
 
-  ok(($p->_run_function('archive_to_irods_samplesheet')->[0]->excluded &&
-      $p->_run_function('archive_to_irods_ml_warehouse')->[0]->excluded),
+  # Both function name and ID are the same in most cases
+  my $fn_name_id = 'archive_to_irods_samplesheet';
+  my $fn_ml_name_id = 'archive_to_irods_ml_warehouse';
+
+  ok(
+    ($p->_run_function($fn_name_id, $fn_name_id)->[0]->excluded
+      && $p->_run_function($fn_ml_name_id, $fn_ml_name_id)->[0]->excluded),
     'archival to irods switched off');
-  ok($p->_run_function('update_warehouse')->[0]->excluded,
+  ok($p->_run_function('update_warehouse', 'update_warehouse')->[0]->excluded,
     'update to warehouse switched off');
 
   $p = npg_pipeline::pluggable->new(
@@ -163,8 +168,8 @@ subtest 'switching off functions' => sub {
     local          => 1,
     function_list => "$config_dir/function_list_central.json"
   );
-  ok(($p->_run_function('archive_to_irods_samplesheet')->[0]->excluded &&
-      $p->_run_function('archive_to_irods_ml_warehouse')->[0]->excluded),
+  ok(($p->_run_function($fn_name_id, $fn_name_id)->[0]->excluded &&
+      $p->_run_function($fn_ml_name_id, $fn_ml_name_id)->[0]->excluded),
     'archival to irods switched off');
   ok($p->no_summary_link, 'summary_link switched off');
 
@@ -174,8 +179,8 @@ subtest 'switching off functions' => sub {
     no_warehouse_update => 0,
     function_list => "$config_dir/function_list_central.json"
   );
-  ok(($p->_run_function('archive_to_irods_samplesheet')->[0]->excluded &&
-      $p->_run_function('archive_to_irods_ml_warehouse')->[0]->excluded),
+  ok(($p->_run_function($fn_name_id, $fn_name_id)->[0]->excluded &&
+      $p->_run_function($fn_ml_name_id, $fn_ml_name_id)->[0]->excluded),
     'archival to irods switched off');
   ok($p->no_summary_link, 'summary_link switched off');
 };
@@ -704,13 +709,13 @@ subtest 'Check resource population from graph' => sub {
 };
 
 subtest 'Checking resources are assigned correctly from graph' => sub {
-  plan tests => 2;
+  plan tests => 4;
   # Check resources for functions are correctly merged with pipeline-wide settings
   my $p = npg_pipeline::pluggable->new(
     id_run => 1234,
     function_list => "$config_dir/function_list_central.json"
   );
-  my $resources = $p->_function_resource_requirements('update_ml_warehouse_1');
+  my $resources = $p->_function_resource_requirements('update_ml_warehouse_1', 'update_ml_warehouse');
   is_deeply(
     $resources,
     {
@@ -730,7 +735,7 @@ subtest 'Checking resources are assigned correctly from graph' => sub {
     id_run => 1234,
     function_list => "$config_dir/function_list_post_qc_review.json"
   );
-  $resources = $p->_function_resource_requirements('run_run_archived');
+  $resources = $p->_function_resource_requirements('run_run_archived', 'run_run_archived');
   is_deeply(
     $resources,
     {
@@ -741,5 +746,18 @@ subtest 'Checking resources are assigned correctly from graph' => sub {
         array_cpu_limit => 64
       }
     }
-  )
+  );
+
+  throws_ok {
+    $p->_run_function('run_run_archived', undef)
+  }
+  qr{Function run requires both label/name and id},
+  'Missing function ID causes resource failure';
+
+  throws_ok {
+    $p->_run_function(undef, 'run_run_archived')
+  }
+  qr{Function run requires both label/name and id},
+  'Missing function name causes resource failure';
+
 };
