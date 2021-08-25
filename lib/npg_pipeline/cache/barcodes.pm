@@ -14,11 +14,20 @@ with 'WTSI::DNAP::Utilities::Loggable';
 
 our $VERSION = '0';
 
-Readonly::Scalar my $TAG_LIST_FILE_HEADER      => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
-# For dual index runs add the expected i5 tag sequences for samples (e.g. phix) which have no i5 tag
-# I've extended these to 10 bases. For I5OPPOSITE final `GT` predicted from adapter documentation.
-Readonly::Scalar my $SPIKED_PHIX_TAG2        => q{TCTTTCCCTA};
-Readonly::Scalar my $SPIKED_PHIX_I5OPPOSITE_TAG2 => q{AGATCTCGGT};
+Readonly::Scalar my $TAG_LIST_FILE_HEADER => qq{barcode_sequence\tbarcode_name\tlibrary_name\tsample_name\tdescription};
+
+# For dual index runs add the expected i5 tag sequences for samples (e.g. single index phix) which have no i5 tag
+# These have been extended to 13 bases to cope with haplotagging runs which have 2x13-bases indexes
+# Pad short tags, for i7 we know the 5-base pad, so we can pad a 8-base i7 tag (i.e. dual-index phix) to 13 bases
+# for i5 only know the 2-bases pad so currently we can pad a 8-base i5 tag (i.e. dual-index phix) to 10 bases
+Readonly::Scalar my $I7_TAG_PAD => q(ATCTC);
+Readonly::Scalar my $I5_TAG_PAD => q(AC);
+Readonly::Scalar my $I5_TAG_OPP_PAD => q(GT);
+Readonly::Scalar my $I5_TAG_MISSING => q(TCTTTCCCTACAC);
+Readonly::Scalar my $I5_TAG_OPP_MISSING => q(AGATCTCGGTGGT);
+
+Readonly::Scalar my $I7_PADDED_PHIX => q(ACAACGCAATC);
+Readonly::Scalar my $I7_UNPADDED_PHIX_LEN => 8;
 
 =head1 NAME
 
@@ -117,24 +126,28 @@ sub generate {
     $self->logcroak(qq{No tag information available for lane $position});
   }
 
-  my $tags = $self->lane_lims->tags;
   my $spiked_phix_tag_index = $self->lane_lims->spiked_phix_tag_index();
 
-  # on a HiSeqX the second index is sequenced in reverse complement order
+  # on a some instruments (HiSeqX, HiSeq4000 and NovaSeq v1.5) the second index is sequenced in reverse complement order
+  my %i7_tags = ();
+  my %i5_tags = ();
   foreach my $plex ($self->lane_lims->children) {
     if (my $ti = $plex->tag_index){
       my $tag_sequences = $plex->tag_sequences;
+      $i7_tags{$ti} = $tag_sequences->[0];
       if ( @{$tag_sequences} == 2 ) {
         if ( $self->i5opposite ) {
           $tag_sequences->[1] =~ tr/[ACGT]/[TGCA]/;
           $tag_sequences->[1] = reverse $tag_sequences->[1];
         }
+        $i5_tags{$ti} = $tag_sequences->[1];
+      } else {
+        $i5_tags{$ti} = q();
       }
-      $tags->{$ti} = join q[-], @{$tag_sequences};
     }
   }
 
-  my ($tag_index_list, $tag_seq_list) = $self->_process_tag_list($tags, $spiked_phix_tag_index);
+  my ($tag_index_list, $tag_seq_list) = $self->_process_tag_list(\%i7_tags, \%i5_tags, $spiked_phix_tag_index);
 
   if  ($tag_index_list && $tag_seq_list) {
     if( scalar @{$tag_index_list} != scalar @{$tag_seq_list} ){
@@ -210,208 +223,170 @@ sub _check_tag_uniqueness {
   return 1;
 }
 
-# return the absolute length of a "6,8" format length
-# (which is the sum of the two lengths)
-sub _abs_len {
-  my ($self, $tag) = @_;
-  my @idx = split /,/smx, $tag;
-  my $result = 0;
-  foreach my $i (@idx) { $result = $result + $i; }
-  return $result;
-}
-
-# return either length of the tag
-# or len1,len2 in the case of a dual index
-sub _get_tag_length {
-  my ($self, $tag) = @_;
-  my @indexes = split /-/smx, $tag;
-  my @lengths = map { length } @indexes;
-  my $key = join q{,}, @lengths;
-  return $key;
-}
-
-# truncate an index of the form "AAAAAA-GGGGGG"
-# to a length of the form [4,6]
-sub _truncate_index {
-  my ($self, $index, $index_lengths, $tag2) = @_;
-  my @idx = split /-/smx, $index;
-  my @ilengths = @{$index_lengths};
-  # if there is only one index length set the second index length to 0
-  if (scalar @ilengths == 1) { push @ilengths, 0; }
-  # if there is no separator in the index set the second part of the index to $tag2
-  if (scalar @idx == 1) { push @idx, defined $tag2 ? $tag2 : q{}; }
-  $idx[0] = substr $idx[0], 0, $ilengths[0];
-  $idx[1] = substr $idx[1], 0, $ilengths[1];
-  my $result = join q{-},@idx;
-  # remove the separator if the second part of the truncated index is empty
-  if ($result =~ /-$/smx) { chop $result; }
-  return $result;
-}
-
-sub _check_tag_length {
-  my ($self, $tag_seq_list, $tag_index_list, $spiked_phix_tag_index) = @_;
-
-  # ensure no tags are longer than the index length
-  # Note: this is not correct for runs where not ALL the index reads appear in the BC(QT) tag i.e. TraDIS it
-  # works only because the first index read (the transposon) is longer that the second index read (the tag)
-  my @indexed_length_tags = map {$self->_truncate_index($_, $self->index_lengths)} @{$tag_seq_list};
-
-  my %tag_length;
-  foreach my $i (0..$#indexed_length_tags) {
-    my $tag = $indexed_length_tags[$i];
-    push @{$tag_length{$self->_get_tag_length($tag)}}, $tag_index_list->[$i];
-  }
-
-  my $number_of_tag_lengths = scalar keys %tag_length;
-
-  if ( $number_of_tag_lengths == 1 ) {
-    return \@indexed_length_tags;
-  }
-
-  my $tags_ok;
-  # we are making the assumption that just 1 tag being too long or too short will be because of a spike
-  if ( $number_of_tag_lengths == 2 ) {
-    $self->info(q{There are 2 different tag lengths});
-    my @temp = keys %tag_length;
-
-    $self->debug(q{Is there only 1 longest or shortest and is it the phix tag?});
-    my $phix_entry = 2;
-    if ( scalar @{$tag_length{$temp[0]}} == 1 and $spiked_phix_tag_index and $spiked_phix_tag_index == $tag_length{$temp[0]}->[0] ) {
-      $phix_entry = 0;
-    }
-    if ( scalar @{$tag_length{$temp[1]}} == 1 and $spiked_phix_tag_index and $spiked_phix_tag_index == $tag_length{$temp[1]}->[0] ) {
-      $phix_entry = 1;
-    }
-    if ($phix_entry < 2) {
-      $self->debug(q{Yes, we have a PhiX tag});
-      my $not_phix_entry = ($phix_entry + 1) % 2;
-      # Truncate all tags to the non-phix length
-      my @temp_lengths = split /,/smx, $temp[$not_phix_entry];
-      # if the non-phix tags have two parts add the missing i5 spiked phix tag
-      @indexed_length_tags = map { $self->_truncate_index($_, \@temp_lengths, ($self->i5opposite ? $SPIKED_PHIX_I5OPPOSITE_TAG2 : $SPIKED_PHIX_TAG2)) } @indexed_length_tags;
-      foreach my $t (@indexed_length_tags) {
-        if ($self->_abs_len($self->_get_tag_length($t)) < $self->_abs_len($temp[$not_phix_entry])) {
-          $self->logcroak(qq{It looks likes the padded sequence for spiked PhiX $t is too short});
-        }
-      }
-      $tags_ok = 1;
-    }
-
-  }
-
-  if ( ! $tags_ok ) {
-    $self->error(q{Number of different tag lengths = } . $number_of_tag_lengths);
-    $self->error( q{Number at each length:} );
-    foreach my $key ( sort { $a <=> $b } keys %tag_length ) {
-      my $n = scalar @{$tag_length{$key}};
-      $self->error( qq{Length $key: $n.} );
-    }
-    $self->logcroak(join q{:}, @indexed_length_tags);
-  }
-
-  return \@indexed_length_tags;
-}
-
 sub _process_tag_list {
-  my ($self, $tags, $spiked_phix_tag_index) = @_;
+  my ($self, $i7_tags, $i5_tags, $control_tag_index) = @_;
 
-  my @tag_index_list = sort keys %{$tags};
+  my $index_lengths = $self->index_lengths;
+  my $i7_read_length = $index_lengths->[0];
+  my $i5_read_length = (scalar @{$index_lengths} == 1 ? 0 : $index_lengths->[1]);
 
-  my @tag_seq_list = ();
-  foreach my $tag_index (@tag_index_list){
-    if(!$tag_index){
+  my @tag_index_list = sort keys %{$i7_tags};
+  foreach my $index (@tag_index_list) {
+    if(!$index){
       $self->warn('The tag index is not available');
       return (undef, undef);
     }
-    my $tag_seq = $tags->{$tag_index};
-    if(!$tag_seq){
+    if (!defined($i7_tags->{$index}) || ($i5_read_length && !defined($i5_tags->{$index}))) {
       $self->warn('The tag sequence are not available');
       return (\@tag_index_list, undef);
+    }
+  }
+
+  # the old single-index phix tag was already padded from 8-bases to 11-bases, remove the last 3 bases so we can treat it like any other short tag
+  foreach my $index (@tag_index_list) {
+    if ($control_tag_index && ($index == $control_tag_index) && ($i7_tags->{$index} eq $I7_PADDED_PHIX)) {
+      $i7_tags->{$index} = substr $i7_tags->{$index}, 0, $I7_UNPADDED_PHIX_LEN;
+    }
+  }
+
+  my $trunc_and_pad_i7 = $self->_truncate_and_pad($i7_tags, $control_tag_index, $i7_read_length, $I7_TAG_PAD);
+  my $i7_tags_suffix_removed = $self->_remove_common_suffixes($trunc_and_pad_i7, $control_tag_index);
+
+  my $i5_tags_suffix_removed;
+  if ($i5_read_length) {
+    my $pad_seq = $I5_TAG_PAD;
+    my $missing = $I5_TAG_MISSING;
+    if ($self->i5opposite){
+      #if the i5 tag was sequenced in the opposite direction the pad and missing sequences will be different
+      $pad_seq = $I5_TAG_OPP_PAD;
+      $missing = $I5_TAG_OPP_MISSING;
+    }
+    my $trunc_and_pad_i5 = $self->_truncate_and_pad($i5_tags, $control_tag_index, $i5_read_length, $pad_seq, $missing);
+    $i5_tags_suffix_removed = $self->_remove_common_suffixes($trunc_and_pad_i5, $control_tag_index);
+  }
+
+  my @tag_seq_list = ();
+  foreach my $tag_index (@tag_index_list){
+    my $tag_seq;
+    if ($i5_read_length > 0){
+      $tag_seq = join q[-], ($i7_tags_suffix_removed->{$tag_index}, $i5_tags_suffix_removed->{$tag_index});
+    } else {
+      $tag_seq = $i7_tags_suffix_removed->{$tag_index};
     }
     push @tag_seq_list, $tag_seq;
   }
 
-  my $tag_seq_list_checked = $self->_check_tag_length(\@tag_seq_list, \@tag_index_list, $spiked_phix_tag_index, $tags);
+  $self->_check_tag_uniqueness(\@tag_seq_list);
 
-  my $trimmed_tag_seq_list = $self->_trim_tag_common_suffix($tag_seq_list_checked, \@tag_index_list, $spiked_phix_tag_index);
-
-  $self->_check_tag_uniqueness($trimmed_tag_seq_list);
-
-  return (\@tag_index_list, $trimmed_tag_seq_list);
+  return (\@tag_index_list, \@tag_seq_list);
 }
 
-#trim common suffix of a list of tag sequences, ignore spiked phix tag
-#croak if the tag sequence are different in length or they are all the same
-sub _trim_tag_common_suffix {
-  my ($self, $tag_seq_list, $tag_index_list, $spiked_phix_tag_index) = @_;
+sub _truncate_and_pad {##no critic (Subroutines::ProhibitManyArgs
+  my ($self, $tags, $control_tag_index, $read_length, $pad_seq, $missing) = @_;
+  #getting length to truncate to
+  my $max_seq_length = 0;
+  foreach my $index (keys %{$tags}){
+    next if (!defined $tags->{$index}); #skip if undef
+    if ($control_tag_index){
+      next if ($index eq $control_tag_index); #just consider real samples 
+    }
+    my $exp_seq = $tags->{$index};
 
-  my $ntags = scalar @{$tag_seq_list};
+    if (length($exp_seq) > $max_seq_length){
+      $max_seq_length = length $exp_seq;
+    }
+  }
+  my $truncated_length = $read_length;
+  if ($max_seq_length < $read_length){
+    $truncated_length = $max_seq_length;
+  }
+  #add missing sequences
+  if (defined $missing) {
+    foreach my $index (keys %{$tags}){
+      if (!$tags->{$index}) {
+        $tags->{$index} = $missing;
+      }
+    }
+  }
+  #truncate sequences
+  foreach my $index (keys %{$tags}){
+    $tags->{$index} = substr $tags->{$index},0,$truncated_length;
+  }
+  #pad sequences
+  my $length_of_pad = length $pad_seq;
+  foreach my $index (keys %{$tags}){
+    my $seq_to_pad = $tags->{$index};
+    my $seq_to_pad_length = length $seq_to_pad;
+    my $num_bases_to_pad = $truncated_length - $seq_to_pad_length;
+    if ($num_bases_to_pad != 0) {
+      if ($num_bases_to_pad > $length_of_pad) {
+        $self->logcroak('Cannot extend for more bases than in padding sequence');
+      }else{
+        $tags->{$index} .= substr $pad_seq,0,$num_bases_to_pad;
+      }
+    }
+  }
+  return $tags;
+}
 
-  if($ntags == 1){
-    $self->info('Only one tag found for this lane');
-    return $tag_seq_list;
+sub _remove_common_suffixes {
+  my ($self, $tags, $control_tag_index) = @_;
+
+  my $num_of_tags = keys %{$tags};
+  # check if there is only one non-control sequence
+  if ((($control_tag_index)and($num_of_tags <= 2)) or ((!$control_tag_index)and ($num_of_tags < 2))){
+    return $tags;
   }
 
-  my %tag_length = map {length $_ => 1 } @{$tag_seq_list};
-
+  my %tag_length = map {length $_ => 1 } values %{$tags};
   if (scalar keys %tag_length != 1){
-    $self->logcroak("The given tags are different in length: @{$tag_seq_list}");
+    $self->logcroak('The given tags are different in length: ',values %{$tags});
   }
 
-  my @common_tag_seq_list;
-  foreach my $i (0..($ntags-1)) {
-    next if $spiked_phix_tag_index && $tag_index_list->[$i] == $spiked_phix_tag_index;
-    push @common_tag_seq_list, $tag_seq_list->[$i];
-  }
-
-  $ntags = scalar @common_tag_seq_list;
-
-  if($ntags == 1){
-    $self->info('Only one non-phix tag found for this lane');
-    return $tag_seq_list;
-  }
-
-  my $tag_common_suffix_length = $self->_tag_common_suffix_length(\@common_tag_seq_list);
-
-  if($tag_common_suffix_length == 0){
-    $self->info('No need to trim given tags');
-    return $tag_seq_list;
-  }
-
-  if($tag_length{$tag_common_suffix_length}){
-    $self->logcroak("All tags are the same @{$tag_seq_list}");
-  }
-
-  my @trimmed_tag_seq_list;
-
-  foreach my $tag (@{$tag_seq_list}){
-    push @trimmed_tag_seq_list, substr $tag, 0, - $tag_common_suffix_length;
-  }
-
-  return \@trimmed_tag_seq_list;
-}
-
-#find the common suffix of length for a list tag sequences
-sub _tag_common_suffix_length {
-  my ($self, $tag_seq_list) = @_;
-
-  my $common_suffix_length = 0;
-  my %tag_length = map {length $_ => 1 } @{$tag_seq_list};
-  my $shotest_tag_length = min keys %tag_length;
-
-  while($common_suffix_length < $shotest_tag_length){
-    $common_suffix_length++;
-    my $previous_suffix = substr $tag_seq_list->[0], - $common_suffix_length;
-
-    foreach my $tag (@{$tag_seq_list}){
-      my $current_suffix = substr $tag, - $common_suffix_length;
-      if($current_suffix ne $previous_suffix){
-	return $common_suffix_length - 1;
+  # get array of real samples
+  my @list_of_tags = ();
+  foreach my $index (keys %{$tags}){
+    if (defined($tags->{$index})){
+      #skip control tag when getting real tags
+      if($control_tag_index){
+        if ($control_tag_index != $index){
+          push @list_of_tags, $tags->{$index};
+        }
+      }else{
+        push @list_of_tags, $tags->{$index};
       }
     }
   }
 
-  return $common_suffix_length;
+  #gets the longest common suffix from real samples
+  my $current_suffix = $list_of_tags[0];
+  foreach my $tag (@list_of_tags){
+    $current_suffix = $self->_longest_common_suffix($tag, $current_suffix);
+    last if ($current_suffix eq q() );
+  }
+  #if no common suffix
+  if (length $current_suffix == 0){
+    return $tags;
+  }
+
+  #remove common suffix
+  foreach my $index (keys %{$tags}){
+    $tags->{$index} = substr $tags->{$index},0,-length($current_suffix);
+  }
+
+  return $tags;
+}
+
+sub _longest_common_suffix {
+  my ($self, $sequence, $current_suffix) = @_;
+  for my $position (0..length $current_suffix){
+    my $suffix = substr $current_suffix, $position;
+    my $part_of_seq = substr $sequence , -(length $suffix);
+    if ($part_of_seq eq $suffix){
+      return $suffix;
+    }
+  }
+  return q();
 }
 
 no Moose;

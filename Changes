@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - When generating lane taglist files truncate and pad i7 and i5 tags independently
  - Support no_auto, no_auto_archive and no_auto_analysis tags for daemons
  - npg_run_is_deletable - delete runs with status 'run cancelled' and
    'data discarded' after 14 days of the status date irrespectively of

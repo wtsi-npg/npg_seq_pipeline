@@ -164,6 +164,8 @@ t/data/barcodes/samplesheet_batch42225_amended2.csv
 t/data/barcodes/samplesheet_batch5378.csv
 t/data/barcodes/samplesheet_batch6532.csv
 t/data/barcodes/samplesheet_batch6713.csv
+t/data/barcodes/samplesheet_batch85331_amended1.csv
+t/data/barcodes/samplesheet_batch85331_amended2.csv
 t/data/cache/my_samplesheet_12376.csv
 t/data/dbic_fixtures/000-Designation.yml
 t/data/dbic_fixtures/000-EntityType.yml
