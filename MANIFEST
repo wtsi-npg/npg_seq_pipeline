@@ -114,6 +114,7 @@ t/15-pipeline_launcher_scripts.t
 t/15-product-climb2mlwh.t
 t/15-product-heron-upload-metadata.t
 t/15-product-release.t
+t/15-product-release-irods.t
 t/20-function-autoqc.t
 t/20-function-autoqc-generic.t
 t/20-function-autoqc_archiver.t

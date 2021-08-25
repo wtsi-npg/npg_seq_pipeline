@@ -12,6 +12,7 @@ use File::Temp qw/ tempdir /;
 use Moose::Meta::Class;
 
 use t::util;
+use t::dbic_util;
 
 use_ok ('npg_pipeline::validation');
 
@@ -25,6 +26,24 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 my $qc_schema = Moose::Meta::Class->create_anon_class(
                   roles => [qw/npg_testing::db/])->new_object()
                 ->create_test_db(q[npg_qc::Schema]);
+my $tracking_schema = t::dbic_util->new()
+                                  ->test_schema('t/data/dbic_fixtures/');
+$tracking_schema->resultset('Run')->create({
+  id_run               => 8747,
+  id_instrument_format => 10,
+  id_instrument        => 67,
+  actual_cycle_count   => 300,
+  expected_cycle_count => 300,
+  id_run_pair          => 0,
+  is_paired            => 1,
+  team                 => 'A'
+});
+for ((1 .. 8)) {
+  $tracking_schema->resultset('RunLane')->create({id_run     => 8747,
+                                                  position   => $_,
+                                                  tile_count => 120,
+                                                  tracks     => 4});
+}
 
 sub _create_test_runfolder_8747 {
   my $rfh = $util->create_runfolder(
@@ -60,8 +79,10 @@ sub _populate_test_runfolder {
 subtest 'create object' => sub {
   plan tests => 15;
 
-  my $v = npg_pipeline::validation->new(qc_schema     => $qc_schema,
-                                        min_keep_days => 30);
+  my $v = npg_pipeline::validation->new(
+    qc_schema           => $qc_schema,
+    npg_tracking_schema => $tracking_schema,
+    min_keep_days       => 30);
   isa_ok ($v, 'npg_pipeline::validation');
 
   for my $flag (qw/ignore_lims ignore_npg_status ignore_time_limit
@@ -82,7 +103,7 @@ subtest 'create object' => sub {
 };
 
 subtest 'deletion delay' => sub {
-  plan tests => 6;
+  plan tests => 9;
 
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = 't/data/samplesheet_8747.csv';
   note 'Samples from three studies in the run data used in this test';
@@ -90,20 +111,37 @@ subtest 'deletion delay' => sub {
   my $rfh = _create_test_runfolder_8747();
 
   my $ref = {
-    id_run => 8747,
-    runfolder_path => $rfh->{'runfolder_path'},
-    analysis_path  => $rfh->{'analysis_path'},
-    archive_path   => $rfh->{'archive_path'},
-    qc_schema      => $qc_schema,
-    conf_path      => 't/data/release/config/archive_on',
+    id_run              => 8747,
+    runfolder_path      => $rfh->{'runfolder_path'},
+    analysis_path       => $rfh->{'analysis_path'},
+    archive_path        => $rfh->{'archive_path'},
+    qc_schema           => $qc_schema,
+    npg_tracking_schema => $tracking_schema,
+    conf_path           => 't/data/release/config/archive_on',
   };
 
   my $v = npg_pipeline::validation->new($ref);
-  is ($v->min_keep_days, 14, 'no config - falling back on hardcoded defalt');
+  throws_ok { $v->min_keep_days } qr/Current run status is undefined/,
+    'error for a run with no associated status';
+  # Assign current status to 'qc complete'.
+  $v->tracking_run->update_run_status('qc complete');
+  $v = npg_pipeline::validation->new($ref);
+  is ($v->min_keep_days, 14,'no config - falling back on hardcoded defalt');
 
   $ref->{conf_path} = 't/data/release/config/archive_off';
   $v = npg_pipeline::validation->new($ref);
   is ($v->min_keep_days, 12, 'value from default product config');
+  
+  # Reassign current status to 'run cancelled'.
+  sleep 1 and $v->tracking_run->update_run_status('run cancelled');
+  $v = npg_pipeline::validation->new($ref);
+  is ($v->min_keep_days, 14, 'default value for a cancelled run');
+  # Reassign current status to 'data discarded'.
+  sleep 1 and $v->tracking_run->update_run_status('data discarded');
+  $v = npg_pipeline::validation->new($ref);
+  is ($v->min_keep_days, 14, 'default value for a run with discarded data');
+  # Reassign current status back to 'qc complete'.
+  sleep 1 and $v->tracking_run->update_run_status('qc complete');
 
   $ref->{conf_path} = 't/data/release/config/notify_on';
   $v = npg_pipeline::validation->new($ref);
@@ -135,10 +173,11 @@ subtest 'lims and staging deletable' => sub {
   my $archive_path = $rfh->{'archive_path'};
   my $ref = {
     id_run => 8747,
-    runfolder_path => $rfh->{'runfolder_path'},
-    analysis_path  => $rfh->{'analysis_path'},
-    archive_path   => $archive_path,
-    qc_schema      => $qc_schema
+    runfolder_path      => $rfh->{'runfolder_path'},
+    analysis_path       => $rfh->{'analysis_path'},
+    archive_path        => $archive_path,
+    qc_schema           => $qc_schema,
+    npg_tracking_schema => $tracking_schema
   };
 
   my $v = npg_pipeline::validation->new($ref);
@@ -199,10 +238,11 @@ subtest 'xarchive validation' => sub {
   my $rfh = _create_test_runfolder_8747();
   my $ref = {
     id_run => 8747,
-    runfolder_path => $rfh->{'runfolder_path'},
-    analysis_path  => $rfh->{'analysis_path'},
-    archive_path   => $rfh->{'archive_path'},
-    qc_schema      => $qc_schema
+    runfolder_path      => $rfh->{'runfolder_path'},
+    analysis_path       => $rfh->{'analysis_path'},
+    archive_path        => $rfh->{'archive_path'},
+    qc_schema           => $qc_schema,
+    npg_tracking_schema => $tracking_schema
   };
 
   my $v = npg_pipeline::validation->new($ref);
@@ -238,10 +278,11 @@ subtest 'flagged as not deletable' => sub {
   my $rfh = _create_test_runfolder_8747();
   my $ref = {
     id_run => 8747,
-    runfolder_path => $rfh->{'runfolder_path'},
-    analysis_path  => $rfh->{'analysis_path'},
-    archive_path   => $rfh->{'archive_path'},
-    qc_schema      => $qc_schema
+    runfolder_path      => $rfh->{'runfolder_path'},
+    analysis_path       => $rfh->{'analysis_path'},
+    archive_path        => $rfh->{'archive_path'},
+    qc_schema           => $qc_schema,
+    npg_tracking_schema => $tracking_schema
   };
   mkdir join q[/], $rfh->{'runfolder_path'}, 'npg_do_not_delete';
 

@@ -141,7 +141,7 @@ subtest 'graph creation from explicitly given function list' => sub {
 };
 
 subtest 'switching off functions' => sub {
-  plan tests => 9;
+  plan tests => 7;
 
   my $p = npg_pipeline::pluggable->new(
     runfolder_path      => $runfolder_path,
@@ -166,8 +166,6 @@ subtest 'switching off functions' => sub {
   ok(($p->_run_function('archive_to_irods_samplesheet')->[0]->excluded &&
       $p->_run_function('archive_to_irods_ml_warehouse')->[0]->excluded),
     'archival to irods switched off');
-  ok($p->_run_function('update_warehouse')->[0]->excluded,
-    'update to warehouse switched off');
   ok($p->no_summary_link, 'summary_link switched off');
 
   $p = npg_pipeline::pluggable->new(
@@ -179,8 +177,6 @@ subtest 'switching off functions' => sub {
   ok(($p->_run_function('archive_to_irods_samplesheet')->[0]->excluded &&
       $p->_run_function('archive_to_irods_ml_warehouse')->[0]->excluded),
     'archival to irods switched off');
-  ok(!$p->_run_function('update_warehouse')->[0]->excluded,
-    'update to warehouse switched on');
   ok($p->no_summary_link, 'summary_link switched off');
 };
 
@@ -192,7 +188,6 @@ subtest 'specifying functions via function_order' => sub {
     upload_auto_qc_to_qc_database
     run_run_archived
     run_qc_complete
-    update_warehouse_post_qc_complete
   );
 
   local $ENV{'PATH'} = join q[:], 't/bin', $ENV{'PATH'}; # mock LSF clients
@@ -261,7 +256,6 @@ subtest 'propagating options to the lsf executor' => sub {
     upload_auto_qc_to_qc_database
     run_run_archived
     run_qc_complete
-    update_warehouse_post_qc_complete
   );
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
@@ -311,7 +305,6 @@ subtest 'running the pipeline (lsf executor)' => sub {
     upload_auto_qc_to_qc_database
     run_run_archived
     run_qc_complete
-    update_warehouse_post_qc_complete
   );
 
   my $ref = {
@@ -371,7 +364,6 @@ subtest 'running the pipeline (wr executor)' => sub {
     upload_auto_qc_to_qc_database
     run_run_archived
     run_qc_complete
-    update_warehouse_post_qc_complete
   );
 
   my $ref = {

@@ -9,7 +9,8 @@ Pipeline-wide parameters can be set here
 
 - function_list_*.png
 
-  Graphical renderings of the pipeline graph to show job interdependencies. Node names refer to entries in npg_pipeline::pluggable::registry
+  Graphical renderings of the pipeline graph to show job interdependencies. Node
+names refer to entries in npg_pipeline::pluggable::registry
 
 - general_values.ini
 
@@ -81,3 +82,19 @@ If resources are supplied, there *must* be something under a *default* block
 - reserve_irods_slots - the number of iRODS tokens required by the job
 
 Note the settings required to protect assets from being overloaded with requests. iRODS and NFS in particular are vulnerable to saturation that leads to complicated pipeline failures.
+
+## Visualization of function graphs
+
+Convert the JSON graph format to the widely use GML (Graph Markup Language)
+format. A simple conversion example using a script supplied in this package:
+
+```
+(scripts/jgf2gml data/config_files/function_list_post_qc_review.json) > \
+  data/config_files/function_list_post_qc_review.json.gml
+```
+
+Use any tool capable of visualization GML graph format, for example,
+[Cytoscape](https://cytoscape.org/), which is capable of exporting the
+produced layout to a PNG image.
+
+
