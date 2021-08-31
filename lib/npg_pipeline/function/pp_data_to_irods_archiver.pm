@@ -11,7 +11,7 @@ extends 'npg_pipeline::function::seq_to_irods_archiver';
 
 our $VERSION = '0';
 
-Readonly::Scalar my $IRODS_PP_ROOT       => q{/seq/illumina/pp/runs};
+Readonly::Scalar my $IRODS_PP_ROOT       => q{illumina/pp/runs};
 Readonly::Scalar my $PUBLISH_SCRIPT_NAME => q{npg_publish_tree.pl};
 
 has '+irods_root_collection_ns' => (

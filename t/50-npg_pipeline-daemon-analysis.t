@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Exception;
 use Cwd;
 use File::Path qw{ make_path };
@@ -233,6 +233,28 @@ subtest 'compute runfolder path' => sub {
 
   my $runner = $package->new(npg_tracking_schema => $schema);
   is( $runner->runfolder_path4run(1234), $rf, 'runfolder path is correct');
+};
+subtest 'no_auto' => sub {
+  plan tests => 1;
+
+  local $ENV{PATH} = join q[:], $current_dir.'/t/bin/red', $ENV{PATH};
+  my $test_run;
+  $test_run = $schema->resultset(q[Run])->find(1234);
+  $test_run->update_run_status('analysis pending', 'pipeline',);
+  $test_run = $schema->resultset(q[Run])->find(1235);
+  $test_run->update_run_status('analysis pending', 'pipeline',);
+  $test_run = $schema->resultset(q[Run])->find(1236);
+  $test_run->update_run_status('analysis pending', 'pipeline',);
+
+  my $runner = test_analysis_runner->new(
+    pipeline_script_name => '/bin/true',
+    npg_tracking_schema  => $schema,
+  );
+
+  $runner->run();
+
+  is (join(q[ ],sort keys %{$runner->seen}), '1234', 'runs with no_auto and no_auto_analysis not seen');
+
 };
 
 1;

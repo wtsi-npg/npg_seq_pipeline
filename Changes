@@ -1,6 +1,24 @@
 LIST OF CHANGES
 ---------------
 
+release 60.2.0
+ - When generating lane taglist files truncate and pad i7 and i5 tags independently
+ - Support no_auto, no_auto_archive and no_auto_analysis tags for daemons
+ - npg_run_is_deletable - delete runs with status 'run cancelled' and
+   'data discarded' after 14 days of the status date irrespectively of
+   what study the samples belong to. The samplesheet is not available for
+   these runs. Prior to this change the code was accessing an external
+   source of LIMS data (XML LIMS API) to get information about the study.
+   This change also helps to go around very long deletion times which
+   are set for some studies. 
+ - Create class/package level methods in npg_pipeline::product::release::irods
+   to allow for reusing the logic about run and product iRODS collections
+   paths in the code outside of this package. 
+ - Stop loading data to the old warehouse. Remove
+   the update_ml_warehouse_post_qc_complete function from the archival
+   pipeline graph.
+ - Use CRAM files as input for the pulldown metrics autoqc job.
+
 release 60.1.0
   - GBS - block tag 0 from GBS pipeline and extra tests.
   - Update docs for samplesheet generation
