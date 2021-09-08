@@ -15,7 +15,8 @@ use npg_qc::Schema;
 extends 'npg_pipeline::base_resource';
 with qw/ npg_pipeline::product::release
          npg_pipeline::product::release::portable_pipeline /;
-with 'npg_common::roles::software_location' => { tools => [qw/npg_upload2climb npg_climb2mlwh/] };
+with 'npg_common::roles::software_location' =>
+     { tools => [qw/npg_upload2climb npg_climb2mlwh/] };
 
 our $VERSION = '0';
 
@@ -40,7 +41,7 @@ Readonly::Scalar my $CLIMB_ARCHIVAL_KEY    => q[climb_archival];
 Readonly::Array  my @CLIMB_ARCHIVAL_CREDENTIALS_KEYS => qw/user host pkey_file/;
 Readonly::Scalar my $PP_DATA_GLOB => q[*_{] .
                 q[trimPrimerSequences/*.mapped.bam,makeConsensus/*.fa] .
-				       q[}];
+                q[}];
 
 Readonly::Array  my @COLUMN_NAMES          => (
                                            $SAMPLE_NAME_COLUMN_NAME,
@@ -263,9 +264,10 @@ sub _build__samples4upload {
     $products4archive->{$sname}->{'product'} = $product;
 
     # Where are the files to upload?
-    my $dir = $self->pp_archive4product(
-                    $product, $self->_pipeline_config, $self->pp_archive_path);
-    $products4archive->{$sname}->{'pp_data_glob'} = catdir($dir, $PP_DATA_GLOB);
+    my $path = $self->_pp_archive4product_existing(
+      $product, $self->_pipeline_config, $self->pp_archive_path);
+    $products4archive->{$sname}->{'pp_data_glob'} =
+      catdir($path, $PP_DATA_GLOB);
   }
 
   return $products4archive;
@@ -352,6 +354,37 @@ sub _build__manifest_path {
   }
 
   return $path;
+}
+
+sub _pp_archive4product_existing {
+  my ($self, $product, $pp_conf, $path) = @_;
+
+  my $existing_path;
+  my $suggested_path = $self->pp_archive4product($product, $pp_conf, $path);
+  if (-e $suggested_path) {
+    $existing_path = $suggested_path;
+  } else {
+    $self->logcarp("$suggested_path does not exist, looking around");
+    # Look around. Any other versions of this pp in the parent
+    # directory?
+    my $parent = dirname($suggested_path);
+    if (-e $parent) {
+      # Should be a directory. We'll disregard soft links. 
+      my @dirs = grep { -d } glob "$parent/*";
+      # We expect to have a single existing directory.
+      if (@dirs == 0) {
+        $self->logcroak("Empty pp archive $parent (no versions)");
+      }
+      if (@dirs != 1) {
+        $self->logcroak("Directories for multiple pp versions in $parent");
+      }
+      $existing_path = $dirs[0];
+    } else {
+      $self->logcroak("pp archive directory $parent does not exist");
+    }
+  }
+
+  return $existing_path;
 }
 
 sub _climb_archival_options {
