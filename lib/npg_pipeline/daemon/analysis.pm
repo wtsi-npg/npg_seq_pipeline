@@ -52,6 +52,14 @@ sub _process_one_run {
     $self->info(qq{Already seen run $id_run, skipping...});
     return;
   }
+  if ($run->is_tag_set('no_auto')) {
+    $self->info(q{no_auto tag set, skipping...});
+    return;
+  }
+  if ($run->is_tag_set('no_auto_analysis')) {
+    $self->info(q{no_auto_analysis tag set, skipping...});
+    return;
+  }
 
   my $arg_refs = {
     batch_id     => $self->_get_batch_id($run),

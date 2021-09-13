@@ -48,4 +48,10 @@
   tag: workflow_NovaSeqStandard
 - id_tag: 51
   tag: workflow_NovaSeqXp
+- id_tag: 52
+  tag: no_auto
+- id_tag: 53
+  tag: no_auto_analysis
+- id_tag: 54
+  tag: no_auto_archive
 
