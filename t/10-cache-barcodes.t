@@ -241,12 +241,12 @@ use_ok(q{npg_pipeline::cache::barcodes});
       location     => $dir,
       i5opposite   => 1,
   );
-  $i7_tags = {1 => 'GTGGAT',   2 => 'ATAGGGCG', 3 => 'TAACGCGTGA', 888 => 'TGTGCAGC'};
-  $i5_tags = {1 => 'GCCAACCC', 2 => 'TGCATCGA', 3 => 'CCCTAACTTC', 888 => 'ACTGATGT'};
+  $i7_tags = {1 => 'GTGGAT', 2 => 'ATAGGGCG', 3 => 'TAACGCGTGA', 888 => 'TGTGCAGC'};
+  $i5_tags = {1 => 'GCCAAC', 2 => 'TGCATCGA', 3 => 'CCCTAACTTC', 888 => 'ACTGATGT'};
   ($index_list, $tag_seq_list) = $create_lane->_process_tag_list($i7_tags, $i5_tags, 888);
   is_deeply($index_list, [1,2,3,888], 'correct index list');
   is_deeply($tag_seq_list, 
-    [qw(GTGGATATCT-GCCAACCCGT ATAGGGCGAT-TGCATCGAGT TAACGCGTGA-CCCTAACTTC TGTGCAGCAT-ACTGATGTGT)],
+    [qw(GTGGATATCT-GCCAACGTGT ATAGGGCGAT-TGCATCGAGT TAACGCGTGA-CCCTAACTTC TGTGCAGCAT-ACTGATGTGT)],
     'i5oppsite dual phix mixed tag lengths padded correctly');
 
   $create_lane = npg_pipeline::cache::barcodes->new(
@@ -262,17 +262,6 @@ use_ok(q{npg_pipeline::cache::barcodes});
 
   $create_lane = npg_pipeline::cache::barcodes->new(
       lane_lims    => $lims->{1},
-      index_lengths=> [10,10],
-      location     => $dir,
-      i5opposite   => 1,
-  );
-  $i7_tags = {1 => 'GTGGAT', 2 => 'ATAGGGCG', 3 => 'AGCAAGAAGC'};
-  $i5_tags = {1 => 'GCCAAC', 2 => 'TGCATCGA', 3 => 'CCCTAACTTC'};
-  throws_ok { $create_lane->_process_tag_list($i7_tags, $i5_tags, 888) }
-    qr{Cannot extend for more bases than in padding sequence}, q{i5opposite mixed tag lengths i5 pad too short};
-
-  $create_lane = npg_pipeline::cache::barcodes->new(
-      lane_lims    => $lims->{1},
       index_lengths=> [13],
       location     => $dir,
   );
@@ -284,6 +273,7 @@ use_ok(q{npg_pipeline::cache::barcodes});
     'single-end haplotagging phix i7 tag padded correctly then a common N suffix is removed');
 
   # the following two test should be changed once we have the full 5-base i5 pads
+  # we still don't have the 5-base i5 pad but we do have the 5-base i5opposite pad
 
   $create_lane = npg_pipeline::cache::barcodes->new(
       lane_lims    => $lims->{1},
@@ -303,8 +293,11 @@ use_ok(q{npg_pipeline::cache::barcodes});
   );
   $i7_tags = {1 => 'GTGGATNNNNNNN', 2 => 'ATAGGGNNNNNNN', 3 => 'TAACGCNNNNNNN', 888 => 'TGTGCAGC'};
   $i5_tags = {1 => 'GCCAACNNNNNNN', 2 => 'TGCATCNNNNNNN', 3 => 'CCCTAANNNNNNN', 888 => 'ACTGATGT'};
-  throws_ok { $create_lane->_process_tag_list($i7_tags, $i5_tags, 888) }
-    qr{Cannot extend for more bases than in padding sequence}, q{i5opposite dual-end haplotagging phix i5 pad too short};
+  ($index_list, $tag_seq_list) = $create_lane->_process_tag_list($i7_tags, $i5_tags, 888);
+  is_deeply($index_list, [1,2,3,888], 'correct index list');
+  is_deeply($tag_seq_list,
+    [qw(GTGGAT-GCCAAC ATAGGG-TGCATC TAACGC-CCCTAA TGTGCA-ACTGAT)],
+    'i5opposite dual-end haplotagging phix i5 tag padded correctly then a common N suffix is removed');
 }
 
 {

@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - extended i5opposite pad to 5 bases
+
 release 60.2.0
  - When generating lane taglist files truncate and pad i7 and i5 tags independently
  - Support no_auto, no_auto_archive and no_auto_analysis tags for daemons
