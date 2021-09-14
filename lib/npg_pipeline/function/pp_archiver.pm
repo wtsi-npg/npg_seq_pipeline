@@ -264,8 +264,9 @@ sub _build__samples4upload {
     $products4archive->{$sname}->{'product'} = $product;
 
     # Where are the files to upload?
-    my $path = $self->_pp_archive4product_existing(
+    my $path = $self->pp_archive4product(
       $product, $self->_pipeline_config, $self->pp_archive_path);
+    $path = $self->_pp_archive4product_existing($path);
     $products4archive->{$sname}->{'pp_data_glob'} =
       catdir($path, $PP_DATA_GLOB);
   }
@@ -357,10 +358,9 @@ sub _build__manifest_path {
 }
 
 sub _pp_archive4product_existing {
-  my ($self, $product, $pp_conf, $path) = @_;
+  my ($self, $suggested_path) = @_;
 
   my $existing_path;
-  my $suggested_path = $self->pp_archive4product($product, $pp_conf, $path);
   if (-e $suggested_path) {
     $existing_path = $suggested_path;
   } else {
