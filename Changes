@@ -1,7 +1,17 @@
 LIST OF CHANGES
 ---------------
 
- - extended i5opposite pad to 5 bases
+release 60.3.0
+ - Extended i5opposite pad to 5 bases.
+ - Check for pp archive existence prior to job creation.
+   pp archival could notcope with data produced by non-current
+   pp versions. When the version of an artic pp is updated, the
+   pp archival jobs that are scheduled after the update, but have to
+   archive data, which was produced prior to the update, fail.
+   The solution is to check that the pp staging archive for the 'current'
+   pp version exists. If it does not exist, but there is an archive for
+   some other version, data from that staging archive should be archived.
+   Staging archives for multiple pp versions cause the code to error.
 
 release 60.2.0
  - When generating lane taglist files truncate and pad i7 and i5 tags independently
