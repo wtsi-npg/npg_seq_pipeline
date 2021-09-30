@@ -1,9 +1,9 @@
 use strict;
 use warnings;
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Exception;
 use File::Temp qw/tempdir/;
-use File::Path qw/make_path/;
+use File::Path qw/make_path remove_tree/;
 use File::Copy;
 use File::Slurp;
 use Log::Log4perl qw/:levels/;
@@ -208,6 +208,14 @@ subtest 'definition and manifest generation' => sub {
     product_conf_file_path => $product_conf,
     id_run                 => $id_run,
   };
+
+  # Scaffold top level of the artic pp archive on staging.
+  for my $t ((1 .. 3)) {
+    make_path("$pp_archive_path/plex$t/ncov2019_artic_nf/v.3");
+    for my $l ((1,2)) {
+      make_path("$pp_archive_path/lane$l/plex$t/ncov2019_artic_nf/v.3");
+    }
+  } 
 
   my $f = npg_pipeline::function::pp_archiver->new($init);
   my $ds = $f->create();
@@ -509,6 +517,82 @@ subtest 'skip unknown pipeline' => sub {
   is (scalar @{$ds}, 1, '1 definition is returned');
   is ($ds->[0]->excluded, 1, 'function is excluded');
     'unknown pipeline archivable pipeline skipped';
+};
+
+# This test drops archive pp directories for the artic pipeline and model
+# different error conditions and a fallback to results of a non-current pp
+# version if it exists. Keep this set of tests at the end so that no other
+# test outcomes are affected.
+subtest 'fallback to non-current pp version' => sub {
+  plan tests => 9;
+
+  # Remove top level directories of the artic pp archive on staging.
+  for my $t ((1 .. 3)) {
+    remove_tree("$pp_archive_path/plex$t/ncov2019_artic_nf");
+    for my $l ((1,2)) {
+      remove_tree("$pp_archive_path/lane$l/plex$t/ncov2019_artic_nf");
+    }
+  }
+
+  my $id_run = 26291;
+  my $product_conf =
+    q[t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release.yml];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    q[t/data/portable_pipelines/samplesheet4archival_none_controls.csv];
+  my $init = {
+    %default,
+    product_conf_file_path => $product_conf,
+    id_run                 => $id_run,
+    qc_schema              => $schema
+  };
+
+  my $path = "$pp_archive_path/plex1/ncov2019_artic_nf";
+  my $f = npg_pipeline::function::pp_archiver->new($init);
+  throws_ok { $f->create() }
+    qr/pp archive directory $path does not exist/,
+    'error when the archive directory for the artic pipeline does not exist';
+
+  make_path($path);
+  throws_ok { $f->create() }
+    qr/Empty pp archive $path \(no versions\)/,
+    'error when no archive directory exists for the versioned artic pipeline';
+
+  make_path("$path/v.2.0");
+  make_path("$path/v.4.0");
+  throws_ok { $f->create() }
+    qr/Directories for multiple pp versions in $path/,
+    'error when directories for multiple versions of the pp are present';
+
+  for my $t ((1 .. 3)) {
+    make_path("$pp_archive_path/plex$t/ncov2019_artic_nf/v.3");
+  }
+  $f = npg_pipeline::function::pp_archiver->new($init);
+  my $mpath = $f->_manifest_path;
+  unlink $mpath;
+  lives_ok { $f->create() } 'no error when one of the multiple directories ' .
+    'is the directory for the current version';
+  ok (-e $mpath, 'manifest file exists');
+  my @lines = grep { $_ =~ m{/ncov2019_artic_nf/v\.3/} } read_file($mpath);
+  is (scalar @lines, 3,
+    'path with the current version is used in the manifest');
+
+  for my $t ((1 .. 3)) {
+    rmdir "$pp_archive_path/plex$t/ncov2019_artic_nf/v.3";
+  }
+  rmdir "$path/v.4.0";
+  for my $t ((2, 3)) {
+    make_path("$pp_archive_path/plex$t/ncov2019_artic_nf/v.2.0");
+  }
+  # A directory for one non-current version is left.
+  $f = npg_pipeline::function::pp_archiver->new($init);
+  $mpath = $f->_manifest_path;
+  unlink $mpath;
+  lives_ok { $f->create() }
+    'no error when one directory for a non-current version is present';
+  ok (-e $mpath, 'manifest file exists');
+  @lines = grep { $_ =~ m{/ncov2019_artic_nf/v\.2\.0/} } read_file($mpath);
+  is (scalar @lines, 3,
+    'path with the non-current version is used in the manifest');
 };
 
 1;

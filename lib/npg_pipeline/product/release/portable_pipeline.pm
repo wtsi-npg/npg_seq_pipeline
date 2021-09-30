@@ -184,8 +184,9 @@ sub pp_archive4product_relative {
 
 =head2 pp_archive4product
 
-  Returns a product archive for a portable pipeline relative to
-  the supplied path. Can be used as a class method.
+  Returns a product archive for a portable pipeline using the supplied
+  path as a base. The returned path might not exist. Can be used as a
+  class method.
   
   my $apath = $obj->pp_archive4product($product, $pp_conf, $path);
 
@@ -417,7 +418,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2020 Genome Research Ltd.
+Copyright (C) 2020,2021 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
