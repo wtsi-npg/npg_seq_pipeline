@@ -22,7 +22,7 @@ Readonly::Scalar my $TAG_LIST_FILE_HEADER => qq{barcode_sequence\tbarcode_name\t
 # for i5 only know the 2-bases pad so currently we can pad a 8-base i5 tag (i.e. dual-index phix) to 10 bases
 Readonly::Scalar my $I7_TAG_PAD => q(ATCTC);
 Readonly::Scalar my $I5_TAG_PAD => q(AC);
-Readonly::Scalar my $I5_TAG_OPP_PAD => q(GT);
+Readonly::Scalar my $I5_TAG_OPP_PAD => q(GTGTA);
 Readonly::Scalar my $I5_TAG_MISSING => q(TCTTTCCCTACAC);
 Readonly::Scalar my $I5_TAG_OPP_MISSING => q(AGATCTCGGTGGT);
 
