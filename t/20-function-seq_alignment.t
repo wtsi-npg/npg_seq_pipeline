@@ -1622,6 +1622,7 @@ subtest 'HiC_flags' => sub {
         'bwa_mem_S_flag' => 'on',
         'bwa_mem_P_flag' => 'on',
         'bwa_mem_B_value' => '5',
+        'spatial_filter_switch' => 'off',
       },
     ],
     'ops' => {

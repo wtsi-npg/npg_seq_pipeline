@@ -310,6 +310,15 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                     $l->separate_y_chromosome_data    ? q(yhuman) :
                     q();
 
+  my $is_haplotag_lib = $l->library_type && ($l->library_type =~ /Haplotagging/smx);
+  if($is_haplotag_lib) {
+    $p4_param_vals->{haplotag_processing} = q[on];
+    if($self->is_i5opposite) {
+      $p4_param_vals->{ht_revcomp_flag} = q[on];
+      
+    }
+  }
+
   my $is_chromium_lib = $l->library_type && ($l->library_type =~ /Chromium/smx);
   my $do_target_alignment = $is_chromium_lib ? 0
                              : ((not $is_tag_zero_product or $self->align_tag0)
