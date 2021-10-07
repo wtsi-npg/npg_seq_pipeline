@@ -288,6 +288,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:subsample-';
   }
 
+  if($self->platform_NovaSeq) {  # skip spatial filter
+    $p4_param_vals->{spatial_filter_switch} = q[off];
+  }
+
   my $do_rna = $self->_do_rna_analysis($dp);
 
   # Reference for target alignment will be overridden where gbs_plex exists 
