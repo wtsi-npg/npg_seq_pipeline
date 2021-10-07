@@ -315,7 +315,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{haplotag_processing} = q[on];
     if($self->is_i5opposite) {
       $p4_param_vals->{ht_revcomp_flag} = q[on];
-      
     }
   }
 
