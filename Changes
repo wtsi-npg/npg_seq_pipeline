@@ -4,6 +4,8 @@ LIST OF CHANGES
  - Removed co-location check (host and staging area) from the pipeline
    daemon code. This check is no longer relevant, the staging servers
    listed in the code are no longer in use. 
+ - Remove pipeline extensions for the npg_tracking daemon monitor,
+   they are no longer in use.
 
 release 60.3.0
  - Extended i5opposite pad to 5 bases.

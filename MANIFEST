@@ -84,8 +84,6 @@ lib/npg_pipeline/validation/common.pm
 lib/npg_pipeline/validation/entity.pm
 lib/npg_pipeline/validation/irods.pm
 lib/npg_pipeline/validation/s3.pm
-lib/npg_tracking/daemon/analysis.pm
-lib/npg_tracking/daemon/archival.pm
 MANIFEST			This list of files
 README
 README.md
@@ -145,8 +143,6 @@ t/30-executor-wr.t
 t/30-executor.t
 t/50-npg_pipeline-daemon-analysis.t
 t/50-npg_pipeline-daemon-archival.t
-t/60-npg_tracking-daemon-analysis.t
-t/60-npg_tracking-daemon-archival.t
 t/bin/bkill
 t/bin/bresume
 t/bin/bsub
