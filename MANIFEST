@@ -150,9 +150,6 @@ t/60-npg_tracking-daemon-archival.t
 t/bin/bkill
 t/bin/bresume
 t/bin/bsub
-t/bin/dodo/machine-location
-t/bin/machine-location
-t/bin/red/machine-location
 t/data/bam_flagstats/1234_1_bam_flagstats.json
 t/data/bam_flagstats/1234_3_bam_flagstats.json
 t/data/bam_flagstats/1234_3_phix_bam_flagstats.json

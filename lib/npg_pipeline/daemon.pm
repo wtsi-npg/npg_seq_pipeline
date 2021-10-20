@@ -20,10 +20,6 @@ with qw{
 
 our $VERSION = '0';
 
-Readonly::Scalar my $GREEN_DATACENTRE  => q[green];
-Readonly::Array  my @GREEN_STAGING     =>
-   qw(sf18 sf19 sf20 sf21 sf22 sf23 sf24 sf25 sf26 sf27 sf28 sf29 sf30 sf31 sf46 sf47 sf49 sf50 sf51);
-
 Readonly::Scalar my $SLEEPY_TIME => 900;
 
 has 'pipeline_script_name' => (
@@ -49,23 +45,6 @@ has 'seen' => (
   metaclass => 'NoGetopt',
   default   => sub { return {}; },
 );
-
-has 'green_host' => (
-  isa        => q{Bool},
-  is         => q{ro},
-  metaclass  => 'NoGetopt',
-  lazy_build => 1,
-);
-sub _build_green_host {
-  my $self = shift;
-  my $datacentre = `machine-location|grep datacentre`;
-  if ($datacentre) {
-    $self->info(qq{Running in $datacentre});
-    return ($datacentre && $datacentre =~ /$GREEN_DATACENTRE/xms) ? 1 : 0;
-  }
-  $self->warn(q{Do not know what datacentre I am running in});
-  return;
-}
 
 has 'npg_tracking_schema' => (
   isa        => q{npg_tracking::Schema},
@@ -99,23 +78,6 @@ sub runs_with_status {
       $condition,
       {prefetch=>q[run_status_dict], order_by => q[me.date],}
     )->all();
-}
-
-sub staging_host_match {
-  my ($self, $folder_path_glob) = @_;
-
-  my $match = 1;
-
-  if (defined $self->green_host) {
-    if (!$folder_path_glob) {
-      $self->logcroak(
-	q[Need folder_path_glob to decide whether the run folder ] .
-        q[and the daemon host are co-located]);
-    }
-    $match =  $self->green_host ^ none { $folder_path_glob =~ m{/$_/}smx } @GREEN_STAGING;
-  }
-
-  return $match;
 }
 
 sub run_command {
@@ -255,10 +217,6 @@ run status timestamp order.
 
 If no run satisfies the conditions given by the argument(s), an
 empty list is returned.
-
-=head2 staging_host_match
-
-=head2 green_host
 
 =head2 local_path
 
