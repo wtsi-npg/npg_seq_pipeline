@@ -3,6 +3,8 @@ LIST OF CHANGES
 
  - do haplotag processing for appropriate library types
  - switch off spatial filtering application and QC check for NovaSeq platform
+ - Remove pipeline extensions for the npg_tracking daemon monitor,
+   they are no longer in use.
 
 release 60.3.0
  - Extended i5opposite pad to 5 bases.
