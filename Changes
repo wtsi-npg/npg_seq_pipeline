@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - do haplotag processing for appropriate library types
+ - switch off spatial filtering application and QC check for NovaSeq platform
+
 release 60.3.0
  - Extended i5opposite pad to 5 bases.
  - Check for pp archive existence prior to job creation.
