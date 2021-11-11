@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 60.4.0
  - Remove pipeline extensions for the npg_tracking daemon monitor,
    they are no longer in use.
 
