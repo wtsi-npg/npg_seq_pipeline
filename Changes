@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 60.4.0
  - do haplotag processing for appropriate library types
  - switch off spatial filtering application and QC check for NovaSeq platform
  - Remove pipeline extensions for the npg_tracking daemon monitor,
