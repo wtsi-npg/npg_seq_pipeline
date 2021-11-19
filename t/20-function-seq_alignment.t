@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 17;
+use Test::More tests => 18;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -13,6 +13,8 @@ use Log::Log4perl qw/:levels/;
 use JSON;
 use Cwd;
 use List::Util qw/first/;
+
+use Data::Dumper;
 
 use Moose::Util qw(apply_all_roles);
 
@@ -1637,6 +1639,171 @@ subtest 'HiC_flags' => sub {
   };
 
   is_deeply($h, $expected, 'correct json file content for run 37416 lane 2 tag 1 p4 parameters');
+
+};
+
+subtest 'Haplotagging test' => sub {
+  plan tests => 5;
+
+  my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
+  my $runfolder_path = join q[/], $dir, 'compositions', $runfolder;
+  my $bbd = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427';
+  my $bc_path = join q[/], $bbd, 'no_cal';
+  make_path $bc_path;
+  my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/metadata_cache_24135';
+  make_path $cache_dir;
+  make_path "$bc_path/lane1";
+  make_path "$bc_path/archive/tileviz";
+
+  copy('t/data/miseq/24135_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135_haplotag.csv];
+
+  my $ms_gen;
+  lives_ok {
+    $ms_gen = npg_pipeline::function::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2017},
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
+      resource          => $default
+    )
+  } 'no error creating seq_alignment object';
+
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
+  my $da = $ms_gen->generate('analysis_pipeline');
+  ok (($da and (@{$da} == 3)), 'three definitions returned');
+
+  my $d = _find($da, 1, 1);
+  isa_ok ($d, 'npg_pipeline::function::definition');
+# is ($d->command, $command, 'command for run 37416 lane 2 tag 1');
+
+  ## check json file for lane 1 tag 1
+  my $json_file = qq{$bc_path/24135_1#1_p4s2_pv_in.json};
+  ok (-e $json_file, 'json params file exists for run 24135 lane 1 tag 1');
+  my $h = from_json(slurp($json_file));
+
+# my $expected = {
+#   'assign' => [
+#     {
+#       'spatial_filter_file' => 'DUMMY',
+#       'recal_dir' => join(q[/], $bbd, 'no_cal'),
+#       'reference_genome_fasta' => join(q[/], $dir, 'references/Mus_musculus/GRCm38/all/fasta/Mus_musculus.GRCm38.68.dna.toplevel.fa'),
+#       'spatial_filter_rg_value' => '37416_2#1',
+#       'run_lane_ss_fq1' => join(q[/], $bbd, 'no_cal/archive/lane2/plex1/.npg_cache_10000/37416_2#1_1.fastq'),
+#       'alignment_reference_genome' => join(q[/], $dir, 'references/Mus_musculus/GRCm38/all/bwa0_6/Mus_musculus.GRCm38.68.dna.toplevel.fa'),
+#       's2_id_run' => 37416,
+#       's2_filter_files' => join(q[/], $bbd, 'no_cal/37416_2.spatial_filter'),
+#       'af_metrics' => '37416_2#1_bam_alignment_filter_metrics.json',
+#       'bwa_executable' => 'bwa0_6',
+#       'markdup_method' => 'biobambam',
+#       's2_se_pe' => 'pe',
+#       'rpt' => '37416_2#1',
+#       's2_tag_index' => 1,
+#       'markdup_optical_distance_value' => '2500',
+#       'alignment_method' => 'bwa_mem',
+#       'phix_reference_genome_fasta' => join(q[/], $dir, 'references/PhiX/Illumina/all/fasta/phix-illumina.fa'),
+#       'seqchksum_orig_file' => join(q[/], $bbd, 'no_cal/archive/lane2/plex1/37416_2#1.orig.seqchksum'),
+#       'subsetsubpath' => '.npg_cache_10000/',
+#       's2_input_format' => 'cram',
+#       's2_position' => 'POSITION',
+#       'incrams' => [
+#         join(q[/], $bbd, 'no_cal/37416_2#1.cram')
+#       ],
+#       'reference_dict' => join(q[/], $dir, 'references/Mus_musculus/GRCm38/all/picard/Mus_musculus.GRCm38.68.dna.toplevel.fa.dict'),
+#       'outdatadir' => join(q[/], $bbd, 'no_cal/archive/lane2/plex1'),
+#       'run_lane_ss_fq2' => join(q[/], $bbd, 'no_cal/archive/lane2/plex1/.npg_cache_10000/37416_2#1_2.fastq'),
+#       'tag_metrics_files' => join(q[/], $bbd, 'no_cal/archive/lane2/qc/37416_2.tag_metrics.json'),
+#       'samtools_executable' => 'samtools',
+#       'is_HiC_lib' => 1,
+#       'bwa_mem_5_flag' => 'on',
+#       'bwa_mem_S_flag' => 'on',
+#       'bwa_mem_P_flag' => 'on',
+#       'bwa_mem_B_value' => '5',
+#       'spatial_filter_switch' => 'off',
+#     },
+#   ],
+#   'ops' => {
+#     'prune' => [
+#       'fop.*_bmd_multiway:calibration_pu-',
+#       'fop.*samtools_stats_F0.*_target.*-',
+#       'fop.*samtools_stats_F0.*00_bait.*-'
+#     ],
+#     'splice' => []
+#   },
+#   'assign_local' => {}
+# };
+
+######################
+######################
+   my $expected = {
+     'assign' => [
+        {
+##        'outdatadir' => '/tmp/o3Hk0jhA14/compositions/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex1',
+          'outdatadir' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1'),
+          's2_id_run' => 24135,
+          's2_position' => 'POSITION',
+##        'phix_reference_genome_fasta' => '/tmp/o3Hk0jhA14/references/PhiX/Illumina/all/fasta/phix-illumina.fa',
+          'phix_reference_genome_fasta' => join(q[/], $dir, 'references/PhiX/Illumina/all/fasta/phix-illumina.fa'),
+          'subsetsubpath' => '.npg_cache_10000/',
+          's2_se_pe' => 'pe',
+          'incrams' => [
+##          '/tmp/o3Hk0jhA14/compositions/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/24135_1#1.cram'
+            join(q[/], $bbd, 'no_cal/24135_1#1.cram')
+          ],
+##        'run_lane_ss_fq1' => '/tmp/o3Hk0jhA14/compositions/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex1/.npg_cache_10000/24135_1#1_1.fastq',
+          'run_lane_ss_fq1' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/.npg_cache_10000/24135_1#1_1.fastq'),
+##        'reference_dict' => '/tmp/o3Hk0jhA14/references/Homo_sapiens/GRCh38_15/all/picard/Homo_sapiens.GRCh38_15.fa.dict',
+          'reference_dict' => join(q[/], $dir, 'references/Homo_sapiens/GRCh38_15/all/picard/Homo_sapiens.GRCh38_15.fa.dict'),
+##        's2_filter_files' => '/tmp/o3Hk0jhA14/compositions/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/24135_1.spatial_filter',
+          's2_filter_files' => join(q[/], $bbd, 'no_cal/24135_1.spatial_filter'),
+          's2_tag_index' => 1,
+##        'reference_genome_fasta' => '/tmp/o3Hk0jhA14/references/Homo_sapiens/GRCh38_15/all/fasta/Homo_sapiens.GRCh38_15.fa',
+          'reference_genome_fasta' => join(q[/], $dir, 'references/Homo_sapiens/GRCh38_15/all/fasta/Homo_sapiens.GRCh38_15.fa'),
+          'haplotag_processing' => 'on',
+##        'seqchksum_orig_file' => '/tmp/o3Hk0jhA14/compositions/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex1/24135_1#1.orig.seqchksum',
+          'seqchksum_orig_file' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/24135_1#1.orig.seqchksum'),
+          'markdup_method' => 'samtools',
+##        'recal_dir' => '/tmp/o3Hk0jhA14/compositions/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal',
+          'recal_dir' => join(q[/], $bbd, 'no_cal'),
+          'spatial_filter_rg_value' => '24135_1#1',
+##        'run_lane_ss_fq2' => '/tmp/o3Hk0jhA14/compositions/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/plex1/.npg_cache_10000/24135_1#1_2.fastq',
+          'run_lane_ss_fq2' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/.npg_cache_10000/24135_1#1_2.fastq'),
+          'af_metrics' => '24135_1#1_bam_alignment_filter_metrics.json',
+          'alignment_method' => 'bwa_mem',
+          'bwa_executable' => 'bwa0_6',
+          's2_input_format' => 'cram',
+          'rpt' => '24135_1#1',
+##        'alignment_reference_genome' => '/tmp/o3Hk0jhA14/references/Homo_sapiens/GRCh38_15/all/bwa0_6/Homo_sapiens.GRCh38_15.fa',
+          'alignment_reference_genome' => join(q[/], $dir, 'references/Homo_sapiens/GRCh38_15/all/bwa0_6/Homo_sapiens.GRCh38_15.fa'),
+          'markdup_optical_distance_value' => '100',
+          'samtools_executable' => 'samtools',
+          'spatial_filter_file' => 'DUMMY',
+##        'tag_metrics_files' => '/tmp/o3Hk0jhA14/compositions/171020_MS5_24135_A_MS5476963-300V2/Data/Intensities/BAM_basecalls_20171127-134427/no_cal/archive/lane1/qc/24135_1.tag_metrics.json'
+          'tag_metrics_files' => join(q[/], $bbd, 'no_cal/archive/lane1/qc/24135_1.tag_metrics.json'),
+        },
+      ],
+      'assign_local' => {},
+      'ops' => {
+        'prune' => [
+          'fop.*_bmd_multiway:calibration_pu-',
+          'fop.*samtools_stats_F0.*_target.*-',
+          'fop.*samtools_stats_F0.*00_bait.*-'
+        ],
+        'splice' => []
+      }
+    };
+######################
+######################
+#warn q[json dump: ], Dumper($h);
+
+is_deeply($h, $expected, 'correct json file content for run 37416 lane 2 tag 1 p4 parameters');
 
 };
 
