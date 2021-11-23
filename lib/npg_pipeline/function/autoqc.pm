@@ -289,6 +289,10 @@ sub _should_run {
   my $is_pool = $product->lims->is_pool;
   my $is_tag_zero = $product->is_tag_zero_product;
 
+  if($self->qc_to_run() eq 'spatial_filter' and $self->platform_NovaSeq) {
+    return 0;
+  }
+
   if ($self->_is_lane_level_check()) {
     return !$is_plex;
   }
