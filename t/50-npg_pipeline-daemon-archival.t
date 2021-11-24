@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 24;
+use Test::More tests => 23;
 use Test::Exception;
 use Cwd;
 use List::MoreUtils qw{any};
@@ -26,7 +26,6 @@ my $script = join q[/],  $temp_directory, $script_name;
 `touch $script`;
 `chmod +x $script`;
 my $current_dir = getcwd();
-local $ENV{PATH} = join q[:], $temp_directory, $current_dir.'/t/bin/red', $ENV{PATH};
 
 my $schema = t::dbic_util->new->test_schema();
 my $test_run = $schema->resultset(q[Run])->find(1234);
@@ -61,7 +60,6 @@ package main;
   like($runner->_generate_command(1234),
     qr/npg_pipeline_post_qc_review --verbose --runfolder_path \/some\/path/,
     q{generated command is correct});
-  ok(!$runner->green_host, 'host is not in green datacentre');
 
   my $status = 'archival pending';
   $schema->resultset(q[Run])->find(2)->update_run_status($status, 'pipeline');
@@ -190,15 +188,16 @@ subtest 'propagate failure of the command to run to the caller' => sub {
 };
 
 subtest 'no_auto tag' => sub {
-  plan tests => 1;
-  local $ENV{PATH} = join q[:], $temp_directory, $current_dir.'/t/bin/red', $ENV{PATH};
+  plan tests => 3;
 
   $test_run = $schema->resultset(q[Run])->find(1234);
-  $test_run->update_run_status('archival pending', 'pipeline',);
+  $test_run->update_run_status('archival pending', 'pipeline');
   $test_run = $schema->resultset(q[Run])->find(1236);
-  $test_run->update_run_status('archival pending', 'pipeline',);
+  ok ($test_run->is_tag_set('no_auto'), 'tag set');
+  $test_run->update_run_status('archival pending', 'pipeline');
   $test_run = $schema->resultset(q[Run])->find(1237);
-  $test_run->update_run_status('archival pending', 'pipeline',);
+  ok ($test_run->is_tag_set('no_auto_archive'), 'tag set');
+  $test_run->update_run_status('archival pending', 'pipeline');
 
   my $runner = test_archival_runner->new(
     pipeline_script_name => '/bin/true',
@@ -206,7 +205,8 @@ subtest 'no_auto tag' => sub {
   );
 
   $runner->run();
-  is (join(q[ ],sort {$a <=> $b} keys %{$runner->seen}), '1234', 'correct list of seen runs');
+  is (join(q[ ],sort {$a <=> $b} keys %{$runner->seen}), '1234',
+    'correct list of seen runs');
 };
 
 1;

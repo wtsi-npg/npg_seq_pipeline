@@ -2,6 +2,9 @@ LIST OF CHANGES
 ---------------
 
 release 60.4.0
+ - Removed co-location check (host and staging area) from the pipeline
+   daemon code. This check is no longer relevant, the staging servers
+   listed in the code are no longer in use. 
  - do haplotag processing for appropriate library types
  - switch off spatial filtering application and QC check for NovaSeq platform
  - Remove pipeline extensions for the npg_tracking daemon monitor,

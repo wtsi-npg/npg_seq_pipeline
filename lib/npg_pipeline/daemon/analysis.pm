@@ -24,9 +24,7 @@ sub run {
 
   foreach my $run ($self->runs_with_status($ANALYSIS_PENDING)) {
     try {
-      if ( $self->staging_host_match($run->folder_path_glob)) {
-        $self->_process_one_run($run);
-      }
+      $self->_process_one_run($run);
     } catch {
       $self->warn(
         sprintf 'Error processing run %i: %s', $run->id_run(), $_ );

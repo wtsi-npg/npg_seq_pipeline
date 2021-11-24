@@ -34,8 +34,7 @@ sub run {
       if ($self->seen->{$id_run}) {
         $self->info(qq{Already seen run $id_run, skipping...});
       } else {
-        if ( $self->staging_host_match($run->folder_path_glob) &&
-             $self->_can_start_archival() ) {
+        if ( $self->_can_start_archival() ) {
           if ($run->is_tag_set('no_auto')) {
             $self->info(q{no_auto tag set, skipping...});
           } elsif ($run->is_tag_set('no_auto_archive')) {
