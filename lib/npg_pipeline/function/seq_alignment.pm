@@ -288,6 +288,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:subsample-';
   }
 
+  if($self->platform_NovaSeq) {  # skip spatial filter
+    $p4_param_vals->{spatial_filter_switch} = q[off];
+  }
+
   my $do_rna = $self->_do_rna_analysis($dp);
 
   # Reference for target alignment will be overridden where gbs_plex exists 
@@ -305,6 +309,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
                     $l->contains_nonconsented_xahuman ? q(xahuman) :
                     $l->separate_y_chromosome_data    ? q(yhuman) :
                     q();
+
+  my $is_haplotag_lib = $l->library_type && ($l->library_type =~ /Haplotagging/smx);
+  if($is_haplotag_lib) {
+    $p4_param_vals->{haplotag_processing} = q[on];
+    if($self->is_i5opposite) {
+      $p4_param_vals->{ht_revcomp_flag} = q[on];
+    }
+  }
 
   my $is_chromium_lib = $l->library_type && ($l->library_type =~ /Chromium/smx);
   my $do_target_alignment = $is_chromium_lib ? 0
