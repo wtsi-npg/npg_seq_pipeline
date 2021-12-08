@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 17;
+use Test::More tests => 18;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -1622,6 +1622,7 @@ subtest 'HiC_flags' => sub {
         'bwa_mem_S_flag' => 'on',
         'bwa_mem_P_flag' => 'on',
         'bwa_mem_B_value' => '5',
+        'spatial_filter_switch' => 'off',
       },
     ],
     'ops' => {
@@ -1636,6 +1637,102 @@ subtest 'HiC_flags' => sub {
   };
 
   is_deeply($h, $expected, 'correct json file content for run 37416 lane 2 tag 1 p4 parameters');
+
+};
+
+subtest 'Haplotagging test' => sub {
+  plan tests => 5;
+
+  my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
+  my $runfolder_path = join q[/], $dir, 'compositions', $runfolder;
+  my $bbd = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427';
+  my $bc_path = join q[/], $bbd, 'no_cal';
+  make_path $bc_path;
+  my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/metadata_cache_24135';
+  make_path $cache_dir;
+  make_path "$bc_path/lane1";
+  make_path "$bc_path/archive/tileviz";
+
+  copy('t/data/miseq/24135_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135_haplotag.csv];
+
+  my $ms_gen;
+  lives_ok {
+    $ms_gen = npg_pipeline::function::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2017},
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
+      resource          => $default
+    )
+  } 'no error creating seq_alignment object';
+
+  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+  $ms_gen->create_product_level();
+
+  my $da = $ms_gen->generate('analysis_pipeline');
+  ok (($da and (@{$da} == 3)), 'three definitions returned');
+
+  my $d = _find($da, 1, 1);
+  isa_ok ($d, 'npg_pipeline::function::definition');
+
+  ## check json file for lane 1 tag 1
+  my $json_file = qq{$bc_path/24135_1#1_p4s2_pv_in.json};
+  ok (-e $json_file, 'json params file exists for run 24135 lane 1 tag 1');
+  my $h = from_json(slurp($json_file));
+
+   my $expected = {
+     'assign' => [
+        {
+          'outdatadir' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1'),
+          's2_id_run' => 24135,
+          's2_position' => 'POSITION',
+          'phix_reference_genome_fasta' => join(q[/], $dir, 'references/PhiX/Illumina/all/fasta/phix-illumina.fa'),
+          'subsetsubpath' => '.npg_cache_10000/',
+          's2_se_pe' => 'pe',
+          'incrams' => [
+            join(q[/], $bbd, 'no_cal/24135_1#1.cram')
+          ],
+          'run_lane_ss_fq1' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/.npg_cache_10000/24135_1#1_1.fastq'),
+          'reference_dict' => join(q[/], $dir, 'references/Homo_sapiens/GRCh38_15/all/picard/Homo_sapiens.GRCh38_15.fa.dict'),
+          's2_filter_files' => join(q[/], $bbd, 'no_cal/24135_1.spatial_filter'),
+          's2_tag_index' => 1,
+          'reference_genome_fasta' => join(q[/], $dir, 'references/Homo_sapiens/GRCh38_15/all/fasta/Homo_sapiens.GRCh38_15.fa'),
+          'haplotag_processing' => 'on',
+          'seqchksum_orig_file' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/24135_1#1.orig.seqchksum'),
+          'markdup_method' => 'samtools',
+          'recal_dir' => join(q[/], $bbd, 'no_cal'),
+          'spatial_filter_rg_value' => '24135_1#1',
+          'run_lane_ss_fq2' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/.npg_cache_10000/24135_1#1_2.fastq'),
+          'af_metrics' => '24135_1#1_bam_alignment_filter_metrics.json',
+          'alignment_method' => 'bwa_mem',
+          'bwa_executable' => 'bwa0_6',
+          's2_input_format' => 'cram',
+          'rpt' => '24135_1#1',
+          'alignment_reference_genome' => join(q[/], $dir, 'references/Homo_sapiens/GRCh38_15/all/bwa0_6/Homo_sapiens.GRCh38_15.fa'),
+          'markdup_optical_distance_value' => '100',
+          'samtools_executable' => 'samtools',
+          'spatial_filter_file' => 'DUMMY',
+          'tag_metrics_files' => join(q[/], $bbd, 'no_cal/archive/lane1/qc/24135_1.tag_metrics.json'),
+        },
+      ],
+      'assign_local' => {},
+      'ops' => {
+        'prune' => [
+          'fop.*_bmd_multiway:calibration_pu-',
+          'fop.*samtools_stats_F0.*_target.*-',
+          'fop.*samtools_stats_F0.*00_bait.*-'
+        ],
+        'splice' => []
+      }
+    };
+
+is_deeply($h, $expected, 'correct json file content for run 37416 lane 2 tag 1 p4 parameters');
 
 };
 
