@@ -570,7 +570,9 @@ sub _is_duplexseq {
   my ( $self, $lane_lims ) = @_;
 
   # I've restricted this to library_types which exactly match Duplex-Seq to exclude the old library_type Bidirectional Duplex-seq
-  my $is_duplexseq = any {$_->library_type && $_->library_type eq q[Duplex-Seq]}
+  # the Duplex-Seq library prep has been replaced by the NanoSeq library prep, the analysis is the same and the Duplex-Seq library_type is still in use
+  # so there is no need to rename this function but there are two new library_types Targeted NanoSeq Pulldown Twist and Targeted NanoSeq Pulldown Agilent
+  my $is_duplexseq = any {$_->library_type && ($_->library_type eq q[Duplex-Seq] || $_->library_type =~/^Targeted NanoSeq Pulldown/sm)}
                   $lane_lims->descendants();
 
   return $is_duplexseq;

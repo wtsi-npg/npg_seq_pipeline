@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - Add Targeted NanoSeq Pulldown to Duplex-Seq analysis library_type list
+
 release 60.4.0
  - Removed co-location check (host and staging area) from the pipeline
    daemon code. This check is no longer relevant, the staging servers
