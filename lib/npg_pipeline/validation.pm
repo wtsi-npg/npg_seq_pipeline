@@ -670,11 +670,41 @@ sub _irods_seq_deletable {
   my $deletable = $v->archived_for_deletion();
   push @{$self->eligible_product_entities}, @{$v->eligible_product_entities};
 
+  # Stepping back from a convention to always run every check.
+  if ($deletable) {
+    $deletable = $self->_irods_seq_pp_deletable();
+  }
+
   my $m = sprintf 'Files in iRODS: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
   return $deletable;
+}
+
+sub _irods_seq_pp_deletable {
+  my $self = shift;
+  ######
+  # A simplified procedure, which will stop and return 0 (not deletable)
+  # as soon as something goes wrong or the first incorrectly archived
+  # file is found.
+  # No checks are done for products for which no pp was run, these
+  # products are considered deletable in the context of this method.
+  #
+  foreach my $p (@{$self->product_entities}) {
+    # get study conf for a product
+    # if 'irods_pp' > 'filters' > 'include' sectin exists
+    #   - apply include/exclude filter to the pp product staging archive
+    #     to get a list of files
+    #   - too many or too few files - error
+    #   for each file type
+    #     - create an instance of npg_pipeline::validation::irods
+    #     - invoke archived_for_deletion() for the instance
+    #   go to next iteration if no error and archived_for_deletion() returned
+    #   true ('deletable')
+  }
+
+  return 1;
 }
 
 sub _autoqc_deletable {
