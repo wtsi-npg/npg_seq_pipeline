@@ -36,11 +36,9 @@ sub create {
 
     my @products = grep { $self->is_release_data($_) }
                    @{$self->products->{data_products}};
-
     foreach my $product (@products) {
-      my $config = $self->find_study_config($product);
-      $config or next;
-      my $enable = $config->{irods_pp}->{enable};
+
+      my $enable = $self->is_for_pp_irods_release($product);
       $self->info(sprintf 'Pp data for product %s will%s be archived to iRODS',
                   $product->composition->freeze,
                   $enable ? q() : q( not));
@@ -53,6 +51,7 @@ sub create {
                    q{--group},      q('ss_).$product->lims->study_id().q(#seq'), #TODO use npg_irods code?
                    q{--metadata},   $metadata_file, );
 
+      my $config = $self->find_study_config($product);
       for my $filter_type (qw/include exclude/) {
         if (defined $config->{irods_pp}->{filters}->{$filter_type}) {
           my $filters = $config->{irods_pp}->{filters}->{$filter_type};

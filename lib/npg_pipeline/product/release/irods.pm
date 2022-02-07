@@ -15,6 +15,8 @@ our $VERSION = '0';
 Readonly::Scalar my $THOUSAND                    => 1000;
 Readonly::Scalar my $PRODUCTION_IRODS_ROOT       => q[/seq];
 Readonly::Scalar my $IRODS_REL_ROOT_NOVASEQ_RUNS => q[illumina/runs];
+Readonly::Scalar my $IRODS_PP_CONF_KEY           =>
+  $npg_pipeline::product::release::IRODS_PP_RELEASE;
 
 =head1 NAME
 
@@ -192,6 +194,20 @@ sub is_for_irods_release {
                       $enable ? q[] : q[NOT ]);
 
   return $enable;
+}
+
+=head2 is_for_pp_irods_release
+
+Return true if the portable pipeline product is to be released via iRODS,
+false otherwise.
+
+  $obj->is_for_pp_irods_release($product)
+
+=cut
+
+sub is_for_pp_irods_release {
+  my ($self, $product) = @_;
+  return $self->_is_for_release($product, $IRODS_PP_CONF_KEY);
 }
 
 sub _siblings_are_for_irods_release {
