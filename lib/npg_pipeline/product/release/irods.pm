@@ -5,6 +5,7 @@ use Readonly;
 use List::MoreUtils qw/uniq/;
 use Carp;
 use Try::Tiny;
+use Data::Dump qw/pp/;
 
 with 'npg_pipeline::product::release' => {
        -alias    => { is_for_release => '_is_for_release' },
@@ -210,10 +211,46 @@ sub is_for_pp_irods_release {
   return $self->_is_for_release($product, $IRODS_PP_CONF_KEY);
 }
 
-sub _siblings_are_for_irods_release {
+=head2 glob_filters4publisher
+
+Returns a hash with glob filters for
+L<iRODS Tree Publisher|https://github.com/wtsi-npg/npg_irods/blob/master/bin/npg_publish_tree.pl>,
+which might be specified in the study configuration in the 'pp_irods' section.
+If the 'filters' key is present, the 'include' filter should be present. The
+'exclude' filter is optional.
+
+The format for both filters is validated. It is expected that an array of
+filter expressions is present.
+
+  my $filters = $self->glob_filters4publisher($product)
+
+=cut
+
+sub glob_filters4publisher {
   my ($self, $product) = @_;
 
-  $product->lims or croak 'Need lims object';
+  my $gfilters = $self->find_study_config($product)
+                      ->{$IRODS_PP_CONF_KEY}->{filters};
+  if ($gfilters) {
+    for my $filter_type (qw/include exclude/) {
+      if (defined $gfilters->{$filter_type}) {
+        my $filters = $gfilters->{$filter_type};
+        (ref $filters eq 'ARRAY') or
+          croak qq(Malformed configuration for filter '${filter_type}'; ) .
+            q(expected a list, but found: ) . pp($filters);
+      } else {
+        if ($filter_type eq 'include') {
+          croak q(No 'include' filter);
+        }
+      }
+    }
+  }
+
+  return $gfilters;
+}
+
+sub _siblings_are_for_irods_release {
+  my ($self, $product) = @_;
 
   my @lims = ();
   my $with_lims = 1;
@@ -230,7 +267,6 @@ sub _siblings_are_for_irods_release {
 
   return (@flags == 1) && $flags[0];
 }
-
 
 no Moose::Role;
 
@@ -256,6 +292,8 @@ __END__
 
 =item Try::Tiny
 
+=item Data::Dump
+
 =back
 
 =head1 INCOMPATIBILITIES
@@ -268,7 +306,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019,2020,2021 Genome Research Ltd.
+Copyright (C) 2019,2020,2021,2022 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

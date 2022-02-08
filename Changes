@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - Refactored existing code to create new public functions, which will be
+   used in the extension of npg_run_deletable script dealing with decisions
+   about correctness of archival of portable pipelines output.
+
 release 60.4.0
  - Removed co-location check (host and staging area) from the pipeline
    daemon code. This check is no longer relevant, the staging servers
