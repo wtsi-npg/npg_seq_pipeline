@@ -1,7 +1,6 @@
 package npg_pipeline::function::pp_data_to_irods_archiver;
 
 use Moose;
-use Data::Dump qw[pp];
 use JSON;
 use File::Slurp;
 use namespace::autoclean;
@@ -36,11 +35,9 @@ sub create {
 
     my @products = grep { $self->is_release_data($_) }
                    @{$self->products->{data_products}};
-
     foreach my $product (@products) {
-      my $config = $self->find_study_config($product);
-      $config or next;
-      my $enable = $config->{irods_pp}->{enable};
+
+      my $enable = $self->is_for_pp_irods_release($product);
       $self->info(sprintf 'Pp data for product %s will%s be archived to iRODS',
                   $product->composition->freeze,
                   $enable ? q() : q( not));
@@ -53,15 +50,12 @@ sub create {
                    q{--group},      q('ss_).$product->lims->study_id().q(#seq'), #TODO use npg_irods code?
                    q{--metadata},   $metadata_file, );
 
-      for my $filter_type (qw/include exclude/) {
-        if (defined $config->{irods_pp}->{filters}->{$filter_type}) {
-          my $filters = $config->{irods_pp}->{filters}->{$filter_type};
-          (ref $filters eq 'ARRAY') or
-            $self->logcroak(qq(Malformed configuration for filter '${filter_type}'; ),
-                             q(expected a list, but found: ), pp($filters));
-          foreach my $val (@{$filters}) {
-            push @args, qq(--${filter_type}), qq('${val}');
-          }
+      my $filters = $self->glob_filters4publisher($product);
+      $filters or $self->logcroak(
+        'Filters for the tree publisher are not defined');
+      foreach my $type (sort keys %{$filters}) {
+        foreach my $val (@{$filters->{$type}}) {
+          push @args, qq(--${type}), qq('${val}');
         }
       }
 
@@ -124,11 +118,7 @@ npg_pipeline::function::pp_data_to_irods_archiver
 
 =head1 SYNOPSIS
 
-
-
 =head1 DESCRIPTION
-
-
 
 =head1 SUBROUTINES/METHODS
 
@@ -150,8 +140,6 @@ npg_pipeline::function::pp_data_to_irods_archiver
 
 =item namespace::autoclean
 
-=item Data::Dump
-
 =item JSON
 
 =item File::Slurp
@@ -169,7 +157,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2020 Genome Research Ltd.
+Copyright (C) 2020,2022 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

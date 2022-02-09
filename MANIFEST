@@ -1103,6 +1103,10 @@ t/data/release/config/notify_on/npg_message_queue.conf
 t/data/release/config/notify_on/product_release.yml
 t/data/release/config/qc_review/product_release.yml
 t/data/release/config/undef_qc_accept/product_release.yml
+t/data/release/config/pp_archival/product_release.yml
+t/data/release/config/pp_archival/product_release_no_array.yml
+t/data/release/config/pp_archival/product_release_no_filters.yml
+t/data/release/config/pp_archival/product_release_no_include.yml
 t/data/rna_seq/12597_RunInfo.xml
 t/data/rna_seq/13066_RunInfo.xml
 t/data/rna_seq/17550_RunInfo.xml

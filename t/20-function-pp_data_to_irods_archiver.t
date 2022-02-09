@@ -100,11 +100,11 @@ subtest 'create job definition' => sub {
     q( --source ) . $bbc_path . q(/pp_archive/lane1/plex1) .
     q( --group 'ss_6187#seq') .
     q( --metadata ) . $meta_file .
+    q( --exclude 'test_file_pollution') .
     q( --include 'ncov2019_artic_nf/v0.(7|8)\\b\\S+trim\\S+/\\S+bam') .
     q( --include 'ncov2019_artic_nf/v0.(11)\\b\\S+trim\\S+/\\S+cram') .
     q( --include 'ncov2019_artic_nf/v0.\\d+\\b\\S+make\\S+/\\S+consensus.fa') .
-    q( --include 'ncov2019_artic_nf/v0.\\d+\\b\\S+call\\S+/\\S+variants.tsv') .
-    q( --exclude 'test_file_pollution'),
+    q( --include 'ncov2019_artic_nf/v0.\\d+\\b\\S+call\\S+/\\S+variants.tsv'),
     'correct command');
 
   ok (-e $meta_file, 'metadata file (with sample supplier name) is created');
