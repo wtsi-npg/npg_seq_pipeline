@@ -8,11 +8,14 @@ use Readonly;
 use File::Find;
 use List::MoreUtils qw/any none/;
 use List::Util qw/max/;
+use File::Basename;
+use Carp;
 
 use npg_tracking::util::abs_path qw/abs_path/;
 use npg_tracking::util::types;
 use npg_tracking::glossary::composition;
 use npg_pipeline::cache;
+use npg_pipeline::product::release;
 use npg_pipeline::validation::entity;
 use npg_pipeline::validation::irods;
 use npg_pipeline::validation::s3;
@@ -670,11 +673,103 @@ sub _irods_seq_deletable {
   my $deletable = $v->archived_for_deletion();
   push @{$self->eligible_product_entities}, @{$v->eligible_product_entities};
 
+  # Stepping back from a convention to always run every check.
+  if ($deletable) {
+    $deletable = $self->_irods_seq_pp_deletable();
+  }
+
   my $m = sprintf 'Files in iRODS: run %i %sdeletable',
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
   return $deletable;
+}
+
+sub _irods_seq_pp_deletable {
+  my $self = shift;
+  ######
+  # A simplified procedure, which will stop and return 0 (not deletable)
+  # as soon as something goes wrong or the first incorrectly archived
+  # file is found.
+  # No checks are done for products for which no pp was run, these
+  # products are considered deletable in the context of this method.
+  #
+
+  my $run_collection = $self->_irods_destination_collection4pp();
+  my $deletable = 1;
+  my $new_re = q[v\d.\d+];
+  my $release_type = $npg_pipeline::product::release::IRODS_PP_RELEASE;
+
+  foreach my $p (@{$self->product_entities}) {
+
+    my $product = $p->target_product;
+    my $rpt_list = $product->composition()->freeze2rpt;
+    $self->is_for_release($product, $release_type) or next;
+
+    my $rel_product_path = $product->dir_path();
+    my $irods_root4product = join q[/], $run_collection, $rel_product_path;
+    my $staging_root4product = $product->path($self->pp_archive_path);
+
+    my @pp_product_entities = (
+      npg_pipeline::validation::entity->new(
+        target_product       => $product,
+        subsets              => [],
+        per_product_archive  => 0,
+        staging_archive_root => $staging_root4product
+      )
+    );
+
+    try {
+      my $filters = $self->glob_filters4publisher($product);
+      $filters or croak 'Filters not found!';
+      my $filter_function = $self->_make_filter_fn(
+        $filters->{include}, $filters->{exclude});
+
+      my @files = ();
+      find( { wanted => sub { push @files, $_ }, no_chdir => 1 },
+            $staging_root4product);
+      @files = grep { $filter_function->($_) } grep { -f } @files;
+
+      # Group files by type.
+      my $files_by_type = {};
+      foreach my $file (@files) {
+        ## no critic (RegularExpressions::ProhibitEscapedMetacharacters)
+        my ($name,$path,$suffix) = fileparse($file, qr/\.[^.]*/xms);
+        ## use critic
+        $suffix or croak qq[File $file without suffix];
+        push @{$files_by_type->{$suffix}}, $file;
+      }
+
+      foreach my $file_type (sort keys %{$files_by_type}) {
+        my $v = npg_pipeline::validation::irods->new(
+          irods_destination_collection => $irods_root4product,
+          irods            => $self->irods,
+          file_extension   => $file_type,
+          product_entities => \@pp_product_entities,
+          staging_files    => {$rpt_list => $files_by_type->{$file_type}}
+        );
+        $deletable = $v->archived_for_deletion();
+        $deletable or last;
+      }
+    } catch {
+      $self->error('Error checking pp iRODS archive: ' . $_);
+      $deletable = 0;
+    };
+    $deletable or last;
+  }
+
+  return $deletable;
+}
+
+sub _irods_destination_collection4pp {
+  my $self = shift;
+
+  return __PACKAGE__->new(
+    id_run => $self->id_run,
+    tracking_run => $self->tracking_run,
+    per_product_archive => 1,
+    irods_root_collection_ns => $self->irods_pp_root_collection()
+  )->irods_destination_collection();
 }
 
 sub _autoqc_deletable {
@@ -822,6 +917,62 @@ sub _file_archive_deletable {
   return $deletable;
 }
 
+###########################################################
+# The code of this function was copied from
+# L<https://github.com/wtsi-npg/npg_irods/blob/63d3485c44cc00e30d8a8ec5bcdc23d2297f0d39/bin/npg_publish_tree.pl#L81> 
+# Keith James kdj@sanger.ac.uk is the original author
+# Long term this function will have to be moved to npg_seq_common or
+# similar NPG Git package
+#
+sub _make_filter_fn {
+  my ($self, $include_a, $exclude_a) = @_;
+
+  my @include_re;
+  my @exclude_re;
+  my $nerr = 0;
+  $include_a ||= [];
+  $exclude_a ||= [];
+
+  foreach my $re (@{$include_a}) {
+    try {
+      push @include_re, qr{$re}msx;
+    } catch {
+      $self->error("in include regex '$re': $_");
+      $nerr++;
+    };
+  }
+
+  foreach my $re (@{$exclude_a}) {
+    try {
+      push @exclude_re, qr{$re}msx;
+    } catch {
+      $self->error("in exclude regex '$re': $_");
+      $nerr++;
+    };
+  }
+
+  if ($nerr > 0) {
+    $self->logcroak("$nerr errors in include / exclude filters");
+  }
+
+  return sub {
+    my ($path) = @_;
+
+    (defined $path and $path ne q[]) or
+        croak 'Path argument is required in callback';
+
+    my $include = -f $path;
+    if (@include_re) {
+      $include = any {$path =~ $_} @include_re;
+    }
+    if ($include and @exclude_re) {
+      $include = not any {$path =~ $_} @exclude_re;
+    }
+
+    return $include;
+  };
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -854,6 +1005,10 @@ __END__
 
 =item Try::Tiny
 
+=item File::Basename
+
+=item Carp
+
 =item WTSI::NPG::iRODS
 
 =item npg_qc::Schema
@@ -884,7 +1039,7 @@ __END__
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019,2020,2021 Genome Research Ltd.
+Copyright (C) 2019,2020,2021,2022 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
