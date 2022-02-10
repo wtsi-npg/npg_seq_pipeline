@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+
+ - Add Targeted NanoSeq Pulldown to Duplex-Seq analysis library_type list
  - Refactored existing code to create new public functions, which will be
    used in the extension of npg_run_deletable script dealing with decisions
    about correctness of archival of portable pipelines output.
