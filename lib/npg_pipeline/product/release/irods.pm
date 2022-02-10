@@ -16,6 +16,7 @@ our $VERSION = '0';
 Readonly::Scalar my $THOUSAND                    => 1000;
 Readonly::Scalar my $PRODUCTION_IRODS_ROOT       => q[/seq];
 Readonly::Scalar my $IRODS_REL_ROOT_NOVASEQ_RUNS => q[illumina/runs];
+Readonly::Scalar my $IRODS_REL_PP_ROOT           => q[illumina/pp/runs];
 Readonly::Scalar my $IRODS_PP_CONF_KEY           =>
   $npg_pipeline::product::release::IRODS_PP_RELEASE;
 
@@ -45,13 +46,25 @@ has 'irods_root_collection_ns' => (
   default       => $IRODS_REL_ROOT_NOVASEQ_RUNS,
 );
 
+=head2 irods_pp_root_collection
+
+Returns the relative iRODS root collection path for the output of portable
+pipelines, C<illumina/pp/runs>. Can be used both as an instance method
+and a class (package) level method.
+
+=cut
+
+sub irods_pp_root_collection {
+  return $IRODS_REL_PP_ROOT;
+}
+
 =head2 irods_destination_collection
 
 Returns iRODS destination collection for the run.
 This attribute will be built if not supplied by the caller.
 C</seq> is used as the root of all collections.
 
-Examples of values: C</seq/425>, C</seq/illumina/runs/34/34567>.
+Examples of return values: C</seq/425>, C</seq/illumina/runs/34/34567>.
 
 =cut
 
@@ -66,17 +79,37 @@ sub _build_irods_destination_collection {
   my $c;
   try {
     $c = $self->irods_collection4run_rel(
-      $self->id_run, $self->platform_NovaSeq());
+      $self->id_run, $self->per_product_archive());
   } catch {
     $self->logcroak($_);
   };
   return join q[/], $PRODUCTION_IRODS_ROOT, $c;
 }
 
+=head2 per_product_archive
+
+A boolean flag indicating whether products are archived to individual
+collections or all data are on the top level of the same collection.
+
+Is set to true for NovaSeq runs, false otherwise.
+
+=cut
+
+has 'per_product_archive' => (
+  isa           => 'Bool',
+  is            => 'ro',
+  required      => 0,
+  lazy_build    => 1,
+);
+sub _build_per_product_archive {
+  my $self = shift;
+  return $self->platform_NovaSeq();
+}
+
 =head2 irods_collection4run_rel
 
 Returns a relative path the run's destination collection. For the production
-iRODS this path does not have the root c</seq> component. This methos can
+iRODS this path does not have the root C</seq> component. This methos can
 be used as an instance method and a class (package) level method. If used
 as a class (package) level method, a hardcoded common iRODS path
 C<illumina/runs> is used for NovaSeq platform runs. In the instance method
@@ -84,11 +117,10 @@ this path can be customised by setting the C<irods_root_collection_ns>
 attribute of the object. For objects it might be more convenient to use the
 C<irods_destination_collection> attribute.
 
-If the second argument is not present, the platform is not considered as
-NovaSeq.
+If the second argument is not present, a flat run-level archive is assumed.
 
   my $rc = $obj->irods_collection4run_rel($id_run);
-  my $platform_is_novaseq = 1;
+  my $per_product_archive = 1;
   $rc = $obj->$obj->irods_collection4run_rel($id_run, $platform_is_novaseq);
   
   $rc = npg_pipeline::product::release::irods->
@@ -102,11 +134,11 @@ NovaSeq.
 =cut
 
 sub irods_collection4run_rel {
-  my ($self, $id_run, $platform_is_novaseq) = @_;
+  my ($self, $id_run, $per_product_archive) = @_;
 
   $id_run or croak 'Run id should be given.';
   my @path = ($id_run);
-  if ($platform_is_novaseq) {
+  if ($per_product_archive) {
     unshift @path, int $id_run/$THOUSAND;
     # Is this method called as a class/package method or an instance method?
     # For an instance method we need to retain the ability to configure
