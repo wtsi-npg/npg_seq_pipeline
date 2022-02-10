@@ -1,0 +1,24 @@
+---
+default:
+  s3:
+    enable: false
+    url: null
+    notify: false
+  irods:
+    enable: false
+    notify: false
+  irods_pp:
+    enable: false
+    notify: false
+
+study:
+  - study_id: "6187"
+    data_deletion:
+      staging_deletion_delay: 1000
+    markdup_method: "none"
+    irods:
+      enable: false
+      notify: false
+    irods_pp:
+      enable: true
+      notify: false

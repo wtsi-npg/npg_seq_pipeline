@@ -15,7 +15,6 @@ our $VERSION = '0';
 Readonly::Scalar our $S3_RELEASE                      => q{s3};
 Readonly::Scalar our $IRODS_RELEASE                   => q{irods};
 Readonly::Scalar our $IRODS_PP_RELEASE                => q{irods_pp};
-
 Readonly::Scalar my $QC_OUTCOME_MATTERS_KEY           => q{qc_outcome_matters};
 Readonly::Scalar my $ACCEPT_UNDEF_QC_OUTCOME_KEY      => q{accept_undef_qc_outcome};
 Readonly::Scalar my $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY => q{s3};
@@ -212,7 +211,6 @@ sub accept_undef_qc_outcome {
   return $self->find_study_config($product)->{$archiver}->{$ACCEPT_UNDEF_QC_OUTCOME_KEY};
 }
 
-
 =head2 customer_name
 
   Arg [1]    : npg_pipeline::product
@@ -291,7 +289,10 @@ sub is_for_release {
   my $study_config = (ref $product eq 'npg_pipeline::product')
                    ? $self->find_study_config($product)
                    : $self->study_config($product); # the last one is for lims objects
-  return $study_config->{$type_of_release}->{enable};
+  if ($study_config and $study_config->{$type_of_release}) {
+    return $study_config->{$type_of_release}->{enable};
+  }
+  return;
 }
 
 =head2 is_for_s3_release
@@ -513,8 +514,6 @@ sub haplotype_caller_chunking_number {
   return $self->find_tertiary_config($product)->{haplotype_caller}->{sample_chunking_number};
 }
 
-
-
 =head2 bqsr_enable
  
  Arg [1]    : npg_pipeline::product
@@ -541,7 +540,6 @@ sub bqsr_enable {
 
   return 0;
 }
-
 
 =head2 bqsr_apply_enable
  
@@ -771,7 +769,7 @@ study:
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2019,2020,2021 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2021,2022 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
