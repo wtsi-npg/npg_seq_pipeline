@@ -50,6 +50,18 @@ File extension for the sequence file format, required.
 
 has '+file_extension' => (required => 1,);
 
+=head2 check_md5
+
+A boolean flag to enforce or disable the md5 check. True by default.
+
+=cut
+
+has 'check_md5' => (
+  isa     => 'Bool',
+  is      => 'ro',
+  default => 1,
+);
+
 =head2 product_entities
 
 =head2 eligible_product_entities
@@ -126,8 +138,10 @@ sub archived_for_deletion {
   my $archived = 1;
 
   if (@{$self->eligible_product_entities}) {
-    $archived = $self->_check_files_exist() &&
-                $self->_check_checksums();
+    $archived = $self->_check_files_exist();
+    if ($archived and $self->check_md5) {
+      $archived = $self->_check_checksums();
+    }
   } else {
     $self->logwarn(
       'No entity is eligible for archival to iRODS');

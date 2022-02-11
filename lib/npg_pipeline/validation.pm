@@ -745,6 +745,7 @@ sub _irods_seq_pp_deletable {
           irods_destination_collection => $irods_root4product,
           irods            => $self->irods,
           file_extension   => $file_type,
+          check_md5        => 0,
           product_entities => \@pp_product_entities,
           staging_files    => {$rpt_list => $files_by_type->{$file_type}}
         );
