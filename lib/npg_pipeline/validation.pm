@@ -735,8 +735,9 @@ sub _irods_seq_pp_deletable {
       foreach my $file (@files) {
         ## no critic (RegularExpressions::ProhibitEscapedMetacharacters)
         my ($name,$path,$suffix) = fileparse($file, qr/\.[^.]*/xms);
-        ## use critic
         $suffix or croak qq[File $file without suffix];
+        $suffix =~ s/\A\.//smx;
+        ## use critic
         push @{$files_by_type->{$suffix}}, $file;
       }
 
