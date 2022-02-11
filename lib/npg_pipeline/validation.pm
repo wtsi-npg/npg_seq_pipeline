@@ -673,14 +673,21 @@ sub _irods_seq_deletable {
   my $deletable = $v->archived_for_deletion();
   push @{$self->eligible_product_entities}, @{$v->eligible_product_entities};
 
+  my $message = sub {
+    my ($what_files, $can_delete) = @_;
+    my $m = sprintf 'Files in iRODS (%s): run %i %sdeletable',
+      $what_files, $self->id_run, $can_delete ? q[] : q[NOT ];
+  };
+
+  $self->info($message->(q[main pipeline], $deletable));
+
   # Stepping back from a convention to always run every check.
   if ($deletable) {
     $deletable = $self->_irods_seq_pp_deletable();
+    $self->info($message->(q[portable pipelines], $deletable));
   }
 
-  my $m = sprintf 'Files in iRODS: run %i %sdeletable',
-          $self->id_run , $deletable ? q[] : q[NOT ];
-  $self->info($m);
+  $self->info($message->(q[all], $deletable));
 
   return $deletable;
 }
@@ -699,6 +706,10 @@ sub _irods_seq_pp_deletable {
   my $deletable = 1;
   my $new_re = q[v\d.\d+];
   my $release_type = $npg_pipeline::product::release::IRODS_PP_RELEASE;
+  # Disable md5 checks since some md5 files are missing on staging.
+  my $check_md5 = 0;
+  $self->info('Archival to iRODS: ',
+              'MD5 checks are disabled for portable pipelines output');
 
   foreach my $p (@{$self->product_entities}) {
 
@@ -710,6 +721,11 @@ sub _irods_seq_pp_deletable {
     my $irods_root4product = join q[/], $run_collection, $rel_product_path;
     my $staging_root4product = $product->path($self->pp_archive_path);
 
+    ######
+    # We are archiving per product and supplying product-level archive
+    # directory as the root of staging archive. Therefore, the
+    # per_product_archive flag is set to false.
+    #
     my @pp_product_entities = (
       npg_pipeline::validation::entity->new(
         target_product       => $product,
@@ -746,7 +762,7 @@ sub _irods_seq_pp_deletable {
           irods_destination_collection => $irods_root4product,
           irods            => $self->irods,
           file_extension   => $file_type,
-          check_md5        => 0,
+          check_md5        => $check_md5,
           product_entities => \@pp_product_entities,
           staging_files    => {$rpt_list => $files_by_type->{$file_type}}
         );
