@@ -23,9 +23,11 @@ use npg_pipeline::validation::autoqc;
 use WTSI::NPG::iRODS;
 use npg_qc::Schema;
 
-extends  q{npg_pipeline::base};
-with    qw{npg_pipeline::validation::common
-           npg_pipeline::product::release::irods};
+extends q{npg_pipeline::base};
+with q{npg_pipeline::validation::common};
+with q{npg_pipeline::product::release::irods} => {
+  -alias => { per_product_archive => q{per_product_irods_archive} },
+};
 
 our $VERSION = '0';
 
@@ -785,7 +787,7 @@ sub _irods_destination_collection4pp {
   return __PACKAGE__->new(
     id_run => $self->id_run,
     tracking_run => $self->tracking_run,
-    per_product_archive => 1,
+    per_product_irods_archive => 1,
     irods_root_collection_ns => $self->irods_pp_root_collection()
   )->irods_destination_collection();
 }
