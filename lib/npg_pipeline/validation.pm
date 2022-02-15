@@ -665,13 +665,24 @@ sub _irods_seq_deletable {
     push @{$files->{$rpt_list}}, $f, $self->_staging_files->{'seq'}->{$f};
   }
 
-  my $v = npg_pipeline::validation::irods->new(
-    irods_destination_collection => $self->irods_destination_collection,
+  ######
+  # Set the per_product_archive attribute by computing its value in the
+  # context of this class since its parent, npg_pipeline::base, provides
+  # attributes that are necessary to get the type of the instrument.
+  # The value of the per_product_archive attribute of this class cannot
+  # be used since it relates to the way data is arranged on staging.
+  # 
+  my $init = {
     irods            => $self->irods,
     file_extension   => $self->file_extension,
     product_entities => $self->product_entities,
-    staging_files    => $files
-  );
+    staging_files    => $files,
+    per_product_archive => $self->per_product_irods_archive
+  };
+  if ($self->has_irods_destination_collection) {
+    $init->{irods_destination_collection} = $self->irods_destination_collection;
+  }
+  my $v = npg_pipeline::validation::irods->new($init);
   my $deletable = $v->archived_for_deletion();
   push @{$self->eligible_product_entities}, @{$v->eligible_product_entities};
 
