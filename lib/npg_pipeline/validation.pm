@@ -24,10 +24,8 @@ use WTSI::NPG::iRODS;
 use npg_qc::Schema;
 
 extends q{npg_pipeline::base};
-with q{npg_pipeline::validation::common};
-with q{npg_pipeline::product::release::irods} => {
-  -alias => { per_product_archive => q{per_product_irods_archive} },
-};
+with qw{npg_pipeline::validation::common
+        npg_pipeline::product::release::irods};
 
 our $VERSION = '0';
 
@@ -165,14 +163,14 @@ has q{use_cram} => (
   q{Toggles between using cram and bam files, true by default},
 );
 
-=head2 per_product_archive
+=head2 per_product_staging_archive
 
 A boolean attribute indicating whether a per-product staging archive
 is being used. Defaults to true.
 
 =cut
 
-has 'per_product_archive' => (
+has 'per_product_staging_archive' => (
   isa        => 'Bool',
   is         => 'ro',
   required   => 0,
@@ -326,7 +324,7 @@ sub _build_product_entities {
   my $self = shift;
 
   my @e = ();
-  my $per_product_archive = $self->per_product_archive ? 1 : 0;
+  my $per_product_archive = $self->per_product_staging_archive ? 1 : 0;
 
   foreach my $product (@{$self->products->{'data_products'}}) {
 
@@ -666,22 +664,19 @@ sub _irods_seq_deletable {
   }
 
   ######
-  # Set the per_product_archive attribute by computing its value in the
-  # context of this class since its parent, npg_pipeline::base, provides
-  # attributes that are necessary to get the type of the instrument.
-  # The value of the per_product_archive attribute of this class cannot
-  # be used since it relates to the way data is arranged on staging.
+  # Compute attributes related to iRODS archive in the context of this
+  # class since its parent, npg_pipeline::base, provides attributes that
+  # are necessary to get the type of the instrument. This also allows for
+  # overwrites by the caller.
   # 
   my $init = {
     irods            => $self->irods,
     file_extension   => $self->file_extension,
     product_entities => $self->product_entities,
     staging_files    => $files,
-    per_product_archive => $self->per_product_irods_archive
+    per_product_archive => $self->per_product_archive,
+    irods_destination_collection => $self->irods_destination_collection
   };
-  if ($self->has_irods_destination_collection) {
-    $init->{irods_destination_collection} = $self->irods_destination_collection;
-  }
   my $v = npg_pipeline::validation::irods->new($init);
   my $deletable = $v->archived_for_deletion();
   push @{$self->eligible_product_entities}, @{$v->eligible_product_entities};
@@ -798,7 +793,7 @@ sub _irods_destination_collection4pp {
   return __PACKAGE__->new(
     id_run => $self->id_run,
     tracking_run => $self->tracking_run,
-    per_product_irods_archive => 1,
+    per_product_archive => 1,
     irods_root_collection_ns => $self->irods_pp_root_collection()
   )->irods_destination_collection();
 }

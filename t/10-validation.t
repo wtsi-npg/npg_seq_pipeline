@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Exception;
 use Test::Warn;
 use Test::Trap qw/ :warn /;
@@ -290,6 +290,46 @@ subtest 'flagged as not deletable' => sub {
   ok ($v->_flagged_as_not_deletable(),
     'detected that the run folder is flagged as not deletable');
   ok (!$v->run(), 'run is not deletable');
+};
+
+subtest 'per product flag and iRODS locations' => sub {
+  plan tests => 10;
+
+  my $rfh = _create_test_runfolder_8747();
+  my $ref = {
+    id_run => 8747,
+    runfolder_path      => $rfh->{'runfolder_path'},
+    analysis_path       => $rfh->{'analysis_path'},
+    archive_path        => $rfh->{'archive_path'},
+    qc_schema           => $qc_schema,
+    npg_tracking_schema => $tracking_schema
+  };
+  mkdir join q[/], $rfh->{'runfolder_path'}, 'npg_do_not_delete';
+
+  my $v = npg_pipeline::validation->new($ref);
+  ok ($v->per_product_staging_archive,
+    'per product archive is true by default');
+  ok (!$v->per_product_archive, 'computed per product flag for iRODS is false');
+  is ($v->irods_destination_collection, '/seq/8747', 'flat iRODS collection');
+
+  $ref->{per_product_staging_archive} = 0;
+  $v = npg_pipeline::validation->new($ref);
+  ok (!$v->per_product_archive, 'computed per product flag for iRODS');
+  is ($v->irods_destination_collection, '/seq/8747', 'iRODS collection');
+
+  delete $ref->{per_product_staging_archive};
+  $ref->{per_product_archive} = 1;
+  $v = npg_pipeline::validation->new($ref);
+  ok ($v->per_product_staging_archive, 'per product archive is true');
+  ok ($v->per_product_archive, 'per product iRODS is true');
+  is ($v->irods_destination_collection, '/seq/illumina/runs/8/8747',
+    'iRODS collection');
+
+  $ref->{irods_destination_collection} = '/seq-dev/8747';
+  $v = npg_pipeline::validation->new($ref);
+  ok ($v->per_product_archive, 'per product iRODS is true');
+  is ($v->irods_destination_collection, '/seq-dev/8747',
+    'iRODScollection as set');
 };
 
 1;

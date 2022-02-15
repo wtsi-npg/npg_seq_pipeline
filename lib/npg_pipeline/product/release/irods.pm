@@ -73,7 +73,6 @@ has 'irods_destination_collection' => (
   is            => 'ro',
   required      => 0,
   lazy_build    => 1,
-  predicate     => 'has_irods_destination_collection',
 );
 sub _build_irods_destination_collection {
   my $self = shift;
