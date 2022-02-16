@@ -304,7 +304,6 @@ subtest 'per product flag and iRODS locations' => sub {
     qc_schema           => $qc_schema,
     npg_tracking_schema => $tracking_schema
   };
-  mkdir join q[/], $rfh->{'runfolder_path'}, 'npg_do_not_delete';
 
   my $v = npg_pipeline::validation->new($ref);
   ok ($v->per_product_staging_archive,
@@ -329,7 +328,7 @@ subtest 'per product flag and iRODS locations' => sub {
   $v = npg_pipeline::validation->new($ref);
   ok ($v->per_product_archive, 'per product iRODS is true');
   is ($v->irods_destination_collection, '/seq-dev/8747',
-    'iRODScollection as set');
+    'iRODS collection as set');
 };
 
 1;
