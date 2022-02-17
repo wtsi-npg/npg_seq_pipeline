@@ -754,6 +754,20 @@ sub _irods_seq_pp_deletable {
             $staging_root4product);
       @files = grep { $filter_function->($_) } grep { -f } @files;
 
+      ######
+      # We do not know the exact number of files we should find,
+      # but we should find at least two files, namely, some bam file and
+      # the QC summary. Not finding anything or finding fewer files is
+      # an indication that the wrong version of the study configuration
+      # is being used.
+      #
+      if (@files < 2) {
+        $self->logcroak('Fewer than two files that are eligible for ' .
+                        'archival to iRODS are found on staging');
+      } else {
+        $self->debug(@files . ' artic files found on staging');
+      }
+
       # Group files by type.
       my $files_by_type = {};
       foreach my $file (@files) {
