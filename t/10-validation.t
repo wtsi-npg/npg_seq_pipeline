@@ -77,12 +77,13 @@ sub _populate_test_runfolder {
 }
 
 subtest 'create object' => sub {
-  plan tests => 15;
+  plan tests => 17;
 
   my $v = npg_pipeline::validation->new(
     qc_schema           => $qc_schema,
     npg_tracking_schema => $tracking_schema,
-    min_keep_days       => 30);
+    min_keep_days       => 30,
+    pp_files_number     => 4);
   isa_ok ($v, 'npg_pipeline::validation');
 
   for my $flag (qw/ignore_lims ignore_npg_status ignore_time_limit
@@ -96,10 +97,12 @@ subtest 'create object' => sub {
   is ($v->min_keep_days(), 30,
     'min_keep_days attribute value as set in the constructor');
   is ($v->lims_driver_type, 'samplesheet', 'default driver type is samplesheet');
+  is ($v->pp_files_number(), 4, 'pp_files_number as set');
 
   $v = npg_pipeline::validation->new(use_cram => 0);
   is ($v->file_extension, 'bam', 'file extension is bam');
   is ($v->index_file_extension, 'bai', 'index file extension is bai');
+  is ($v->pp_files_number(), 10000, 'default pp_files_number');
 };
 
 subtest 'deletion delay' => sub {

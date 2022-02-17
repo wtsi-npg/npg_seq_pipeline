@@ -32,6 +32,7 @@ our $VERSION = '0';
 Readonly::Array  my @NPG_DELETABLE_UNCOND => ('run cancelled', 'data discarded');
 Readonly::Array  my @NPG_DELETABLE_STATES => (@NPG_DELETABLE_UNCOND,'qc complete');
 Readonly::Scalar my $MIN_KEEP_DAYS        => 14;
+Readonly::Scalar my $UNREALISTIC_NUM_STAGING_PP_FILES => 10_000;
 Readonly::Scalar my $DEFAULT_IRODS_ROOT   => q[/seq];
 Readonly::Scalar my $STAGING_TAG          => q[staging];
 Readonly::Scalar my $DO_NOT_DELETE_NAME   => q[npg_do_not_delete];
@@ -279,6 +280,29 @@ sub _build_min_keep_days {
   }
   return @delays ? max @delays : $MIN_KEEP_DAYS;
 }
+
+=head2 pp_files_number
+
+Minimum number of portable pipeline outputs to archive. The default for
+this number is an unrealistically big number. Unless this number is set
+by the caller, the runs with portable pipeline outputs, which should
+be archived to iRODS, will not be deletable.
+
+The files on staging, which were eligible for archival, are found by
+globbing the file system using patterns specified in the study configuration.
+In case of a mismatch between the study configuration used by this utility
+and the study configuration used during the analysis, globbing might result
+in none or too few files being found.
+
+=cut
+
+has q{pp_files_number} => (
+  isa     => q{Int},
+  is      => q{ro},
+  default => $UNREALISTIC_NUM_STAGING_PP_FILES,
+  documentation =>
+  q{Minimum number of portable pipeline outputs to archive},
+);
 
 =head2 skip_autoqc_check
 
@@ -755,17 +779,16 @@ sub _irods_seq_pp_deletable {
       @files = grep { $filter_function->($_) } grep { -f } @files;
 
       ######
-      # We do not know the exact number of files we should find,
-      # but we should find at least two files, namely, some bam file and
-      # the QC summary. Not finding anything or finding fewer files is
-      # an indication that the wrong version of the study configuration
-      # is being used.
+      # We do not know the exact number of files we should find.
+      # Not finding anything or finding fewer files than expected
+      # might be an indication that the wrong version of the study
+      # configuration is being used or that the value of the
+      # pp_files_number attribute is too high.
       #
-      if (@files < 2) {
-        $self->logcroak('Fewer than two files that are eligible for ' .
-                        'archival to iRODS are found on staging');
-      } else {
-        $self->debug(@files . ' artic files found on staging');
+      $self->debug(@files . ' artic files found on staging');
+      if (@files < $self->pp_files_number) {
+        $self->logcroak(sprintf 'Fewer than %i files that are eligible for ' .
+          'archival to iRODS are found on staging', $self->pp_files_number);
       }
 
       # Group files by type.
