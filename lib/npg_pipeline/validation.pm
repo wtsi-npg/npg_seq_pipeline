@@ -733,23 +733,32 @@ sub _irods_seq_pp_deletable {
   # products are considered deletable in the context of this method.
   #
 
-  my $run_collection = $self->_irods_destination_collection4pp();
   my $deletable = 1;
+  my @pp_products = grep { $self->is_for_pp_irods_release($_) }
+                    grep { $self->is_release_data($_) }
+                    map  { $_->target_product }
+                    @{$self->product_entities};
+  if (not @pp_products) {
+    $self->info('No products are eligible for pp iRODS archival');
+    return $deletable;
+  } else {
+    $self->info(@pp_products . ' products are eligible for pp iRODS archival');
+  }
+
+  my $run_collection = $self->_irods_destination_collection4pp();
   my $new_re = q[v\d.\d+];
   # Disable md5 checks since some md5 files are missing on staging.
   my $check_md5 = 0;
   $self->info('Archival to iRODS: ',
               'MD5 checks are disabled for portable pipelines output');
 
-  foreach my $p (@{$self->product_entities}) {
+  foreach my $product (@pp_products) {
 
-    my $product = $p->target_product;
     my $rpt_list = $product->composition()->freeze2rpt;
-    $self->is_for_pp_irods_release($product) or next;
-
     my $rel_product_path = $product->dir_path();
     my $irods_root4product = join q[/], $run_collection, $rel_product_path;
     my $staging_root4product = $product->path($self->pp_archive_path);
+    $self->debug("Considering pp archival for $rpt_list");
 
     ######
     # We are archiving per product and supplying product-level archive
