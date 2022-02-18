@@ -15,7 +15,6 @@ use npg_tracking::util::abs_path qw/abs_path/;
 use npg_tracking::util::types;
 use npg_tracking::glossary::composition;
 use npg_pipeline::cache;
-use npg_pipeline::product::release;
 use npg_pipeline::validation::entity;
 use npg_pipeline::validation::irods;
 use npg_pipeline::validation::s3;
@@ -737,7 +736,6 @@ sub _irods_seq_pp_deletable {
   my $run_collection = $self->_irods_destination_collection4pp();
   my $deletable = 1;
   my $new_re = q[v\d.\d+];
-  my $release_type = $npg_pipeline::product::release::IRODS_PP_RELEASE;
   # Disable md5 checks since some md5 files are missing on staging.
   my $check_md5 = 0;
   $self->info('Archival to iRODS: ',
@@ -747,7 +745,7 @@ sub _irods_seq_pp_deletable {
 
     my $product = $p->target_product;
     my $rpt_list = $product->composition()->freeze2rpt;
-    $self->is_for_release($product, $release_type) or next;
+    $self->is_for_pp_irods_release($product) or next;
 
     my $rel_product_path = $product->dir_path();
     my $irods_root4product = join q[/], $run_collection, $rel_product_path;
