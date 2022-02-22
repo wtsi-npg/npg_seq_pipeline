@@ -30,6 +30,7 @@ sub create {
   if (!$ref->{'excluded'}) {
 
     $self->ensure_restart_dir_exists();
+    $self->ensure_locations_dir_exists();
     my $job_name_prefix = join q{_}, q{publish_seq_data2irods}, $self->label();
 
     my $command = join q[ ],
@@ -45,11 +46,12 @@ sub create {
       if ($self->is_for_irods_release($product)) {
         my %dref = %{$ref};
         $dref{'composition'} = $product->composition;
-        $dref{'command'} = sprintf '%s --restart_file %s --collection %s --source_directory %s',
+        $dref{'command'} = sprintf '%s --restart_file %s --collection %s --source_directory %s --mlwh_json %s',
           $command,
           $self->restart_file_path($job_name_prefix, $product),
           $self->irods_product_destination_collection($run_collection, $product),
-          $product->path($self->archive_path());
+          $product->path($self->archive_path()),
+          $self->irods_location_file_path($product);
         $self->assign_common_definition_attrs(\%dref, $job_name_prefix);
         push @definitions, $self->create_definition(\%dref);
       }
@@ -115,6 +117,18 @@ sub ensure_restart_dir_exists {
   return;
 }
 
+sub ensure_locations_dir_exists {
+  my $self = shift;
+  $self->make_dir($self->irods_locations_dir_path());
+  return;
+}
+
+sub irods_location_file_path {
+  my ($self, $product) = @_;
+  my $file_name = 'irods_location_' . $product->composition->digest() . '.json';
+  return join q[/], $self->irods_locations_dir_path(), $file_name;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -175,7 +189,13 @@ should exit.
 Given a job name prefix, returns a full path of the iRODS publisher
 restart file.
 
+=head2 irods_location_file_path
+
+Returns a full path of the irods location file for a given product.
+
 =head2 ensure_restart_dir_exists
+
+=head2 ensure_locations_dir_exists
 
 =head1 DIAGNOSTICS
 
@@ -209,7 +229,7 @@ restart file.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2019,2020,2021 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2021,2022 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
