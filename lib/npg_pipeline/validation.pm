@@ -8,6 +8,8 @@ use Readonly;
 use File::Find;
 use List::MoreUtils qw/any none/;
 use List::Util qw/max/;
+use File::Basename;
+use Carp;
 
 use npg_tracking::util::abs_path qw/abs_path/;
 use npg_tracking::util::types;
@@ -20,15 +22,16 @@ use npg_pipeline::validation::autoqc;
 use WTSI::NPG::iRODS;
 use npg_qc::Schema;
 
-extends  q{npg_pipeline::base};
-with    qw{npg_pipeline::validation::common
-           npg_pipeline::product::release::irods};
+extends q{npg_pipeline::base};
+with qw{npg_pipeline::validation::common
+        npg_pipeline::product::release::irods};
 
 our $VERSION = '0';
 
 Readonly::Array  my @NPG_DELETABLE_UNCOND => ('run cancelled', 'data discarded');
 Readonly::Array  my @NPG_DELETABLE_STATES => (@NPG_DELETABLE_UNCOND,'qc complete');
 Readonly::Scalar my $MIN_KEEP_DAYS        => 14;
+Readonly::Scalar my $UNREALISTIC_NUM_STAGING_PP_FILES => 10_000;
 Readonly::Scalar my $DEFAULT_IRODS_ROOT   => q[/seq];
 Readonly::Scalar my $STAGING_TAG          => q[staging];
 Readonly::Scalar my $DO_NOT_DELETE_NAME   => q[npg_do_not_delete];
@@ -160,14 +163,14 @@ has q{use_cram} => (
   q{Toggles between using cram and bam files, true by default},
 );
 
-=head2 per_product_archive
+=head2 per_product_staging_archive
 
 A boolean attribute indicating whether a per-product staging archive
 is being used. Defaults to true.
 
 =cut
 
-has 'per_product_archive' => (
+has 'per_product_staging_archive' => (
   isa        => 'Bool',
   is         => 'ro',
   required   => 0,
@@ -277,6 +280,29 @@ sub _build_min_keep_days {
   return @delays ? max @delays : $MIN_KEEP_DAYS;
 }
 
+=head2 pp_files_number
+
+Minimum number of portable pipeline outputs to archive. The default for
+this number is an unrealistically big number. Unless this number is set
+by the caller, the runs with portable pipeline outputs, which should
+be archived to iRODS, will not be deletable.
+
+The files on staging, which were eligible for archival, are found by
+globbing the file system using patterns specified in the study configuration.
+In case of a mismatch between the study configuration used by this utility
+and the study configuration used during the analysis, globbing might result
+in none or too few files being found.
+
+=cut
+
+has q{pp_files_number} => (
+  isa     => q{Int},
+  is      => q{ro},
+  default => $UNREALISTIC_NUM_STAGING_PP_FILES,
+  documentation =>
+  q{Minimum number of portable pipeline outputs to archive},
+);
+
 =head2 skip_autoqc_check
 
 A list of autoqc check names to exclude from checking.
@@ -321,7 +347,7 @@ sub _build_product_entities {
   my $self = shift;
 
   my @e = ();
-  my $per_product_archive = $self->per_product_archive ? 1 : 0;
+  my $per_product_archive = $self->per_product_staging_archive ? 1 : 0;
 
   foreach my $product (@{$self->products->{'data_products'}}) {
 
@@ -660,21 +686,160 @@ sub _irods_seq_deletable {
     push @{$files->{$rpt_list}}, $f, $self->_staging_files->{'seq'}->{$f};
   }
 
-  my $v = npg_pipeline::validation::irods->new(
-    irods_destination_collection => $self->irods_destination_collection,
+  ######
+  # Compute attributes related to iRODS archive in the context of this
+  # class since its parent, npg_pipeline::base, provides attributes that
+  # are necessary to get the type of the instrument. This also allows for
+  # overwrites by the caller.
+  # 
+  my $init = {
     irods            => $self->irods,
     file_extension   => $self->file_extension,
     product_entities => $self->product_entities,
-    staging_files    => $files
-  );
+    staging_files    => $files,
+    per_product_archive => $self->per_product_archive,
+    irods_destination_collection => $self->irods_destination_collection
+  };
+  my $v = npg_pipeline::validation::irods->new($init);
   my $deletable = $v->archived_for_deletion();
   push @{$self->eligible_product_entities}, @{$v->eligible_product_entities};
 
-  my $m = sprintf 'Files in iRODS: run %i %sdeletable',
-          $self->id_run , $deletable ? q[] : q[NOT ];
-  $self->info($m);
+  my $message = sub {
+    my ($what_files, $can_delete) = @_;
+    my $m = sprintf 'Files in iRODS (%s): run %i %sdeletable',
+      $what_files, $self->id_run, $can_delete ? q[] : q[NOT ];
+  };
+
+  $self->info($message->(q[main pipeline], $deletable));
+
+  # Stepping back from a convention to always run every check.
+  if ($deletable) {
+    $deletable = $self->_irods_seq_pp_deletable();
+    $self->info($message->(q[portable pipelines], $deletable));
+  }
+
+  $self->info($message->(q[all], $deletable));
 
   return $deletable;
+}
+
+sub _irods_seq_pp_deletable {
+  my $self = shift;
+  ######
+  # A simplified procedure, which will stop and return 0 (not deletable)
+  # as soon as something goes wrong or the first incorrectly archived
+  # file is found.
+  # No checks are done for products for which no pp was run, these
+  # products are considered deletable in the context of this method.
+  #
+
+  my $deletable = 1;
+  my @pp_products = grep { $self->is_for_pp_irods_release($_) }
+                    grep { $self->is_release_data($_) }
+                    map  { $_->target_product }
+                    @{$self->product_entities};
+  if (not @pp_products) {
+    $self->info('No products are eligible for pp iRODS archival');
+    return $deletable;
+  } else {
+    $self->info(@pp_products . ' products are eligible for pp iRODS archival');
+  }
+
+  my $run_collection = $self->_irods_destination_collection4pp();
+  my $new_re = q[v\d.\d+];
+  # Disable md5 checks since some md5 files are missing on staging.
+  my $check_md5 = 0;
+  $self->info('Archival to iRODS: ',
+              'MD5 checks are disabled for portable pipelines output');
+
+  foreach my $product (@pp_products) {
+
+    my $rpt_list = $product->composition()->freeze2rpt;
+    my $rel_product_path = $product->dir_path();
+    my $irods_root4product = join q[/], $run_collection, $rel_product_path;
+    my $staging_root4product = $product->path($self->pp_archive_path);
+    $self->debug("Considering pp archival for $rpt_list");
+
+    ######
+    # We are archiving per product and supplying product-level archive
+    # directory as the root of staging archive. Therefore, the
+    # per_product_archive flag is set to false.
+    #
+    my @pp_product_entities = (
+      npg_pipeline::validation::entity->new(
+        target_product       => $product,
+        subsets              => [],
+        per_product_archive  => 0,
+        staging_archive_root => $staging_root4product
+      )
+    );
+
+    try {
+      my $filters = $self->glob_filters4publisher($product);
+      $filters or croak 'Filters not found!';
+      my $filter_function = $self->_make_filter_fn(
+        $filters->{include}, $filters->{exclude});
+
+      my @files = ();
+      find( { wanted => sub { push @files, $_ }, no_chdir => 1 },
+            $staging_root4product);
+      @files = grep { $filter_function->($_) } grep { -f } @files;
+
+      ######
+      # We do not know the exact number of files we should find.
+      # Not finding anything or finding fewer files than expected
+      # might be an indication that the wrong version of the study
+      # configuration is being used or that the value of the
+      # pp_files_number attribute is too high.
+      #
+      $self->debug(@files . ' artic files found on staging');
+      if (@files < $self->pp_files_number) {
+        $self->logcroak(sprintf 'Fewer than %i files that are eligible for ' .
+          'archival to iRODS are found on staging', $self->pp_files_number);
+      }
+
+      # Group files by type.
+      my $files_by_type = {};
+      foreach my $file (@files) {
+        ## no critic (RegularExpressions::ProhibitEscapedMetacharacters)
+        my ($name,$path,$suffix) = fileparse($file, qr/\.[^.]*/xms);
+        $suffix or croak qq[File $file without suffix];
+        $suffix =~ s/\A\.//smx;
+        ## use critic
+        push @{$files_by_type->{$suffix}}, $file;
+      }
+
+      foreach my $file_type (sort keys %{$files_by_type}) {
+        my $v = npg_pipeline::validation::irods->new(
+          irods_destination_collection => $irods_root4product,
+          irods            => $self->irods,
+          file_extension   => $file_type,
+          check_md5        => $check_md5,
+          product_entities => \@pp_product_entities,
+          staging_files    => {$rpt_list => $files_by_type->{$file_type}}
+        );
+        $deletable = $v->archived_for_deletion();
+        $deletable or last;
+      }
+    } catch {
+      $self->error('Error checking pp iRODS archive: ' . $_);
+      $deletable = 0;
+    };
+    $deletable or last;
+  }
+
+  return $deletable;
+}
+
+sub _irods_destination_collection4pp {
+  my $self = shift;
+
+  return __PACKAGE__->new(
+    id_run => $self->id_run,
+    tracking_run => $self->tracking_run,
+    per_product_archive => 1,
+    irods_root_collection_ns => $self->irods_pp_root_collection()
+  )->irods_destination_collection();
 }
 
 sub _autoqc_deletable {
@@ -822,6 +987,62 @@ sub _file_archive_deletable {
   return $deletable;
 }
 
+###########################################################
+# The code of this function was copied from
+# L<https://github.com/wtsi-npg/npg_irods/blob/63d3485c44cc00e30d8a8ec5bcdc23d2297f0d39/bin/npg_publish_tree.pl#L81> 
+# Keith James kdj@sanger.ac.uk is the original author
+# Long term this function will have to be moved to npg_seq_common or
+# similar NPG Git package
+#
+sub _make_filter_fn {
+  my ($self, $include_a, $exclude_a) = @_;
+
+  my @include_re;
+  my @exclude_re;
+  my $nerr = 0;
+  $include_a ||= [];
+  $exclude_a ||= [];
+
+  foreach my $re (@{$include_a}) {
+    try {
+      push @include_re, qr{$re}msx;
+    } catch {
+      $self->error("in include regex '$re': $_");
+      $nerr++;
+    };
+  }
+
+  foreach my $re (@{$exclude_a}) {
+    try {
+      push @exclude_re, qr{$re}msx;
+    } catch {
+      $self->error("in exclude regex '$re': $_");
+      $nerr++;
+    };
+  }
+
+  if ($nerr > 0) {
+    $self->logcroak("$nerr errors in include / exclude filters");
+  }
+
+  return sub {
+    my ($path) = @_;
+
+    (defined $path and $path ne q[]) or
+        croak 'Path argument is required in callback';
+
+    my $include = -f $path;
+    if (@include_re) {
+      $include = any {$path =~ $_} @include_re;
+    }
+    if ($include and @exclude_re) {
+      $include = not any {$path =~ $_} @exclude_re;
+    }
+
+    return $include;
+  };
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -854,6 +1075,10 @@ __END__
 
 =item Try::Tiny
 
+=item File::Basename
+
+=item Carp
+
 =item WTSI::NPG::iRODS
 
 =item npg_qc::Schema
@@ -884,7 +1109,7 @@ __END__
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019,2020,2021 Genome Research Ltd.
+Copyright (C) 2019,2020,2021,2022 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

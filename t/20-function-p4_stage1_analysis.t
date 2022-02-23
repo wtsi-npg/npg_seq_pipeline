@@ -315,7 +315,7 @@ subtest 'check_save_arguments_minimap2' => sub {
 # check_duplex-seq test
 
 subtest 'check_duplex-seq' => sub {
-  plan tests => 26;
+  plan tests => 29;
 
   my $rf_name = '210111_A00513_0447_AHJ55JDSXY';
   my $rfpath  = abs_path(getcwd) . qq{/t/data/novaseq/$rf_name};
@@ -445,6 +445,75 @@ subtest 'check_duplex-seq' => sub {
       }
     };
 
+  is_deeply($h, $expected, 'correct json file content (for p4 stage1 params file)');
+
+  # and a Targeted NanoSeq Pulldown Twist lane
+
+  $pfname = $bbp . q[/p4_stage1_analysis/lane2/param_files/36062_2_p4s1_pv_in.json];
+  ok (-e $pfname, 'params file exists');
+  $h = from_json(slurp($pfname));
+
+  $no_cal_path = $intensities_dir . '/BAM_basecalls_20210113-092146/no_cal';
+
+  $expected = {
+    'assign' => [
+       {
+         'i2b_intensity_dir' =>  $intensities_dir,
+         'qc_check_qc_out_dir' =>  $no_cal_path . '/archive/lane2/qc',
+         'bwa_executable' => 'bwa0_6',
+         'cluster_count' => '3029686070',
+         'split_prefix' => $no_cal_path,
+         'barcode_file' => $intensities_dir . '/BAM_basecalls_20210113-092146/metadata_cache_36062/lane_2.taglist',
+         'split_threads_val' => '4',
+         'i2b_lane' => '2',
+         'seed_frac' => '36062.00000330',
+         'reference_phix' => $dir . '/srpipe_references/references/PhiX/default/all/minimap2/phix_unsnipped_short_no_N.fa.mmi',
+         'i2b_bc_qual_val' => 'rq,mq,bq,QT,QT,rq,mq,bq',
+         'lane_archive_path' => $no_cal_path . '/archive/lane2',
+         'samtools_executable' => 'samtools',
+         'qc_check_id_run' => '36062',
+         'i2b_final_0' => '151,318',
+         'i2b_sample_aliases' => 'EGAN00002715626,EGAN00002715646,EGAN00002715660,EGAN00002715671,EGAN00002715675,EGAN00002715685,EGAN00002715692,EGAN00002715705,EGAN00002715707,EGAN00002715709,EGAN00002715712,EGAN00002715714,EGAN00002715721,EGAN00002715734,EGAN00002715743,EGAN00002715751',
+         'tileviz_dir' => $no_cal_path . '/archive/lane2/tileviz',
+         's1_se_pe' => 'pe',
+         'aln_filter_value' => '0x900',
+         'i2b_runfolder' => $rf_name,
+         'subsetsubpath' => $no_cal_path . '/archive/lane2/.npg_cache_10000',
+         'outdatadir' => $no_cal_path,
+         'i2b_study_name' => '"EGAS00001004580: My research project aims to use the clonal dynamics of spontaneously occurring somatic mutations to answer fundamental questions about human haematopoietic stem cell (HSC) biology.  The four major questions I will address are: 1. How do age and aging affect normal human HSC dynamics in vivo? 2. How do in vivo perturbations, particularly chemotherapy and increased levels of reactive oxygen species, affect HSC population dynamics? 3. Is response to in vitro perturbation heritable and/or correlated with other features such as age of individual and contribution of the lineage to peripheral blood? 4. How are HSC dynamics altered in people with early driver mutations (clonal haematopoiesis)?"',
+         'scramble_reference_fasta' => $dir . '/srpipe_references/references/PhiX/default/all/fasta/phix_unsnipped_short_no_N.fa',
+         'i2b_thread_count' => '8',
+         'teepot_tempdir' => '.',
+         'filtered_bam' => $no_cal_path . '/36062_2.bam',
+         'md5filename' => $no_cal_path . '/36062_2.bam.md5',
+         'i2b_basecalls_dir' => $intensities_dir . '/BaseCalls',
+         'i2b_run_path' => $rfpath,
+         'i2b_rg' => '36062_2',
+         'rpt_list' => '36062:2',
+         'teepot_wval' => '500',
+         'i2b_pu' => $rf_name . '_2',
+         'i2b_final_index_0' => '3,3,7,159,167,170,170,174',
+         'seqchksum_file' => $intensities_dir . '/BAM_basecalls_20210113-092146/36062_2.post_i2b.seqchksum',
+         'decoder_metrics' => $intensities_dir . '/BAM_basecalls_20210113-092146/36062_2.bam.tag_decode.metrics',
+         'i2b_bc_read' => '1,2,1,1,1,2,1,2',
+         'qc_check_qc_in_dir' => $intensities_dir. '/BAM_basecalls_20210113-092146',
+         'i2b_bc_seq_val' => 'rb,mb,br,BC,BC,rb,mb,br',
+         's1_output_format' => 'cram',
+         'phix_alignment_method' => 'minimap2',
+         'i2b_first_0' => '8,175',
+         'i2b_first_index_0' => '1,1,4,152,160,168,168,171',
+         'unfiltered_cram_file' => $no_cal_path . '/36062_2.unfiltered.cram',
+         'teepot_mval' => '2G'
+       }
+     ],
+     "ops" => {
+       "splice" => ["bamadapterfind"],
+       "prune" => ["tee_split:unsplit_bam-"]
+      }
+    };
+
+  is_deeply($h, $expected, 'correct json file content (for p4 stage1 params file)');
+
   # and a non Duplex-Seq lane for completeness
 
   $pfname = $bbp . q[/p4_stage1_analysis/lane1/param_files/36062_1_p4s1_pv_in.json];
@@ -502,7 +571,6 @@ subtest 'check_duplex-seq' => sub {
        "prune" => ["tee_split:unsplit_bam-"]
       }
     };
-
 
   is_deeply($h, $expected, 'correct json file content (for p4 stage1 params file)');
  };

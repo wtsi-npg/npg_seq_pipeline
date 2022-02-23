@@ -1,6 +1,14 @@
 LIST OF CHANGES
 ---------------
 
+release 60.5.0
+ - Add Targeted NanoSeq Pulldown to Duplex-Seq analysis library_type list
+ - Refactored existing code to create new public functions, which will be
+   used in the extension of npg_run_deletable script dealing with decisions
+   about correctness of archival of portable pipelines output.
+ - Extended npg_run_deletable script to deal with the output of portable
+   pipelines for a case when this output is archived to iRODS.
+
 release 60.4.0
  - Removed co-location check (host and staging area) from the pipeline
    daemon code. This check is no longer relevant, the staging servers
