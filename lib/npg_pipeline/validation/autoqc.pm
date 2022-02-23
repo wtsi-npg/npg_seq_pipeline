@@ -175,7 +175,7 @@ sub _results_exist {
     foreach my $check_name (@{$checks}) {
       my ($name, $class_name) = npg_qc::autoqc::role::result->class_names($check_name);
       my $rs = $self->qc_schema->resultset($class_name)
-	            ->search_via_composition($compositions);
+                    ->search_via_composition($compositions);
       my $count = $rs->count;
 
       if ($check_name eq 'samtools_stats') {
@@ -184,7 +184,7 @@ sub _results_exist {
         if ($count < $e) {
           $self->warn($context . qq[Expected at least $expected results got $count for $check_name]);
           $exists = 0;
-	}
+        }
       } elsif ($check_name eq 'sequence_summary') {
         $rs = $rs->search({'me.iscurrent' => 1});
         $count = $rs->count;
@@ -193,7 +193,7 @@ sub _results_exist {
         if ($count < $expected) {
           $self->warn($context . qq[Expected at least $expected results got $count for $check_name]);
           $exists = 0;
-	}
+        }
       } else {
 
         my $local_expected     = $expected;
@@ -211,8 +211,8 @@ sub _results_exist {
             $local_compositions = \@non_tag_zero_compositions;
             $local_expected = scalar @non_tag_zero_compositions;
             $local_count = $rs->search_via_composition(\@non_tag_zero_compositions)->count;
-	  }
-	}
+          }
+        }
 
         if ($local_count != $local_expected) {
           $self->warn($context . qq[Expected $local_expected results got $local_count for $check_name]);
@@ -355,7 +355,7 @@ Marina Gourtovaia E<lt>mg8@sanger.ac.ukE<gt>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 GRL
+Copyright (C) 2019,2021,2022 GRL
 
 This file is part of NPG.
 
