@@ -196,10 +196,15 @@ sub _results_exist {
         }
       } else {
 
+        ($count == $expected) and next; # All is OK.
+
         my $local_expected     = $expected;
         my $local_count        = $count;
         my $local_compositions = $compositions;
 
+        ######
+        # Are there any reasons for a mismatch?
+        # 
         if ($check_name eq 'adapter') {
           # Adapter check for tag zero might or might not be present.
           # We will not check for it.
@@ -212,6 +217,8 @@ sub _results_exist {
             $local_expected = scalar @non_tag_zero_compositions;
             $local_count = $rs->search_via_composition(\@non_tag_zero_compositions)->count;
           }
+        } elsif ($check_name eq 'insert_size') {
+          $local_expected -= $self->_num_skips4insert_size($compositions);
         }
 
         if ($local_count != $local_expected) {
@@ -273,6 +280,20 @@ sub _prune_by_subset {
   }
 
   return $map;
+}
+
+sub _num_skips4insert_size {
+  my ($self, $compositions) = @_;
+  # If the primer_panel/gbx_plex attribute is set, the insert_size check
+  # is not run. Only consider products from a subset with compositions
+  # that are in the list of compositions given by the argument of this
+  # method. 
+  my %cmap = map { $_->digest => 1 } @{$compositions};
+  return scalar grep { $_ }
+                map  { $_->lims->primer_panel }
+                grep { exists $cmap{$_->composition->digest} }
+                map  { $_->target_product }
+                @{$self->product_entities()};
 }
 
 __PACKAGE__->meta->make_immutable;
