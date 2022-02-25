@@ -1,11 +1,12 @@
 LIST OF CHANGES
 ---------------
  
- - Fixed a bug in autoqc checks validation for the npg_run_is_deletable
+ - Fixed bugs in autoqc checks validation for the npg_run_is_deletable
    scrip. Previously the runs where libraries had the primer panel set
    were not autoqc-deletable since the insert_size check results, which
    are not run for such products, were absent in the database, but were
-   expected by the code.
+   expected by the code. A similar problem is fixed for ref_match check
+   results for GBS runs.
 
 release 60.5.0
  - Add Targeted NanoSeq Pulldown to Duplex-Seq analysis library_type list

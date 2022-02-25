@@ -216,7 +216,7 @@ sub _results_exist {
             $local_expected = scalar @non_tag_zero_compositions;
             $local_count = $rs->search_via_composition(\@non_tag_zero_compositions)->count;
           }
-        } elsif ($check_name eq 'insert_size') {
+        } elsif ($check_name eq 'insert_size' or $check_name eq 'ref_match') {
           $local_expected = $self->_num_run4check($check_name, $compositions);
         }
 
