@@ -5,6 +5,7 @@ use MooseX::StrictConstructor;
 use namespace::autoclean;
 use Readonly;
 use List::MoreUtils qw/any none uniq/;
+use Class::Load qw(load_class);
 
 use npg_tracking::glossary::composition;
 use npg_tracking::glossary::composition::component::illumina;
@@ -98,11 +99,9 @@ sub fully_archived {
   $self->debug(@non_pools ? 'Non-indexed ' . join q[, ], @non_pools :
                             'All lanes processed as indexed');
 
-  my @common = grep {($_ ne 'insert_size') || $self->is_paired_read} @COMMON_CHECKS;
-
   my @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} ||
                       scalar @{$self->_skip_checks_wsubsets->{$_}} }
-               (@common, @WITH_SUBSET_CHECKS);
+               (@COMMON_CHECKS, @WITH_SUBSET_CHECKS);
   my $context = 'Expected product level checks';
   $self->debug($context . q[: ] . join q[, ], @checks);
   my @flags = $self->_results_exist(\@compositions, \@checks, $context);
@@ -123,7 +122,7 @@ sub fully_archived {
 
   my $compositions4lanes = $self->_compositions4lanes(\@compositions);
 
-  @checks = grep {$_ ne 'adapter'} @common;
+  @checks = grep {$_ ne 'adapter'} @COMMON_CHECKS;
   push @checks, @LANE_LEVELCHECKS;
   @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} } @checks;
   $context = 'Expected lane level checks';
@@ -218,7 +217,7 @@ sub _results_exist {
             $local_count = $rs->search_via_composition(\@non_tag_zero_compositions)->count;
           }
         } elsif ($check_name eq 'insert_size') {
-          $local_expected -= $self->_num_skips4insert_size($compositions);
+          $local_expected = $self->_num_run4check($check_name, $compositions);
         }
 
         if ($local_count != $local_expected) {
@@ -282,18 +281,27 @@ sub _prune_by_subset {
   return $map;
 }
 
-sub _num_skips4insert_size {
-  my ($self, $compositions) = @_;
-  # If the primer_panel/gbx_plex attribute is set, the insert_size check
-  # is not run. Only consider products from a subset with compositions
-  # that are in the list of compositions given by the argument of this
-  # method. 
+sub _num_run4check {
+  my ($self, $check_name, $compositions) = @_;
+  # Only consider products from a subset with compositions that are in
+  # the list of compositions given by the argument of this method. 
   my %cmap = map { $_->digest => 1 } @{$compositions};
-  return scalar grep { $_ }
-                map  { $_->lims->primer_panel }
+  return scalar grep { $self->_expect_result($check_name, $_->composition) }
                 grep { exists $cmap{$_->composition->digest} }
                 map  { $_->target_product }
                 @{$self->product_entities()};
+}
+
+sub _expect_result {
+  my ($self, $check_name, $composition) = @_;
+  my $class_name = join q[::], q[npg_qc], q[autoqc], q[checks], $check_name;
+  load_class($class_name);
+  my $ref = {composition => $composition,
+             rpt_list => $composition->freeze2rpt};
+  if ($check_name eq q[insert_size]) {
+    $ref->{is_paired_read} = $self->is_paired_read;
+  }
+  return $class_name->new($ref)->can_run();
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -353,6 +361,8 @@ npg_pipeline::validation::autoqc
 =item Readonly
 
 =item List::MoreUtils
+
+=item Class::Load
 
 =item npg_tracking::glossary::composition::component::illumina
 

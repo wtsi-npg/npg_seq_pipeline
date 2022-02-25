@@ -50,6 +50,8 @@ subtest 'object construction' => sub {
 subtest 'insert_size checks validation' => sub {
   plan tests => 9;
 
+  local $ENV{NPG_REPOSITORY_ROOT} = q[t];
+
   is ($schema->resultset('InsertSize')->count(), 0,
     'no insert size db results');
 
@@ -57,20 +59,7 @@ subtest 'insert_size checks validation' => sub {
     qX_yield adapter gc_fraction ref_match sequence_error
     spatial_filter tag_metrics
     bam_flagstats samtools_stats sequence_summary    
-  /;
-
-  my $no_lims_entity =  npg_pipeline::validation::entity->new(
-    staging_archive_root => q[t],
-    target_product       => npg_pipeline::product->new(rpt_list => q[2:3])
-  );
-  my $validator = npg_pipeline::validation::autoqc->new(
-    is_paired_read   => 0,
-    logger           => $logger,
-    qc_schema        => $schema,
-    skip_checks      => \@skip_checks,
-    product_entities => [$no_lims_entity]
-  );
-  ok ($validator->fully_archived, 'non-paired run is fully archived');  
+  /; 
 
   ######
   # MiSeq run
@@ -86,7 +75,7 @@ subtest 'insert_size checks validation' => sub {
   );
   my $entity = npg_pipeline::validation::entity->new(
     staging_archive_root => q[t], target_product => $product);
-  $validator = npg_pipeline::validation::autoqc->new(
+  my $validator = npg_pipeline::validation::autoqc->new(
     is_paired_read   => 1,
     logger           => $logger,
     qc_schema        => $schema,
@@ -94,6 +83,15 @@ subtest 'insert_size checks validation' => sub {
     product_entities => [$entity]
   );
   ok (!$validator->fully_archived, 'tag zero is not fully archived');
+
+  $validator = npg_pipeline::validation::autoqc->new(
+    is_paired_read   => 0,
+    logger           => $logger,
+    qc_schema        => $schema,
+    skip_checks      => \@skip_checks,
+    product_entities => [$entity]
+  ); 
+  ok ($validator->fully_archived, 'non-paired run, tag zero is fully archived');
 
   $product = npg_pipeline::product->new(
     rpt_list => q[24135:1:1],
