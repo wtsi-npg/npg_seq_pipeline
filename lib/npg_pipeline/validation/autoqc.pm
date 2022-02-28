@@ -5,6 +5,7 @@ use MooseX::StrictConstructor;
 use namespace::autoclean;
 use Readonly;
 use List::MoreUtils qw/any none uniq/;
+use Class::Load qw(load_class);
 
 use npg_tracking::glossary::composition;
 use npg_tracking::glossary::composition::component::illumina;
@@ -98,11 +99,9 @@ sub fully_archived {
   $self->debug(@non_pools ? 'Non-indexed ' . join q[, ], @non_pools :
                             'All lanes processed as indexed');
 
-  my @common = grep {($_ ne 'insert_size') || $self->is_paired_read} @COMMON_CHECKS;
-
   my @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} ||
                       scalar @{$self->_skip_checks_wsubsets->{$_}} }
-               (@common, @WITH_SUBSET_CHECKS);
+               (@COMMON_CHECKS, @WITH_SUBSET_CHECKS);
   my $context = 'Expected product level checks';
   $self->debug($context . q[: ] . join q[, ], @checks);
   my @flags = $self->_results_exist(\@compositions, \@checks, $context);
@@ -123,7 +122,7 @@ sub fully_archived {
 
   my $compositions4lanes = $self->_compositions4lanes(\@compositions);
 
-  @checks = grep {$_ ne 'adapter'} @common;
+  @checks = grep {$_ ne 'adapter'} @COMMON_CHECKS;
   push @checks, @LANE_LEVELCHECKS;
   @checks = grep { !exists $self->_skip_checks_wsubsets->{$_} } @checks;
   $context = 'Expected lane level checks';
@@ -175,7 +174,7 @@ sub _results_exist {
     foreach my $check_name (@{$checks}) {
       my ($name, $class_name) = npg_qc::autoqc::role::result->class_names($check_name);
       my $rs = $self->qc_schema->resultset($class_name)
-	            ->search_via_composition($compositions);
+                    ->search_via_composition($compositions);
       my $count = $rs->count;
 
       if ($check_name eq 'samtools_stats') {
@@ -184,7 +183,7 @@ sub _results_exist {
         if ($count < $e) {
           $self->warn($context . qq[Expected at least $expected results got $count for $check_name]);
           $exists = 0;
-	}
+        }
       } elsif ($check_name eq 'sequence_summary') {
         $rs = $rs->search({'me.iscurrent' => 1});
         $count = $rs->count;
@@ -193,13 +192,18 @@ sub _results_exist {
         if ($count < $expected) {
           $self->warn($context . qq[Expected at least $expected results got $count for $check_name]);
           $exists = 0;
-	}
+        }
       } else {
+
+        ($count == $expected) and next; # All is OK.
 
         my $local_expected     = $expected;
         my $local_count        = $count;
         my $local_compositions = $compositions;
 
+        ######
+        # Are there any reasons for a mismatch?
+        # 
         if ($check_name eq 'adapter') {
           # Adapter check for tag zero might or might not be present.
           # We will not check for it.
@@ -211,8 +215,10 @@ sub _results_exist {
             $local_compositions = \@non_tag_zero_compositions;
             $local_expected = scalar @non_tag_zero_compositions;
             $local_count = $rs->search_via_composition(\@non_tag_zero_compositions)->count;
-	  }
-	}
+          }
+        } elsif ($check_name eq 'insert_size' or $check_name eq 'ref_match') {
+          $local_expected = $self->_num_run4check($check_name, $compositions);
+        }
 
         if ($local_count != $local_expected) {
           $self->warn($context . qq[Expected $local_expected results got $local_count for $check_name]);
@@ -275,6 +281,29 @@ sub _prune_by_subset {
   return $map;
 }
 
+sub _num_run4check {
+  my ($self, $check_name, $compositions) = @_;
+  # Only consider products from a subset with compositions that are in
+  # the list of compositions given by the argument of this method. 
+  my %cmap = map { $_->digest => 1 } @{$compositions};
+  return scalar grep { $self->_expect_result($check_name, $_->composition) }
+                grep { exists $cmap{$_->composition->digest} }
+                map  { $_->target_product }
+                @{$self->product_entities()};
+}
+
+sub _expect_result {
+  my ($self, $check_name, $composition) = @_;
+  my $class_name = join q[::], q[npg_qc], q[autoqc], q[checks], $check_name;
+  load_class($class_name);
+  my $ref = {composition => $composition,
+             rpt_list => $composition->freeze2rpt};
+  if ($check_name eq q[insert_size]) {
+    $ref->{is_paired_read} = $self->is_paired_read;
+  }
+  return $class_name->new($ref)->can_run();
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -333,6 +362,8 @@ npg_pipeline::validation::autoqc
 
 =item List::MoreUtils
 
+=item Class::Load
+
 =item npg_tracking::glossary::composition::component::illumina
 
 =item npg_tracking::glossary::composition
@@ -355,7 +386,7 @@ Marina Gourtovaia E<lt>mg8@sanger.ac.ukE<gt>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 GRL
+Copyright (C) 2019,2021,2022 GRL
 
 This file is part of NPG.
 
