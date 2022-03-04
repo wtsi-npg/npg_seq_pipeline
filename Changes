@@ -1,7 +1,10 @@
 LIST OF CHANGES
 ---------------
  
- release 60.6.0
+ - Purge Net::AMQP::RabbitMQ and message notification system used for UKB
+   Vanguard
+
+release 60.6.0
  - Fixed bugs in autoqc checks validation for the npg_run_is_deletable
    scrip. Previously the runs where libraries had the primer panel set
    were not autoqc-deletable since the insert_size check results, which

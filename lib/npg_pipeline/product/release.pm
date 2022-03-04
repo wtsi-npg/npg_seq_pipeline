@@ -423,36 +423,6 @@ sub is_s3_releasable {
            $self->has_qc_for_release($product) );
 }
 
-=head2 is_for_s3_release_notification
-
-  Arg [1]    : npg_pipeline::product
-
-  Example    : $obj->is_for_s3_release_notification($product)
-  Description: Return true if a notification is to be sent on the
-               external archival of the product.
-
-  Returntype : Bool
-
-=cut
-
-sub is_for_s3_release_notification {
-  my ($self, $product) = @_;
-
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $m = "for $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY release notification";
-
-  if ($self->find_study_config($product)
-           ->{$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY}->{notify}) {
-    $self->info("Product $name, $rpt is $m");
-    return 1;
-  }
-
-  $self->info("Product $name, $rpt is NOT $m");
-
-  return 0;
-}
-
 =head2 haplotype_caller_enable
  
  Arg [1]    : npg_pipeline::product

@@ -49,7 +49,7 @@
             {
                 "relation": "dependsOn",
                 "source": "archive_to_s3",
-                "target": "notify_product_delivery"
+                "target": "run_run_archived"
             },
             {
                 "relation": "dependsOn",
@@ -64,11 +64,6 @@
             {
                 "relation": "dependsOn",
                 "source": "pp_archiver",
-                "target": "run_run_archived"
-            },
-            {
-                "relation": "dependsOn",
-                "source": "notify_product_delivery",
                 "target": "run_run_archived"
             },
             {
@@ -211,14 +206,6 @@
                 "label": "pp_archiver",
                 "metadata": {
                     "description": " Upload or archival of the output of portable pipelines to a location specified by the customer (if configured)",
-                    "resources": {}
-                }
-            },
-            {
-                "id": "notify_product_delivery",
-                "label": "notify_product_delivery",
-                "metadata": {
-                    "description": "Notification of product delivery to a customer using an in-house message queue (if configured)",
                     "resources": {}
                 }
             },

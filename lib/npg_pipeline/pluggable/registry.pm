@@ -62,7 +62,6 @@ Readonly::Hash my %REGISTRY => (
   'bam_cluster_counter_check'=> {'cluster_count' => 'create'},
   'seqchksum_comparator'     => {'seqchksum_comparator' => 'create'},
   'archive_to_s3'            => {'s3_archiver' => 'create'},
-  'notify_product_delivery'  => {'product_delivery_notifier' => 'create'},
   'cache_merge_component'    => {'cache_merge_component' => 'create'},
 
   'archive_to_irods_samplesheet' => {'seq_to_irods_archiver' =>
