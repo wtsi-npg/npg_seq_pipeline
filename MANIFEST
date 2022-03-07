@@ -47,6 +47,7 @@ lib/npg_pipeline/function/cluster_count.pm
 lib/npg_pipeline/function/current_analysis_link.pm
 lib/npg_pipeline/function/definition.pm
 lib/npg_pipeline/function/haplotype_caller.pm
+lib/npg_pipeline/function/irods_locations_warehouse_archiver.pm
 lib/npg_pipeline/function/log_files_archiver.pm
 lib/npg_pipeline/function/merge_recompress.pm
 lib/npg_pipeline/function/p4_stage1_analysis.pm
@@ -120,6 +121,7 @@ t/20-function-cluster_count.t
 t/20-function-current_analysis_link.t
 t/20-function-definition.t
 t/20-function-haplotype_caller.t
+t/20-function-irods-locations_warehouse-archiver.t
 t/20-function-log_files_archiver.t
 t/20-function-merge_recompress.t
 t/20-function-p4_stage1_analysis.t

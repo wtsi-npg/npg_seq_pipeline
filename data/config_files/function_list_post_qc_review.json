@@ -94,6 +94,11 @@
             {
                 "relation": "dependsOn",
                 "source": "archive_logs",
+                "target": "archive_irods_locations_to_ml_warehouse"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "archive_irods_locations_to_ml_warehouse",
                 "target": "pipeline_end"
             }
         ],
@@ -302,6 +307,20 @@
                             "queue": "lowload",
                             "fs_slots_num": 1
                         }
+                    }
+                }
+            },
+            {
+                "id": "archive_irods_locations_to_ml_warehouse",
+                "label": "archive_irods_locations_to_ml_warehouse",
+                "metadata": {
+                    "description": "Adds a row to the seq_product_irods_locations table for each product archived to irods",
+                    "resources": {
+                        "db": [
+                            "mlwh"
+                        ],
+                        "queue": "lowload",
+                        "minimum_cpu": 0
                     }
                 }
             },
