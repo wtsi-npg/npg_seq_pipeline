@@ -1072,6 +1072,8 @@ t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release_two_studies.yml
 t/data/portable_pipelines/ncov2019-artic-nf/v.3/product_release.yml
 t/data/products/samplesheet_novaseq4lanes.csv
 t/data/products/samplesheet_rapidrun_nopool.csv
+t/data/primer_panel/samplesheet_24135_gbs.csv
+t/data/primer_panel/samplesheet_36214.csv
 t/data/qc/1234_samplesheet_amended.csv
 t/data/qc/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa
 t/data/qc/references/PhiX/default/all/fasta/PhiX.fasta
