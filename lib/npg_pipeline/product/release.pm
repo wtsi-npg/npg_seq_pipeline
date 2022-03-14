@@ -666,11 +666,9 @@ used for any study without a specific configuration.
  S3:
     enable: <boolean> S3 release enabled if true.
     url:    <URL>     The S3 bucket URL to send to.
-    notify: <boolean> A notificastion message will be sent if true.
 
  irods:
     enable: <boolean> iRODS release enabled if true.
-    notify: <boolean> A notification message will be sent if true.
 
 e.g.
 
@@ -679,29 +677,23 @@ default:
   s3:
     enable: false
     url: null
-    notify: false
   irods:
     enable: true
-    notify: false
 
 study:
   - study_id: "5290"
     s3:
       enable: true
       url: "s3://product_bucket"
-      notify: true
     irods:
       enable: false
-      notify: false
 
   - study_id: "1000"
     s3:
       enable: false
       url: null
-      notify: false
     irods:
       enable: true
-      notify: false
 
 =head1 BUGS AND LIMITATIONS
 
