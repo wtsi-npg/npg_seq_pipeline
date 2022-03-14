@@ -60,7 +60,7 @@ subtest 'top level scaffold' => sub {
   ok (-e "$bbc_path/metadata_cache_999", 'metadata cache directory created');
   ok (-e "$bbc_path/irods_publisher_restart_files",
     'directory for iRODS publisher restart files created');
-  ok (-e "$bbc_path/irods_locations",
+  ok (-e "$bbc_path/irods_locations_files",
     'directory for iRODS location json files created')
 };
 

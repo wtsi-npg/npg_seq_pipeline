@@ -63,7 +63,7 @@ subtest 'MiSeq run' => sub {
   my $analysis_path = $paths->{'analysis_path'};
   my $col = qq{/seq/$id_run};
   my $restart_file = qr/${analysis_path}\/irods_publisher_restart_files\/publish_seq_data2irods_${id_run}_20181204-\d+_\w+\.restart_file\.json/;
-  my $irods_location_file = qr/${analysis_path}\/irods_locations\/irods_location_\w+\.json/;
+  my $irods_location_file = qr/${analysis_path}\/irods_locations_files\/16850_1\#\d+\.seq_to_irods_archiver\.json/;
 
   my $a = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder     => $rf_name,
@@ -155,8 +155,9 @@ subtest 'MiSeq run' => sub {
   $d = $da->[0];
   is ($d->composition->num_components, 1, 'one component');
   is ($d->composition->get_component(0)->tag_index, undef, 'tag index is undefined');
+  my $ifile = "${analysis_path}/irods_locations_files/16850_1.seq_to_irods_archiver.json";
   like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1 --mlwh_json $irods_location_file\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1 --mlwh_json $ifile\Z/,
     'command for lane 1');
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(

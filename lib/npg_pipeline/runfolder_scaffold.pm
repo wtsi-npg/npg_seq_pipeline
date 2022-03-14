@@ -18,7 +18,7 @@ Readonly::Scalar my $METADATA_CACHE_DIR_NAME        => q[metadata_cache_];
 Readonly::Scalar my $TILEVIZ_INDEX_DIR_NAME         => q[tileviz];
 Readonly::Scalar my $TILEVIZ_INDEX_FILE_NAME        => q[index.html];
 Readonly::Scalar my $IRODS_PUBLISHER_RSART_DIR_NAME => q[irods_publisher_restart_files];
-Readonly::Scalar my $IRODS_LOCATIONS_DIR_NAME       => q[irods_locations];
+Readonly::Scalar my $IRODS_LOCATIONS_DIR_NAME       => q[irods_locations_files];
 
 sub create_product_level {
   my $self = shift;

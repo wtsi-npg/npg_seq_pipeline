@@ -29,8 +29,8 @@ sub create {
 
   if (!$ref->{'excluded'}) {
 
-    $self->ensure_restart_dir_exists();
-    $self->ensure_locations_dir_exists();
+    $self->_ensure_directory_exist();
+
     my $job_name_prefix = join q{_}, q{publish_seq_data2irods}, $self->label();
 
     my $command = join q[ ],
@@ -41,17 +41,21 @@ sub create {
       $command .= q{ --driver-type } . $self->lims_driver_type;
     }
 
+    my $package_name = _package_name();
+
     my $run_collection = $self->irods_destination_collection();
     foreach my $product (@{$self->products->{'data_products'}}) {
       if ($self->is_for_irods_release($product)) {
         my %dref = %{$ref};
         $dref{'composition'} = $product->composition;
-        $dref{'command'} = sprintf '%s --restart_file %s --collection %s --source_directory %s --mlwh_json %s',
+        $dref{'command'} = sprintf
+          '%s --restart_file %s --collection %s --source_directory %s --mlwh_json %s',
           $command,
           $self->restart_file_path($job_name_prefix, $product),
           $self->irods_product_destination_collection($run_collection, $product),
           $product->path($self->archive_path()),
-          $self->irods_location_file_path($product);
+          $product->file_path($self->irods_locations_dir_path(),
+            ext=>"${package_name}.json");
         $self->assign_common_definition_attrs(\%dref, $job_name_prefix);
         push @definitions, $self->create_definition(\%dref);
       }
@@ -106,28 +110,21 @@ sub restart_file_path {
   return join q[/], $self->irods_publisher_rstart_dir_path(), $file_name;
 }
 
-sub ensure_restart_dir_exists {
+sub _ensure_directory_exist {
   my $self = shift;
   ####
-  # Create a directory for publisher's restart files.
-  # The directory is normally created by the analysis runfolder
+  # This directory is normally created by the analysis runfolder
   # scaffold, but might be absent for run folders with older
   # analysis results.
-  $self->make_dir($self->irods_publisher_rstart_dir_path());
-  return;
-}
-
-sub ensure_locations_dir_exists {
-  my $self = shift;
   $self->make_dir($self->irods_locations_dir_path());
   return;
 }
 
-sub irods_location_file_path {
-  my ($self, $product) = @_;
-  my $file_name = 'irods_location_' . $product->composition->digest() . '.json';
-  return join q[/], $self->irods_locations_dir_path(), $file_name;
+sub _package_name {
+  my @names = split /:/smx, __PACKAGE__;
+  return pop @names
 }
+
 
 __PACKAGE__->meta->make_immutable;
 
@@ -188,14 +185,6 @@ should exit.
 
 Given a job name prefix, returns a full path of the iRODS publisher
 restart file.
-
-=head2 irods_location_file_path
-
-Returns a full path of the irods location file for a given product.
-
-=head2 ensure_restart_dir_exists
-
-=head2 ensure_locations_dir_exists
 
 =head1 DIAGNOSTICS
 
