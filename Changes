@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
- 
+
+ - When loading main pipeline product to iRODS, added an option to create
+   files recording the location of these products.  In future these files
+   will be used to load the iRODS locations to the ml warehouse.
  - Purge Net::AMQP::RabbitMQ and message notification system used for UKB
    Vanguard
 

@@ -63,6 +63,7 @@ subtest 'MiSeq run' => sub {
   my $analysis_path = $paths->{'analysis_path'};
   my $col = qq{/seq/$id_run};
   my $restart_file = qr/${analysis_path}\/irods_publisher_restart_files\/publish_seq_data2irods_${id_run}_20181204-\d+_\w+\.restart_file\.json/;
+  my $irods_location_file = qr/${analysis_path}\/irods_locations_files\/16850_1\#\d+\.seq_to_irods_archiver\.json/;
 
   my $a = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder     => $rf_name,
@@ -88,19 +89,19 @@ subtest 'MiSeq run' => sub {
     'job_name is correct');
   is ($d->composition->get_component(0)->tag_index, 1, 'tag index 1 job');
   like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file\Z/,
     'command for tag 1');
 
   $d = $da->[1];
   is ($d->composition->get_component(0)->tag_index, 2, 'tag index 2 job');
   like ($d->command,
-     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex2\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex2 --mlwh_json $irods_location_file\Z/,
     'command for tag 2');
 
   $d = $da->[2];
   is ($d->composition->get_component(0)->tag_index, 0, 'tag index 0 job');
   like ($d->command,
-     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex0\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex0 --mlwh_json $irods_location_file\Z/,
     'command for tag 0');
 
   # Make study explicitly configured to be archived to iRODS
@@ -120,15 +121,15 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file\Z/,
     'command for tag 1');
   $d = $da->[1];
   like ($d->command,
-     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex2\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex2 --mlwh_json $irods_location_file\Z/,
     'command for tag 2');
   $d = $da->[2];
   like ($d->command,
-     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex0\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex0 --mlwh_json $irods_location_file\Z/,
     'command for tag 0');
 
   is ($d->command_preexec,
@@ -154,8 +155,9 @@ subtest 'MiSeq run' => sub {
   $d = $da->[0];
   is ($d->composition->num_components, 1, 'one component');
   is ($d->composition->get_component(0)->tag_index, undef, 'tag index is undefined');
+  my $ifile = "${analysis_path}/irods_locations_files/16850_1.seq_to_irods_archiver.json";
   like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1 --mlwh_json $ifile\Z/,
     'command for lane 1');
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -202,7 +204,7 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file\Z/,
     'command is correct for qc run');
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -218,7 +220,7 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --max_errors 10 --driver-type samplesheet --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1\Z/,
+    qr/\A$script --max_errors 10 --driver-type samplesheet --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file\Z/,
     'command is correct for the samplesheet driver');
 };
 
