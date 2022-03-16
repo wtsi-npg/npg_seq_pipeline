@@ -314,6 +314,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $is_haplotag_lib = $l->library_type && ($l->library_type =~ /Haplotagging/smx);
   if($is_haplotag_lib) {
     $p4_param_vals->{haplotag_processing} = q[on];
+    # the samhapotag tool was developed with data from an i5 "rev comp workflow",
+    # its --revcomp flag allows it to work with "standard workflow" i5, as would be
+    # obtained from MiSeq or NovaSeq V1.0 reagents, hence the "not"
     if(not $self->is_i5opposite) {
       $p4_param_vals->{ht_revcomp_flag} = q[on];
     }
