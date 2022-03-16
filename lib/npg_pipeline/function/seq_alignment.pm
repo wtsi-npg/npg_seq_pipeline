@@ -314,7 +314,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   my $is_haplotag_lib = $l->library_type && ($l->library_type =~ /Haplotagging/smx);
   if($is_haplotag_lib) {
     $p4_param_vals->{haplotag_processing} = q[on];
-    if($self->is_i5opposite) {
+    if(not $self->is_i5opposite) {
       $p4_param_vals->{ht_revcomp_flag} = q[on];
     }
   }
