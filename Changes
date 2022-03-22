@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 61.0.0
+ - Reverse logic for SamHaplotag in the seq. alignment function:
+   --revcomp flag - should be used when is_i5_opposite attribute is false.
  - When loading main pipeline product to iRODS, added an option to create
    files recording the location of these products.  In future these files
    will be used to load the iRODS locations to the ml warehouse.
