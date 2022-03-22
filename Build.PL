@@ -60,7 +60,6 @@ my $builder = $class->new(
           'MooseX::Getopt'               => 0,
           'MooseX::Singleton'            => 0,
           'MooseX::StrictConstructor'    => 0,
-          'Net::AMQP::RabbitMQ'          => 0,
           'namespace::autoclean'         => 0,
           'Perl6::Slurp'                 => 0,
           'POSIX'                        => 0,

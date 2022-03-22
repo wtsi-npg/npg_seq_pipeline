@@ -1704,6 +1704,7 @@ subtest 'Haplotagging test' => sub {
           's2_tag_index' => 1,
           'reference_genome_fasta' => join(q[/], $dir, 'references/Homo_sapiens/GRCh38_15/all/fasta/Homo_sapiens.GRCh38_15.fa'),
           'haplotag_processing' => 'on',
+          'ht_revcomp_flag' => 'on',
           'seqchksum_orig_file' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/24135_1#1.orig.seqchksum'),
           'markdup_method' => 'samtools',
           'recal_dir' => join(q[/], $bbd, 'no_cal'),

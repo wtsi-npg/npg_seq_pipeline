@@ -10,14 +10,15 @@ use Carp;
 
 our $VERSION = '0';
 
-Readonly::Scalar my $OUTGOING_PATH_COMPONENT    => q[/outgoing/];
-Readonly::Scalar my $ANALYSIS_PATH_COMPONENT    => q[/analysis/];
-Readonly::Scalar my $LOG_DIR_NAME               => q[log];
-Readonly::Scalar my $STATUS_FILES_DIR_NAME      => q[status];
-Readonly::Scalar my $METADATA_CACHE_DIR_NAME    => q[metadata_cache_];
-Readonly::Scalar my $TILEVIZ_INDEX_DIR_NAME     => q[tileviz];
-Readonly::Scalar my $TILEVIZ_INDEX_FILE_NAME    => q[index.html];
+Readonly::Scalar my $OUTGOING_PATH_COMPONENT        => q[/outgoing/];
+Readonly::Scalar my $ANALYSIS_PATH_COMPONENT        => q[/analysis/];
+Readonly::Scalar my $LOG_DIR_NAME                   => q[log];
+Readonly::Scalar my $STATUS_FILES_DIR_NAME          => q[status];
+Readonly::Scalar my $METADATA_CACHE_DIR_NAME        => q[metadata_cache_];
+Readonly::Scalar my $TILEVIZ_INDEX_DIR_NAME         => q[tileviz];
+Readonly::Scalar my $TILEVIZ_INDEX_FILE_NAME        => q[index.html];
 Readonly::Scalar my $IRODS_PUBLISHER_RSART_DIR_NAME => q[irods_publisher_restart_files];
+Readonly::Scalar my $IRODS_LOCATIONS_DIR_NAME       => q[irods_locations_files];
 
 sub create_product_level {
   my $self = shift;
@@ -122,7 +123,8 @@ sub create_top_level {
     $self->pp_archive_path(),
     $self->status_files_path(),
     $self->_tileviz_index_dir_path(),
-    $self->irods_publisher_rstart_dir_path();
+    $self->irods_publisher_rstart_dir_path(),
+    $self->irods_locations_dir_path();
 
   my @errors = $self->make_dir(@dirs);
 
@@ -154,6 +156,15 @@ sub irods_publisher_rstart_dir_path {
     croak 'Failed to retrieve analysis_path';
   }
   return catdir($apath, $IRODS_PUBLISHER_RSART_DIR_NAME);
+}
+
+sub irods_locations_dir_path {
+  my $self = shift;
+  my $apath = $self->analysis_path;
+  if (!$apath) {
+    croak 'Failed to retrieve analysis_path';
+  }
+  return catdir($apath, $IRODS_LOCATIONS_DIR_NAME);
 }
 
 sub make_log_dir4names {
@@ -294,6 +305,8 @@ is empty. Can be called both as an instance and a class method.
 
 =head2 irods_publisher_rstart_dir_path
 
+=head2 irods_locations_dir_path
+
 =head2 make_log_dir4names
 
 =head2 path_in_outgoing
@@ -342,7 +355,7 @@ Given a path in analysis directory changes it to outgoing directory.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2019,2020 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2022 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

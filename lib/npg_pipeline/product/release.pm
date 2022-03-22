@@ -423,36 +423,6 @@ sub is_s3_releasable {
            $self->has_qc_for_release($product) );
 }
 
-=head2 is_for_s3_release_notification
-
-  Arg [1]    : npg_pipeline::product
-
-  Example    : $obj->is_for_s3_release_notification($product)
-  Description: Return true if a notification is to be sent on the
-               external archival of the product.
-
-  Returntype : Bool
-
-=cut
-
-sub is_for_s3_release_notification {
-  my ($self, $product) = @_;
-
-  my $rpt          = $product->rpt_list();
-  my $name         = $product->file_name_root();
-  my $m = "for $CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY release notification";
-
-  if ($self->find_study_config($product)
-           ->{$CLOUD_ARCHIVE_PRODUCT_CONFIG_KEY}->{notify}) {
-    $self->info("Product $name, $rpt is $m");
-    return 1;
-  }
-
-  $self->info("Product $name, $rpt is NOT $m");
-
-  return 0;
-}
-
 =head2 haplotype_caller_enable
  
  Arg [1]    : npg_pipeline::product
@@ -696,11 +666,9 @@ used for any study without a specific configuration.
  S3:
     enable: <boolean> S3 release enabled if true.
     url:    <URL>     The S3 bucket URL to send to.
-    notify: <boolean> A notificastion message will be sent if true.
 
  irods:
     enable: <boolean> iRODS release enabled if true.
-    notify: <boolean> A notification message will be sent if true.
 
 e.g.
 
@@ -709,29 +677,23 @@ default:
   s3:
     enable: false
     url: null
-    notify: false
   irods:
     enable: true
-    notify: false
 
 study:
   - study_id: "5290"
     s3:
       enable: true
       url: "s3://product_bucket"
-      notify: true
     irods:
       enable: false
-      notify: false
 
   - study_id: "1000"
     s3:
       enable: false
       url: null
-      notify: false
     irods:
       enable: true
-      notify: false
 
 =head1 BUGS AND LIMITATIONS
 

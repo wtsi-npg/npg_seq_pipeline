@@ -67,6 +67,10 @@ subtest 'create job definition' => sub {
   # seed the random number generator.
   srand('1x4y5z8k');
 
+  # restart dir is no longer created if not present because it is
+  # now present in all runfolders
+  mkdir $bbc_path . q(/irods_publisher_restart_files/);
+
   my $archiver = $pkg->new(
     %init,
     timestamp => '20200806-130730',

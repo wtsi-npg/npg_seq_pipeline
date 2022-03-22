@@ -16,7 +16,6 @@ override 'create' => sub {
   my $ref = $self->basic_definition_init_hash();
 
   if (!$ref->{'excluded'}) {
-    $self->ensure_restart_dir_exists();
     my $job_name_prefix = join q{_}, q{publish_run_data2irods}, $self->id_run();
     $self->assign_common_definition_attrs($ref, $job_name_prefix);
 

@@ -24,8 +24,6 @@ sub create {
 
   if (not $ref->{'excluded'}) {
 
-    $self->ensure_restart_dir_exists();
-
     # Not using script name in the job name since the tree publisher
     # script is generic and can be used in many different functions.
     my $job_name = __PACKAGE__;
