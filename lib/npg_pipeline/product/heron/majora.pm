@@ -353,7 +353,8 @@ sub update_majora{
       # in differnt runs - Majora library must contain both
 
       my $primer_panel = $r->iseq_flowcell->primer_panel;
-      ($primer_panel) = $primer_panel =~ m{nCoV-2019/V(\d)\b}smx?$1:q("");
+      # extract string after "nCoV-2019/V" but before any "/B" like suffix
+      ($primer_panel) = $primer_panel =~ m{nCoV-2019/V(\S+?)(?:/\S+)?$}smx?$1:q("");
 
       my $lt = $r->iseq_flowcell->pipeline_id_lims;
       $lt ||= q();
@@ -385,12 +386,14 @@ sub update_majora{
       $l2lsp{$lib}{$lib_seq_protocol}++;
   }
 
+  my $web_queries=[]; # Horrid retrofitted stash of queries to improve testing
+
   my $url = q(api/v2/artifact/library/add/);
 
   foreach my $lb (sort keys %l2bs) {
 
-    (1 == keys %{$l2pp{$lb}})  or $self->logger->error_die("multiple primer panels in $lb");
-    (1 == keys %{$l2lsp{$lb}}) or $self->logger->error_die("multiple library seq protocol in $lb");
+    (1 == keys %{$l2pp{$lb}})  or $self->logger->error_die("multiple primer panels in $lb"); # Majora API would actually allow this
+    (1 == keys %{$l2lsp{$lb}}) or $self->logger->error_die("multiple library seq protocol in $lb"); # Majora API will not allow this
     my ($primer_panel)     = keys %{$l2pp{$lb}};
     my ($lib_seq_protocol) = keys %{$l2lsp{$lb}};
 
@@ -414,6 +417,7 @@ sub update_majora{
                            biosamples            => \@biosample_info
                          };
    $self->logger->debug("Sending call to update Majora for library $lb");
+   push @{$web_queries}, ['POST', $url, $data_to_encode];
    $self->_use_majora_api('POST', $url, $data_to_encode);
   }
 
@@ -458,11 +462,12 @@ sub update_majora{
                                    }]
                            };
       $self->logger->debug("Sending call to update Majora for library $lb");
+      push @{$web_queries}, ['POST', $url, $data_to_encode];
       $self->_use_majora_api('POST', $url, $data_to_encode);
     }
   }
 
-  return;
+  return $web_queries;
 }
 
 sub _use_majora_api{
@@ -486,7 +491,7 @@ sub _use_majora_api{
   my $ua =  $self->user_agent;
 
   my $r = HTTP::Request->new($method, $url, $header, $encoded_data);
-  $self->logger->debug( "Request to Majora is:\n".$r->as_string(1) );
+  $self->logger->debug( "Request to Majora is:\n".$r->as_string() );
 
   if ( $url_end=~m{/get/?\Z}smx or not $self->dry_run() ) {
     my $res = $ua->request($r);
