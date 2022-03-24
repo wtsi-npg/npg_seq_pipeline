@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 61.1.0
+ - Heron artic full primer version will be uploaded to Majora.
+
 release 61.0.0
  - Reverse logic for SamHaplotag in the seq. alignment function:
    --revcomp flag - should be used when is_i5_opposite attribute is false.
