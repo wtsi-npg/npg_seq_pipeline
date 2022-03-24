@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 53;
+use Test::More tests => 67;
 use Test::Warn;
 use JSON;
 use t::dbic_util;
@@ -9,6 +9,7 @@ use Test::Mock::HTTP::Response;
 use Test::Mock::HTTP::Request;
 use Log::Log4perl qw(:easy);
 use Test::Exception;
+use List::MoreUtils qw(uniq);
 use_ok('npg_pipeline::product::heron::majora');
 
 #getting simplified json output from file
@@ -299,8 +300,21 @@ $Mock_resp->mock( code     => sub { 200 } );
 $Mock_resp->mock( is_error => sub { return; } );
 
 #updating Majora data for id_run (35340)
-$majora->update_majora($id_run);
-$Mock_args = $Mock_request->new_args;
+my $r35340sub = $majora->update_majora($id_run);
+$Mock_args = $Mock_request->new_args; # only catches last use of LWP...
+
+is(scalar @$r35340sub, 4, '4 web requests are made for run 35430');
+is_deeply([map{$_->[0]}@$r35340sub], [('POST') x 4], 'all 4 are POSTs');
+is_deeply([map{$_->[1]}@$r35340sub], [(q(api/v2/artifact/library/add/)) x 2, (q(api/v2/process/sequencing/add/)) x 2], '2 to library endpoint, 2 to sequencing endpoint');
+my@r35340libs = map{$_->[2]}@$r35340sub[0,1];
+cmp_ok($r35340libs[0]->{library_layout_config}, 'eq', 'PAIRED', 'library layout is PAIRED');
+cmp_ok($r35340libs[0]->{library_seq_kit}, 'eq', 'NEB ULTRA II', 'library kit is NEB ULTRA II');
+cmp_ok($r35340libs[0]->{library_seq_protocol}, 'eq', 'TAILING', 'library protocol is TAILING');
+is_deeply([sort map{$_->{library_name}}@r35340libs],[qw(NT1648725O NT1648726P)], 'correct lane library names');
+cmp_ok((uniq map{$_->{library_primers}} map{@{$_->{biosamples}}} @r35340libs)[0], 'eq', '3', 'artic primer version is 3');
+cmp_ok((uniq map{$_->{library_selection}} map{@{$_->{biosamples}}} @r35340libs)[0], 'eq', 'PCR', 'library selecion is PCR');
+cmp_ok((uniq map{$_->{library_source}} map{@{$_->{biosamples}}} @r35340libs)[0], 'eq', 'VIRAL_RNA', 'library source is VIRAL_RNA');
+cmp_ok((uniq map{$_->{library_strategy}} map{@{$_->{biosamples}}} @r35340libs)[0], 'eq', 'AMPLICON', 'library strategy is AMPLICON');
 
 #expected args
 $request = 'HTTP::Request';
@@ -319,6 +333,20 @@ $encoded_data = {
                     username => "DUMMYUSER",
                    };
 
+# alter DB to change primer version so we have a mix of primer versions which we don't currently deal with
+my$rs_to_alter_primer_ver=$schema_for_fn->resultset(q(IseqFlowcell))->search({id_pool_lims=>[qw(NT1648725O NT1648726P)]});
+$rs_to_alter_primer_ver->first->update({primer_panel=>q(nCoV-2019/V4.1alt)});
+throws_ok { $majora->update_majora($id_run) } qr/multiple primer panels/, 'Bail out when multiple primer types.';
+
+# alter DB to change primer version to 4.1alt and /B variant of 3 which shoudl not be represented.
+$rs_to_alter_primer_ver=$schema_for_fn->resultset(q(IseqFlowcell))->search({id_pool_lims=>[qw(NT1648726P)]});
+$rs_to_alter_primer_ver->update({primer_panel=>q(nCoV-2019/V4.1alt)});
+$rs_to_alter_primer_ver=$schema_for_fn->resultset(q(IseqFlowcell))->search({id_pool_lims=>[qw(NT1648725O)]});
+$rs_to_alter_primer_ver->update({primer_panel=>q(nCoV-2019/V3)});
+my $r35340newsub;
+lives_ok { $r35340newsub=$majora->update_majora($id_run) } 'Continue when single primer type per lane/library.';
+my($r35340libNT1648726P) = grep{$_->{library_name} eq q(NT1648726P)} map{$_->[2]}@$r35340newsub[0,1];
+cmp_ok((uniq map{$_->{library_primers}} @{$r35340libNT1648726P->{biosamples}})[0], 'eq', '4.1alt', 'artic primer version is 4.1alt');
 
 $data_to_encode = {%{$encoded_data}};
 # checking args passed are correct
@@ -330,6 +358,8 @@ $Mock_decoded_data = decode_json($Mock_args->[4]);
 is_deeply($Mock_decoded_data->{runs},$encoded_data->{runs}, 'run_name is passed correctly');
 is($Mock_decoded_data->{username},$encoded_data->{username}, 'username is passed correctly');
 is($Mock_decoded_data->{token},$encoded_data->{token}, 'token is passed correctly');
+
+
 
 
 #Warning is returned when different values for pp_name and pp_version
