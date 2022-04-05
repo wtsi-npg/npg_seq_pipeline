@@ -19,7 +19,7 @@ sub create {
   my $location_dir = $self->irods_locations_dir_path();
 
   return [$self->create_definition({
-    command  => qq{$SCRIPT_NAME --target $location_dir --verbose},
+    command  => qq{$SCRIPT_NAME --path $location_dir --verbose},
     job_name => join q{_}, $SCRIPT_NAME, $self->label, $pipeline_name
   })];
 }

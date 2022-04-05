@@ -35,7 +35,7 @@ my $d = $locations_archiver->create();
 isa_ok ($d->[0], 'npg_pipeline::function::definition');
 is ($d->[0]->created_by, 'npg_pipeline::function::irods_locations_warehouse_archiver', 'created_by');
 is ($d->[0]->job_name, 'npg_irods_locations2ml_warehouse_1234_', 'job name');
-is ($d->[0]->command, "npg_irods_locations2ml_warehouse --target $runfolder_path/irods_locations_files --verbose", 'command');
+is ($d->[0]->command, "npg_irods_locations2ml_warehouse --path $runfolder_path/irods_locations_files --verbose", 'command');
 is ($d->[0]->queue, 'lowload', 'queue');
 is_deeply ($d->[0]->num_cpus, [1], 'one CPU required');
 ok (!$d->[0]->has_command_preexec, 'preexec command not defined');
