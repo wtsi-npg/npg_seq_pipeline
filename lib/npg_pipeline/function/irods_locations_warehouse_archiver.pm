@@ -15,13 +15,18 @@ Readonly::Scalar my $SCRIPT_NAME => q{npg_irods_locations2ml_warehouse};
 
 sub create {
   my ($self, $pipeline_name) = @_;
-
-  my $location_dir = $self->irods_locations_dir_path();
-
-  return [$self->create_definition({
-    command  => qq{$SCRIPT_NAME --path $location_dir --verbose},
-    job_name => join q{_}, $SCRIPT_NAME, $self->label, $pipeline_name
-  })];
+  my $ref;
+  if ($self->no_irods_archival){
+    $ref = {'excluded' => 1};
+    $self->info(q{Archival to iRODS is switched off});
+  }else {
+    my $location_dir = $self->irods_locations_dir_path();
+    $ref = {
+      command  => qq{$SCRIPT_NAME --path $location_dir --verbose},
+      job_name => join q{_}, $SCRIPT_NAME, $self->label, $pipeline_name
+    };
+  }
+  return [$self->create_definition($ref)];
 }
 
 __PACKAGE__->meta->make_immutable;
