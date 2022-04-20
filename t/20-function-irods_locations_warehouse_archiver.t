@@ -27,6 +27,7 @@ my $default = {
 
 my $locations_archiver =
   npg_pipeline::function::irods_locations_warehouse_archiver->new(
+    id_run         => 25955,
     runfolder_path => $runfolder_path,
     analysis_path  => $analysis_path,
     resource       => $default
@@ -54,6 +55,7 @@ ok (!$d->[0]->has_command_preexec, 'preexec command not defined');
 
 $locations_archiver =
   npg_pipeline::function::irods_locations_warehouse_archiver->new(
+    id_run         => 25955,
     runfolder_path => $runfolder_path,
     analysis_path  => $analysis_path,
     resource       => $default,
