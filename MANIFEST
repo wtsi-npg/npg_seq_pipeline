@@ -121,7 +121,7 @@ t/20-function-cluster_count.t
 t/20-function-current_analysis_link.t
 t/20-function-definition.t
 t/20-function-haplotype_caller.t
-t/20-function-irods-locations_warehouse-archiver.t
+t/20-function-irods_locations_warehouse_archiver.t
 t/20-function-log_files_archiver.t
 t/20-function-merge_recompress.t
 t/20-function-p4_stage1_analysis.t

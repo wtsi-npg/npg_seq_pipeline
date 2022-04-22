@@ -4,8 +4,6 @@ use Moose;
 use namespace::autoclean;
 use Readonly;
 
-use npg_pipeline::runfolder_scaffold;
-
 extends q{npg_pipeline::base_resource};
 with q{npg_pipeline::runfolder_scaffold};
 
@@ -14,16 +12,22 @@ our $VERSION = '0';
 Readonly::Scalar my $SCRIPT_NAME => q{npg_irods_locations2ml_warehouse};
 
 sub create {
-  my ($self, $pipeline_name) = @_;
+  my $self = shift;
   my $ref;
-  if ($self->no_irods_archival){
+  if ($self->no_irods_archival) {
     $ref = {'excluded' => 1};
-    $self->info(q{Archival to iRODS is switched off});
-  }else {
-    my $location_dir = $self->irods_locations_dir_path();
+    $self->info(q{Archival to iRODS is switched off, } .
+                q{iRODS locations loader will not run.});
+  } else {
+    my $locations_dir = $self->irods_locations_dir_path();
+    ####
+    # This directory might be absent for older run folders or when only
+    # a subset of archival functions is run. Creating it here guarantees
+    # that the job will not fail due to an invalid input path.
+    $self->make_dir($locations_dir);
     $ref = {
-      command  => qq{$SCRIPT_NAME --path $location_dir --verbose},
-      job_name => join q{_}, $SCRIPT_NAME, $self->label, $pipeline_name
+      command  => qq{$SCRIPT_NAME --path $locations_dir --verbose},
+      job_name => join q{_}, $SCRIPT_NAME, $self->label, $self->timestamp()
     };
   }
   return [$self->create_definition($ref)];
@@ -34,6 +38,7 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 __END__
+
 =head1 NAME
 
 npg_pipeline::function::irods_locations_warehouse_archiver

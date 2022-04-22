@@ -182,11 +182,13 @@
                 "metadata": {
                     "description": "Adds a row to the seq_product_irods_locations table for each product archived to irods",
                     "resources": {
-                        "db": [
-                            "mlwh"
-                        ],
-                        "queue": "lowload",
-                        "minimum_cpu": 0
+                        "default": {
+                            "db": [
+                                "mlwh"
+                            ],
+                            "queue": "lowload",
+                            "minimum_cpu": 0
+                        }
                     }
                 }
             },
