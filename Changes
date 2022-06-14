@@ -1,5 +1,8 @@
 LIST OF CHANGES
 ---------------
+
+ - Add substitution metrics to the seq alignment command.
+
 release 61.2.0
 - Added a new pipeline function - archive_irods_locations_to_ml_warehouse
 
