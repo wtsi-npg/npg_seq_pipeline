@@ -39,7 +39,7 @@ of the ml warehouse.
 
 sub update_ml_warehouse {
   my ($self, $pipeline_name, $flag) = @_;
-  return $self->_update_warehouse_command($MLWH_LOADER_NAME, $pipeline_name, $flag);
+  return $self->_update_warehouse_command($pipeline_name, $flag);
 }
 
 =head2 update_ml_warehouse_post_qc_complete
@@ -56,12 +56,17 @@ sub update_ml_warehouse_post_qc_complete {
 }
 
 sub _update_warehouse_command {
-  my ($self, $loader_name, $pipeline_name, $post_qc_complete) = @_;
+  my ($self, $pipeline_name, $post_qc_complete) = @_;
 
   my $m = q{};
   if ($self->no_warehouse_update) {
     $m = q{Update to warehouse is switched off.};
   }
+
+  my $command = $self->has_product_rpt_list ?
+                $MLWH_PRODUCT_LOADER_NAME:
+                $MLWH_LOADER_NAME;
+  $command .= q{ --verbose };
 
   my $d;
   if ($m) {
@@ -69,11 +74,9 @@ sub _update_warehouse_command {
     $d = $self->create_excluded_definition();
   } else {
     $pipeline_name ||= q[];
-    my $job_name = join q{_}, $loader_name, $self->label, $pipeline_name;
-    my $command = qq{$loader_name --verbose };
+    my $job_name = join q{_}, $MLWH_LOADER_NAME, $self->label, $pipeline_name;
 
     if ($self->has_product_rpt_list) {
-      $command = qq{$MLWH_PRODUCT_LOADER_NAME --verbose };
       $command .= q{--rpt_list '} . $self->product_rpt_list . q{'};
     } else {
       $command .= q{--id_run } . $self->id_run;
