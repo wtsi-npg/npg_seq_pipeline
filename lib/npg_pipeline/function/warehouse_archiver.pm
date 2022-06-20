@@ -10,7 +10,6 @@ extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $OLD_WH_LOADER_NAME => q{warehouse_loader};
 Readonly::Scalar my $MLWH_LOADER_NAME   => q{npg_runs2mlwarehouse};
 Readonly::Scalar my $MLWH_PRODUCT_LOADER_NAME => q{npg_products2mlwarehouse};
 
@@ -30,31 +29,6 @@ npg_pipeline::function::warehouse_archiver
 A collection of definitions for updating warehouses
 
 =head1 SUBROUTINES/METHODS
-
-=head2 update_warehouse
-
-Creates command definition to update run data in the npg tables
-of the warehouse.
-
-=cut
-
-sub update_warehouse {
-  my ($self, $pipeline_name, $flag) = @_;
-  return $self->_update_warehouse_command($OLD_WH_LOADER_NAME, $pipeline_name, $flag);
-}
-
-=head2 update_warehouse_post_qc_complete
-
-Creates command definition to update run data in the npg tables
-of the warehouse at a stage when the runfolder is moved to the
-outgoing directory.
-
-=cut
-
-sub update_warehouse_post_qc_complete {
-  my ($self, $pipeline_name) = @_;
-  return $self->update_warehouse($pipeline_name, 'post_qc_complete');
-}
 
 =head2 update_ml_warehouse
 
@@ -87,8 +61,6 @@ sub _update_warehouse_command {
   my $m = q{};
   if ($self->no_warehouse_update) {
     $m = q{Update to warehouse is switched off.};
-  } elsif ($self->has_product_rpt_list && $loader_name eq $OLD_WH_LOADER_NAME) {
-    $m = q{Update to the old warehouse for individual products is switched off.};
   }
 
   my $d;
@@ -105,10 +77,6 @@ sub _update_warehouse_command {
       $command .= q{--rpt_list '} . $self->product_rpt_list . q{'};
     } else {
       $command .= q{--id_run } . $self->id_run;
-      if ($loader_name eq $OLD_WH_LOADER_NAME) {
-        $command .= q{ --lims_driver_type };
-        $command .= $post_qc_complete ? 'ml_warehouse_fc_cache' : 'samplesheet';
-      }
       if ($post_qc_complete) {
         $job_name .= '_postqccomplete';
       }

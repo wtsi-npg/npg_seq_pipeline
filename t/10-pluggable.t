@@ -160,7 +160,7 @@ subtest 'switching off functions' => sub {
     ($p->_run_function($fn_name_id, $fn_name_id)->[0]->excluded
       && $p->_run_function($fn_ml_name_id, $fn_ml_name_id)->[0]->excluded),
     'archival to irods switched off');
-  ok($p->_run_function('update_warehouse', 'update_warehouse')->[0]->excluded,
+  ok($p->_run_function('update_ml_warehouse', 'update_ml_warehouse')->[0]->excluded,
     'update to warehouse switched off');
 
   $p = npg_pipeline::pluggable->new(

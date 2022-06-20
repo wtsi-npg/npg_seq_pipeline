@@ -32,10 +32,7 @@ Readonly::Hash my %REGISTRY => (
   'pipeline_end'   => {'start_stop' => 'pipeline_end'},
   'pipeline_wait4path' => {'start_stop' => 'pipeline_wait4path'},
 
-  'update_warehouse'    => {'warehouse_archiver' => 'update_warehouse'},
   'update_ml_warehouse' => {'warehouse_archiver' => 'update_ml_warehouse'},
-  'update_warehouse_post_qc_complete' =>
-    {'warehouse_archiver' => 'update_warehouse_post_qc_complete'},
   'update_ml_warehouse_post_qc_complete' =>
     {'warehouse_archiver' => 'update_ml_warehouse_post_qc_complete'},
 

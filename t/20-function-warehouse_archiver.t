@@ -14,7 +14,7 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 
 my $runfolder_path = $util->analysis_runfolder_path();
 my $pqq_suffix = q[_post_qc_complete];
-my @wh_methods = qw/update_warehouse update_ml_warehouse/;
+my @wh_methods = qw/update_ml_warehouse/;
 @wh_methods = map {$_, $_ . $pqq_suffix} @wh_methods;
 
 use_ok('npg_pipeline::function::warehouse_archiver');
@@ -28,7 +28,7 @@ my $default = {
 };
 
 subtest 'warehouse updates' => sub {
-  plan tests => 37;
+  plan tests => 19;
 
   my $c = npg_pipeline::function::warehouse_archiver->new(
     run_folder          => q{123456_IL2_1234},
@@ -46,17 +46,12 @@ subtest 'warehouse updates' => sub {
   foreach my $m (@wh_methods) {
 
     my $postqcc  = $m =~ /$pqq_suffix/smx;
-    my $ml       = $m =~ /_ml_/smx;
-    my $command  = $ml ? 'npg_runs2mlwarehouse' : 'warehouse_loader';
+    my $command  = 'npg_runs2mlwarehouse';
     my $job_name = $command . '_1234_pname';
     if ($postqcc) {
       $job_name .= '_postqccomplete';
     }
     $command    .= ' --verbose --id_run 1234';
-    if (!$ml) {
-      $command  .= ' --lims_driver_type ' . ($postqcc ?
-                   'ml_warehouse_fc_cache' : 'samplesheet');
-    }
 
     my $ds = $c->$m('pname');
     ok ($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
@@ -75,7 +70,7 @@ subtest 'warehouse updates' => sub {
 };
 
 subtest 'warehouse updates disabled' => sub {
-  plan tests => 12;
+  plan tests => 6;
 
   my $test_method = sub {
     my ($f, $method, $switch) = @_;
