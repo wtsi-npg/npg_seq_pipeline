@@ -12,6 +12,7 @@ our $VERSION = '0';
 
 Readonly::Scalar my $MLWH_LOADER_NAME   => q{npg_runs2mlwarehouse};
 Readonly::Scalar my $MLWH_PRODUCT_LOADER_NAME => q{npg_products2mlwarehouse};
+Readonly::Scalar my $MLWH_RUNPARAMS_LOADER_NAME => q{npg_run_params2mlwarehouse};
 
 =head1 NAME
 
@@ -33,7 +34,8 @@ A collection of definitions for updating warehouses
 =head2 update_ml_warehouse
 
 Creates command definition to update run data in the npg tables
-of the ml warehouse.
+of the ml warehouse, including the content of the RunParameters.XML
+file.
 
 =cut
 
@@ -46,7 +48,8 @@ sub update_ml_warehouse {
 
 Creates command definition to update run data in the npg tables
 of the ml warehouse at a stage when the runfolder is moved to the
-outgoing directory.
+outgoing directory. Data from the RunParameters.XML file is not
+loaded.
 
 =cut
 
@@ -82,6 +85,10 @@ sub _update_warehouse_command {
       $command .= q{--id_run } . $self->id_run;
       if ($post_qc_complete) {
         $job_name .= '_postqccomplete';
+      } else {
+        $command = join q{ }, $command, q{&&}, $MLWH_RUNPARAMS_LOADER_NAME,
+          q{--id_run}, $self->id_run,
+          q{--path_glob}, $self->runfolder_path . q{/{r,R}unParameters.xml};
       }
     }
 
