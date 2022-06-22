@@ -10,7 +10,6 @@ extends q{npg_pipeline::base_resource};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $OLD_WH_LOADER_NAME => q{warehouse_loader};
 Readonly::Scalar my $MLWH_LOADER_NAME   => q{npg_runs2mlwarehouse};
 Readonly::Scalar my $MLWH_PRODUCT_LOADER_NAME => q{npg_products2mlwarehouse};
 
@@ -31,31 +30,6 @@ A collection of definitions for updating warehouses
 
 =head1 SUBROUTINES/METHODS
 
-=head2 update_warehouse
-
-Creates command definition to update run data in the npg tables
-of the warehouse.
-
-=cut
-
-sub update_warehouse {
-  my ($self, $pipeline_name, $flag) = @_;
-  return $self->_update_warehouse_command($OLD_WH_LOADER_NAME, $pipeline_name, $flag);
-}
-
-=head2 update_warehouse_post_qc_complete
-
-Creates command definition to update run data in the npg tables
-of the warehouse at a stage when the runfolder is moved to the
-outgoing directory.
-
-=cut
-
-sub update_warehouse_post_qc_complete {
-  my ($self, $pipeline_name) = @_;
-  return $self->update_warehouse($pipeline_name, 'post_qc_complete');
-}
-
 =head2 update_ml_warehouse
 
 Creates command definition to update run data in the npg tables
@@ -65,7 +39,7 @@ of the ml warehouse.
 
 sub update_ml_warehouse {
   my ($self, $pipeline_name, $flag) = @_;
-  return $self->_update_warehouse_command($MLWH_LOADER_NAME, $pipeline_name, $flag);
+  return $self->_update_warehouse_command($pipeline_name, $flag);
 }
 
 =head2 update_ml_warehouse_post_qc_complete
@@ -82,14 +56,17 @@ sub update_ml_warehouse_post_qc_complete {
 }
 
 sub _update_warehouse_command {
-  my ($self, $loader_name, $pipeline_name, $post_qc_complete) = @_;
+  my ($self, $pipeline_name, $post_qc_complete) = @_;
 
   my $m = q{};
   if ($self->no_warehouse_update) {
     $m = q{Update to warehouse is switched off.};
-  } elsif ($self->has_product_rpt_list && $loader_name eq $OLD_WH_LOADER_NAME) {
-    $m = q{Update to the old warehouse for individual products is switched off.};
   }
+
+  my $command = $self->has_product_rpt_list ?
+                $MLWH_PRODUCT_LOADER_NAME:
+                $MLWH_LOADER_NAME;
+  $command .= q{ --verbose };
 
   my $d;
   if ($m) {
@@ -97,18 +74,12 @@ sub _update_warehouse_command {
     $d = $self->create_excluded_definition();
   } else {
     $pipeline_name ||= q[];
-    my $job_name = join q{_}, $loader_name, $self->label, $pipeline_name;
-    my $command = qq{$loader_name --verbose };
+    my $job_name = join q{_}, $MLWH_LOADER_NAME, $self->label, $pipeline_name;
 
     if ($self->has_product_rpt_list) {
-      $command = qq{$MLWH_PRODUCT_LOADER_NAME --verbose };
       $command .= q{--rpt_list '} . $self->product_rpt_list . q{'};
     } else {
       $command .= q{--id_run } . $self->id_run;
-      if ($loader_name eq $OLD_WH_LOADER_NAME) {
-        $command .= q{ --lims_driver_type };
-        $command .= $post_qc_complete ? 'ml_warehouse_fc_cache' : 'samplesheet';
-      }
       if ($post_qc_complete) {
         $job_name .= '_postqccomplete';
       }
@@ -155,7 +126,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Ltd
+Copyright (C) 2018,2019,2021,2022 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

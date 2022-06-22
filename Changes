@@ -1,7 +1,11 @@
 LIST OF CHANGES
 ---------------
+
+ - Removed provisions for loading the old warehouse, the function
+   for loading the old warehouse was removed some time ago.
+
 release 61.2.0
-- Added a new pipeline function - archive_irods_locations_to_ml_warehouse
+ - Added a new pipeline function - archive_irods_locations_to_ml_warehouse
 
 release 61.1.0
  - Heron artic full primer version will be uploaded to Majora.
