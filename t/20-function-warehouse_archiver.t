@@ -48,10 +48,13 @@ subtest 'warehouse updates' => sub {
     my $postqcc  = $m =~ /$pqq_suffix/smx;
     my $command  = 'npg_runs2mlwarehouse';
     my $job_name = $command . '_1234_pname';
+    $command    .= ' --verbose --id_run 1234';
     if ($postqcc) {
       $job_name .= '_postqccomplete';
+    } else {
+      $command .= ' && npg_run_params2mlwarehouse --id_run 1234 --path_glob ' .
+        "$runfolder_path/{r,R}unParameters.xml";
     }
-    $command    .= ' --verbose --id_run 1234';
 
     my $ds = $c->$m('pname');
     ok ($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
