@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 40;
+use Test::More tests => 34;
 use Test::Exception;
 
 use_ok('npg_pipeline::pluggable::registry');
@@ -20,19 +20,9 @@ is ($i->{'module'}, 'start_stop', 'module name');
 is ($i->{'method'}, 'pipeline_start', 'method name');
 ok (!exists $i->{'params'}, 'params not defined');
 
-$i = $r->get_function_implementor('update_warehouse');
-is ($i->{'module'}, 'warehouse_archiver', 'module name');
-is ($i->{'method'}, 'update_warehouse', 'method name');
-ok (!exists $i->{'params'}, 'params not defined');
-
 $i = $r->get_function_implementor('update_ml_warehouse');
 is ($i->{'module'}, 'warehouse_archiver', 'module name');
 is ($i->{'method'}, 'update_ml_warehouse', 'method name');
-ok (!exists $i->{'params'}, 'params not defined');
-
-$i = $r->get_function_implementor('update_warehouse_post_qc_complete');
-is ($i->{'module'}, 'warehouse_archiver', 'module name');
-is ($i->{'method'}, 'update_warehouse_post_qc_complete', 'method name');
 ok (!exists $i->{'params'}, 'params not defined');
 
 $i = $r->get_function_implementor('update_ml_warehouse_post_qc_complete');
