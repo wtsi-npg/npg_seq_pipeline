@@ -676,10 +676,20 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $do_gbs_plex ? (join q( ),
         q{&&},
         _qc_command('genotype_call', $dp_archive_path, $qc_out_path, undef, undef, $rpt_list, $name_root),
-      ) : q()
-    ),
+      ) : q(),
 
+      ($do_target_alignment && ! $is_tag_zero_product) ? (join q( ),
+        q{&&},
+        _qc_command('substitution_metrics', $dp_archive_path, $qc_out_path, undef, undef, $rpt_list, $name_root, [$cfs_input_file]),
+      ) : q(),
+
+      ($do_target_alignment && $human_split && ! $is_tag_zero_product)  ? (join q( ),
+        q{&&},
+        _qc_command('substitution_metrics', $dp_archive_path, $qc_out_path, $human_split, undef, $rpt_list, $name_root, [$cfs_input_file]),
+      ) : q(),
+    ),
     q(');
+
 }
 
 sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
@@ -696,7 +706,7 @@ sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
       push @flags, q[--skip_markdups_metrics];
   }
 
-  if ($check_name =~ /^bam_flagstats|genotype_call|rna_seqc$/smx) {
+  if ($check_name =~ /^bam_flagstats|genotype_call|substitution_metrics|rna_seqc$/smx) {
     if ($subset) {
       $args->{'subset'} = $subset;
     }

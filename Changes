@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+
+ - Add substitution metrics to the seq alignment command.
  - Removed provisions for loading the old warehouse, the function
    for loading the old warehouse was removed some time ago.
  - Extended the ml warehouse loader job. For all warehouse loader jobs
