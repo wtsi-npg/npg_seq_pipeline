@@ -1,7 +1,17 @@
 LIST OF CHANGES
 ---------------
+
+release 62.0.0
+ - Add substitution metrics to the seq alignment command.
+ - Removed provisions for loading the old warehouse, the function
+   for loading the old warehouse was removed some time ago.
+ - Extended the ml warehouse loader job. For all warehouse loader jobs
+   that are run prior to setting the 'qc complete' run status an extra
+   script is invoked; it loads the content of RunParameters.xml Illumina
+   file to the warehouse to facilitate automatic billing.  
+
 release 61.2.0
-- Added a new pipeline function - archive_irods_locations_to_ml_warehouse
+ - Added a new pipeline function - archive_irods_locations_to_ml_warehouse
 
 release 61.1.0
  - Heron artic full primer version will be uploaded to Majora.
