@@ -53,7 +53,7 @@ subtest 'warehouse updates' => sub {
       $job_name .= '_postqccomplete';
     } else {
       $command .= ' && npg_run_params2mlwarehouse --id_run 1234 --path_glob ' .
-        "$runfolder_path/{r,R}unParameters.xml";
+        "'$runfolder_path/{r,R}unParameters.xml'";
     }
 
     my $ds = $c->$m('pname');
