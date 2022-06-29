@@ -88,7 +88,8 @@ sub _update_warehouse_command {
       } else {
         $command = join q{ }, $command, q{&&}, $MLWH_RUNPARAMS_LOADER_NAME,
           q{--id_run}, $self->id_run,
-          q{--path_glob}, $self->runfolder_path . q{/{r,R}unParameters.xml};
+          q{--path_glob},
+          q{'}.$self->runfolder_path . q{/{r,R}unParameters.xml'};
       }
     }
 

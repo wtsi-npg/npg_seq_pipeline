@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+release 62.0.1
+ - Prevent the file glob expansion by the shell when calling a loader
+   for the run parameters XML file. A non-existing file might be passed
+   to the loader.
+
 release 62.0.0
  - Add substitution metrics to the seq alignment command.
  - Removed provisions for loading the old warehouse, the function
