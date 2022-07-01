@@ -35,6 +35,7 @@ Readonly::Array  my @RNA_ANALYSES                 => qw{tophat2 star hisat2};
 Readonly::Scalar my $PFC_MARKDUP_OPT_DIST         => q{2500};  # distance in pixels for optical duplicate detection on patterned flowcells
 Readonly::Scalar my $NON_PFC_MARKDUP_OPT_DIST     => q{100};   # distance in pixels for optical duplicate detection on non-patterned flowcells
 Readonly::Scalar my $BWA_MEM_MISMATCH_PENALTY     => q{5};
+Readonly::Scalar my $SKIP_MARKDUP_METRICS         => 1;
 
 around 'markdup_method' => sub {
     my $orig = shift;
@@ -653,19 +654,19 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     (grep {$_}
       ($spike_tag ? q() : (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', 1, $rpt_list, $name_root, [$cfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, 'phix', $SKIP_MARKDUP_METRICS, $rpt_list, $name_root, [$cfs_input_file]),
         q{&&},
         _qc_command('alignment_filter_metrics', undef, $qc_out_path, undef, undef, $rpt_list, $name_root, [$af_input_file]),
       ),
 
       $human_split ? (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $human_split, undef, $rpt_list, $name_root, [$cfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $human_split, $skip_target_markdup_metrics, $rpt_list, $name_root, [$cfs_input_file]),
       ) : q()),
 
       $nchs ? (join q( ),
         q{&&},
-        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $nchs_outfile_label, undef, $rpt_list, $name_root, [$cfs_input_file]),
+        _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, $nchs_outfile_label, $SKIP_MARKDUP_METRICS, $rpt_list, $name_root, [$cfs_input_file]),
       ) : q(),
 
       ($do_rna and not $is_tag_zero_product) ? (join q( ),
