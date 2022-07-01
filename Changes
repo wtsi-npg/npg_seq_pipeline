@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+ - Adjust bam_flagstats QC check invocation in seq_alignment for nonconsented
+   human split and XA/Y human splits
+     nchs: always use --skip_markdup_metrics
+     XA/Y splits: use --skip_markdup_metrics in the same way as the target subset
+
 release 62.0.1
  - Prevent the file glob expansion by the shell when calling a loader
    for the run parameters XML file. A non-existing file might be passed
