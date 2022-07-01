@@ -1002,7 +1002,7 @@ subtest 'nonconsented human split, no target alignment' => sub {
     qq{ && qc --check bam_flagstats --filename_root 16756_1#1 --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:1" --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex1/16756_1#1.cram --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --filename_root 16756_1#1_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:1" --subset phix --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex1/16756_1#1.cram --skip_markdups_metrics} .
      q{ && qc --check alignment_filter_metrics --filename_root 16756_1#1 --qc_in $PWD --qc_out } .$qc_out.q{ --rpt_list "16756:1:1" --input_files 16756_1#1_bam_alignment_filter_metrics.json}.
-    qq{ && qc --check bam_flagstats --filename_root 16756_1#1_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:1" --subset human --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex1/16756_1#1.cram} .
+    qq{ && qc --check bam_flagstats --filename_root 16756_1#1_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:1" --subset human --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex1/16756_1#1.cram --skip_markdups_metrics} .
      q{ '};
 
   my $d = _find($da, 1, 1);
@@ -1015,7 +1015,7 @@ subtest 'nonconsented human split, no target alignment' => sub {
     qq{ && qc --check bam_flagstats --filename_root 16756_1#2 --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:2" --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex2/16756_1#2.cram --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --filename_root 16756_1#2_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:2" --subset phix --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex2/16756_1#2.cram --skip_markdups_metrics} .
      q{ && qc --check alignment_filter_metrics --filename_root 16756_1#2 --qc_in $PWD --qc_out } .$qc_out.q{ --rpt_list "16756:1:2" --input_files 16756_1#2_bam_alignment_filter_metrics.json}.
-    qq{ && qc --check bam_flagstats --filename_root 16756_1#2_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:2" --subset human --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex2/16756_1#2.cram} .
+    qq{ && qc --check bam_flagstats --filename_root 16756_1#2_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:2" --subset human --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex2/16756_1#2.cram --skip_markdups_metrics} .
      q{ '};
 
   $d = _find($da, 1, 2);
@@ -1028,7 +1028,7 @@ subtest 'nonconsented human split, no target alignment' => sub {
     qq{ && qc --check bam_flagstats --filename_root 16756_1#0 --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:0" --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex0/16756_1#0.cram --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --filename_root 16756_1#0_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:0" --subset phix --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex0/16756_1#0.cram --skip_markdups_metrics} .
      q{ && qc --check alignment_filter_metrics --filename_root 16756_1#0 --qc_in $PWD --qc_out } .$qc_out.q{ --rpt_list "16756:1:0" --input_files 16756_1#0_bam_alignment_filter_metrics.json}.
-    qq{ && qc --check bam_flagstats --filename_root 16756_1#0_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:0" --subset human --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex0/16756_1#0.cram} .
+    qq{ && qc --check bam_flagstats --filename_root 16756_1#0_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16756:1:0" --subset human --input_files $dir/150701_HS36_16756_B_C711RANXX/Data/Intensities/BAM_basecalls_20150707-132329/no_cal/archive/lane1/plex0/16756_1#0.cram --skip_markdups_metrics} .
      q{ '};
 
   $d = _find($da, 1, 0);
@@ -1080,7 +1080,7 @@ subtest 'nonconsented human split, target alignment' => sub {
     qq{ && qc --check bam_flagstats --filename_root 16866_1#1 --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:1" --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex1/16866_1#1.cram} .
     qq{ && qc --check bam_flagstats --filename_root 16866_1#1_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:1" --subset phix --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex1/16866_1#1.cram --skip_markdups_metrics} .
      q{ && qc --check alignment_filter_metrics --filename_root 16866_1#1 --qc_in $PWD --qc_out } .$qc_out.q{ --rpt_list "16866:1:1" --input_files 16866_1#1_bam_alignment_filter_metrics.json}.
-    qq{ && qc --check bam_flagstats --filename_root 16866_1#1_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:1" --subset human --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex1/16866_1#1.cram}.
+    qq{ && qc --check bam_flagstats --filename_root 16866_1#1_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:1" --subset human --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex1/16866_1#1.cram --skip_markdups_metrics}.
     qq{ && qc --check substitution_metrics --filename_root 16866_1#1 --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:1" --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex1/16866_1#1.cram}.
      q{ '};
 
@@ -1094,7 +1094,7 @@ subtest 'nonconsented human split, target alignment' => sub {
     qq{ && qc --check bam_flagstats --filename_root 16866_1#2 --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:2" --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex2/16866_1#2.cram} .
     qq{ && qc --check bam_flagstats --filename_root 16866_1#2_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:2" --subset phix --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex2/16866_1#2.cram --skip_markdups_metrics} .
      q{ && qc --check alignment_filter_metrics --filename_root 16866_1#2 --qc_in $PWD --qc_out } .$qc_out.q{ --rpt_list "16866:1:2" --input_files 16866_1#2_bam_alignment_filter_metrics.json}.
-    qq{ && qc --check bam_flagstats --filename_root 16866_1#2_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:2" --subset human --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex2/16866_1#2.cram} .
+    qq{ && qc --check bam_flagstats --filename_root 16866_1#2_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:2" --subset human --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex2/16866_1#2.cram --skip_markdups_metrics} .
     qq{ && qc --check substitution_metrics --filename_root 16866_1#2 --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:2" --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex2/16866_1#2.cram}.
      q{ '};
 
@@ -1108,7 +1108,7 @@ subtest 'nonconsented human split, target alignment' => sub {
     qq{ && qc --check bam_flagstats --filename_root 16866_1#0 --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:0" --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex0/16866_1#0.cram --skip_markdups_metrics} .
     qq{ && qc --check bam_flagstats --filename_root 16866_1#0_phix --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:0" --subset phix --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex0/16866_1#0.cram --skip_markdups_metrics} .
      q{ && qc --check alignment_filter_metrics --filename_root 16866_1#0 --qc_in $PWD --qc_out } .$qc_out.q{ --rpt_list "16866:1:0" --input_files 16866_1#0_bam_alignment_filter_metrics.json}.
-    qq{ && qc --check bam_flagstats --filename_root 16866_1#0_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:0" --subset human --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex0/16866_1#0.cram} .
+    qq{ && qc --check bam_flagstats --filename_root 16866_1#0_human --qc_in $qc_in --qc_out $qc_out --rpt_list "16866:1:0" --subset human --input_files $dir/150713_MS8_16866_A_MS3734403-300V2/Data/Intensities/BAM_basecalls_20150714-133929/no_cal/archive/lane1/plex0/16866_1#0.cram --skip_markdups_metrics} .
      q{ '};
 
   $d = _find($da, 1, 0);
