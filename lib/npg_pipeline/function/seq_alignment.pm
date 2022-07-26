@@ -426,7 +426,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{reference_dict} = $self->_ref($dp, q(picard)) . q(.dict);
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
-    $p4_param_vals->{markdup_method} = ($self->is_paired_read ? $self->markdup_method($dp) : q[samtools]);
+    $p4_param_vals->{markdup_method} = $self->markdup_method($dp);
     $p4_param_vals->{markdup_optical_distance_value} = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
 
     if($p4_param_vals->{markdup_method} eq q[none]) {
@@ -595,6 +595,13 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   if($nchs) {
     push @{$subsets}, 'human';
+  }
+
+  if(not $self->is_paired_read) {
+    # override default markdup method for single read runs as we experience  
+    # occasional hangs using default (biobambam)
+    $p4_param_vals->{markdup_method} = q[samtools];
+    $self->info(q[Overriding markdup method for single-end, always use samtools]);
   }
 
   # write p4 parameters to file
