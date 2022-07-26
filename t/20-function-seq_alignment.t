@@ -1717,14 +1717,11 @@ subtest 'Haplotagging test' => sub {
             join(q[/], $bbd, 'no_cal/24135_1#1.cram')
           ],
           'run_lane_ss_fq1' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/.npg_cache_10000/24135_1#1_1.fastq'),
-          'reference_dict' => join(q[/], $dir, 'references/Homo_sapiens/GRCh38_15/all/picard/Homo_sapiens.GRCh38_15.fa.dict'),
           's2_filter_files' => join(q[/], $bbd, 'no_cal/24135_1.spatial_filter'),
           's2_tag_index' => 1,
-          'reference_genome_fasta' => join(q[/], $dir, 'references/Homo_sapiens/GRCh38_15/all/fasta/Homo_sapiens.GRCh38_15.fa'),
           'haplotag_processing' => 'on',
           'ht_revcomp_flag' => 'on',
           'seqchksum_orig_file' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/24135_1#1.orig.seqchksum'),
-          'markdup_method' => 'samtools',
           'recal_dir' => join(q[/], $bbd, 'no_cal'),
           'spatial_filter_rg_value' => '24135_1#1',
           'run_lane_ss_fq2' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/.npg_cache_10000/24135_1#1_2.fastq'),
@@ -1733,11 +1730,12 @@ subtest 'Haplotagging test' => sub {
           'bwa_executable' => 'bwa0_6',
           's2_input_format' => 'cram',
           'rpt' => '24135_1#1',
-          'alignment_reference_genome' => join(q[/], $dir, 'references/Homo_sapiens/GRCh38_15/all/bwa0_6/Homo_sapiens.GRCh38_15.fa'),
-          'markdup_optical_distance_value' => '100',
           'samtools_executable' => 'samtools',
           'spatial_filter_file' => 'DUMMY',
           'tag_metrics_files' => join(q[/], $bbd, 'no_cal/archive/lane1/qc/24135_1.tag_metrics.json'),
+          'stats_reference_flag' => undef,
+          'scramble_reference_flag' => '-x',
+          'no_target_alignment' => 1,
         },
       ],
       'assign_local' => {},
@@ -1745,9 +1743,13 @@ subtest 'Haplotagging test' => sub {
         'prune' => [
           'fop.*_bmd_multiway:calibration_pu-',
           'fop.*samtools_stats_F0.*_target.*-',
+          'fop.*_bmd_multiway:bam-',
           'fop.*samtools_stats_F0.*00_bait.*-'
         ],
-        'splice' => []
+        'splice' => [
+                      'ssfqc_tee_ssfqc:straight_through1:-alignment_filter:phix_bam_in',
+                      'alignment_filter:target_bam_out-foptgt_bmd_multiway:'
+                    ]
       }
     };
 
