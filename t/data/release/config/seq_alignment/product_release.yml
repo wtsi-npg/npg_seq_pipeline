@@ -32,4 +32,5 @@ study:
     markdup_method: "samtools"
     gbs_pipeline: &gbs_pipeline_inaccessible
       allowed: false
-
+  - study_id: "6931"
+    markdup_method: "biobambam"

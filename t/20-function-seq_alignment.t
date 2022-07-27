@@ -1,6 +1,7 @@
 use strict;
 use warnings;
-use Test::More tests => 18;
+use Data::Dumper;
+use Test::More tests => 19;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -1752,6 +1753,108 @@ subtest 'Haplotagging test' => sub {
     };
 
 is_deeply($h, $expected, 'correct json file content for run 37416 lane 2 tag 1 p4 parameters');
+
+};
+
+subtest 'single-end markdup_method test' => sub {
+  plan tests => 5;
+
+  my $runfolder = q{220715_HS40_45421_A_HVF72BCX3};
+  my $runfolder_path = join q[/], $dir, 'compositions', $runfolder;
+  my $bbd = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20220718-112250';
+  my $bc_path = join q[/], $bbd, 'no_cal';
+  make_path $bc_path;
+  my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/metadata_cache_45421';
+  make_path $cache_dir;
+  make_path "$bc_path/lane1";
+  make_path "$bc_path/archive/tileviz";
+
+  copy('t/data/hiseq/45421_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/run_params/runParameters.hiseq.rr.se.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/hiseq/samplesheet_45421.csv];
+
+  my $hs_gen;
+  lives_ok {
+    $hs_gen = npg_pipeline::function::seq_alignment->new(
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2022},
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
+      resource          => $default
+    )
+  } 'no error creating seq_alignment object';
+
+  apply_all_roles($hs_gen, 'npg_pipeline::runfolder_scaffold');
+  $hs_gen->create_product_level();
+
+  my $da = $hs_gen->generate('analysis_pipeline');
+warn q[da count: ], scalar @{$da};
+  ok (($da and (@{$da} == 10)), 'ten definitions returned');
+
+  my $d = _find($da, 1, 1);
+  isa_ok ($d, 'npg_pipeline::function::definition');
+
+  ## check json file for lane 1 tag 1
+  my $json_file = qq{$bc_path/45421_1#1_p4s2_pv_in.json};
+  ok (-e $json_file, 'json params file exists for run 45421 lane 1 tag 1');
+  my $h = from_json(slurp($json_file));
+
+warn q[h: ], Dumper($h);
+
+   my $expected = {
+     'assign' => [
+        {
+          'outdatadir' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1'),
+          's2_id_run' => 45421,
+          's2_position' => 'POSITION',
+          'phix_reference_genome_fasta' => join(q[/], $dir, 'references/PhiX/Illumina/all/fasta/phix-illumina.fa'),
+          'subsetsubpath' => '.npg_cache_10000/',
+          's2_se_pe' => 'se',
+          'incrams' => [
+            join(q[/], $bbd, 'no_cal/45421_1#1.cram')
+          ],
+          'run_lane_ss_fq1' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/.npg_cache_10000/45421_1#1_1.fastq'),
+          's2_filter_files' => join(q[/], $bbd, 'no_cal/45421_1.spatial_filter'),
+          's2_tag_index' => 1,
+          'seqchksum_orig_file' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/45421_1#1.orig.seqchksum'),
+          'markdup_method' => 'samtools',
+          'recal_dir' => join(q[/], $bbd, 'no_cal'),
+          'spatial_filter_rg_value' => '45421_1#1',
+          'run_lane_ss_fq2' => join(q[/], $bbd, 'no_cal/archive/lane1/plex1/.npg_cache_10000/45421_1#1_2.fastq'),
+          'af_metrics' => '45421_1#1_bam_alignment_filter_metrics.json',
+          'alignment_method' => 'bwa_mem',
+          'no_target_alignment' => 1,
+          'bwa_executable' => 'bwa0_6',
+          's2_input_format' => 'cram',
+          'rpt' => '45421_1#1',
+          'samtools_executable' => 'samtools',
+          'spatial_filter_file' => 'DUMMY',
+          'tag_metrics_files' => join(q[/], $bbd, 'no_cal/archive/lane1/qc/45421_1.tag_metrics.json'),
+          'bwa_mem_p_flag' => undef,
+          'stats_reference_flag' => undef,
+          'scramble_reference_flag' => '-x'
+        },
+      ],
+      'assign_local' => {},
+      'ops' => {
+        'splice' => [
+                      'ssfqc_tee_ssfqc:straight_through1:-alignment_filter:phix_bam_in',
+                      'alignment_filter:target_bam_out-foptgt_bmd_multiway:'
+                    ],
+        'prune' => [
+          'fop.*_bmd_multiway:calibration_pu-',
+          'fop.*samtools_stats_F0.*_target.*-',
+          'fop.*_bmd_multiway:bam-',
+          'fop.*samtools_stats_F0.*00_bait.*-'
+        ]
+      }
+    };
+
+is_deeply($h, $expected, 'correct json file content for run 45421 lane 1 tag 1 p4 parameters');
 
 };
 
