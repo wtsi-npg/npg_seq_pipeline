@@ -597,6 +597,13 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     push @{$subsets}, 'human';
   }
 
+  if(not $self->is_paired_read) {
+    # override default markdup method for single read runs as we experience  
+    # occasional hangs using default (biobambam)
+    $p4_param_vals->{markdup_method} = q[samtools];
+    $self->info(q[Overriding markdup method for single-end, always use samtools]);
+  }
+
   # write p4 parameters to file
   my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path(q[POSITION]),
                                     $name_root.q{_p4s2_pv_in.json};
