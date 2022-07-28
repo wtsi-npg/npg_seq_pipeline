@@ -1791,7 +1791,6 @@ subtest 'single-end markdup_method test' => sub {
   $hs_gen->create_product_level();
 
   my $da = $hs_gen->generate('analysis_pipeline');
-warn q[da count: ], scalar @{$da};
   ok (($da and (@{$da} == 10)), 'ten definitions returned');
 
   my $d = _find($da, 1, 1);
