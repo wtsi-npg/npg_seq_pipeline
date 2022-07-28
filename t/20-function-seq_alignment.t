@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-use Data::Dumper;
 use Test::More tests => 19;
 use Test::Exception;
 use Test::Deep;
@@ -1802,8 +1801,6 @@ warn q[da count: ], scalar @{$da};
   my $json_file = qq{$bc_path/45421_1#1_p4s2_pv_in.json};
   ok (-e $json_file, 'json params file exists for run 45421 lane 1 tag 1');
   my $h = from_json(slurp($json_file));
-
-warn q[h: ], Dumper($h);
 
    my $expected = {
      'assign' => [
