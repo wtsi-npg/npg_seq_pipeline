@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 62.0.3
+ - always use markdup_method:samtools in stage2 analysis for single-end runs
+
 release 62.0.2
  - Adjust bam_flagstats QC check invocation in seq_alignment for nonconsented
    human split and XA/Y human splits
