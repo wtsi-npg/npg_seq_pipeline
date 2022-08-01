@@ -1827,7 +1827,6 @@ subtest 'single-end markdup_method test' => sub {
 
       for my $att (keys %{$expected->{$t}}) {
         is($h->{assign}->[0]->{$att}, $expected->{$t}->{$att}, "correct value for p4 parameter $att for run 45421 lane 1 tag $t");
-#       is($h->{assign}->[0]->{'markdup_optical_distance'}, $expected{$t}->{'markdup_method'}, "correct json file content for run 45421 lane 1 tag $t p4 parameters");
       }
     }
   }
