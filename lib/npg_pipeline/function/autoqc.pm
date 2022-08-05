@@ -87,6 +87,7 @@ sub _build__is_check4target_file {
                                   verify_bam_id |
                                   genotype |
                                   pulldown_metrics |
+                                  haplotag_metrics |
                                   review $/smx;
 }
 

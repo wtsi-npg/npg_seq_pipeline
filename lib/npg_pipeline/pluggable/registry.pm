@@ -96,6 +96,7 @@ Readonly::Array my @AUTOQC_FUNCTIONS =>
       qc_insert_size
       qc_interop
       qc_pulldown_metrics
+      qc_haplotag_metrics
       qc_qX_yield
       qc_ref_match
       qc_rna_seqc
