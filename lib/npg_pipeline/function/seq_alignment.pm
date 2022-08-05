@@ -451,6 +451,13 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{hs_reference_genome_fasta} = $self->_default_human_split_ref(q{fasta}, $self->repository);   # always human default
   }
 
+  if(not $self->is_paired_read) {
+    # override default markdup method for single read runs as we experience  
+    # occasional hangs using default (biobambam)
+    $p4_param_vals->{markdup_method} = q[samtools];
+    $self->info(q[Overriding markdup method for single-end, always use samtools]);
+  }
+
   # handle targeted stats_(bait_stats_analysis) here, handling the interaction with spike tag case
   if(not $spike_tag) {
     if($self->_do_bait_stats_analysis($dp)) {
@@ -595,13 +602,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
   if($nchs) {
     push @{$subsets}, 'human';
-  }
-
-  if(not $self->is_paired_read) {
-    # override default markdup method for single read runs as we experience  
-    # occasional hangs using default (biobambam)
-    $p4_param_vals->{markdup_method} = q[samtools];
-    $self->info(q[Overriding markdup method for single-end, always use samtools]);
   }
 
   # write p4 parameters to file
