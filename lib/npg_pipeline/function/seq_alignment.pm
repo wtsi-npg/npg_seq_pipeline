@@ -37,6 +37,20 @@ Readonly::Scalar my $NON_PFC_MARKDUP_OPT_DIST     => q{100};   # distance in pix
 Readonly::Scalar my $BWA_MEM_MISMATCH_PENALTY     => q{5};
 Readonly::Scalar my $SKIP_MARKDUP_METRICS         => 1;
 
+Readonly::Scalar our $GENERATE_MODE_DEFAULT => 0;
+Readonly::Scalar our $GENERATE_MODE_NOWRITE => 1;
+Readonly::Scalar our $GENERATE_MODE_DRY_RUN => 2;
+
+=head2 p4_params
+P4 parameters generated (per data product)
+=cut
+
+has 'p4_params' => ( isa      => 'HashRef',
+                     is       => 'ro',
+                     required => 0,
+                     default  => sub {return {};},
+                    );
+
 around 'markdup_method' => sub {
     my $orig = shift;
     my $self = shift;
@@ -121,16 +135,32 @@ has '_rna_analysis' => (
 
 
 sub generate {
-  my ($self, $pipeline_name) = @_;
+  my ($self, $pipeline_name, $mode) = @_;
 
+  $mode //= $GENERATE_MODE_DEFAULT;
   my @definitions = ();
 
   for my $dp (@{$self->products->{data_products}}) {
-    my $ref = {};
-    my $subsets = [];
-    $ref->{'command'} = $self->_alignment_command($dp, $ref, $subsets);
-    $self->_save_compositions($dp, $subsets);
-    push @definitions, $self->_create_definition($ref, $dp);
+
+    my $file_name_root = $dp->file_name_root;
+    my $ac_results = $self->_alignment_command($dp);
+    $ac_results->{'ref'}->{'command'} //= q[]; #??
+    $ac_results->{'subsets'} ||= [];
+    $self->p4_params->{$file_name_root} = $ac_results->{'p4_params'}->{'contents'};
+
+    push @definitions, $self->_create_definition($ac_results->{'ref'}, $dp);
+
+    if($mode != $GENERATE_MODE_NOWRITE) {
+
+      # write p4 parameters to file
+      my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path, $file_name_root.q{_p4s2_pv_in.json};
+      write_file($ac_results->{'p4_params'}->{'filename'}, encode_json($ac_results->{'p4_params'}->{'contents'}));
+
+      $self->_save_compositions($dp, $ac_results->{'subsets'});
+    }
+    elsif($mode == $GENERATE_MODE_DRY_RUN) {
+      $self->_save_compositions($dp, $ac_results->{'subsets'});
+    }
   }
 
   return \@definitions;
@@ -164,7 +194,10 @@ sub _create_definition {
 }
 
 sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
-  my ( $self, $dp, $ref, $subsets ) = @_;
+  my ( $self, $dp) = @_;
+
+  my $subsets = [];
+  my $ref = {};
 
   ########################################################
   # derive base parameters from supplied data_product (dp)
@@ -604,11 +637,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     push @{$subsets}, 'human';
   }
 
-  # write p4 parameters to file
-  my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path(q[POSITION]),
-                                    $name_root.q{_p4s2_pv_in.json};
-  write_file($param_vals_fname, encode_json(
-    { assign => [ $p4_param_vals ], assign_local => $p4_local_assignments, ops => $p4_ops }));
+  my $param_vals_fname = join q{/}, $self->_p4_stage2_params_path, $name_root.q{_p4s2_pv_in.json};
 
   ####################
   # log run parameters
@@ -637,7 +666,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->get_massaged_resources()->{num_cpus}[0];
   my $id = $self->_job_id();
-  return join q( ),
+  $ref->{'command'} = join q( ),
     q(bash -c '),
     q(mkdir -p), $working_dir, q{;},
     q(cd), $working_dir,
@@ -698,6 +727,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     ),
     q(');
 
+  return {
+         ref => $ref,
+         subsets => $subsets,
+         p4_params => {
+           filename => $param_vals_fname,
+           contents => {assign => [ $p4_param_vals ], assign_local => $p4_local_assignments, ops => $p4_ops}
+         }
+  };
 }
 
 sub _qc_command {##no critic (Subroutines::ProhibitManyArgs)
