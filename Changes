@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - allow analysis of single-end runs with non-consented human split
+
 release 62.0.4
  - fix tag 888 bug in force markdup_method:samtools for single-end runs
 
