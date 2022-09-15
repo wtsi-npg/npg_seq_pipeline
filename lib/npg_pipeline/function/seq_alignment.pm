@@ -545,20 +545,20 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       bwa_aln_se => q[bwa0_6],
       bwa_mem => q[bwa0_6],
       bwa_mem_bwakit => q[bwa0_6],
-      bwa_mem2 => q[bwa0_6],
     );
     my %ref_suffix = (
       picard => q{.dict},
       minimap2 => q{.mmi},
     );
 
-    my $aligner = $p4_param_vals->{alignment_method};
-    if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
+    my $aligner = (not $spike_tag and $self->bwa_mem2)? q[bwa_mem2]: $p4_param_vals->{alignment_method};
+
+    if(exists $methods_to_aligners{$aligner}) {
       $aligner = $methods_to_aligners{$aligner};
     }
 
     # BWA MEM2 requires a different executable
-    if ($p4_param_vals->{alignment_method} eq q[bwa_mem2]) {
+    if ($aligner eq q[bwa_mem2]) {
       $p4_param_vals->{bwa_executable} = q[bwa-mem2];
     } else {
       $p4_param_vals->{bwa_executable} = q[bwa0_6];
