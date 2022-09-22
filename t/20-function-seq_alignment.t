@@ -46,6 +46,7 @@ $tbuilds{'3D7_Oct11v3'} = ['genedb_161015_transcriptome'];
 
 my $ref_dir = join q[/],$dir,'references';
 my $tra_dir = join q[/],$dir,'transcriptomes';
+my $prp_dir = join q[/],$dir,'primer_panel';
 foreach my $org (keys %builds){
     foreach my $rel (@{ $builds{$org} }){
         my $rel_dir     = join q[/],$ref_dir,$org,$rel,'all';
@@ -83,7 +84,7 @@ foreach my $gtype_dir (qw/fasta bwa0_6 picard/) {
     make_path($gdir, {verbose => 0});
     `touch $gdir/Hs_MajorQC.fa`;
 }
-
+make_path($prp_dir, {verbose => 0});
 
 my $default = {
   default => {
