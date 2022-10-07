@@ -390,14 +390,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
    push @{$p4_ops->{prune}}, 'fop.*samtools_stats_F0.*_target.*-';
   }
 
-  my $nchs = $do_gbs_plex ? q{} : $l->contains_nonconsented_human;
+  my $nchs = $l->contains_nonconsented_human;
   my $nchs_template_label = $nchs? q{humansplit_}: q{};
   my $nchs_outfile_label = $nchs? q{human}: q{};
 
   #TODO: allow for an analysis genuinely without phix and where no phiX split work is wanted - especially the phix spike plex....
   #TODO: support these various options below in P4 analyses
   if (not $self->is_paired_read and $nchs) {
-    $self->logcroak(qq{only paired reads supported for non-consented human ($name_root)});
+    $self->info(qq{single-end and non-consented human ($name_root)});
   }
 
   ########
@@ -426,13 +426,13 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{reference_dict} = $self->_ref($dp, q(picard)) . q(.dict);
     $p4_param_vals->{reference_genome_fasta} = $self->_ref($dp, q(fasta));
     if($self->p4s2_aligner_intfile) { $p4_param_vals->{align_intfile_opt} = 1; }
-    $p4_param_vals->{markdup_method} = $self->markdup_method($dp);
+    $p4_param_vals->{markdup_method} = $do_gbs_plex ? q[none] : $self->markdup_method($dp);
     $p4_param_vals->{markdup_optical_distance_value} = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
 
     if($p4_param_vals->{markdup_method} eq q[none]) {
       $skip_target_markdup_metrics = 1;
 
-      if(my $pcb=npg_pipeline::cache::reference->instance->get_primer_panel_bed_file($dp)) {
+      if(my $pcb=npg_pipeline::cache::reference->instance->get_primer_panel_bed_file($dp, $self->repository)) {
         $p4_param_vals->{primer_clip_bed} = $pcb;
         $self->info(qq[No markdup with primer panel: $pcb]);
       }
@@ -442,7 +442,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       }
     }
   }
-  elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$do_gbs_plex && !$is_chromium_lib) {
+  elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$is_chromium_lib) {
       push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
   }
 
@@ -485,9 +485,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
      $p4_param_vals->{alignment_method} = $bwa;
      $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, q(bwa0_6));
      $p4_local_assignments->{'final_output_prep_target'}->{'scramble_embed_reference'} = q[1];
-     if($do_target_alignment) {
-       push @{$p4_ops->{splice}}, 'foptgt_000_bamsort_coord:-foptgt_bmd_multiway:';
-     }
      $skip_target_markdup_metrics = 1;
   }
   elsif($do_rna) {
@@ -524,11 +521,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{alignment_reference_genome} = $p4_reference_genome_index;
     # create intermediate file to prevent deadlock
     $p4_param_vals->{align_intfile_opt} = 1;
-    if($nchs) {
-      # this human split alignment method is currently the same as the default, but this may change
-      $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
-      $p4_param_vals->{alignment_hs_method} = $hs_bwa;
-    }
+
     if(not $self->is_paired_read) {
       $p4_param_vals->{alignment_reads_layout} = 1;
     }
@@ -578,13 +571,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $p4_param_vals->{alignment_reference_genome} .= $ref_suffix{$aligner};
     }
 
-    if($nchs) {
-      $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
-      $p4_param_vals->{alignment_hs_method} = $hs_bwa;
-    }
     if(not $self->is_paired_read) {
       $p4_param_vals->{bwa_mem_p_flag} = undef;
     }
+  }
+
+  if($nchs) {
+    $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
+    $p4_param_vals->{alignment_hs_method} = $hs_bwa;
   }
 
   if($human_split) {
