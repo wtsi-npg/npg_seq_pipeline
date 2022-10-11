@@ -12,6 +12,7 @@ use Try::Tiny;
 use npg_tracking::util::types;
 use npg_tracking::data::reference;
 use npg_tracking::data::primer_panel;
+use npg_tracking::data::gbs_plex;
 use npg_pipeline::function::util;
 use npg_pipeline::cache::reference::constants qw( $TARGET_REGIONS_DIR $TARGET_AUTOSOME_REGIONS_DIR $REFERENCE_ABSENT );
 
@@ -22,7 +23,8 @@ our $VERSION = '0';
 has [qw/ _ref_cache
          _resources_cache
          _calling_intervals_cache 
-         _primer_panel_cache /] => (
+         _primer_panel_cache
+         _gbs_plex_cache /] => (
   isa      => 'HashRef',
   is       => 'ro',
   required => 0,
@@ -223,6 +225,57 @@ sub get_primer_panel_bed_file {
 
   return $bed_file;
 }
+
+=head2 get_gbs_plex_bed_file
+ 
+ Arg [1]    : $dp
+ Arg [2]    : $repository, optional
+ 
+ Example    : my $file = npg_pipeline::cache::reference->instance
+                        ->get_gbs_plex_bed_file($dp);
+              my $file = npg_pipeline::cache::reference->instance
+                         ->get_gbs_plex_bed_file($dp, $ref_repository_root);
+ Description: Get gbs plex bed file path for this product.
+              If the reference repository root argument is given, this
+              custom repository is used, otherwise a default reference
+              repository is used. If the primer_panel LIMs value is not
+              defined for this product, an undefined value is returned;
+ 
+ Returntype : String
+ 
+=cut
+
+sub get_gbs_plex_bed_file {
+  my ($self, $product, $repository) = @_;
+  $product or croak 'Product argument required';
+  $product->lims or croak 'Product should have lims attribute set';
+
+  my $init = { lims => $product->lims };
+  if ($repository) {
+    $init->{repository} = $repository;
+  }
+  my $gb = npg_tracking::data::gbs_plex->new($init);
+
+  $repository = $gb->repository;
+  my $gbs_plex = $gb->gbs_plex_name;
+  my $bed_file;
+
+  if ($gbs_plex) {
+    my $reference_genome = $gb->lims->reference_genome;
+    $reference_genome or croak 'reference_genome is not defined';
+    $bed_file = $self->_gbs_plex_cache()
+                ->{$repository}->{$gbs_plex}->{$reference_genome};
+    if (!$bed_file) {
+      $bed_file = $gb->gbs_plex_bed_path();
+      $self->_gbs_plex_cache()
+        ->{$repository}->{$gbs_plex}->{$reference_genome} = $bed_file;
+    }
+  }
+
+  return $bed_file;
+}
+
+
 
 __PACKAGE__->meta->make_immutable;
 

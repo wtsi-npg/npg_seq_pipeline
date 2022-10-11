@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - allow samtools ampliconclip to run for GBS products where primer panel
+   has primer bed file in the repository
+
 release 62.1.0
  - allow non consented human split for GBS runs
  - allow analysis of single-end runs with non-consented human split
