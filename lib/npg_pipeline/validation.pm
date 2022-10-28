@@ -357,14 +357,13 @@ sub _build_product_entities {
     if (!$product->lims->is_control) {
       push @subsets, 'phix';
     }
-    if (!$product->lims->gbs_plex_name) {
-      if ($product->lims->contains_nonconsented_human) {
-        push @subsets, 'human';
-      } elsif ($product->lims->contains_nonconsented_xahuman) {
-        push @subsets, 'xahuman';
-      } elsif ($product->lims->separate_y_chromosome_data) {
-        push @subsets, 'yhuman';
-      }
+
+    if ($product->lims->contains_nonconsented_human) {
+      push @subsets, 'human';
+    } elsif ($product->lims->contains_nonconsented_xahuman) {
+      push @subsets, 'xahuman';
+    } elsif ($product->lims->separate_y_chromosome_data) {
+      push @subsets, 'yhuman';
     }
 
     push @e, npg_pipeline::validation::entity->new(

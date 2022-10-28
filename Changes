@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - run deletion: account for a potential human split for GBS runs and
+   lanes where a primer panel is set 
+
 release 62.1.0
  - allow non consented human split for GBS runs
  - allow analysis of single-end runs with non-consented human split
