@@ -794,7 +794,8 @@ sub _irods_seq_pp_deletable {
       $self->debug(@files . ' artic files found on staging');
       if (@files < $self->pp_files_number) {
         $self->logcroak(sprintf 'Fewer than %i files that are eligible for ' .
-          'archival to iRODS are found on staging', $self->pp_files_number);
+          'archival to iRODS are found on staging %s',
+          $self->pp_files_number, $staging_root4product);
       }
 
       # Group files by type.
