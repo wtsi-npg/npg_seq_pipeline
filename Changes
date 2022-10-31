@@ -2,10 +2,10 @@ LIST OF CHANGES
 ---------------
 
  - run deletion:
-   account for a potential human split for GBS runs and
-     lanes where a primer panel is set,
-   error message extended with info about a product when pp files are
-   missing on staging
+     accounted for a potential human split for GBS runs and lanes where
+       a primer panel is set,
+     when pp files are  missing on staging, error message extended with info 
+       about a product
 
 release 62.1.0
  - allow non consented human split for GBS runs
