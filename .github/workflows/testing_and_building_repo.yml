@@ -5,18 +5,18 @@ jobs:
     runs-on: ubuntu-latest
     name: Distribution Perl
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Cache conda
       id: minicondaCache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: $HOME/miniconda
         key: ${{ runner.os}}-build-miniconda
 
     - name: Cache cpanm external modules
       id: cpanmCache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/perl5ext
         key: ${{ runner.os}}-build-cpanm-external
@@ -67,7 +67,7 @@ jobs:
 
     - name: Archive CPAN logs on failure
       if: ${{ failure() }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: cpan_log
         path: /home/runner/.cpanm/work/*/build.log

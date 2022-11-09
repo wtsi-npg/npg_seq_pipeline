@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - CI
+   - update version of github actions
  - run deletion:
      accounted for a potential human split for GBS runs and lanes where
        a primer panel is set,
