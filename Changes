@@ -1,8 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 62.2.0
  - CI
    - update version of github actions
+   - change CI runner from Ubuntu 18.04 to ubuntu-latest
  - run deletion:
      accounted for a potential human split for GBS runs and lanes where
        a primer panel is set,
