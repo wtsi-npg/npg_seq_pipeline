@@ -1,6 +1,16 @@
 LIST OF CHANGES
 ---------------
 
+release 62.2.0
+ - CI
+   - update version of github actions
+   - change CI runner from Ubuntu 18.04 to ubuntu-latest
+ - run deletion:
+     accounted for a potential human split for GBS runs and lanes where
+       a primer panel is set,
+     when pp files are  missing on staging, error message extended with info 
+       about a product
+
 release 62.1.0
  - allow non consented human split for GBS runs
  - allow analysis of single-end runs with non-consented human split
