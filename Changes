@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - Removed pp_archiver from the function graph.
+
 release 62.2.0
  - CI
    - update version of github actions
