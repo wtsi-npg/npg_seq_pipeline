@@ -15,9 +15,3 @@ study:
         pp_version: "v.3"
         pp_type: "stage2pp"
         pp_root: "t/data/portable_pipelines"
-        pp_archival_flag: true
-        pp_staging_root: "t/data"
-        climb_archival:
-          host: "climb.com"
-          user: "cat"
-          pkey_file: "~/.ssh/mykey"
