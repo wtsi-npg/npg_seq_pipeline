@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Exception;
 use File::Copy;
 use Cwd;
@@ -139,6 +139,34 @@ subtest 'NovaSeq run' => sub {
   isa_ok($d, q{npg_pipeline::function::definition});
   like ($d->command,
     qr/$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $rfpath $includes --id_run $id_run/,
+    'command is correct');
+};
+
+subtest 'Logconf option' => sub {
+  plan tests => 1;
+
+  my $id_run  = 26291;
+  my $rf_name = '180709_A00538_0010_BH3FCMDRXX';
+  my $rfpath  = abs_path(getcwd . qq{/t/data/novaseq/$rf_name});
+  my $bbc_path = qq{$rfpath/Data/Intensities/BAM_basecalls_20180805-013153};
+  my $col = qq{/seq/illumina/runs/26/$id_run};
+  my $restart_file = qr/${bbc_path}\/irods_publisher_restart_files\/publish_run_data2irods_${id_run}_20181204-\d+\.restart_file\.json/;
+  my $syslog_conf = abs_path(getcwd . qq{/data/config_files/log4perl_syslog.conf});
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    qq{$bbc_path/metadata_cache_26291/samplesheet_26291.csv};
+
+  my $a  = npg_pipeline::function::run_data_to_irods_archiver->new(
+    run_folder        => $rf_name,
+    runfolder_path    => $rfpath,
+    id_run            => $id_run,
+    timestamp         => q{20181204},
+    resource          => $defaults
+  );
+  my $da = $a->create();
+  my $d = $da->[0];
+  like ($d->command,
+    qr/$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $rfpath $includes --id_run $id_run --logconf $syslog_conf/,
     'command is correct');
 };
 
