@@ -20,7 +20,9 @@ my $config_dir = join q[/], $tmp_dir, 'config';
 mkdir $config_dir;
 copy 't/data/release/config/archive_on/product_release.yml', $config_dir;
 copy 'data/config_files/general_values.ini', $config_dir;
+copy 'data/config_files/log4perl_syslog.conf', $config_dir;
 my $pconfig = join q[/], $config_dir, 'product_release.yml';
+my $syslog_conf = join q[/], $config_dir, 'log4perl_syslog.conf';
 
 Log::Log4perl->easy_init({level  => $INFO,
                           layout => '%d %p %m %n',
@@ -89,19 +91,19 @@ subtest 'MiSeq run' => sub {
     'job_name is correct');
   is ($d->composition->get_component(0)->tag_index, 1, 'tag index 1 job');
   like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file --logconf $syslog_conf\Z/,
     'command for tag 1');
 
   $d = $da->[1];
   is ($d->composition->get_component(0)->tag_index, 2, 'tag index 2 job');
   like ($d->command,
-     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex2 --mlwh_json $irods_location_file\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex2 --mlwh_json $irods_location_file --logconf $syslog_conf\Z/,
     'command for tag 2');
 
   $d = $da->[2];
   is ($d->composition->get_component(0)->tag_index, 0, 'tag index 0 job');
   like ($d->command,
-     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex0 --mlwh_json $irods_location_file\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex0 --mlwh_json $irods_location_file --logconf $syslog_conf\Z/,
     'command for tag 0');
 
   # Make study explicitly configured to be archived to iRODS
@@ -121,15 +123,15 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file --logconf $syslog_conf\Z/,
     'command for tag 1');
   $d = $da->[1];
   like ($d->command,
-     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex2 --mlwh_json $irods_location_file\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex2 --mlwh_json $irods_location_file --logconf $syslog_conf\Z/,
     'command for tag 2');
   $d = $da->[2];
   like ($d->command,
-     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex0 --mlwh_json $irods_location_file\Z/,
+     qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex0 --mlwh_json $irods_location_file --logconf $syslog_conf\Z/,
     'command for tag 0');
 
   is ($d->command_preexec,
@@ -157,7 +159,7 @@ subtest 'MiSeq run' => sub {
   is ($d->composition->get_component(0)->tag_index, undef, 'tag index is undefined');
   my $ifile = "${analysis_path}/irods_locations_files/16850_1.seq_to_irods_archiver.json";
   like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1 --mlwh_json $ifile\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1 --mlwh_json $ifile --logconf $syslog_conf\Z/,
     'command for lane 1');
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -204,7 +206,7 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file\Z/,
+    qr/\A$script --max_errors 10 --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file --logconf $syslog_conf\Z/,
     'command is correct for qc run');
 
   $a = npg_pipeline::function::seq_to_irods_archiver->new(
@@ -220,7 +222,7 @@ subtest 'MiSeq run' => sub {
   ok ($da && @{$da} == 3, 'an array with three definitions is returned');
   $d = $da->[0];
   like ($d->command,
-    qr/\A$script --max_errors 10 --driver-type samplesheet --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file\Z/,
+    qr/\A$script --max_errors 10 --driver-type samplesheet --restart_file $restart_file --collection $col --source_directory $archive_path\/lane1\/plex1 --mlwh_json $irods_location_file --logconf $syslog_conf\Z/,
     'command is correct for the samplesheet driver');
 };
 
