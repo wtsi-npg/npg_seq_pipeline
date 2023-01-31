@@ -20,9 +20,9 @@ my $config_dir = join q[/], $tmp_dir, 'config';
 mkdir $config_dir;
 copy 't/data/release/config/archive_on/product_release.yml', $config_dir;
 copy 'data/config_files/general_values.ini', $config_dir;
-copy 'data/config_files/log4perl_syslog.conf', $config_dir;
+copy 'data/config_files/log4perl_publish_illumina.conf', $config_dir;
 my $pconfig = join q[/], $config_dir, 'product_release.yml';
-my $syslog_conf = join q[/], $config_dir, 'log4perl_syslog.conf';
+my $syslog_conf = join q[/], $config_dir, 'log4perl_publish_illumina.conf';
 
 Log::Log4perl->easy_init({level  => $INFO,
                           layout => '%d %p %m %n',

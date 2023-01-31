@@ -29,7 +29,7 @@ override 'create' => sub {
       q{--include},          q['[Rr]unParameters.xml'],
       q{--include},          q[InterOp],
       q{--id_run},           $self->id_run,
-      q{--logconf},          $self->conf_file_path('log4perl_syslog.conf');
+      q{--logconf},          $self->conf_file_path('log4perl_publish_illumina.conf');
 
     $self->info(qq[iRODS loader command "$command"]);
     $ref->{'command'} = $command;

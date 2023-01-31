@@ -151,7 +151,7 @@ subtest 'Logconf option' => sub {
   my $bbc_path = qq{$rfpath/Data/Intensities/BAM_basecalls_20180805-013153};
   my $col = qq{/seq/illumina/runs/26/$id_run};
   my $restart_file = qr/${bbc_path}\/irods_publisher_restart_files\/publish_run_data2irods_${id_run}_20181204-\d+\.restart_file\.json/;
-  my $syslog_conf = abs_path(getcwd . qq{/data/config_files/log4perl_syslog.conf});
+  my $syslog_conf = abs_path(getcwd . qq{/data/config_files/log4perl_publish_illumina.conf});
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
     qq{$bbc_path/metadata_cache_26291/samplesheet_26291.csv};

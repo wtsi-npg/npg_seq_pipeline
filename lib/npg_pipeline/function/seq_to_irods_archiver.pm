@@ -56,7 +56,7 @@ sub create {
           $product->path($self->archive_path()),
           $product->file_path($self->irods_locations_dir_path(),
             ext=>"${package_name}.json"),
-          $self->conf_file_path('log4perl_syslog.conf');
+          $self->conf_file_path('log4perl_publish_illumina.conf');
         $self->assign_common_definition_attrs(\%dref, $job_name_prefix);
         push @definitions, $self->create_definition(\%dref);
       }
