@@ -49,6 +49,7 @@ my $builder = $class->new(
           'List::MoreUtils'              => 0,
           'List::Util'                   => 0,
           'Log::Log4perl'                => 0,
+          'Log::Dispatch::Syslog'        => 2.70,
           'Math::Random::Secure'         => 0,
           'MIME::Base64'                 => 0,
           'Moose'                        => 0.93,
