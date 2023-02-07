@@ -6,6 +6,7 @@ use JSON;
 use File::Slurp;
 use Test::More tests => 4;
 use Test::Exception;
+use File::Copy;
 
 my $runfolder_path = 't/data/novaseq/200709_A00948_0157_AHM2J2DRXX';
 my $bbc_path = join q[/], getcwd(), $runfolder_path,
@@ -32,6 +33,8 @@ my %init = (
   }
 );
 
+copy 'data/config_files/log4perl_publish_tree.conf', $init{'conf_path'};
+my $syslog_config = join q[/], $init{'conf_path'}, 'log4perl_publish_tree.conf';
 
 subtest 'local flag' => sub {
   plan tests => 3;
@@ -108,7 +111,8 @@ subtest 'create job definition' => sub {
     q( --include 'ncov2019_artic_nf/v0.(7|8)\\b\\S+trim\\S+/\\S+bam') .
     q( --include 'ncov2019_artic_nf/v0.(11)\\b\\S+trim\\S+/\\S+cram') .
     q( --include 'ncov2019_artic_nf/v0.\\d+\\b\\S+make\\S+/\\S+consensus.fa') .
-    q( --include 'ncov2019_artic_nf/v0.\\d+\\b\\S+call\\S+/\\S+variants.tsv'),
+    q( --include 'ncov2019_artic_nf/v0.\\d+\\b\\S+call\\S+/\\S+variants.tsv') .
+    q( --logconf ) . $syslog_config,
     'correct command');
 
   ok (-e $meta_file, 'metadata file (with sample supplier name) is created');
@@ -147,3 +151,4 @@ subtest 'create job definition' => sub {
 
 };
 
+unlink $syslog_config;
