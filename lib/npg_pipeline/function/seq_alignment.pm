@@ -530,28 +530,31 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     # Parse the reference genome for the product
     my ($organism, $strain, $tversion, $analysis) = npg_tracking::data::reference->new(($self->repository ? (q(repository)=>$self->repository) : ()))->parse_reference_genome($l->reference_genome);
 
-    # if a non-standard aligner is specified in ref string select it
-    $p4_param_vals->{alignment_method} = ($analysis || $bwa);
+    # if analysis is not explicitly selected in reference name, use the $bwa method selected above
+    $analysis ||= ($self->bwa_mem2? q[bwa_mem2]: $bwa);
 
-    my %methods_to_aligners = (
+    # alignment_method parameter selects p4 template
+    $p4_param_vals->{alignment_method} = ($analysis ne q[bwa_mem2]) ? $analysis : $bwa;
+
+    my %methods_to_indexes = (
       bwa_aln => q[bwa0_6],
       bwa_aln_se => q[bwa0_6],
       bwa_mem => q[bwa0_6],
       bwa_mem_bwakit => q[bwa0_6],
-      bwa_mem2 => q[bwa0_6],
     );
     my %ref_suffix = (
       picard => q{.dict},
       minimap2 => q{.mmi},
     );
 
-    my $aligner = $p4_param_vals->{alignment_method};
-    if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
-      $aligner = $methods_to_aligners{$aligner};
+    # $aligner selects the alignment reference genome index
+    my $aligner = (not $spike_tag and ($analysis eq q[bwa_mem2] or $self->bwa_mem2))? q[bwa_mem2]: $p4_param_vals->{alignment_method};
+    if(exists $methods_to_indexes{$aligner}) {
+      $aligner = $methods_to_indexes{$aligner};
     }
 
     # BWA MEM2 requires a different executable
-    if ($p4_param_vals->{alignment_method} eq q[bwa_mem2]) {
+    if ($aligner eq q[bwa_mem2]) {
       $p4_param_vals->{bwa_executable} = q[bwa-mem2];
     } else {
       $p4_param_vals->{bwa_executable} = q[bwa0_6];

@@ -37,6 +37,7 @@ $builds{'Mus_musculus'} = ['GRCm38','NCBIm37'];
 $builds{'PhiX'} = ['Illumina'];
 $builds{'Strongyloides_ratti'} = ['20100601'];
 $builds{'Plasmodium_falciparum'} = ['3D7_Oct11v3'];
+$builds{'Escherichia_coli'} = ['B_strain'];
 my %tbuilds = ();
 $tbuilds{'1000Genomes_hs37d5'} = ['ensembl_75_transcriptome'];
 $tbuilds{'GRCh38_15'} = ['ensembl_76_transcriptome'];
@@ -52,13 +53,14 @@ foreach my $org (keys %builds){
         my $rel_dir     = join q[/],$ref_dir,$org,$rel,'all';
         my $bowtie2_dir = join q[/],$rel_dir,'bowtie2';
         my $bwa0_6_dir  = join q[/],$rel_dir,'bwa0_6';
+        my $bwa_mem2_dir  = join q[/],$rel_dir,'bwa_mem2';
         my $fasta_dir   = join q[/],$rel_dir,'fasta';
         my $picard_dir  = join q[/],$rel_dir,'picard';
         my $star_dir    = join q[/],$rel_dir,'star';
         my $hisat2_dir  = join q[/],$rel_dir,'hisat2';
         my $target_dir  = join q[/],$rel_dir,'target';
         my $targeta_dir = join q[/],$rel_dir,'target_autosome';
-        make_path($bowtie2_dir, $bwa0_6_dir, $picard_dir, $star_dir,
+        make_path($bowtie2_dir, $bwa0_6_dir, $bwa_mem2_dir, $picard_dir, $star_dir,
                   $fasta_dir, $hisat2_dir, {verbose => 0});
         if($rel eq 'GRCh38_full_analysis_set_plus_decoy_hla'){
           make_path($target_dir, $targeta_dir, {verbose => 0});
@@ -139,6 +141,9 @@ sub symlink_default {
 `touch $ref_dir/Mus_musculus/NCBIm37/all/bwa0_6/mm_ref_NCBI37_1.fasta`;
 `touch $ref_dir/Plasmodium_falciparum/3D7_Oct11v3/all/fasta/Pf3D7_v3.fasta`;
 `touch $ref_dir/Plasmodium_falciparum/3D7_Oct11v3/all/picard/Pf3D7_v3.fasta.dict`;
+`touch $ref_dir/Escherichia_coli/B_strain/all/fasta/E_coli_B_strain.fasta`;
+`touch $ref_dir/Escherichia_coli/B_strain/all/picard/E_coli_B_strain.fasta.dict`;
+`touch $ref_dir/Escherichia_coli/B_strain/all/bwa_mem2/E_coli_B_strain.fasta`;
 `touch $tra_dir/Homo_sapiens/ensembl_75_transcriptome/1000Genomes_hs37d5/gtf/ensembl_75_transcriptome-1000Genomes_hs37d5.gtf`;
 `touch $tra_dir/Homo_sapiens/ensembl_75_transcriptome/1000Genomes_hs37d5/tophat2/1000Genomes_hs37d5.known.2.bt2`;
 `touch $tra_dir/Homo_sapiens/ensembl_75_transcriptome/1000Genomes_hs37d5/fasta/1000Genomes_hs37d5.fa`;
@@ -1507,28 +1512,29 @@ subtest 'product_release_tests' => sub {
 };
 
 subtest 'BWA MEM 2 test' => sub {
-  plan tests => 4;
+  plan tests => 6;
 
-  my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
-  my $runfolder_path = join q[/], $dir, 'compositions', $runfolder;
-  my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/no_cal';
+  my $runfolder = q{230208_MS2_46761_A_MS3408491-300V2};
+  my $runfolder_path = join q[/], $dir, $runfolder;
+  my $bbd = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20230214-194920';
+  my $bc_path = join q[/], $bbd, qq[no_cal];
   make_path $bc_path;
-  my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/metadata_cache_24135';
+  my $cache_dir = join q[/], $runfolder_path, q[$bbd/metadata_cache_46761];
   make_path $cache_dir;
   make_path "$bc_path/lane1";
   make_path "$bc_path/archive/tileviz";
 
-  copy('t/data/miseq/24135_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+  copy('t/data/miseq/46761_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/miseq/46761_runParameters.xml', "$runfolder_path/runParameters.xml")
     or die 'Copy failed';
 
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135_bwa_mem2.csv];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_46761_bwa_mem2.csv];
 
   my $ms_gen = npg_pipeline::function::seq_alignment->new(
     run_folder        => $runfolder,
     runfolder_path    => $runfolder_path,
     recalibrated_path => $bc_path,
-    timestamp         => q{2017},
+    timestamp         => q{2023},
     repository        => $dir,
     conf_path         => 't/data/release/config/seq_alignment',
     resource          => $default
@@ -1537,14 +1543,66 @@ subtest 'BWA MEM 2 test' => sub {
   $ms_gen->create_product_level();
 
   my $da = $ms_gen->generate('analysis_pipeline');
-  ok (($da and (@{$da} == 3)), 'three definitions returned');
-  my $d = _find($da, 1, 1);
+  ok (($da and (@{$da} == 31)), 'thirty-one definitions returned');
+  my $d = _find($da, 1, 8);
   isa_ok ($d, 'npg_pipeline::function::definition');
   ok (!$d->excluded, 'step not excluded');
 
-  my $l = st::api::lims->new(id_run => 24135, position => 1, tag_index => 2);
-  my $analysis = $ms_gen->_analysis($l->reference_genome, '24135:1:2');
-  ok ($analysis eq "bwa_mem2", 'run 24135 lane 1 tag 2 Analysis is BWA MEM 2');
+  my $l = st::api::lims->new(id_run => 46761, position => 1, tag_index => 8);
+  my $analysis = $ms_gen->_analysis($l->reference_genome, '46761:1:8');
+  ok ($analysis eq "bwa_mem2", 'run 46761 lane 1 tag 8 Analysis is BWA MEM 2');
+ 
+  ## check json file for lane 1 tag 8
+  my $json_file = qq{$bc_path/46761_1#8_p4s2_pv_in.json};
+  ok (-e $json_file, 'json params file exists for run 46761 lane 1 tag 8');
+  my $h = from_json(slurp($json_file));
+
+  my $expected = {
+    'assign' => [
+      {
+        'bwa_executable' => 'bwa-mem2',
+        's2_position' => 'POSITION',
+        'subsetsubpath' => '.npg_cache_10000/',
+        'seqchksum_orig_file' => join(q[/], $bbd, 'no_cal/archive/lane1/plex8/46761_1#8.orig.seqchksum'),
+        'phix_reference_genome_fasta' => join(q[/], $ref_dir, 'PhiX/Illumina/all/fasta/phix-illumina.fa'),
+        'outdatadir' => join(q[/], $bbd, 'no_cal/archive/lane1/plex8'),
+        's2_tag_index' => 8,
+        'alignment_reference_genome' => join(q[/], $ref_dir, 'Escherichia_coli/B_strain/all/bwa_mem2/E_coli_B_strain.fasta'),
+        's2_id_run' => 46761,
+        'run_lane_ss_fq2' => join(q[/], $bbd, 'no_cal/archive/lane1/plex8/.npg_cache_10000/46761_1#8_2.fastq'),
+        'reference_genome_fasta' => join(q[/], $ref_dir, 'Escherichia_coli/B_strain/all/fasta/E_coli_B_strain.fasta'),
+        'rpt' => '46761_1#8',
+        's2_se_pe' => 'pe',
+        'markdup_method' => 'biobambam',
+        'recal_dir' => join(q[/], $bbd, 'no_cal'),
+        'incrams' => [
+          join(q[/], $bbd, 'no_cal/46761_1#8.cram')
+        ],
+        'markdup_optical_distance_value' => '100',
+        'spatial_filter_file' => 'DUMMY',
+        's2_filter_files' => join(q[/], $bbd, 'no_cal/46761_1.spatial_filter'),
+        'samtools_executable' => 'samtools',
+        'reference_dict' => join(q[/], $ref_dir, 'Escherichia_coli/B_strain/all/picard/E_coli_B_strain.fasta.dict'),
+        'af_metrics' => '46761_1#8_bam_alignment_filter_metrics.json',
+        'alignment_method' => 'bwa_mem',
+        'tag_metrics_files' => join(q[/], $bbd, 'no_cal/archive/lane1/qc/46761_1.tag_metrics.json'),
+        'run_lane_ss_fq1' => join(q[/], $bbd, 'no_cal/archive/lane1/plex8/.npg_cache_10000/46761_1#8_1.fastq'),
+        'spatial_filter_rg_value' => '46761_1#8',
+        's2_input_format' => 'cram'
+      }
+    ],
+    'ops' => {
+      'splice' => [],
+      'prune' => [
+        'fop.*_bmd_multiway:calibration_pu-',
+        'fop.*samtools_stats_F0.*_target.*-',
+        'fop.*samtools_stats_F0.*00_bait.*-'
+      ]
+    },
+    'assign_local' => {}
+  };
+
+is_deeply($h, $expected, 'correct json file content for run 46761 lane 1 tag 8 p4 parameters');
 };
 
 # test that bwa mem flags are added when HiC libraries are detected

@@ -287,6 +287,19 @@ has q{no_haplotype_caller} => (
   documentation => q{Switches off haplotype caller.},
 );
 
+=head2 bwa_mem2
+
+Use bwa-mem2 for alignment instead of bwa_mem (if indexes available)
+
+=cut
+
+has q{bwa_mem2} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  default       => 0,
+  documentation => q{Use bwa-mem2 for alignment instead of bwa_mem.},
+);
+
 no Moose::Role;
 
 1;
