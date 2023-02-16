@@ -82,11 +82,13 @@ has q{_is_check4target_file} => (
 sub _build__is_check4target_file {
   my $self = shift;
   ##no critic (RegularExpressions::RequireBracesForMultiline)
+  ##no critic (RegularExpressions::ProhibitComplexRegexes)
   return $self->qc_to_run() =~ /^ adapter |
                                   bcfstats |
                                   verify_bam_id |
                                   genotype |
                                   pulldown_metrics |
+                                  haplotag_metrics |
                                   review $/smx;
 }
 

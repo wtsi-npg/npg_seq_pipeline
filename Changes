@@ -1,6 +1,11 @@
 LIST OF CHANGES
 ---------------
 
+release 63.0.0
+ - removed pp_archiver from the function graph.
+ - removed scripts for CLIMB data maintenance
+ - add haplotag QC check
+
 release 62.2.0
  - CI
    - update version of github actions

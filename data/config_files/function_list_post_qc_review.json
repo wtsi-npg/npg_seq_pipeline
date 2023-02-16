@@ -33,11 +33,6 @@
             },
             {
                 "relation": "dependsOn",
-                "source": "update_ml_warehouse",
-                "target": "pp_archiver"
-            },
-            {
-                "relation": "dependsOn",
                 "source": "archive_run_data_to_irods",
                 "target": "archive_to_irods_ml_warehouse"
             },
@@ -64,11 +59,6 @@
             {
                 "relation": "dependsOn",
                 "source": "cache_merge_component",
-                "target": "run_run_archived"
-            },
-            {
-                "relation": "dependsOn",
-                "source": "pp_archiver",
                 "target": "run_run_archived"
             },
             {
@@ -219,14 +209,6 @@
                 "label": "cache_merge_component",
                 "metadata": {
                     "description": "Cached products that are due for a top-up in a directory outside the run folder (if configured)",
-                    "resources": {}
-                }
-            },
-            {
-                "id": "pp_archiver",
-                "label": "pp_archiver",
-                "metadata": {
-                    "description": " Upload or archival of the output of portable pipelines to a location specified by the customer (if configured)",
                     "resources": {}
                 }
             },
