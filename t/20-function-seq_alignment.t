@@ -1517,8 +1517,10 @@ subtest 'product_release_tests' => sub {
 #   2) on sample sheet entry without [bwa_mem2] specified in reference name, but setting bwa_mem2 attribute
 #       on creation of seq_alignment object
 #   3) on sample sheet entry with [bwa_mem2] specified in reference name
+#   4) on sample sheet entry with [bwa_mem2] specified in reference name and setting bwa_mem2 attribute
+#       on creation of seq_alignment object
 subtest 'BWA MEM 2 tests' => sub {
-  plan tests => 18;
+  plan tests => 24;
 
   my $runfolder = q{230208_MS2_46761_A_MS3408491-300V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
@@ -1540,6 +1542,7 @@ subtest 'BWA MEM 2 tests' => sub {
 	  {name => q[bwamem2_noflag_noss], tag => 1, bwa_mem_flag => 0, aligner => q[bwa0_6], index => q[bwa0_6], },
 	  {name => q[bwamem2_flag_noss], tag => 1, bwa_mem_flag => 1, aligner => q[bwa-mem2], index => q[bwa_mem2], },
 	  {name => q[bwamem2_ss], tag => 8, bwa_mem_flag => 0, aligner => q[bwa-mem2], index => q[bwa_mem2], },
+	  {name => q[bwamem2_flag_ss], tag => 8, bwa_mem_flag => 1, aligner => q[bwa-mem2], index => q[bwa_mem2], },
   );
 
   for my $tp (@test_params) {
