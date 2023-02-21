@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 63.1.0
+ - add configuration and functionality to support filtering and appending
+   irods error log messages to syslog.
+
 release 63.0.0
  - removed pp_archiver from the function graph.
  - removed scripts for CLIMB data maintenance
