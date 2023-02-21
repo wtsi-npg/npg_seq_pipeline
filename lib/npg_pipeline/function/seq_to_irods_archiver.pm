@@ -49,13 +49,14 @@ sub create {
         my %dref = %{$ref};
         $dref{'composition'} = $product->composition;
         $dref{'command'} = sprintf
-          '%s --restart_file %s --collection %s --source_directory %s --mlwh_json %s',
+          '%s --restart_file %s --collection %s --source_directory %s --mlwh_json %s --logconf %s',
           $command,
           $self->restart_file_path($job_name_prefix, $product),
           $self->irods_product_destination_collection($run_collection, $product),
           $product->path($self->archive_path()),
           $product->file_path($self->irods_locations_dir_path(),
-            ext=>"${package_name}.json");
+            ext=>"${package_name}.json"),
+          $self->conf_file_path('log4perl_publish_illumina.conf');
         $self->assign_common_definition_attrs(\%dref, $job_name_prefix);
         push @definitions, $self->create_definition(\%dref);
       }
