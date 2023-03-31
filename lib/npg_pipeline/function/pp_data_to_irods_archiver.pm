@@ -56,6 +56,8 @@ sub create {
         }
       }
 
+      push @args, q{--logconf}, $self->conf_file_path('log4perl_publish_tree.conf');
+
       my %dref = %{$ref};
       $dref{'composition'} = $product->composition;
       $dref{'command'}     = join q[ ], $PUBLISH_SCRIPT_NAME, @args;
