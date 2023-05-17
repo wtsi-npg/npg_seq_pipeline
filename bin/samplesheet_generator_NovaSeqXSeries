@@ -1,0 +1,323 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
+use Readonly;
+use Carp;
+use Text::CSV;
+use List::MoreUtils qw/any/;
+use List::Util qw/max/;
+
+use st::api::lims;
+
+our $VERSION = '0';
+
+Readonly::Scalar my $READ1_LENGTH => 150;
+Readonly::Scalar my $READ2_LENGTH => 150;
+Readonly::Scalar my $BATCH_ID     => 96_802;
+Readonly::Scalar my $FILE_NAME    => qq[samplesheet_${BATCH_ID}.csv];
+Readonly::Scalar my $LIST_INDEX_TAG1 => 2;
+Readonly::Scalar my $LIST_INDEX_TAG2 => 3;
+
+
+my $index1_length = 0;
+my $index2_length = 0;
+
+##no critic (InputOutput::RequireBriefOpen)
+open my $fh, q[>], $FILE_NAME or croak "Failed to open $FILE_NAME for writing";
+my $csv = Text::CSV->new({
+  eol      => qq[\n],
+  sep_char => q[,],
+});
+
+
+sub print_line {
+  my @row = @_;
+  $csv->print($fh, [@row]);
+  return;
+}
+
+sub print_section_break {
+  $csv->print($fh, [q[]]);
+  return;
+}
+
+sub process_lims_data {
+  my ($batch_id) = @_;
+
+  my @lane_lims =st::api::lims->new(
+    id_flowcell_lims => $batch_id,
+    driver_type => q[ml_warehouse]
+  )->children();
+
+  my @products = ();
+
+  for my $lane (@lane_lims) {
+    my $position = $lane->position;
+    my @lane_products = $lane->is_pool ? $lane->children() : ($lane);
+    for my $p (@lane_products) {
+      my $i7 = $p->tag_sequences->[0] || q();
+      my $i5 = $p->tag_sequences->[1] || q();
+      if ($i5) { # reverse-complement
+        $i5 =~ tr/[ACGT]/[TGCA]/;
+        $i5 = reverse $i5;
+      }
+      push @products, [
+        $position,
+        $p->sample_id,
+        $i7,
+        $i5
+      ];
+    }
+  }
+
+  # Assign variables that were defined in the parent scope.
+  $index1_length = max (map { length $_->[$LIST_INDEX_TAG1] } @products);
+  $index2_length = max (map { length $_->[$LIST_INDEX_TAG2] } @products);
+
+  # sort by sample ID
+  @products = sort { $a->[1] cmp $b->[1] } @products;
+
+  return \@products;
+}
+
+my $products = process_lims_data($BATCH_ID);
+
+# Header section
+print_line(qw([Header]));
+print_line(qw(RunName Run_IDFL_96802));
+print_line(qw(InstrumentPlatform NovaSeqXSeries));
+# What are other options for IndexOrientation?
+print_line(qw(IndexOrientation Forward));
+print_section_break();
+
+# Reads section                                                              
+print_line(qw([Reads]));
+print_line(q[Read1Cycles], $READ1_LENGTH);
+print_line(q[Read2Cycles], $READ2_LENGTH);
+if ($index1_length) {
+  print_line(('Index1Cycles', $index1_length));
+  if ($index2_length) {
+    print_line(('Index2Cycles', $index2_length));
+  }
+}
+print_section_break();
+
+# Sequencing_Settings section
+print_line(qw([Sequencing_Settings]));
+# We might want to change this value.
+print_line(qw(LibraryPrepKits
+  IlluminaDNAPCRFree;NexteraXT;SingleCellATACLibraryKit1;IlluminaDNAPrep));
+print_section_break();
+
+###############################
+# BCLConvert_Settings section
+###############################
+print_line(qw([BCLConvert_Settings]));
+print_line(qw(SoftwareVersion 4.1.5));
+
+# Not clear what CLI analysis option thie coresponds to.
+# Looks likely to be a list of lanes to run a tag collision check.
+# According to @srl, bcl-covert tries to correct one error by default
+# but it checks the tags allow this I.e that they all differ by at least
+# 3 bases, if they don't it disables the error correction
+#print_line(qw(CombinedIndexCollisionCheck 1;3;4;6));
+
+# CreateFastqForIndexReads might be an option. Do we need these files?
+print_line(qw(CreateFastqForIndexReads 1));
+# When 1 will be appropriate for this trim?
+print_line(qw(TrimUMI 0));
+# gzip is the other compression options
+print_line(qw(FastqCompressionFormat dragen));
+
+# Barcode mismatch tolerances, the default is 1.
+# These settings can be omitted
+if ($index1_length) {
+  print_line(qw(BarcodeMismatchesIndex1 1));
+  if ($index2_length) {
+    print_line(qw(BarcodeMismatchesIndex2 1));
+  }
+}
+# Adapter trimming settings. The sequence of the Read 1 (or 2) adapter
+# to be masked or trimmed. To trim multiple adapters, separate the sequences
+# with a plus sign (+) indicating independent adapters that must be
+# independently assessed for masking or trimming for each read.
+# Characters must be A, C, G, or T.
+# It seems that this settign can also be a column in teh data section
+#
+# print_line(qw(AdapterRead1 SOME));
+# print_line(qw(AdapterRead2 OTHER));
+
+# Override Cycles - Specifies the sequencing and indexing cycles to be used
+# when processing the sequencing data. Must adhere to the
+# following requirements:
+# - Must be same number of fields (delimited by semicolon) as sequencing and
+#   indexing reads specified in RunInfo.xml or Reads section.
+# - Indexing reads are specified with I, sequencing reads are specified with
+#   Y, UMI cycles are specified with U, and trimmed reads are specified with N.
+# - The number of cycles specified for each read must equal the number of
+#   cycles specified for that read in the RunInfo.xml file.
+# - Only one Y or I sequence can be specified per read.
+# This setting can also be specified as a column per sample in the Data section.
+# print_line(qw(OverrideCycles A_MASK));
+
+print_section_break();
+
+##########################
+# BCLConvert_Data section
+##########################
+print_line(qw([BCLConvert_Data]));
+
+# Must have columns: Lane, SampleID, Index, Index2, provided the index reads
+# were performed.
+# Optional columns: OverrideCycles, AdapterRead1, AdapterRead2
+# The rows are sorted by SampleID
+
+my @data_header = qw(Lane SampleID);
+if ($index1_length) {
+  push @data_header, q[Index];
+  if ($index2_length) {
+    push @data_header, q[Index2];
+  }
+  push @data_header, q[OverrideCycles];
+}
+print_line(@data_header);
+
+my $index_override = sub {
+  my ($max_length, $barcode) = @_;
+  my $i_cycles_number = length $barcode;
+  my $n_cycles_number = $max_length - $i_cycles_number;
+  $i_cycles_number -= $n_cycles_number;
+  my $expression = q[];
+  if ($i_cycles_number) {
+    $expression .= q[I] . $i_cycles_number;
+  }
+  if ($n_cycles_number) {
+    $expression .= q[N] . $n_cycles_number;
+  }
+  return $expression;
+};
+
+for my $product ( @{$products} ) {
+
+  my @product_data = ($product->[0], $product->[1]);
+
+  my @override_cycles = ();
+  # Not accounting for UMI cycles for now.
+  if ($index1_length) {
+    my $i7 = $product->[$LIST_INDEX_TAG1];
+    push @product_data, $i7;
+    push @override_cycles, q[Y] . $READ1_LENGTH;
+    push @override_cycles,
+      $index_override->($index1_length, $i7);
+    if ($index2_length) {
+      my $i5 = $product->[$LIST_INDEX_TAG2];
+      push @product_data, $i5;
+      push @override_cycles,
+        $index_override->($index2_length, $i5);
+    }
+    push @override_cycles, q[Y] . $READ2_LENGTH;
+  }
+  if (@override_cycles) {
+    push @product_data, join q[;], @override_cycles;
+  }
+  print_line(@product_data);
+}
+
+#############################
+# Further sections to follow
+#############################
+
+
+##### The End #####
+close $fh or carp "Problems closing $FILE_NAME";
+
+1;
+
+=head1 NAME
+
+samplesheet_generator_NovaSeqXSeries
+
+=head1 USAGE
+
+=head1 REQUIRED ARGUMENTS
+
+None
+
+=head1 OPTIONS
+
+None
+
+=head1 DESCRIPTION
+
+Samplesheet generation to initiate on-board DRAGEN analysis on the
+NovaSeqX Series instrument.
+
+See specification in
+https://support-docs.illumina.com/SHARE/SampleSheetv2/Content/SHARE/SampleSheetv2/Settings_fNV_mX.htm 
+
+A full listing of analysis options is available in
+https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/OptionReference.htm
+
+The selection of analysis options exposed via the samplesheet is very limited.
+
+=head1 EXIT STATUS
+
+0
+
+=head1 DIAGNOSTICS
+
+=head1 CONFIGURATION
+
+Access to the ml warehouse database is required.
+
+=head1 DEPENDENCIES
+
+=over
+
+=item strict
+
+=item warnings
+
+=item Carp
+
+=item Text::CSV
+
+=item Readonly
+
+=item List::MoreUtils
+
+=item List::Util
+
+=item st::api::lims
+
+=back
+
+=head1 BUGS AND LIMITATIONS
+
+=head1 INCOMPATIBILITIES
+
+=head1 AUTHOR
+
+Marina Gourtovaia E<lt>mg8@sanger.ac.ukE<gt>
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2023 Genome Research Ltd
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut
