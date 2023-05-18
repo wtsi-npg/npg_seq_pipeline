@@ -283,7 +283,17 @@ print_section_break();
 # DragenEnrichment_Settings section - guessing the name
 ########################################
 
+########################################
+# DragenEnrichment_Data section
+########################################
 
+########################################
+# DragenRNA_Settings section - guessing the name
+########################################
+
+########################################
+# DragenRNA_Data section
+########################################
 
 ##### The End #####
 close $fh or carp "Problems closing $FILE_NAME";
