@@ -284,7 +284,12 @@ for my $r (@references) {
 }
 
 # DRAGEN aligner info:
-# https://support-docs.illumina.com/SW/DRAGEN_v40/Content/SW/DRAGEN/GraphMapper_fDG.htm 
+# https://support-docs.illumina.com/SW/DRAGEN_v40/Content/SW/DRAGEN/GraphMapper_fDG.htm
+# Prepare a reference:
+# https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/RefGenIntro.htm
+# https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/RefGenPipe_fDG.htm
+# Import a reference:
+# https://support-docs.illumina.com/IN/NovaSeqX/Content/IN/NovaSeqX/ImportResources.htm
 
 if ($do_germline_alignment) {
   print_line(qw([DragenGermline_Data]));
