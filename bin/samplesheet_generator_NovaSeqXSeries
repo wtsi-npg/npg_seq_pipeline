@@ -21,7 +21,7 @@ Readonly::Scalar my $FILE_NAME    => qq[samplesheet_${BATCH_ID}.csv];
 Readonly::Scalar my $LIST_INDEX_TAG1  => 2;
 Readonly::Scalar my $LIST_INDEX_TAG2  => 3;
 Readonly::Scalar my $LIST_INDEX_REF   => 4;
-Readonly::Scalar my $LIST_INDEX_LTYPE => 5;
+Readonly::Array  my @RNA_ANALYSES     => qw{tophat2 star hisat2};
 
 my $index1_length = 0;
 my $index2_length = 0;
@@ -241,6 +241,7 @@ print_line(qw(SoftwareVersion 4.1.5));
 # Accepted values are bam, cram, or none. Selecting none produces
 # no map/align output. Not clear whether this ca be set per sample.
 print_line(qw(MapAlignOutFormat cram));
+
 # Accepted values are true or false. Not clear whether this can be
 # set per sample.
 print_line(qw(KeepFastq FALSE));
@@ -249,7 +250,7 @@ print_line(qw(KeepFastq FALSE));
 # Repeat Expansions, ROH, CYP2D6.
 # This seting is non-optional.
 # Can be placed in either settings or data section.
-print_line(qw(VariantCallingMode None));
+# print_line(qw(VariantCallingMode None));
 # Can set ReferenceGenomeDir here, but we will do this per sample
 # in the data section.
 
@@ -260,24 +261,54 @@ print_section_break();
 # This section is definitely conditional.
 #########################################
 
-# DRAGEN aligner info:
-# https://support-docs.illumina.com/SW/DRAGEN_v40/Content/SW/DRAGEN/GraphMapper_fDG.htm 
-print_line(qw([DragenGermline_Data]));
-print_line(qw(Sample_ID ReferenceGenomeDir));
-
-# Genome name consisting of alphanumeric string with _ or -.
-# We do not know yet how to map our references to the on-board(?) references,
-# which the DRAGEN aligner will use.
-
-# Sample IDs here should be the same as in the BCLConvert_Data section.
-
 # Only non-RNA samples should be listed in this section.
+# A very simple test:
 
-for my $p ( @{$products} ) {
-  print_line(($p->[1], $p->[$LIST_INDEX_REF]));
+my $do_rna_alignment_test = sub {
+  my $r = shift;
+  return any { $_ =~ $r } @RNA_ANALYSES;
+};
+
+my @references = map { $_->[$LIST_INDEX_REF] } @{$products};
+my $do_rna_alignment = 0;
+my $do_germline_alignment = 0;
+for my $r (@references) {
+  if ( $do_rna_alignment_test->($r) ) {
+    $do_rna_alignment = 1;
+  } else {
+    $do_germline_alignment = 1;
+  }
+  if ($do_rna_alignment && $do_germline_alignment) {
+    last;
+  }
 }
 
-print_section_break();
+# DRAGEN aligner info:
+# https://support-docs.illumina.com/SW/DRAGEN_v40/Content/SW/DRAGEN/GraphMapper_fDG.htm 
+
+if ($do_germline_alignment) {
+  print_line(qw([DragenGermline_Data]));
+  # We do want the MapAlignOutFormat column here so that we could
+  # specify None option for some samples. Possible? Not clea.
+  print_line(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
+  # ReferenceGenomeDir is the Genome name consisting of alphanumeric
+  # string with _ or -.
+  # Sample IDs here should be the same as in the BCLConvert_Data section.
+
+  for my $p ( @{$products} ) {
+    my $r = $p->[$LIST_INDEX_REF];
+    if ($r =~ /Not suitable/xmsi) {
+      $r = q();
+    }
+    if ( !$do_rna_alignment_test->($r) ) {
+      # We do not know yet how to map our references to the on-board(?)
+      # references, which the DRAGEN aligner will use.
+      print_line(($p->[1], $r, q(SmallVariantCaller)));
+    }
+  }
+
+  print_section_break();
+}
 
 ########################################
 # DragenEnrichment_Settings section - guessing the name
