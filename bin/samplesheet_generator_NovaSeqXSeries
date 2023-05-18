@@ -18,9 +18,10 @@ Readonly::Scalar my $READ1_LENGTH => 150;
 Readonly::Scalar my $READ2_LENGTH => 150;
 Readonly::Scalar my $BATCH_ID     => 96_802;
 Readonly::Scalar my $FILE_NAME    => qq[samplesheet_${BATCH_ID}.csv];
-Readonly::Scalar my $LIST_INDEX_TAG1 => 2;
-Readonly::Scalar my $LIST_INDEX_TAG2 => 3;
-
+Readonly::Scalar my $LIST_INDEX_TAG1  => 2;
+Readonly::Scalar my $LIST_INDEX_TAG2  => 3;
+Readonly::Scalar my $LIST_INDEX_REF   => 4;
+Readonly::Scalar my $LIST_INDEX_LTYPE => 5;
 
 my $index1_length = 0;
 my $index2_length = 0;
@@ -68,7 +69,9 @@ sub process_lims_data {
         $position,
         $p->sample_id,
         $i7,
-        $i5
+        $i5,
+        $p->reference_genome() || q(),
+        $p->library_type() || q()
       ];
     }
   }
@@ -226,9 +229,60 @@ for my $product ( @{$products} ) {
   print_line(@product_data);
 }
 
-#############################
-# Further sections to follow
-#############################
+print_section_break();
+
+##################################
+# DragenGermline_Settings Section
+##################################
+
+# Probably it's OK to have this section unconditionally.
+print_line(qw([DragenGermline_Settings]));
+print_line(qw(SoftwareVersion 4.1.5));
+# Accepted values are bam, cram, or none. Selecting none produces
+# no map/align output. Not clear whether this ca be set per sample.
+print_line(qw(MapAlignOutFormat cram));
+# Accepted values are true or false. Not clear whether this can be
+# set per sample.
+print_line(qw(KeepFastq FALSE));
+# Accepted values are None, SmallVariantCaller, AllVariantCallers.
+# The option for all variant callers includes Small, Structural, CNV,
+# Repeat Expansions, ROH, CYP2D6.
+# This seting is non-optional.
+# Can be placed in either settings or data section.
+print_line(qw(VariantCallingMode None));
+# Can set ReferenceGenomeDir here, but we will do this per sample
+# in the data section.
+
+print_section_break();
+
+#########################################
+# DragenGermline_Data Section
+# This section is definitely conditional.
+#########################################
+
+# DRAGEN aligner info:
+# https://support-docs.illumina.com/SW/DRAGEN_v40/Content/SW/DRAGEN/GraphMapper_fDG.htm 
+print_line(qw([DragenGermline_Data]));
+print_line(qw(Sample_ID ReferenceGenomeDir));
+
+# Genome name consisting of alphanumeric string with _ or -.
+# We do not know yet how to map our references to the on-board(?) references,
+# which the DRAGEN aligner will use.
+
+# Sample IDs here should be the same as in the BCLConvert_Data section.
+
+# Only non-RNA samples should be listed in this section.
+
+for my $p ( @{$products} ) {
+  print_line(($p->[1], $p->[$LIST_INDEX_REF]));
+}
+
+print_section_break();
+
+########################################
+# DragenEnrichment_Settings section - guessing the name
+########################################
+
 
 
 ##### The End #####
