@@ -23,6 +23,10 @@ Readonly::Scalar my $LIST_INDEX_TAG2  => 3;
 Readonly::Scalar my $LIST_INDEX_REF   => 4;
 Readonly::Array  my @RNA_ANALYSES     => qw{tophat2 star hisat2};
 
+# The version of the software currently installed on the system,
+# using all three integers included in the version name.
+Readonly::Scalar my $SOFTWARE_VERSION => '4.1.5'; # TODO
+
 my $index1_length = 0;
 my $index2_length = 0;
 
@@ -90,10 +94,11 @@ my $products = process_lims_data($BATCH_ID);
 
 # Header section
 print_line(qw([Header]));
-print_line(qw(RunName Run_IDFL_96802));
+# How important is this name? Is the runfolder name derived from this?
+print_line(q[RunName], qq[Run_${BATCH_ID}]); # TODO
 print_line(qw(InstrumentPlatform NovaSeqXSeries));
-# What are other options for IndexOrientation?
-print_line(qw(IndexOrientation Forward));
+# NovaSeqxPlus or NovaSeqX. 
+print_line(qw(InstrumentType NovaSeqX)); # TODO
 print_section_break();
 
 # Reads section                                                              
@@ -110,7 +115,7 @@ print_section_break();
 
 # Sequencing_Settings section
 print_line(qw([Sequencing_Settings]));
-# We might want to change this value.
+# TODO. We might want to change this value or not to have it.
 print_line(qw(LibraryPrepKits
   IlluminaDNAPCRFree;NexteraXT;SingleCellATACLibraryKit1;IlluminaDNAPrep));
 print_section_break();
@@ -119,7 +124,7 @@ print_section_break();
 # BCLConvert_Settings section
 ###############################
 print_line(qw([BCLConvert_Settings]));
-print_line(qw(SoftwareVersion 4.1.5));
+print_line((q[SoftwareVersion], $SOFTWARE_VERSION));
 
 # Not clear what CLI analysis option thie coresponds to.
 # Looks likely to be a list of lanes to run a tag collision check.
@@ -237,22 +242,13 @@ print_section_break();
 
 # Probably it's OK to have this section unconditionally.
 print_line(qw([DragenGermline_Settings]));
-print_line(qw(SoftwareVersion 4.1.5));
+print_line(q[SoftwareVersion], $SOFTWARE_VERSION);
 # Accepted values are bam, cram, or none. Selecting none produces
 # no map/align output. Not clear whether this ca be set per sample.
 print_line(qw(MapAlignOutFormat cram));
-
 # Accepted values are true or false. Not clear whether this can be
 # set per sample.
 print_line(qw(KeepFastq FALSE));
-# Accepted values are None, SmallVariantCaller, AllVariantCallers.
-# The option for all variant callers includes Small, Structural, CNV,
-# Repeat Expansions, ROH, CYP2D6.
-# This seting is non-optional.
-# Can be placed in either settings or data section.
-# print_line(qw(VariantCallingMode None));
-# Can set ReferenceGenomeDir here, but we will do this per sample
-# in the data section.
 
 print_section_break();
 
@@ -308,6 +304,11 @@ if ($do_germline_alignment) {
     if ( !$do_rna_alignment_test->($r) ) {
       # We do not know yet how to map our references to the on-board(?)
       # references, which the DRAGEN aligner will use.
+      #
+      # For the VariantCallingMode column accepted values are
+      # None, SmallVariantCaller, AllVariantCallers.
+      # The option for all variant callers includes Small, Structural, CNV,
+      # Repeat Expansions, ROH, CYP2D6.
       print_line(($p->[1], $r, q(SmallVariantCaller)));
     }
   }
@@ -316,7 +317,7 @@ if ($do_germline_alignment) {
 }
 
 ########################################
-# DragenEnrichment_Settings section - guessing the name
+# DragenEnrichment_Settings section
 ########################################
 
 ########################################
@@ -324,7 +325,7 @@ if ($do_germline_alignment) {
 ########################################
 
 ########################################
-# DragenRNA_Settings section - guessing the name
+# DragenRNA_Settings section
 ########################################
 
 ########################################
@@ -360,8 +361,6 @@ https://support-docs.illumina.com/SHARE/SampleSheetv2/Content/SHARE/SampleSheetv
 
 A full listing of analysis options is available in
 https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/OptionReference.htm
-
-The selection of analysis options exposed via the samplesheet is very limited.
 
 =head1 EXIT STATUS
 
