@@ -339,7 +339,7 @@ close $fh or carp "Problems closing $FILE_NAME";
 
 =head1 NAME
 
-samplesheet_generator_NovaSeqXSeries
+npg_samplesheet_generator_NovaSeqXSeries
 
 =head1 USAGE
 
