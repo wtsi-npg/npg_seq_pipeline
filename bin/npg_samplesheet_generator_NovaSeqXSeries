@@ -71,7 +71,7 @@ sub process_lims_data {
       }
       push @products, [
         $position,
-        $p->sample_id,
+        $p->sample_name,
         $i7,
         $i5,
         $p->reference_genome() || q(),
