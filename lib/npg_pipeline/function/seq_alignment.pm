@@ -534,8 +534,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $analysis ||= ($self->bwa_mem2 or $self->platform_NovaSeqX)? q[bwa_mem2]: $bwa;
 
 ###
-# analysis-specific overrides NEW
-#  By default, the analysis name derived from the reference genome specification above) is also the aligner, refindex and p4_alignment_method names.
+# analysis-specific overrides
+#  By default, the analysis name (derived from the reference genome specification above) is also the aligner, refindex and p4_alignment_method names.
 #  Entries in $exceptions will override these defaults
 ###
     my $exceptions = {
@@ -549,7 +549,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       minimap2       => { ref_suffix => q{.mmi} },
     };
 
-    $p4_param_vals->{alignment_method} = ($exceptions->{$analysis}->{p4_alignment_method} or $analysis); # NEW
+    $p4_param_vals->{alignment_method} = ($exceptions->{$analysis}->{p4_alignment_method} or $analysis);
     $p4_param_vals->{bwa_executable} = ($exceptions->{$analysis}->{aligner} or $analysis); # confusingly, can take value like "hisat2" or "minimap2", but should be ignored by relevant p4 template
     if($do_target_alignment) {
       my $refindex = ($exceptions->{$analysis}->{refindex} or $analysis);
