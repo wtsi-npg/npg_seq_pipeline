@@ -14,8 +14,6 @@ Readonly::Scalar my $PP_VERSION_KEY            => q[pp_version];
 Readonly::Scalar my $PP_REPO_URL_KEY           => q[pp_repo_url];
 Readonly::Scalar my $PP_TYPE_KEY               => q[pp_type];
 Readonly::Scalar my $PP_ROOT_KEY               => q[pp_root];
-Readonly::Scalar my $PP_ARCHIVAL_FLAG_KEY      => q[pp_archival_flag];
-Readonly::Scalar my $PP_STAGING_ROOT_KEY       => q[pp_staging_root];
 Readonly::Scalar my $PP_INPUT_GLOB_KEY         => q[pp_input_glob];
 Readonly::Scalar my $PP_QC_SUMMARY_KEY         => q[pp_qc_summary];
 Readonly::Scalar my $PP_AUTOQC_FLAG_KEY        => q[pp_autoqc_flag];
@@ -261,45 +259,6 @@ sub pp_deployment_dir {
                       $pp_conf->{$PP_NAME_KEY}, $pp_conf->{$PP_VERSION_KEY});
   (-d $pp_dir) or croak "$pp_dir does not exist or is not a directory";
   return $pp_dir;
-}
-
-=head2 pp_enable_external_archival
-
-Returns the value of a flag specifying whether the output of this
-pipeline is eligible for external archival. Returns false if the flag
-is not set for the pipeline. Can be used as a class method.
-
-=cut
-
-sub pp_enable_external_archival {
-  my ($self, $pp_conf) = @_;
-  $pp_conf or croak 'pp config should be defined';
-  return $pp_conf->{$PP_ARCHIVAL_FLAG_KEY};
-}
-
-=head2 pp_staging_root
-
-Returns a path to the root of the interim archive for this
-portable pipeline. Such an archive can be used to stage the
-data before submitting to the external archive.
-Error if the value if not defined or the directory specified
-in the pipeline config does not exist.
-Can be used as a class method.
-
-  my $staging_root = $obj->pp_staging_root($pp_conf);
-
-=cut
-
-sub pp_staging_root {
-  my ($self, $pp_conf) = @_;
-
-  $pp_conf or croak 'pp config should be defined';
-  my $root = $pp_conf->{$PP_STAGING_ROOT_KEY};
-  $root or croak "$PP_STAGING_ROOT_KEY is not defined";
-  (-d $root) or croak
-    "$PP_STAGING_ROOT_KEY $root does not exist or is not a directory";
-
-  return $root
 }
 
 =head2 pp_input_glob

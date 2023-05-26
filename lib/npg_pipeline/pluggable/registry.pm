@@ -52,8 +52,6 @@ Readonly::Hash my %REGISTRY => (
   'upload_auto_qc_to_qc_database'  => {'autoqc_archiver' => 'create'},
   'archive_run_data_to_irods'      => {'run_data_to_irods_archiver' => 'create'},
   'remove_intermediate_data'       => {'remove_intermediate_data' => 'create'},
-  'pp_archiver'                    => {'pp_archiver' => 'create'},
-  'pp_archiver_manifest'           => {'pp_archiver' => 'generate_manifest'},
   'archive_pp_data_to_irods'       => {'pp_data_to_irods_archiver' => 'create'},
   'archive_irods_locations_to_ml_warehouse' => { 'irods_locations_warehouse_archiver' => 'create'},
 
@@ -96,6 +94,7 @@ Readonly::Array my @AUTOQC_FUNCTIONS =>
       qc_insert_size
       qc_interop
       qc_pulldown_metrics
+      qc_haplotag_metrics
       qc_qX_yield
       qc_ref_match
       qc_rna_seqc
