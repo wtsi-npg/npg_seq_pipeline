@@ -7,8 +7,8 @@ use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Readonly;
 use Carp;
 use Text::CSV;
-use List::MoreUtils qw/any/;
-use List::Util qw/first max/;
+use List::MoreUtils qw(any);
+use List::Util qw(first max);
 
 use st::api::lims;
 
@@ -35,25 +35,6 @@ Readonly::Scalar my $SOFTWARE_VERSION => '4.1.5'; # TODO
 
 my $index1_length = 0;
 my $index2_length = 0;
-
-##no critic (InputOutput::RequireBriefOpen)
-open my $fh, q[>], $FILE_NAME or croak "Failed to open $FILE_NAME for writing";
-my $csv = Text::CSV->new({
-  eol      => qq[\n],
-  sep_char => q[,],
-});
-
-
-sub print_line {
-  my @row = @_;
-  $csv->print($fh, [@row]);
-  return;
-}
-
-sub print_section_break {
-  $csv->print($fh, [q[]]);
-  return;
-}
 
 sub process_lims_data {
   my ($batch_id) = @_;
@@ -98,60 +79,67 @@ sub process_lims_data {
 
 my $products = process_lims_data($BATCH_ID);
 
+my @all_lines = ();
+
+my $add_line = sub {
+  my @columns = @_;
+  push @all_lines, @columns ? \@columns : [];
+};
+
 # Header section
-print_line(qw([Header]));
+$add_line->(qw([Header]));
 # How important is this name? Is the runfolder name derived from this?
-print_line(q[RunName], qq[Run_${BATCH_ID}]); # TODO
-print_line(qw(InstrumentPlatform NovaSeqXSeries));
+$add_line->(q[RunName], qq[Run_${BATCH_ID}]); # TODO
+$add_line->(qw(InstrumentPlatform NovaSeqXSeries));
 # NovaSeqxPlus or NovaSeqX. 
-print_line(qw(InstrumentType NovaSeqX)); # TODO
-print_section_break();
+$add_line->(qw(InstrumentType NovaSeqX)); # TODO
+$add_line->();
 
 # Reads section                                                              
-print_line(qw([Reads]));
-print_line(q[Read1Cycles], $READ1_LENGTH);
-print_line(q[Read2Cycles], $READ2_LENGTH);
+$add_line->(qw([Reads]));
+$add_line->(q[Read1Cycles], $READ1_LENGTH);
+$add_line->(q[Read2Cycles], $READ2_LENGTH);
 if ($index1_length) {
-  print_line(('Index1Cycles', $index1_length));
+  $add_line->(('Index1Cycles', $index1_length));
   if ($index2_length) {
-    print_line(('Index2Cycles', $index2_length));
+    $add_line->(('Index2Cycles', $index2_length));
   }
 }
-print_section_break();
+$add_line->();
 
 # Sequencing_Settings section
-print_line(qw([Sequencing_Settings]));
+$add_line->(qw([Sequencing_Settings]));
 # TODO. We might want to change this value or not to have it.
-# print_line(qw(LibraryPrepKits
+# $add_line->(qw(LibraryPrepKits
 #  IlluminaDNAPCRFree;NexteraXT;SingleCellATACLibraryKit1;IlluminaDNAPrep));
-print_section_break();
+$add_line->();
 
 ###############################
 # BCLConvert_Settings section
 ###############################
-print_line(qw([BCLConvert_Settings]));
-print_line((q[SoftwareVersion], $SOFTWARE_VERSION));
+$add_line->(qw([BCLConvert_Settings]));
+$add_line->((q[SoftwareVersion], $SOFTWARE_VERSION));
 
 # Not clear what CLI analysis option thie coresponds to.
 # Looks likely to be a list of lanes to run a tag collision check.
 # According to @srl, bcl-covert tries to correct one error by default
 # but it checks the tags allow this I.e that they all differ by at least
 # 3 bases, if they don't it disables the error correction
-#print_line(qw(CombinedIndexCollisionCheck 1;3;4;6));
+# $add_line->(qw(CombinedIndexCollisionCheck 1;3;4;6));
 
 # CreateFastqForIndexReads might be an option. Do we need these files?
-print_line(qw(CreateFastqForIndexReads 1));
+$add_line->(qw(CreateFastqForIndexReads 1));
 # When 1 will be appropriate for this trim?
-print_line(qw(TrimUMI 0));
+$add_line->(qw(TrimUMI 0));
 # gzip is the other compression options
-print_line(qw(FastqCompressionFormat dragen));
+$add_line->(qw(FastqCompressionFormat dragen));
 
 # Barcode mismatch tolerances, the default is 1.
 # These settings can be omitted
 if ($index1_length) {
-  print_line(qw(BarcodeMismatchesIndex1 1));
+  $add_line->(qw(BarcodeMismatchesIndex1 1));
   if ($index2_length) {
-    print_line(qw(BarcodeMismatchesIndex2 1));
+    $add_line->(qw(BarcodeMismatchesIndex2 1));
   }
 }
 # Adapter trimming settings. The sequence of the Read 1 (or 2) adapter
@@ -161,28 +149,15 @@ if ($index1_length) {
 # Characters must be A, C, G, or T.
 # It seems that this settign can also be a column in teh data section
 #
-# print_line(qw(AdapterRead1 SOME));
-# print_line(qw(AdapterRead2 OTHER));
+# $add_line->(qw(AdapterRead1 SOME));
+# $add_line->(qw(AdapterRead2 OTHER));
 
-# Override Cycles - Specifies the sequencing and indexing cycles to be used
-# when processing the sequencing data. Must adhere to the
-# following requirements:
-# - Must be same number of fields (delimited by semicolon) as sequencing and
-#   indexing reads specified in RunInfo.xml or Reads section.
-# - Indexing reads are specified with I, sequencing reads are specified with
-#   Y, UMI cycles are specified with U, and trimmed reads are specified with N.
-# - The number of cycles specified for each read must equal the number of
-#   cycles specified for that read in the RunInfo.xml file.
-# - Only one Y or I sequence can be specified per read.
-# This setting can also be specified as a column per sample in the Data section.
-# print_line(qw(OverrideCycles A_MASK));
-
-print_section_break();
+$add_line->();
 
 ##########################
 # BCLConvert_Data section
 ##########################
-print_line(qw([BCLConvert_Data]));
+$add_line->(qw([BCLConvert_Data]));
 
 # Must have columns: Lane, SampleID, Index, Index2, provided the index reads
 # were performed.
@@ -197,7 +172,18 @@ if ($index1_length) {
   }
   push @data_header, q[OverrideCycles];
 }
-print_line(@data_header);
+$add_line->(@data_header);
+
+# Override Cycles - Specifies the sequencing and indexing cycles to be used
+# when processing the sequencing data. Must adhere to the
+# following requirements:
+# - Must be same number of fields (delimited by semicolon) as sequencing and
+#   indexing reads specified in RunInfo.xml or Reads section.
+# - Indexing reads are specified with I, sequencing reads are specified with
+#   Y, UMI cycles are specified with U, and trimmed reads are specified with N.
+# - The number of cycles specified for each read must equal the number of
+#   cycles specified for that read in the RunInfo.xml file.
+# - Only one Y or I sequence can be specified per read.
 
 my $index_override = sub {
   my ($max_length, $barcode) = @_;
@@ -237,26 +223,26 @@ for my $product ( @{$products} ) {
   if (@override_cycles) {
     push @product_data, join q[;], @override_cycles;
   }
-  print_line(@product_data);
+  $add_line->(@product_data);
 }
 
-print_section_break();
+$add_line->();
 
 ##################################
 # DragenGermline_Settings Section
 ##################################
 
 # Probably it's OK to have this section unconditionally.
-print_line(qw([DragenGermline_Settings]));
-print_line(q[SoftwareVersion], $SOFTWARE_VERSION);
+$add_line->(qw([DragenGermline_Settings]));
+$add_line->(q[SoftwareVersion], $SOFTWARE_VERSION);
 # Accepted values are bam, cram, or none. Selecting none produces
 # no map/align output. Not clear whether this can be set per sample.
-print_line(qw(MapAlignOutFormat cram));
+$add_line->(qw(MapAlignOutFormat cram));
 # Accepted values are true or false. Not clear whether this can be
 # set per sample.
-print_line(qw(KeepFastq FALSE));
+$add_line->(qw(KeepFastq FALSE));
 
-print_section_break();
+$add_line->();
 
 #########################################
 # DragenGermline_Data Section
@@ -299,13 +285,10 @@ if ($do_germline_alignment) {
   my @ref_matches = keys %REFERENCE_MAPING;
   for my $p ( @{$products} ) {
     my $r = $p->[$LIST_INDEX_REF];
-    if ($r =~ /Not suitable/xmsi) {
+    if (!$r || ($r =~ /Not suitable/xmsi)) {
       next;
     }
     if ( !$do_rna_alignment_test->($r) ) {
-      # We do not know yet how to map our references to the on-board(?)
-      # references, which the DRAGEN aligner will use.
-      #
       # For the VariantCallingMode column accepted values are
       # None, SmallVariantCaller, AllVariantCallers.
       # The option for all variant callers includes Small, Structural, CNV,
@@ -317,17 +300,14 @@ if ($do_germline_alignment) {
     }
   }
   if (@to_align) {
-    print_line(qw([DragenGermline_Data]));
-    # We do want the MapAlignOutFormat column here so that we could
-    # specify None option for some samples. Possible? Not clea.
-    print_line(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
+    $add_line->(qw([DragenGermline_Data]));
+    $add_line->(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
     # ReferenceGenomeDir is the Genome name consisting of alphanumeric
     # string with _ or -.
-    # Sample IDs here should be the same as in the BCLConvert_Data section.
     for (@to_align) {
-        print_line(@{$_});
+        $add_line->(@{$_});
     }
-    print_section_break();
+    $add_line->();
   }
 }
 
@@ -347,7 +327,25 @@ if ($do_germline_alignment) {
 # DragenRNA_Data section
 ########################################
 
-##### The End #####
+use Data::Dumper;
+use Test::More;
+diag Dumper \@all_lines;
+open my $fh, q[>], $FILE_NAME or croak "Failed to open $FILE_NAME for writing";
+my $csv = Text::CSV->new({
+  eol      => qq[\n],
+  sep_char => q[,],
+});
+
+# Pad the rows and print.
+my $max_num_columns = max map { scalar @{$_} } @all_lines;
+for my $line (@all_lines) {
+  my @columns = @{$line};
+  while (scalar @columns < $max_num_columns) {
+    push @columns, q[];
+  }
+  $csv->print($fh, \@columns);
+}
+
 close $fh or carp "Problems closing $FILE_NAME";
 
 1;
