@@ -8,7 +8,7 @@ use Readonly;
 use Carp;
 use Text::CSV;
 use List::MoreUtils qw/any/;
-use List::Util qw/max/;
+use List::Util qw/first max/;
 
 use st::api::lims;
 
@@ -22,6 +22,12 @@ Readonly::Scalar my $LIST_INDEX_TAG1  => 2;
 Readonly::Scalar my $LIST_INDEX_TAG2  => 3;
 Readonly::Scalar my $LIST_INDEX_REF   => 4;
 Readonly::Array  my @RNA_ANALYSES     => qw{tophat2 star hisat2};
+
+Readonly::Hash my %REFERENCE_MAPING => (
+    'Homo_sapiens'=> 'hg38-alt_masked.cnv.graph.hla.rna-8-*-2',
+    'Escherichia_coli' => 'eschColi_K12_1-rna-8-*-2',
+    'PhiX' => 'phix-rna-8-*-2',
+);
 
 # The version of the software currently installed on the system,
 # using all three integers included in the version name.
@@ -116,8 +122,8 @@ print_section_break();
 # Sequencing_Settings section
 print_line(qw([Sequencing_Settings]));
 # TODO. We might want to change this value or not to have it.
-print_line(qw(LibraryPrepKits
-  IlluminaDNAPCRFree;NexteraXT;SingleCellATACLibraryKit1;IlluminaDNAPrep));
+# print_line(qw(LibraryPrepKits
+#  IlluminaDNAPCRFree;NexteraXT;SingleCellATACLibraryKit1;IlluminaDNAPrep));
 print_section_break();
 
 ###############################
@@ -244,7 +250,7 @@ print_section_break();
 print_line(qw([DragenGermline_Settings]));
 print_line(q[SoftwareVersion], $SOFTWARE_VERSION);
 # Accepted values are bam, cram, or none. Selecting none produces
-# no map/align output. Not clear whether this ca be set per sample.
+# no map/align output. Not clear whether this can be set per sample.
 print_line(qw(MapAlignOutFormat cram));
 # Accepted values are true or false. Not clear whether this can be
 # set per sample.
@@ -288,18 +294,13 @@ for my $r (@references) {
 # https://support-docs.illumina.com/IN/NovaSeqX/Content/IN/NovaSeqX/ImportResources.htm
 
 if ($do_germline_alignment) {
-  print_line(qw([DragenGermline_Data]));
-  # We do want the MapAlignOutFormat column here so that we could
-  # specify None option for some samples. Possible? Not clea.
-  print_line(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
-  # ReferenceGenomeDir is the Genome name consisting of alphanumeric
-  # string with _ or -.
-  # Sample IDs here should be the same as in the BCLConvert_Data section.
 
+  my @to_align = ();
+  my @ref_matches = keys %REFERENCE_MAPING;
   for my $p ( @{$products} ) {
     my $r = $p->[$LIST_INDEX_REF];
     if ($r =~ /Not suitable/xmsi) {
-      $r = q();
+      next;
     }
     if ( !$do_rna_alignment_test->($r) ) {
       # We do not know yet how to map our references to the on-board(?)
@@ -309,11 +310,25 @@ if ($do_germline_alignment) {
       # None, SmallVariantCaller, AllVariantCallers.
       # The option for all variant callers includes Small, Structural, CNV,
       # Repeat Expansions, ROH, CYP2D6.
-      print_line(($p->[1], $r, q(SmallVariantCaller)));
+      my $match = first { $r =~ /$_/xms} @ref_matches;
+      if ($match) {
+        push @to_align, [$p->[1], $REFERENCE_MAPING{$match}, q(SmallVariantCaller)];
+      }
     }
   }
-
-  print_section_break();
+  if (@to_align) {
+    print_line(qw([DragenGermline_Data]));
+    # We do want the MapAlignOutFormat column here so that we could
+    # specify None option for some samples. Possible? Not clea.
+    print_line(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
+    # ReferenceGenomeDir is the Genome name consisting of alphanumeric
+    # string with _ or -.
+    # Sample IDs here should be the same as in the BCLConvert_Data section.
+    for (@to_align) {
+        print_line(@{$_});
+    }
+    print_section_break();
+  }
 }
 
 ########################################
