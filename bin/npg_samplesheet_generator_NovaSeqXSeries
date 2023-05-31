@@ -14,8 +14,8 @@ use st::api::lims;
 
 our $VERSION = '0';
 
-Readonly::Scalar my $READ1_LENGTH => 150;
-Readonly::Scalar my $READ2_LENGTH => 150;
+Readonly::Scalar my $READ1_LENGTH => 151;
+Readonly::Scalar my $READ2_LENGTH => 151;
 Readonly::Scalar my $BATCH_ID     => 96_802;
 Readonly::Scalar my $FILE_NAME    => qq[samplesheet_${BATCH_ID}.csv];
 Readonly::Scalar my $LIST_INDEX_TAG1  => 2;
