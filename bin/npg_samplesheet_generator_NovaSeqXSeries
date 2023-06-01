@@ -7,8 +7,10 @@ use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Readonly;
 use Carp;
 use Text::CSV;
-use List::MoreUtils qw(any);
+use List::MoreUtils qw(any none);
 use List::Util qw(first max);
+use Getopt::Long;
+use Pod::Usage;
 
 use st::api::lims;
 
@@ -21,7 +23,9 @@ Readonly::Scalar my $FILE_NAME    => qq[samplesheet_${BATCH_ID}.csv];
 Readonly::Scalar my $LIST_INDEX_TAG1  => 2;
 Readonly::Scalar my $LIST_INDEX_TAG2  => 3;
 Readonly::Scalar my $LIST_INDEX_REF   => 4;
-Readonly::Array  my @RNA_ANALYSES     => qw{tophat2 star hisat2};
+Readonly::Array  my @RNA_ANALYSES     => qw(tophat2 star hisat2);
+Readonly::Array  my @VAR_CALL_MODES   =>
+    qw(None SmallVariantCaller AllVariantCallers);
 
 Readonly::Hash my %REFERENCE_MAPING => (
     'Homo_sapiens'=> 'hg38-alt_masked.cnv.graph.hla.rna-8-*-2',
@@ -32,6 +36,18 @@ Readonly::Hash my %REFERENCE_MAPING => (
 # The version of the software currently installed on the system,
 # using all three integers included in the version name.
 Readonly::Scalar my $SOFTWARE_VERSION => '4.1.5'; # TODO
+
+my $variant_calling_mode = $VAR_CALL_MODES[0];
+my $help;
+GetOptions (
+            'help'      => \$help,
+            'varcall=s' => \$variant_calling_mode,
+           );
+if ($help) { pod2usage(0); }
+
+if (none { $variant_calling_mode eq $_ } @VAR_CALL_MODES) {
+    croak "Uknown mode for variang calling - $variant_calling_mode";
+}
 
 my $index1_length = 0;
 my $index2_length = 0;
@@ -289,13 +305,13 @@ if ($do_germline_alignment) {
       next;
     }
     if ( !$do_rna_alignment_test->($r) ) {
-      # For the VariantCallingMode column accepted values are
-      # None, SmallVariantCaller, AllVariantCallers.
       # The option for all variant callers includes Small, Structural, CNV,
       # Repeat Expansions, ROH, CYP2D6.
       my $match = first { $r =~ /$_/xms} @ref_matches;
       if ($match) {
-        push @to_align, [$p->[1], $REFERENCE_MAPING{$match}, q(SmallVariantCaller)];
+        push @to_align, [$p->[1],
+                         $REFERENCE_MAPING{$match},
+                         $variant_calling_mode];
       }
     }
   }
@@ -327,9 +343,6 @@ if ($do_germline_alignment) {
 # DragenRNA_Data section
 ########################################
 
-use Data::Dumper;
-use Test::More;
-diag Dumper \@all_lines;
 open my $fh, q[>], $FILE_NAME or croak "Failed to open $FILE_NAME for writing";
 my $csv = Text::CSV->new({
   eol      => qq[\n],
@@ -356,24 +369,33 @@ npg_samplesheet_generator_NovaSeqXSeries
 
 =head1 USAGE
 
+  C<npg_samplesheet_generator_NovaSeqXSeries>
+  C<npg_samplesheet_generator_NovaSeqXSeries --help>
+  C<npg_samplesheet_generator_NovaSeqXSeries --varcall SmallVariantCaller>
+
+  The C<--varcall> argument defines the variant calling mode. If not set
+  the mode defaults to C<None>, other valid options are C<SmallVariantCaller>
+  and C<AllVariantCallers>.
+
 =head1 REQUIRED ARGUMENTS
 
 None
 
 =head1 OPTIONS
 
-None
+  C<varcall> - variant calling mode, defaults to C<None>, other valid options
+               C<SmallVariantCaller> and C<AllVariantCallers>
 
 =head1 DESCRIPTION
 
 Samplesheet generation to initiate on-board DRAGEN analysis on the
-NovaSeqX Series instrument.
+NovaSeq Series X instrument.
 
 See specification in
-https://support-docs.illumina.com/SHARE/SampleSheetv2/Content/SHARE/SampleSheetv2/Settings_fNV_mX.htm 
+L<https://support-docs.illumina.com/SHARE/SampleSheetv2/Content/SHARE/SampleSheetv2/Settings_fNV_mX.htm> 
 
 A full listing of analysis options is available in
-https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/OptionReference.htm
+L<https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/OptionReference.htm>
 
 =head1 EXIT STATUS
 
@@ -402,6 +424,10 @@ Access to the ml warehouse database is required.
 =item List::MoreUtils
 
 =item List::Util
+
+=item Getopt::Long
+
+=item Pod::Usage
 
 =item st::api::lims
 
