@@ -116,7 +116,7 @@ if ($add_germline) {
   add_germline_section();
 }
 
-my $file_name = "SampleSheet_${batch_id}.csv";
+my $file_name = "SampleSheet_${run_name}.csv";
 open my $fh, q[>], $file_name or croak "Failed to open $file_name for writing";
 my $csv = Text::CSV->new({
   eol      => qq[\n],
