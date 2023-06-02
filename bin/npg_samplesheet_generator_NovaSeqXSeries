@@ -151,8 +151,10 @@ if ($id_run) {
 $add_line->(qw([Header]));
 $add_line->(q[RunName], $run_name);
 $add_line->(qw(InstrumentPlatform NovaSeqXSeries));
-# NovaSeqxPlus or NovaSeqX. 
-$add_line->(qw(InstrumentType NovaSeqX)); # TODO
+# NovaSeqxPlus or NovaSeqX.
+# If the run id is given, this should come from the tracking database
+# when we fix the type there.
+$add_line->(qw(InstrumentType NovaSeqXPlus));
 $add_line->();
 
 # Reads section                                                              
