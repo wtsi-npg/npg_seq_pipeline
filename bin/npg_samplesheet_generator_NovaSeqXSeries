@@ -149,6 +149,7 @@ if ($id_run) {
 
 # Header section
 $add_line->(qw([Header]));
+$add_line->(q[FileFormatVersion], 2);
 $add_line->(q[RunName], $run_name);
 $add_line->(qw(InstrumentPlatform NovaSeqXSeries));
 # NovaSeqxPlus or NovaSeqX.
