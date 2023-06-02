@@ -253,7 +253,6 @@ my $index_override = sub {
   my ($max_length, $barcode) = @_;
   my $i_cycles_number = length $barcode;
   my $n_cycles_number = $max_length - $i_cycles_number;
-  $i_cycles_number -= $n_cycles_number;
   my $expression = q[];
   if ($i_cycles_number) {
     $expression .= q[I] . $i_cycles_number;
