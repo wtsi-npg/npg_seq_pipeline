@@ -11,8 +11,11 @@ use List::MoreUtils qw(any none);
 use List::Util qw(first max);
 use Getopt::Long;
 use Pod::Usage;
+use DateTime;
+use Data::UUID;
 
 use st::api::lims;
+use npg_tracking::Schema;
 
 our $VERSION = '0';
 
@@ -38,11 +41,13 @@ Readonly::Scalar my $SOFTWARE_VERSION => '4.1.5'; # TODO
 my $variant_calling_mode = $VAR_CALL_MODES[0];
 my $help;
 my $batch_id;
+my $id_run;
 
 GetOptions (
             'help'       => \$help,
             'varcall=s'  => \$variant_calling_mode,
             'batch_id=i' => \$batch_id,
+            'id_run=i'   => \$id_run,
            );
 if ($help) { pod2usage(0); }
 
@@ -51,6 +56,13 @@ if (!defined $batch_id) {
 }
 if (none { $variant_calling_mode eq $_ } @VAR_CALL_MODES) {
     croak "Uknown mode for variang calling - $variant_calling_mode";
+}
+
+carp "Provided batch ID $batch_id";
+if (defined $id_run) {
+  carp "Provided run ID $id_run";
+} else {
+  carp q[No run ID provided];
 }
 
 my $index1_length = 0;
@@ -96,8 +108,6 @@ sub process_lims_data {
   return \@products;
 }
 
-my $products = process_lims_data();
-
 my @all_lines = ();
 
 my $add_line = sub {
@@ -105,10 +115,41 @@ my $add_line = sub {
   push @all_lines, @columns ? \@columns : [];
 };
 
+my $run_row;
+if ($id_run) {
+  $run_row = npg_tracking::Schema->connect()->resultset('Run')->find($id_run);
+  if (!$run_row) {
+    croak "No database record for run $id_run";
+  }
+  my $recorder_batch_id = $run_row->batch_id;
+  if ($recorder_batch_id && ($recorder_batch_id != $batch_id)) {
+    # TODO - error in production?
+    carp "Recorded $recorder_batch_id and provided $batch_id batch IDs do not match";
+  }
+}
+
+my $products = process_lims_data();
+
+my $date = DateTime->now()->ymd(q{});
+my $run_name;
+if ($id_run) {
+  my $side = $run_row->is_tag_set('fc_slotA') ? 'A' :
+             ($run_row->is_tag_set('fc_slotB') ? 'B' : q[]);
+  $run_name = sprintf '%s_%s_%s%i',
+    $date,
+    $run_row->instrument->external_name(),
+    $side ? $side . q[_] : q[],
+    $id_run;
+} else {
+  my $ug = Data::UUID->new();
+  my @a = split /-/xms, $ug->to_string($ug->create());
+  # Add a random string at the end so that the batch can be reused.
+  $run_name = join q[_], $date, $batch_id, $a[0];
+}
+
 # Header section
 $add_line->(qw([Header]));
-# How important is this name? Is the runfolder name derived from this?
-$add_line->(q[RunName], qq[Run_${batch_id}]); # TODO
+$add_line->(q[RunName], $run_name);
 $add_line->(qw(InstrumentPlatform NovaSeqXSeries));
 # NovaSeqxPlus or NovaSeqX. 
 $add_line->(qw(InstrumentType NovaSeqX)); # TODO
@@ -388,6 +429,9 @@ None
   
   C<batch_id> - LIMS batch identifier, required
 
+  C<id_run>   - NPG run ID, optional; if supplied, the record for this run
+                should exists in the run tracking database
+
 =head1 DESCRIPTION
 
 Samplesheet generation to initiate on-board DRAGEN analysis on the
@@ -431,7 +475,13 @@ Access to the ml warehouse database is required.
 
 =item Pod::Usage
 
+=item DateTime
+
+=item Data::UUID
+
 =item st::api::lims
+
+=item npg_tracking::Schema
 
 =back
 
