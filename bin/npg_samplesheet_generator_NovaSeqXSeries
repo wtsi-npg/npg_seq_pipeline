@@ -130,7 +130,7 @@ if ($id_run) {
 
 my $products = process_lims_data();
 
-my $date = DateTime->now()->ymd(q{});
+my $date = DateTime->now()->strftime('%y%m%d'); # 230602 for 2 June 2023
 my $run_name;
 if ($id_run) {
   my $side = $run_row->is_tag_set('fc_slotA') ? 'A' :
@@ -144,7 +144,7 @@ if ($id_run) {
   my $ug = Data::UUID->new();
   my @a = split /-/xms, $ug->to_string($ug->create());
   # Add a random string at the end so that the batch can be reused.
-  $run_name = join q[_], $date, $batch_id, $a[0];
+  $run_name = sprintf '%s_ssbatch%s_%s',  $date, $batch_id, $a[0];
 }
 
 # Header section
