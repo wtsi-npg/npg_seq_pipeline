@@ -42,12 +42,14 @@ my $variant_calling_mode = $VAR_CALL_MODES[0];
 my $help;
 my $batch_id;
 my $id_run;
+my $add_germline;
 
 GetOptions (
             'help'       => \$help,
             'varcall=s'  => \$variant_calling_mode,
             'batch_id=i' => \$batch_id,
             'id_run=i'   => \$id_run,
+            'germline'   => \$add_germline,
            );
 if ($help) { pod2usage(0); }
 
@@ -67,6 +69,189 @@ if (defined $id_run) {
 
 my $index1_length = 0;
 my $index2_length = 0;
+
+my @all_lines = ();
+
+my $add_line = sub {
+  my @columns = @_;
+  push @all_lines, @columns ? \@columns : [];
+};
+
+my $run_row;
+if ($id_run) {
+  $run_row = npg_tracking::Schema->connect()->resultset('Run')->find($id_run);
+  if (!$run_row) {
+    croak "No database record for run $id_run";
+  }
+  my $recorder_batch_id = $run_row->batch_id;
+  if ($recorder_batch_id && ($recorder_batch_id != $batch_id)) {
+    # TODO - error in production?
+    carp "Recorded $recorder_batch_id and provided $batch_id batch IDs do not match";
+  }
+}
+
+my $products = process_lims_data();
+my $date = DateTime->now()->strftime('%y%m%d'); # 230602 for 2 June 2023
+my $run_name;
+if ($id_run) {
+  my $side = $run_row->is_tag_set('fc_slotA') ? 'A' :
+             ($run_row->is_tag_set('fc_slotB') ? 'B' : q[]);
+  $run_name = sprintf '%s_%s_%s%i',
+    $date,
+    $run_row->instrument->external_name(),
+    $side ? $side . q[_] : q[],
+    $id_run;
+} else {
+  my $ug = Data::UUID->new();
+  my @a = split /-/xms, $ug->to_string($ug->create());
+  # Add a random string at the end so that the batch can be reused.
+  $run_name = sprintf '%s_ssbatch%s_%s',  $date, $batch_id, $a[0];
+}
+
+add_common_headers();
+$add_line->();
+add_bclconvert_section();
+if ($add_germline) {
+  $add_line->();
+  add_germline_section();
+}
+
+my $file_name = "SampleSheet_${batch_id}.csv";
+open my $fh, q[>], $file_name or croak "Failed to open $file_name for writing";
+my $csv = Text::CSV->new({
+  eol      => qq[\n],
+  sep_char => q[,],
+});
+
+# Pad the rows and print.
+my $max_num_columns = max map { scalar @{$_} } @all_lines;
+for my $line (@all_lines) {
+  my @columns = @{$line};
+  while (scalar @columns < $max_num_columns) {
+    push @columns, q[];
+  }
+  $csv->print($fh, \@columns);
+}
+
+close $fh or carp "Problems closing $file_name";
+
+exit 0;
+
+sub add_bclconvert_section {
+  ###############################
+  # BCLConvert_Settings section
+  ###############################
+  $add_line->(qw([BCLConvert_Settings]));
+  $add_line->((q[SoftwareVersion], $SOFTWARE_VERSION));
+
+  # Not clear what CLI analysis option thie coresponds to.
+  # Looks likely to be a list of lanes to run a tag collision check.
+  # According to @srl, bcl-covert tries to correct one error by default
+  # but it checks the tags allow this I.e that they all differ by at least
+  # 3 bases, if they don't it disables the error correction
+  # $add_line->(qw(CombinedIndexCollisionCheck 1;3;4;6));
+
+  # CreateFastqForIndexReads might be an option. Do we need these files?
+  # $add_line->(qw(CreateFastqForIndexReads 1));
+  # When 1 will be appropriate for this trim?
+  # $add_line->(qw(TrimUMI 0));
+  # dragen is the other compression options
+  $add_line->(qw(FastqCompressionFormat gzip));
+
+  # Barcode mismatch tolerances, the default is 1.
+  # These settings can be omitted.
+  #if ($index1_length) {
+  #  $add_line->(qw(BarcodeMismatchesIndex1 1));
+  #  if ($index2_length) {
+  #    $add_line->(qw(BarcodeMismatchesIndex2 1));
+  #  }
+  #}
+
+  # Adapter trimming settings. The sequence of the Read 1 (or 2) adapter
+  # to be masked or trimmed. To trim multiple adapters, separate the sequences
+  # with a plus sign (+) indicating independent adapters that must be
+  # independently assessed for masking or trimming for each read.
+  # Characters must be A, C, G, or T.
+  # It seems that this settign can also be a column in teh data section
+  #
+  # $add_line->(qw(AdapterRead1 SOME));
+  # $add_line->(qw(AdapterRead2 OTHER));
+
+  $add_line->();
+
+  ##########################
+  # BCLConvert_Data section
+  ##########################
+  $add_line->(qw([BCLConvert_Data]));
+
+  # Must have columns: Lane, Sample_ID, Index, Index2, provided the index reads
+  # were performed.
+  # Optional columns: OverrideCycles, AdapterRead1, AdapterRead2
+  # The rows are sorted by Sample_ID
+
+  my @data_header = qw(Lane Sample_ID);
+  if ($index1_length) {
+    push @data_header, q[Index];
+    if ($index2_length) {
+      push @data_header, q[Index2];
+    }
+    push @data_header, q[OverrideCycles];
+  }
+  $add_line->(@data_header);
+
+  # Override Cycles - Specifies the sequencing and indexing cycles to be used
+  # when processing the sequencing data. Must adhere to the
+  # following requirements:
+  # - Must be same number of fields (delimited by semicolon) as sequencing and
+  #   indexing reads specified in RunInfo.xml or Reads section.
+  # - Indexing reads are specified with I, sequencing reads are specified with
+  #   Y, UMI cycles are specified with U, and trimmed reads are specified with N.
+  # - The number of cycles specified for each read must equal the number of
+  #   cycles specified for that read in the RunInfo.xml file.
+  # - Only one Y or I sequence can be specified per read.
+
+  my $index_override = sub {
+    my ($max_length, $barcode) = @_;
+    my $i_cycles_number = length $barcode;
+    my $n_cycles_number = $max_length - $i_cycles_number;
+    my $expression = q[];
+    if ($i_cycles_number) {
+      $expression .= q[I] . $i_cycles_number;
+    }
+    if ($n_cycles_number) {
+      $expression .= q[N] . $n_cycles_number;
+    }
+    return $expression;
+  };
+
+  for my $product ( @{$products} ) {
+
+    my @product_data = ($product->[0], $product->[1]);
+
+    my @override_cycles = ();
+    # Not accounting for UMI cycles for now.
+    if ($index1_length) {
+      my $i7 = $product->[$LIST_INDEX_TAG1];
+      push @product_data, $i7;
+      push @override_cycles, q[Y] . $READ1_LENGTH;
+      push @override_cycles,
+        $index_override->($index1_length, $i7);
+      if ($index2_length) {
+        my $i5 = $product->[$LIST_INDEX_TAG2];
+        push @product_data, $i5;
+        push @override_cycles,
+          $index_override->($index2_length, $i5);
+      }
+      push @override_cycles, q[Y] . $READ2_LENGTH;
+    }
+    if (@override_cycles) {
+      push @product_data, join q[;], @override_cycles;
+    }
+    $add_line->(@product_data);
+  }
+
+  return;
+}
 
 sub process_lims_data {
 
@@ -108,308 +293,120 @@ sub process_lims_data {
   return \@products;
 }
 
-my @all_lines = ();
+sub add_common_headers {
+  $add_line->(qw([Header]));
+  $add_line->(q[FileFormatVersion], 2);
+  $add_line->(q[RunName], $run_name);
+  $add_line->(qw(InstrumentPlatform NovaSeqXSeries));
+  # NovaSeqxPlus or NovaSeqX.
+  # If the run id is given, this should come from the tracking database
+  # when we fix the type there.
+  $add_line->(qw(InstrumentType NovaSeqXPlus));
+  $add_line->();
 
-my $add_line = sub {
-  my @columns = @_;
-  push @all_lines, @columns ? \@columns : [];
-};
-
-my $run_row;
-if ($id_run) {
-  $run_row = npg_tracking::Schema->connect()->resultset('Run')->find($id_run);
-  if (!$run_row) {
-    croak "No database record for run $id_run";
-  }
-  my $recorder_batch_id = $run_row->batch_id;
-  if ($recorder_batch_id && ($recorder_batch_id != $batch_id)) {
-    # TODO - error in production?
-    carp "Recorded $recorder_batch_id and provided $batch_id batch IDs do not match";
-  }
-}
-
-my $products = process_lims_data();
-
-my $date = DateTime->now()->strftime('%y%m%d'); # 230602 for 2 June 2023
-my $run_name;
-if ($id_run) {
-  my $side = $run_row->is_tag_set('fc_slotA') ? 'A' :
-             ($run_row->is_tag_set('fc_slotB') ? 'B' : q[]);
-  $run_name = sprintf '%s_%s_%s%i',
-    $date,
-    $run_row->instrument->external_name(),
-    $side ? $side . q[_] : q[],
-    $id_run;
-} else {
-  my $ug = Data::UUID->new();
-  my @a = split /-/xms, $ug->to_string($ug->create());
-  # Add a random string at the end so that the batch can be reused.
-  $run_name = sprintf '%s_ssbatch%s_%s',  $date, $batch_id, $a[0];
-}
-
-# Header section
-$add_line->(qw([Header]));
-$add_line->(q[FileFormatVersion], 2);
-$add_line->(q[RunName], $run_name);
-$add_line->(qw(InstrumentPlatform NovaSeqXSeries));
-# NovaSeqxPlus or NovaSeqX.
-# If the run id is given, this should come from the tracking database
-# when we fix the type there.
-$add_line->(qw(InstrumentType NovaSeqXPlus));
-$add_line->();
-
-# Reads section                                                              
-$add_line->(qw([Reads]));
-$add_line->(q[Read1Cycles], $READ1_LENGTH);
-$add_line->(q[Read2Cycles], $READ2_LENGTH);
-if ($index1_length) {
-  $add_line->(('Index1Cycles', $index1_length));
-  if ($index2_length) {
-    $add_line->(('Index2Cycles', $index2_length));
-  }
-}
-$add_line->();
-
-# Sequencing_Settings section
-$add_line->(qw([Sequencing_Settings]));
-# TODO. We might want to change this value or not to have it.
-# $add_line->(qw(LibraryPrepKits
-#  IlluminaDNAPCRFree;NexteraXT;SingleCellATACLibraryKit1;IlluminaDNAPrep));
-$add_line->();
-
-###############################
-# BCLConvert_Settings section
-###############################
-$add_line->(qw([BCLConvert_Settings]));
-$add_line->((q[SoftwareVersion], $SOFTWARE_VERSION));
-
-# Not clear what CLI analysis option thie coresponds to.
-# Looks likely to be a list of lanes to run a tag collision check.
-# According to @srl, bcl-covert tries to correct one error by default
-# but it checks the tags allow this I.e that they all differ by at least
-# 3 bases, if they don't it disables the error correction
-# $add_line->(qw(CombinedIndexCollisionCheck 1;3;4;6));
-
-# CreateFastqForIndexReads might be an option. Do we need these files?
-# $add_line->(qw(CreateFastqForIndexReads 1));
-# When 1 will be appropriate for this trim?
-# $add_line->(qw(TrimUMI 0));
-# dragen is the other compression options
-$add_line->(qw(FastqCompressionFormat gzip));
-
-# Barcode mismatch tolerances, the default is 1.
-# These settings can be omitted.
-#if ($index1_length) {
-#  $add_line->(qw(BarcodeMismatchesIndex1 1));
-#  if ($index2_length) {
-#    $add_line->(qw(BarcodeMismatchesIndex2 1));
-#  }
-#}
-
-# Adapter trimming settings. The sequence of the Read 1 (or 2) adapter
-# to be masked or trimmed. To trim multiple adapters, separate the sequences
-# with a plus sign (+) indicating independent adapters that must be
-# independently assessed for masking or trimming for each read.
-# Characters must be A, C, G, or T.
-# It seems that this settign can also be a column in teh data section
-#
-# $add_line->(qw(AdapterRead1 SOME));
-# $add_line->(qw(AdapterRead2 OTHER));
-
-$add_line->();
-
-##########################
-# BCLConvert_Data section
-##########################
-$add_line->(qw([BCLConvert_Data]));
-
-# Must have columns: Lane, Sample_ID, Index, Index2, provided the index reads
-# were performed.
-# Optional columns: OverrideCycles, AdapterRead1, AdapterRead2
-# The rows are sorted by Sample_ID
-
-my @data_header = qw(Lane Sample_ID);
-if ($index1_length) {
-  push @data_header, q[Index];
-  if ($index2_length) {
-    push @data_header, q[Index2];
-  }
-  push @data_header, q[OverrideCycles];
-}
-$add_line->(@data_header);
-
-# Override Cycles - Specifies the sequencing and indexing cycles to be used
-# when processing the sequencing data. Must adhere to the
-# following requirements:
-# - Must be same number of fields (delimited by semicolon) as sequencing and
-#   indexing reads specified in RunInfo.xml or Reads section.
-# - Indexing reads are specified with I, sequencing reads are specified with
-#   Y, UMI cycles are specified with U, and trimmed reads are specified with N.
-# - The number of cycles specified for each read must equal the number of
-#   cycles specified for that read in the RunInfo.xml file.
-# - Only one Y or I sequence can be specified per read.
-
-my $index_override = sub {
-  my ($max_length, $barcode) = @_;
-  my $i_cycles_number = length $barcode;
-  my $n_cycles_number = $max_length - $i_cycles_number;
-  my $expression = q[];
-  if ($i_cycles_number) {
-    $expression .= q[I] . $i_cycles_number;
-  }
-  if ($n_cycles_number) {
-    $expression .= q[N] . $n_cycles_number;
-  }
-  return $expression;
-};
-
-for my $product ( @{$products} ) {
-
-  my @product_data = ($product->[0], $product->[1]);
-
-  my @override_cycles = ();
-  # Not accounting for UMI cycles for now.
+  # Reads section                                                              
+  $add_line->(qw([Reads]));
+  $add_line->(q[Read1Cycles], $READ1_LENGTH);
+  $add_line->(q[Read2Cycles], $READ2_LENGTH);
   if ($index1_length) {
-    my $i7 = $product->[$LIST_INDEX_TAG1];
-    push @product_data, $i7;
-    push @override_cycles, q[Y] . $READ1_LENGTH;
-    push @override_cycles,
-      $index_override->($index1_length, $i7);
+    $add_line->(('Index1Cycles', $index1_length));
     if ($index2_length) {
-      my $i5 = $product->[$LIST_INDEX_TAG2];
-      push @product_data, $i5;
-      push @override_cycles,
-        $index_override->($index2_length, $i5);
+      $add_line->(('Index2Cycles', $index2_length));
     }
-    push @override_cycles, q[Y] . $READ2_LENGTH;
   }
-  if (@override_cycles) {
-    push @product_data, join q[;], @override_cycles;
-  }
-  $add_line->(@product_data);
+  $add_line->();
+
+  # Sequencing_Settings section
+  $add_line->(qw([Sequencing_Settings]));
+  # TODO. We might want to change this value or not to have it.
+  # $add_line->(qw(LibraryPrepKits
+  #  IlluminaDNAPCRFree;NexteraXT;SingleCellATACLibraryKit1;IlluminaDNAPrep));
+  return;
 }
 
-$add_line->();
+sub add_germline_section {
+  ##################################
+  # DragenGermline_Settings Section
+  ##################################
 
-##################################
-# DragenGermline_Settings Section
-##################################
+  $add_line->(qw([DragenGermline_Settings]));
+  $add_line->(q[SoftwareVersion], $SOFTWARE_VERSION);
+  # Accepted values are bam, cram, or none. Selecting none produces
+  # no map/align output. Not clear whether this can be set per sample.
+  $add_line->(qw(MapAlignOutFormat cram));
+  # Accepted values are true or false. Not clear whether this can be
+  # set per sample.
+  $add_line->(qw(KeepFastq FALSE));
 
-# Probably it's OK to have this section unconditionally.
-$add_line->(qw([DragenGermline_Settings]));
-$add_line->(q[SoftwareVersion], $SOFTWARE_VERSION);
-# Accepted values are bam, cram, or none. Selecting none produces
-# no map/align output. Not clear whether this can be set per sample.
-$add_line->(qw(MapAlignOutFormat cram));
-# Accepted values are true or false. Not clear whether this can be
-# set per sample.
-$add_line->(qw(KeepFastq FALSE));
+  $add_line->();
 
-$add_line->();
+  #########################################
+  # DragenGermline_Data Section
+  # This section is definitely conditional.
+  #########################################
 
-#########################################
-# DragenGermline_Data Section
-# This section is definitely conditional.
-#########################################
+  # Only non-RNA samples should be listed in this section.
+  # A very simple test:
 
-# Only non-RNA samples should be listed in this section.
-# A very simple test:
+  my $do_rna_alignment_test = sub {
+    my $r = shift;
+    return any { $_ =~ $r } @RNA_ANALYSES;
+  };
 
-my $do_rna_alignment_test = sub {
-  my $r = shift;
-  return any { $_ =~ $r } @RNA_ANALYSES;
-};
-
-my @references = map { $_->[$LIST_INDEX_REF] } @{$products};
-my $do_rna_alignment = 0;
-my $do_germline_alignment = 0;
-for my $r (@references) {
-  if ( $do_rna_alignment_test->($r) ) {
-    $do_rna_alignment = 1;
-  } else {
-    $do_germline_alignment = 1;
-  }
-  if ($do_rna_alignment && $do_germline_alignment) {
-    last;
-  }
-}
-
-# DRAGEN aligner info:
-# https://support-docs.illumina.com/SW/DRAGEN_v40/Content/SW/DRAGEN/GraphMapper_fDG.htm
-# Prepare a reference:
-# https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/RefGenIntro.htm
-# https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/RefGenPipe_fDG.htm
-# Import a reference:
-# https://support-docs.illumina.com/IN/NovaSeqX/Content/IN/NovaSeqX/ImportResources.htm
-
-if ($do_germline_alignment) {
-
-  my @to_align = ();
-  my @ref_matches = keys %REFERENCE_MAPING;
-  for my $p ( @{$products} ) {
-    my $r = $p->[$LIST_INDEX_REF];
-    if (!$r || ($r =~ /Not suitable/xmsi)) {
-      next;
+  my @references = map { $_->[$LIST_INDEX_REF] } @{$products};
+  my $do_rna_alignment = 0;
+  my $do_germline_alignment = 0;
+  for my $r (@references) {
+    if ( $do_rna_alignment_test->($r) ) {
+      $do_rna_alignment = 1;
+    } else {
+      $do_germline_alignment = 1;
     }
-    if ( !$do_rna_alignment_test->($r) ) {
-      # The option for all variant callers includes Small, Structural, CNV,
-      # Repeat Expansions, ROH, CYP2D6.
-      my $match = first { $r =~ /$_/xms} @ref_matches;
-      if ($match) {
-        push @to_align, [$p->[1],
-                         $REFERENCE_MAPING{$match},
-                         $variant_calling_mode];
+    if ($do_rna_alignment && $do_germline_alignment) {
+      last;
+    }
+  }
+
+  # DRAGEN aligner info:
+  # https://support-docs.illumina.com/SW/DRAGEN_v40/Content/SW/DRAGEN/GraphMapper_fDG.htm
+  # Prepare a reference:
+  # https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/RefGenIntro.htm
+  # https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/RefGenPipe_fDG.htm
+  # Import a reference:
+  # https://support-docs.illumina.com/IN/NovaSeqX/Content/IN/NovaSeqX/ImportResources.htm
+
+  if ($do_germline_alignment) {
+
+    my @to_align = ();
+    my @ref_matches = keys %REFERENCE_MAPING;
+    for my $p ( @{$products} ) {
+      my $r = $p->[$LIST_INDEX_REF];
+      if (!$r || ($r =~ /Not suitable/xmsi)) {
+        next;
+      }
+      if ( !$do_rna_alignment_test->($r) ) {
+        # The option for all variant callers includes Small, Structural, CNV,
+        # Repeat Expansions, ROH, CYP2D6.
+        my $match = first { $r =~ /$_/xms} @ref_matches;
+        if ($match) {
+          push @to_align, [$p->[1],
+                           $REFERENCE_MAPING{$match},
+                           $variant_calling_mode];
+        }
+      }
+    }
+    if (@to_align) {
+      $add_line->(qw([DragenGermline_Data]));
+      $add_line->(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
+      # ReferenceGenomeDir is the Genome name consisting of alphanumeric
+      # string with _ or -.
+      for (@to_align) {
+          $add_line->(@{$_});
       }
     }
   }
-  if (@to_align) {
-    $add_line->(qw([DragenGermline_Data]));
-    $add_line->(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
-    # ReferenceGenomeDir is the Genome name consisting of alphanumeric
-    # string with _ or -.
-    for (@to_align) {
-        $add_line->(@{$_});
-    }
-    $add_line->();
-  }
+  return;
 }
-
-########################################
-# DragenEnrichment_Settings section
-########################################
-
-########################################
-# DragenEnrichment_Data section
-########################################
-
-########################################
-# DragenRNA_Settings section
-########################################
-
-########################################
-# DragenRNA_Data section
-########################################
-
-my $file_name = "SampleSheet_${batch_id}.csv";
-open my $fh, q[>], $file_name or croak "Failed to open $file_name for writing";
-my $csv = Text::CSV->new({
-  eol      => qq[\n],
-  sep_char => q[,],
-});
-
-# Pad the rows and print.
-my $max_num_columns = max map { scalar @{$_} } @all_lines;
-for my $line (@all_lines) {
-  my @columns = @{$line};
-  while (scalar @columns < $max_num_columns) {
-    push @columns, q[];
-  }
-  $csv->print($fh, \@columns);
-}
-
-close $fh or carp "Problems closing $file_name";
-
-1;
 
 =head1 NAME
 
@@ -434,6 +431,8 @@ None
 
   C<id_run>   - NPG run ID, optional; if supplied, the record for this run
                 should exists in the run tracking database
+  C<germline> - a boolean option, false by default; if set, the DRAGEN
+                germline analysis section is added to the file
 
 =head1 DESCRIPTION
 
