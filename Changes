@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 64.0.0
  - add bwa_mem2 flag to options.pm to allow override of default bwa analyses at pipeline invocation
  - update seq_alignment to recognise the bwa_mem2 flag and also default to bwa_mem2 for NovaSeqX platform
 
