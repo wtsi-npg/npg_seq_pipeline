@@ -530,31 +530,31 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     # Parse the reference genome for the product
     my ($organism, $strain, $tversion, $analysis) = npg_tracking::data::reference->new(($self->repository ? (q(repository)=>$self->repository) : ()))->parse_reference_genome($l->reference_genome);
 
-    # if a non-standard aligner is specified in ref string select it
-    $p4_param_vals->{alignment_method} = ($analysis || $bwa);
+    # if analysis is not explicitly selected in reference name, use the $bwa method selected above unless overridden by bwa_mem2 flag or platform NovaSeqX
+    $analysis ||= ($self->bwa_mem2 or $self->platform_NovaSeqX)? q[bwa_mem2]: $bwa;
 
-    my %methods_to_aligners = (
-      bwa_aln => q[bwa0_6],
-      bwa_aln_se => q[bwa0_6],
-      bwa_mem => q[bwa0_6],
-      bwa_mem_bwakit => q[bwa0_6],
-      bwa_mem2 => q[bwa0_6],
-    );
-    my %ref_suffix = (
-      picard => q{.dict},
-      minimap2 => q{.mmi},
-    );
+###
+# analysis-specific overrides
+#  By default, the analysis name (derived from the reference genome specification above) is also the aligner, refindex and p4_alignment_method names.
+#  Entries in $exceptions will override these defaults
+###
+    my $exceptions = {
+      bwa_aln        => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
+      bwa_aln_se     => { aligner => q[bw0_6], refindex => q[bwa0_6], },
+      bwa_mem        => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
+      bwa_mem_bwakit => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
+      bwa_mem2       => { aligner => q[bwa-mem2], refindex => q[bwa_mem2], p4_alignment_method => q[bwa_mem] },
+      q{bwa-mem2}    => { aligner => q[bwa-mem2], refindex => q[bwa_mem2], p4_alignment_method => q[bwa_mem] },
+      picard         => { ref_suffix => q{.dict} },
+      minimap2       => { ref_suffix => q{.mmi} },
+    };
 
-    my $aligner = $p4_param_vals->{alignment_method};
-    if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
-      $aligner = $methods_to_aligners{$aligner};
-    }
-
-    # BWA MEM2 requires a different executable
-    if ($p4_param_vals->{alignment_method} eq q[bwa_mem2]) {
-      $p4_param_vals->{bwa_executable} = q[bwa-mem2];
-    } else {
-      $p4_param_vals->{bwa_executable} = q[bwa0_6];
+    $p4_param_vals->{alignment_method} = ($exceptions->{$analysis}->{p4_alignment_method} or $analysis);
+    $p4_param_vals->{bwa_executable} = ($exceptions->{$analysis}->{aligner} or $analysis); # confusingly, can take value like "hisat2" or "minimap2", but should be ignored by relevant p4 template
+    if($do_target_alignment) {
+      my $refindex = ($exceptions->{$analysis}->{refindex} or $analysis);
+      $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $refindex);
+      $p4_param_vals->{alignment_reference_genome} .= ($exceptions->{$analysis}->{ref_suffix} or q[]);
     }
 
     my $is_hic_lib = $l->library_type && ($l->library_type =~ /Hi-C/smx);
@@ -564,11 +564,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $p4_param_vals->{bwa_mem_S_flag} = q[on];
       $p4_param_vals->{bwa_mem_P_flag} = q[on];
       $p4_param_vals->{bwa_mem_B_value} = $BWA_MEM_MISMATCH_PENALTY;
-    }
-
-    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $aligner); }
-    if(exists $ref_suffix{$aligner}) {
-      $p4_param_vals->{alignment_reference_genome} .= $ref_suffix{$aligner};
     }
 
     if(not $self->is_paired_read) {
