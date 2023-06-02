@@ -223,12 +223,12 @@ $add_line->();
 ##########################
 $add_line->(qw([BCLConvert_Data]));
 
-# Must have columns: Lane, SampleID, Index, Index2, provided the index reads
+# Must have columns: Lane, Sample_ID, Index, Index2, provided the index reads
 # were performed.
 # Optional columns: OverrideCycles, AdapterRead1, AdapterRead2
-# The rows are sorted by SampleID
+# The rows are sorted by Sample_ID
 
-my @data_header = qw(Lane SampleID);
+my @data_header = qw(Lane Sample_ID);
 if ($index1_length) {
   push @data_header, q[Index];
   if ($index2_length) {
