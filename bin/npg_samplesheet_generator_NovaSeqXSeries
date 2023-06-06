@@ -7,7 +7,7 @@ use lib ( -d "$Bin/../lib/perl5" ? "$Bin/../lib/perl5" : "$Bin/../lib" );
 use Readonly;
 use Carp;
 use Text::CSV;
-use List::MoreUtils qw(any none);
+use List::MoreUtils qw(any none uniq);
 use List::Util qw(first max);
 use Getopt::Long;
 use Pod::Usage;
@@ -24,7 +24,9 @@ Readonly::Scalar my $READ2_LENGTH => 151;
 Readonly::Scalar my $LIST_INDEX_TAG1  => 2;
 Readonly::Scalar my $LIST_INDEX_TAG2  => 3;
 Readonly::Scalar my $LIST_INDEX_REF   => 4;
-Readonly::Array  my @RNA_ANALYSES     => qw(tophat2 star hisat2);
+Readonly::Scalar my $LIST_INDEX_LIBTYPE => 5;
+Readonly::Array  my @RNA_ANALYSES_REFS => qw(tophat2 star hisat2);
+Readonly::Array  my @RNA_ANALYSES_LIB_TYPES => qw(rna cdna);
 Readonly::Array  my @VAR_CALL_MODES   =>
     qw(None SmallVariantCaller AllVariantCallers);
 
@@ -348,22 +350,37 @@ sub add_germline_section {
   # Only non-RNA samples should be listed in this section.
   # A very simple test:
 
-  my $do_rna_alignment_test = sub {
+  my $do_ref_rna_alignment_test = sub {
     my $r = shift;
-    return any { $_ =~ $r } @RNA_ANALYSES;
+    return any { $r =~ /$_/xmsi } @RNA_ANALYSES_REFS;
+  };
+  my $do_libtype_rna_alignment_test = sub {
+    my $lt = shift;
+    return any { $lt =~ /$_/xmsi } @RNA_ANALYSES_LIB_TYPES;
   };
 
-  my @references = map { $_->[$LIST_INDEX_REF] } @{$products};
+
+  my @references = uniq grep { $_ } map { $_->[$LIST_INDEX_REF] } @{$products};
   my $do_rna_alignment = 0;
   my $do_germline_alignment = 0;
   for my $r (@references) {
-    if ( $do_rna_alignment_test->($r) ) {
+    if ( $do_ref_rna_alignment_test->($r) ) {
       $do_rna_alignment = 1;
     } else {
       $do_germline_alignment = 1;
     }
     if ($do_rna_alignment && $do_germline_alignment) {
       last;
+    }
+  }
+
+  if (!$do_rna_alignment && $do_rna_alignment) {
+    my @libtypes = grep { $_ } map { $_->[$LIST_INDEX_REF] } @{$products};
+    for my $lib_type (@libtypes) {
+      if ( $do_libtype_rna_alignment_test->($lib_type) ) {
+        $do_rna_alignment = 1;
+	last;
+      }
     }
   }
 
@@ -379,12 +396,13 @@ sub add_germline_section {
 
     my @to_align = ();
     my @ref_matches = keys %REFERENCE_MAPING;
-    for my $p ( @{$products} ) {
+    foreach my $p ( @{$products} ) {
       my $r = $p->[$LIST_INDEX_REF];
       if (!$r || ($r =~ /Not suitable/xmsi)) {
         next;
       }
-      if ( !$do_rna_alignment_test->($r) ) {
+      if ( !($do_ref_rna_alignment_test->($r) ||
+	     $do_libtype_rna_alignment_test->($p->[$LIST_INDEX_LIBTYPE])) ) {
         # The option for all variant callers includes Small, Structural, CNV,
         # Repeat Expansions, ROH, CYP2D6.
         my $match = first { $r =~ /$_/xms} @ref_matches;
@@ -400,8 +418,8 @@ sub add_germline_section {
       $add_line->(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
       # ReferenceGenomeDir is the Genome name consisting of alphanumeric
       # string with _ or -.
-      for (@to_align) {
-          $add_line->(@{$_});
+      foreach my $sample (@to_align) {
+          $add_line->(@{$sample});
       }
     }
   }
