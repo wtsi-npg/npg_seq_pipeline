@@ -27,6 +27,7 @@ Readonly::Scalar my $LIST_INDEX_REF   => 4;
 Readonly::Scalar my $LIST_INDEX_LIBTYPE => 5;
 Readonly::Array  my @RNA_ANALYSES_REFS => qw(tophat2 star hisat2);
 Readonly::Array  my @RNA_ANALYSES_LIB_TYPES => qw(rna cdna);
+Readonly::Array  my @TENX_ANALYSES_LIB_TYPES => qw(chromium haplotagging);
 Readonly::Array  my @VAR_CALL_MODES   =>
     qw(None SmallVariantCaller AllVariantCallers);
 
@@ -358,11 +359,16 @@ sub add_germline_section {
     my $lt = shift;
     return any { $lt =~ /$_/xmsi } @RNA_ANALYSES_LIB_TYPES;
   };
+  my $do_libtype_tenx_test = sub {
+    my $lt = shift;
+    return any { $lt =~ /$_/xmsi } @TENX_ANALYSES_LIB_TYPES;
+  };
 
-
+  my @libtypes = grep { $_ } map { $_->[$LIST_INDEX_REF] } @{$products};
   my @references = uniq grep { $_ } map { $_->[$LIST_INDEX_REF] } @{$products};
   my $do_rna_alignment = 0;
   my $do_germline_alignment = 0;
+
   for my $r (@references) {
     if ( $do_ref_rna_alignment_test->($r) ) {
       $do_rna_alignment = 1;
@@ -374,8 +380,7 @@ sub add_germline_section {
     }
   }
 
-  if (!$do_rna_alignment && $do_rna_alignment) {
-    my @libtypes = grep { $_ } map { $_->[$LIST_INDEX_REF] } @{$products};
+  if (!$do_rna_alignment && $do_germline_alignment) {
     for my $lib_type (@libtypes) {
       if ( $do_libtype_rna_alignment_test->($lib_type) ) {
         $do_rna_alignment = 1;
@@ -401,8 +406,10 @@ sub add_germline_section {
       if (!$r || ($r =~ /Not suitable/xmsi)) {
         next;
       }
+      my $lib_type = $p->[$LIST_INDEX_LIBTYPE];
       if ( !($do_ref_rna_alignment_test->($r) ||
-	     $do_libtype_rna_alignment_test->($p->[$LIST_INDEX_LIBTYPE])) ) {
+	     $do_libtype_rna_alignment_test->($lib_type) ||
+             $do_libtype_tenx_test->($lib_type)) ) {
         # The option for all variant callers includes Small, Structural, CNV,
         # Repeat Expansions, ROH, CYP2D6.
         my $match = first { $r =~ /$_/xms} @ref_matches;
