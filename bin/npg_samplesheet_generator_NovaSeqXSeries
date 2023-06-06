@@ -414,12 +414,16 @@ sub add_germline_section {
       }
     }
     if (@to_align) {
+      my $done = {};
       $add_line->(qw([DragenGermline_Data]));
       $add_line->(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
       # ReferenceGenomeDir is the Genome name consisting of alphanumeric
       # string with _ or -.
       foreach my $sample (@to_align) {
+	if (!$done->{$sample->[0]}) {
           $add_line->(@{$sample});
+	  $done->{$sample->[0]} = 1;
+        }
       }
     }
   }
