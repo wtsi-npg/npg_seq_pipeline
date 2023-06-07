@@ -49,6 +49,7 @@ my $help;
 my $batch_id;
 my $id_run;
 my $align;
+my $keep_fastq;
 
 GetOptions (
             'help'       => \$help,
@@ -56,6 +57,7 @@ GetOptions (
             'batch_id=i' => \$batch_id,
             'id_run=i'   => \$id_run,
             'align'      => \$align,
+	    'keep_fastq' => \$keep_fastq,
            );
 if ($help) { pod2usage(0); }
 
@@ -153,7 +155,7 @@ sub add_bclconvert_section {
   ###############################
   # BCLConvert_Settings section
   ###############################
-  $add_line->(qw([BCLConvert_Settings]));
+  $add_line->('[BCLConvert_Settings]');
   $add_line->((q[SoftwareVersion], $SOFTWARE_VERSION));
 
   # Not clear what CLI analysis option thie coresponds to.
@@ -194,7 +196,7 @@ sub add_bclconvert_section {
   ##########################
   # BCLConvert_Data section
   ##########################
-  $add_line->(qw([BCLConvert_Data]));
+  $add_line->('[BCLConvert_Data]');
 
   # Must have columns: Lane, Sample_ID, Index, Index2, provided the index reads
   # were performed.
@@ -306,7 +308,7 @@ sub process_lims_data {
 }
 
 sub add_common_headers {
-  $add_line->(qw([Header]));
+  $add_line->('[Header]');
   $add_line->(q[FileFormatVersion], 2);
   $add_line->(q[RunName], $run_name);
   $add_line->(qw(InstrumentPlatform NovaSeqXSeries));
@@ -317,7 +319,7 @@ sub add_common_headers {
   $add_line->();
 
   # Reads section                                                              
-  $add_line->(qw([Reads]));
+  $add_line->(q([Reads]));
   $add_line->(q[Read1Cycles], $READ1_LENGTH);
   $add_line->(q[Read2Cycles], $READ2_LENGTH);
   if ($index1_length) {
@@ -395,12 +397,12 @@ sub add_germline_section {
 
   if (@to_align) {
 
-    $add_line->(qw([DragenGermline_Settings]));
+    $add_line->('[DragenGermline_Settings]');
     $add_line->(q[SoftwareVersion], $SOFTWARE_VERSION);
     $add_line->(qw(MapAlignOutFormat cram));
     # Accepted values are true or false. Not clear whether this can be
     # set per sample.
-    $add_line->(qw(KeepFastq FALSE));
+    $add_line->(q(KeepFastq), $keep_fastq ? 'TRUE' : 'FALSE');
     $add_line->();
 
     $add_line->(qw([DragenGermline_Data]));
@@ -433,9 +435,9 @@ sub add_rna_section {
 
   if (@to_align) {
     $add_line->('[DragenRNA_Settings]');
-    $add_line->(qw(SoftwareVersion 4.1.5));
+    $add_line->(q(SoftwareVersion), $SOFTWARE_VERSION);
     $add_line->(qw(MapAlignOutFormat cram));
-    $add_line->(qw(KeepFastq TRUE));
+    $add_line->(q(KeepFastq), $keep_fastq ? 'TRUE' : 'FALSE');
     $add_line->(qw(RnaPipelineMode FullPipeline));
     $add_line->();
 
@@ -473,6 +475,8 @@ npg_samplesheet_generator_NovaSeqXSeries
   C<align>    - a boolean option, false by default; if set, the DRAGEN
                 germline analysis section is added to the file if suitable
 		samples are present
+  C<keep_fastq> - an option to keep FASTQ files for aligned data, false
+                  default
 
 =head1 DESCRIPTION
 
