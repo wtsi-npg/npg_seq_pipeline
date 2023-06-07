@@ -121,6 +121,11 @@ if ($align) {
   $add_line->();
   my $num_samples = add_germline_section();
   carp "$num_samples samples are added to the Germline section";
+  if ($num_samples) {
+    $add_line->();
+  }
+  $num_samples = add_rna_section();
+  carp "$num_samples samples are added to the RNA section";
 }
 
 my $file_name = "SampleSheet_${run_name}.csv";
@@ -331,6 +336,11 @@ sub add_common_headers {
   return;
 }
 
+sub can_do_alignment {
+  my $r = shift;
+  return $r && !($r =~ /Not suitable/xmsi);
+}
+
 sub do_ref_rna_alignment_test {
   my $r = shift;
   return any { $r =~ /$_/xmsi } @RNA_ANALYSES_REFS;
@@ -346,19 +356,31 @@ sub do_libtype_tenx_test {
   return any { $lt =~ /$_/xmsi } @TENX_ANALYSES_LIB_TYPES;
 }
 
+sub add_samples {
+  my @samples = @_;
+
+  my $done = {};
+  foreach my $sample (@samples) {
+    if (!$done->{$sample->[0]}) {
+      $add_line->(@{$sample});
+      $done->{$sample->[0]} = 1;
+    }
+  }
+
+  return;
+}
+
 sub add_germline_section {
 
   my @to_align = ();
   my @ref_matches = keys %REFERENCE_MAPING;
 
   foreach my $p ( @{$products} ) {
-    my $r = $p->[$LIST_INDEX_REF];
-    if (!$r || ($r =~ /Not suitable/xmsi)) {
-      next;
-    }
 
+    my $r = $p->[$LIST_INDEX_REF];
     my $lib_type = $p->[$LIST_INDEX_LIBTYPE];
-    if ( !(do_ref_rna_alignment_test($r) ||
+
+    if ( can_do_alignment($r) && !(do_ref_rna_alignment_test($r) ||
            do_libtype_rna_alignment_test($lib_type) ||
            do_libtype_tenx_test($lib_type)) ) {
 
@@ -383,13 +405,43 @@ sub add_germline_section {
 
     $add_line->(qw([DragenGermline_Data]));
     $add_line->(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
-    my $done = {};
-    foreach my $sample (@to_align) {
-      if (!$done->{$sample->[0]}) {
-        $add_line->(@{$sample});
-        $done->{$sample->[0]} = 1;
+    add_samples(@to_align);
+  }
+
+  return scalar @to_align;
+}
+
+sub add_rna_section {
+
+  my @to_align = ();
+  my @ref_matches = keys %REFERENCE_MAPING;
+
+  foreach my $p ( @{$products} ) {
+
+    my $r = $p->[$LIST_INDEX_REF];
+    my $lib_type = $p->[$LIST_INDEX_LIBTYPE];
+
+    if ( can_do_alignment($r) &&
+	 (do_ref_rna_alignment_test($r) || do_libtype_rna_alignment_test($lib_type)) ) {
+
+      my $match = first { $r =~ /$_/xms} @ref_matches;
+      if ($match) {
+        push @to_align, [$p->[1], $REFERENCE_MAPING{$match}];
       }
     }
+  }
+
+  if (@to_align) {
+    $add_line->('[DragenRNA_Settings]');
+    $add_line->(qw(SoftwareVersion 4.1.5));
+    $add_line->(qw(MapAlignOutFormat cram));
+    $add_line->(qw(KeepFastq TRUE));
+    $add_line->(qw(RnaPipelineMode FullPipeline));
+    $add_line->();
+
+    $add_line->('[DragenRNA_Data]');
+    $add_line->(qw(Sample_ID ReferenceGenomeDir));
+    add_samples(@to_align);
   }
 
   return scalar @to_align;
