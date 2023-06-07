@@ -48,14 +48,14 @@ my $variant_calling_mode = $VAR_CALL_MODES[0];
 my $help;
 my $batch_id;
 my $id_run;
-my $add_germline;
+my $align;
 
 GetOptions (
             'help'       => \$help,
             'varcall=s'  => \$variant_calling_mode,
             'batch_id=i' => \$batch_id,
             'id_run=i'   => \$id_run,
-            'germline'   => \$add_germline,
+            'align'      => \$align,
            );
 if ($help) { pod2usage(0); }
 
@@ -117,9 +117,10 @@ if ($id_run) {
 add_common_headers();
 $add_line->();
 add_bclconvert_section();
-if ($add_germline) {
+if ($align) {
   $add_line->();
-  add_germline_section();
+  my $num_samples = add_germline_section();
+  carp "$num_samples samples are added to the Germline section";
 }
 
 my $file_name = "SampleSheet_${run_name}.csv";
@@ -330,114 +331,68 @@ sub add_common_headers {
   return;
 }
 
+sub do_ref_rna_alignment_test {
+  my $r = shift;
+  return any { $r =~ /$_/xmsi } @RNA_ANALYSES_REFS;
+}
+
+sub do_libtype_rna_alignment_test {
+  my $lt = shift;
+  return any { $lt =~ /$_/xmsi } @RNA_ANALYSES_LIB_TYPES;
+}
+
+sub do_libtype_tenx_test {
+  my $lt = shift;
+  return any { $lt =~ /$_/xmsi } @TENX_ANALYSES_LIB_TYPES;
+}
+
 sub add_germline_section {
-  ##################################
-  # DragenGermline_Settings Section
-  ##################################
 
-  $add_line->(qw([DragenGermline_Settings]));
-  $add_line->(q[SoftwareVersion], $SOFTWARE_VERSION);
-  # Accepted values are bam, cram, or none. Selecting none produces
-  # no map/align output. Not clear whether this can be set per sample.
-  $add_line->(qw(MapAlignOutFormat cram));
-  # Accepted values are true or false. Not clear whether this can be
-  # set per sample.
-  $add_line->(qw(KeepFastq FALSE));
+  my @to_align = ();
+  my @ref_matches = keys %REFERENCE_MAPING;
 
-  $add_line->();
-
-  #########################################
-  # DragenGermline_Data Section
-  # This section is definitely conditional.
-  #########################################
-
-  # Only non-RNA samples should be listed in this section.
-  # A very simple test:
-
-  my $do_ref_rna_alignment_test = sub {
-    my $r = shift;
-    return any { $r =~ /$_/xmsi } @RNA_ANALYSES_REFS;
-  };
-  my $do_libtype_rna_alignment_test = sub {
-    my $lt = shift;
-    return any { $lt =~ /$_/xmsi } @RNA_ANALYSES_LIB_TYPES;
-  };
-  my $do_libtype_tenx_test = sub {
-    my $lt = shift;
-    return any { $lt =~ /$_/xmsi } @TENX_ANALYSES_LIB_TYPES;
-  };
-
-  my @libtypes = grep { $_ } map { $_->[$LIST_INDEX_REF] } @{$products};
-  my @references = uniq grep { $_ } map { $_->[$LIST_INDEX_REF] } @{$products};
-  my $do_rna_alignment = 0;
-  my $do_germline_alignment = 0;
-
-  for my $r (@references) {
-    if ( $do_ref_rna_alignment_test->($r) ) {
-      $do_rna_alignment = 1;
-    } else {
-      $do_germline_alignment = 1;
+  foreach my $p ( @{$products} ) {
+    my $r = $p->[$LIST_INDEX_REF];
+    if (!$r || ($r =~ /Not suitable/xmsi)) {
+      next;
     }
-    if ($do_rna_alignment && $do_germline_alignment) {
-      last;
-    }
-  }
 
-  if (!$do_rna_alignment && $do_germline_alignment) {
-    for my $lib_type (@libtypes) {
-      if ( $do_libtype_rna_alignment_test->($lib_type) ) {
-        $do_rna_alignment = 1;
-	last;
+    my $lib_type = $p->[$LIST_INDEX_LIBTYPE];
+    if ( !(do_ref_rna_alignment_test($r) ||
+           do_libtype_rna_alignment_test($lib_type) ||
+           do_libtype_tenx_test($lib_type)) ) {
+
+      my $match = first { $r =~ /$_/xms} @ref_matches;
+      if ($match) {
+        push @to_align, [$p->[1],
+		   $REFERENCE_MAPING{$match},
+		   $variant_calling_mode];
       }
     }
   }
 
-  # DRAGEN aligner info:
-  # https://support-docs.illumina.com/SW/DRAGEN_v40/Content/SW/DRAGEN/GraphMapper_fDG.htm
-  # Prepare a reference:
-  # https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/RefGenIntro.htm
-  # https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/RefGenPipe_fDG.htm
-  # Import a reference:
-  # https://support-docs.illumina.com/IN/NovaSeqX/Content/IN/NovaSeqX/ImportResources.htm
+  if (@to_align) {
 
-  if ($do_germline_alignment) {
+    $add_line->(qw([DragenGermline_Settings]));
+    $add_line->(q[SoftwareVersion], $SOFTWARE_VERSION);
+    $add_line->(qw(MapAlignOutFormat cram));
+    # Accepted values are true or false. Not clear whether this can be
+    # set per sample.
+    $add_line->(qw(KeepFastq FALSE));
+    $add_line->();
 
-    my @to_align = ();
-    my @ref_matches = keys %REFERENCE_MAPING;
-    foreach my $p ( @{$products} ) {
-      my $r = $p->[$LIST_INDEX_REF];
-      if (!$r || ($r =~ /Not suitable/xmsi)) {
-        next;
-      }
-      my $lib_type = $p->[$LIST_INDEX_LIBTYPE];
-      if ( !($do_ref_rna_alignment_test->($r) ||
-	     $do_libtype_rna_alignment_test->($lib_type) ||
-             $do_libtype_tenx_test->($lib_type)) ) {
-        # The option for all variant callers includes Small, Structural, CNV,
-        # Repeat Expansions, ROH, CYP2D6.
-        my $match = first { $r =~ /$_/xms} @ref_matches;
-        if ($match) {
-          push @to_align, [$p->[1],
-                           $REFERENCE_MAPING{$match},
-                           $variant_calling_mode];
-        }
-      }
-    }
-    if (@to_align) {
-      my $done = {};
-      $add_line->(qw([DragenGermline_Data]));
-      $add_line->(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
-      # ReferenceGenomeDir is the Genome name consisting of alphanumeric
-      # string with _ or -.
-      foreach my $sample (@to_align) {
-	if (!$done->{$sample->[0]}) {
-          $add_line->(@{$sample});
-	  $done->{$sample->[0]} = 1;
-        }
+    $add_line->(qw([DragenGermline_Data]));
+    $add_line->(qw(Sample_ID ReferenceGenomeDir VariantCallingMode));
+    my $done = {};
+    foreach my $sample (@to_align) {
+      if (!$done->{$sample->[0]}) {
+        $add_line->(@{$sample});
+        $done->{$sample->[0]} = 1;
       }
     }
   }
-  return;
+
+  return scalar @to_align;
 }
 
 =head1 NAME
@@ -450,7 +405,7 @@ npg_samplesheet_generator_NovaSeqXSeries
 
 =head1 REQUIRED ARGUMENTS
 
-None
+  C<batch_id>
 
 =head1 OPTIONS
 
@@ -463,8 +418,9 @@ None
 
   C<id_run>   - NPG run ID, optional; if supplied, the record for this run
                 should exists in the run tracking database
-  C<germline> - a boolean option, false by default; if set, the DRAGEN
-                germline analysis section is added to the file
+  C<align>    - a boolean option, false by default; if set, the DRAGEN
+                germline analysis section is added to the file if suitable
+		samples are present
 
 =head1 DESCRIPTION
 
@@ -476,6 +432,16 @@ L<https://support-docs.illumina.com/SHARE/SampleSheetv2/Content/SHARE/SampleShee
 
 A full listing of analysis options is available in
 L<https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/OptionReference.htm>
+
+DRAGEN aligner info:
+L<https://support-docs.illumina.com/SW/DRAGEN_v40/Content/SW/DRAGEN/GraphMapper_fDG.htm>
+
+Prepare a reference:
+L<https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/RefGenIntro.htm>
+L<https://support-docs.illumina.com/SW/DRAGEN_v41/Content/SW/DRAGEN/RefGenPipe_fDG.htm>
+
+Import a reference:
+L<https://support-docs.illumina.com/IN/NovaSeqX/Content/IN/NovaSeqX/ImportResources.htm>
 
 =head1 EXIT STATUS
 
