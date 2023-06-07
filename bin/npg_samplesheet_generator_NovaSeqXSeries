@@ -33,7 +33,8 @@ Readonly::Array  my @VAR_CALL_MODES   =>
 
 # Not mapping PhiX on purpose - an easy way to avoid invoking
 # an extra Germline pipeline in a situation when the number of
-# unique analysis configurations seems to be limited.
+# unique analysis configurations is limited to 4 locally and 8
+# in the cloud, with one of them being BCLConvert.
 # Was 'PhiX' => 'phix-rna-8-1667499364-2'
 Readonly::Hash my %REFERENCE_MAPING => (
     'Homo_sapiens'=> 'hg38-alt_masked.cnv.graph.hla.rna-8-1667497097-2',
@@ -388,6 +389,8 @@ sub add_germline_section {
 
       my $match = first { $r =~ /$_/xms} @ref_matches;
       if ($match) {
+	# TODO Are all variant calling modes compatible with all
+	# references?
         push @to_align, [$p->[1],
 		   $REFERENCE_MAPING{$match},
 		   $variant_calling_mode];
