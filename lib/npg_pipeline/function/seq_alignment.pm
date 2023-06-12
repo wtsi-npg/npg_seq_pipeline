@@ -574,6 +574,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($nchs) {
     $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
     $p4_param_vals->{alignment_hs_method} = $hs_bwa;
+    $p4_param_vals->{hs_bwa_executable} = q{bwa0_6};
   }
 
   if($human_split) {
