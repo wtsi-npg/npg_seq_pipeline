@@ -1,13 +1,14 @@
 LIST OF CHANGES
 ---------------
 
+ - remove wr limit of p4s1 to specific flavor
+
 release 64.0.1
  - set p4 parameter to fix bug in bwa-mem2 + non-consented human split
 
 release 64.0.0
  - add bwa_mem2 flag to options.pm to allow override of default bwa analyses at pipeline invocation
  - update seq_alignment to recognise the bwa_mem2 flag and also default to bwa_mem2 for NovaSeqX platform
- - remove wr limit of p4s1 to specific flavor
 
 release 63.3.0
  - force no_target_alignment for haplotag libraries
