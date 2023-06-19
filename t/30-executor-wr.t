@@ -38,9 +38,7 @@ subtest 'wr conf file' => sub {
   is (ref $conf, 'HASH', 'configuration is a hash ref');
   while (my ($key, $value) = each %{$conf}) {
     if ( $key =~ /queue\Z/ ) {
-      is_deeply ($value,
-      $key =~ /\Ap4stage1/ ? {'cloud_flavor' => 'ukb1.2xlarge'} : {},
-      "correct settings for $key");
+      is_deeply ($value, {}, "correct settings for $key");
     }
   }
 };
