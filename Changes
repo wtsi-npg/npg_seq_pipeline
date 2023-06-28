@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 65.0.0
+ - remove wr limit of p4s1 to specific flavor
+
 release 64.0.1
  - set p4 parameter to fix bug in bwa-mem2 + non-consented human split
 

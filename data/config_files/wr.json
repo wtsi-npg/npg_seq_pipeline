@@ -2,6 +2,6 @@
  "default_queue":{},
  "small_queue":{},
  "lowload_queue":{},
- "p4stage1_queue":{"cloud_flavor":"ukb1.2xlarge"},
+ "p4stage1_queue":{},
  "limit_grps":["irods", "s3"]
 }
