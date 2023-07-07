@@ -1110,6 +1110,7 @@ t/data/run_params/runParameters.hiseq.xml
 t/data/run_params/runParameters.hiseqx.upgraded.xml
 t/data/run_params/runParameters.miseq.xml
 t/data/run_params/runParameters.novaseq.xml
+t/data/run_params/RunParameters.novaseqx.xml
 t/data/runfolder/archive/1234_2.bam
 t/data/runfolder/archive/1234_2_human.bam
 t/data/runfolder/archive/1234_3.bam
