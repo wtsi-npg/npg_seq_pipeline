@@ -103,7 +103,7 @@ has 'per_product_archive' => (
 );
 sub _build_per_product_archive {
   my $self = shift;
-  return $self->platform_NovaSeq();
+  return $self->platform_NovaSeq() || $self->platform_NovaSeqX();
 }
 
 =head2 irods_collection4run_rel
