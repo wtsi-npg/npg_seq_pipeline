@@ -1,5 +1,7 @@
 name: testing_and_building_repo
 on: [push, pull_request]
+env:
+  WTSI_NPG_BUILD_BRANCH: ${{ github.base_ref || github.ref }}
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -50,7 +52,6 @@ jobs:
           ${GITHUB_WORKSPACE}/scripts/install_npg_perl_dependencies.sh $WTSI_NPG_GITHUB_URL $WTSI_NPG_BUILD_BRANCH
       env:
         WTSI_NPG_GITHUB_URL: https://github.com/wtsi-npg
-        WTSI_NPG_BUILD_BRANCH: ${GITHUB_HEAD_REF} #getting name of current github branch
 
     - name: Install cpanm dependencies
       run: |
