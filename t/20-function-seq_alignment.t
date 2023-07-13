@@ -1277,7 +1277,7 @@ subtest 'chromium' => sub {
 };
 
 subtest 'miseq' => sub {
-  plan tests => 23;
+  plan tests => 24;
 
   my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
@@ -1310,6 +1310,10 @@ subtest 'miseq' => sub {
   my $l1 = st::api::lims->new(id_run => 24135, position => 1, tag_index => 1);
   my $dp1 = npg_pipeline::product->new(lims => $l1, rpt_list => q[24135:1:1],);
   ok ($ms_gen->can_run_gbs($dp1), 'can run gbs pipeline on 24135:1:1');
+
+  my $l2 = st::api::lims->new(id_run => 24135, position => 1, tag_index =>2);
+  my $dp2 = npg_pipeline::product->new(lims => $l2, rpt_list => q[24135:1:2],);
+  ok ($ms_gen->can_run_gbs($dp2), 'can run gbs pipeline on 24135:1:2 (no study ref)');
 
   my $l3 = st::api::lims->new(id_run => 24135, position => 1, tag_index => 3);
   my $dp3 = npg_pipeline::product->new(lims => $l3, rpt_list => q[24135:1:3],);

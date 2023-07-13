@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - small tweak to seq_alignment so GbS samples with no study ref do not fail
+
 release 65.0.0
  - remove wr limit of p4s1 to specific flavor
 
