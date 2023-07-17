@@ -165,7 +165,7 @@ sub irods_product_destination_collection {
   my $dc;
   try {
     $dc = $self->irods_product_destination_collection_norf(
-          $run_collection, $product, $self->platform_NovaSeq());
+          $run_collection, $product, $self->per_product_archive());
   } catch {
     $self->logcroak($_);
   };

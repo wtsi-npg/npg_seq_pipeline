@@ -290,22 +290,19 @@ subtest 'NovaSeq run' => sub {
   ok ($d->excluded, 'step is excluded');
 };
 
-subtest 'NovaSeq run' => sub {
-  plan tests => 2,
-
-  my $id_run  = 26291;
-  my $rf_name = '180709_A00538_0010_BH3FCMDRXX';
-  my $rfpath_test  = abs_path(getcwd) . qq{/t/data/novaseq/$rf_name};
+subtest 'NovaSeqX run' => sub {
+  plan tests => 3,
+  my $id_run  = 47515;
+  my $rf_name = '20230622_LH00210_0007_A225TMTLT3';
+  my $rfpath_test  = abs_path(getcwd) . qq{/t/data/novaseqx/$rf_name};
   my $rfpath = "$tmp_dir/$rf_name";
   dircopy($rfpath_test, $rfpath);
-  copy('t/data/run_params/RunParameters.novaseqx.xml',
-    "$rfpath/RunParameters.xml"); 
-  my $bbc_path = qq{$rfpath/Data/Intensities/BAM_basecalls_20180805-013153};
+  my $bbc_path = qq{$rfpath/Data/Intensities/BAM_basecalls_20230703-150003};
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
-    qq{$bbc_path/metadata_cache_26291/samplesheet_26291.csv};
+    qq{$bbc_path/metadata_cache_47515/samplesheet_47515.csv};
 
-  my $col = qq{/seq/illumina/runs/26/$id_run}; 
+  my $col = qq{/seq/illumina/runs/47/$id_run}; 
 
   my $a  = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder     => $rf_name,
@@ -313,12 +310,17 @@ subtest 'NovaSeq run' => sub {
     analysis_path  => $bbc_path,
     conf_path      => $config_dir,
     id_run         => $id_run,
-    timestamp      => q{20181204},
+    timestamp      => q{20230702},
     resource       => $defaults
   );
 
   ok ($a->per_product_archive(), 'per-product archival'); 
   is ($a->irods_destination_collection(), $col, 'correct run collection');
+  my $da = $a->create();
+  my $d = $da->[0];
+  like ($d->command,
+    qr{--collection \S+illumina/runs\S+lane1\/plex1},
+    'command has per product iRODS destination collection');
 };
 
 1;
