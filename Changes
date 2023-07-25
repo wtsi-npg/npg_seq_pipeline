@@ -1,6 +1,15 @@
 LIST OF CHANGES
 ---------------
 
+release 65.1.0
+ - ensure per-product archival for NovaSeqX data
+ - runs with data analysed on-board are not deletable
+ - ensure per product archival impacts hierarchy
+ - per product publish doc and variable name fixup
+ - when platform_NovaSeqX is detected, set p4 parameter i2b_nocall_qual_switch
+   to "on"
+ - avoid archiving "Analysis" hierarchy with XML and InterOp
+
 release 65.0.0
  - remove wr limit of p4s1 to specific flavor
 
