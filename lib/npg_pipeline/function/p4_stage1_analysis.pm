@@ -277,6 +277,10 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
   $p4_params{i2b_basecalls_dir} = $self->basecall_path;
   $p4_params{i2b_rg} = join q[_], $id_run, $position;
   $p4_params{i2b_pu} = join q[_], $self->run_folder, $position;
+  if($self->platform_NovaSeqX) {  # no call qualities set (default 2)
+    $p4_params{i2b_nocall_qual_switch} = q[on];
+  }
+
 
   my $st_names = $self->_get_library_sample_study_names($lane_lims);
 

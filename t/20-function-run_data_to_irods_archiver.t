@@ -14,7 +14,7 @@ my $util = t::util->new();
 
 my $tmp_dir = $util->temp_directory();
 my $script = q{npg_publish_illumina_run.pl};
-my $includes = qr/--include 'RunInfo\.xml' --include '\[Rr\]unParameters\.xml' --include InterOp/;
+my $inexcludes = qr/--include 'RunInfo\.xml' --include '\[Rr\]unParameters\.xml' --include InterOp --exclude Analysis/;
 
 my $defaults = {
   default => {
@@ -70,7 +70,7 @@ subtest 'MiSeq run' => sub {
   is ($d->job_name, qq{publish_run_data2irods_${id_run}_20181204},
     'job_name is correct');
   like ($d->command,
-    qr/$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $rfpath $includes --id_run $id_run/,
+    qr/$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $rfpath $inexcludes --id_run $id_run/,
     'command is correct');
   is ($d->command_preexec,
     'npg_pipeline_script_must_be_unique_runner -job_name="publish_run_data2irods_16850"',
@@ -138,7 +138,7 @@ subtest 'NovaSeq run' => sub {
   my $d = $da->[0];
   isa_ok($d, q{npg_pipeline::function::definition});
   like ($d->command,
-    qr/$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $rfpath $includes --id_run $id_run/,
+    qr/$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $rfpath $inexcludes --id_run $id_run/,
     'command is correct');
 };
 
@@ -166,7 +166,7 @@ subtest 'Logconf option' => sub {
   my $da = $a->create();
   my $d = $da->[0];
   like ($d->command,
-    qr/$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $rfpath $includes --id_run $id_run --logconf $syslog_conf/,
+    qr/$script --restart_file $restart_file --max_errors 10 --collection $col --source_directory $rfpath $inexcludes --id_run $id_run --logconf $syslog_conf/,
     'command is correct');
 };
 

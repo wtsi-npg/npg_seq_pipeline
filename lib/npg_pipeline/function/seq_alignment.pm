@@ -45,12 +45,23 @@ around 'markdup_method' => sub {
     $product or $self->logcroak('Product object argument is required');
     my $lims = $product->lims;
     $lims or $self->logcroak('lims object is not defined for a product');
+
     my $lt = $lims->library_type;
     $lt ||= q[];
     # I've restricted this to library_types which exactly match Duplex-Seq to exclude the old library_type Bidirectional Duplex-seq
     # the Duplex-Seq library prep has been replaced by the NanoSeq library prep, the analysis is the same and the Duplex-Seq library_type is still in use
     # I've added two new library_types Targeted NanoSeq Pulldown Twist and Targeted NanoSeq Pulldown Agilent
-    my $mdm =  ($lt eq q[Duplex-Seq] || $lt =~ /^Targeted\sNanoSeq\sPulldown/smx) ? q(duplexseq) : $self->$orig($product);
+    my $mdm;
+    if($lt eq q[Duplex-Seq] || $lt =~ /^Targeted\sNanoSeq\sPulldown/smx) {
+      $mdm = q(duplexseq);
+    }
+    elsif($self->platform_NovaSeqX) {
+      $mdm = q(samtools);
+    }
+    else {
+      $mdm = $self->$orig($product);
+    }
+
     $mdm or $self->logcroak('markdup method is not defined for a product');
 
     return $mdm;
