@@ -499,7 +499,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
      $skip_target_markdup_metrics = 1;
   }
   elsif($do_rna) {
-    my $rna_analysis = $self->_analysis($l->reference_genome, $rpt_list) // $DEFAULT_RNA_ANALYSIS;
+    my $rna_analysis = $self->_analysis($l->reference_genome, $rpt_list) // ($self->platform_NovaSeqX? q[star]:$DEFAULT_RNA_ANALYSIS);
+
     if (none {$_ eq $rna_analysis} @RNA_ANALYSES){
         $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
         $rna_analysis = $DEFAULT_RNA_ANALYSIS;
