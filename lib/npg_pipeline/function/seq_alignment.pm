@@ -440,7 +440,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{markdup_method} = $do_gbs_plex ? q[none] : $self->markdup_method($dp);
     $p4_param_vals->{markdup_optical_distance_value} = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
 
-    if($p4_param_vals->{markdup_method} eq q[none]) {
+    if(!$do_gbs_plex && ($p4_param_vals->{markdup_method} eq q[none])) {
       $skip_target_markdup_metrics = 1;
 
       if(my $pcb=npg_pipeline::cache::reference->instance->get_primer_panel_bed_file($dp, $self->repository)) {
@@ -491,6 +491,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   my $p4_local_assignments = {};
   if($do_gbs_plex){
+     $p4_param_vals->{primer_clip_method} = q[no_clip];
      $p4_param_vals->{bwa_executable}   = q[bwa0_6];
      $p4_param_vals->{bsc_executable}   = q[bamsort];
      $p4_param_vals->{alignment_method} = $bwa;

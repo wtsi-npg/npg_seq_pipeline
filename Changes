@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+
+ - small tweak to seq_alignment so GbS samples with no study ref do not fail
+ 
 release 65.1.0
  - ensure per-product archival for NovaSeqX data
  - runs with data analysed on-board are not deletable
