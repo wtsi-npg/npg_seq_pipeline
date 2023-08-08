@@ -301,7 +301,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:subsample-';
   }
 
-  if($self->platform_NovaSeq) {  # skip spatial filter
+  if($self->platform_NovaSeq or $self->platform_NovaSeqX) {  # skip spatial filter
     $p4_param_vals->{spatial_filter_switch} = q[off];
   }
 
