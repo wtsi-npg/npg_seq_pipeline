@@ -1,8 +1,9 @@
 LIST OF CHANGES
 ---------------
 
-
  - small tweak to seq_alignment so GbS samples with no study ref do not fail
+ - switch off spatial filter for NovaSeqX
+ - for NovaSeqX, default RNA analysis should be STAR
  
 release 65.1.0
  - ensure per-product archival for NovaSeqX data
