@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - turn off spatial filter QC check for NovaSeqX
+
 release 66.0.0
  - small tweak to seq_alignment so GbS samples with no study ref do not fail
  - switch off spatial filter for NovaSeqX
