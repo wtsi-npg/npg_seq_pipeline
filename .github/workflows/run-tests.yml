@@ -89,7 +89,6 @@ jobs:
              perl-dnap-utilities \
              perl-irods-wrap \
              ml_warehouse \
-             npg_ml_warehouse \
              npg_tracking \
              npg_seq_common \
              npg_qc \
