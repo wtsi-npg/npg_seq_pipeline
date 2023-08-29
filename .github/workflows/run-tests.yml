@@ -1,0 +1,124 @@
+name: "Unit tests"
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash -l -e -o pipefail {0}
+
+    env:
+      PERL_CACHE: ~/perl5 # Perlbrew and CPAN modules installed here, cached
+      NPG_LIB: ~/perl5npg # NPG modules installed here, not cached
+      WSI_CONDA_CHANNEL: "https://dnap.cog.sanger.ac.uk/npg/conda/devel/generic"
+      CONDA_TEST_ENV: test-environment
+      WTSI_NPG_GITHUB_URL: https://github.com/wtsi-npg
+      WTSI_NPG_BUILD_BRANCH: ${{ github.base_ref || github.ref }}
+
+    strategy:
+      matrix:
+        perl: ["5.26.3", "5.34.1"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: "Install OS dependencies"
+        run: |
+          sudo apt-get update
+          # https://github.com/actions/runner-images/issues/2139
+          sudo apt-get remove -y nginx libgd3
+          sudo apt-get install -y libgd-dev uuid-dev libgd-text-perl
+
+      - name: "Initialize Miniconda"
+        run: |
+          echo 'source $CONDA/etc/profile.d/conda.sh' >> "$HOME/.bash_profile"
+
+      - name: "Install Conda packages"
+        run: |
+          conda config --prepend pkgs_dirs ~/conda/pkgs
+          conda config --prepend envs_dirs ~/conda/envs
+
+          conda config --set auto_update_conda False
+          conda config --prepend channels "$WSI_CONDA_CHANNEL"
+          conda info
+
+          conda create  -y -n "$CONDA_TEST_ENV"
+          conda install -y -n "$CONDA_TEST_ENV" baton
+          conda install -y -n "$CONDA_TEST_ENV" samtools
+
+      - name: "Cache Perl"
+        id: cache-perl
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.PERL_CACHE }}
+          key: ${{ runner.os }}-${{ matrix.perl }}-perl
+
+      - name: "Install Perlbrew"
+        if: steps.cache-perl.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL https://install.perlbrew.pl -o perlbrew.sh
+          sha256sum -c .github/workflows/perlbrew.sha256
+          export PERLBREW_ROOT=${{ env.PERL_CACHE }}
+          sh perlbrew.sh
+          
+          source ${{ env.PERL_CACHE }}/etc/bashrc
+          perlbrew available
+          perlbrew install --notest perl-${{ matrix.perl }}
+          perlbrew use perl-${{ matrix.perl }}
+          perlbrew install-cpanm
+
+      - name: "Initialize Perlbrew"
+        run: |
+          echo "source ${{ env.PERL_CACHE }}/etc/bashrc" >> "$HOME/.bash_profile"
+
+      - name: "Install Perl dependencies"
+        run: |
+          cpanm --local-lib=${{ env.PERL_CACHE }} local::lib
+          eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib="$NPG_LIB")
+          eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib)
+          
+          cpanm --quiet --notest Module::Build
+          cpanm --quiet --notest Alien::Tidyp
+          cpanm --quiet --notest Net::SSLeay
+          cpanm --quiet --notest https://github.com/chapmanb/vcftools-cpan/archive/v0.953.tar.gz
+          
+          ./scripts/install_wsi_dependencies.sh "$NPG_LIB" \
+             perl-dnap-utilities \
+             perl-irods-wrap \
+             ml_warehouse \
+             npg_ml_warehouse \
+             npg_tracking \
+             npg_seq_common \
+             npg_qc \
+             npg_irods
+
+          cpanm --installdeps --notest .          
+
+      - name: "Log install failure"
+        if: ${{ failure() }}
+        run: |
+          find ~/.cpanm/work -cmin -1 -name '*.log' -exec tail -n20  {} \;
+
+      - name: "Archive CPAN logs on failure"
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: cpan_log
+          path: ~/.cpanm/work/*/build.log
+          retention-days: 5
+
+      - name: "Run tests"
+        run: |
+          conda activate "$CONDA_TEST_ENV"
+          conda info --envs
+          
+          eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib)
+          eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib="$NPG_LIB")
+          
+          export TEST_AUTHOR=1
+          perl Build.PL
+          ./Build test --verbose
+          ./Build install
