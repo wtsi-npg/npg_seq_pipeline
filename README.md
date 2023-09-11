@@ -6,27 +6,28 @@ customers.
 
 There are two main pipelines:
 
-* data product and QC metric creation: "central"
-* internal archival of data products, metadata, QC metrics and logs: "post_qc"
+* data product and QC metric creation: `central`
+* internal archival of data products, metadata, QC metrics and logs:
+  `post_qc_review`
 
 and the daemons which automatically start these pipelines.
 
-Processing is performed as a appropriate for the entire run, for each lane in
-the sequencing flowcell, or each tagged library (within a pool on the flowcell).
+Processing is performed as appropriate for the entire run, for each lane in the
+sequencing flowcell, or each tagged library (within a pool on the flowcell).
 
 ## Batch Processing and Dependency Tracking with LSF or wr
 
-With this system, all of a pipeline's steps are submitted for execution to the
-LSF, or wr, batch/job processing system as the pipeline is initialised. As such,
-a submitted pipeline does not have a orchestration script of daemon running:
-managing the runtime dependencies of jobs within an instance of a pipeline is
-delegated to the batch/job processing system.
+With this system, all of a pipeline's jobs for its steps are submitted for
+execution to the LSF, or wr, batch/job processing system as the pipeline is
+initialised. As such, a _submitted_ pipeline does not have an orchestration
+script or daemon running: managing the runtime dependencies of jobs within an
+instance of a pipeline is delegated to the batch/job processing system.
 
 How is this done? The job representing the start point of a graph is submitted
 to LSF, or wr, in a suspended state and is resumed once all other jobs have been
 submitted thus ensuring that the execution starts only if all steps are
-successfully submitted to LSF, or wr. If an error occurs at any point, all
-submitted jobs, apart from the start job, are killed.
+successfully submitted to LSF, or wr. If an error occurs at any point during job
+submissions, all submitted jobs, apart from the start job, are killed.
 
 ## Pipeline Creation
 
@@ -51,7 +52,7 @@ DAG: some steps are appropriate for
 
 parallelisation.
 
-### Visualizing Input Graphs
+#### Visualizing Input Graphs
 
 JSON Graph Format (JGF) is relatively new, with little support for
 visualization. Convert JGF to GML
@@ -60,7 +61,7 @@ format using a simple script supplied with this package, `scripts/jgf2gml` .
 Many graph visualization tools, for example
 [Cytoscape](http://www.cytoscape.org/), support the GML format.
 
-## Per Sequencing Run Pipelines
+## Per Sequencing-Run Pipelines
 
 The processing is performed per sequencing run. Many different studies and
 sequencing assays for different "customers" may be performed on a single run.
@@ -76,20 +77,26 @@ sequencing instrument.
 
 ### Analysis Pipeline
 
-Processes data coming from Illumina sequencing instruments.
+Processes data coming from Illumina sequencing instruments. It is labeled the
+"central" pipeline.
 
 The input for an instance of the pipeline is the instrument output run folder
 (BCL and associated files) and LIMS information which drives appropriate
 processing.
 
 The key data products are aligned CRAM files and indexes, or unaligned CRAM
-files. However (per study) configuration allows for the creation of GATK gVCF
-files, or the running for external tool/pipeline e.g. ncov2012-artic-nf
+files. However per study (a LIMS datum) pipeline configuration allows for the
+creation of GATK gVCF files, or the running for external tool/pipeline e.g.
+ncov2012-artic-nf
+
+!["central" pipeline](data/config_files/function_list_central.json.png)
 
 ### Archival Pipeline
 
 Archives sequencing data (CRAM files) and other related artifacts e.g. index
-files. QC metrics.
+files. QC metrics. It is labeled the "post_qc_review" pipeline.
+
+!["post_qc_review" pipeline](data/config_files/function_list_post_qc_review.json.png)
 
 ### Pipeline Script Outputs
 
@@ -106,13 +113,15 @@ in the analysis directory. Example:
 
 ## Dependencies
 
-This software relies heavily on the npg_tracking software to abstract
+This software relies heavily on the
+[npg_tracking](https://github.com/wtsi-npg/npg_tracking) software to abstract
 information from the MLWH and instrument runfolder, and coordination of the
 state of the run.
 
-This software integrates heavily with the npg_qc system for calculating and
+This software integrates heavily with the
+[npg_qc](https://github.com/wtsi-npg/npg_qc) system for calculating and
 recording for internal display QC metrics for operational teams to assess the
 sequencing and upstream processes.
 
-Also, the npg_irods system is essential for the internal archival of data
-products.
+Also, the [npg_irods](https://github.com/wtsi-npg/npg_irods) system is essential
+for the internal archival of data products.
