@@ -36,7 +36,7 @@ JSON input files located in data/config_files directory. The files follow
 [JSON Graph Format](https://github.com/jsongraph/json-graph-specification)
 syntax. Individual pipeline steps are defined as graph nodes, dependencies
 between them as directed graph edges. If step B should be executed after step A
-finishes, step B is is considered to be dependant on step A.
+finishes, step B is considered to be dependant on step A.
 
 The graph represented by the input file should be a directed acyclic graph
 (DAG). Each graph node should have an id, which should be unique, and a label,
@@ -91,6 +91,11 @@ ncov2012-artic-nf
 
 !["central" pipeline](data/config_files/function_list_central.json.png)
 
+Within this DAG there are two step which are key in producing the main data products:
+
+* `p4_stage1_analysis` processes data at the lane level within a flowcell/run: includes conversion of instrument output (BCL files) to BAM format, demultiplexing of data within a lane to tagged libraries, alignment with any spiked phiX, (for some instrument types) detection of indel inducing fluidics bubbles and marking reads with fail bit, and (for some instrument types) detection and marking of sequencing adapter.
+* `seq_alignment` processes data at tagged library, or lane and tagged library, level: includes alignment to the target genome (or not), a naive human read filtering capability, splitting of human target data by autosome/allosome capability, (for some instrument types) removal of marked adapter pre-alignment and pasting post-alignment (so there is no loss of instrument basecalls or quality data), duplicate marking, and creation of standard sequencing metrics files.
+
 ### Archival Pipeline
 
 Archives sequencing data (CRAM files) and other related artifacts e.g. index
@@ -122,6 +127,11 @@ This software integrates heavily with the
 [npg_qc](https://github.com/wtsi-npg/npg_qc) system for calculating and
 recording for internal display QC metrics for operational teams to assess the
 sequencing and upstream processes.
+
+For the data processing intensive steps, `p4_stage1_analysis` and
+`seq_alignment`, the [p4](https://github.com/wtsi-npg/p4) software is used to
+provide disk IO minimised processing of many informatics tools in streaming data
+flow DAGs.
 
 Also, the [npg_irods](https://github.com/wtsi-npg/npg_irods) system is essential
 for the internal archival of data products.
