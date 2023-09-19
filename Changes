@@ -1,7 +1,14 @@
 LIST OF CHANGES
 ---------------
 
- - turn off spatial filter QC check for NovaSeqX
+release 67.0.0
+ - Turn off spatial filter QC check for NovaSeqX
+ - Switch to Perlbrew to obtain multiple Perl versions
+ - Remove npg_ml_warehouse dependency
+ - Enhance README with more context
+ - Improve Markdown format consistency
+ - Add images of DAGs, add links, fix a typo
+ - Add info on data intensive P4 based steps
 
 release 66.0.0
  - small tweak to seq_alignment so GbS samples with no study ref do not fail
