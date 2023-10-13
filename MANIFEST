@@ -1,4 +1,3 @@
-.github/workflows/testing_and_building_repo.yml
 bin/npg_pipeline_analysis_runner
 bin/npg_pipeline_archival_runner
 bin/npg_pipeline_central
@@ -78,7 +77,6 @@ lib/npg_pipeline/validation/s3.pm
 MANIFEST			This list of files
 README
 README.md
-scripts/install_npg_perl_dependencies.sh
 scripts/jgf2gml
 t/00-critic.t
 t/00-distribution.t
