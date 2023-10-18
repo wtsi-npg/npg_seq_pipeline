@@ -197,22 +197,13 @@ sub _get_index_lengths {
   my ( $self, $lane_lims ) = @_;
 
   my @index_length_array;
-
-  if ($lane_lims->inline_index_exists) {
-    # Tradis run - treat as a special case
-    my $index_start = $lane_lims->inline_index_start;
-    my $index_end = $lane_lims->inline_index_end;
-    if ($index_start && $index_end) {
-      push @index_length_array, $index_end - $index_start + 1;
-    }
-  } else {
-    my $n = 0;
-    my @cycle_counts = $self->read_cycle_counts();
-    my @reads_indexed = $self->reads_indexed();
-    foreach my $n (0..$#cycle_counts) {
-      if ($reads_indexed[$n]) { push @index_length_array, $cycle_counts[$n]; }
-    }
+  my $n = 0;
+  my @cycle_counts = $self->read_cycle_counts();
+  my @reads_indexed = $self->reads_indexed();
+  foreach my $n (0..$#cycle_counts) {
+    if ($reads_indexed[$n]) { push @index_length_array, $cycle_counts[$n]; }
   }
+
   return \@index_length_array;
 }
 
@@ -221,7 +212,7 @@ sub _get_index_lengths {
 # Determine parameters for the lane from LIMS information and create the hash from which the p4 stage1
 #  analysis param_vals file will be generated. Generate the vtfp/viv commands using this param_vals file.
 #########################################################################################################
-sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexity)
+sub _generate_command_params {
   my ($self, $lane_lims, $tag_list_file, $lane_product) = @_;
   my %p4_params = (
                     samtools_executable => q{samtools},
@@ -302,52 +293,6 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
     $p4_params{i2b_bc_qual_val} = q[tq];
   }
 
-  if($lane_lims->inline_index_exists) {
-    my $index_start = $lane_lims->inline_index_start;
-    my $index_end = $lane_lims->inline_index_end;
-    my $index_read = $lane_lims->inline_index_read;
-
-    if ($index_start && $index_end && $index_read) {
-      $self->info(q{P4 stage1 analysis of a lane with inline indexes});
-
-      my($first, $final) = $self->read1_cycle_range();
-      if ($index_read == 1) {
-        $p4_params{i2b_bc_read} = 1;
-        $index_start += ($first-1);
-        $index_end += ($first-1);
-        $p4_params{i2b_first_index_0} = $index_start;
-        $p4_params{i2b_final_index_0} = $index_end;
-        $p4_params{i2b_first_index_1} = $first;
-        $p4_params{i2b_final_index_1} = $index_start-1;
-        $p4_params{i2b_first_0} = $index_end+1;
-        $p4_params{i2b_final_0} = $final;
-        if ($self->is_paired_read()) {
-          ($first, $final) = $self->read2_cycle_range();
-          $p4_params{i2b_first_1} = $first;
-          $p4_params{i2b_final_1} = $final;
-        }
-      } elsif ($index_read == 2) {
-        $p4_params{i2b_bc_read} = 2;
-        $self->is_paired_read() or $self->logcroak(q{Inline index read (2) does not exist});
-        $p4_params{i2b_first_0} = $first;
-        $p4_params{i2b_final_0} = $final;
-        ($first, $final) = $self->read2_cycle_range();
-        $index_start += ($first-1);
-        $index_end += ($first-1);
-        $p4_params{i2b_first_index_0} = $index_start;
-        $p4_params{i2b_final_index_0} = $index_end;
-        $p4_params{i2b_first_index_1} = $first;
-        $p4_params{i2b_final_index_1} = $index_start-1;
-        $p4_params{i2b_first_1} = $index_end+1;
-        $p4_params{i2b_final_1} = $final;
-      } else {
-        $self->logcroak("Invalid inline index read ($index_read)");
-      }
-      $p4_params{i2b_sec_bc_seq_val} = q{br};
-      $p4_params{i2b_sec_bc_qual_val} = q{qr};
-    }
-  }
-
   if($self->_is_duplexseq($lane_lims)) {
     $self->info(q{P4 stage1 analysis of a Duplex-Seq lane});
 
@@ -417,8 +362,7 @@ sub _generate_command_params { ## no critic (Subroutines::ProhibitExcessComplexi
   }
 
   ###  TODO: remove this read length comparison if biobambam will handle this case. Check clip reinsertion.
-  if($self->is_paired_read() && !$lane_lims->inline_index_exists) {
-    # omit BamAdapterFinder for inline index
+  if($self->is_paired_read()) {
     my @range1 = $self->read1_cycle_range();
     my $read1_length = $range1[1] - $range1[0] + 1;
     my @range2 = $self->read2_cycle_range();
