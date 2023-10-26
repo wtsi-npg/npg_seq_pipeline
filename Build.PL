@@ -98,7 +98,6 @@ my $builder = $class->new(
           'npg_qc::illumina::interop::parser'                  => 0,
           'st::api::lims'                                      => 0,
           'st::api::lims::ml_warehouse'                        => 0,
-          'npg::api::request'                                  => 0,
           'npg::samplesheet'                                   => 0,
           'WTSI::DNAP::Utilities::Loggable'                    => 0,
           'WTSI::DNAP::Warehouse::Schema'                      => 0,
