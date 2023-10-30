@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunParameters xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Side>B</Side>
+  <Application>control-software</Application>
+  <SystemSuiteVersion>1.1.0.18335</SystemSuiteVersion>
+  <OutputFolder>//nx1-esa.dnapipelines.sanger.ac.uk/staging/IL_seq_data/incoming/20230628_LH00210_0008_B225TGJLT3</OutputFolder>
+  <CloudUploadMode>InstrumentPerformance</CloudUploadMode>
+  <RunSetupMode>LocalOrchestrated</RunSetupMode>
+  <SecondaryAnalysisMode>LocalAnalysis</SecondaryAnalysisMode>
+  <InstrumentType>NovaSeqXPlus</InstrumentType>
+  <InstrumentSerialNumber>LH00210</InstrumentSerialNumber>
+  <RunId>20230628_LH00210_0008_B225TGJLT3</RunId>
+  <RunCounter>8</RunCounter>
+  <RecipeName>10B Sequencing</RecipeName>
+  <RecipeVersion>10B-01.01.00</RecipeVersion>
+  <ExperimentName>47539</ExperimentName>
+  <FlowCellName>NovaSeqXSeries B3</FlowCellName>
+  <FlowCellType>NovaSeqXSeriesB3</FlowCellType>
+  <ScanSpeedMmPerSec>1.2345678</ScanSpeedMmPerSec>
+  <ConsumableInfo>
+    <ConsumableInfo>
+      <SerialNumber>225TGJLT3</SerialNumber>
+      <LotNumber>20750642</LotNumber>
+      <PartNumber>20080370</PartNumber>
+      <ExpirationDate>2024-04-09T00:00:00+01:00</ExpirationDate>
+      <Type>FlowCell</Type>
+      <Mode>10B</Mode>
+    </ConsumableInfo>
+    <ConsumableInfo>
+      <SerialNumber>LC4009058-LC3</SerialNumber>
+      <LotNumber>20740727</LotNumber>
+      <PartNumber>20066614</PartNumber>
+      <ExpirationDate>2024-03-27T00:00:00Z</ExpirationDate>
+      <Type>Reagent</Type>
+      <Mode>10B</Mode>
+    </ConsumableInfo>
+    <ConsumableInfo>
+      <SerialNumber>LC2304140485-1</SerialNumber>
+      <LotNumber>23041301</LotNumber>
+      <PartNumber>20089853</PartNumber>
+      <ExpirationDate>2024-07-13T00:00:00+01:00</ExpirationDate>
+      <Type>Buffer</Type>
+      <Mode>10B</Mode>
+    </ConsumableInfo>
+    <ConsumableInfo>
+      <SerialNumber>LC1009924-LC1</SerialNumber>
+      <LotNumber>1000017597</LotNumber>
+      <PartNumber>20072271</PartNumber>
+      <ExpirationDate>2024-04-08T00:00:00+01:00</ExpirationDate>
+      <Type>SampleTube</Type>
+      <Mode>10B</Mode>
+    </ConsumableInfo>
+    <ConsumableInfo>
+      <SerialNumber>LC2007014-LC1</SerialNumber>
+      <LotNumber>17847282</LotNumber>
+      <PartNumber>20081650</PartNumber>
+      <ExpirationDate>2024-02-13T00:00:00Z</ExpirationDate>
+      <Type>Lyo</Type>
+      <Mode>10B</Mode>
+    </ConsumableInfo>
+  </ConsumableInfo>
+  <PlannedReads>
+    <Read ReadName="Read1" Cycles="151" />
+    <Read ReadName="Index1" Cycles="8" />
+    <Read ReadName="Index2" Cycles="8" />
+    <Read ReadName="Read2" Cycles="151" />
+  </PlannedReads>
+  <SecondaryAnalysisInfo>
+    <SecondaryAnalysisInfo>
+      <SecondaryAnalysisPlatformVersion>4.1.7</SecondaryAnalysisPlatformVersion>
+      <SecondaryAnalysisWorkflow>
+        <string>DRAGEN BCL Convert</string>
+        <string>DRAGEN Germline</string>
+        <string>DRAGEN Germline</string>
+        <string>DRAGEN RNA</string>
+      </SecondaryAnalysisWorkflow>
+    </SecondaryAnalysisInfo>
+  </SecondaryAnalysisInfo>
+</RunParameters>
