@@ -291,7 +291,8 @@ subtest 'NovaSeq run' => sub {
 };
 
 subtest 'NovaSeqX run' => sub {
-  plan tests => 3,
+  plan tests => 7,
+
   my $id_run  = 47515;
   my $rf_name = '20230622_LH00210_0007_A225TMTLT3';
   my $rfpath_test  = abs_path(getcwd) . qq{/t/data/novaseqx/$rf_name};
@@ -319,8 +320,25 @@ subtest 'NovaSeqX run' => sub {
   my $da = $a->create();
   my $d = $da->[0];
   like ($d->command,
-    qr{--collection \S+illumina/runs\S+lane1\/plex1},
+    qr{--collection \S+illumina/runs\S+lane1\/plex888},
+    'command has per product iRODS destination collection for spiked in PhiX');
+  $d = $da->[8];
+  like ($d->command,
+    qr{--collection \S+illumina/runs\S+lane1\/plex0},
+    'command has per product iRODS destination collection for tag zero');
+  $d = $da->[16];
+  like ($d->command,
+    qr{--collection \S+illumina/runs\S+lane1-2-3-4\/plex1},
     'command has per product iRODS destination collection');
+  $d = $da->[21];
+  like ($d->command,
+    qr{--collection \S+illumina/runs\S+lane1-2-3-4\/plex6},
+    'command has per product iRODS destination collection');
+  $d = $da->[-1];
+  like ($d->command,
+    qr{--collection \S+illumina/runs\S+lane5-6-7-8\/plex6},
+    'command has per product iRODS destination collection');
+
 };
 
 1;

@@ -202,8 +202,8 @@ sub irods_product_destination_collection_norf {
   $run_collection or croak('Run collection iRODS path is required');
   $product or croak('Product object is required');
   return $per_product_archive
-         ? join q[/], $run_collection, $product->dir_path()
-         : $run_collection;
+    ? join q[/], $run_collection, $product->dir_path($product->selected_lanes)
+    : $run_collection;
 }
 
 =head2 is_for_irods_release

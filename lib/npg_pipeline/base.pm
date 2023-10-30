@@ -227,6 +227,23 @@ sub _build_merge_lanes {
   return $self->all_lanes_mergeable;
 }
 
+=head2 merge_by_library
+
+=cut
+
+has q{merge_by_library} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{Tells p4 stage2 (seq_alignment) to merge all plexes } .
+                   q{that belong to the same library, except spiked PhiX and }.
+                   q{tag zero)},
+);
+sub _build_merge_by_library {
+  my $self = shift;
+  return $self->is_indexed && $self->platform_NovaSeqX();
+}
+
 =head2 lims
 
 st::api::lims run-level or product-specific object
@@ -337,27 +354,62 @@ sub _build_products {
 
   my @lane_lims = ();
   my @data_lims = ();
+  my @libmerged_data_lims = ();
+  my $selected_lanes4libmerge = 0;
 
   if ($self->has_product_rpt_list) {
     @data_lims = ($self->lims);
   } else {
     my @positions = $self->positions;
     @lane_lims = map { $self->lims4lane($_) } @positions;
+
     if ($self->merge_lanes) {
       @data_lims = $self->lims->aggregate_xlanes(@positions);
     } else {
-      foreach my $lane (@lane_lims) {
-        if ($self->is_indexed && $lane->is_pool) {
-          push @data_lims, $lane->children, $lane->create_tag_zero_object();
-        } else {
-          push @data_lims, $lane;
-        }
+
+      my %tag0_lims = ();
+      if ($self->is_indexed) {
+        %tag0_lims = map { $_->position => $_->create_tag_zero_object() }
+                     grep { $_->is_pool } @lane_lims;
+      }
+
+      if ($self->merge_by_library) {
+
+        my $all_lims = $self->lims->aggregate_libraries(\@lane_lims);
+        # Unmerged data, if any, including individual objects for
+        # spiked controls.
+        push @data_lims, @{$all_lims->{'single'}};
+        # Tag zero LIMS objects for all lanes, merged or unmerged.
+        push @data_lims, map { $tag0_lims{$_} } (sort keys %tag0_lims);
+        # Merged data.
+        @libmerged_data_lims =
+          map { @{$all_lims->{'merges'}->{$_}} }
+          ( sort keys %{$all_lims->{'merges'}} );
+        # We might be analysing a full set of lanes, but the libraries
+        # might be merged across some lanes only.
+        $selected_lanes4libmerge = $self->_selected_lanes ||
+          (!exists $all_lims->{'merges'}->{join q[,], @positions});
+
+      } else {
+        # To keep backward-compatible order of pipeline invocations, add
+        # tag zero LIMS object at the end of other objects for the lane.
+        @data_lims = map {
+            exists $tag0_lims{$_->position} ?
+            ($_->children, $tag0_lims{$_->position}) : $_
+          } @lane_lims
       }
     }
   }
 
+  my @data_products = map { $self->_lims_object2product($_) } @data_lims;
+  if (@libmerged_data_lims) {
+    push @data_products,
+      map { $self->_lims_object2product($_, $selected_lanes4libmerge) }
+      @libmerged_data_lims;
+  }
+
   return {
-    'data_products' => [map { $self->_lims_object2product($_) } @data_lims],
+    'data_products' => \@data_products,
     'lanes'         => [map { $self->_lims_object2product($_) } @lane_lims]
   };
 }
@@ -365,7 +417,7 @@ sub _build_products {
 #####
 # The boolean flag below defines whether lane numbers are explicitly
 # listed in directory and file names for merged products. It is set
-# to true whenever a subset of all available lanes is analysed. 
+# to true whenever a subset of all available lanes is analysed.
 has q{_selected_lanes} => (
   isa           => q{Bool},
   is            => q{ro},
@@ -381,13 +433,15 @@ sub _build__selected_lanes {
 }
 
 sub _lims_object2product {
-  my ($self, $lims) = @_;
+  my ($self, $lims, $selected_lanes) = @_;
+
   return npg_pipeline::product->new(
     rpt_list       => $lims->rpt_list ? $lims->rpt_list :
                         npg_tracking::glossary::rpt->deflate_rpt($lims),
     lims           => $lims,
-    selected_lanes => $self->_selected_lanes
-  )
+    selected_lanes => defined $selected_lanes ?
+                        $selected_lanes : $self->_selected_lanes
+  );
 }
 
 __PACKAGE__->meta->make_immutable;
