@@ -237,7 +237,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});
   $self->debug(qq{  is_tag_zero_product: $is_tag_zero_product});
-  $self->debug(qq{  is_pool: $is_pool});
+  $self->debug( q{  is_pool: } . $is_pool ? 1 : 0);
   $self->debug(qq{  dp_archive_path: $dp_archive_path});
   $self->debug(qq{  uses_patterned_flowcell: $uses_patterned_flowcell});
   $self->debug(qq{  cache10k_path: $cache10k_path});
