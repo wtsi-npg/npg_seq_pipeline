@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - Add in use of autosome target regions for BGE libraries in seq_alignment
+
 release 67.0.0
  - Turn off spatial filter QC check for NovaSeqX
  - Switch to Perlbrew to obtain multiple Perl versions
