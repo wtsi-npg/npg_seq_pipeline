@@ -10,6 +10,7 @@ use File::Basename;
 use Readonly;
 
 use npg_tracking::glossary::rpt;
+use npg_tracking::glossary::composition::factory::rpt_list;
 use st::api::lims;
 use npg_pipeline::product;
 
@@ -352,10 +353,7 @@ has q{products} => (
 sub _build_products {
   my $self = shift;
 
-  my @lane_lims = ();
-  my @data_lims = ();
-  my @libmerged_data_lims = ();
-  my $selected_lanes4libmerge = 0;
+  my (@lane_lims, @data_lims);
 
   if ($self->has_product_rpt_list) {
     @data_lims = ($self->lims);
@@ -374,42 +372,40 @@ sub _build_products {
       }
 
       if ($self->merge_by_library) {
-
         my $all_lims = $self->lims->aggregate_libraries(\@lane_lims);
-        # Unmerged data, if any, including individual objects for
-        # spiked controls.
-        push @data_lims, @{$all_lims->{'single'}};
+        @data_lims = @{$all_lims->{'singles'}}; # Might be empty.
         # Tag zero LIMS objects for all lanes, merged or unmerged.
         push @data_lims, map { $tag0_lims{$_} } (sort keys %tag0_lims);
-        # Merged data.
-        @libmerged_data_lims =
-          map { @{$all_lims->{'merges'}->{$_}} }
-          ( sort keys %{$all_lims->{'merges'}} );
-        # We might be analysing a full set of lanes, but the libraries
-        # might be merged across some lanes only.
-        $selected_lanes4libmerge = $self->_selected_lanes ||
-          (!exists $all_lims->{'merges'}->{join q[,], @positions});
+
+        if ( @{$all_lims->{'merges'}} ) {
+          # If the libraries are merged across a subset of lanes under analysis,
+          # the 'selected_lanes' flag needs to be flipped to true.
+          if (!$self->_selected_lanes) {
+            my $rpt_list = $all_lims->{'merges'}->[0]->rpt_list;;
+            my $num_components =
+              npg_tracking::glossary::composition::factory::rpt_list
+                ->new(rpt_list => $rpt_list)
+                ->create_composition()->num_components();
+            if ($num_components != scalar @lane_lims) {
+              $self->_set_selected_lanes(1);
+            }
+          }
+          push @data_lims, @{$all_lims->{'merges'}};
+        }
 
       } else {
         # To keep backward-compatible order of pipeline invocations, add
         # tag zero LIMS object at the end of other objects for the lane.
         @data_lims = map {
-            exists $tag0_lims{$_->position} ?
+          exists $tag0_lims{$_->position} ?
             ($_->children, $tag0_lims{$_->position}) : $_
-          } @lane_lims
+        } @lane_lims;
       }
     }
   }
 
-  my @data_products = map { $self->_lims_object2product($_) } @data_lims;
-  if (@libmerged_data_lims) {
-    push @data_products,
-      map { $self->_lims_object2product($_, $selected_lanes4libmerge) }
-      @libmerged_data_lims;
-  }
-
   return {
-    'data_products' => \@data_products,
+    'data_products' => [map { $self->_lims_object2product($_) } @data_lims],
     'lanes'         => [map { $self->_lims_object2product($_) } @lane_lims]
   };
 }
@@ -418,9 +414,12 @@ sub _build_products {
 # The boolean flag below defines whether lane numbers are explicitly
 # listed in directory and file names for merged products. It is set
 # to true whenever a subset of all available lanes is analysed.
+# If it is set to false by the builder method, it can be reset to true
+# when a full collection of products is constructed.
 has q{_selected_lanes} => (
   isa           => q{Bool},
   is            => q{ro},
+  writer        => q{_set_selected_lanes},
   lazy_build    => 1,
 );
 sub _build__selected_lanes {
@@ -433,14 +432,13 @@ sub _build__selected_lanes {
 }
 
 sub _lims_object2product {
-  my ($self, $lims, $selected_lanes) = @_;
+  my ($self, $lims) = @_;
 
   return npg_pipeline::product->new(
     rpt_list       => $lims->rpt_list ? $lims->rpt_list :
                         npg_tracking::glossary::rpt->deflate_rpt($lims),
     lims           => $lims,
-    selected_lanes => defined $selected_lanes ?
-                        $selected_lanes : $self->_selected_lanes
+    selected_lanes => $self->_selected_lanes
   );
 }
 
@@ -475,6 +473,8 @@ __END__
 =item Readonly
 
 =item npg_tracking::glossary::rpt
+
+=item npg_tracking::glossary::composition::factory::rpt_list
 
 =item st::api::lims
 

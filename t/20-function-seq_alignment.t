@@ -2022,7 +2022,7 @@ subtest 'test reference caching' => sub {
   # This test was set up to demonstrate a problem with ref cache
   # when a lane preceeding the one where the problem is observed
   # has samples with multiple references. The test will start
-  # passing when the root cause of teh problem is fixed in
+  # passing when the root cause of the problem is fixed in
   # st::api::lims.
   my $generator = npg_pipeline::function::seq_alignment->new(
     id_run         => $id_run,
@@ -2032,7 +2032,7 @@ subtest 'test reference caching' => sub {
     repository     => $dir,
     resource       => $default,
     conf_path      => 't/data/release/config/seq_alignment',
-    lines          => [1, 4],
+    lanes          => [1, 4],
   );
 
   lives_ok { $generator->generate() }
