@@ -1040,10 +1040,10 @@ t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_2021
 t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/lane_3.taglist
 t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/lane_4.taglist
 t/data/novaseq/210415_A00971_0162_AHNNTMDSXY/Data/Intensities/BAM_basecalls_20210417-080715/metadata_cache_37416/samplesheet_37416.csv
-t/data/novaseqx_47539/README.md
-t/data/novaseqx_47539/RunInfo.xml
-t/data/novaseqx_47539/RunParameters.xml
-t/data/novaseqx_47539/samplesheet_47539.csv
+t/data/novaseqx/47539/README.md
+t/data/novaseqx/47539/RunInfo.xml
+t/data/novaseqx/47539/RunParameters.xml
+t/data/novaseqx/47539/samplesheet_47539.csv
 t/data/p4_stage1_analysis/1234_samplesheet.csv
 t/data/p4_stage1_analysis/TileMetricsOut.bin
 t/data/portable_pipelines/samplesheet4archival_all_controls.csv

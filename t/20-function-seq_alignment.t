@@ -1946,7 +1946,7 @@ subtest 'single-end markdup_method test' => sub {
 subtest 'test reference caching' => sub {
   plan tests => 7;
   
-  my $data_dir = q[t/data/novaseqx_47539];
+  my $data_dir = q[t/data/novaseqx/47539];
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = qq[$data_dir/samplesheet_47539.csv];
 
   my $id_run = 47539;
