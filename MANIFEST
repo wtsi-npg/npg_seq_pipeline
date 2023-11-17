@@ -1044,6 +1044,9 @@ t/data/novaseqx/47539/README.md
 t/data/novaseqx/47539/RunInfo.xml
 t/data/novaseqx/47539/RunParameters.xml
 t/data/novaseqx/47539/samplesheet_47539.csv
+t/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3/RunInfo.xml
+t/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3/RunParameters.xml
+t/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3/samplesheet_47995.csv
 t/data/p4_stage1_analysis/1234_samplesheet.csv
 t/data/p4_stage1_analysis/TileMetricsOut.bin
 t/data/portable_pipelines/samplesheet4archival_all_controls.csv

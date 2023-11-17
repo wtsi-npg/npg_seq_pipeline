@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use Cwd;
@@ -83,16 +83,20 @@ subtest 'repository preexec' => sub {
     q{correct ref_adapter_pre_exec_string} );
 };
 
-subtest 'products' => sub {
-  plan tests => 18;
+subtest 'products - merging (or not) lanes' => sub {
+  plan tests => 19;
+
+  my $rf_path = q[t/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3];
+  my $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 47995);
+  ok(!$b->merge_lanes, 'merge by lanes is false for NovaSeqX');
 
   my $rf_info = $util->create_runfolder();
-  my $rf_path = $rf_info->{'runfolder_path'};
+  $rf_path = $rf_info->{'runfolder_path'};
   my $products;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_novaseq4lanes.csv';
   cp 't/data/run_params/runParameters.novaseq.xml',  "$rf_path/runParameters.xml";
-  my $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
+  $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
   ok ($b->merge_lanes, 'merge_lanes flag is set');
   lives_ok {$products = $b->products} 'products hash created for NovaSeq run';
   ok (exists $products->{'lanes'}, 'products lanes key exists');
@@ -122,6 +126,141 @@ subtest 'products' => sub {
   ok (exists $products->{'data_products'}, 'products data_products key exists');
   is (scalar @{$products->{'data_products'}}, 3, 'three data products');
 };
+
+subtest 'products - merging (or not) libraries' => sub {
+  plan tests => 418;
+
+  my $rf_info = $util->create_runfolder();
+  my $rf_path = $rf_info->{'runfolder_path'};
+  cp 't/data/run_params/runParameters.novaseq.xml',  "$rf_path/runParameters.xml";
+  my $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
+  ok(!$b->merge_by_library, 'merge by library is false for NovaSeq');
+
+  $rf_path = q[t/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3];
+  my $id_run = 47995;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = qq[$rf_path/samplesheet_${id_run}.csv];
+  # All lanes are spiked. Possible merges:
+  # lanes 1, 2 - 17 samples
+  # lanes 3, 4 - 10 samples
+  # lanes 5, 6 - 22 samples
+  # lanes 7, 8 - 38 samples
+  $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => $id_run);
+  ok($b->merge_by_library, 'merge by library is true for NovaSeqX');
+  my @lane_products = @{$b->products()->{'lanes'}};
+  is (@lane_products, 8, 'eight lane products');
+  is_deeply ([map { $_->rpt_list } @lane_products],
+    [map { join q[:], $id_run, $_} (1 .. 8)],
+    'lane products have correct rpt lists assigned');
+  my @products = @{$b->products()->{'data_products'}};
+  is (@products, 103, 'number of data products is 103');
+  my @expected = map { join q[:], $id_run, $_, 888 } (1 .. 8);
+  is_deeply ([map { $_->rpt_list } map { $products[$_] } (0 .. 7)],
+    \@expected, 'first eight products are for spiked controls');
+  @expected = map { join q[:], $id_run, $_, 0 } (1 .. 8);
+  is_deeply ([map { $_->rpt_list } map { $products[$_] } (8 .. 15)],
+     \@expected, 'next eight products are for tag zero');
+  my $ti = 1;
+  foreach my $p (map { $products[$_] } (16 .. 32)) {
+    my $expected_rpt_list = _generate_rpt($id_run, [1,2], $ti);
+    $ti++;
+    is ($p->rpt_list, $expected_rpt_list,
+      "product rpt list $expected_rpt_list as expected");
+    ok ($p->selected_lanes, 'selected_lanes flag is set to true');
+  }
+  $ti = 1;
+  foreach my $p (map { $products[$_] } (33 .. 42)) {
+    my $expected_rpt_list = _generate_rpt($id_run, [3,4], $ti);
+    $ti++;
+    is ($p->rpt_list, $expected_rpt_list,
+      "product rpt list $expected_rpt_list as expected");
+    ok ($p->selected_lanes, 'selected_lanes flag is set to true');
+  }
+  $ti = 1;
+  foreach my $p (map { $products[$_] } (43 .. 64)) {
+    my $expected_rpt_list = _generate_rpt($id_run, [5,6], $ti);
+    $ti++;
+    is ($p->rpt_list, $expected_rpt_list,
+      "product rpt list $expected_rpt_list as expected");
+    ok ($p->selected_lanes, 'selected_lanes flag is set to true');
+  }
+  $ti = 1;
+  foreach my $p (map { $products[$_] } (65 .. 102)) {
+    my $expected_rpt_list = _generate_rpt($id_run, [7,8], $ti);
+    $ti++;
+    is ($p->rpt_list, $expected_rpt_list,
+      "product rpt list $expected_rpt_list as expected");
+    ok ($p->selected_lanes, 'selected_lanes flag is set to true');
+  }
+
+  # Expect lanes 3 and 4 merged.
+  $b = npg_pipeline::base->new(
+    runfolder_path => $rf_path, id_run => $id_run, lanes => [4,8,3]);
+  ok($b->merge_by_library, 'merge by library is true for NovaSeqX');
+
+  @lane_products = @{$b->products()->{'lanes'}};
+  is (@lane_products, 3, 'three lane products');
+  is_deeply ([map { $_->rpt_list } @lane_products],
+    [map { join q[:], $id_run, $_} (3,4,8)],
+    'lane products have correct rpt lists assigned');
+
+  @products = @{$b->products()->{'data_products'}};
+  is (@products, 54, 'number of data products is 54');
+
+  is ($products[0]->rpt_list, "$id_run:3:888",
+    'first single product is for spiked control for lane 3');
+  is ($products[1]->rpt_list, "$id_run:4:888",
+    'second single product is for spiked control for lane 4');
+  # Then all single products for lane 8.
+  $ti = 1;
+  foreach my $p (map { $products[$_] } (2 .. 39)) {
+    my $expected_rpt_list = join q[:], $id_run, 8, $ti;
+    $ti++;
+    is ($p->rpt_list, $expected_rpt_list,
+      "product rpt list $expected_rpt_list as expected");
+    ok ($p->selected_lanes, 'selected_lanes flag is set to true');
+  }
+  is ($products[40]->rpt_list, "$id_run:8:888", 'spiked control for lane 8');
+  is ($products[41]->rpt_list, "$id_run:3:0", 'tag zero for lane 3');
+  is ($products[42]->rpt_list, "$id_run:4:0", 'tag zero for lane 4');
+  is ($products[43]->rpt_list, "$id_run:8:0", 'tag zero for lane 8');
+  # Then merged data.
+  $ti = 1;
+  foreach my $p (map { $products[$_] } (44 .. 53)) {
+    my $expected_rpt_list = _generate_rpt($id_run, [3,4], $ti);
+    $ti++;
+    is ($p->rpt_list, $expected_rpt_list,
+      "product rpt list $expected_rpt_list as expected");
+    ok ($p->selected_lanes, 'selected_lanes flag is set to true');
+  }
+
+  # Merge disabled.
+  $b = npg_pipeline::base->new(
+    runfolder_path => $rf_path,
+    id_run => $id_run,
+    lanes => [4,8,3],
+    merge_by_library => 0
+  );
+  ok(!$b->merge_by_library, 'merge by library is false');
+  @products = @{$b->products()->{'data_products'}};
+  is (@products, 64, 'number of data products is 64');
+  
+  foreach my $position ((3, 4, 8)) {
+    my $num_plexes = $position == 8 ? 38 : 10;
+    foreach my $index ((1 .. $num_plexes, 888, 0)) {
+      my $p = shift @products;
+      my $expected_rpt_list = join q[:], $id_run, $position, $index;
+      is ($p->rpt_list, $expected_rpt_list,
+        "product rpt list $expected_rpt_list as expected");
+      ok ($p->selected_lanes, 'selected_lanes flag is set to true');
+    }
+  }
+  is (@products, 0, 'no products are left');
+};
+
+sub _generate_rpt {
+  my ($id_run, $lanes, $tag_index) = @_;
+  return join q[;], map { join q[:], $id_run, $_, $tag_index  } @{$lanes};
+}
 
 subtest 'label' => sub {
   plan tests => 4;
