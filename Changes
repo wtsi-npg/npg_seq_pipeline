@@ -2,6 +2,14 @@ LIST OF CHANGES
 ---------------
 
  - Add in use of autosome target regions for BGE libraries in seq_alignment
+ - Add 'merge_by_library' pipeline boolean option. This options is automatially
+   activated for NovaSeqX platform. It triggers a discovery of sets of data
+   that belong to the same libraries. If cases like this are found, the pipeline
+   is instructed, at the secondary analysis stage, to process this data as a
+   single entity. In practice, if the same pool is sequenced in more than one
+   lane of the run, sample data for the pool are merged across these lanes.
+   The 'discovery' part of the algorithm is implemented in
+   https://github.com/wtsi-npg/npg_tracking/pull/772
 
 release 67.0.0
  - Turn off spatial filter QC check for NovaSeqX
