@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - Fix typo in analysis specific overrides for bwa_als_se mapping to bwa0_6
  - Add in use of autosome target regions for BGE libraries in seq_alignment
  - Add 'merge_by_library' pipeline boolean option. This options is automatially
    activated for NovaSeqX platform. It triggers a discovery of sets of data

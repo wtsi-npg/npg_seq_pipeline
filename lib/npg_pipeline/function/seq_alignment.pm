@@ -560,7 +560,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 ###
     my $exceptions = {
       bwa_aln        => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
-      bwa_aln_se     => { aligner => q[bw0_6], refindex => q[bwa0_6], },
+      bwa_aln_se     => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
       bwa_mem        => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
       bwa_mem_bwakit => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
       bwa_mem2       => { aligner => q[bwa-mem2], refindex => q[bwa_mem2], p4_alignment_method => q[bwa_mem] },
