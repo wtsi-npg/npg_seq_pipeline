@@ -4,7 +4,6 @@ use Moose;
 use File::Temp qw{ tempdir };
 use Readonly;
 use File::Path qw(make_path);
-use npg::api::request;
 
 Readonly::Scalar my $NFS_STAGING_DISK => q{/nfs/sf45};
 
@@ -114,11 +113,6 @@ $reads
 </RunInfo>
 ENDXML
   close $fh;
-}
-
-# ensure that the environment variables do not get passed around
-sub DEMOLISH {
-  $ENV{ npg::api::request->cache_dir_var_name() } = q{};
 }
 
 1;

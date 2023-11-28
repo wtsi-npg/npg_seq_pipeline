@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 19;
+use Test::More tests => 20;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -1940,6 +1940,113 @@ subtest 'single-end markdup_method test' => sub {
         is($h->{assign}->[0]->{$att}, $expected->{$t}->{$att}, "correct value for p4 parameter $att for run 45421 lane 1 tag $t");
       }
     }
+  }
+};
+
+subtest 'test reference caching' => sub {
+  plan tests => 7;
+  
+  my $data_dir = q[t/data/novaseqx/47539];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = qq[$data_dir/samplesheet_47539.csv];
+
+  my $id_run = 47539;
+  my $runfolder_name = q[20230628_LH00210_0008_B225TGJLT3];
+  my $runfolder_path = qq[$dir/20230628_LH00210_0008_B225TGJLT3];
+  my $nocal_dir =
+    qq[$runfolder_path/Data/Intensities/BAM_basecalls_20230914-143003/no_cal]; 
+  my $archive_dir = qq[$nocal_dir/archive];
+
+  my $lims = st::api::lims->new(id_run => $id_run);
+  for my $lane ($lims->children) {
+    my $lane_path = join q[/], $archive_dir, q[lane] . $lane->position;
+    my @indexes = map {$_->tag_index} $lane->children;
+    push @indexes, 0, 888;
+    for my $index (@indexes) {
+      make_path(join q[/], $lane_path, q[plex] . $index);
+    }
+  }
+
+  foreach my $file (qw(RunParameters.xml RunInfo.xml)) {
+    copy("$data_dir/$file", "$runfolder_path/$file")
+  }
+
+  # Have to add some references to the test ref repo that was
+  # created at the beginning of this test file.
+  my @ref_dirs = qw(
+    Bordetella_pertussis/Tohama_I/all
+    Clostridium_difficile/Strain_630/all
+    Escherichia_coli/K12/all
+    Escherichia_coli/K12_DH10B/all
+    Homo_sapiens/GRCh38_15_plus_hs38d1/all
+    Plasmodium_falciparum/3D7_Jan16v3/all
+  );
+  @ref_dirs = map { "$ref_dir/$_" } @ref_dirs;
+
+  my @ref_names = qw(
+    B_pertussis_Tahoma_I.fasta
+    C_difficile_630.fasta
+    E-coli-K12.fa
+    CP000948.1.fasta
+    Homo_sapiens.GRCh38_15_plus_hs38d1.fa
+    Pf3D7_v3.fa
+  );
+  my @aligners = qw/fasta bwa bwa_mem2 minimap2 picard star/;
+  
+  my $i = 0;
+  while ($i < @ref_dirs) {
+    my $top_dir = $ref_dirs[$i];
+    my $file_name = $ref_names[$i];
+    for my $a (@aligners) {
+      my $dir = join q[/], $top_dir, $a;
+      make_path($dir); # Create the directory for the reference.
+      my $path;
+      if ($a eq 'fasta') {
+        $path = "$dir/$file_name";
+      } elsif ($a eq 'picard') {
+        my $name = join q[.], $file_name, 'dict';
+        $path = "$dir/$name";
+      } else {
+        my $name = join q[.], $file_name, 'do'; # some extension
+        $path = "$dir/$name";
+      }
+      `touch $path`; # Create the reference file.
+    }
+    $i++;
+  }
+
+  # Need two lanes. One, in which the ref cache miss is recorded
+  # for a reference for tag zero, and another, where this reference
+  # is needed for one of the samples. Missing reference results in
+  # data for tag 2 being unaligned.
+
+  # This test was set up to demonstrate a problem with ref cache
+  # when a lane preceeding the one where the problem is observed
+  # has samples with multiple references. The test will start
+  # passing when the root cause of the problem is fixed in
+  # st::api::lims.
+  my $generator = npg_pipeline::function::seq_alignment->new(
+    id_run         => $id_run,
+    run_folder     => $runfolder_name,
+    runfolder_path => $runfolder_path,
+    archive_path   => $archive_dir,
+    repository     => $dir,
+    resource       => $default,
+    conf_path      => 't/data/release/config/seq_alignment',
+    lanes          => [1, 4],
+  );
+
+  lives_ok { $generator->generate() }
+    'run seq_alignment function for two lanes';
+
+  for my $i (qw(1 2)) {
+    my $json_file = sprintf qq[%s/%i_4#%s_p4s2_pv_in.json],
+      $nocal_dir, $id_run, $i;
+    ok (-e $json_file, "File $json_file exists");
+    my $p4config = from_json(slurp $json_file);
+    $p4config = $p4config->{'assign'}->[0];
+    is ($p4config->{'rpt'}, '47539_4#' . $i, 'correct rpt key value');
+    ok (!exists $p4config->{'no_target_alignment'},
+      "the alignment not disabled for tag $i in lane 4");
   }
 };
 

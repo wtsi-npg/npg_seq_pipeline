@@ -36,6 +36,7 @@ Readonly::Scalar my $PFC_MARKDUP_OPT_DIST         => q{2500};  # distance in pix
 Readonly::Scalar my $NON_PFC_MARKDUP_OPT_DIST     => q{100};   # distance in pixels for optical duplicate detection on non-patterned flowcells
 Readonly::Scalar my $BWA_MEM_MISMATCH_PENALTY     => q{5};
 Readonly::Scalar my $SKIP_MARKDUP_METRICS         => 1;
+Readonly::Scalar my $AUTO_COV_THRESHOLD           => 1;
 
 around 'markdup_method' => sub {
     my $orig = shift;
@@ -237,7 +238,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});
   $self->debug(qq{  is_tag_zero_product: $is_tag_zero_product});
-  $self->debug(qq{  is_pool: $is_pool});
+  $self->debug( q{  is_pool: } . $is_pool ? 1 : 0);
   $self->debug(qq{  dp_archive_path: $dp_archive_path});
   $self->debug(qq{  uses_patterned_flowcell: $uses_patterned_flowcell});
   $self->debug(qq{  cache10k_path: $cache10k_path});
@@ -371,16 +372,22 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   # handle extra stats file for aligned data with reference regions file
   my $do_target_regions_stats = 0;
-  if ($do_target_alignment && !$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
+  if ($do_target_alignment && !$spike_tag && !$do_gbs_plex && !$do_rna) {
+    my $target_path = $self->_ref($dp, $TARGET_REGIONS_DIR);
+    my $target_autosome_path = $self->_ref($dp, $TARGET_AUTOSOME_REGIONS_DIR);
+
     if($self->_do_bait_stats_analysis($dp)){
        $p4_param_vals->{target_regions_file} = $self->_bait($rpt_list)->target_intervals_path();
-       push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
        $do_target_regions_stats = 1;
+       if ( $l->library_type && ($l->library_type =~ /BGE/smx) && $target_autosome_path ) {
+         $p4_param_vals->{target_autosome_regions_file} = $target_autosome_path.q(.interval_list);
+         $p4_param_vals->{stats_filter__cov_threshold_autosome} = $AUTO_COV_THRESHOLD;
+       } else {
+         push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
+       }
     }
     else {
-      my $target_path = $self->_ref($dp, $TARGET_REGIONS_DIR);
-      my $target_autosome_path = $self->_ref($dp, $TARGET_AUTOSOME_REGIONS_DIR);
-      if ($target_path) {
+      if ($target_path && !$human_split) {
         $p4_param_vals->{target_regions_file} = $target_path.q(.interval_list);
         $do_target_regions_stats = 1;
         if ($target_autosome_path) {
@@ -553,7 +560,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 ###
     my $exceptions = {
       bwa_aln        => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
-      bwa_aln_se     => { aligner => q[bw0_6], refindex => q[bwa0_6], },
+      bwa_aln_se     => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
       bwa_mem        => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
       bwa_mem_bwakit => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
       bwa_mem2       => { aligner => q[bwa-mem2], refindex => q[bwa_mem2], p4_alignment_method => q[bwa_mem] },

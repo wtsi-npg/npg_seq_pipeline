@@ -1,6 +1,28 @@
 LIST OF CHANGES
 ---------------
 
+release 67.1.0
+ - Fix typo in analysis specific overrides for bwa_als_se mapping to bwa0_6
+ - Add in use of autosome target regions for BGE libraries in seq_alignment
+ - Add 'merge_by_library' pipeline boolean option. This options is automatially
+   activated for NovaSeqX platform. It triggers a discovery of sets of data
+   that belong to the same libraries. If cases like this are found, the pipeline
+   is instructed, at the secondary analysis stage, to process this data as a
+   single entity. In practice, if the same pool is sequenced in more than one
+   lane of the run, sample data for the pool are merged across these lanes.
+   The 'discovery' part of the algorithm is implemented in
+   https://github.com/wtsi-npg/npg_tracking/pull/772
+ - Removed provisions for inline indexes
+ - Removed a check for rapid runs when deciding whether to merge
+ - Stop warnings about an undefined value when writing to the log from
+   npg_pipeline::function::seq_alignment
+ - Some tests were creating test data in the package's source tree. These
+   activities are redirected to temporary files and directories in /tmp
+ - Removed listing of non-existing files from MANIFEST
+ - Removed superfluous dependency on now removed st::api::request
+ - Added a test to expose a problem with ref cache, which is resolved by
+   https://github.com/wtsi-npg/npg_tracking/pull/761
+
 release 67.0.0
  - Turn off spatial filter QC check for NovaSeqX
  - Switch to Perlbrew to obtain multiple Perl versions
