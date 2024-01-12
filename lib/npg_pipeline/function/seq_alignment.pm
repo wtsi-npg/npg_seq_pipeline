@@ -454,11 +454,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
         $p4_param_vals->{primer_clip_bed} = $pcb;
         $self->info(qq[No markdup with primer panel: $pcb]);
       }
-      elsif($do_gbs_plex &&
-            (my $gbb=npg_pipeline::cache::reference->instance->get_gbs_plex_bed_file($dp, $self->repository))) {
-        $p4_param_vals->{primer_clip_bed} = $gbb;
-        $self->info(qq[No markdup with gbs primer panel : $gbb]);
-      }
       else {
         $p4_param_vals->{primer_clip_method} = q[no_clip];
         $self->info(q[No markdup, no primer panel]);
@@ -503,7 +498,12 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   my $p4_local_assignments = {};
   if($do_gbs_plex){
-     $p4_param_vals->{primer_clip_method} = q[no_clip];
+     if(my $gbb=npg_pipeline::cache::reference->instance->get_gbs_plex_bed_file($dp, $self->repository)) {
+        $p4_param_vals->{primer_clip_bed} = $gbb;
+        $self->info(qq[No markdup with gbs primer panel : $gbb]);
+     } else {
+        $p4_param_vals->{primer_clip_method} = q[no_clip];
+     }
      $p4_param_vals->{bwa_executable}   = q[bwa0_6];
      $p4_param_vals->{bsc_executable}   = q[bamsort];
      $p4_param_vals->{alignment_method} = $bwa;
