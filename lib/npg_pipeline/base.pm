@@ -10,6 +10,7 @@ use File::Basename;
 use Readonly;
 
 use npg_tracking::glossary::rpt;
+use npg_tracking::glossary::composition::factory::rpt_list;
 use st::api::lims;
 use npg_pipeline::product;
 
@@ -174,8 +175,9 @@ sub random_string {
 
 =head2 positions
 
-A sorted array of lanes (positions) this pipeline will be run on.
-Defaults to positions specified in LIMs.
+A sorted list of lanes (positions) this pipeline will analyse.
+This list is set from the values supplied by the C<lanes> attribute. If
+lanes are not set explicitly, defaults to positions specified in LIMS.
 
 =cut
 
@@ -206,8 +208,8 @@ sub _build_general_values_conf {
 
 =head2 merge_lanes
 
-Tells p4 stage2 (seq_alignment) to merge lanes (at their plex level if plexed)
-and to run its downstream tasks as corresponding compositions.
+Tells p4 stage2 (seq_alignment) to merge all lanes (at their plex level
+if plexed) and to run its downstream tasks using corresponding compositions.
 
 =cut
 
@@ -217,13 +219,30 @@ has q{merge_lanes} => (
   lazy          => 1,
   predicate     => q{has_merge_lanes},
   builder       => q{_build_merge_lanes},
-  documentation => q{Tells p4 stage2 (seq_alignment) to merge lanes } .
+  documentation => q{Tells p4 stage2 (seq_alignment) to merge all lanes } .
                    q{(at their plex level if plexed) and to run its } .
-                   q{downstream tasks as corresponding compositions},
+                   q{downstream tasks using corresponding compositions},
 );
 sub _build_merge_lanes {
   my $self = shift;
-  return $self->all_lanes_mergeable && !$self->is_rapid_run();
+  return $self->all_lanes_mergeable;
+}
+
+=head2 merge_by_library
+
+=cut
+
+has q{merge_by_library} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{Tells p4 stage2 (seq_alignment) to merge all plexes } .
+                   q{that belong to the same library, except spiked PhiX and }.
+                   q{tag zero)},
+);
+sub _build_merge_by_library {
+  my $self = shift;
+  return $self->is_indexed && $self->platform_NovaSeqX();
 }
 
 =head2 lims
@@ -316,6 +335,13 @@ sub get_tag_index_list {
 
 =head2 products
 
+Two arrays of npg_pipeline::product objects, one for lanes, hashed under
+the 'lanes' key, another for end products, including, where relevant, tag
+zero products, hashed under the 'data_products' key.
+
+If product_rpt_list attribute is set, the 'lanes' key maps to an empty
+array.
+
 =cut
 
 has q{products} => (
@@ -327,48 +353,93 @@ has q{products} => (
 sub _build_products {
   my $self = shift;
 
-  my $selected_lanes = $self->has_product_rpt_list ? 0 :
-                       ((join q[], $self->positions) ne
-                        (join q[], map {$_->position} $self->lims->children()));
+  my (@lane_lims, @data_lims);
 
-  my $lims2product = sub {
-    my $lims = shift;
-    return npg_pipeline::product->new(
-      rpt_list       => npg_tracking::glossary::rpt->deflate_rpt($lims),
-      lims           => $lims,
-      selected_lanes => $selected_lanes);
-  };
-
-  my @lane_lims = ();
-  if (!$self->has_product_rpt_list) {
-    @lane_lims = map { $self->lims4lane($_) } $self->positions;
-  }
-
-  my @data_products;
-  if ($self->has_product_rpt_list || $self->merge_lanes) {
-    @data_products =
-      map {
-        npg_pipeline::product->new(lims           => $_,
-                                   rpt_list       => $_->rpt_list,
-                                   selected_lanes => $selected_lanes)
-          }
-      $self->has_product_rpt_list ? ($self->lims) :
-        $self->lims->aggregate_xlanes($self->positions);
+  if ($self->has_product_rpt_list) {
+    @data_lims = ($self->lims);
   } else {
-    my @lims = ();
-    foreach my $lane (@lane_lims) {
-      if ($self->is_indexed && $lane->is_pool) {
-        push @lims, $lane->children;
-        push @lims, $lane->create_tag_zero_object();
+    my @positions = $self->positions;
+    @lane_lims = map { $self->lims4lane($_) } @positions;
+
+    if ($self->merge_lanes) {
+      @data_lims = $self->lims->aggregate_xlanes(@positions);
+    } else {
+
+      my %tag0_lims = ();
+      if ($self->is_indexed) {
+        %tag0_lims = map { $_->position => $_->create_tag_zero_object() }
+                     grep { $_->is_pool } @lane_lims;
+      }
+
+      if ($self->merge_by_library) {
+        my $all_lims = $self->lims->aggregate_libraries(\@lane_lims);
+        @data_lims = @{$all_lims->{'singles'}}; # Might be empty.
+        # Tag zero LIMS objects for all lanes, merged or unmerged.
+        push @data_lims, map { $tag0_lims{$_} } (sort keys %tag0_lims);
+
+        if ( @{$all_lims->{'merges'}} ) {
+          # If the libraries are merged across a subset of lanes under analysis,
+          # the 'selected_lanes' flag needs to be flipped to true.
+          if (!$self->_selected_lanes) {
+            my $rpt_list = $all_lims->{'merges'}->[0]->rpt_list;;
+            my $num_components =
+              npg_tracking::glossary::composition::factory::rpt_list
+                ->new(rpt_list => $rpt_list)
+                ->create_composition()->num_components();
+            if ($num_components != scalar @lane_lims) {
+              $self->_set_selected_lanes(1);
+            }
+          }
+          push @data_lims, @{$all_lims->{'merges'}};
+        }
+
       } else {
-        push @lims, $lane;
+        # To keep backward-compatible order of pipeline invocations, add
+        # tag zero LIMS object at the end of other objects for the lane.
+        @data_lims = map {
+          exists $tag0_lims{$_->position} ?
+            ($_->children, $tag0_lims{$_->position}) : $_
+        } @lane_lims;
       }
     }
-    @data_products = map { $lims2product->($_) } @lims;
   }
 
-  return { 'data_products' => \@data_products,
-           'lanes'         => [map { $lims2product->($_) } @lane_lims] };
+  return {
+    'data_products' => [map { $self->_lims_object2product($_) } @data_lims],
+    'lanes'         => [map { $self->_lims_object2product($_) } @lane_lims]
+  };
+}
+
+#####
+# The boolean flag below defines whether lane numbers are explicitly
+# listed in directory and file names for merged products. It is set
+# to true whenever a subset of all available lanes is analysed.
+# If it is set to false by the builder method, it can be reset to true
+# when a full collection of products is constructed.
+has q{_selected_lanes} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  writer        => q{_set_selected_lanes},
+  lazy_build    => 1,
+);
+sub _build__selected_lanes {
+  my $self = shift;
+  if (!$self->has_product_rpt_list) {
+    return ((join q[], $self->positions) ne
+            (join q[], map {$_->position} $self->lims->children()))
+  }
+  return;
+}
+
+sub _lims_object2product {
+  my ($self, $lims) = @_;
+
+  return npg_pipeline::product->new(
+    rpt_list       => $lims->rpt_list ? $lims->rpt_list :
+                        npg_tracking::glossary::rpt->deflate_rpt($lims),
+    lims           => $lims,
+    selected_lanes => $self->_selected_lanes
+  );
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -403,6 +474,8 @@ __END__
 
 =item npg_tracking::glossary::rpt
 
+=item npg_tracking::glossary::composition::factory::rpt_list
+
 =item st::api::lims
 
 =item WTSI::DNAP::Utilities::Loggable
@@ -424,7 +497,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014,2015,2016,2017,2018,2019,2020 Genome Research Ltd.
+Copyright (C) 2014,2015,2016,2017,2018,2019,2020,2023 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

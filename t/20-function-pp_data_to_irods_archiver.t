@@ -6,10 +6,15 @@ use JSON;
 use File::Slurp;
 use Test::More tests => 4;
 use Test::Exception;
-use File::Copy;
+use File::Copy::Recursive qw(fcopy dircopy);
+use File::Temp qw(tempdir);
 
-my $runfolder_path = 't/data/novaseq/200709_A00948_0157_AHM2J2DRXX';
-my $bbc_path = join q[/], getcwd(), $runfolder_path,
+my $tdir = tempdir(CLEANUP => 1);
+my $rf_name = '200709_A00948_0157_AHM2J2DRXX';
+my $runfolder_path = join q[/], $tdir, $rf_name;
+dircopy("t/data/novaseq/$rf_name", $runfolder_path);
+
+my $bbc_path = join q[/], $runfolder_path,
                'Data/Intensities/BAM_basecalls_20200710-105415';
 
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = join q[/], $bbc_path,
@@ -33,7 +38,7 @@ my %init = (
   }
 );
 
-copy 'data/config_files/log4perl_publish_tree.conf', $init{'conf_path'};
+fcopy 'data/config_files/log4perl_publish_tree.conf', $init{'conf_path'};
 my $syslog_config = join q[/], $init{'conf_path'}, 'log4perl_publish_tree.conf';
 
 subtest 'local flag' => sub {

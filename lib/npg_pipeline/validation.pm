@@ -468,6 +468,7 @@ sub run {
               $self->_lims_deletable()         &&
               $self->_staging_deletable()      &&
               $self->_irods_seq_deletable()    &&
+              $self->_irods_seq_onboard_deletable() &&
               $self->_s3_deletable()           &&
               $self->_autoqc_deletable()       &&
               $self->_file_archive_deletable
@@ -831,6 +832,11 @@ sub _irods_seq_pp_deletable {
   return $deletable;
 }
 
+sub _irods_seq_onboard_deletable {
+  my $self = shift;
+  return !$self->onboard_analysis_planned();
+}
+
 sub _irods_destination_collection4pp {
   my $self = shift;
 
@@ -1109,7 +1115,7 @@ __END__
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019,2020,2021,2022 Genome Research Ltd.
+Copyright (C) 2019,2020,2021,2022,2023 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

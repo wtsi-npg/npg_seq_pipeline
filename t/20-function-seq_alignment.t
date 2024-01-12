@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 19;
+use Test::More tests => 20;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -37,6 +37,7 @@ $builds{'Mus_musculus'} = ['GRCm38','NCBIm37'];
 $builds{'PhiX'} = ['Illumina'];
 $builds{'Strongyloides_ratti'} = ['20100601'];
 $builds{'Plasmodium_falciparum'} = ['3D7_Oct11v3'];
+$builds{'Escherichia_coli'} = ['B_strain'];
 my %tbuilds = ();
 $tbuilds{'1000Genomes_hs37d5'} = ['ensembl_75_transcriptome'];
 $tbuilds{'GRCh38_15'} = ['ensembl_76_transcriptome'];
@@ -52,13 +53,15 @@ foreach my $org (keys %builds){
         my $rel_dir     = join q[/],$ref_dir,$org,$rel,'all';
         my $bowtie2_dir = join q[/],$rel_dir,'bowtie2';
         my $bwa0_6_dir  = join q[/],$rel_dir,'bwa0_6';
+        my $minimap2_dir  = join q[/],$rel_dir,'minimap2';
+        my $bwa_mem2_dir  = join q[/],$rel_dir,'bwa_mem2';
         my $fasta_dir   = join q[/],$rel_dir,'fasta';
         my $picard_dir  = join q[/],$rel_dir,'picard';
         my $star_dir    = join q[/],$rel_dir,'star';
         my $hisat2_dir  = join q[/],$rel_dir,'hisat2';
         my $target_dir  = join q[/],$rel_dir,'target';
         my $targeta_dir = join q[/],$rel_dir,'target_autosome';
-        make_path($bowtie2_dir, $bwa0_6_dir, $picard_dir, $star_dir,
+        make_path($bowtie2_dir, $bwa0_6_dir, $minimap2_dir, $bwa_mem2_dir, $picard_dir, $star_dir,
                   $fasta_dir, $hisat2_dir, {verbose => 0});
         if($rel eq 'GRCh38_full_analysis_set_plus_decoy_hla'){
           make_path($target_dir, $targeta_dir, {verbose => 0});
@@ -139,6 +142,11 @@ sub symlink_default {
 `touch $ref_dir/Mus_musculus/NCBIm37/all/bwa0_6/mm_ref_NCBI37_1.fasta`;
 `touch $ref_dir/Plasmodium_falciparum/3D7_Oct11v3/all/fasta/Pf3D7_v3.fasta`;
 `touch $ref_dir/Plasmodium_falciparum/3D7_Oct11v3/all/picard/Pf3D7_v3.fasta.dict`;
+`touch $ref_dir/Escherichia_coli/B_strain/all/fasta/E_coli_B_strain.fasta`;
+`touch $ref_dir/Escherichia_coli/B_strain/all/picard/E_coli_B_strain.fasta.dict`;
+`touch $ref_dir/Escherichia_coli/B_strain/all/bwa0_6/E_coli_B_strain.fasta`;
+`touch $ref_dir/Escherichia_coli/B_strain/all/bwa_mem2/E_coli_B_strain.fasta`;
+`touch $ref_dir/Escherichia_coli/B_strain/all/minimap2/E_coli_B_strain.fasta.mmi`;
 `touch $tra_dir/Homo_sapiens/ensembl_75_transcriptome/1000Genomes_hs37d5/gtf/ensembl_75_transcriptome-1000Genomes_hs37d5.gtf`;
 `touch $tra_dir/Homo_sapiens/ensembl_75_transcriptome/1000Genomes_hs37d5/tophat2/1000Genomes_hs37d5.known.2.bt2`;
 `touch $tra_dir/Homo_sapiens/ensembl_75_transcriptome/1000Genomes_hs37d5/fasta/1000Genomes_hs37d5.fa`;
@@ -157,7 +165,7 @@ sub symlink_default {
 # In an array of definitions find and return a definition
 # that corresponds to a position and, optionally, tag index.
 # Use composition property of the definition object.
-#
+######
 sub _find {
   my ($a, $p, $t) = @_;
   my $d= first { my $c = $_->composition->get_component(0);
@@ -1269,7 +1277,7 @@ subtest 'chromium' => sub {
 };
 
 subtest 'miseq' => sub {
-  plan tests => 23;
+  plan tests => 24;
 
   my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
   my $runfolder_path = join q[/], $dir, $runfolder;
@@ -1302,6 +1310,10 @@ subtest 'miseq' => sub {
   my $l1 = st::api::lims->new(id_run => 24135, position => 1, tag_index => 1);
   my $dp1 = npg_pipeline::product->new(lims => $l1, rpt_list => q[24135:1:1],);
   ok ($ms_gen->can_run_gbs($dp1), 'can run gbs pipeline on 24135:1:1');
+
+  my $l2 = st::api::lims->new(id_run => 24135, position => 1, tag_index =>2);
+  my $dp2 = npg_pipeline::product->new(lims => $l2, rpt_list => q[24135:1:2],);
+  ok ($ms_gen->can_run_gbs($dp2), 'can run gbs pipeline on 24135:1:2 (no study ref)');
 
   my $l3 = st::api::lims->new(id_run => 24135, position => 1, tag_index => 3);
   my $dp3 = npg_pipeline::product->new(lims => $l3, rpt_list => q[24135:1:3],);
@@ -1506,45 +1518,141 @@ subtest 'product_release_tests' => sub {
   }
 };
 
-subtest 'BWA MEM 2 test' => sub {
-  plan tests => 4;
+# test overrides of bwa_mem with bwa-mem2
+#   1) on sample sheet entry without [bwa_mem2] specified in reference name
+#   2) on sample sheet entry without [bwa_mem2] specified in reference name, but setting bwa_mem2 attribute
+#       on creation of seq_alignment object
+#   3) on sample sheet entry with [bwa_mem2] specified in reference name
+#   4) on sample sheet entry with [bwa_mem2] specified in reference name and setting bwa_mem2 attribute
+#       on creation of seq_alignment object
+#   5) on sample sheet entry with [bwa-mem2] specified in reference name
+#   6) on sample sheet entry with [bwa-mem2] specified in reference name and setting bwa_mem2 attribute
+#       on creation of seq_alignment object
+#   7) on sample sheet entry with [minimap2] specified in reference name and setting bwa_mem2 attribute
+#       on creation of seq_alignment object
+subtest 'BWA MEM 2 tests' => sub {
+  plan tests => 42;
 
-  my $runfolder = q{171020_MS5_24135_A_MS5476963-300V2};
-  my $runfolder_path = join q[/], $dir, 'compositions', $runfolder;
-  my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/no_cal';
+  my $runfolder = q{230208_MS2_46761_A_MS3408491-300V2};
+  my $runfolder_path = join q[/], $dir, $runfolder;
+  my $bbd = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20230214-194920';
+  my $bc_path = join q[/], $bbd, qq[no_cal];
   make_path $bc_path;
-  my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20171127-134427/metadata_cache_24135';
+  my $cache_dir = join q[/], $runfolder_path, q[$bbd/metadata_cache_46761];
   make_path $cache_dir;
   make_path "$bc_path/lane1";
   make_path "$bc_path/archive/tileviz";
 
-  copy('t/data/miseq/24135_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+  copy('t/data/miseq/46761_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/miseq/46761_runParameters.xml', "$runfolder_path/runParameters.xml")
     or die 'Copy failed';
 
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135_bwa_mem2.csv];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_46761_bwa_mem2.csv];
 
-  my $ms_gen = npg_pipeline::function::seq_alignment->new(
-    run_folder        => $runfolder,
-    runfolder_path    => $runfolder_path,
-    recalibrated_path => $bc_path,
-    timestamp         => q{2017},
-    repository        => $dir,
-    conf_path         => 't/data/release/config/seq_alignment',
-    resource          => $default
+  my @test_params = (
+	  {name => q[bwamem2_noflag_noss], tag => 1, bwa_mem_flag => 0, aligner => q[bwa0_6], index => q[bwa0_6], },
+	  {name => q[bwamem2_flag_noss], tag => 1, bwa_mem_flag => 1, aligner => q[bwa-mem2], index => q[bwa_mem2], },
+	  {name => q[bwamem2_ss], tag => 8, bwa_mem_flag => 0, aligner => q[bwa-mem2], index => q[bwa_mem2], },
+	  {name => q[bwamem2_flag_ss], tag => 8, bwa_mem_flag => 1, aligner => q[bwa-mem2], index => q[bwa_mem2], },
+	  {name => q[bwamem2_ss], tag => 3, bwa_mem_flag => 0, aligner => q[bwa-mem2], index => q[bwa_mem2], },
+	  {name => q[bwamem2_ss], tag => 3, bwa_mem_flag => 1, aligner => q[bwa-mem2], index => q[bwa_mem2], },
+ 	  {name => q[bwamem2_flag_ss], tag => 7, bwa_mem_flag => 1, aligner => q[minimap2], index => q[minimap2], index_suffix => q[.mmi], alignment_method => q[minimap2], },
   );
-  apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
-  $ms_gen->create_product_level();
 
-  my $da = $ms_gen->generate('analysis_pipeline');
-  ok (($da and (@{$da} == 3)), 'three definitions returned');
-  my $d = _find($da, 1, 1);
-  isa_ok ($d, 'npg_pipeline::function::definition');
-  ok (!$d->excluded, 'step not excluded');
+  for my $tp (@test_params) {
+    my $tag = $tp->{tag};
+    my $aligner = $tp->{aligner};
+    my $index = $tp->{index};
+    my $index_suffix = ($tp->{index_suffix} or q[]);;
+    my $alignment_method = ($tp->{alignment_method} or q[bwa_mem]);;
+    my $bwa_mem_flag = $tp->{bwa_mem_flag};
 
-  my $l = st::api::lims->new(id_run => 24135, position => 1, tag_index => 2);
-  my $analysis = $ms_gen->_analysis($l->reference_genome, '24135:1:2');
-  ok ($analysis eq "bwa_mem2", 'run 24135 lane 1 tag 2 Analysis is BWA MEM 2');
+    my $ms_gen = npg_pipeline::function::seq_alignment->new(
+      bwa_mem2          => $bwa_mem_flag,
+      run_folder        => $runfolder,
+      runfolder_path    => $runfolder_path,
+      recalibrated_path => $bc_path,
+      timestamp         => q{2023},
+      repository        => $dir,
+      conf_path         => 't/data/release/config/seq_alignment',
+      resource          => $default
+    );
+    apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
+    $ms_gen->create_product_level();
+
+    my $da = $ms_gen->generate('analysis_pipeline');
+    ok (($da and (@{$da} == 31)), 'thirty-one definitions returned');
+    my $d = _find($da, 1, $tp->{tag});
+    isa_ok ($d, 'npg_pipeline::function::definition');
+    ok (!$d->excluded, 'step not excluded');
+
+    my $l = st::api::lims->new(id_run => 46761, position => 1, tag_index => ${tag});
+    my $analysis = $ms_gen->_analysis($l->reference_genome, "46761:1:${tag}");
+    if($tag == 8) {
+      ok ($analysis eq "bwa_mem2", "run 46761 lane 1 tag $tag Analysis is BWA MEM 2");
+    }
+    elsif($tag == 3) {
+      ok ($analysis eq 'bwa-mem2', "run 46761 lane 1 tag $tag Analysis is BWA MEM 2");
+    }
+    elsif($tag == 7) {
+      ok ($analysis eq "minimap2", "run 46761 lane 1 tag $tag Analysis is BWA MEM 2");
+    }
+    else { # default
+      is ($analysis, undef, "run 46761 lane 1 tag $tag Analysis is not BWA MEM 2");
+    }
+   
+    ## check json file for lane 1 tag x
+    my $json_file = qq{$bc_path/46761_1#${tag}_p4s2_pv_in.json};
+    ok (-e $json_file, "json params file exists for run 46761 lane 1 tag $tag");
+    my $h = from_json(slurp($json_file));
+
+    my $expected = {
+      'assign' => [
+        {
+          'bwa_executable' => $aligner,
+          's2_position' => 'POSITION',
+          'subsetsubpath' => '.npg_cache_10000/',
+          'seqchksum_orig_file' => join(q[/], $bbd, "no_cal/archive/lane1/plex${tag}/46761_1#${tag}.orig.seqchksum"),
+          'phix_reference_genome_fasta' => join(q[/], $ref_dir, 'PhiX/Illumina/all/fasta/phix-illumina.fa'),
+          'outdatadir' => join(q[/], $bbd, "no_cal/archive/lane1/plex$tag"),
+          's2_tag_index' => $tag,
+          'alignment_reference_genome' => join(q[/], $ref_dir, "Escherichia_coli/B_strain/all/${index}/E_coli_B_strain.fasta${index_suffix}"),
+          's2_id_run' => 46761,
+          'run_lane_ss_fq2' => join(q[/], $bbd, "no_cal/archive/lane1/plex${tag}/.npg_cache_10000/46761_1#${tag}_2.fastq"),
+          'reference_genome_fasta' => join(q[/], $ref_dir, 'Escherichia_coli/B_strain/all/fasta/E_coli_B_strain.fasta'),
+          'rpt' => "46761_1#$tag",
+          's2_se_pe' => 'pe',
+          'markdup_method' => 'biobambam',
+          'recal_dir' => join(q[/], $bbd, 'no_cal'),
+          'incrams' => [
+            join(q[/], $bbd, "no_cal/46761_1#$tag.cram")
+          ],
+          'markdup_optical_distance_value' => '100',
+          'spatial_filter_file' => 'DUMMY',
+          's2_filter_files' => join(q[/], $bbd, 'no_cal/46761_1.spatial_filter'),
+          'samtools_executable' => 'samtools',
+          'reference_dict' => join(q[/], $ref_dir, 'Escherichia_coli/B_strain/all/picard/E_coli_B_strain.fasta.dict'),
+          'af_metrics' => "46761_1#${tag}_bam_alignment_filter_metrics.json",
+          'alignment_method' => ${alignment_method},
+          'tag_metrics_files' => join(q[/], $bbd, 'no_cal/archive/lane1/qc/46761_1.tag_metrics.json'),
+          'run_lane_ss_fq1' => join(q[/], $bbd, "no_cal/archive/lane1/plex${tag}/.npg_cache_10000/46761_1#${tag}_1.fastq"),
+          'spatial_filter_rg_value' => "46761_1#$tag",
+          's2_input_format' => 'cram'
+        }
+      ],
+      'ops' => {
+        'splice' => [],
+        'prune' => [
+          'fop.*_bmd_multiway:calibration_pu-',
+          'fop.*samtools_stats_F0.*_target.*-',
+          'fop.*samtools_stats_F0.*00_bait.*-'
+        ]
+      },
+      'assign_local' => {}
+    };
+
+    is_deeply($h, $expected, "correct json file content for run 46761 lane 1 tag $tag p4 parameters");
+  }
 };
 
 # test that bwa mem flags are added when HiC libraries are detected
@@ -1750,7 +1858,7 @@ subtest 'Haplotagging test' => sub {
         'splice' => [
                       'ssfqc_tee_ssfqc:straight_through1:-alignment_filter:phix_bam_in',
                       'alignment_filter:target_bam_out-foptgt_bmd_multiway:'
-                    ]
+        ]
       }
     };
 
@@ -1832,6 +1940,113 @@ subtest 'single-end markdup_method test' => sub {
         is($h->{assign}->[0]->{$att}, $expected->{$t}->{$att}, "correct value for p4 parameter $att for run 45421 lane 1 tag $t");
       }
     }
+  }
+};
+
+subtest 'test reference caching' => sub {
+  plan tests => 7;
+  
+  my $data_dir = q[t/data/novaseqx/47539];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = qq[$data_dir/samplesheet_47539.csv];
+
+  my $id_run = 47539;
+  my $runfolder_name = q[20230628_LH00210_0008_B225TGJLT3];
+  my $runfolder_path = qq[$dir/20230628_LH00210_0008_B225TGJLT3];
+  my $nocal_dir =
+    qq[$runfolder_path/Data/Intensities/BAM_basecalls_20230914-143003/no_cal]; 
+  my $archive_dir = qq[$nocal_dir/archive];
+
+  my $lims = st::api::lims->new(id_run => $id_run);
+  for my $lane ($lims->children) {
+    my $lane_path = join q[/], $archive_dir, q[lane] . $lane->position;
+    my @indexes = map {$_->tag_index} $lane->children;
+    push @indexes, 0, 888;
+    for my $index (@indexes) {
+      make_path(join q[/], $lane_path, q[plex] . $index);
+    }
+  }
+
+  foreach my $file (qw(RunParameters.xml RunInfo.xml)) {
+    copy("$data_dir/$file", "$runfolder_path/$file")
+  }
+
+  # Have to add some references to the test ref repo that was
+  # created at the beginning of this test file.
+  my @ref_dirs = qw(
+    Bordetella_pertussis/Tohama_I/all
+    Clostridium_difficile/Strain_630/all
+    Escherichia_coli/K12/all
+    Escherichia_coli/K12_DH10B/all
+    Homo_sapiens/GRCh38_15_plus_hs38d1/all
+    Plasmodium_falciparum/3D7_Jan16v3/all
+  );
+  @ref_dirs = map { "$ref_dir/$_" } @ref_dirs;
+
+  my @ref_names = qw(
+    B_pertussis_Tahoma_I.fasta
+    C_difficile_630.fasta
+    E-coli-K12.fa
+    CP000948.1.fasta
+    Homo_sapiens.GRCh38_15_plus_hs38d1.fa
+    Pf3D7_v3.fa
+  );
+  my @aligners = qw/fasta bwa bwa_mem2 minimap2 picard star/;
+  
+  my $i = 0;
+  while ($i < @ref_dirs) {
+    my $top_dir = $ref_dirs[$i];
+    my $file_name = $ref_names[$i];
+    for my $a (@aligners) {
+      my $dir = join q[/], $top_dir, $a;
+      make_path($dir); # Create the directory for the reference.
+      my $path;
+      if ($a eq 'fasta') {
+        $path = "$dir/$file_name";
+      } elsif ($a eq 'picard') {
+        my $name = join q[.], $file_name, 'dict';
+        $path = "$dir/$name";
+      } else {
+        my $name = join q[.], $file_name, 'do'; # some extension
+        $path = "$dir/$name";
+      }
+      `touch $path`; # Create the reference file.
+    }
+    $i++;
+  }
+
+  # Need two lanes. One, in which the ref cache miss is recorded
+  # for a reference for tag zero, and another, where this reference
+  # is needed for one of the samples. Missing reference results in
+  # data for tag 2 being unaligned.
+
+  # This test was set up to demonstrate a problem with ref cache
+  # when a lane preceeding the one where the problem is observed
+  # has samples with multiple references. The test will start
+  # passing when the root cause of the problem is fixed in
+  # st::api::lims.
+  my $generator = npg_pipeline::function::seq_alignment->new(
+    id_run         => $id_run,
+    run_folder     => $runfolder_name,
+    runfolder_path => $runfolder_path,
+    archive_path   => $archive_dir,
+    repository     => $dir,
+    resource       => $default,
+    conf_path      => 't/data/release/config/seq_alignment',
+    lanes          => [1, 4],
+  );
+
+  lives_ok { $generator->generate() }
+    'run seq_alignment function for two lanes';
+
+  for my $i (qw(1 2)) {
+    my $json_file = sprintf qq[%s/%i_4#%s_p4s2_pv_in.json],
+      $nocal_dir, $id_run, $i;
+    ok (-e $json_file, "File $json_file exists");
+    my $p4config = from_json(slurp $json_file);
+    $p4config = $p4config->{'assign'}->[0];
+    is ($p4config->{'rpt'}, '47539_4#' . $i, 'correct rpt key value');
+    ok (!exists $p4config->{'no_target_alignment'},
+      "the alignment not disabled for tag $i in lane 4");
   }
 };
 

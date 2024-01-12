@@ -103,25 +103,25 @@ has 'per_product_archive' => (
 );
 sub _build_per_product_archive {
   my $self = shift;
-  return $self->platform_NovaSeq();
+  return $self->platform_NovaSeq() || $self->platform_NovaSeqX();
 }
 
 =head2 irods_collection4run_rel
 
 Returns a relative path the run's destination collection. For the production
-iRODS this path does not have the root C</seq> component. This methos can
+iRODS this path does not have the root C</seq> component. This method can
 be used as an instance method and a class (package) level method. If used
 as a class (package) level method, a hardcoded common iRODS path
-C<illumina/runs> is used for NovaSeq platform runs. In the instance method
-this path can be customised by setting the C<irods_root_collection_ns>
-attribute of the object. For objects it might be more convenient to use the
-C<irods_destination_collection> attribute.
+C<illumina/runs> is used for NovaSeq (or newer) platform runs. In the
+instance method this path can be customised by setting the
+C<irods_root_collection_ns> attribute of the object. For objects it might be
+more convenient to use the C<irods_destination_collection> attribute.
 
 If the second argument is not present, a flat run-level archive is assumed.
 
   my $rc = $obj->irods_collection4run_rel($id_run);
   my $per_product_archive = 1;
-  $rc = $obj->$obj->irods_collection4run_rel($id_run, $platform_is_novaseq);
+  $rc = $obj->$obj->irods_collection4run_rel($id_run, $per_product_archive);
   
   $rc = npg_pipeline::product::release::irods->
     irods_collection4run_rel(45666, 0);
@@ -165,7 +165,7 @@ sub irods_product_destination_collection {
   my $dc;
   try {
     $dc = $self->irods_product_destination_collection_norf(
-          $run_collection, $product, $self->platform_NovaSeq());
+          $run_collection, $product, $self->per_product_archive());
   } catch {
     $self->logcroak($_);
   };
@@ -177,33 +177,33 @@ sub irods_product_destination_collection {
 Returns iRODS destination collection for the argument product.
 Can be use as a package-level or class method since all its inputs are
 given as arguments. If the third argument is not present, the platform
-is not considered as NovaSeq.
+is not considered as NovaSeq or newer (producing a flat hierarchy).
 
   my $product = npg_pipeline::product(rpt_list => '34567:2:1');
   my $pc = $obj->irods_product_destination_collection_norf(
                  $run_collection, $product);
-  my $platform_is_novaseq = 0;
+  my $per_product_archive = 0;
   $pc = $obj->irods_product_destination_collection_norf(
-    'some/irods/path/34/34567', $product, $platform_is_novaseq);
+    'some/irods/path/34/34567', $product, $per_product_archive);
   print $pc; # prints some/irods/path/34/34567 
  
-  $platform_is_novaseq = 1;
+  $per_product_archive = 1;
   my $product = npg_pipeline::product(rpt_list => '34567:2:1');
   $pc = npg_pipeline::product::release::irods->
     irods_product_destination_collection_norf(
-    'some/irods/path/34/34567', $product, $platform_is_novaseq);
+    'some/irods/path/34/34567', $product, $per_product_archive);
   print $pc; # prints some/irods/path/34/34567/lane2/plex1
   
 =cut
 
 sub irods_product_destination_collection_norf {
-  my ($self, $run_collection, $product, $platform_is_novaseq) = @_;
+  my ($self, $run_collection, $product, $per_product_archive) = @_;
 
   $run_collection or croak('Run collection iRODS path is required');
   $product or croak('Product object is required');
-  return $platform_is_novaseq
-         ? join q[/], $run_collection, $product->dir_path()
-         : $run_collection;
+  return $per_product_archive
+    ? join q[/], $run_collection, $product->dir_path($product->selected_lanes)
+    : $run_collection;
 }
 
 =head2 is_for_irods_release

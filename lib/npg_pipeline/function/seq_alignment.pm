@@ -36,6 +36,7 @@ Readonly::Scalar my $PFC_MARKDUP_OPT_DIST         => q{2500};  # distance in pix
 Readonly::Scalar my $NON_PFC_MARKDUP_OPT_DIST     => q{100};   # distance in pixels for optical duplicate detection on non-patterned flowcells
 Readonly::Scalar my $BWA_MEM_MISMATCH_PENALTY     => q{5};
 Readonly::Scalar my $SKIP_MARKDUP_METRICS         => 1;
+Readonly::Scalar my $AUTO_COV_THRESHOLD           => 1;
 
 around 'markdup_method' => sub {
     my $orig = shift;
@@ -45,12 +46,23 @@ around 'markdup_method' => sub {
     $product or $self->logcroak('Product object argument is required');
     my $lims = $product->lims;
     $lims or $self->logcroak('lims object is not defined for a product');
+
     my $lt = $lims->library_type;
     $lt ||= q[];
     # I've restricted this to library_types which exactly match Duplex-Seq to exclude the old library_type Bidirectional Duplex-seq
     # the Duplex-Seq library prep has been replaced by the NanoSeq library prep, the analysis is the same and the Duplex-Seq library_type is still in use
     # I've added two new library_types Targeted NanoSeq Pulldown Twist and Targeted NanoSeq Pulldown Agilent
-    my $mdm =  ($lt eq q[Duplex-Seq] || $lt =~ /^Targeted\sNanoSeq\sPulldown/smx) ? q(duplexseq) : $self->$orig($product);
+    my $mdm;
+    if($lt eq q[Duplex-Seq] || $lt =~ /^Targeted\sNanoSeq\sPulldown/smx) {
+      $mdm = q(duplexseq);
+    }
+    elsif($self->platform_NovaSeqX) {
+      $mdm = q(samtools);
+    }
+    else {
+      $mdm = $self->$orig($product);
+    }
+
     $mdm or $self->logcroak('markdup method is not defined for a product');
 
     return $mdm;
@@ -226,7 +238,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   $self->debug(qq{  rpt_list: $rpt_list});
   $self->debug(qq{  reference_genome: $reference_genome});
   $self->debug(qq{  is_tag_zero_product: $is_tag_zero_product});
-  $self->debug(qq{  is_pool: $is_pool});
+  $self->debug( q{  is_pool: } . $is_pool ? 1 : 0);
   $self->debug(qq{  dp_archive_path: $dp_archive_path});
   $self->debug(qq{  uses_patterned_flowcell: $uses_patterned_flowcell});
   $self->debug(qq{  cache10k_path: $cache10k_path});
@@ -290,7 +302,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     push @{$p4_ops->{prune}}, 'ssfqc_tee_ssfqc:subsample-';
   }
 
-  if($self->platform_NovaSeq) {  # skip spatial filter
+  if($self->platform_NovaSeq or $self->platform_NovaSeqX) {  # skip spatial filter
     $p4_param_vals->{spatial_filter_switch} = q[off];
   }
 
@@ -360,16 +372,22 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   # handle extra stats file for aligned data with reference regions file
   my $do_target_regions_stats = 0;
-  if ($do_target_alignment && !$spike_tag && !$human_split && !$do_gbs_plex && !$do_rna) {
+  if ($do_target_alignment && !$spike_tag && !$do_gbs_plex && !$do_rna) {
+    my $target_path = $self->_ref($dp, $TARGET_REGIONS_DIR);
+    my $target_autosome_path = $self->_ref($dp, $TARGET_AUTOSOME_REGIONS_DIR);
+
     if($self->_do_bait_stats_analysis($dp)){
        $p4_param_vals->{target_regions_file} = $self->_bait($rpt_list)->target_intervals_path();
-       push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
        $do_target_regions_stats = 1;
+       if ( $l->library_type && ($l->library_type =~ /BGE/smx) && $target_autosome_path ) {
+         $p4_param_vals->{target_autosome_regions_file} = $target_autosome_path.q(.interval_list);
+         $p4_param_vals->{stats_filter__cov_threshold_autosome} = $AUTO_COV_THRESHOLD;
+       } else {
+         push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*_target_autosome.*-';
+       }
     }
     else {
-      my $target_path = $self->_ref($dp, $TARGET_REGIONS_DIR);
-      my $target_autosome_path = $self->_ref($dp, $TARGET_AUTOSOME_REGIONS_DIR);
-      if ($target_path) {
+      if ($target_path && !$human_split) {
         $p4_param_vals->{target_regions_file} = $target_path.q(.interval_list);
         $do_target_regions_stats = 1;
         if ($target_autosome_path) {
@@ -429,7 +447,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{markdup_method} = $do_gbs_plex ? q[none] : $self->markdup_method($dp);
     $p4_param_vals->{markdup_optical_distance_value} = ($uses_patterned_flowcell? $PFC_MARKDUP_OPT_DIST: $NON_PFC_MARKDUP_OPT_DIST);
 
-    if($p4_param_vals->{markdup_method} eq q[none]) {
+    if(!$do_gbs_plex && ($p4_param_vals->{markdup_method} eq q[none])) {
       $skip_target_markdup_metrics = 1;
 
       if(my $pcb=npg_pipeline::cache::reference->instance->get_primer_panel_bed_file($dp, $self->repository)) {
@@ -485,6 +503,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   my $p4_local_assignments = {};
   if($do_gbs_plex){
+     $p4_param_vals->{primer_clip_method} = q[no_clip];
      $p4_param_vals->{bwa_executable}   = q[bwa0_6];
      $p4_param_vals->{bsc_executable}   = q[bamsort];
      $p4_param_vals->{alignment_method} = $bwa;
@@ -493,7 +512,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
      $skip_target_markdup_metrics = 1;
   }
   elsif($do_rna) {
-    my $rna_analysis = $self->_analysis($l->reference_genome, $rpt_list) // $DEFAULT_RNA_ANALYSIS;
+    my $rna_analysis = $self->_analysis($l->reference_genome, $rpt_list) // ($self->platform_NovaSeqX? q[star]:$DEFAULT_RNA_ANALYSIS);
+
     if (none {$_ eq $rna_analysis} @RNA_ANALYSES){
         $self->info($l->to_string . qq[- Unsupported RNA analysis: $rna_analysis - running $DEFAULT_RNA_ANALYSIS instead]);
         $rna_analysis = $DEFAULT_RNA_ANALYSIS;
@@ -535,31 +555,31 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     # Parse the reference genome for the product
     my ($organism, $strain, $tversion, $analysis) = npg_tracking::data::reference->new(($self->repository ? (q(repository)=>$self->repository) : ()))->parse_reference_genome($l->reference_genome);
 
-    # if a non-standard aligner is specified in ref string select it
-    $p4_param_vals->{alignment_method} = ($analysis || $bwa);
+    # if analysis is not explicitly selected in reference name, use the $bwa method selected above unless overridden by bwa_mem2 flag or platform NovaSeqX
+    $analysis ||= ($self->bwa_mem2 or $self->platform_NovaSeqX)? q[bwa_mem2]: $bwa;
 
-    my %methods_to_aligners = (
-      bwa_aln => q[bwa0_6],
-      bwa_aln_se => q[bwa0_6],
-      bwa_mem => q[bwa0_6],
-      bwa_mem_bwakit => q[bwa0_6],
-      bwa_mem2 => q[bwa0_6],
-    );
-    my %ref_suffix = (
-      picard => q{.dict},
-      minimap2 => q{.mmi},
-    );
+###
+# analysis-specific overrides
+#  By default, the analysis name (derived from the reference genome specification above) is also the aligner, refindex and p4_alignment_method names.
+#  Entries in $exceptions will override these defaults
+###
+    my $exceptions = {
+      bwa_aln        => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
+      bwa_aln_se     => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
+      bwa_mem        => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
+      bwa_mem_bwakit => { aligner => q[bwa0_6], refindex => q[bwa0_6], },
+      bwa_mem2       => { aligner => q[bwa-mem2], refindex => q[bwa_mem2], p4_alignment_method => q[bwa_mem] },
+      q{bwa-mem2}    => { aligner => q[bwa-mem2], refindex => q[bwa_mem2], p4_alignment_method => q[bwa_mem] },
+      picard         => { ref_suffix => q{.dict} },
+      minimap2       => { ref_suffix => q{.mmi} },
+    };
 
-    my $aligner = $p4_param_vals->{alignment_method};
-    if(exists $methods_to_aligners{$p4_param_vals->{alignment_method}}) {
-      $aligner = $methods_to_aligners{$aligner};
-    }
-
-    # BWA MEM2 requires a different executable
-    if ($p4_param_vals->{alignment_method} eq q[bwa_mem2]) {
-      $p4_param_vals->{bwa_executable} = q[bwa-mem2];
-    } else {
-      $p4_param_vals->{bwa_executable} = q[bwa0_6];
+    $p4_param_vals->{alignment_method} = ($exceptions->{$analysis}->{p4_alignment_method} or $analysis);
+    $p4_param_vals->{bwa_executable} = ($exceptions->{$analysis}->{aligner} or $analysis); # confusingly, can take value like "hisat2" or "minimap2", but should be ignored by relevant p4 template
+    if($do_target_alignment) {
+      my $refindex = ($exceptions->{$analysis}->{refindex} or $analysis);
+      $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $refindex);
+      $p4_param_vals->{alignment_reference_genome} .= ($exceptions->{$analysis}->{ref_suffix} or q[]);
     }
 
     my $is_hic_lib = $l->library_type && ($l->library_type =~ /Hi-C/smx);
@@ -571,11 +591,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       $p4_param_vals->{bwa_mem_B_value} = $BWA_MEM_MISMATCH_PENALTY;
     }
 
-    if($do_target_alignment) { $p4_param_vals->{alignment_reference_genome} = $self->_ref($dp, $aligner); }
-    if(exists $ref_suffix{$aligner}) {
-      $p4_param_vals->{alignment_reference_genome} .= $ref_suffix{$aligner};
-    }
-
     if(not $self->is_paired_read) {
       $p4_param_vals->{bwa_mem_p_flag} = undef;
     }
@@ -584,6 +599,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($nchs) {
     $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
     $p4_param_vals->{alignment_hs_method} = $hs_bwa;
+    $p4_param_vals->{hs_bwa_executable} = q{bwa0_6};
   }
 
   if($human_split) {

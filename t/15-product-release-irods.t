@@ -82,7 +82,7 @@ subtest 'destination collection - instance methods and attributes' => sub {
     q[/seq/26219], 'flat run-level archive');
 
   my $util = t::util->new();
-  my $paths = $util->create_runfolder(
+  my $paths = $util->create_runfolder(undef,
     {runfolder_name => '220128_HX9_43416_A_HHCCCCCX2'});
   my $path = $paths->{runfolder_path};
   copy 't/data/hiseqx/43416_runParameters.xml', $path .q[/runParameters.xml];

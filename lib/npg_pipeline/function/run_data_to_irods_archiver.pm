@@ -28,6 +28,7 @@ override 'create' => sub {
       q{--include},          q['RunInfo.xml'],
       q{--include},          q['[Rr]unParameters.xml'],
       q{--include},          q[InterOp],
+      q{--exclude},          q[Analysis],
       q{--id_run},           $self->id_run,
       q{--logconf},          $self->conf_file_path('log4perl_publish_illumina.conf');
 
@@ -57,7 +58,8 @@ npg_pipeline::function::run_data_to_irods_archiver
 
 =head1 DESCRIPTION
 
-Defines a job for publishing Illumina run data to iRODS.
+Defines a job for publishing Illumina's data about a run to iRODS. e.g.
+RunParameters.xml and InterOp/
 
 =head1 SUBROUTINES/METHODS
 

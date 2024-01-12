@@ -1,11 +1,12 @@
 use strict;
 use warnings;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Exception;
 use File::Copy;
 use Log::Log4perl qw[:levels];
 use File::Slurp;
 use Cwd;
+use File::Copy::Recursive qw(dircopy);
 
 use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
@@ -227,15 +228,13 @@ subtest 'MiSeq run' => sub {
 };
 
 subtest 'NovaSeq run' => sub {
-  plan tests => 9;
+  plan tests => 11;
 
   my $id_run  = 26291;
   my $rf_name = '180709_A00538_0010_BH3FCMDRXX';
   my $rfpath  = abs_path(getcwd) . qq{/t/data/novaseq/$rf_name};
   my $bbc_path = qq{$rfpath/Data/Intensities/BAM_basecalls_20180805-013153};
-  my $archive_path = qq{$bbc_path/no_cal/archive};
   my $col = qq{/seq/illumina/runs/26/$id_run};
-  my $restart_file = qr/${bbc_path}\/irods_publisher_restart_files\/publish_seq_data2irods_${id_run}_20181204-\d+_\w+\.restart_file\.json/;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
     qq{$bbc_path/metadata_cache_26291/samplesheet_26291.csv};
@@ -254,6 +253,9 @@ subtest 'NovaSeq run' => sub {
   my $d = $da->[0];
   isa_ok($d, q{npg_pipeline::function::definition});
   ok ($d->excluded, 'step is excluded');
+
+  ok ($a->per_product_archive(), 'per-product archival'); 
+  is ($a->irods_destination_collection(), $col, 'correct run collection');
 
   $a  = npg_pipeline::function::seq_to_irods_archiver->new(
     run_folder     => $rf_name,
@@ -286,6 +288,57 @@ subtest 'NovaSeq run' => sub {
   $d = $da->[0];
   ok (!$d->has_composition, 'does not have composition object defined');
   ok ($d->excluded, 'step is excluded');
+};
+
+subtest 'NovaSeqX run' => sub {
+  plan tests => 7,
+
+  my $id_run  = 47515;
+  my $rf_name = '20230622_LH00210_0007_A225TMTLT3';
+  my $rfpath_test  = abs_path(getcwd) . qq{/t/data/novaseqx/$rf_name};
+  my $rfpath = "$tmp_dir/$rf_name";
+  dircopy($rfpath_test, $rfpath);
+  my $bbc_path = qq{$rfpath/Data/Intensities/BAM_basecalls_20230703-150003};
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    qq{$bbc_path/metadata_cache_47515/samplesheet_47515.csv};
+
+  my $col = qq{/seq/illumina/runs/47/$id_run}; 
+
+  my $a  = npg_pipeline::function::seq_to_irods_archiver->new(
+    run_folder     => $rf_name,
+    runfolder_path => $rfpath,
+    analysis_path  => $bbc_path,
+    conf_path      => $config_dir,
+    id_run         => $id_run,
+    timestamp      => q{20230702},
+    resource       => $defaults
+  );
+
+  ok ($a->per_product_archive(), 'per-product archival'); 
+  is ($a->irods_destination_collection(), $col, 'correct run collection');
+  my $da = $a->create();
+  my $d = $da->[0];
+  like ($d->command,
+    qr{--collection \S+illumina/runs\S+lane1\/plex888},
+    'command has per product iRODS destination collection for spiked in PhiX');
+  $d = $da->[8];
+  like ($d->command,
+    qr{--collection \S+illumina/runs\S+lane1\/plex0},
+    'command has per product iRODS destination collection for tag zero');
+  $d = $da->[16];
+  like ($d->command,
+    qr{--collection \S+illumina/runs\S+lane1-2-3-4\/plex1},
+    'command has per product iRODS destination collection');
+  $d = $da->[21];
+  like ($d->command,
+    qr{--collection \S+illumina/runs\S+lane1-2-3-4\/plex6},
+    'command has per product iRODS destination collection');
+  $d = $da->[-1];
+  like ($d->command,
+    qr{--collection \S+illumina/runs\S+lane5-6-7-8\/plex6},
+    'command has per product iRODS destination collection');
+
 };
 
 1;
