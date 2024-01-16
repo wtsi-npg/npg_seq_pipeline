@@ -261,15 +261,11 @@ sub get_gbs_plex_bed_file {
   my $bed_file;
 
   if ($gbs_plex) {
-    my $reference_genome = $gb->lims->reference_genome;
-    $reference_genome or croak 'reference_genome is not defined';
-    $bed_file = $self->_gbs_plex_cache()
-                ->{$repository}->{$gbs_plex}->{$reference_genome};
-    if (!$bed_file) {
-      $bed_file = $gb->gbs_plex_bed_path();
-      $self->_gbs_plex_cache()
-        ->{$repository}->{$gbs_plex}->{$reference_genome} = $bed_file;
-    }
+     $bed_file = $self->_gbs_plex_cache()->{$repository}->{$gbs_plex};
+     if (!$bed_file) {
+       $bed_file = $gb->gbs_plex_bed_path();
+       $self->_gbs_plex_cache()->{$repository}->{$gbs_plex} = $bed_file;
+     }
   }
 
   return $bed_file;

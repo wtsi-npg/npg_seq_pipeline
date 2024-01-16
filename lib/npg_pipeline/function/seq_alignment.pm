@@ -489,7 +489,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   else {
     push @{$p4_ops->{prune}}, 'foptgt.*samtools_stats_F0.*00_bait.*-';  # confirm hyphen
     if($p4_param_vals->{markdup_method} and ($p4_param_vals->{markdup_method} eq q[samtools] or $p4_param_vals->{markdup_method} eq q[picard])) {
-      push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_fixmate:', 'foptgt_000_markdup', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk'; # the fixmate node only works for mardkup_method samtools (pending p4 node id uniqueness bug fix)
+      push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_fixmate:', 'foptgt_000_markdup', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk'; # the fixmate node only works for markup_method samtools (pending p4 node id uniqueness bug fix)
     }
     else {
       push @{$p4_ops->{splice}}, 'ssfqc_tee_ssfqc:straight_through1:-foptgt_000_bamsort_coord:', 'foptgt_000_bammarkduplicates', 'foptgt_seqchksum_file:-scs_cmp_seqchksum:outputchk';
@@ -498,12 +498,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   my $p4_local_assignments = {};
   if($do_gbs_plex){
-     if(my $gbb=npg_pipeline::cache::reference->instance->get_gbs_plex_bed_file($dp, $self->repository)) {
+     my $gbb=npg_pipeline::cache::reference->instance->get_gbs_plex_bed_file($dp, $self->repository);
+     if (defined $gbb) {
         $p4_param_vals->{primer_clip_bed} = $gbb;
-        $self->info(qq[No markdup with gbs primer panel : $gbb]);
+        $self->info(qq[No markdup and primer clipping with gbs primer panel : $gbb]);
      } else {
         $p4_param_vals->{primer_clip_method} = q[no_clip];
      }
+
      $p4_param_vals->{bwa_executable}   = q[bwa0_6];
      $p4_param_vals->{bsc_executable}   = q[bamsort];
      $p4_param_vals->{alignment_method} = $bwa;
