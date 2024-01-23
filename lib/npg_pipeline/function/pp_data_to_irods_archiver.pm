@@ -16,6 +16,15 @@ has '+irods_root_collection_ns' => (
   default => __PACKAGE__->irods_pp_root_collection(),
 );
 
+#####
+# per_product_archive attribute is inherited by this class from
+# npg_pipeline::product::release::irods via the parent class.
+# The builder method is overwritten here to return true regardless of the
+# instrument type.
+sub _build_per_product_archive {
+  return 1;
+}
+
 sub create {
   my $self = shift;
 
@@ -123,6 +132,12 @@ npg_pipeline::function::pp_data_to_irods_archiver
 
 =head2 irods_root_collection_ns
 
+=head2 per_product_archive
+
+Inherited from npg_pipeline::product::release::irods via the parent class.
+The builder method is overwritten here to return true regardless of the
+instrument type.
+
 =head2 create
 
 =head1 DIAGNOSTICS
@@ -156,7 +171,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2020,2022 Genome Research Ltd.
+Copyright (C) 2020,2022,2024 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
