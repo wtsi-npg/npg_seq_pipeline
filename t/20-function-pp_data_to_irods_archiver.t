@@ -4,7 +4,7 @@ use Cwd;
 use Math::Random::Secure qw(srand);
 use JSON;
 use File::Slurp;
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Exception;
 use File::Copy::Recursive qw(fcopy dircopy);
 use File::Temp qw(tempdir);
@@ -16,6 +16,10 @@ dircopy("t/data/novaseq/$rf_name", $runfolder_path);
 
 my $bbc_path = join q[/], $runfolder_path,
                'Data/Intensities/BAM_basecalls_20200710-105415';
+
+# restart dir is no longer created if not present because it is
+# now present in all runfolders
+mkdir $bbc_path . q(/irods_publisher_restart_files/);
 
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = join q[/], $bbc_path,
         'metadata_cache_34576/samplesheet_34576.csv';
@@ -74,10 +78,6 @@ subtest 'create job definition' => sub {
   # To predict the name of the file with metadata,
   # seed the random number generator.
   srand('1x4y5z8k');
-
-  # restart dir is no longer created if not present because it is
-  # now present in all runfolders
-  mkdir $bbc_path . q(/irods_publisher_restart_files/);
 
   my $archiver = $pkg->new(
     %init,
@@ -154,6 +154,32 @@ subtest 'create job definition' => sub {
   is ($h->{attribute}, 'target');
   is ($h->{value}, 'pp');
 
+};
+
+subtest 'create job definition, MiSeq run' => sub {
+  plan tests => 3;
+
+  unlink "$runfolder_path/RunParameters.xml";
+  unlink "$runfolder_path/RunInfo.xml";
+
+  fcopy 't/data/miseq/46761_runParameters.xml',
+    "$runfolder_path/runParameters.xml";   
+  fcopy 't/data/miseq/46761_RunInfo.xml',
+    "$runfolder_path/RunInfo.xml";
+
+  my $ss_path = $ENV{NPG_CACHED_SAMPLESHEET_FILE};
+  my @lines = read_file($ss_path);
+  write_file($ss_path, @lines[0 .. 4]); # Two header lines and three samples
+                                        # from lane 1.
+  my $ds = $pkg->new(%init)->create();
+  my $num_expected = 3;
+  is(scalar @{$ds}, $num_expected, "expected $num_expected definitions");
+  my $d = $ds->[0];
+  ok (!$d->excluded, 'function is not excluded');
+  my $expected = 'npg_publish_tree.pl' .
+     q( --collection /seq/illumina/pp/runs/34/34576/lane1/plex1) .
+     q( --source ) . $bbc_path . q(/pp_archive/lane1/plex1);
+  like ($d->command, qr/$expected/, 'correct data source and destination');
 };
 
 unlink $syslog_config;
