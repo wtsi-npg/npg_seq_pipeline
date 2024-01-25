@@ -29,7 +29,9 @@ with qw{npg_pipeline::validation::common
 our $VERSION = '0';
 
 Readonly::Array  my @NPG_DELETABLE_UNCOND => ('run cancelled', 'data discarded');
-Readonly::Array  my @NPG_DELETABLE_STATES => (@NPG_DELETABLE_UNCOND,'qc complete');
+Readonly::Scalar my $QC_COMPLETE_STATUS   => q[qc complete];
+Readonly::Array  my @NPG_DELETABLE_STATES =>
+                      (@NPG_DELETABLE_UNCOND, $QC_COMPLETE_STATUS);
 Readonly::Scalar my $MIN_KEEP_DAYS        => 14;
 Readonly::Scalar my $UNREALISTIC_NUM_STAGING_PP_FILES => 10_000;
 Readonly::Scalar my $DEFAULT_IRODS_ROOT   => q[/seq];
@@ -456,6 +458,16 @@ sub run {
   my $self = shift;
 
   $self->_flagged_as_not_deletable() and return 0;
+
+  # For now just inform about a deletable shadow run folder. The folder
+  # will be deleted manually.
+  # Later, when we gain confidence, we might return 1 here, which will
+  # result in the automatic deletion.
+  if ($self->_is_deletable_shadow_runfolder()) {
+    $self->info(sprintf 'Shadow runfolder %s for run %i can be deleted',
+      $self->runfolder_path, $self->id_run);
+    return 0;
+  }
 
   my $deletable = $self->_npg_tracking_deletable('unconditional');
   my $vars_set  = 0;
@@ -991,6 +1003,16 @@ sub _file_archive_deletable {
   $self->info($m);
 
   return $deletable;
+}
+
+sub _is_deletable_shadow_runfolder {
+  my $self = shift;
+  if ( ($self->runfolder_path() =~ m{/incoming/}xms) &&
+       ($self->_run_status_obj->description eq $QC_COMPLETE_STATUS) &&
+       !$self->tracking_run->is_tag_set($STAGING_TAG)) {
+    return 1;
+  }
+  return 0;
 }
 
 ###########################################################
