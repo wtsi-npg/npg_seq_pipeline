@@ -28,11 +28,6 @@
             },
             {
                 "relation": "dependsOn",
-                "source": "update_ml_warehouse",
-                "target": "cache_merge_component"
-            },
-            {
-                "relation": "dependsOn",
                 "source": "archive_run_data_to_irods",
                 "target": "archive_to_irods_ml_warehouse"
             },
@@ -54,11 +49,6 @@
             {
                 "relation": "dependsOn",
                 "source": "archive_irods_locations_to_ml_warehouse",
-                "target": "run_run_archived"
-            },
-            {
-                "relation": "dependsOn",
-                "source": "cache_merge_component",
                 "target": "run_run_archived"
             },
             {
@@ -201,14 +191,6 @@
                 "label": "archive_to_s3",
                 "metadata": {
                     "description": "Upload of the main pipeline products to a cloud location (if configured)",
-                    "resources": {}
-                }
-            },
-            {
-                "id": "cache_merge_component",
-                "label": "cache_merge_component",
-                "metadata": {
-                    "description": "Cached products that are due for a top-up in a directory outside the run folder (if configured)",
                     "resources": {}
                 }
             },
