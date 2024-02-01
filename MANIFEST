@@ -49,7 +49,6 @@ lib/npg_pipeline/function/p4_stage1_analysis.pm
 lib/npg_pipeline/function/stage2pp.pm
 lib/npg_pipeline/function/pp_data_to_irods_archiver.pm
 lib/npg_pipeline/function/run_data_to_irods_archiver.pm
-lib/npg_pipeline/function/s3_archiver.pm
 lib/npg_pipeline/function/seq_alignment.pm
 lib/npg_pipeline/function/seq_to_irods_archiver.pm
 lib/npg_pipeline/function/seqchksum_comparator.pm
@@ -61,7 +60,6 @@ lib/npg_pipeline/pluggable.pm
 lib/npg_pipeline/pluggable/central.pm
 lib/npg_pipeline/pluggable/registry.pm
 lib/npg_pipeline/product.pm
-lib/npg_pipeline/product/cache_merge.pm
 lib/npg_pipeline/product/chunk.pm
 lib/npg_pipeline/product/release.pm
 lib/npg_pipeline/product/release/irods.pm
@@ -72,7 +70,6 @@ lib/npg_pipeline/validation/autoqc.pm
 lib/npg_pipeline/validation/common.pm
 lib/npg_pipeline/validation/entity.pm
 lib/npg_pipeline/validation/irods.pm
-lib/npg_pipeline/validation/s3.pm
 MANIFEST			This list of files
 README
 README.md
@@ -94,7 +91,6 @@ t/10-script-job_env_to_threads.t
 t/10-validation-autoqc.t
 t/10-validation-entity.t
 t/10-validation-irods.t
-t/10-validation-s3.t
 t/10-validation.t
 t/15-pipeline_launcher_scripts.t
 t/15-product-release.t
@@ -114,7 +110,6 @@ t/20-function-p4_stage1_analysis.t
 t/20-function-stage2pp.t
 t/20-function-pp_data_to_irods_archiver.t
 t/20-function-run_data_to_irods_archiver.t
-t/20-function-s3_archiver.t
 t/20-function-seq_alignment.t
 t/20-function-seq_to_irods_archiver.t
 t/20-function-seqchksum_comparator.t
@@ -1081,20 +1076,14 @@ t/data/release/config/archive_off/product_release.yml
 t/data/release/config/archive_on/product_release.yml
 t/data/release/config/bqsr_off/product_release.yml
 t/data/release/config/bqsr_on_study_specific/product_release.yml
-t/data/release/config/default_s3_archival/product_release.yml
-t/data/release/config/disregard_qc_outcome/product_release.yml
-t/data/release/config/empty_default/product_release.yml
 t/data/release/config/haplotype_caller_bqsr_on_study_specific/product_release.yml
 t/data/release/config/haplotype_caller_off_study_specific_reference/product_release.yml
 t/data/release/config/haplotype_caller_on/product_release.yml
 t/data/release/config/haplotype_caller_on_study_specific/product_release.yml
 t/data/release/config/haplotype_caller_on_study_specific_reference/product_release.yml
-t/data/release/config/multiple_configs/product_release.yml
-t/data/release/config/no_config/product_release.yml
 t/data/release/config/notify_off/product_release.yml
 t/data/release/config/notify_on/product_release.yml
 t/data/release/config/qc_review/product_release.yml
-t/data/release/config/undef_qc_accept/product_release.yml
 t/data/release/config/pp_archival/product_release.yml
 t/data/release/config/pp_archival/product_release_no_array.yml
 t/data/release/config/pp_archival/product_release_no_filters.yml
