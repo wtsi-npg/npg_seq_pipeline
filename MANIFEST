@@ -1057,14 +1057,6 @@ t/data/qc/references/Homo_sapiens/1000Genomes_hs37d5/all/fasta/hs37d5.fa
 t/data/qc/references/PhiX/default/all/fasta/PhiX.fasta
 t/data/qc/samplesheet_14043.csv
 t/data/qc/samplesheet_14353.csv
-t/data/qc_outcomes/fixtures/000-mqc_library_outcome_dict.yml
-t/data/qc_outcomes/fixtures/000-mqc_outcome_dict.yml
-t/data/qc_outcomes/fixtures/000-uqc_outcome_dict.yml
-t/data/qc_outcomes/fixtures/200-seq_component.yml
-t/data/qc_outcomes/fixtures/300-seq_component_composition.yml
-t/data/qc_outcomes/fixtures/300-seq_composition.yml
-t/data/qc_outcomes/fixtures/400-mqc_library_outcome_ent.yml
-t/data/qc_outcomes/fixtures/README
 t/data/release/config/archive_off/product_release.yml
 t/data/release/config/archive_on/product_release.yml
 t/data/release/config/bqsr_off/product_release.yml
