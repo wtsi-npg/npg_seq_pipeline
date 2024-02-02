@@ -225,7 +225,6 @@ t/data/hiseq/samplesheet_20268.csv
 t/data/hiseqx/43416_runParameters.xml
 t/data/hiseqx/16839_RunInfo.xml
 t/data/hiseqx/samplesheet_16839.csv
-t/data/messaging/npg_message_queue.conf
 t/data/miseq/16850_RunInfo.xml
 t/data/miseq/16850_runParameters.xml
 t/data/miseq/16866_RunInfo.xml
@@ -235,7 +234,6 @@ t/data/miseq/samplesheet_16850.csv
 t/data/miseq/samplesheet_16866.csv
 t/data/miseq/samplesheet_20990.csv
 t/data/miseq/samplesheet_24135.csv
-t/data/miseq/samplesheet_24135_bwa_mem2.csv
 t/data/miseq/samplesheet_24135_gbs.csv
 t/data/miseq/samplesheet_24135_V2.csv
 t/data/no_reads.cram
@@ -1042,11 +1040,6 @@ t/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3/RunParameters.xml
 t/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3/samplesheet_47995.csv
 t/data/p4_stage1_analysis/1234_samplesheet.csv
 t/data/p4_stage1_analysis/TileMetricsOut.bin
-t/data/portable_pipelines/samplesheet4archival_all_controls.csv
-t/data/portable_pipelines/samplesheet4archival_none_controls.csv
-t/data/portable_pipelines/samplesheet4archival_none_controls_cons_wthdr.csv
-t/data/portable_pipelines/samplesheet4archival_none_controls_diff_study.csv
-t/data/portable_pipelines/samplesheet4archival_none_controls_no_suppl_name.csv
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release.yml
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_no_pp.yml
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_no_study.yml
