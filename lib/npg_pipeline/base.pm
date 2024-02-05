@@ -26,16 +26,12 @@ with qw{
        };
 
 Readonly::Array my @NO_SCRIPT_ARG_ATTRS  => qw/
-                                               slot
-                                               instrument_string
                                                subpath
                                                tilelayout_rows
                                                tile_count
                                                lane_tilecount
                                                tilelayout_columns
                                                npg_tracking_schema
-                                               flowcell_id
-                                               name
                                                tracking_run
                                                experiment_name
                                                logger
@@ -59,8 +55,6 @@ within npg_pipeline package
 =head1 SUBROUTINES/METHODS
 
 =head2 npg_tracking_schema
-
-=head2 flowcell_id
 
 =head2 tracking_run
 
