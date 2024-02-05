@@ -1077,6 +1077,7 @@ t/data/qc_outcomes/fixtures/000-uqc_outcome_dict.yml
 t/data/qc_outcomes/fixtures/200-seq_component.yml
 t/data/qc_outcomes/fixtures/300-seq_component_composition.yml
 t/data/qc_outcomes/fixtures/300-seq_composition.yml
+t/data/qc_outcomes/fixtures/400-mqc_outcome_ent.yml
 t/data/qc_outcomes/fixtures/400-mqc_library_outcome_ent.yml
 t/data/qc_outcomes/fixtures/README
 t/data/release/config/archive_off/product_release.yml
