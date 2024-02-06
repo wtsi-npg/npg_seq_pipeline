@@ -232,7 +232,6 @@ t/data/hiseq/samplesheet_20268.csv
 t/data/hiseqx/43416_runParameters.xml
 t/data/hiseqx/16839_RunInfo.xml
 t/data/hiseqx/samplesheet_16839.csv
-t/data/messaging/npg_message_queue.conf
 t/data/miseq/16850_RunInfo.xml
 t/data/miseq/16850_runParameters.xml
 t/data/miseq/16866_RunInfo.xml
