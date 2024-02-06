@@ -38,7 +38,6 @@ lib/npg_pipeline/function/autoqc.pm
 lib/npg_pipeline/function/autoqc/generic.pm
 lib/npg_pipeline/function/autoqc_archiver.pm
 lib/npg_pipeline/function/bqsr_calc.pm
-lib/npg_pipeline/function/cache_merge_component.pm
 lib/npg_pipeline/function/cluster_count.pm
 lib/npg_pipeline/function/current_analysis_link.pm
 lib/npg_pipeline/function/definition.pm
@@ -104,7 +103,6 @@ t/20-function-autoqc.t
 t/20-function-autoqc-generic.t
 t/20-function-autoqc_archiver.t
 t/20-function-bqsr_calc.t
-t/20-function-cache_merge_component.t
 t/20-function-cluster_count.t
 t/20-function-current_analysis_link.t
 t/20-function-definition.t
