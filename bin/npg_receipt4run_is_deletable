@@ -127,9 +127,6 @@ Uses data from ml warehouse to generate a list of externally
 acknowledged products. The list is written to a compressed file. The path
 of the new file is as given by the --receipt_path plus the .bz2 extension.
 
-This file will be used by the npg_run_is_deletable
-script, see npg_pipeline::validation::s3.
-
 =head1 DESCRIPTION
 
 npg_receipt4run_is_deletable --help
