@@ -106,7 +106,6 @@ sub is_release_data {
   Arg [2]    : Str, type of release
 
   Example    : $obj->is_for_release($product, 'irods');
-               $obj->is_for_release($product, 's3');
   Description: Return true if the product is to be released via the
                mechanism defined by the second argument.
 
@@ -376,10 +375,6 @@ product release.
 The configuration file gives per-study settings and a default to be
 used for any study without a specific configuration.
 
- S3:
-    enable: <boolean> S3 release enabled if true.
-    url:    <URL>     The S3 bucket URL to send to.
-
  irods:
     enable: <boolean> iRODS release enabled if true.
 
@@ -387,24 +382,15 @@ e.g.
 
 ---
 default:
-  s3:
-    enable: false
-    url: null
   irods:
     enable: true
 
 study:
   - study_id: "5290"
-    s3:
-      enable: true
-      url: "s3://product_bucket"
     irods:
       enable: false
 
   - study_id: "1000"
-    s3:
-      enable: false
-      url: null
     irods:
       enable: true
 
