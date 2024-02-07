@@ -23,11 +23,6 @@
             },
             {
                 "relation": "dependsOn",
-                "source": "update_ml_warehouse",
-                "target": "archive_to_s3"
-            },
-            {
-                "relation": "dependsOn",
                 "source": "archive_run_data_to_irods",
                 "target": "archive_to_irods_ml_warehouse"
             },
@@ -40,11 +35,6 @@
                 "relation": "dependsOn",
                 "source": "archive_pp_data_to_irods",
                 "target": "archive_irods_locations_to_ml_warehouse"
-            },
-            {
-                "relation": "dependsOn",
-                "source": "archive_to_s3",
-                "target": "run_run_archived"
             },
             {
                 "relation": "dependsOn",
@@ -184,14 +174,6 @@
                             "fs_slots_num": 1
                         }
                     }
-                }
-            },
-            {
-                "id": "archive_to_s3",
-                "label": "archive_to_s3",
-                "metadata": {
-                    "description": "Upload of the main pipeline products to a cloud location (if configured)",
-                    "resources": {}
                 }
             },
             {

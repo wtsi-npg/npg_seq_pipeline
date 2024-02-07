@@ -17,7 +17,6 @@ use npg_tracking::glossary::composition;
 use npg_pipeline::cache;
 use npg_pipeline::validation::entity;
 use npg_pipeline::validation::irods;
-use npg_pipeline::validation::s3;
 use npg_pipeline::validation::autoqc;
 use WTSI::NPG::iRODS;
 use npg_qc::Schema;
@@ -191,17 +190,6 @@ has q{remove_staging_tag} => (
   is            => q{ro},
   documentation =>
   q{Toggles an option to remove run's staging tag, false by default},
-);
-
-=head2 no_s3_archival
-
-Boolean attribute, toggles s3 check, false by default.
-
-=cut
-
-has q{+no_s3_archival} => (
-  documentation =>
-  q{Toggles an option to check for data in s3, false by default},
 );
 
 ############## Other public attributes ###########################
@@ -469,7 +457,6 @@ sub run {
               $self->_staging_deletable()      &&
               $self->_irods_seq_deletable()    &&
               $self->_irods_seq_onboard_deletable() &&
-              $self->_s3_deletable()           &&
               $self->_autoqc_deletable()       &&
               $self->_file_archive_deletable
                                );
@@ -930,30 +917,6 @@ sub _staging_deletable {
           $self->id_run , $deletable ? q[] : q[NOT ];
   $self->info($m);
 
-  return $deletable;
-}
-
-sub _s3_deletable {
-  my $self = shift;
-  $self->debug('Examining files reported to be in s3');
-
-  if ($self->no_s3_archival) {
-    $self->info('s3 check ignored');
-    push @{$self->eligible_product_entities}, @{$self->product_entities};
-    return 1;
-  }
-
-  my $v = npg_pipeline::validation::s3->new(
-    product_entities => $self->product_entities,
-    file_extension   => $self->file_extension,
-    qc_schema        => $self->qc_schema
-  );
-  my $deletable = $v->fully_archived();
-  push @{$self->eligible_product_entities}, @{$v->eligible_product_entities};
-
-  my $m = sprintf 'Files in s3: run %i %sdeletable',
-          $self->id_run , $deletable ? q[] : q[NOT ];
-  $self->info($m);
   return $deletable;
 }
 
