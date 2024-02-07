@@ -60,22 +60,6 @@ within npg_pipeline package
 
 =head2 npg_tracking_schema
 
-=head2 qc_schema
-
-An attribute caching a connection to a QC database.
-The attribute is allowed to be undefined and is implicitly undefined
-since no default or build method is provided. This is done in order
-to prevent the automatic connection to a database in child classes.
-
-=cut
-
-has 'qc_schema' => (
-  metaclass  => 'NoGetopt',
-  isa        => 'Maybe[npg_qc::Schema]',
-  is         => 'ro',
-  required   => 0,
-);
-
 =head2 flowcell_id
 
 =head2 tracking_run

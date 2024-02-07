@@ -405,9 +405,11 @@ a database connection.
 
 =cut
 
-has '+qc_schema' => (
-  lazy       => 1,
-  builder    => '_build_qc_schema',
+has 'qc_schema' => (
+  isa        => 'npg_qc::Schema',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
 );
 sub _build_qc_schema {
   return npg_qc::Schema->connect();

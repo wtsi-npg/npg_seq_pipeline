@@ -24,11 +24,6 @@ Log::Log4perl->easy_init({level  => $INFO,
   with 'npg_testing::db';
 }
 
-# See README in fixtures for a description of the test data.
-my $qc = TestDB->new (
-  sqlite_utf8_enabled => 1,
-  verbose             => 0)->create_test_db('npg_qc::Schema');
-
 local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
   't/data/novaseq/180709_A00538_0010_BH3FCMDRXX/' .
   'Data/Intensities/BAM_basecalls_20180805-013153/' .
@@ -49,8 +44,7 @@ subtest 'expected_files' => sub {
     (conf_path      => "t/data/release/config/archive_on",
      runfolder_path => $runfolder_path,
      id_run         => 26291,
-     timestamp      => $timestamp,
-     qc_schema      => $qc);
+     timestamp      => $timestamp);
 
   my $path = "$runfolder_path/Data/Intensities/" .
              'BAM_basecalls_20180805-013153/no_cal/archive/plex1';
@@ -86,8 +80,7 @@ subtest 'expected_unaligned_files' => sub {
       (conf_path      => "t/data/release/config/archive_on",
        runfolder_path => $runfolder_path,
        id_run         => 26291,
-       timestamp      => $timestamp,
-       qc_schema      => $qc);
+       timestamp      => $timestamp);
 
   my $product = $archiver->products->{data_products}->[4];
   my $path = "$runfolder_path/Data/Intensities/" .
