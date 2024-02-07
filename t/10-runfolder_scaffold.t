@@ -67,12 +67,13 @@ subtest 'top level scaffold' => sub {
 };
 
 subtest 'product level scaffold, NovaSeq all lanes' => sub {
-  plan tests => 99;
+  plan tests => 101;
 
   my $util = t::util->new();
   my $rfh = $util->create_runfolder();
   my $rf_path = $rfh->{'runfolder_path'};
-  fcopy 't/data/run_params/runParameters.novaseq.xml',  "$rf_path/runParameters.xml";
+  fcopy 't/data/run_params/runParameters.novaseq.xml', "$rf_path/runParameters.xml";
+  fcopy 't/data/novaseq/210111_A00513_0447_AHJ55JDSXY/RunInfo.xml', "$rf_path/RunInfo.xml";
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_novaseq4lanes.csv';
   
   my $rfs = Moose::Meta::Class->create_anon_class(
@@ -95,6 +96,8 @@ subtest 'product level scaffold, NovaSeq all lanes' => sub {
   push @dirs, (map {join q[/], $_, 'qc'} @original);
   push @dirs, (map {join q[/], $_, 'tileviz_'.$_} @original);
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
+  push @dirs, (map {join q[/], $_, 'plex0/qc'} @original);
+  push @dirs, (map {join q[/], $_, 'plex888/qc'} @original);
   map { ok (-d $_, "$_ created") } map {join q[/], $apath, $_} @dirs;
 
   for my $lane (@original) {
@@ -106,7 +109,7 @@ subtest 'product level scaffold, NovaSeq all lanes' => sub {
     like ($content, qr/No tileviz data available for this lane/, 'info exists');
   }
   
-  @original = map {'plex' . $_} (0 .. 21, 888);
+  @original = map {'plex' . $_} (1 .. 21);
   @dirs = @original;
   push @dirs, (map {join q[/], $_, 'qc'} @original);
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
@@ -115,16 +118,17 @@ subtest 'product level scaffold, NovaSeq all lanes' => sub {
   my $tileviz_index = join q[/], $apath, 'tileviz', 'index.html';
   ok (-e $tileviz_index, 'tileviz index created');
   my @lines = read_file($tileviz_index);
-  is (scalar @lines, 7, 'tileviz index contains sevel lines');
+  is (scalar @lines, 7, 'tileviz index contains seven lines');
 };
 
 subtest 'product level scaffold, NovaSeq selected lanes' => sub {
-  plan tests => 175;
+  plan tests => 165;
 
   my $util = t::util->new();
   my $rfh = $util->create_runfolder();
   my $rf_path = $rfh->{'runfolder_path'};
-  fcopy 't/data/run_params/runParameters.novaseq.xml',  "$rf_path/runParameters.xml";
+  fcopy 't/data/run_params/runParameters.novaseq.xml', "$rf_path/runParameters.xml";
+  fcopy 't/data/novaseq/210111_A00513_0447_AHJ55JDSXY/RunInfo.xml', "$rf_path/RunInfo.xml";
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_novaseq4lanes.csv';
   
   my $rfs = Moose::Meta::Class->create_anon_class(
@@ -149,12 +153,14 @@ subtest 'product level scaffold, NovaSeq selected lanes' => sub {
   push @dirs, (map {join q[/], $_, 'qc'} @original);
   push @dirs, (map {join q[/], $_, 'tileviz_'.$_} @original);
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
+  push @dirs, (map {join q[/], $_, 'plex0/qc'} @original);
+  push @dirs, (map {join q[/], $_, 'plex888/qc'} @original); 
   map { ok (-d $_, "$_ created") } map {join q[/], $apath, $_} @dirs;
 
   @dirs = qw/lane1 lane4/;
   map { ok (!-e $_, "$_ not created") } map {join q[/], $apath, $_} @dirs;
 
-  @original = map {'lane2-3/plex' . $_} (0 .. 21, 888);
+  @original = map {'lane2-3/plex' . $_} (1 .. 21);
   @dirs = @original;
   push @dirs, (map {join q[/], $_, 'qc'} @original);
   push @dirs, (map {join q[/], $_, '.npg_cache_10000'} @original);
@@ -172,7 +178,7 @@ subtest 'product level scaffold, NovaSeq selected lanes' => sub {
       "link for lane $l file is not created");
   }
 
-  for my $t ( (0 .. 21, 888) ) {
+  for my $t ( (1 .. 21) ) {
     my $name = "999_2-3#${t}.cram";
     my $file = "$napath/lane2-3/plex${t}/stage1/$name";
     ok ((-l $file), "link for plex $t is created");

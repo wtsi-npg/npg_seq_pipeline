@@ -1,6 +1,16 @@
 LIST OF CHANGES
 ---------------
 
+ - Use st::api::lims->aggregate_libraries() method for both 'merge_lanes' and
+  'merge_by_library' pipeline options. This is a breaking change as far as
+  archival and deletion of NovaSeq Standard workflow data is concerned.
+  Key change for lane merging for this data will be that tag 0 and tag 888 will
+  not be merged across the lanes.
+  The NovaSeq Standard workflow, where there is only one input port, is
+  different to the more general merging across lanes where the (claimed) same
+  library has been sequenced. But this is not a valid reason to maintain separate
+  code.
+
 release 67.1.1
  - Fixed correct pp collection root for MiSeq
 
