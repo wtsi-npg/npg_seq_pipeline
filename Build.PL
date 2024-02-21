@@ -86,7 +86,6 @@ my $builder = $class->new(
           'npg_tracking::glossary::rpt'                        => 0,
           'npg_tracking::glossary::composition::factory::rpt_list' => 0,
           'npg_tracking::illumina::runfolder'                  => 0,
-          'npg_tracking::illumina::run::folder::validation'    => 0,
           'npg_tracking::Schema'                               => 0,
           'npg_tracking::util::types'                          => 0,
           'npg_tracking::util::abs_path'                       => 0,
