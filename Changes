@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 68.0.0
  - Use st::api::lims->aggregate_libraries() method for both 'merge_lanes' and
   'merge_by_library' pipeline options. This is a breaking change as far as
   archival and deletion of NovaSeq Standard workflow data is concerned.
@@ -10,6 +11,22 @@ LIST OF CHANGES
   different to the more general merging across lanes where the (claimed) same
   library has been sequenced. But this is not a valid reason to maintain separate
   code.
+ - Deletable shadow folders are detected, but not considered as deletable
+   for now. They are flagged in the log of the 'npg_run_is_deletable' script.
+ - Removed all code that was used for the UKB project and the upload of Heron
+   project data to CLIMB. Updated the archival pipeline function graph and its
+   graphical representation.
+    - Removed 'cache_merge_component' and 'archive_to_s3' pipeline functions.
+    - Removed all functions for retrieving the QC state of the product
+      from 'npg_pipeline::product'.
+    - Dropped npg_pipeline::base dependency on QC database ('qc_schema'
+      attribute for 'npg_qc::Schema'). Removed test fixtures for the QC database.
+    - Deleted 'npg_receipt4run_is_deletable' script.
+    - Dropped checks for files upload to the third-party cloud locations when
+      deciding whether the run folder is deletable.
+    - Updated examples in POD in 'npg_pipeline::product::release'.
+    - Excluded redundant settings from 'product_release.yml' files used in
+      unit tests.
 
 release 67.1.1
  - Fixed correct pp collection root for MiSeq
