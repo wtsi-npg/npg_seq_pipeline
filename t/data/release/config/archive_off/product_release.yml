@@ -1,31 +1,16 @@
 ---
 default:
-  s3:
-    enable: false
-    url: null
-    notify: false
   irods:
     enable: true
-    notify: false
   data_deletion:
     staging_deletion_delay: 12
 
 study:
   - study_id: "5290"
-    s3:
-      enable: false
-      url: "gs://product_bucket"
-      notify: true
     irods:
       enable: false
-      notify: false
 
   - study_id: "1000"
-    s3:
-      enable: false
-      url: null
-      notify: false
     irods:
       enable: true
-      notify: false
  

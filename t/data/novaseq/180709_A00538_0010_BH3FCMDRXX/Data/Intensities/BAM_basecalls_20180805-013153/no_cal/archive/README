@@ -1,0 +1,6 @@
+5 January 2024
+
+Both lane1 and lane2 directories are expected to contain
+subdirectories plex0 and plex888 with all relevant files
+and subdirectories. Only lane1/plex0 directory is present
+in this testrunfolder as a representative example.

@@ -96,13 +96,14 @@ subtest 'products - merging (or not) lanes' => sub {
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_novaseq4lanes.csv';
   cp 't/data/run_params/runParameters.novaseq.xml',  "$rf_path/runParameters.xml";
+  cp 't/data/novaseq/210111_A00513_0447_AHJ55JDSXY/RunInfo.xml',  "$rf_path/RunInfo.xml";
   $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
   ok ($b->merge_lanes, 'merge_lanes flag is set');
   lives_ok {$products = $b->products} 'products hash created for NovaSeq run';
   ok (exists $products->{'lanes'}, 'products lanes key exists');
   is (scalar @{$products->{'lanes'}}, 4, 'four lane product');
   ok (exists $products->{'data_products'}, 'products data_products key exists');
-  is (scalar @{$products->{'data_products'}}, 23, '23 data products'); 
+  is (scalar @{$products->{'data_products'}}, 29, '29 data products'); 
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_rapidrun_nopool.csv';
   cp 't/data/run_params/runParameters.hiseq.rr.xml',  "$rf_path/runParameters.xml";

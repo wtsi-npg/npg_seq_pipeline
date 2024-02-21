@@ -17,7 +17,6 @@ use npg_tracking::glossary::composition;
 use npg_pipeline::cache;
 use npg_pipeline::validation::entity;
 use npg_pipeline::validation::irods;
-use npg_pipeline::validation::s3;
 use npg_pipeline::validation::autoqc;
 use WTSI::NPG::iRODS;
 use npg_qc::Schema;
@@ -29,7 +28,9 @@ with qw{npg_pipeline::validation::common
 our $VERSION = '0';
 
 Readonly::Array  my @NPG_DELETABLE_UNCOND => ('run cancelled', 'data discarded');
-Readonly::Array  my @NPG_DELETABLE_STATES => (@NPG_DELETABLE_UNCOND,'qc complete');
+Readonly::Scalar my $QC_COMPLETE_STATUS   => q[qc complete];
+Readonly::Array  my @NPG_DELETABLE_STATES =>
+                      (@NPG_DELETABLE_UNCOND, $QC_COMPLETE_STATUS);
 Readonly::Scalar my $MIN_KEEP_DAYS        => 14;
 Readonly::Scalar my $UNREALISTIC_NUM_STAGING_PP_FILES => 10_000;
 Readonly::Scalar my $DEFAULT_IRODS_ROOT   => q[/seq];
@@ -191,17 +192,6 @@ has q{remove_staging_tag} => (
   is            => q{ro},
   documentation =>
   q{Toggles an option to remove run's staging tag, false by default},
-);
-
-=head2 no_s3_archival
-
-Boolean attribute, toggles s3 check, false by default.
-
-=cut
-
-has q{+no_s3_archival} => (
-  documentation =>
-  q{Toggles an option to check for data in s3, false by default},
 );
 
 ############## Other public attributes ###########################
@@ -415,9 +405,11 @@ a database connection.
 
 =cut
 
-has '+qc_schema' => (
-  lazy       => 1,
-  builder    => '_build_qc_schema',
+has 'qc_schema' => (
+  isa        => 'npg_qc::Schema',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
 );
 sub _build_qc_schema {
   return npg_qc::Schema->connect();
@@ -457,6 +449,16 @@ sub run {
 
   $self->_flagged_as_not_deletable() and return 0;
 
+  # For now just inform about a deletable shadow run folder. The folder
+  # will be deleted manually.
+  # Later, when we gain confidence, we might return 1 here, which will
+  # result in the automatic deletion.
+  if ($self->_is_deletable_shadow_runfolder()) {
+    $self->info(sprintf 'Shadow runfolder %s for run %i can be deleted',
+      $self->runfolder_path, $self->id_run);
+    return 0;
+  }
+
   my $deletable = $self->_npg_tracking_deletable('unconditional');
   my $vars_set  = 0;
 
@@ -469,7 +471,6 @@ sub run {
               $self->_staging_deletable()      &&
               $self->_irods_seq_deletable()    &&
               $self->_irods_seq_onboard_deletable() &&
-              $self->_s3_deletable()           &&
               $self->_autoqc_deletable()       &&
               $self->_file_archive_deletable
                                );
@@ -933,30 +934,6 @@ sub _staging_deletable {
   return $deletable;
 }
 
-sub _s3_deletable {
-  my $self = shift;
-  $self->debug('Examining files reported to be in s3');
-
-  if ($self->no_s3_archival) {
-    $self->info('s3 check ignored');
-    push @{$self->eligible_product_entities}, @{$self->product_entities};
-    return 1;
-  }
-
-  my $v = npg_pipeline::validation::s3->new(
-    product_entities => $self->product_entities,
-    file_extension   => $self->file_extension,
-    qc_schema        => $self->qc_schema
-  );
-  my $deletable = $v->fully_archived();
-  push @{$self->eligible_product_entities}, @{$v->eligible_product_entities};
-
-  my $m = sprintf 'Files in s3: run %i %sdeletable',
-          $self->id_run , $deletable ? q[] : q[NOT ];
-  $self->info($m);
-  return $deletable;
-}
-
 sub _file_archive_deletable {
   my $self = shift;
   $self->debug('Checking that each product is archived in at least ' .
@@ -991,6 +968,16 @@ sub _file_archive_deletable {
   $self->info($m);
 
   return $deletable;
+}
+
+sub _is_deletable_shadow_runfolder {
+  my $self = shift;
+  if ( ($self->runfolder_path() =~ m{/incoming/}xms) &&
+       ($self->_run_status_obj->description eq $QC_COMPLETE_STATUS) &&
+       !$self->tracking_run->is_tag_set($STAGING_TAG)) {
+    return 1;
+  }
+  return 0;
 }
 
 ###########################################################
