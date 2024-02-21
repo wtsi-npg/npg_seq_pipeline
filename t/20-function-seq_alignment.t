@@ -204,7 +204,6 @@ subtest 'basic functionality' => sub {
       timestamp         => q{2014},
       verbose           => 0,
       repository        => $dir,
-      force_phix_split  => 0,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default
     )
@@ -274,7 +273,6 @@ subtest 'basic functionality' => sub {
   is ($d->num_hosts, 1, 'one host');
   is ($d->fs_slots_num, 4, 'four sf slots');
 
-  #### force on phix_split
   lives_ok {
     $rna_gen = npg_pipeline::function::seq_alignment->new(
       run_folder        => $runfolder,
@@ -283,7 +281,6 @@ subtest 'basic functionality' => sub {
       timestamp         => q{2014},
       verbose           => 0,
       repository        => $dir,
-      force_phix_split  => 1,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default
     )
