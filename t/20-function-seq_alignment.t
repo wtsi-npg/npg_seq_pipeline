@@ -13,6 +13,7 @@ use Log::Log4perl qw/:levels/;
 use JSON;
 use Cwd;
 use List::Util qw/first/;
+use File::Slurp qw/edit_file_lines/;
 
 use Moose::Util qw(apply_all_roles);
 
@@ -192,20 +193,24 @@ subtest 'basic functionality' => sub {
 
   copy('t/data/rna_seq/12597_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die
     'Copy failed';
-  copy('t/data/run_params/runParameters.hiseq.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.hiseq.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24235</ExperimentName>}{<ExperimentName>12597</ExperimentName>}
+  }, $run_params_file;
 
   my $rna_gen;
   lives_ok {
     $rna_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2014},
       verbose           => 0,
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
 
@@ -275,14 +280,14 @@ subtest 'basic functionality' => sub {
 
   lives_ok {
     $rna_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2014},
       verbose           => 0,
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object (forcing on phix split)';
 
@@ -336,10 +341,14 @@ subtest 'RNASeq analysis' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20140606-133530/metadata_cache_13066';
   `mkdir -p $cache_dir`;
   copy('t/data/rna_seq/13066_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.hiseq.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.hiseq.xml', $run_params_file)
     or die 'Copy failed';
-
-  # Edited to add 1000Genomes_hs37d5 + ensembl_75_transcriptome to lane 8
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24235</ExperimentName>}{<ExperimentName>13066</ExperimentName>}
+  }, $run_params_file;
+  
+# Edited to add 1000Genomes_hs37d5 + ensembl_75_transcriptome to lane 8
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/rna_seq/samplesheet_13066.csv];
 
   my $qc_in  = qq{$bc_path/archive/lane8};
@@ -348,13 +357,13 @@ subtest 'RNASeq analysis' => sub {
   my $rna_gen;
   lives_ok {
     $rna_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2014},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
   is ($rna_gen->id_run, 13066, 'id_run inferred correctly');
@@ -397,8 +406,12 @@ subtest 'RNASeq analysis' => sub {
   `mkdir -p $bc_path`;
   `mkdir -p $cache_dir`;
   copy('t/data/rna_seq/17550_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.hiseq.xml', "$runfolder_path/runParameters.xml")
+  $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.hiseq.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24235</ExperimentName>}{<ExperimentName>17550</ExperimentName>}
+  }, $run_params_file;
 
   for ((3,4,6,8)) {
     `mkdir -p $bc_path/lane$_`;
@@ -410,13 +423,13 @@ subtest 'RNASeq analysis' => sub {
 
   lives_ok {
     $rna_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2017},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
   is ($rna_gen->id_run, 17550, 'id_run inferred correctly');
@@ -495,13 +508,13 @@ subtest 'RNASeq analysis' => sub {
 
   lives_ok {
     $rna_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2018},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
 
@@ -522,21 +535,25 @@ subtest 'test 3' => sub {
   my $bc_path = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20151215-215034';
   my $cache_dir = join q[/], $bc_path, 'metadata_cache_18472';
   `mkdir -p $bc_path/no_cal/lane2`;
-  copy('t/data/run_params/runParameters.hiseq.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.hiseq.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24235</ExperimentName>}{<ExperimentName>18472</ExperimentName>}
+  }, $run_params_file;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = join q[/], $cache_dir, q[samplesheet_18472.csv];
 
   my $se_gen;
   lives_ok {
     $se_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => "$bc_path/no_cal",
       timestamp         => q{2015},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
   is ($se_gen->id_run, 18472, 'id_run inferred correctly');
@@ -575,8 +592,12 @@ subtest 'test 4' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/metadata_cache_16839';
   `mkdir -p $cache_dir`;
   copy('t/data/hiseqx/16839_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.hiseqx.upgraded.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.hiseqx.upgraded.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24420</ExperimentName>}{<ExperimentName>16839</ExperimentName>}
+  }, $run_params_file;
 
   my $fasta_ref = "$ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/fasta/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa";
   my $target_file = "$ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/target/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa";
@@ -587,13 +608,13 @@ subtest 'test 4' => sub {
   my $hsx_gen;
   lives_ok {
     $hsx_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
   is ($hsx_gen->id_run, 16839, 'id_run inferred correctly');
@@ -685,21 +706,25 @@ subtest 'Newer flowcell' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-232614/metadata_cache_16807';
   `mkdir -p $cache_dir`;
   copy('t/data/hiseq/16807_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.hiseqx.upgraded.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.hiseqx.upgraded.xml', $run_params_file)
    or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24420</ExperimentName>}{<ExperimentName>16807</ExperimentName>}
+  }, $run_params_file;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/hiseq/samplesheet_16807.csv];
 
   my $hs_gen;
   lives_ok {
     $hs_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16807, 'id_run inferred correctly');
@@ -768,22 +793,26 @@ subtest 'MiSeq WES baits' => sub {
   `mkdir -p $cache_dir`;
 
   copy('t/data/hiseq/20268_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.miseq.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24347</ExperimentName>}{<ExperimentName>20268</ExperimentName>}
+  }, $run_params_file;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/hiseq/samplesheet_20268.csv];
 
   my $bait_gen;
   lives_ok {
     $bait_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2016},
       repository        => $dir,
       verbose           => 1,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
 
@@ -898,21 +927,25 @@ subtest 'cycle count over threshold' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-022206/metadata_cache_16850';
   `mkdir -p $cache_dir`;
   copy('t/data/miseq/16850_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.miseq.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24347</ExperimentName>}{<ExperimentName>16850</ExperimentName>}
+  }, $run_params_file;
 
  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_16850.csv];
 
   my $ms_gen;
   lives_ok {
     $ms_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16850, 'id_run inferred correctly');
@@ -974,8 +1007,12 @@ subtest 'nonconsented human split, no target alignment' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150707-132329/metadata_cache_16756';
   `mkdir -p $cache_dir`;
   copy('t/data/hiseq/16756_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.miseq.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24347</ExperimentName>}{<ExperimentName>16756</ExperimentName>}
+  }, $run_params_file;
 
   # default human reference needed for alignment for unconsented human split
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/hiseq/samplesheet_16756.csv];
@@ -983,13 +1020,13 @@ subtest 'nonconsented human split, no target alignment' => sub {
   my $hs_gen;
   lives_ok {
     $hs_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
   is ($hs_gen->id_run, 16756, 'id_run inferred correctly');
@@ -1053,21 +1090,25 @@ subtest 'nonconsented human split, target alignment' => sub {
   `mkdir -p $cache_dir`;
 
   copy('t/data/miseq/16866_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.miseq.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24347</ExperimentName>}{<ExperimentName>16866</ExperimentName>}
+  }, $run_params_file;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_16866.csv];
 
   my $ms_gen;
   lives_ok {
     $ms_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 16866, 'id_run inferred correctly');
@@ -1133,21 +1174,25 @@ subtest 'no target alignment, no human split' => sub {
   `mkdir $cache_dir`;
 
   copy('t/data/miseq/20990_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.miseq.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24347</ExperimentName>}{<ExperimentName>20990</ExperimentName>}
+  }, $run_params_file;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_20990.csv];
 
   my $ms_gen;
   lives_ok {
     $ms_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2016},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 20990, 'id_run (20990) inferred correctly');
@@ -1200,8 +1245,12 @@ subtest 'chromium' => sub {
   my $cache_dir = join q[/], $runfolder_path, 'Data/Intensities/BAM_basecalls_20150712-121006/metadata_cache_16839';
   `mkdir -p $cache_dir`;
   copy('t/data/hiseqx/16839_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.hiseqx.upgraded.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.hiseqx.upgraded.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24420</ExperimentName>}{<ExperimentName>16839</ExperimentName>}
+  }, $run_params_file;
 
   # Chromium libs are not aligned
   my $old_ss = q[t/data/hiseqx/samplesheet_16839.csv];
@@ -1218,13 +1267,13 @@ subtest 'chromium' => sub {
   my $chromium_gen;
   lives_ok {
     $chromium_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2015},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
   is ($chromium_gen->id_run, 16839, 'id_run inferred correctly');
@@ -1285,21 +1334,25 @@ subtest 'miseq' => sub {
   `mkdir $bc_path/lane1`;
 
   copy('t/data/miseq/24135_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.miseq.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>24347</ExperimentName>}{<ExperimentName>24135</ExperimentName>}
+  }, $run_params_file;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135_gbs.csv];
 
   my $ms_gen;
   lives_ok {
     $ms_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2017},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
   is ($ms_gen->id_run, 24135, 'id_run inferred correctly');
@@ -1409,21 +1462,25 @@ subtest 'miseq_primer_panel_only' => sub {
   `mkdir -p $bc_path/lane1`;
 
   copy('t/data/miseq/24135_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
-  copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
+  my $run_params_file = "$runfolder_path/runParameters.xml";
+  copy('t/data/run_params/runParameters.miseq.xml', $run_params_file)
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>\d+</ExperimentName>}{<ExperimentName>24135</ExperimentName>}
+  }, $run_params_file;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135_V2.csv];
 
   my $ms_gen;
   lives_ok {
     $ms_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2017},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
 
@@ -1446,7 +1503,7 @@ subtest 'miseq_primer_panel_only' => sub {
 };
 
 subtest 'product_release_tests' => sub {
-  plan tests => 279;
+  plan tests => 269;
 
   my %test_runs = (
     16850 => { platform => 'miseq', runfolder_name => '150710_MS2_16850_A_MS3014507-500V2', markdup_method => 'samtools', },
@@ -1484,16 +1541,16 @@ subtest 'product_release_tests' => sub {
     my $sa_gen;
     lives_ok {
       $sa_gen = npg_pipeline::function::seq_alignment->new(
-        run_folder        => $run_details->{runfolder_name},
+        id_run            => $run,,
         runfolder_path    => $runfolder_path,
         recalibrated_path => $bc_path,
         timestamp         => q{1776},
         repository        => $dir,
         conf_path         => 't/data/release/config/seq_alignment',
-        resource          => $default
+        resource          => $default,
+        npg_tracking_schema => undef
       )
     } 'no error creating an object';
-    is ($sa_gen->id_run, $run, 'id_run inferred correctly');
 
     my $dps;
     lives_ok { $dps = $sa_gen->products->{data_products} } "no error finding data products for run $run";
@@ -1566,13 +1623,13 @@ subtest 'BWA MEM 2 tests' => sub {
 
     my $ms_gen = npg_pipeline::function::seq_alignment->new(
       bwa_mem2          => $bwa_mem_flag,
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2023},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     );
     apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
     $ms_gen->create_product_level();
@@ -1669,7 +1726,6 @@ subtest 'HiC_flags' => sub {
   my $HiC_flags_gen;
   lives_ok {
     $HiC_flags_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2021},
@@ -1677,6 +1733,7 @@ subtest 'HiC_flags' => sub {
       verbose           => 1,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating an object';
 
@@ -1778,21 +1835,25 @@ subtest 'Haplotagging test' => sub {
   make_path "$bc_path/archive/tileviz";
 
   copy('t/data/miseq/24135_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  my $run_params_file = "$runfolder_path/runParameters.xml";
   copy('t/data/run_params/runParameters.miseq.xml', "$runfolder_path/runParameters.xml")
     or die 'Copy failed';
+  edit_file_lines sub {
+    $_ =~ s{<ExperimentName>\d+</ExperimentName>}{<ExperimentName>24135</ExperimentName>}
+  }, $run_params_file;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/miseq/samplesheet_24135_haplotag.csv];
 
   my $ms_gen;
   lives_ok {
     $ms_gen = npg_pipeline::function::seq_alignment->new(
-      run_folder        => $runfolder,
       runfolder_path    => $runfolder_path,
       recalibrated_path => $bc_path,
       timestamp         => q{2017},
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
-      resource          => $default
+      resource          => $default,
+      npg_tracking_schema => undef
     )
   } 'no error creating seq_alignment object';
 
@@ -1907,13 +1968,13 @@ subtest 'single-end markdup_method test' => sub {
     my $hs_gen;
     lives_ok {
       $hs_gen = npg_pipeline::function::seq_alignment->new(
-        run_folder        => $runfolder,
         runfolder_path    => $runfolder_path,
         recalibrated_path => $bc_path,
         timestamp         => q{2022},
         repository        => $dir,
         conf_path         => 't/data/release/config/seq_alignment',
-        resource          => $default
+        resource          => $default,
+        npg_tracking_schema => undef
       )
     } 'no error creating seq_alignment object';
 
@@ -2023,13 +2084,13 @@ subtest 'test reference caching' => sub {
   # st::api::lims.
   my $generator = npg_pipeline::function::seq_alignment->new(
     id_run         => $id_run,
-    run_folder     => $runfolder_name,
     runfolder_path => $runfolder_path,
     archive_path   => $archive_dir,
     repository     => $dir,
     resource       => $default,
     conf_path      => 't/data/release/config/seq_alignment',
     lanes          => [1, 4],
+    npg_tracking_schema => undef
   );
 
   lives_ok { $generator->generate() }
