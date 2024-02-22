@@ -3,13 +3,12 @@ use warnings;
 use Test::More tests => 8;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
-use Cwd;
+use Cwd qw(getcwd abs_path);
 use Log::Log4perl qw(:levels);
 use Moose::Util qw(apply_all_roles);
 use File::Copy qw(cp);
 
 use t::util;
-use npg_tracking::util::abs_path qw(abs_path);
 
 my $util = t::util->new();
 

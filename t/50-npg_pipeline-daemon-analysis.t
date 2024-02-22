@@ -2,17 +2,16 @@ use strict;
 use warnings;
 use Test::More tests => 12;
 use Test::Exception;
-use Cwd;
+use Cwd qw{ getcwd abs_path };
 use File::Path qw{ make_path };
 use Log::Log4perl qw{ :levels };
 use English qw{ -no_match_vars };
+use File::Temp qw{ tempdir };
 
 use t::util;
 use t::dbic_util;
-use npg_tracking::util::abs_path qw(abs_path);
 
-my $util = t::util->new();
-my $temp_directory = $util->temp_directory();
+my $temp_directory = tempdir(CLEANUP => 1);
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
@@ -26,11 +25,8 @@ use_ok($package);
 my $script = join q[/],  $temp_directory, 'npg_pipeline_central';
 `touch $script`;
 `chmod +x $script`;
-my $current_dir = abs_path(getcwd());
-local $ENV{PATH} = join q[:], $temp_directory, $current_dir.'/t/bin', $ENV{PATH};
 
-my $dbic_util = t::dbic_util->new();
-my $schema = $dbic_util->test_schema();
+my $schema = t::dbic_util->new()->test_schema();
 my $test_run = $schema->resultset(q[Run])->find(1234);
 $test_run->update_run_status('analysis pending', 'pipeline',);
 
@@ -103,8 +99,8 @@ subtest 'generate command' => sub {
 
   $test_run->update({'batch_id' => 55});
   my $runner  = $package->new(
-               pipeline_script_name => '/bin/true',
-               npg_tracking_schema  => $schema,
+    pipeline_script_name => '/bin/true',
+    npg_tracking_schema  => $schema,
   );
   my $data = {batch_id => $runner->_get_batch_id($test_run)};
   $data->{'job_priority'} = 4;
@@ -112,8 +108,10 @@ subtest 'generate command' => sub {
   my $original_path = $ENV{'PATH'};
   my $perl_bin = abs_path($EXECUTABLE_NAME);
   $perl_bin =~ s/\/perl\Z//smx;
-  my $path = join q[:], "${current_dir}/t", $perl_bin, $original_path;
-  my $command = q[/bin/true --verbose --job_priority 4 --runfolder_path t --id_flowcell_lims 55];
+  my $path = join q[:], join(q[/], abs_path(getcwd()), q[t]),
+                        $perl_bin, $original_path;
+  my $command =
+    q[/bin/true --verbose --job_priority 4 --runfolder_path t --id_flowcell_lims 55];
   is($runner->_generate_command($data),
     qq[export PATH=${path}; $command], 'command');
 };

@@ -3,12 +3,11 @@ use warnings;
 use Test::More tests => 4;
 use Test::Exception;
 use File::Copy;
-use Log::Log4perl qw[:levels];
+use Log::Log4perl qw(:levels);
 use File::Slurp;
-use Cwd;
+use Cwd qw(abs_path getcwd);
 use File::Copy::Recursive qw(dircopy);
 
-use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
 
 use_ok('npg_pipeline::function::seq_to_irods_archiver');

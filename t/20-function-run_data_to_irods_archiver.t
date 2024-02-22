@@ -3,9 +3,8 @@ use warnings;
 use Test::More tests => 4;
 use Test::Exception;
 use File::Copy;
-use Cwd;
+use Cwd qw(getcwd abs_path);
 
-use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
 
 use_ok('npg_pipeline::function::run_data_to_irods_archiver');
