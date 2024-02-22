@@ -4,7 +4,7 @@ use Test::More tests => 4;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use File::Temp qw(tempdir);
-use File::Copy::Recursive qw(dircopy);
+use File::Copy::Recursive qw(dircopy fmove);
 
 my $temp_dir = tempdir(CLEANUP => 1);
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
@@ -34,6 +34,11 @@ mkdir $nocal_path;
 symlink $nocal_path, "$runfolder_path/Latest_Summary";
 
 my $id_run = 37416;
+for my $file (qw(RunInfo.xml RunParameters.xml)) {
+  my $source = join q[/], $runfolder_path, "${id_run}_${file}";
+  my $target = join q[/], $runfolder_path, $file;
+  fmove($source, $target);
+}
 
 use_ok('npg_pipeline::function::warehouse_archiver');
 
@@ -42,7 +47,8 @@ subtest 'warehouse updates' => sub {
 
   my $c = npg_pipeline::function::warehouse_archiver->new(
     runfolder_path      => $runfolder_path,
-    resource            => $default
+    resource            => $default,
+    npg_tracking_schema => undef
   );
   isa_ok ($c, 'npg_pipeline::function::warehouse_archiver');
 
@@ -95,7 +101,8 @@ subtest 'warehouse updates disabled' => sub {
     my $c = npg_pipeline::function::warehouse_archiver->new(
       runfolder_path      => $runfolder_path,
       no_warehouse_update => 1,
-      resource            => $default
+      resource            => $default,
+      npg_tracking_schema => undef
     );
     $test_method->($c, $m, 'off');
 
@@ -110,7 +117,8 @@ subtest 'warehouse updates disabled' => sub {
       runfolder_path      => $runfolder_path,
       local               => 1,
       no_warehouse_update => 0,
-      resource            => $default
+      resource            => $default,
+      npg_tracking_schema => undef
     );
     $test_method->($c, $m, 'on');
   }
@@ -121,10 +129,11 @@ subtest 'mlwh updates for a product' => sub {
 
   my $rpt_list = join(q[:], $id_run, 4, 5);
   my $wa = npg_pipeline::function::warehouse_archiver->new(
-    runfolder_path    => $runfolder_path,
-    label             => 'my_label',
-    product_rpt_list  => $rpt_list,
-    resource          => $default
+    runfolder_path      => $runfolder_path,
+    label               => 'my_label',
+    product_rpt_list    => $rpt_list,
+    resource            => $default,
+    npg_tracking_schema => undef
   );
 
   my $ds = $wa->update_ml_warehouse('pname');

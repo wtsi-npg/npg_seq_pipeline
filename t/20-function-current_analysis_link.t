@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test::More tests => 23;
 use Test::Exception;
-use File::Copy::Recursive qw(dircopy);
+use File::Copy::Recursive qw(dircopy fmove);
 use File::Temp qw(tempdir);
 
 use_ok('npg_pipeline::function::current_analysis_link');
@@ -16,10 +16,15 @@ my $analysis_dir = join q[/], $temp_dir,
 my $runfolder_path = join q[/], $analysis_dir, $rf_name;
 dircopy($test_rf, $runfolder_path);
 my $nocall_relative = q[Data/Intensities/BAM_basecalls_20210417-080715/no_cal];
-my $recalibrated_path = join q[/], $runfolder_path, $nocall_relative;
-mkdir $recalibrated_path;
+my $nocall_path = join q[/], $runfolder_path, $nocall_relative;
+mkdir $nocall_path;
 
 my $id_run = 37416;
+for my $file (qw(RunInfo.xml RunParameters.xml)) {
+  my $source = join q[/], $runfolder_path, "${id_run}_${file}";
+  my $target = join q[/], $runfolder_path, $file;
+  fmove($source, $target);
+}
 
 my $resource = {default => {minimum_cpu => 1, memory => 1, queue => 'small'}};
 
@@ -33,22 +38,25 @@ sub test_job_skipped {
 
 {
   my $rfl = npg_pipeline::function::current_analysis_link->new(
-    runfolder_path  => $runfolder_path,
-    no_summary_link => 1,
-    resource        => $resource
+    runfolder_path      => $runfolder_path,
+    no_summary_link     => 1,
+    resource            => $resource,
+    npg_tracking_schema => undef
   );
   test_job_skipped($rfl);
 
   $rfl = npg_pipeline::function::current_analysis_link->new(
-    runfolder_path => $runfolder_path,
-    local          => 1,
-    resource       => $resource
+    runfolder_path      => $runfolder_path,
+    local               => 1,
+    resource            => $resource,
+    npg_tracking_schema => undef
   );
   test_job_skipped($rfl);
 
   $rfl = npg_pipeline::function::current_analysis_link->new(
-    runfolder_path => $runfolder_path,
-    resource       => $resource
+    runfolder_path      => $runfolder_path,
+    resource            => $resource,
+    npg_tracking_schema => undef
   );
   my $ds = $rfl->create();
   ok($ds && scalar @{$ds} == 1 && !$ds->[0]->excluded,
@@ -60,7 +68,7 @@ sub test_job_skipped {
   my $command = 'npg_pipeline_create_summary_link ' .
                 "--run_folder $rf_name " .
                 "--runfolder_path $runfolder_path " .
-                "--recalibrated_path $recalibrated_path";
+                "--recalibrated_path $nocall_path";
   is ($d->command, $command, 'command');
   is ($d->job_name, "create_latest_summary_link_${id_run}_${rf_name}", 'job name');
   is ($d->queue, 'small', 'small queue');
@@ -71,8 +79,9 @@ sub test_job_skipped {
   ok(!-e $link, 'link does not exist - test prerequisite');
 
   my $rfl = npg_pipeline::function::current_analysis_link->new(
-    runfolder_path => $runfolder_path,
-    resource       => $resource
+    runfolder_path      => $runfolder_path,
+    resource            => $resource,
+    npg_tracking_schema => undef
   );
 
   lives_ok { $rfl->make_link() } q{no error creating link};
@@ -86,10 +95,10 @@ sub test_job_skipped {
   rename $analysis_dir, $outgoing_dir;
   $link              =~ s/analysis/outgoing/;
   $runfolder_path    =~ s/analysis/outgoing/;
-  $recalibrated_path =~ s/analysis/outgoing/;
 
   $rfl = npg_pipeline::function::current_analysis_link->new(
-    runfolder_path => $runfolder_path,
+    runfolder_path      => $runfolder_path,
+    npg_tracking_schema => undef
   );
   lives_ok { $rfl->make_link() }
     q{no error creating link in outgoing when it already exists};
