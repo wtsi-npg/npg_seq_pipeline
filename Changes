@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+
+ - allow samtools ampliconclip to run for GBS products where primer panel
+   has primer bed file in the repository
+
 release 68.0.0
  - Use st::api::lims->aggregate_libraries() method for both 'merge_lanes' and
    'merge_by_library' pipeline options. This is a breaking change as far as
