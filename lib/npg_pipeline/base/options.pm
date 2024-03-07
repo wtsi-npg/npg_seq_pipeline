@@ -62,34 +62,6 @@ sub _default_to_local {
   return $self->local;
 }
 
-=head2 no_cache_merge_component
-
-Switches off caching of data products suitable for later merging
-
-=cut
-
-has q{no_cache_merge_component} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  lazy          => 1,
-  builder       => '_default_to_local',
-  documentation => q{Switches off caching of data products suitable for later merging.},
-);
-
-=head2 no_s3_archival
-
-Switches off archival to s3.
-
-=cut
-
-has q{no_s3_archival} => (
-  isa           => q{Bool},
-  is            => q{ro},
-  lazy          => 1,
-  builder       => '_default_to_local',
-  documentation => q{Switches off archival to s3.},
-);
-
 =head2 no_warehouse_update
 
 Switches off updating the NPG warehouse.

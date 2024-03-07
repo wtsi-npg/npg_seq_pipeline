@@ -1,13 +1,7 @@
 ---
 default:
-  s3:
-    enable: false
-    url: null
-    notify: false
   irods:
     enable: true
-    notify: false
-
 study:
   - study_id: "1713"
     robo_qc:

@@ -1,11 +1,11 @@
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Exception;
 use Test::Warn;
 use Test::Trap qw/ :warn /;
 use File::Path qw/ make_path /;
-use File::Slurp qw/ write_file /;
+use File::Slurp qw/ read_file write_file /;
 use File::Copy;
 use Log::Log4perl qw/ :levels /;
 use File::Temp qw/ tempdir /;
@@ -19,7 +19,7 @@ use_ok ('npg_pipeline::validation');
 my $util = t::util->new();
 my $logfile = join q[/], $util->temp_directory(), 'logfile';
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
-                          level  => $WARN,
+                          level  => $INFO,
                           file   => $logfile,
                           utf8   => 1});
 
@@ -77,7 +77,7 @@ sub _populate_test_runfolder {
 }
 
 subtest 'create object' => sub {
-  plan tests => 17;
+  plan tests => 16;
 
   my $v = npg_pipeline::validation->new(
     qc_schema           => $qc_schema,
@@ -87,8 +87,7 @@ subtest 'create object' => sub {
   isa_ok ($v, 'npg_pipeline::validation');
 
   for my $flag (qw/ignore_lims ignore_npg_status ignore_time_limit
-                   ignore_autoqc ignore_irods remove_staging_tag
-                   no_s3_archival/) {
+                   ignore_autoqc ignore_irods remove_staging_tag/) {
     ok (!$v->$flag, "$flag is false by default");
   }
   ok ($v->use_cram, 'cram files are used by default');
@@ -234,7 +233,7 @@ subtest 'lims and staging deletable' => sub {
 };
 
 subtest 'xarchive validation' => sub {
-  plan tests => 9;
+  plan tests => 8;
 
   local $ENV{'NPG_CACHED_SAMPLESHEET_FILE'} = 't/data/samplesheet_8747.csv';
 
@@ -257,12 +256,11 @@ subtest 'xarchive validation' => sub {
     'warnings about data absent from archive'); 
   ok (!$deletable, 'not deletable prior to running validation for file archives');
 
-  $v = npg_pipeline::validation->new(%{$ref}, no_s3_archival => 1, ignore_irods => 1);
-  ok ($v->_s3_deletable(), 'no s3 archival - s3 deletable');
+  $v = npg_pipeline::validation->new(%{$ref}, ignore_irods => 1);
   ok ($v->_irods_seq_deletable(), 'no irods archival - irods deletable');
   my $num_products = scalar @{$v->product_entities};
-  ok (scalar @{$v->eligible_product_entities} == (2 * $num_products),
-    'double number pf products in eligible products');
+  ok (scalar @{$v->eligible_product_entities} == $num_products,
+    'number pf products in eligible products');
   is ($v->_file_archive_deletable(), 1, 'is deletable');
 
   while (scalar @{$v->eligible_product_entities} > ($num_products - 1)) {
@@ -356,6 +354,80 @@ subtest 'presence of onboard analysis results' => sub {
   );
   ok ($v->_irods_seq_onboard_deletable(),
     'NovaSeq - no onboard analysis - deletable');
+};
+
+subtest 'shadow runfolder' => sub {
+  plan tests => 7;
+
+  my $id_run = 35348;
+  my $run_row = $tracking_schema->resultset('Run')->find($id_run);
+  $run_row or die "Run $id_run is missing from the test tracking database";
+
+  my $staging_path = tempdir(CLEANUP => 1);
+  $run_row->update({folder_path_glob => "$staging_path/*/"});
+
+  my $runfolder_path = join q[/], $staging_path, 'incoming',
+                                  $run_row->folder_name;
+  make_path($runfolder_path);
+  copy('t/data/novaseq/35843_RunInfo.xml',"$runfolder_path/RunInfo.xml");
+  copy('t/data/novaseq/35843_RunParameters.xml',"$runfolder_path/RunParameters.xml");
+
+  my $qc_status = 'archival pending';
+  my $status_disc_row = $tracking_schema->resultset('RunStatusDict')
+    ->search({description => $qc_status})->next();
+  my $rs = $tracking_schema->resultset('RunStatus');
+  map { $_->update({iscurrent => 0}) } $rs->search({id_run => $id_run})->all();
+  $rs->create({
+    id_run_status_dict => $status_disc_row->id_run_status_dict,
+    id_run => $id_run,
+    id_user => 1,
+    iscurrent => 1
+  });
+  ok ($run_row->current_run_status_description() eq $qc_status,
+    "current status is '$qc_status'");
+  $run_row->set_tag('joe_admin','staging'); 
+ 
+  my $v = npg_pipeline::validation->new(
+    qc_schema           => $qc_schema,
+    npg_tracking_schema => $tracking_schema,
+    id_run              => $id_run,
+    runfolder_path      => $runfolder_path
+  );
+  ok (!$v->_is_deletable_shadow_runfolder(), 'shadow run folder is not deletable');
+  
+  $qc_status = 'qc complete';
+  $status_disc_row = $tracking_schema->resultset('RunStatusDict')
+    ->search({description => $qc_status})->next();
+  map { $_->update({iscurrent => 0}) } $rs->search({id_run => $id_run})->all();
+  $rs->create({
+    id_run_status_dict => $status_disc_row->id_run_status_dict,
+    id_run => $id_run,
+    id_user => 1,
+    iscurrent => 1
+  });
+  ok ($run_row->current_run_status_description() eq $qc_status,
+    "current status is '$qc_status'");
+
+  $v = npg_pipeline::validation->new(
+    qc_schema           => $qc_schema,
+    npg_tracking_schema => $tracking_schema,
+    id_run              => $id_run,
+    runfolder_path      => $runfolder_path
+  );
+  ok (!$v->_is_deletable_shadow_runfolder(), 'shadow run folder is not deletable');
+
+  $run_row->unset_tag('staging');
+  $v = npg_pipeline::validation->new(
+    qc_schema           => $qc_schema,
+    npg_tracking_schema => $tracking_schema,
+    id_run              => $id_run,
+    runfolder_path      => $runfolder_path
+  );
+  ok ($v->_is_deletable_shadow_runfolder(), 'shadow run folder is deletable');
+  ok (!$v->run(), q[..., but the return value is 'not deletable']);
+  like (read_file($logfile),
+    qr/Shadow runfolder $runfolder_path for run $id_run can be deleted/,
+    'expected info in the log file');
 };
 
 1;

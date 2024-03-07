@@ -19,7 +19,6 @@ my $their_log_level = $verbose ? 'DEBUG' : 'WARN';
 ##no critic (ValuesAndExpressions::ProhibitImplicitNewlines)
 my $log4perl_config = qq(
   log4perl.logger                                  = $my_log_level, A1
-  log4perl.category.npg_pipeline.validation.s3     = $their_log_level, A1
   log4perl.category.npg_pipeline.validation.irods  = $their_log_level, A1
   log4perl.category.npg_pipeline.validation.autoqc = $their_log_level, A1
   log4perl.logger.WTSI.NPG.iRODS                   = OFF, A1

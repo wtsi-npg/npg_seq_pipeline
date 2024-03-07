@@ -5,7 +5,7 @@ use namespace::autoclean;
 use MooseX::Getopt::Meta::Attribute::Trait::NoGetopt;
 use POSIX qw(strftime);
 use Math::Random::Secure qw{irand};
-use List::MoreUtils qw{any};
+use List::MoreUtils qw{any uniq};
 use File::Basename;
 use Readonly;
 
@@ -59,22 +59,6 @@ within npg_pipeline package
 =head1 SUBROUTINES/METHODS
 
 =head2 npg_tracking_schema
-
-=head2 qc_schema
-
-An attribute caching a connection to a QC database.
-The attribute is allowed to be undefined and is implicitly undefined
-since no default or build method is provided. This is done in order
-to prevent the automatic connection to a database in child classes.
-
-=cut
-
-has 'qc_schema' => (
-  metaclass  => 'NoGetopt',
-  isa        => 'Maybe[npg_qc::Schema]',
-  is         => 'ro',
-  required   => 0,
-);
 
 =head2 flowcell_id
 
@@ -358,49 +342,51 @@ sub _build_products {
   if ($self->has_product_rpt_list) {
     @data_lims = ($self->lims);
   } else {
-    my @positions = $self->positions;
-    @lane_lims = map { $self->lims4lane($_) } @positions;
+    @lane_lims = map { $self->lims4lane($_) } $self->positions;
 
-    if ($self->merge_lanes) {
-      @data_lims = $self->lims->aggregate_xlanes(@positions);
-    } else {
+    my %tag0_lims = ();
+    if ($self->is_indexed) {
+      %tag0_lims = map { $_->position => $_->create_tag_zero_object() }
+                   grep { $_->is_pool } @lane_lims;
+    }
 
-      my %tag0_lims = ();
-      if ($self->is_indexed) {
-        %tag0_lims = map { $_->position => $_->create_tag_zero_object() }
-                     grep { $_->is_pool } @lane_lims;
+    if ($self->merge_lanes || $self->merge_by_library) {
+
+      my $all_lims = $self->lims->aggregate_libraries(\@lane_lims);
+      @data_lims = @{$all_lims->{'singles'}}; # Might be empty.
+
+      # merge_lanes option implies a merge across all lanes.
+      if ($self->merge_lanes && (@lane_lims > 1)) {
+        $self->_check_lane_merge_is_viable(
+          \@lane_lims, $all_lims->{'singles'}, $all_lims->{'merges'});
       }
 
-      if ($self->merge_by_library) {
-        my $all_lims = $self->lims->aggregate_libraries(\@lane_lims);
-        @data_lims = @{$all_lims->{'singles'}}; # Might be empty.
-        # Tag zero LIMS objects for all lanes, merged or unmerged.
-        push @data_lims, map { $tag0_lims{$_} } (sort keys %tag0_lims);
+      # Tag zero LIMS objects for all pooled lanes, merged or unmerged.
+      push @data_lims, map { $tag0_lims{$_} } (sort keys %tag0_lims);
 
-        if ( @{$all_lims->{'merges'}} ) {
-          # If the libraries are merged across a subset of lanes under analysis,
-          # the 'selected_lanes' flag needs to be flipped to true.
-          if (!$self->_selected_lanes) {
-            my $rpt_list = $all_lims->{'merges'}->[0]->rpt_list;;
-            my $num_components =
-              npg_tracking::glossary::composition::factory::rpt_list
-                ->new(rpt_list => $rpt_list)
-                ->create_composition()->num_components();
-            if ($num_components != scalar @lane_lims) {
-              $self->_set_selected_lanes(1);
-            }
+      if ( @{$all_lims->{'merges'}} ) {
+        # If the libraries are merged across a subset of lanes under analysis,
+        # the 'selected_lanes' flag needs to be flipped to true.
+        if (!$self->_selected_lanes) {
+          my $rpt_list = $all_lims->{'merges'}->[0]->rpt_list;;
+          my $num_components =
+            npg_tracking::glossary::composition::factory::rpt_list
+              ->new(rpt_list => $rpt_list)
+              ->create_composition()->num_components();
+          if ($num_components != scalar @lane_lims) {
+            $self->_set_selected_lanes(1);
           }
-          push @data_lims, @{$all_lims->{'merges'}};
         }
-
-      } else {
-        # To keep backward-compatible order of pipeline invocations, add
-        # tag zero LIMS object at the end of other objects for the lane.
-        @data_lims = map {
-          exists $tag0_lims{$_->position} ?
-            ($_->children, $tag0_lims{$_->position}) : $_
-        } @lane_lims;
+        push @data_lims, @{$all_lims->{'merges'}};
       }
+
+    } else {
+      # To keep backward-compatible order of pipeline invocations, add
+      # tag zero LIMS object at the end of other objects for the lane.
+      @data_lims = map {
+        exists $tag0_lims{$_->position} ?
+            ($_->children, $tag0_lims{$_->position}) : $_
+      } @lane_lims;
     }
   }
 
@@ -440,6 +426,29 @@ sub _lims_object2product {
     lims           => $lims,
     selected_lanes => $self->_selected_lanes
   );
+}
+
+sub _check_lane_merge_is_viable {
+  my ($self, $lane_lims, $singles, $merges) = @_;
+
+  my @num_plexes = uniq
+                   map { scalar @{$_} }
+                   map { [grep { !$_->is_control } @{$_}] }
+                   map { [$_->children()] } @{$lane_lims};
+
+  my $m = 'merge_lane option is not viable: ';
+  if (@num_plexes > 1) {
+    $self->logcroak($m . 'different number of samples in lanes');
+  }
+  if (any { !$_->is_control } @{$singles}) {
+    $self->logcroak($m . 'unmerged samples are present after aggregation');
+  }
+  if (@{$merges} != $num_plexes[0]) {
+    $self->logcroak($m . 'number of merged samples after aggregation ' .
+      'differs from the number of samples in a lane');
+  }
+
+  return 1;
 }
 
 __PACKAGE__->meta->make_immutable;
