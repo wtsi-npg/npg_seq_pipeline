@@ -5,8 +5,8 @@ use Test::Exception;
 use Log::Log4perl qw(:levels);
 use File::Copy qw(cp);
 use File::Path qw(make_path remove_tree);
+use Cwd qw(abs_path);
 
-use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
 
 my $util = t::util->new();
