@@ -1,6 +1,12 @@
 LIST OF CHANGES
 ---------------
 
+release 68.1.0
+ - Apply changes to the code and tests, which follow from removing some
+   functionality from npg_tracking::illumina::runfolder, see
+   https://github.com/wtsi-npg/npg_tracking/pull/807. The pipeline retains
+   all its previous functionality.
+
 release 68.0.0
  - Use st::api::lims->aggregate_libraries() method for both 'merge_lanes' and
    'merge_by_library' pipeline options. This is a breaking change as far as

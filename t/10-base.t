@@ -1,15 +1,14 @@
 use strict;
 use warnings;
-use Test::More tests => 9;
+use Test::More tests => 8;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
-use Cwd;
+use Cwd qw(getcwd abs_path);
 use Log::Log4perl qw(:levels);
 use Moose::Util qw(apply_all_roles);
 use File::Copy qw(cp);
 
 use t::util;
-use npg_tracking::util::abs_path qw(abs_path);
 
 my $util = t::util->new();
 
@@ -52,25 +51,6 @@ subtest 'config' => sub {
    npg_pipeline::base->new(conf_path => q{does/not/exist});
   } qr/Attribute \(conf_path\) does not pass the type constraint/,
     'Croaks for non-esistent config file as expected';
-};
-
-subtest 'flowcell id and barcode' => sub {
-  plan tests => 7;
-
-  my $bpath = t::util->new()->temp_directory;
-  my $path = join q[/], $bpath, '150206_HS29_15467_A_C5WL2ACXX';
-  my $base;
-  lives_ok { $base = npg_pipeline::base->new(runfolder_path => $path); }
-    'can create object without supplying run id';
-  is ($base->id_run, 15467, 'id run derived correctly from runfolder_path');
-  ok (!defined $base->id_flowcell_lims, 'lims flowcell id undefined');
-  is ($base->flowcell_id, 'C5WL2ACXX', 'flowcell barcode derived from runfolder path');
-  
-  $path = join q[/], $bpath, '150204_MS8_15441_A_MS2806735-300V2';
-  $base = npg_pipeline::base->new(runfolder_path => $path, id_flowcell_lims => 45);
-  is ($base->id_run, 15441, 'id run derived correctly from runfolder_path');
-  is ($base->id_flowcell_lims, 45, 'lims flowcell id returned correctly');
-  is ($base->flowcell_id, 'MS2806735-300V2', 'MiSeq reagent kit id derived from runfolder path');
 };
 
 subtest 'repository preexec' => sub {

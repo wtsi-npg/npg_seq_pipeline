@@ -2,13 +2,12 @@ use strict;
 use warnings;
 use Test::More tests => 5;
 use Test::Exception;
-use Cwd;
+use Cwd qw(getcwd abs_path);
 use File::Copy qw(cp);
-use File::Copy::Recursive qw[dircopy];
+use File::Copy::Recursive qw(dircopy);
 use Perl6::Slurp;
 use JSON;
 
-use npg_tracking::util::abs_path qw(abs_path);
 use t::util;
 
 my $util = t::util->new(clean_temp_directory => 1);
