@@ -62,7 +62,7 @@ subtest 'description' => sub {
 };
 
 subtest 'relative_path' => sub {
-  plan tests => 5;
+  plan tests => 6;
 
   my $product = npg_pipeline::product->new(rpt_list => '1:2');
   my $entity = npg_pipeline::validation::entity->new(
@@ -100,6 +100,17 @@ subtest 'relative_path' => sub {
     target_product       => $product
   );
   is ($entity->entity_relative_path, q[plex3], 'plex13 relative path');
+
+  $product = npg_pipeline::product->new(
+    rpt_list => q[22:2:3;22:3:3],
+    selected_lanes => 1
+  );
+  $entity = npg_pipeline::validation::entity->new(
+    staging_archive_root => q[t],
+    target_product       => $product
+  );
+  is ($entity->entity_relative_path, q[lane2-3/plex3],
+    'lane2-3/plex13 relative path for a partial merge');
 };
 
 subtest 'entity_staging_path' => sub {

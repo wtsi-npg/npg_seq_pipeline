@@ -202,7 +202,7 @@ sub irods_product_destination_collection_norf {
   $run_collection or croak('Run collection iRODS path is required');
   $product or croak('Product object is required');
   return $per_product_archive
-    ? join q[/], $run_collection, $product->dir_path($product->selected_lanes)
+    ? join q[/], $run_collection, $product->dir_path()
     : $run_collection;
 }
 
@@ -338,7 +338,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019,2020,2021,2022 Genome Research Ltd.
+Copyright (C) 2019,2020,2021,2022,2024 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
