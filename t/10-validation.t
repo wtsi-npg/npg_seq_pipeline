@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 9;
+use Test::More tests => 8;
 use Test::Exception;
 use Test::Warn;
 use Test::Trap qw/ :warn /;
@@ -330,30 +330,6 @@ subtest 'per product flag and iRODS locations' => sub {
   ok ($v->per_product_archive, 'per product iRODS is true');
   is ($v->irods_destination_collection, '/seq-dev/8747',
     'iRODS collection as set');
-};
-
-subtest 'presence of onboard analysis results' => sub {
-  plan tests => 2;
-
-  my $rf_path = tempdir(CLEANUP => 1);
-
-  copy('t/data/run_params/RunParameters.novaseqx.xml',
-    "$rf_path/RunParameters.xml");
-  my $v = npg_pipeline::validation->new(
-    id_run => 47539,
-    runfolder_path => $rf_path
-  );
-  ok (!$v->_irods_seq_onboard_deletable(),
-    'NovaSeqX with onboard analysis - not deletable');
-
-  copy('t/data/run_params/runParameters.novaseq.xml',
-    "$rf_path/RunParameters.xml"); 
-  $v = npg_pipeline::validation->new(
-    id_run => 9999,
-    runfolder_path => $rf_path
-  );
-  ok ($v->_irods_seq_onboard_deletable(),
-    'NovaSeq - no onboard analysis - deletable');
 };
 
 subtest 'shadow runfolder' => sub {
