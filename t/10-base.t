@@ -64,7 +64,7 @@ subtest 'repository preexec' => sub {
 };
 
 subtest 'products - merging (or not) lanes' => sub {
-  plan tests => 19;
+  plan tests => 22;
 
   my $rf_path = q[t/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3];
   my $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 47995);
@@ -79,11 +79,22 @@ subtest 'products - merging (or not) lanes' => sub {
   cp 't/data/novaseq/210111_A00513_0447_AHJ55JDSXY/RunInfo.xml',  "$rf_path/RunInfo.xml";
   $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
   ok ($b->merge_lanes, 'merge_lanes flag is set');
+  ok (!$b->_selected_lanes, 'selected_lanes flag is not set');
   lives_ok {$products = $b->products} 'products hash created for NovaSeq run';
   ok (exists $products->{'lanes'}, 'products lanes key exists');
   is (scalar @{$products->{'lanes'}}, 4, 'four lane product');
   ok (exists $products->{'data_products'}, 'products data_products key exists');
   is (scalar @{$products->{'data_products'}}, 29, '29 data products'); 
+
+  $b = npg_pipeline::base->new(
+    runfolder_path => $rf_path,
+    id_run => 999,
+    merge_lanes => 1,
+    process_separately_lanes => [2]
+  );
+  # 8 products out of previous 29 are tag zero and spiked phiX
+  is (scalar @{$b->products->{'data_products'}}, 50, '50 data products');
+  ok ($b->_selected_lanes, 'selected_lanes flag is set');
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_rapidrun_nopool.csv';
   cp 't/data/run_params/runParameters.hiseq.rr.xml',  "$rf_path/runParameters.xml";
@@ -109,7 +120,7 @@ subtest 'products - merging (or not) lanes' => sub {
 };
 
 subtest 'products - merging (or not) libraries' => sub {
-  plan tests => 418;
+  plan tests => 423;
 
   my $rf_info = $util->create_runfolder();
   my $rf_path = $rf_info->{'runfolder_path'};
@@ -173,6 +184,22 @@ subtest 'products - merging (or not) libraries' => sub {
     ok ($p->selected_lanes, 'selected_lanes flag is set to true');
   }
 
+  $b = npg_pipeline::base->new(
+    runfolder_path => $rf_path,
+    id_run => $id_run,
+    process_separately_lanes => [1,2,5,6]
+  );
+  @products = @{$b->products()->{'data_products'}};
+  is (@products, 142, 'number of data products is 142');
+
+  $b = npg_pipeline::base->new(
+    runfolder_path => $rf_path,
+    id_run => $id_run,
+    process_separately_lanes => [1,6]
+  );
+  @products = @{$b->products()->{'data_products'}};
+  is (@products, 142, 'number of data products is 142');
+  
   # Expect lanes 3 and 4 merged.
   $b = npg_pipeline::base->new(
     runfolder_path => $rf_path, id_run => $id_run, lanes => [4,8,3]);
@@ -236,6 +263,28 @@ subtest 'products - merging (or not) libraries' => sub {
     }
   }
   is (@products, 0, 'no products are left');
+
+  # remove lane 3 from the merge - no merge will take place
+  $b = npg_pipeline::base->new(
+    runfolder_path => $rf_path,
+    id_run => $id_run,
+    lanes => [4,8,3],
+    merge_by_library => 1,
+    process_separately_lanes => [3]
+  );
+  @products = @{$b->products()->{'data_products'}};
+  is (@products, 64, 'number of data products is 64');
+  
+  $b = npg_pipeline::base->new(
+    runfolder_path => $rf_path,
+    id_run => $id_run,
+    lanes => [4,8,3],
+    merge_by_library => 0,
+    process_separately_lanes => [3,8]
+  );
+  lives_ok { @products = @{$b->products()->{'data_products'}} }
+    'process_separately_lanes is compatible with suppressed merge';
+  is (@products, 64, 'number of data products is 64');
 };
 
 sub _generate_rpt {

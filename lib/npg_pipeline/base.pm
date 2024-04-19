@@ -187,7 +187,10 @@ sub _build_general_values_conf {
 =head2 merge_lanes
 
 Tells p4 stage2 (seq_alignment) to merge all lanes (at their plex level
-if plexed) and to run its downstream tasks using corresponding compositions.
+if plexed, except spiked PhiX and tag_zero).
+
+If not set, this attribute is build lazily. It is set to true for NovaSeq runs,
+which use a Standard flowcell.
 
 =cut
 
@@ -208,6 +211,12 @@ sub _build_merge_lanes {
 
 =head2 merge_by_library
 
+Tells p4 stage2 (seq_alignment) to merge all plexes that belong to the same
+library, except spiked PhiX and tag_zero.
+
+If not set, this attribute is build lazily. It is set to true for indexed
+NovaSeqX runs.
+
 =cut
 
 has q{merge_by_library} => (
@@ -216,12 +225,31 @@ has q{merge_by_library} => (
   lazy_build    => 1,
   documentation => q{Tells p4 stage2 (seq_alignment) to merge all plexes } .
                    q{that belong to the same library, except spiked PhiX and }.
-                   q{tag zero)},
+                   q{tag zero},
 );
 sub _build_merge_by_library {
   my $self = shift;
   return $self->is_indexed && $self->platform_NovaSeqX();
 }
+
+=head2 process_separately_lanes
+
+An array of lane (position) numbers, which should not be merged with anyother
+lanes. To be used in conjunction with C<merge_lanes> or C<merge_by_library>
+attributes. Does not have any impact if both of these attributes are false.
+
+Defaults to an empty array value, meaning that all possible entities will be
+merged. 
+
+=cut
+
+has q{process_separately_lanes} => (
+  isa           => q{ArrayRef},
+  is            => q{ro},
+  default       => sub { return []; },
+  documentation => q{Array of lane numbers, which have to be excluded from } .
+                   q{a merge},
+);
 
 =head2 lims
 
@@ -346,7 +374,8 @@ sub _build_products {
 
     if ($self->merge_lanes || $self->merge_by_library) {
 
-      my $all_lims = $self->lims->aggregate_libraries(\@lane_lims);
+      my $all_lims = $self->lims->aggregate_libraries(
+        \@lane_lims, $self->process_separately_lanes);
       @data_lims = @{$all_lims->{'singles'}}; # Might be empty.
 
       # merge_lanes option implies a merge across all lanes.
@@ -425,18 +454,27 @@ sub _lims_object2product {
 sub _check_lane_merge_is_viable {
   my ($self, $lane_lims, $singles, $merges) = @_;
 
+  my %no_merge_lanes = map { $_ => 1 } @{$self->process_separately_lanes};
   my @num_plexes = uniq
-                   map { scalar @{$_} }
-                   map { [grep { !$_->is_control } @{$_}] }
-                   map { [$_->children()] } @{$lane_lims};
+                   map  { scalar @{$_} }
+                   map  { [grep { !$_->is_control } @{$_}] }
+                   map  { [$_->children()] }
+                   grep { ! exists $no_merge_lanes{$_->position} }
+                   @{$lane_lims};
 
   my $m = 'merge_lane option is not viable: ';
   if (@num_plexes > 1) {
     $self->logcroak($m . 'different number of samples in lanes');
   }
-  if (any { !$_->is_control } @{$singles}) {
-    $self->logcroak($m . 'unmerged samples are present after aggregation');
+
+  my @unmerged_unexpected = grep { ! exists $no_merge_lanes{$_->position} }
+                            grep { !$_->is_control }
+                            @{$singles};
+  if (@unmerged_unexpected) {
+    $self->logcroak(
+      $m . 'unexpected unmerged samples are present after aggregation');
   }
+
   if (@{$merges} != $num_plexes[0]) {
     $self->logcroak($m . 'number of merged samples after aggregation ' .
       'differs from the number of samples in a lane');
