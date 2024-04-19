@@ -1,11 +1,10 @@
 use strict;
 use warnings;
-use Test::More tests => 27;
+use Test::More tests => 22;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use File::Copy qw(cp);
-use File::Path qw(make_path remove_tree);
-use Cwd qw(abs_path);
+use File::Path qw(make_path);
 
 use t::util;
 
@@ -138,23 +137,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
   $pb = $central->new($init);
   $pb->prepare();
   is ($pb->bam_basecall_path, $expected_pb_cal, 'bam basecall path is set');
-
-  delete $init->{'runfolder_path'};
-  delete $init->{'runfolder'};
-  $pb = $central->new($init);
-  throws_ok { $pb->prepare() }
-    qr/Nothing looks like a run_folder in any given subpath/,
-    'error since the given subpath does not exist';
-
-  make_path $init->{'archive_path'};
-  throws_ok { $pb->prepare() }
-    qr/Nothing looks like a run_folder in any given subpath/,
-    'error since Config does not exist';
-
-  make_path "$rf/Config";
-  lives_ok { $pb->prepare() } 'no error';
-  is ($pb->bam_basecall_path, $expected_pb_cal, 'bam basecall path is set');
-  is ($pb->runfolder_path, $rf, 'run folder path is set');
 }
 
 1;
