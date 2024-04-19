@@ -185,7 +185,7 @@ sub _build_rpt_list {
 =head2 selected_lanes
 
 Boolean flag, defaults to false, is meaningful only for a product with multiple
-components. If true, indicates that the conposition does not span all lanes
+components. If true, indicates that the composition does not span all lanes
 of the run.
 
 =cut
@@ -249,8 +249,26 @@ sub file_name {
 
 =head2 dir_path
 
-A relative path for the product, method is inherited from
-npg_tracking::glossary::moniker.
+A relative path for the product. The method is inherited from
+C<npg_tracking::glossary::moniker> and extended here to account for
+a partial merge.
+
+For a merged entity described as C<22:1:24;22:2:24> the directory
+path can be C<plex24> if the run had two lanes, both of which are
+merged, or it can be C<lane1-2/plex24> if the run has more than two
+lanes and this entity is a partial (not over all lanes) merge.
+
+The C<selected_lanes> attribute of this object keeps information
+about the nature of the merge. Its value is passed to the inherited
+C<dir_path> method to ensure that the path is generated correctly.
+
+=cut
+
+around 'dir_path' => sub {
+  my $orig = shift;
+  my $self = shift;
+  return $self->$orig($self->selected_lanes);
+};
 
 =head2 path
 
@@ -263,7 +281,7 @@ generate the path.
 sub path {
   my ($self, $dir) = @_;
   $dir or croak 'Directory argument is needed';
-  return File::Spec->catdir($dir, $self->dir_path($self->selected_lanes));
+  return File::Spec->catdir($dir, $self->dir_path());
 }
 
 =head2 existing_path
@@ -282,7 +300,7 @@ sub existing_path {
   $dir or croak 'Directory argument is needed';
   (-e $dir) or croak "Directory argument $dir does not exist";
 
-  my $path = File::Spec->catdir($dir, $self->dir_path($self->selected_lanes));
+  my $path = File::Spec->catdir($dir, $self->dir_path());
   my $orig = $path;
   if (!-e $path) {
     $path = File::Spec->catdir($dir, $self->generic_name());
@@ -478,7 +496,7 @@ sub lanes_as_products {
 
   if ($with_lims && !$self->has_lims) {
     croak 'In order to use with_lims option this product should have ' .
-	  'lims attribute set';
+          'lims attribute set';
   }
   ##no critic (BuiltinFunctions::ProhibitComplexMappings)
   my @lane_hashes =
@@ -534,13 +552,13 @@ sub subset_as_product {
 
 =head2 chunks_as_product
  
- Interprets the argument integer (required) as the number of chunks to subset
- each product into. Returns a list of product objects with the chunk value
- in each set to one of the values in range 1 .. NUMBER_OF_GIVEN_CHUNKS. See
- chunk_as_product method for details of a product object with the chunk
- attribute defined.
+Interprets the argument integer (required) as the number of chunks to subset
+each product into. Returns a list of product objects with the chunk value
+in each set to one of the values in range 1 .. NUMBER_OF_GIVEN_CHUNKS. See
+chunk_as_product method for details of a product object with the chunk
+attribute defined.
 
- The products in the list are sorted in the accending chunk value order.
+The products in the list are sorted in the accending chunk value order.
  
  my @chunks_p = $p->chunks_as_product(24);
  $p->file_name_root();         # 123_6#4
@@ -568,13 +586,13 @@ sub chunks_as_product {
 
 =head2 chunk_as_product
  
- Interprets the argument integer (required) as the chunk for this product
- to create a new product object for. Returns an object of this class for the chunk with
- a composition identical to the composition object of this object with one exception -
- the chunk value in the object is set to the value of the argument string.
+Interprets the argument integer (required) as the chunk for this product
+to create a new product object for. Returns an object of this class for the chunk with
+a composition identical to the composition object of this object with one exception -
+the chunk value in the object is set to the value of the argument string.
  
- The lims attribute of the returned object is set if the lims attribute of
- this object is set.
+The lims attribute of the returned object is set if the lims attribute of
+this object is set.
  
  my @chunks_p = $p->product_chunk(2);
  $p->file_name_root();         # 123_6#4
@@ -650,7 +668,7 @@ __END__
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2019,2020,2021 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2021,2024 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
