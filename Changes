@@ -1,6 +1,15 @@
 LIST OF CHANGES
 ---------------
 
+release 68.2.0
+ - Added '--process_separately_lanes' to the pipeline to explicitly exclude
+   multiple lanes from a merge.
+ - Generalised dir_path method in npg_pipeline::product. This fixed a bug in
+   npg_run_is_deletable, which manifested in wrong expectations about the
+   directory tree for partially merged run data. 
+ - Dropped a check for DRAGEN analysis data from npg_run_is_deletable.
+ - Removed unnecessary tests from t/10-pluggable-central.t
+
 release 68.1.0
  - Apply changes to the code and tests, which follow from removing some
    functionality from npg_tracking::illumina::runfolder, see
