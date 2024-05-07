@@ -234,7 +234,7 @@ sub _build_merge_by_library {
 
 =head2 process_separately_lanes
 
-An array of lane (position) numbers, which should not be merged with anyother
+An array of lane (position) numbers, which should not be merged with any other
 lanes. To be used in conjunction with C<merge_lanes> or C<merge_by_library>
 attributes. Does not have any impact if both of these attributes are false.
 
@@ -348,6 +348,21 @@ zero products, hashed under the 'data_products' key.
 If product_rpt_list attribute is set, the 'lanes' key maps to an empty
 array.
 
+While computing the lists of data products, we examine whether data in any
+of the lanes can be merged across lanes. Some of the lanes might be explicitly
+excluded from the merge by setting the `process_separately_lanes` attribute
+from the command line. This is likely to be done when the analysis pipeline
+is run manually. Then the same lanes have to be excluded from the merge by
+the archival pipeline and by the script that evaluates whether the run folder
+can be deleted. To enable this, the value of the `process_separately_lanes`
+attribute is saved to the metadate_cache_<ID_RUN> directory immediately after
+the pipeline establishes the location of the samplesheet file or generates a
+new samplesheet.
+
+This method looks at the `process_separately_lanes` attribute first. If the
+`process_separately_lanes` array is empty, an attempts to retrieve the cached
+value is made.
+
 =cut
 
 has q{products} => (
@@ -374,8 +389,11 @@ sub _build_products {
 
     if ($self->merge_lanes || $self->merge_by_library) {
 
+      my @separate_lanes = @{$self->process_separately_lanes};
+      @separate_lanes |= $self->_get_cached_separate_lanes_info();
+
       my $all_lims = $self->lims->aggregate_libraries(
-        \@lane_lims, $self->process_separately_lanes);
+        \@lane_lims, @separate_lanes);
       @data_lims = @{$all_lims->{'singles'}}; # Might be empty.
 
       # merge_lanes option implies a merge across all lanes.
@@ -481,6 +499,12 @@ sub _check_lane_merge_is_viable {
   }
 
   return 1;
+}
+
+sub _get_cached_separate_lanes_info {
+  my $self = shift;
+  # Read from a file in metadata_cache_<IDRUN> directory if the file exists.
+  return;
 }
 
 __PACKAGE__->meta->make_immutable;

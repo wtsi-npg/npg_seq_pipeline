@@ -498,6 +498,11 @@ sub prepare {
   } else {
     $self->info('Not running spider');
   }
+
+  if (@{$self->process_separately_lanes()) {
+    $self->_cache_process_separately_lanes();
+  }
+
   return;
 }
 
@@ -763,6 +768,12 @@ sub _run_spider {
     $self->logcroak(qq[Error while spidering: $_]);
   };
 
+  return;
+}
+
+sub _cache_process_separately_lanes {
+  # If the files we are about to create exists and its content is different
+  # from the content we are about to save, raise an error.
   return;
 }
 
