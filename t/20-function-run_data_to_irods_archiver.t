@@ -13,7 +13,7 @@ my $util = t::util->new();
 
 my $tmp_dir = $util->temp_directory();
 my $script = q{npg_publish_illumina_run.pl};
-my $inexcludes = qr/--include 'RunInfo\.xml' --include '\[Rr\]unParameters\.xml' --include InterOp --exclude Analysis/;
+my $inexcludes = qr/--include 'RunInfo\.xml' --include '\[Rr\]unParameters\.xml' --include 'SampleSheet\.csv' --include InterOp --exclude Analysis --exclude Data/;
 
 my $defaults = {
   default => {

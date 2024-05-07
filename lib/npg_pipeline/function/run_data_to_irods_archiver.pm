@@ -19,6 +19,10 @@ override 'create' => sub {
     my $job_name_prefix = join q{_}, q{publish_run_data2irods}, $self->id_run();
     $self->assign_common_definition_attrs($ref, $job_name_prefix);
 
+    # Exclude directories, which might have copies of the top-level files
+    # that are being archived. SampleSheet.csv is expected to be present
+    # only for MiSeq runs.
+
     my $command = join q[ ],
       $PUBLISH_SCRIPT_NAME,
       q{--restart_file},     $self->restart_file_path($job_name_prefix),
@@ -27,8 +31,10 @@ override 'create' => sub {
       q{--source_directory}, $self->runfolder_path(),
       q{--include},          q['RunInfo.xml'],
       q{--include},          q['[Rr]unParameters.xml'],
+      q{--include},          q['SampleSheet.csv'],
       q{--include},          q[InterOp],
       q{--exclude},          q[Analysis],
+      q{--exclude},          q[Data],
       q{--id_run},           $self->id_run,
       q{--logconf},          $self->conf_file_path('log4perl_publish_illumina.conf');
 
@@ -95,7 +101,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2019 Genome Research Ltd.
+Copyright (C) 2018,2019,2021,2022,2023,2024 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
