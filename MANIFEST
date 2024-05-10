@@ -124,10 +124,8 @@ t/50-npg_pipeline-daemon-archival.t
 t/bin/bkill
 t/bin/bresume
 t/bin/bsub
-t/data/bam_flagstats/1234_1_bam_flagstats.json
-t/data/bam_flagstats/1234_3_bam_flagstats.json
-t/data/bam_flagstats/1234_3_phix_bam_flagstats.json
-t/data/bam_flagstats/1234_4_bam_flagstats.json
+t/data/bam_flagstats/47995_3_bam_flagstats.json
+t/data/bam_flagstats/47995_3_phix_bam_flagstats.json
 t/data/barcodes/samplesheet_batch2015.csv
 t/data/barcodes/samplesheet_batch42225.csv
 t/data/barcodes/samplesheet_batch42225_amended1.csv
@@ -229,6 +227,7 @@ t/data/miseq/16850_runParameters.xml
 t/data/miseq/16866_RunInfo.xml
 t/data/miseq/20990_RunInfo.xml
 t/data/miseq/24135_RunInfo.xml
+t/data/miseq/24347_RunInfo.xml
 t/data/miseq/samplesheet_16850.csv
 t/data/miseq/samplesheet_16866.csv
 t/data/miseq/samplesheet_20990.csv
@@ -1011,7 +1010,7 @@ t/data/novaseqx/47539/samplesheet_47539.csv
 t/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3/RunInfo.xml
 t/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3/RunParameters.xml
 t/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3/samplesheet_47995.csv
-t/data/p4_stage1_analysis/1234_samplesheet.csv
+t/data/p4_stage1_analysis/samplesheet.csv
 t/data/p4_stage1_analysis/TileMetricsOut.bin
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release.yml
 t/data/portable_pipelines/ncov2019-artic-nf/cf01166c42a/product_release_no_pp.yml
@@ -1071,7 +1070,6 @@ t/data/runfolder/archive/lane1/1234_1#15_human.bam
 t/data/runfolder/archive/lane1/1234_1#15_phix.bam
 t/data/runfolder/archive/lane4/1234_4#16.bam
 t/data/runfolder/archive/lane4/1234_4#32.bam
-t/data/runfolder/Data/RunInfo.xml
 t/data/samplesheet_1234.csv
 t/data/samplesheet_8747.csv
 t/data/samplesheet_33990.csv
