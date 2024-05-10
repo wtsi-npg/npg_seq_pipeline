@@ -23,6 +23,7 @@ chmod 0755, @tools;
 local $ENV{'PATH'}       = join q[:], $tmp_dir, $bin, $ENV{'PATH'};
 local $ENV{'http_proxy'} = q[http://wibble];
 local $ENV{'no_proxy'}   = q[];
+local $ENV{'HOME'}       = 't';
 
 my $rf = $util->analysis_runfolder_path;
 my $bbp = "$rf/bam_basecall_path";

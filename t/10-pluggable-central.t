@@ -18,6 +18,7 @@ foreach my $tool (@tools) {
 }
 chmod 0755, @tools;
 local $ENV{'PATH'} = join q[:], $tdir, $ENV{'PATH'};
+local $ENV{'HOME'} = 't';
 
 my $product_config = q[t/data/release/config/archive_on/product_release.yml];
 

@@ -40,6 +40,8 @@ for my $file (qw(RunInfo.xml RunParameters.xml)) {
   fmove($source, $target);
 }
 
+local $ENV{'HOME'} = 't';
+
 use_ok('npg_pipeline::function::warehouse_archiver');
 
 subtest 'warehouse updates' => sub {
