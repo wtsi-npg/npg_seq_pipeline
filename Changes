@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - Removing Tidyp dependency from CI
+
 release 68.2.0
  - Added '--process_separately_lanes' to the pipeline to explicitly exclude
    multiple lanes from a merge.
