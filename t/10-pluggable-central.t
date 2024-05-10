@@ -65,7 +65,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
   cp 't/data/run_params/runParameters.hiseq.xml',
     join(q[/], $runfolder_path, 'runParameters.xml');
 
-  $util->create_run_info();
   my $config_dir = 'data/config_files';
   my $init = {
       function_order   => [qw{qc_qX_yield qc_adapter update_ml_warehouse qc_insert_size}],

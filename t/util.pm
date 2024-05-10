@@ -49,7 +49,10 @@ sub standard_analysis_recalibrated_path {
 
 sub create_analysis {
   my ($self) = @_;
-  $self->remove_staging();
+
+  my $staging = $self->temp_directory() . $NFS_STAGING_DISK;
+  `rm -rf $staging`;
+
   my $analysis_runfolder_path = $self->temp_directory() . $ANALYSIS_RUNFOLDER_PATH;
   my $recalibrated_path = $self->temp_directory() . $RECALIBRATED_PATH;
   `mkdir -p $recalibrated_path`;
@@ -57,14 +60,9 @@ sub create_analysis {
   `mkdir -p $analysis_runfolder_path/InterOp`;
   `cp t/data/p4_stage1_analysis/TileMetricsOut.bin $analysis_runfolder_path/InterOp`;
   `cp t/data/run_params/runParameters.miseq.xml $analysis_runfolder_path/runParameters.xml`;
-  return;
-}
+  $self->_create_run_info();
 
-sub remove_staging {
-  my ($self) = @_;
-  my $staging = $self->temp_directory() . $NFS_STAGING_DISK;
-  `rm -rf $staging`;
-  return 1;
+  return;
 }
 
 sub create_runfolder {
@@ -90,12 +88,8 @@ sub create_runfolder {
   return $paths;
 }
 
-sub create_run_info {
-  my ($self, $reads_wanted) = @_;
-
-  my $default_reads_wanted = q[    <Read Number="1" NumCycles="76" IsIndexedRead="N" />];
-
-  my $reads = ( defined $reads_wanted ) ? $reads_wanted : $default_reads_wanted;
+sub _create_run_info {
+  my ($self) = @_;
 
   my $fh;
   my $runinfofile = $self->analysis_runfolder_path() . q[/RunInfo.xml];
@@ -105,7 +99,7 @@ sub create_run_info {
 <RunInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="3">
   <Run>
     <Reads>
-$reads
+      <Read Number="1" NumCycles="76" IsIndexedRead="N" />
     </Reads>
     <FlowcellLayout LaneCount="8" SurfaceCount="2" SwathCount="1" TileCount="60">
     </FlowcellLayout>
