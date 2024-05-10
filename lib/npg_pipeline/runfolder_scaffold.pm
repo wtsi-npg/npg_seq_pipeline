@@ -15,6 +15,7 @@ Readonly::Scalar my $ANALYSIS_PATH_COMPONENT        => q[/analysis/];
 Readonly::Scalar my $LOG_DIR_NAME                   => q[log];
 Readonly::Scalar my $STATUS_FILES_DIR_NAME          => q[status];
 Readonly::Scalar my $METADATA_CACHE_DIR_NAME        => q[metadata_cache_];
+Readonly::Scalar my $ANALYSIS_OPTIONS_FILE_NAME     => q[analysis_options.json];
 Readonly::Scalar my $TILEVIZ_INDEX_DIR_NAME         => q[tileviz];
 Readonly::Scalar my $TILEVIZ_INDEX_FILE_NAME        => q[index.html];
 Readonly::Scalar my $IRODS_PUBLISHER_RSART_DIR_NAME => q[irods_publisher_restart_files];
@@ -147,6 +148,11 @@ sub metadata_cache_dir_path {
     croak 'Failed to retrieve analysis_path';
   }
   return catdir($apath, $METADATA_CACHE_DIR_NAME . $self->id_run());
+}
+
+sub analysis_options_file_path {
+  my $self = shift;
+  return catfile($self->metadata_cache_dir_path, $ANALYSIS_OPTIONS_FILE_NAME);
 }
 
 sub irods_publisher_rstart_dir_path {
@@ -303,6 +309,11 @@ is empty. Can be called both as an instance and a class method.
 
 =head2 metadata_cache_dir_path
 
+=head2 analysis_options_file_path
+
+A full path for a JSON file, which captures line numbers given by the
+C<process_separately_lanes> pipeline attribute and other analysis options.
+
 =head2 irods_publisher_rstart_dir_path
 
 =head2 irods_locations_dir_path
@@ -355,7 +366,7 @@ Given a path in analysis directory changes it to outgoing directory.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2019,2020,2022 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2022,2024 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

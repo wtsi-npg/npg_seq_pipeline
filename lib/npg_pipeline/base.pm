@@ -7,7 +7,10 @@ use POSIX qw(strftime);
 use Math::Random::Secure qw{irand};
 use List::MoreUtils qw{any uniq};
 use File::Basename;
+use JSON;
+use Perl6::Slurp;
 use Readonly;
+use Try::Tiny;
 
 use npg_tracking::glossary::rpt;
 use npg_tracking::glossary::composition::factory::rpt_list;
@@ -23,6 +26,7 @@ with qw{
         WTSI::DNAP::Utilities::Loggable
         npg_tracking::util::pipeline_config
         npg_pipeline::base::options
+        npg_pipeline::runfolder_scaffold
        };
 
 Readonly::Array my @NO_SCRIPT_ARG_ATTRS  => qw/
@@ -234,12 +238,13 @@ sub _build_merge_by_library {
 
 =head2 process_separately_lanes
 
-An array of lane (position) numbers, which should not be merged with anyother
+An array of lane (position) numbers, which should not be merged with any other
 lanes. To be used in conjunction with C<merge_lanes> or C<merge_by_library>
-attributes. Does not have any impact if both of these attributes are false.
+attributes. A consistency check is triggered when the value is set in order
+to prevent this setting to be cached if no merge is intended.
 
 Defaults to an empty array value, meaning that all possible entities will be
-merged. 
+merged.
 
 =cut
 
@@ -247,9 +252,18 @@ has q{process_separately_lanes} => (
   isa           => q{ArrayRef},
   is            => q{ro},
   default       => sub { return []; },
+  trigger       => \&_validate_process_separately_lanes,
   documentation => q{Array of lane numbers, which have to be excluded from } .
                    q{a merge},
 );
+sub _validate_process_separately_lanes {
+  my ($self, $new_value) = @_;
+  if (!$self->merge_lanes && !$self->merge_by_library && (@{$new_value} != 0)) {
+    $self->logcroak('One of merge options should be enabled if ' .
+                    'process_separately_lanes is set');
+  }
+  return;
+}
 
 =head2 lims
 
@@ -348,6 +362,21 @@ zero products, hashed under the 'data_products' key.
 If product_rpt_list attribute is set, the 'lanes' key maps to an empty
 array.
 
+While computing the lists of data products, we examine whether data in any
+of the lanes can be merged across lanes. Some of the lanes might be explicitly
+excluded from the merge by setting the `process_separately_lanes` attribute
+from the command line. This is likely to be done when the analysis pipeline
+is run manually. Then the same lanes have to be excluded from the merge by
+the archival pipeline and by the script that evaluates whether the run folder
+can be deleted. To enable this, the value of the `process_separately_lanes`
+attribute is saved to the metadate_cache_<ID_RUN> directory immediately after
+the pipeline establishes the location of the samplesheet file or generates a
+new samplesheet.
+
+This method looks at the `process_separately_lanes` attribute first. If the
+`process_separately_lanes` array is empty, an attempt to retrieve the cached
+value is made.
+
 =cut
 
 has q{products} => (
@@ -373,9 +402,14 @@ sub _build_products {
     }
 
     if ($self->merge_lanes || $self->merge_by_library) {
+      my $attr_name = 'process_separately_lanes';
+      my $separate_lanes = $self->$attr_name;
+      if (@{$separate_lanes} == 0) {
+        $separate_lanes = $self->_cached_process_separately_lanes($attr_name);
+      }
 
       my $all_lims = $self->lims->aggregate_libraries(
-        \@lane_lims, $self->process_separately_lanes);
+        \@lane_lims, $separate_lanes);
       @data_lims = @{$all_lims->{'singles'}}; # Might be empty.
 
       # merge_lanes option implies a merge across all lanes.
@@ -483,6 +517,27 @@ sub _check_lane_merge_is_viable {
   return 1;
 }
 
+sub _cached_process_separately_lanes {
+  my ($self, $key) = @_;
+  $key or $self->logcroak('Key should be defined');
+
+  my $path = $self->analysis_options_file_path();
+  if (-f $path) {
+    my $options;
+    try {
+      $options = decode_json(slurp($path));
+    } catch {
+      $self->logcroak("Error reading or parsing ${path} : $_");
+    };
+    if ($options->{$key}) {
+      $self->info("Found $key analysis option in $path: " .
+        join q[, ], @{$options->{$key}});
+      return $options->{$key};
+    }
+  }
+  return [];
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
@@ -511,6 +566,8 @@ __END__
 
 =item File::Basename
 
+=item JSON
+
 =item Readonly
 
 =item npg_tracking::glossary::rpt
@@ -538,7 +595,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014,2015,2016,2017,2018,2019,2020,2023 Genome Research Ltd.
+Copyright (C) 2014,2015,2016,2017,2018,2019,2020,2023,2024 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
