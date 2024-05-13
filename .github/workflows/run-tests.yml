@@ -81,7 +81,6 @@ jobs:
           eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib)
           
           cpanm --quiet --notest Module::Build
-          cpanm --quiet --notest Alien::Tidyp
           cpanm --quiet --notest Net::SSLeay
           cpanm --quiet --notest https://github.com/chapmanb/vcftools-cpan/archive/v0.953.tar.gz
           
