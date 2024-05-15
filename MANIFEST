@@ -1060,16 +1060,6 @@ t/data/run_params/runParameters.hiseqx.upgraded.xml
 t/data/run_params/runParameters.miseq.xml
 t/data/run_params/runParameters.novaseq.xml
 t/data/run_params/RunParameters.novaseqx.xml
-t/data/runfolder/archive/1234_2.bam
-t/data/runfolder/archive/1234_2_human.bam
-t/data/runfolder/archive/1234_3.bam
-t/data/runfolder/archive/lane1/1234_1#15.bam
-t/data/runfolder/archive/lane1/1234_1#15.cram
-t/data/runfolder/archive/lane1/1234_1#15.seqchksum
-t/data/runfolder/archive/lane1/1234_1#15_human.bam
-t/data/runfolder/archive/lane1/1234_1#15_phix.bam
-t/data/runfolder/archive/lane4/1234_4#16.bam
-t/data/runfolder/archive/lane4/1234_4#32.bam
 t/data/samplesheet_1234.csv
 t/data/samplesheet_8747.csv
 t/data/samplesheet_33990.csv
