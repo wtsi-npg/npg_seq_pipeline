@@ -2,6 +2,9 @@ LIST OF CHANGES
 ---------------
 
  - Removing Tidyp dependency from CI
+ - Added 'SampleSheet.csv' file from the top level of the run folder to
+   a list of archived run-level Illumina data. This file is only present
+   in MiSeq run folders.
 
 release 68.2.0
  - Added '--process_separately_lanes' to the pipeline to explicitly exclude
