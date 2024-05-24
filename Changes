@@ -1,6 +1,12 @@
 LIST OF CHANGES
 ---------------
 
+release 68.3.0 (2024-05-24)
+ - Removing Tidyp dependency from CI
+ - Added 'SampleSheet.csv' file from the top level of the run folder to
+   a list of archived run-level Illumina data. This file is only present
+   in MiSeq run folders.
+
 release 68.2.0
  - Added '--process_separately_lanes' to the pipeline to explicitly exclude
    multiple lanes from a merge.
