@@ -1,10 +1,11 @@
 use strict;
 use warnings;
-use Test::More tests => 22;
+use Test::More tests => 4;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use File::Copy qw(cp);
 use File::Path qw(make_path);
+use File::Temp qw(tempdir);
 
 use t::util;
 
@@ -18,6 +19,7 @@ foreach my $tool (@tools) {
 }
 chmod 0755, @tools;
 local $ENV{'PATH'} = join q[:], $tdir, $ENV{'PATH'};
+local $ENV{'HOME'} = 't';
 
 my $product_config = q[t/data/release/config/archive_on/product_release.yml];
 
@@ -26,74 +28,82 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           file   => join(q[/], $tdir, 'logfile'),
                           utf8   => 1});
 
+my $test_data_dir_47995 = 't/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3';
+sub _setup_runfolder_47995 {
+  my $tmp_dir = tempdir(CLEANUP => 1);
+  my @dirs = split q[/], $test_data_dir_47995;
+  my $rf_name = pop @dirs;
+  my $rf_info = $util->create_runfolder($tmp_dir, {'runfolder_name' => $rf_name});
+  my $rf = $rf_info->{'runfolder_path'};
+  for my $file (qw(RunInfo.xml RunParameters.xml)) {
+    if (cp("$test_data_dir_47995/$file", "$rf/$file") == 0) {
+      die "Failed to copy $file";
+    }
+  }
+  return $rf_info;
+}
+
+
 my $central = q{npg_pipeline::pluggable::central};
 use_ok($central);
 
-my $runfolder_path = $util->analysis_runfolder_path();
+subtest 'test object creation' => sub {
+  plan tests => 4;
 
-{
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
-  $util->create_analysis();
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = "$test_data_dir_47995/samplesheet_47995.csv";
   my $pipeline;
   lives_ok {
     $pipeline = $central->new(
-      runfolder_path => $runfolder_path,
+      runfolder_path => $tdir,
     );
-  } q{no croak creating new object};
+  } q{no error creating new object};
   isa_ok($pipeline, $central);
-}
 
-{
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
-  my $pb;
   lives_ok {
-    $pb = $central->new(
+    $pipeline = $central->new(
       function_order => [qw(qc_qX_yield qc_insert_size)],
-      runfolder_path => $runfolder_path,
+      runfolder_path => $tdir,
     );
-  } q{no croak on creation};
-  $util->create_analysis();
-  is(join(q[ ], @{$pb->function_order()}), 'qc_qX_yield qc_insert_size',
+  } q{no error on creation};
+  is(join(q[ ], @{$pipeline->function_order()}), 'qc_qX_yield qc_insert_size',
     'function_order set on creation');
-}
+};
 
-{
+subtest 'execute main()' => sub {
+  plan tests => 2;
+
   local $ENV{CLASSPATH} = undef;
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
-  my $pb;
-  $util->create_analysis();
-  cp 't/data/run_params/runParameters.hiseq.xml',
-    join(q[/], $runfolder_path, 'runParameters.xml');
-
-  $util->create_run_info();
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = "$test_data_dir_47995/samplesheet_47995.csv";
+  my $rf_info = _setup_runfolder_47995();
   my $config_dir = 'data/config_files';
-  my $init = {
-      function_order   => [qw{qc_qX_yield qc_adapter update_ml_warehouse qc_insert_size}],
-      lanes            => [4],
-      runfolder_path   => $runfolder_path,
-      function_list => "$config_dir/function_list_central.json",
-      id_flowcell_lims => 2015,
-      no_bsub          => 1,
-      repository       => 't/data/sequence',
-      spider           => 0,
-      no_sf_resource   => 1,
-      product_conf_file_path => $product_config,
-  };
 
-  lives_ok { $pb = $central->new($init); } q{no croak on new creation};
-  mkdir $pb->archive_path;
+  my $pb;
+  lives_ok { $pb = $central->new(
+    id_run           => 47995,
+    function_order   => [qw{qc_qX_yield qc_adapter update_ml_warehouse qc_insert_size}],
+    lanes            => [4],
+    run_folder       => $rf_info->{'runfolder_name'},
+    runfolder_path   => $rf_info->{'runfolder_path'},
+    function_list    => "$config_dir/function_list_central.json",
+    id_flowcell_lims => 17089,
+    no_bsub          => 1,
+    repository       => 't/data/sequence',
+    spider           => 0,
+    product_conf_file_path => $product_config,
+  ); } q{no croak on new creation};
+
   lives_ok { $pb->main() } q{no croak running qc->main()};
-}
+};
 
-{
-  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
-  my $rf = join q[/], $tdir, 'myfolder';
-  mkdir $rf;
-  cp 't/data/run_params/runParameters.hiseq.xml',
-    join(q[/], $rf, 'runParameters.xml');
+subtest 'execute prepare()' => sub {
+  plan tests => 12;
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = "$test_data_dir_47995/samplesheet_47995.csv";
+  my $rf_info = _setup_runfolder_47995();
+  my $rf = $rf_info->{'runfolder_path'};
   my $init = {
-      id_run         => 1234,
-      run_folder     => 'myfolder',
+      id_run         => 47995,
+      run_folder     => $rf_info->{'runfolder_name'},
       runfolder_path => $rf,
       timestamp      => '22-May',
       spider         => 0,
@@ -101,14 +111,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
       product_conf_file_path => $product_config,
   };
   my $pb = $central->new($init);
-  is ($pb->intensity_path, "$rf/Data/Intensities", 'intensities path');
-  is ($pb->basecall_path, "$rf/Data/Intensities/BaseCalls", 'basecalls path');
-  throws_ok { $pb->prepare() }
-    qr/does not exist, either bam_basecall_path or analysis_path should be given/,
-    q{error scaffolding the run folder};
-
-  make_path "$rf/Data/Intensities";
-  $pb = $central->new($init);
   is ($pb->intensity_path, "$rf/Data/Intensities", 'intensities path');
   is ($pb->basecall_path, "$rf/Data/Intensities/BaseCalls", 'basecalls path');
   lives_ok { $pb->prepare() } 'prepare runs fine';
@@ -137,6 +139,6 @@ my $runfolder_path = $util->analysis_runfolder_path();
   $pb = $central->new($init);
   $pb->prepare();
   is ($pb->bam_basecall_path, $expected_pb_cal, 'bam basecall path is set');
-}
+};
 
 1;

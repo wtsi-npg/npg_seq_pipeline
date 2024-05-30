@@ -13,6 +13,8 @@ use t::util;
 my $util = t::util->new();
 my $temp_directory = $util->temp_directory();
 
+local $ENV{'HOME'} = 't';
+
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
                           file   => join(q[/], $temp_directory, 'logfile'),

@@ -1,14 +1,13 @@
 use strict;
 use warnings;
 use Test::More tests => 3;
-use Test::Exception;
-use File::Copy;
-use File::Basename;
 
 use t::util;
 
 my $util = t::util->new();
-my $runfolder_path = $util->analysis_runfolder_path();
+my $temp_dir = join q[/], $util->temp_directory(), 'analysis';
+my $rf_info = $util->create_runfolder($temp_dir);
+my $runfolder_path = $rf_info->{'runfolder_path'};
 
 use_ok('npg_pipeline::function::start_stop');
 
