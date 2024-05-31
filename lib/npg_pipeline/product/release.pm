@@ -6,6 +6,7 @@ use Data::Dump qw{pp};
 use Moose::Role;
 use List::Util qw{all any};
 use Readonly;
+use Try::Tiny;
 
 with qw{WTSI::DNAP::Utilities::Loggable
         npg_tracking::util::pipeline_config};
@@ -300,7 +301,7 @@ sub bwakit_enable {
   Arg [1]    : npg_pipeline::product
 
   Example    : $obj->markdup_method($product);
-  Description: Return mark duplicate method,
+  Description: Returns mark duplicate method,
                the value might be undefined.
 
   Returntype : Str
@@ -309,7 +310,22 @@ sub bwakit_enable {
 
 sub markdup_method {
   my ($self, $product) = @_;
-  return $self->find_study_config($product)->{markdup_method};
+
+  my $config;
+  try {
+    $config = $self->find_study_config($product);
+  } catch {
+    my $error = $_;
+    if ($error =~ /Multiple[ ]study[ ]ids/xms) {
+      $self->logwarn($error);
+      $self->logwarn('Falling back to the default section of the product config');
+      $config = $self->default_study_config();
+    } else {
+      $self->logcroak($error);
+    }
+  };
+
+  return defined $config ? $config->{markdup_method} : undef;
 }
 
 =head2 staging_deletion_delay
@@ -412,6 +428,8 @@ study:
 
 =item Readonly
 
+=item Try::Tiny
+
 =item WTSI::DNAP::Utilities::Loggable
 
 =item npg_tracking::util::pipeline_config
@@ -430,7 +448,7 @@ study:
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2019,2020,2021,2022 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2021,2022,2024 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
