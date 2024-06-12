@@ -1,11 +1,13 @@
 use strict;
 use warnings;
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use File::Copy qw(cp);
 use File::Path qw(make_path);
 use File::Temp qw(tempdir);
+use File::Slurp qw(read_file write_file);
+use JSON;
 
 use t::util;
 
@@ -43,7 +45,6 @@ sub _setup_runfolder_47995 {
   return $rf_info;
 }
 
-
 my $central = q{npg_pipeline::pluggable::central};
 use_ok($central);
 
@@ -69,8 +70,8 @@ subtest 'test object creation' => sub {
     'function_order set on creation');
 };
 
-subtest 'execute main()' => sub {
-  plan tests => 2;
+subtest 'execute main() with a merge' => sub {
+  plan tests => 7;
 
   local $ENV{CLASSPATH} = undef;
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = "$test_data_dir_47995/samplesheet_47995.csv";
@@ -81,7 +82,7 @@ subtest 'execute main()' => sub {
   lives_ok { $pb = $central->new(
     id_run           => 47995,
     function_order   => [qw{qc_qX_yield qc_adapter update_ml_warehouse qc_insert_size}],
-    lanes            => [4],
+    lanes            => [3,4],
     run_folder       => $rf_info->{'runfolder_name'},
     runfolder_path   => $rf_info->{'runfolder_path'},
     function_list    => "$config_dir/function_list_central.json",
@@ -93,6 +94,106 @@ subtest 'execute main()' => sub {
   ); } q{no croak on new creation};
 
   lives_ok { $pb->main() } q{no croak running qc->main()};
+
+  my $rf = $rf_info->{'runfolder_path'};
+  my %dirs =
+    map  { $_ => 1 }
+    map  { /(lane.+\z)/ }
+    grep { -d }
+    glob "$rf/Data/Intensities/BAM_basecalls_*/no_cal/archive/lane*";
+  is (scalar keys %dirs, 3, 'three directories for lanes 3 and 4 are created');
+  # Presence of lane3-4 dir indicates that data from lanes 3 and 4 will be merged.
+  for my $name (qw(lane3 lane4 lane3-4)) {
+    ok (exists $dirs{$name}, "directory '$name' exists");
+  }
+  my @files = grep { -f }
+    glob "$rf/Data/Intensities/BAM_basecalls_*/metadata_cache_47995/*.json";
+  is (@files, 0, 'No JSON files in the metadata cache directory');
+};
+
+subtest 'execute main() with merge supressed' => sub {
+  plan tests => 13;
+
+  local $ENV{CLASSPATH} = undef;
+  my $samplesheet = "$test_data_dir_47995/samplesheet_47995.csv";
+  my $rf_info = _setup_runfolder_47995();
+  my $rf = $rf_info->{'runfolder_path'};
+  my $config_dir = 'data/config_files';
+
+  my $init = {
+    id_run           => 47995,
+    function_order   => [qw{qc_qX_yield qc_adapter update_ml_warehouse qc_insert_size}],
+    lanes            => [3,4],
+    process_separately_lanes => [4,3],
+    run_folder       => $rf_info->{'runfolder_name'},
+    runfolder_path   => $rf,
+    function_list    => "$config_dir/function_list_central.json",
+    id_flowcell_lims => 17089,
+    no_bsub          => 1,
+    repository       => 't/data/sequence',
+    spider           => 0,
+    product_conf_file_path => $product_config, 
+  };
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $samplesheet;
+  my $pb = $central->new($init);
+  lives_ok { $pb->main() } 'no error running qc->main()';
+  my $bam_basecall_path = $pb->bam_basecall_path();
+
+  my %dirs =
+    map  { $_ => 1 }
+    map  { /(lane.+\z)/ }
+    grep { -d }
+    glob "$rf/Data/Intensities/BAM_basecalls_*/no_cal/archive/lane*";
+  is (scalar keys %dirs, 2, 'two directories for lanes 3 and 4 are created');
+  # Absence of lane3-4 dir indicates that data from lanes 3 and 4 will
+  # not be merged.
+  for my $name (qw(lane3 lane4)) {
+    ok (exists $dirs{$name}, "directory '$name' exists");
+  }
+
+  my $file_with_cache = "$bam_basecall_path/metadata_cache_47995/analysis_options.json";
+  ok (-f $file_with_cache, 'A file with cached no-merge options exists');
+  is_deeply (decode_json(read_file($file_with_cache))->{'process_separately_lanes'},
+    [3,4], 'no-merge options are correctly cached');
+
+  # Run once more. Reuse bam_basecalls directory. Expect no change.
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $samplesheet;
+  $init->{'bam_basecall_path'} = $bam_basecall_path;
+  $pb = $central->new($init);
+  lives_ok { $pb->main() } 'no error running qc->main() with the same options';
+  ok (-f $file_with_cache, 'A file with cached no-merge options is retained');
+
+  # Run once more with different lanes not to merge.
+  my $error = 'Lane list from process_separately_lanes attribute is ' .
+              'inconsistent with cached value';
+  $init->{'process_separately_lanes'} = [8,7];
+  $pb = $central->new($init);
+  throws_ok { $pb->main() } qr/$error/,
+    'error running qc->main() with different no-merge options';
+
+  # The file exists, but the no-merge option is not captured;
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $samplesheet;
+  $init->{'process_separately_lanes'} = [4,3];
+  write_file($file_with_cache,
+    encode_json({'some option' => 'some option value'}));
+  $pb = $central->new($init);
+  lives_ok { $pb->main() } 'no error running qc->main()';
+  is_deeply (decode_json(read_file($file_with_cache)),
+    {'some option' => 'some option value', 'process_separately_lanes' => [3,4]},
+    'the no-merged option has been added to the file'
+  );
+
+  # The file exists, the no-merge option is captured as an empty list.
+  write_file($file_with_cache,
+    encode_json({'option' => 'value', 'process_separately_lanes' => []}));
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $samplesheet;
+  $init->{'process_separately_lanes'} = [3,4];
+  $pb = $central->new($init);
+  lives_ok { $pb->main() } 'no error running qc->main()';
+  is_deeply (decode_json(read_file($file_with_cache)),
+    {'option' => 'value', 'process_separately_lanes' => [3,4]},
+    'the no-merged option has been added to the file'
+  );
 };
 
 subtest 'execute prepare()' => sub {

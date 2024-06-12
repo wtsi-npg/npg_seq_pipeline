@@ -1,26 +1,35 @@
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Test::More tests => 10;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use Cwd qw(getcwd abs_path);
 use Log::Log4perl qw(:levels);
 use Moose::Util qw(apply_all_roles);
 use File::Copy qw(cp);
+use File::Slurp qw(read_file write_file);
+use JSON;
 
 use t::util;
 
 my $util = t::util->new();
+my $temp_dir = $util->temp_directory();
 
+my $log_file = join q[/], $temp_dir, 'logfile';
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
-                          file   => join(q[/], $util->temp_directory(), 'logfile'),
+                          file   => $log_file,
                           utf8   => 1});
 
 my $cwd = abs_path(getcwd());
 my $config_dir = $cwd . '/data/config_files';
 
 use_ok(q{npg_pipeline::base});
+
+sub _generate_rpt {
+  my ($id_run, $lanes, $tag_index) = @_;
+  return join q[;], map { join q[:], $id_run, $_, $tag_index  } @{$lanes};
+}
 
 subtest 'local flag' => sub {
   plan tests => 3;
@@ -63,6 +72,36 @@ subtest 'repository preexec' => sub {
     q{correct ref_adapter_pre_exec_string} );
 };
 
+subtest 'label' => sub {
+  plan tests => 4;
+
+  my $base = npg_pipeline::base->new(id_run => 22);
+  is ($base->label, '22', 'label defaults to run id');
+  $base = npg_pipeline::base->new(id_run => 22, label => '33');
+  is ($base->label, '33', 'label as set');
+  $base = npg_pipeline::base->new(product_rpt_list => '22:1:33');
+  throws_ok { $base->label }
+    qr/cannot build 'label' attribute, it should be pre-set/,
+    'error if label is not preset';
+  $base = npg_pipeline::base->new(product_rpt_list => '22:1:33', label => '33');
+  is ($base->label, '33', 'label as set');
+};
+
+subtest 'error on incompatible merge attributes' => sub {
+  plan tests => 1;
+  my $error = 'One of merge options should be enabled if ' .
+              'process_separately_lanes is set';
+  throws_ok {
+    $b = npg_pipeline::base->new(
+      runfolder_path => $temp_dir,
+      id_run => 999,
+      merge_lanes => 0,
+      merge_by_library => 0,
+      process_separately_lanes => [3,8]
+    )
+  } qr/$error/, $error;
+};
+
 subtest 'products - merging (or not) lanes' => sub {
   plan tests => 22;
 
@@ -77,7 +116,11 @@ subtest 'products - merging (or not) lanes' => sub {
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/products/samplesheet_novaseq4lanes.csv';
   cp 't/data/run_params/runParameters.novaseq.xml',  "$rf_path/runParameters.xml";
   cp 't/data/novaseq/210111_A00513_0447_AHJ55JDSXY/RunInfo.xml',  "$rf_path/RunInfo.xml";
-  $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => 999);
+  $b = npg_pipeline::base->new(
+    runfolder_path => $rf_path,
+    analysis_path => $temp_dir,
+    id_run => 47995
+  );
   ok ($b->merge_lanes, 'merge_lanes flag is set');
   ok (!$b->_selected_lanes, 'selected_lanes flag is not set');
   lives_ok {$products = $b->products} 'products hash created for NovaSeq run';
@@ -120,7 +163,7 @@ subtest 'products - merging (or not) lanes' => sub {
 };
 
 subtest 'products - merging (or not) libraries' => sub {
-  plan tests => 423;
+  plan tests => 421;
 
   my $rf_info = $util->create_runfolder();
   my $rf_path = $rf_info->{'runfolder_path'};
@@ -136,7 +179,11 @@ subtest 'products - merging (or not) libraries' => sub {
   # lanes 3, 4 - 10 samples
   # lanes 5, 6 - 22 samples
   # lanes 7, 8 - 38 samples
-  $b = npg_pipeline::base->new(runfolder_path => $rf_path, id_run => $id_run);
+  $b = npg_pipeline::base->new(
+    runfolder_path => $rf_path,
+    analysis_path => $temp_dir,
+    id_run => $id_run
+  );
   ok($b->merge_by_library, 'merge by library is true for NovaSeqX');
   my @lane_products = @{$b->products()->{'lanes'}};
   is (@lane_products, 8, 'eight lane products');
@@ -202,7 +249,11 @@ subtest 'products - merging (or not) libraries' => sub {
   
   # Expect lanes 3 and 4 merged.
   $b = npg_pipeline::base->new(
-    runfolder_path => $rf_path, id_run => $id_run, lanes => [4,8,3]);
+    runfolder_path => $rf_path,
+    analysis_path => $temp_dir,
+    id_run => $id_run,
+    lanes => [4,8,3]
+  );
   ok($b->merge_by_library, 'merge by library is true for NovaSeqX');
 
   @lane_products = @{$b->products()->{'lanes'}};
@@ -274,37 +325,120 @@ subtest 'products - merging (or not) libraries' => sub {
   );
   @products = @{$b->products()->{'data_products'}};
   is (@products, 64, 'number of data products is 64');
-  
-  $b = npg_pipeline::base->new(
-    runfolder_path => $rf_path,
-    id_run => $id_run,
-    lanes => [4,8,3],
-    merge_by_library => 0,
-    process_separately_lanes => [3,8]
-  );
-  lives_ok { @products = @{$b->products()->{'data_products'}} }
-    'process_separately_lanes is compatible with suppressed merge';
-  is (@products, 64, 'number of data products is 64');
 };
 
-sub _generate_rpt {
-  my ($id_run, $lanes, $tag_index) = @_;
-  return join q[;], map { join q[:], $id_run, $_, $tag_index  } @{$lanes};
-}
+subtest 'products - retrieve cached merge options' => sub {
+  plan tests => 13;
+  
+  my $id_run = 47995;
+  my $rf_name = q[20231017_LH00210_0012_B22FCNFLT3];
+  my $rf_path_test = qq[t/data/novaseqx/$rf_name];
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} =
+    qq[$rf_path_test/samplesheet_${id_run}.csv];
+  
+  my $rf_info = $util->create_runfolder($temp_dir, {'runfolder_name' => $rf_name,
+    'analysis_path' => 'BAM_basecalls_20240514-111105'});
+  my $runfolder_path = $rf_info->{'runfolder_path'};
+  for my $name (qw(RunInfo.xml RunParameters.xml)) {
+    cp("$rf_path_test/$name", "$runfolder_path/$name") or die "Failed to copy $name";
+  }
+  my $bam_basecall_path = $rf_info->{'basecall_path'};
+  my $metadata_cache_path = "$bam_basecall_path/metadata_cache_$id_run";
+  mkdir $metadata_cache_path;
 
-subtest 'label' => sub {
-  plan tests => 4;
+  # All lanes are spiked. Possible merges:
+  # lanes 1, 2 - 17 samples
+  # lanes 3, 4 - 10 samples
+  # lanes 5, 6 - 22 samples
+  # lanes 7, 8 - 38 samples
 
-  my $base = npg_pipeline::base->new(id_run => 22);
-  is ($base->label, '22', 'label defaults to run id');
-  $base = npg_pipeline::base->new(id_run => 22, label => '33');
-  is ($base->label, '33', 'label as set');
-  $base = npg_pipeline::base->new(product_rpt_list => '22:1:33');
-  throws_ok { $base->label }
-    qr/cannot build 'label' attribute, it should be pre-set/,
-    'error if label is not preset';
-  $base = npg_pipeline::base->new(product_rpt_list => '22:1:33', label => '33');
-  is ($base->label, '33', 'label as set');
+  # Establish the base cases - an inevitable repetition of some of the tests above.
+  # No merge
+  my $num_unmerged = 190;
+  my $b = npg_pipeline::base->new(
+    runfolder_path => $runfolder_path,
+    bam_basecall_path => $bam_basecall_path,
+    id_run => $id_run,
+    merge_lanes => 0,
+    merge_by_library => 0,
+  );
+  my @products = @{$b->products()->{'data_products'}};
+  is (@products, $num_unmerged, "number of unmerged data products is $num_unmerged");
+
+  # Full merge by library
+  my $num_merged = 103; # Including unmerged spiked-in PhiX and tag0
+  $b = npg_pipeline::base->new(
+    runfolder_path => $runfolder_path,
+    bam_basecall_path => $bam_basecall_path,
+    id_run => $id_run,
+  );
+  ok ($b->merge_by_library, 'merge by library is enabled for NovaSeqX');
+  @products = @{$b->products()->{'data_products'}};
+  is (@products, $num_merged, "number of data products is $num_merged");
+  # End of the base case
+
+  # Supress the merge explicitly
+  $b = npg_pipeline::base->new(
+    runfolder_path => $runfolder_path,
+    bam_basecall_path => $bam_basecall_path,
+    id_run => $id_run,
+    process_separately_lanes => [(1 .. 8)],
+  );
+  ok ($b->merge_by_library, 'merge by library is enabled for NovaSeqX');
+  @products = @{$b->products()->{'data_products'}};
+  is (@products, $num_unmerged, "number of data products is $num_unmerged");
+
+  my $cached_options_file = "$metadata_cache_path/analysis_options.json";
+  write_file($cached_options_file, 'no JSON');
+  $b = npg_pipeline::base->new(
+    runfolder_path => $runfolder_path,
+    bam_basecall_path => $bam_basecall_path,
+    id_run => $id_run,
+  );
+  throws_ok { $b->products() } qr/Error reading or parsing $cached_options_file/,
+    'Exception is thrown when the cached data cannot be read';
+
+  write_file($cached_options_file, encode_json({'option' => 'value'}))
+    or die "Failed writing to $cached_options_file";
+  $b = npg_pipeline::base->new(
+    runfolder_path => $runfolder_path,
+    bam_basecall_path => $bam_basecall_path,
+    id_run => $id_run,
+  );
+  lives_ok { @products = @{$b->products()->{'data_products'}} }
+    'no error generating products';
+  is (@products, $num_merged, "number of data products is $num_merged");
+
+  write_file($cached_options_file,
+    encode_json({'option' => 'value', 'process_separately_lanes' => [(1 .. 8)]}))
+    or die "Failed writing to $cached_options_file";
+  $b = npg_pipeline::base->new(
+    runfolder_path => $runfolder_path,
+    bam_basecall_path => $bam_basecall_path,
+    id_run => $id_run,
+  );
+  lives_ok { @products = @{$b->products()->{'data_products'}} }
+    'no error generating products';
+  is (@products, $num_unmerged, "number of data products is $num_unmerged");
+  my @log_lines = read_file($log_file) or die "Failed to read the log $log_file";
+  like ($log_lines[-1],
+     qr/Found process_separately_lanes analysis option/, 'information is logged');
+
+  write_file($cached_options_file,
+    encode_json({'process_separately_lanes' => [1,2,3]}))
+    or die "Failed writing to $cached_options_file";
+  $b = npg_pipeline::base->new(
+    runfolder_path => $runfolder_path,
+    bam_basecall_path => $bam_basecall_path,
+    id_run => $id_run,
+  );
+  my $num_partially_merged = 16 + 22 + 38 + (10+17)*2;
+  @products = @{$b->products()->{'data_products'}};
+  is (@products, $num_partially_merged,
+    "number of data products is $num_partially_merged");
+  @log_lines = read_file($log_file) or die "Failed to read the log $log_file";
+  like ($log_lines[-1], qr/option in $cached_options_file: 1, 2, 3/,
+    'information is logged');
 };
 
 1;

@@ -33,7 +33,7 @@ subtest 'tests for class methods' => sub {
 };
 
 subtest 'top level scaffold' => sub {
-  plan tests => 10;
+  plan tests => 12;
 
   my $util = t::util->new();
   my $rfh = $util->create_runfolder();
@@ -59,11 +59,16 @@ subtest 'top level scaffold' => sub {
   ok (-e $dir, 'archive directory created');
   ok (-e "$dir/tileviz", 'tileviz index directory created');
   ok (-e "$bbc_path/status", 'status directory created');
-  ok (-e "$bbc_path/metadata_cache_999", 'metadata cache directory created');
+  is ($rfs->metadata_cache_dir_path, "$bbc_path/metadata_cache_999");
+  ok (-e $rfs->metadata_cache_dir_path, 'metadata cache directory created');
   ok (-e "$bbc_path/irods_publisher_restart_files",
     'directory for iRODS publisher restart files created');
   ok (-e "$bbc_path/irods_locations_files",
-    'directory for iRODS location json files created')
+    'directory for iRODS location json files created');
+  
+  is ($rfs->analysis_options_file_path,
+    "$bbc_path/metadata_cache_999/analysis_options.json",
+    'file path for the analysis options cache')
 };
 
 subtest 'product level scaffold, NovaSeq all lanes' => sub {
