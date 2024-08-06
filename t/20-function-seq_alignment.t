@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 20;
+use Test::More tests => 21;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -13,7 +13,7 @@ use Log::Log4perl qw/:levels/;
 use JSON;
 use Cwd;
 use List::Util qw/first/;
-use File::Slurp qw/edit_file_lines/;
+use File::Slurp qw/edit_file_lines read_file write_file/;
 
 use Moose::Util qw(apply_all_roles);
 
@@ -1502,7 +1502,7 @@ subtest 'miseq_primer_panel_only' => sub {
   is ($d->command(), $command, 'correct command for MiSeq lane 24135_1 tag index 1');
 };
 
-subtest 'product_release_tests' => sub {
+subtest 'product_release_tests and mark duplicate method' => sub {
   plan tests => 269;
 
   my %test_runs = (
@@ -1572,6 +1572,47 @@ subtest 'product_release_tests' => sub {
   }
 };
 
+subtest 'mark duplicate method for a product with multiple studies' => sub {
+  plan tests => 3;
+  
+  my $runfolder_path = join q[/], $dir, q[markdups_test];
+  mkdir $runfolder_path;
+  copy('t/data/miseq/46761_RunInfo.xml', "$runfolder_path/RunInfo.xml") or die 'Copy failed';
+  copy('t/data/miseq/46761_runParameters.xml', "$runfolder_path/runParameters.xml")
+    or die 'Copy failed';
+  my @lines = read_file(q[t/data/miseq/samplesheet_46761_bwa_mem2.csv]);
+  my @data = ();
+  # Change study ID for the first tag.
+  foreach my $value ((split q[,], $lines[2])) {
+    $value =~ s/5556/5557/;
+    push @data, $value;
+  }
+  $lines[2] = join q[,], @data;
+  my $samplesheet = "$runfolder_path/samplesheet_46761.csv";
+  write_file($samplesheet, @lines);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $samplesheet;
+
+  my $ms_gen = npg_pipeline::function::seq_alignment->new(
+    id_run            => 46761,
+    runfolder_path    => $runfolder_path,
+    conf_path         => 't/data/release/config/seq_alignment',
+    resource          => $default,
+    npg_tracking_schema => undef
+  );
+  my $product;
+  foreach my $p (@{$ms_gen->products->{data_products}}) {
+    if ($p->rpt_list eq '46761:1:0') {
+      $product = $p;
+      last;
+    }
+  }
+
+  is ($product->lims->study_ids, 2, 'tag zero product has two study ids');
+  my $method;
+  lives_ok { $method = $ms_gen->markdup_method($product) }
+    'no error calling markdup_method';
+  is ($method, 'biobambam', 'correct method');
+};
 # test overrides of bwa_mem with bwa-mem2
 #   1) on sample sheet entry without [bwa_mem2] specified in reference name
 #   2) on sample sheet entry without [bwa_mem2] specified in reference name, but setting bwa_mem2 attribute

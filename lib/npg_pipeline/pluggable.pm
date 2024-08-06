@@ -22,8 +22,7 @@ use npg_pipeline::pluggable::registry;
 extends q{npg_pipeline::base};
 
 with qw{ MooseX::AttributeCloner
-         npg_pipeline::executor::options
-         npg_pipeline::runfolder_scaffold };
+         npg_pipeline::executor::options };
 
 our $VERSION = '0';
 
@@ -883,7 +882,7 @@ __END__
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2014,2015,2016,2017,2018,2019,2020,2021 Genome Research Ltd.
+Copyright (C) 2014,2015,2016,2017,2018,2019,2020,2021,2024 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -1,6 +1,14 @@
 LIST OF CHANGES
 ---------------
 
+release 68.4.0 (2024-08-06)
+ - Ensured mark duplicate method can be inferred for a product with multiple
+   studies (tag zero).
+ - Upgrading tests
+   - Use contemporary run folders for tests (NovaSeqX)
+   - Clean fixtures
+   - Prevent tests from accessing live databases (reset HOME)
+
 release 68.3.0 (2024-05-24)
  - Removing Tidyp dependency from CI
  - Added 'SampleSheet.csv' file from the top level of the run folder to

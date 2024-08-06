@@ -23,6 +23,7 @@ foreach my $tool (@tools) {
 }
 chmod 0755, @tools;
 local $ENV{'PATH'} = join q[:], $test_bin, $ENV{'PATH'};
+local $ENV{'HOME'} = 't';
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,

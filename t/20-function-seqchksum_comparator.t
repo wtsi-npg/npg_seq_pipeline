@@ -1,39 +1,57 @@
 use strict;
 use warnings;
-use Test::More tests => 17;
+use Test::More tests => 15;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
+use File::Path qw(make_path);
+use File::Copy;
+
 use t::util;
 
 my $util = t::util->new();
 my $tmp_dir = $util->temp_directory();
-
-local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_1234.csv];
-# if REF_PATH is not set, force using ref defined in the header
-local $ENV{REF_PATH} = $ENV{REF_PATH} ? $ENV{REF_PATH} : 'DUMMY';
 
 Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
                           level  => $DEBUG,
                           file   => join(q[/], $tmp_dir, 'logfile'),
                           utf8   => 1});
 
+my $test_data_dir_47995 = 't/data/novaseqx/20231017_LH00210_0012_B22FCNFLT3';
+
+sub _setup_runfolder_47995 {
+  my $timestamp = shift;
+  my @dirs = split q[/], $test_data_dir_47995;
+  my $rf_name = pop @dirs;
+  my $rf_info = $util->create_runfolder($tmp_dir, {'runfolder_name' => $rf_name});
+  my $rf = $rf_info->{'runfolder_path'};
+  for my $file (qw(RunInfo.xml RunParameters.xml)) {
+    if (copy("$test_data_dir_47995/$file", "$rf/$file") == 0) {
+      die "Failed to copy $file";
+    }
+  }
+  my $bam_basecall_path = $rf . "/Data/Intensities/BAM_basecalls_$timestamp";
+  my $archive_path = $bam_basecall_path . q{/no_cal/archive};
+  make_path($archive_path);
+  $rf_info->{'bam_basecall_path'} = $bam_basecall_path;
+  $rf_info->{'archive_path'} = $archive_path;
+  return $rf_info;
+}
+
 use_ok( q{npg_pipeline::function::seqchksum_comparator} );
 
-$util->create_analysis();
-
 my $timestamp = q{09-07-2009};
-my $analysis_runfolder_path = $util->analysis_runfolder_path();
-my $bam_basecall_path = $analysis_runfolder_path . "/Data/Intensities/BAM_basecalls_$timestamp/";
-my $recalibrated_path = $analysis_runfolder_path. "/Data/Intensities/BAM_basecalls_$timestamp/no_cal";
-my $archive_path = $recalibrated_path . q{/archive};
+my $rf_info = _setup_runfolder_47995($timestamp);
+my $archive_path = $rf_info->{'archive_path'};
+my $bam_basecall_path = $rf_info->{'bam_basecall_path'};
 
 my %init = (
-  run_folder        => q{123456_IL2_1234},
-  runfolder_path    => $analysis_runfolder_path,
+  runfolder_path    => $rf_info->{'runfolder_path'},
   archive_path      => $archive_path,
   bam_basecall_path => $bam_basecall_path,
-  id_run            => 1234,
+  id_run            => 47995,
   is_indexed        => 0,
+  timestamp         => $timestamp,
+  lanes             => [1,2],
   resource          => {
     default => {
       minimum_cpu => 1,
@@ -43,13 +61,11 @@ my %init = (
 );
 
 {
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = "$test_data_dir_47995/samplesheet_47995.csv";
+
   my $object;
   lives_ok {
-    $object = npg_pipeline::function::seqchksum_comparator->new(
-      %init,
-      timestamp         => $timestamp,
-      lanes             => [1,2],
-    );
+    $object = npg_pipeline::function::seqchksum_comparator->new(%init);
   } q{object ok};
 
   isa_ok( $object, q{npg_pipeline::function::seqchksum_comparator});
@@ -60,83 +76,22 @@ my %init = (
   is ($d->created_by, q{npg_pipeline::function::seqchksum_comparator},
     'created_by is correct');
   is ($d->created_on, $object->timestamp, 'created_on is correct');
-  is ($d->identifier, 1234, 'identifier is set correctly');
-  ok (!$d->has_composition, 'no composition is not set');
-  is ($d->job_name, q{seqchksum_comparator_1234_09-07-2009},
+  is ($d->identifier, 47995, 'identifier is set correctly');
+  ok (!$d->has_composition, 'composition is not set');
+  is ($d->job_name, q{seqchksum_comparator_47995_09-07-2009},
     'job_name is correct');
   my $rp = $object->recalibrated_path;
   is ($d->command,
-    q{npg_pipeline_seqchksum_comparator --id_run=1234 --lanes=1 --lanes=2} .
+    q{npg_pipeline_seqchksum_comparator --id_run=47995 --lanes=1 --lanes=2} .
     qq{ --archive_path=$archive_path --bam_basecall_path=$bam_basecall_path} .
-    qq{ --input_fofg_name=$rp/1234_input_fofn.txt},
+    qq{ --input_fofg_name=$rp/47995_input_fofn.txt},
     'command is correct');
   ok (!$d->excluded, 'step not excluded');
   is ($d->queue, 'default', 'default queue');
   lives_ok {$d->freeze()} 'definition can be serialized to JSON';
 
-  throws_ok{$object->do_comparison()} qr/Failed to change directory/,
+  throws_ok{$object->do_comparison()} qr/Failed to run command seqchksum_merge.pl/,
     q{Doing a comparison with no files throws an exception};
-
-#############
-#############
-#############
-#############
-##   my $seqchksum_contents1 = <<'END1';
-## ###  set count   b_seq name_b_seq  b_seq_qual  b_seq_tags(BC,FI,QT,RT,TC)
-## all all 19821774    3a58186f  29528f13  7bf272c0  30e0b9ef
-## all pass  19821774    3a58186f  29528f13  7bf272c0  30e0b9ef
-##   all 0   1 1 1 1
-##   pass  0   1 1 1 1
-## 1#0 all 3865560   4aebf9cb  63f4ad67  3d54f814  5c3f971f
-## 1#0 pass  3865560   4aebf9cb  63f4ad67  3d54f814  5c3f971f
-## 1#2 all 15956214    504ab7d8  28428e9b  643c096e  3cbf1e96
-## 1#2 pass  15956214    504ab7d8  28428e9b  643c096e  3cbf1e96};
-## END1
-##
-##   system "mkdir -p $archive_path/lane1";
-##   system "cp -p t/data/runfolder/archive/lane1/1234_1#15.cram $archive_path/lane1";
-##
-##   system "mkdir -p $archive_path/lane2";
-##   system "cp -p t/data/runfolder/archive/lane1/1234_1#15.cram $archive_path/lane2/1234_2#15.cram";
-##   system "cp -p t/data/runfolder/archive/lane1/1234_1#15.seqchksum $archive_path/lane2/1234_2#15.seqchksum";
-##
-##   open my $seqchksum_fh1, '>', "$bam_basecall_path/1234_1.post_i2b.seqchksum" or die "Cannot open file for writing";
-##   print $seqchksum_fh1 $seqchksum_contents1 or die $!;
-##   close $seqchksum_fh1 or die $!;
-##
-##   SKIP: {
-##     skip 'no tools', 2 if ((not $ENV{TOOLS_INSTALLED}) and (system(q(which bamseqchksum)) or system(q(which scramble))));
-##     TODO: { local $TODO= q(scramble doesn't through an exception when converting an empty bam file to cram it just writes a cram files with a @PG ID:scramble .. line);
-##       throws_ok{$object->do_comparison()} qr/Failed to run command bamcat /, q{Doing a comparison with empty bam files throws an exception};
-##     }
-##
-##     system "cp -p t/data/seqchksum/sorted.cram $archive_path/lane1/1234_1#15.cram";
-##     system "cp -p t/data/seqchksum/sorted.cram $archive_path/lane2/1234_2#15.cram";
-##
-##     throws_ok { $object->do_comparison() }
-##       qr/seqchksum for post_i2b and product are different/,
-##       q{Doing a comparison with different bam files throws an exception};
-##   }
-#############
-#############
-#############
-#############
-}
-
-{
-  my $object = npg_pipeline::function::seqchksum_comparator->new(
-    %init,
-    lanes             => [1],
-  );
-  my $da = $object->create();
-  ok ($da && @{$da} == 1, 'an array with one definitions is returned');
-
-  $object = npg_pipeline::function::seqchksum_comparator->new(
-    %init
-  );
-  $da = $object->create();
-  # seqchksum_comparator is now a run-level function, so only one definition returned
-  ok ($da && @{$da} == 1, 'an array with one definition is returned for eight lanes');
 }
 
 1;

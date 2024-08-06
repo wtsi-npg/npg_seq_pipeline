@@ -1,8 +1,8 @@
 # NPG Pipelines for Processing Illumina Sequencing Data
 
 This software provides the Sanger NPG team's automation for analysing and
-internally archiving Illumina sequencing on behalf of DNA Pipelines for their
-customers.
+internally archiving Illumina sequencing data on behalf of DNA Pipelines for
+their customers.
 
 There are two main pipelines:
 
@@ -18,16 +18,16 @@ sequencing flowcell, or each tagged library (within a pool on the flowcell).
 ## Batch Processing and Dependency Tracking with LSF or wr
 
 With this system, all of a pipeline's jobs for its steps are submitted for
-execution to the LSF, or wr, batch/job processing system as the pipeline is
+execution to `LSF` or `wr` batch/job processing system as the pipeline is
 initialised. As such, a _submitted_ pipeline does not have an orchestration
 script or daemon running: managing the runtime dependencies of jobs within an
 instance of a pipeline is delegated to the batch/job processing system.
 
 How is this done? The job representing the start point of a graph is submitted
-to LSF, or wr, in a suspended state and is resumed once all other jobs have been
+to `LSF` or `wr` in a suspended state and is resumed once all other jobs have been
 submitted thus ensuring that the execution starts only if all steps are
-successfully submitted to LSF, or wr. If an error occurs at any point during job
-submissions, all submitted jobs, apart from the start job, are killed.
+successfully submitted. If an error occurs at any point during job submissions,
+all submitted jobs, apart from the start job, are killed.
 
 ## Pipeline Creation
 
@@ -84,8 +84,8 @@ The input for an instance of the pipeline is the instrument output run folder
 (BCL and associated files) and LIMS information which drives appropriate
 processing.
 
-The key data products are aligned CRAM files and indexes, or unaligned CRAM
-files. However per study (a LIMS datum) pipeline configuration allows for the
+The key data products are aligned or unaligned CRAM files and indexes.
+However per study (a LIMS datum) pipeline configuration allows for the
 creation of GATK gVCF files, or the running for external tool/pipeline e.g.
 ncov2012-artic-nf
 
@@ -135,3 +135,28 @@ flow DAGs.
 
 Also, the [npg_irods](https://github.com/wtsi-npg/npg_irods) system is essential
 for the internal archival of data products.
+
+## Data Merging across Lanes of a Flowcell
+
+If the same library is sequenced in different lanes of a flowcell, under certain
+conditions the pipeline will automatically merge all data for a library into
+a single end product. Spiked-in PhiX libraries data and unassigned to any tags
+data (tag zero) are not merged. The following scenarios trigger the merge:
+
+* NovaSeq Standard flowcell - a merge across all two or four lanes is performed.
+
+* Any flowcell run on a NovaSeqX instrument - if multiple lanes belong to the
+  same pool, the data from individual libraries will be merged across those
+  lanes. Thus the output of a NovaSeqX run might contain a mixture of merged and
+  unmerged products.
+
+If the data quality in a lane is poor, the lane should be excluded from the merge.
+The `--process_separately_lanes` pipeline option is used to list lanes like this.
+Usually this option is used when running the analysis pipeline. The pipeline caches
+the supplied lane numbers so that the archival pipeline can generate a consistent
+with the analysis pipeline list of data products. The same relates to the
+`npg_run_is_deletable` script. The cached value is retrieved only if the
+`--process_separately_lanes` argument was not set when any of these scripts are
+invoked.
+
+
