@@ -615,13 +615,15 @@ subtest 'review' => sub {
   my $d = $definitions{'8747:8'};
   my $expected_command = q{qc --check=review --rpt_list="8747:8" } .
     qq{--filename_root=8747_8 --qc_out=$archive_dir/lane8/qc } .
-    qq{--qc_in=$archive_dir/lane8/qc --conf_path=t/data/release/config/qc_review};
+    qq{--qc_in=$archive_dir/lane8/qc --conf_path=t/data/release/config/qc_review } .
+    qq{--runfolder_path=$rf_path};
   is ($d->command, $expected_command, 'correct command for lane-level job');
 
   $d = $definitions{'8747:1:1'};
   $expected_command = q{qc --check=review --rpt_list="8747:1:1" } .
     qq{--filename_root=8747_1#1 --qc_out=$archive_dir/lane1/plex1/qc } .
-    qq{--qc_in=$archive_dir/lane1/plex1/qc --conf_path=t/data/release/config/qc_review};
+    qq{--qc_in=$archive_dir/lane1/plex1/qc --conf_path=t/data/release/config/qc_review } .
+    qq{--runfolder_path=$rf_path};
   is ($d->command, $expected_command, 'correct command for plex-level job');
 };
 
