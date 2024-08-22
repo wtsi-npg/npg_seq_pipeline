@@ -271,8 +271,8 @@ sub _generate_command {
     $c .= q[ ] . join q[ ], (map {"--qc_in=$_"} (keys %qc_in_roots));
   }
   elsif($check eq q/review/) {
-    $c .= q{ --qc_in=} . $qc_out_path;
-    $c .= q{ --conf_path=} . $self->conf_path;
+    $c .= sprintf q{ --qc_in=%s --conf_path=%s --runfolder_path=%s},
+      $qc_out_path, $self->conf_path, $self->runfolder_path;
   }
   else {
     ## default input_files [none?]
