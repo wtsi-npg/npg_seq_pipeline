@@ -6,14 +6,18 @@ study:
   - study_id: "1713"
     robo_qc:
       criteria:
-        - library_type:
-            - "Agilent Pulldown"
-          acceptance_criteria :
+        - applicability_criteria:
+          lims:
+            - library_type:
+              - "Agilent Pulldown"
+          acceptance_criteria:
             - "criteria1"
   - study_id: "2410"
     robo_qc:
       criteria:
-        - library_type:
-            - "Custom"
-          acceptance_criteria :
+        - applicability_criteria:
+          lims:
+            - library_type:
+              - "Custom"
+          acceptance_criteria:
             - "criteria2"
