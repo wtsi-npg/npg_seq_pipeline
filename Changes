@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 68.5.0 (2024-09-04)
+ - The runfolder_path argument is added to the command for the autoqc review
+   check. See https://github.com/wtsi-npg/npg_qc/pull/869
+
 release 68.4.0 (2024-08-06)
  - Ensured mark duplicate method can be inferred for a product with multiple
    studies (tag zero).
