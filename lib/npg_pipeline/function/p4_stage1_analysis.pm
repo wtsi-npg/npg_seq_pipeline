@@ -361,6 +361,9 @@ sub _generate_command_params {
     $p4_params{i2b_bc_qual_val}   = join q{,}, @i2b_bc_qual_val;
   }
 
+  $p4_params{i2b_first_tile} = $self->p4s1_i2b_first_tile;
+  $p4_params{i2b_tile_limit} = $self->p4s1_i2b_tile_limit;
+
   ###  TODO: remove this read length comparison if biobambam will handle this case. Check clip reinsertion.
   if($self->is_paired_read()) {
     my @range1 = $self->read1_cycle_range();

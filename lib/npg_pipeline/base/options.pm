@@ -179,6 +179,31 @@ sub _build_p4s1_phix_alignment_method {
   return $alignment_method;
 }
 
+=head2 p4s1_i2b_first_tile
+
+Optional first tile for i2b in stage1
+
+=cut
+
+has q{p4s1_i2b_first_tile} => (
+  isa      => q{Int},
+  is       => q{ro},
+  required => 0,
+  documentation => q{Optional first tile for i2b in stage1},
+);
+
+=head2 p4s1_i2b_tile_limit
+
+Optional tile limit for i2b in stage1
+
+=cut
+
+has q{p4s1_i2b_tile_limit} => (
+  isa      => q{Int},
+  is       => q{ro},
+  required => 0,
+  documentation => q{Optional tile limit for i2b in stage1},
+);
 
 =head2 p4s2_aligner_intfile
 
