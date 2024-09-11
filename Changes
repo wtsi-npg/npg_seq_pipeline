@@ -8,6 +8,8 @@ LIST OF CHANGES
    the change originates from GitHub and can be trusted. Our CI flow compares
    the checksum of the downloaded script to the expected value. We now store
    an updated expected checksum value, which corresponds to the latest release.
+ - GitHub CI - updated deprecated v2 runner to v3
+
 
 release 68.5.0 (2024-09-04)
  - The runfolder_path argument is added to the command for the autoqc review
