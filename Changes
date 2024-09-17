@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - The runfolder_path attribute is passed to the constructor of the review
+   autoqc check object when deciding whether this check should run.
+
 release 68.5.1 (2024-10-04)
  - Added .github/dependabot.yml file to auto-update GitHub actions
  - Following a release on 07/09/2024, see https://metacpan.org/dist/App-perlbrew/changes,
