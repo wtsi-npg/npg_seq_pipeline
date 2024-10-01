@@ -51,7 +51,7 @@ jobs:
 
       - name: "Cache Perl"
         id: cache-perl
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.PERL_CACHE }}
           key: ${{ runner.os }}-${{ matrix.perl }}-perl
