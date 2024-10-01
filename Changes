@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - Added .github/dependabot.yml file to auto-update GitHub actions
  - Following a release on 07/09/2024, see https://metacpan.org/dist/App-perlbrew/changes,
    the checksum of the script served by https://install.perlbrew.pl had changed.
    https://install.perlbrew.pl is a redirect to raw
