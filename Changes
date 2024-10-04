@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 68.5.1 (2024-10-04)
  - Added .github/dependabot.yml file to auto-update GitHub actions
  - Following a release on 07/09/2024, see https://metacpan.org/dist/App-perlbrew/changes,
    the checksum of the script served by https://install.perlbrew.pl had changed.
@@ -10,7 +11,6 @@ LIST OF CHANGES
    the checksum of the downloaded script to the expected value. We now store
    an updated expected checksum value, which corresponds to the latest release.
  - GitHub CI - updated deprecated v2 runner to v3
-
 
 release 68.5.0 (2024-09-04)
  - The runfolder_path argument is added to the command for the autoqc review
