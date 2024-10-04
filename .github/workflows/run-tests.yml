@@ -23,7 +23,7 @@ jobs:
         perl: ["5.26.3", "5.34.1"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: "Install OS dependencies"
         run: |
@@ -51,7 +51,7 @@ jobs:
 
       - name: "Cache Perl"
         id: cache-perl
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.PERL_CACHE }}
           key: ${{ runner.os }}-${{ matrix.perl }}-perl
@@ -102,7 +102,7 @@ jobs:
 
       - name: "Archive CPAN logs on failure"
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: cpan_log
           path: ~/.cpanm/work/*/build.log
