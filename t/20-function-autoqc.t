@@ -40,6 +40,8 @@ my $archive_dir = $hiseq_rf->{'archive_path'};
 my $rf_path     = $hiseq_rf->{'runfolder_path'};
 fcopy('t/data/run_params/runParameters.hiseq.xml', "$rf_path/runParameters.xml")
   or die 'Fail to copy run param file';
+fcopy('t/data/run_params/RunInfo.hiseq.rr.xml',  "$rf_path/RunInfo.xml")
+  or die 'Fail to copy run info file';
 
 my $default = {
   default => {
@@ -509,7 +511,7 @@ subtest 'genotype and gc_fraction and bcfstats' => sub {
 
   my $qc = npg_pipeline::function::autoqc->new($init);
 
-# create products with the characteristics being tested
+  # create products with the characteristics being tested
   my $plexed_lane_lims = st::api::lims->new(id_run => 14043, position => 6);
   my $library_lane_lims = st::api::lims->new(id_run => 14043, position => 1);
   my $plex0_lims = st::api::lims->new(id_run => 8747, position => 6, tag_index => 0);
@@ -574,7 +576,7 @@ subtest 'genotype and gc_fraction and bcfstats' => sub {
 };
 
 subtest 'review' => sub {
-  plan tests => 6;
+  plan tests => 8;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_8747.csv';
 
@@ -602,20 +604,19 @@ subtest 'review' => sub {
   );
 
   $da = $qc->create();
-  ok ($da && (@{$da} == 11), '11 definitions returned');
+  ok ($da && (@{$da} == 10), '10 definitions returned');
   my %definitions = map { $_->composition->freeze2rpt => $_ } @{$da};
   my @expected_rpt_lists = qw/ 8747:1:1  8747:1:2  8747:1:3
                                8747:2:4  8747:2:5  8747:2:6
                                8747:3:7  8747:3:8  8747:3:9
-                               8747:7
-                               8747:8 /;
+                               8747:7 /;
   is_deeply ([sort keys %definitions], \@expected_rpt_lists,
     'definitions are for correct entities');
 
-  my $d = $definitions{'8747:8'};
-  my $expected_command = q{qc --check=review --rpt_list="8747:8" } .
-    qq{--filename_root=8747_8 --qc_out=$archive_dir/lane8/qc } .
-    qq{--qc_in=$archive_dir/lane8/qc --conf_path=t/data/release/config/qc_review } .
+  my $d = $definitions{'8747:7'};
+  my $expected_command = q{qc --check=review --rpt_list="8747:7" } .
+    qq{--filename_root=8747_7 --qc_out=$archive_dir/lane7/qc } .
+    qq{--qc_in=$archive_dir/lane7/qc --conf_path=t/data/release/config/qc_review } .
     qq{--runfolder_path=$rf_path};
   is ($d->command, $expected_command, 'correct command for lane-level job');
 
@@ -625,6 +626,23 @@ subtest 'review' => sub {
     qq{--qc_in=$archive_dir/lane1/plex1/qc --conf_path=t/data/release/config/qc_review } .
     qq{--runfolder_path=$rf_path};
   is ($d->command, $expected_command, 'correct command for plex-level job');
+
+  $qc = npg_pipeline::function::autoqc->new(
+    qc_to_run         => 'review',
+    is_indexed        => 1,
+    id_run            => 8747,
+    runfolder_path    => $rf_path,
+    timestamp         => q{today},
+    conf_path         => q{t/data/release/config/qc_review_default},
+    resource          => $default
+  );
+
+  $da = $qc->create();
+  ok ($da && (@{$da} == 6), '6 definitions returned');
+  %definitions = map { $_->composition->freeze2rpt => $_ } @{$da};
+  @expected_rpt_lists = map { "8747:$_:168"} qw/1 2 3 4 5 6/;
+  is_deeply ([sort keys %definitions], \@expected_rpt_lists,
+    'definitions are for correct entities');
 };
 
 subtest 'interop' => sub {

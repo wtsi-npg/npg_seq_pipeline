@@ -1,0 +1,22 @@
+---
+common:
+  irods: &no_irods
+    enable: false
+default:
+  irods: &default_irods
+    enable: true
+  data_deletion:
+    staging_deletion_delay: 30
+  markdup_method: "biobambam"
+  gbs_pipeline: &gbs_pipeline_accessible
+    allowed: true
+  robo_qc:
+    qc_type: "mqc"
+    criteria:
+      - applicability_criteria:
+          lims:
+            is_control: 1
+          sequencing_run:
+            platform_HiSeq: 1
+        acceptance_criteria:
+          - "sequence_error.pass"
