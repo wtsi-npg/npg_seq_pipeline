@@ -318,6 +318,7 @@ sub _should_run {
       $init_hash{'is_paired_read'} = $self->is_paired_read() ? 1 : 0;
     } elsif ($self->qc_to_run() eq 'review') {
       $init_hash{'product_conf_file_path'} = $self->product_conf_file_path;
+      $init_hash{'runfolder_path'} = $self->runfolder_path;
     } elsif ($self->qc_to_run() eq 'genotype') {
       my $ref_fasta = npg_pipeline::cache::reference->instance()
 	              ->get_path($product, q(fasta), $self->repository());
@@ -416,7 +417,7 @@ Marina Gourtovaia
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2018,2019,2020 Genome Research Ltd.
+Copyright (C) 2018,2019,2020,2024 Genome Research Ltd.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
