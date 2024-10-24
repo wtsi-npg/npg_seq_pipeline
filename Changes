@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 68.6.0 (2024-10-24)
  - The runfolder_path attribute is passed to the constructor of the review
    autoqc check object when deciding whether this check should run.
 
