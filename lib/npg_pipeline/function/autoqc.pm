@@ -304,8 +304,7 @@ sub _should_run {
   }
 
   if ($self->_is_check4target_file()) {
-    $can_run = (($is_lane && !$is_pool) ||
-	       ($is_plex && !$is_tag_zero));
+    $can_run = (($is_lane && !$is_pool) || ($is_plex && !$is_tag_zero));
   }
 
   if ($can_run) {
@@ -321,7 +320,7 @@ sub _should_run {
       $init_hash{'runfolder_path'} = $self->runfolder_path;
     } elsif ($self->qc_to_run() eq 'genotype') {
       my $ref_fasta = npg_pipeline::cache::reference->instance()
-	              ->get_path($product, q(fasta), $self->repository());
+                      ->get_path($product, q(fasta), $self->repository());
       if ($ref_fasta) {
         $init_hash{'reference_fasta'} = $ref_fasta;
       }
