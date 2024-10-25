@@ -148,8 +148,15 @@ sub _create_definition {
   my ($self, $product, $is_plex) = @_;
 
   if ($self->_should_run($is_plex, $product)) {
-    my $command = $self->_generate_command($product);
-    return $self->_create_definition_object($product, $command);
+    my $ref = {
+      'job_name'    => $self->_job_name(),
+      'composition' => $product->composition,
+      'command'     => $self->_generate_command($product)
+    };
+    if ( ($self->qc_to_run eq 'adapter') || $self->_check_uses_refrepos() ) {
+      $ref->{'command_preexec'} = $self->repos_pre_exec_string();
+    }
+    return $self->create_definition($ref);
   }
 
   return;
@@ -186,23 +193,6 @@ sub _create_definition4interop {
     @{$self->products->{lanes}};
 
   $ref->{'command'}  = $c;
-
-  return $self->create_definition($ref);
-}
-
-sub _create_definition_object {
-  my ($self, $product, $command) = @_;
-
-  my $ref = {};
-  my $qc_to_run = $self->qc_to_run;
-
-  $ref->{'job_name'}        = $self->_job_name();
-  $ref->{'composition'}     = $product->composition;
-  $ref->{'command'}         = $command;
-
-  if ( ($qc_to_run eq 'adapter') || $self->_check_uses_refrepos() ) {
-    $ref->{'command_preexec'} = $self->repos_pre_exec_string();
-  }
 
   return $self->create_definition($ref);
 }
