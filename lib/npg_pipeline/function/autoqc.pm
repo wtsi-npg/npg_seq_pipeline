@@ -51,28 +51,6 @@ sub _build__check_uses_refrepos {
     ->find_attribute_by_name('repository') ? 1 : 0;
 }
 
-has q{_is_lane_level_check} => (
-                                isa        => q{Bool},
-                                is         => q{ro},
-                                required   => 0,
-                                init_arg   => undef,
-                                lazy_build => 1,);
-sub _build__is_lane_level_check {
-  my $self = shift;
-  return $self->qc_to_run() =~ /^ spatial_filter $/smx;
-}
-
-has q{_is_lane_level_check4indexed_lane} => (
-                                isa        => q{Bool},
-                                is         => q{ro},
-                                required   => 0,
-                                init_arg   => undef,
-                                lazy_build => 1,);
-sub _build__is_lane_level_check4indexed_lane {
-  my $self = shift;
-  return $self->qc_to_run() =~ /^ tag_metrics $/smx;
-}
-
 has q{_is_check4target_file} => (
                                 isa        => q{Bool},
                                 is         => q{ro},
@@ -281,16 +259,11 @@ sub _should_run {
   my $is_pool = $product->lims->is_pool;
   my $is_tag_zero = $product->is_tag_zero_product;
 
-  if($self->qc_to_run() eq 'spatial_filter' and ($self->platform_NovaSeq or $self->platform_NovaSeqX)) {
-    return 0;
+  if ($self->qc_to_run() eq 'spatial_filter') {
+    return $is_plex || ($self->platform_NovaSeq || $self->platform_NovaSeqX) ? 0 : 1;
   }
-
-  if ($self->_is_lane_level_check()) {
-    return !$is_plex;
-  }
-
-  if ($self->_is_lane_level_check4indexed_lane()) {
-    return $is_lane && $is_pool;
+  if ($self->qc_to_run() eq 'tag_metrics') {
+    return $self->is_indexed() && $is_lane && $is_pool ? 1 : 0;
   }
 
   if ($self->_is_check4target_file()) {
