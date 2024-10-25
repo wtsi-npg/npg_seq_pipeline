@@ -25,6 +25,18 @@ Readonly::Array  my @CHECKS_NEED_PAIREDNESS_INFO => qw/
                                                  gc_fraction
                                                  qX_yield
                                                       /;
+##no critic (RegularExpressions::RequireBracesForMultiline)
+##no critic (RegularExpressions::ProhibitComplexRegexes)
+Readonly::Scalar my $TARGET_FILE_CHECK_RE => qr/\A
+                                              adapter |
+                                             bcfstats |
+                                        verify_bam_id |
+                                             genotype |
+                                     pulldown_metrics |
+                                     haplotag_metrics |
+                                               review
+                                               \Z/xms;
+## use critic
 
 has q{qc_to_run}       => (isa      => q{Str},
                            is       => q{ro},
@@ -49,25 +61,6 @@ sub _build__check_uses_refrepos {
   my $self = shift;
   return $self->_qc_module_name()->meta()
     ->find_attribute_by_name('repository') ? 1 : 0;
-}
-
-has q{_is_check4target_file} => (
-                                isa        => q{Bool},
-                                is         => q{ro},
-                                required   => 0,
-                                init_arg   => undef,
-                                lazy_build => 1,);
-sub _build__is_check4target_file {
-  my $self = shift;
-  ##no critic (RegularExpressions::RequireBracesForMultiline)
-  ##no critic (RegularExpressions::ProhibitComplexRegexes)
-  return $self->qc_to_run() =~ /^ adapter |
-                                  bcfstats |
-                                  verify_bam_id |
-                                  genotype |
-                                  pulldown_metrics |
-                                  haplotag_metrics |
-                                  review $/smx;
 }
 
 sub BUILD {
@@ -252,56 +245,55 @@ sub _generate_command {
 sub _should_run {
   my ($self, $is_plex, $product) = @_;
 
-  my $can_run = 1;
-
-  my $is_lane = !$is_plex; # if it's not a plex, it's a lane
-  my $rpt_list = $product->rpt_list;
   my $is_pool = $product->lims->is_pool;
-  my $is_tag_zero = $product->is_tag_zero_product;
+  my $is_lane = !$is_plex;
 
   if ($self->qc_to_run() eq 'spatial_filter') {
-    return $is_plex || ($self->platform_NovaSeq || $self->platform_NovaSeqX) ? 0 : 1;
+    # Run on individual lanes only.
+    return $is_lane && !($self->platform_NovaSeq || $self->platform_NovaSeqX) ? 1 : 0;
   }
   if ($self->qc_to_run() eq 'tag_metrics') {
+    # For indexed runs, run on individual lanes if they are pools of samples.
     return $self->is_indexed() && $is_lane && $is_pool ? 1 : 0;
   }
-
-  if ($self->_is_check4target_file()) {
-    $can_run = (($is_lane && !$is_pool) || ($is_plex && !$is_tag_zero));
+  if ($self->qc_to_run() =~ $TARGET_FILE_CHECK_RE) {
+    # Do not run on tag zero files.
+    # Do not run on lane-level data if the lane is a pool.
+    if ((!$is_plex && $is_pool) || $product->is_tag_zero_product) {
+      return 0;
+    }
   }
 
-  if ($can_run) {
-    my %init_hash = ( rpt_list => $rpt_list, lims => $product->lims );
-
-    if ($self->has_repository && $self->_check_uses_refrepos()) {
-      $init_hash{'repository'} = $self->repository;
+  # The rest will abide by the return value of the can_run method of the
+  # autoqc check. We have to provide enough argument to the constructor for
+  # the object to be created and can_run to execute.
+  my %init_hash = ( rpt_list => $product->rpt_list, lims => $product->lims );
+  if ($self->has_repository && $self->_check_uses_refrepos()) {
+    $init_hash{'repository'} = $self->repository;
+  }
+  if ($self->qc_to_run() eq 'insert_size') {
+    $init_hash{'is_paired_read'} = $self->is_paired_read() ? 1 : 0;
+  } elsif ($self->qc_to_run() eq 'review') {
+    $init_hash{'product_conf_file_path'} = $self->product_conf_file_path;
+    $init_hash{'runfolder_path'} = $self->runfolder_path;
+  } elsif ($self->qc_to_run() eq 'genotype') {
+    my $ref_fasta = npg_pipeline::cache::reference->instance()
+                    ->get_path($product, q(fasta), $self->repository());
+    if ($ref_fasta) {
+      $init_hash{'reference_fasta'} = $ref_fasta;
     }
-    if ($self->qc_to_run() eq 'insert_size') {
-      $init_hash{'is_paired_read'} = $self->is_paired_read() ? 1 : 0;
-    } elsif ($self->qc_to_run() eq 'review') {
-      $init_hash{'product_conf_file_path'} = $self->product_conf_file_path;
-      $init_hash{'runfolder_path'} = $self->runfolder_path;
-    } elsif ($self->qc_to_run() eq 'genotype') {
-      my $ref_fasta = npg_pipeline::cache::reference->instance()
-                      ->get_path($product, q(fasta), $self->repository());
-      if ($ref_fasta) {
-        $init_hash{'reference_fasta'} = $ref_fasta;
-      }
-    }
-
-    my $class = $self->_qc_module_name();
-    my $check_obj;
-    try {
-      $check_obj = $class->new(\%init_hash);
-    } catch {
-      delete $init_hash{'lims'};
-      $check_obj = $class->new(\%init_hash);
-    };
-
-    $can_run = $check_obj->can_run();
   }
 
-  return $can_run;
+  my $class = $self->_qc_module_name();
+  my $check_obj;
+  try {
+    $check_obj = $class->new(\%init_hash);
+  } catch {
+    delete $init_hash{'lims'};
+    $check_obj = $class->new(\%init_hash); # Allow to fail at this stage.
+  };
+
+  return $check_obj->can_run();
 }
 
 __PACKAGE__->meta->make_immutable;
