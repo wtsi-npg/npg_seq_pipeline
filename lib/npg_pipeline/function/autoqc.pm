@@ -82,15 +82,19 @@ sub create {
     push @definitions, $self->_create_definition4interop();
   } else {
 
+    my $is_lane = 1;
     for my $lp (@{$self->products->{lanes}}) {
 
       $self->debug(sprintf '  autoqc check %s for lane, rpt_list: %s, is_pool: %s',
                    $self->qc_to_run(), $lp->rpt_list, ($lp->lims->is_pool? q[True]: q[False]));
 
       $done_as_lane{$lp->rpt_list} = 1;
-      push @definitions, $self->_create_definition($lp, 0); # is_plex is always 0 here
+      if ($self->_should_run($lp, $is_lane)) {
+        push @definitions, $self->_create_definition($lp);
+      }
     }
 
+    $is_lane = 0;
     for my $dp (@{$self->products->{data_products}}) {
       # skip data_products that have already been processed as lanes
       # (i.e. libraries or single-sample pools)
@@ -104,7 +108,9 @@ sub create {
         $self->qc_to_run(), $dp->{rpt_list}, ($is_plex? q[True]: q[False]),
         ($dp->lims->is_pool? q[True]: q[False]), ($is_plex? $tag_index: q[NONE]));
 
-      push @definitions, $self->_create_definition($dp, $is_plex);
+      if ($self->_should_run($dp, $is_lane, $is_plex)) {
+        push @definitions, $self->_create_definition($dp);
+      }
     }
   }
 
@@ -116,21 +122,17 @@ sub create {
 }
 
 sub _create_definition {
-  my ($self, $product, $is_plex) = @_;
+  my ($self, $product) = @_;
 
-  if ($self->_should_run($is_plex, $product)) {
-    my $ref = {
+  my $ref = {
       'job_name'    => $self->_job_name(),
       'composition' => $product->composition,
       'command'     => $self->_generate_command($product)
-    };
-    if ( ($self->qc_to_run eq 'adapter') || $self->_check_uses_refrepos() ) {
+  };
+  if ( ($self->qc_to_run eq 'adapter') || $self->_check_uses_refrepos() ) {
       $ref->{'command_preexec'} = $self->repos_pre_exec_string();
-    }
-    return $self->create_definition($ref);
   }
-
-  return;
+  return $self->create_definition($ref);
 }
 
 sub _job_name {
@@ -243,10 +245,9 @@ sub _generate_command {
 }
 
 sub _should_run {
-  my ($self, $is_plex, $product) = @_;
+  my ($self, $product, $is_lane, $is_plex) = @_;
 
-  my $is_pool = $product->lims->is_pool;
-  my $is_lane = !$is_plex;
+  my $is_pool = $product->lims->is_pool; # Note - true for merged data.
 
   if ($self->qc_to_run() eq 'spatial_filter') {
     # Run on individual lanes only.
@@ -257,9 +258,11 @@ sub _should_run {
     return $self->is_indexed() && $is_lane && $is_pool ? 1 : 0;
   }
   if ($self->qc_to_run() =~ $TARGET_FILE_CHECK_RE) {
-    # Do not run on tag zero files.
+    # Do not run on tag zero files, unmerged or merged.
     # Do not run on lane-level data if the lane is a pool.
-    if ((!$is_plex && $is_pool) || $product->is_tag_zero_product) {
+    # Run on lane-level data for a single library.
+    # Run on merged plexes or lanes.
+    if (($is_plex && $product->is_tag_zero_product) || ($is_lane && $is_pool)) {
       return 0;
     }
   }

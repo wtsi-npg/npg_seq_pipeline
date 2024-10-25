@@ -418,7 +418,7 @@ subtest 'insert_size and sequence error' => sub {
 };
 
 subtest 'tag_metrics' => sub {
-  plan tests => 11;
+  plan tests => 10;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_8747.csv';
 
@@ -443,13 +443,11 @@ subtest 'tag_metrics' => sub {
   my $library_lane_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($library_lane_lims),lims => $library_lane_lims);
   my $plex_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex_lims),lims => $plex_lims);
 
-  ok( $qc->_should_run(0, $plexed_lane_product),
+  ok( $qc->_should_run($plexed_lane_product, 1, 0),
     q{lane is multiplexed - run tag metrics on a lane} );
-  ok( !$qc->_should_run(0, $library_lane_product),
+  ok( !$qc->_should_run($library_lane_product, 1, 0),
     q{lane is not multiplexed - do not run tag metrics on a lane} );
-  ok( !$qc->_should_run(0, $plex_product),
-    q{do not run tag metrics on a plex (hmm)} );
-  ok( !$qc->_should_run(1, $plex_product),
+  ok( !$qc->_should_run($plex_product, 0, 1),
     q{do not run tag metrics on a plex} );
 
   my $da = $qc->create();
@@ -477,7 +475,7 @@ subtest 'tag_metrics' => sub {
 };
 
 subtest 'genotype and gc_fraction and bcfstats' => sub {
-  plan tests => 17;
+  plan tests => 16;
 
   my $destination = "$tmp/references";
   dircopy('t/data/qc/references', $destination);
@@ -518,30 +516,35 @@ subtest 'genotype and gc_fraction and bcfstats' => sub {
   my $plex_lims = st::api::lims->new(id_run => 8747, position => 6, tag_index => 1);
   my $plex_lims_alt = st::api::lims->new(id_run => 8747, position => 8, tag_index => 22);
   my $plex168_lims = st::api::lims->new(id_run => 8747, position => 6, tag_index => 168);
-  my $plexed_lane_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plexed_lane_lims),lims => $plexed_lane_lims);
-  my $library_lane_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($library_lane_lims),lims => $library_lane_lims);
-  my $plex0_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex0_lims),lims => $plex0_lims);
-  my $plex_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex_lims),lims => $plex_lims);
-  my $plex_product_alt = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex_lims_alt),lims => $plex_lims_alt);
-  my $plex168_product = npg_pipeline::product->new(rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex168_lims),lims => $plex168_lims);
+  my $plexed_lane_product = npg_pipeline::product->new(
+    rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plexed_lane_lims),lims => $plexed_lane_lims);
+  my $library_lane_product = npg_pipeline::product->new(
+    rpt_list => npg_tracking::glossary::rpt->deflate_rpt($library_lane_lims),lims => $library_lane_lims);
+  my $plex0_product = npg_pipeline::product->new(
+    rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex0_lims),lims => $plex0_lims);
+  my $plex_product = npg_pipeline::product->new(
+    rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex_lims),lims => $plex_lims);
+  my $plex_product_alt = npg_pipeline::product->new(
+    rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex_lims_alt),lims => $plex_lims_alt);
+  my $plex168_product = npg_pipeline::product->new(
+    rpt_list => npg_tracking::glossary::rpt->deflate_rpt($plex168_lims),lims => $plex168_lims);
 
-  throws_ok { $qc->_should_run(0, $library_lane_product) }
+  throws_ok { $qc->_should_run($library_lane_product, 1, 0) }
     qr/Attribute \(ref_repository\) does not pass the type constraint/,
     'ref repository does not exists - error';
 
   $init->{'repository'} = $tmp;
-
   $qc = npg_pipeline::function::autoqc->new($init);
 
-  ok ($qc->_should_run(0, $library_lane_product),
+  ok ($qc->_should_run($library_lane_product, 1, 0),
     'genotype check can run for a non-indexed lane');
-  ok (!$qc->_should_run(0, $plexed_lane_product),
+  ok (!$qc->_should_run($plexed_lane_product, 1, 0),
     'genotype check cannot run for an indexed lane');
-  ok (!$qc->_should_run(1, $plex0_product),
+  ok (!$qc->_should_run($plex0_product, 0, 1),
     'genotype check cannot run for tag 0 (no alignment)');
-  ok ($qc->_should_run(1, $plex_product),
+  ok ($qc->_should_run($plex_product, 0, 1),
     'genotype check can run for tag 1 (human sample)');
-  ok (!$qc->_should_run(1, $plex168_product),
+  ok (!$qc->_should_run($plex168_product, 0, 1),
     'genotype check cannot run for a spiked phix tag');
 
   $init->{'qc_to_run'} = q[gc_fraction];
@@ -550,12 +553,9 @@ subtest 'genotype and gc_fraction and bcfstats' => sub {
     $qc = npg_pipeline::function::autoqc->new($init);
   } q{no croak on new, as required params provided};
 
-  ok ($qc->_should_run(0, $plexed_lane_product), 'gc_fraction check can run');
-  ok ($qc->_should_run(1, $plexed_lane_product), 'gc_fraction check can run (hmm)');
-  ok ($qc->_should_run(1, $plex0_product),
-    'gc_fraction check can run');
-  ok ($qc->_should_run(1, $plex_product_alt),
-   'gc_fraction check can run');
+  ok ($qc->_should_run($plexed_lane_product, 1, 0), 'gc_fraction check can run');
+  ok ($qc->_should_run($plex0_product, 0, 1), 'gc_fraction check can run');
+  ok ($qc->_should_run($plex_product_alt, 0, 1), 'gc_fraction check can run');
 
 
   $init->{'qc_to_run'} = q[bcfstats];
@@ -563,15 +563,15 @@ subtest 'genotype and gc_fraction and bcfstats' => sub {
     $qc = npg_pipeline::function::autoqc->new($init);
   } q{no croak on new, as required params provided};
 
-  ok ($qc->_should_run(0, $library_lane_product),
+  ok ($qc->_should_run($library_lane_product, 1, 0),
     'bcfstats check can run for a non-indexed lane');
-  ok ($qc->_should_run(1, $plex_product),
+  ok ($qc->_should_run($plex_product, 0, 1),
     'bcfstats check can run for tag 1 (human sample)');
-  ok (!$qc->_should_run(0, $plexed_lane_product),
+  ok (!$qc->_should_run($plexed_lane_product, 1, 0),
     'bcfstats check cannot run for an indexed lane');
-  ok (!$qc->_should_run(1, $plex0_product),
+  ok (!$qc->_should_run($plex0_product, 0, 1),
     'bcfstats check cannot run for tag 0 (no alignment)');
-  ok (!$qc->_should_run(1, $plex168_product),
+  ok (!$qc->_should_run($plex168_product, 0, 1),
     'bcfstats check cannot run for a spiked phix tag');
 };
 
