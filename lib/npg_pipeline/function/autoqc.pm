@@ -19,24 +19,22 @@ with q{npg_pipeline::function::util};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $QC_SCRIPT_NAME           => q{qc};
+Readonly::Scalar my $QC_SCRIPT_NAME => q{qc};
+
 Readonly::Array  my @CHECKS_NEED_PAIREDNESS_INFO => qw/
                                                  insert_size
                                                  gc_fraction
                                                  qX_yield
                                                       /;
-##no critic (RegularExpressions::RequireBracesForMultiline)
-##no critic (RegularExpressions::ProhibitComplexRegexes)
-Readonly::Scalar my $TARGET_FILE_CHECK_RE => qr/\A
+
+Readonly::Scalar my $TARGET_FILE_CHECK_RE => qr{ \A
                                               adapter |
                                              bcfstats |
                                         verify_bam_id |
                                              genotype |
                                      pulldown_metrics |
-                                     haplotag_metrics |
-                                               review
-                                               \Z/xms;
-## use critic
+                                     haplotag_metrics
+                                                 \Z }xms;
 
 has q{qc_to_run}       => (isa      => q{Str},
                            is       => q{ro},
@@ -256,6 +254,12 @@ sub _should_run {
   if ($self->qc_to_run() eq 'tag_metrics') {
     # For indexed runs, run on individual lanes if they are pools of samples.
     return $self->is_indexed() && $is_lane && $is_pool ? 1 : 0;
+  }
+  if ($self->qc_to_run() eq 'review') {
+    # This check should never run on tag zero, other entities are fair game.
+    if ($is_plex && $product->is_tag_zero_product) {
+      return 0;
+    }
   }
   if ($self->qc_to_run() =~ $TARGET_FILE_CHECK_RE) {
     # Do not run on tag zero files, unmerged or merged.

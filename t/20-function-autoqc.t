@@ -576,7 +576,7 @@ subtest 'genotype and gc_fraction and bcfstats' => sub {
 };
 
 subtest 'review' => sub {
-  plan tests => 8;
+  plan tests => 10;
 
   local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = 't/data/samplesheet_8747.csv';
 
@@ -640,9 +640,26 @@ subtest 'review' => sub {
   $da = $qc->create();
   ok ($da && (@{$da} == 6), '6 definitions returned');
   %definitions = map { $_->composition->freeze2rpt => $_ } @{$da};
-  @expected_rpt_lists = map { "8747:$_:168"} qw/1 2 3 4 5 6/;
+  @expected_rpt_lists = map { "8747:$_:168"} (1 .. 6);
   is_deeply ([sort keys %definitions], \@expected_rpt_lists,
     'definitions are for correct entities');
+
+  $qc = npg_pipeline::function::autoqc->new(
+    qc_to_run         => 'review',
+    is_indexed        => 1,
+    id_run            => 8747,
+    runfolder_path    => $rf_path,
+    timestamp         => q{today},
+    conf_path         => q{t/data/release/config/qc_review_default_with_lane},
+    resource          => $default
+  );
+
+  $da = $qc->create();
+  ok ($da && (@{$da} == 14), '14 definitions returned');
+  %definitions = map { $_->composition->freeze2rpt => $_ } @{$da};
+  push @expected_rpt_lists, map { "8747:$_" } (1 .. 8); 
+  is_deeply ([sort keys %definitions], [sort @expected_rpt_lists],
+    'definitions for lanes are added');
 };
 
 subtest 'interop' => sub {

@@ -19,3 +19,11 @@ default:
             platform_HiSeq: 1
         acceptance_criteria:
           - "sequence_error.pass"
+      - applicability_criteria:
+          lims:
+            is_lane: 1
+          sequencing_run:
+            platform_HiSeq: 1
+        acceptance_criteria:
+          - "sequence_error.pass"
+
