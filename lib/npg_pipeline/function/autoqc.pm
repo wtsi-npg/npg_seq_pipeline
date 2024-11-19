@@ -19,12 +19,22 @@ with q{npg_pipeline::function::util};
 
 our $VERSION = '0';
 
-Readonly::Scalar my $QC_SCRIPT_NAME           => q{qc};
+Readonly::Scalar my $QC_SCRIPT_NAME => q{qc};
+
 Readonly::Array  my @CHECKS_NEED_PAIREDNESS_INFO => qw/
                                                  insert_size
                                                  gc_fraction
                                                  qX_yield
                                                       /;
+
+Readonly::Scalar my $TARGET_FILE_CHECK_RE => qr{ \A
+                                              adapter |
+                                             bcfstats |
+                                        verify_bam_id |
+                                             genotype |
+                                     pulldown_metrics |
+                                     haplotag_metrics
+                                                 \Z }xms;
 
 has q{qc_to_run}       => (isa      => q{Str},
                            is       => q{ro},
@@ -51,47 +61,6 @@ sub _build__check_uses_refrepos {
     ->find_attribute_by_name('repository') ? 1 : 0;
 }
 
-has q{_is_lane_level_check} => (
-                                isa        => q{Bool},
-                                is         => q{ro},
-                                required   => 0,
-                                init_arg   => undef,
-                                lazy_build => 1,);
-sub _build__is_lane_level_check {
-  my $self = shift;
-  return $self->qc_to_run() =~ /^ spatial_filter $/smx;
-}
-
-has q{_is_lane_level_check4indexed_lane} => (
-                                isa        => q{Bool},
-                                is         => q{ro},
-                                required   => 0,
-                                init_arg   => undef,
-                                lazy_build => 1,);
-sub _build__is_lane_level_check4indexed_lane {
-  my $self = shift;
-  return $self->qc_to_run() =~ /^ tag_metrics $/smx;
-}
-
-has q{_is_check4target_file} => (
-                                isa        => q{Bool},
-                                is         => q{ro},
-                                required   => 0,
-                                init_arg   => undef,
-                                lazy_build => 1,);
-sub _build__is_check4target_file {
-  my $self = shift;
-  ##no critic (RegularExpressions::RequireBracesForMultiline)
-  ##no critic (RegularExpressions::ProhibitComplexRegexes)
-  return $self->qc_to_run() =~ /^ adapter |
-                                  bcfstats |
-                                  verify_bam_id |
-                                  genotype |
-                                  pulldown_metrics |
-                                  haplotag_metrics |
-                                  review $/smx;
-}
-
 sub BUILD {
   my $self = shift;
   load_class($self->_qc_module_name);
@@ -111,15 +80,19 @@ sub create {
     push @definitions, $self->_create_definition4interop();
   } else {
 
+    my $is_lane = 1;
     for my $lp (@{$self->products->{lanes}}) {
 
       $self->debug(sprintf '  autoqc check %s for lane, rpt_list: %s, is_pool: %s',
                    $self->qc_to_run(), $lp->rpt_list, ($lp->lims->is_pool? q[True]: q[False]));
 
       $done_as_lane{$lp->rpt_list} = 1;
-      push @definitions, $self->_create_definition($lp, 0); # is_plex is always 0 here
+      if ($self->_should_run($lp, $is_lane)) {
+        push @definitions, $self->_create_definition($lp);
+      }
     }
 
+    $is_lane = 0;
     for my $dp (@{$self->products->{data_products}}) {
       # skip data_products that have already been processed as lanes
       # (i.e. libraries or single-sample pools)
@@ -133,7 +106,9 @@ sub create {
         $self->qc_to_run(), $dp->{rpt_list}, ($is_plex? q[True]: q[False]),
         ($dp->lims->is_pool? q[True]: q[False]), ($is_plex? $tag_index: q[NONE]));
 
-      push @definitions, $self->_create_definition($dp, $is_plex);
+      if ($self->_should_run($dp, $is_lane, $is_plex)) {
+        push @definitions, $self->_create_definition($dp);
+      }
     }
   }
 
@@ -145,14 +120,17 @@ sub create {
 }
 
 sub _create_definition {
-  my ($self, $product, $is_plex) = @_;
+  my ($self, $product) = @_;
 
-  if ($self->_should_run($is_plex, $product)) {
-    my $command = $self->_generate_command($product);
-    return $self->_create_definition_object($product, $command);
+  my $ref = {
+      'job_name'    => $self->_job_name(),
+      'composition' => $product->composition,
+      'command'     => $self->_generate_command($product)
+  };
+  if ( ($self->qc_to_run eq 'adapter') || $self->_check_uses_refrepos() ) {
+      $ref->{'command_preexec'} = $self->repos_pre_exec_string();
   }
-
-  return;
+  return $self->create_definition($ref);
 }
 
 sub _job_name {
@@ -186,23 +164,6 @@ sub _create_definition4interop {
     @{$self->products->{lanes}};
 
   $ref->{'command'}  = $c;
-
-  return $self->create_definition($ref);
-}
-
-sub _create_definition_object {
-  my ($self, $product, $command) = @_;
-
-  my $ref = {};
-  my $qc_to_run = $self->qc_to_run;
-
-  $ref->{'job_name'}        = $self->_job_name();
-  $ref->{'composition'}     = $product->composition;
-  $ref->{'command'}         = $command;
-
-  if ( ($qc_to_run eq 'adapter') || $self->_check_uses_refrepos() ) {
-    $ref->{'command_preexec'} = $self->repos_pre_exec_string();
-  }
 
   return $self->create_definition($ref);
 }
@@ -282,64 +243,64 @@ sub _generate_command {
 }
 
 sub _should_run {
-  my ($self, $is_plex, $product) = @_;
+  my ($self, $product, $is_lane, $is_plex) = @_;
 
-  my $can_run = 1;
+  my $is_pool = $product->lims->is_pool; # Note - true for merged data.
 
-  my $is_lane = !$is_plex; # if it's not a plex, it's a lane
-  my $rpt_list = $product->rpt_list;
-  my $is_pool = $product->lims->is_pool;
-  my $is_tag_zero = $product->is_tag_zero_product;
-
-  if($self->qc_to_run() eq 'spatial_filter' and ($self->platform_NovaSeq or $self->platform_NovaSeqX)) {
-    return 0;
+  if ($self->qc_to_run() eq 'spatial_filter') {
+    # Run on individual lanes only.
+    return $is_lane && !($self->platform_NovaSeq || $self->platform_NovaSeqX) ? 1 : 0;
   }
-
-  if ($self->_is_lane_level_check()) {
-    return !$is_plex;
+  if ($self->qc_to_run() eq 'tag_metrics') {
+    # For indexed runs, run on individual lanes if they are pools of samples.
+    return $self->is_indexed() && $is_lane && $is_pool ? 1 : 0;
   }
-
-  if ($self->_is_lane_level_check4indexed_lane()) {
-    return $is_lane && $is_pool;
-  }
-
-  if ($self->_is_check4target_file()) {
-    $can_run = (($is_lane && !$is_pool) ||
-	       ($is_plex && !$is_tag_zero));
-  }
-
-  if ($can_run) {
-    my %init_hash = ( rpt_list => $rpt_list, lims => $product->lims );
-
-    if ($self->has_repository && $self->_check_uses_refrepos()) {
-      $init_hash{'repository'} = $self->repository;
+  if ($self->qc_to_run() eq 'review') {
+    # This check should never run on tag zero, other entities are fair game.
+    if ($is_plex && $product->is_tag_zero_product) {
+      return 0;
     }
-    if ($self->qc_to_run() eq 'insert_size') {
-      $init_hash{'is_paired_read'} = $self->is_paired_read() ? 1 : 0;
-    } elsif ($self->qc_to_run() eq 'review') {
-      $init_hash{'product_conf_file_path'} = $self->product_conf_file_path;
-      $init_hash{'runfolder_path'} = $self->runfolder_path;
-    } elsif ($self->qc_to_run() eq 'genotype') {
-      my $ref_fasta = npg_pipeline::cache::reference->instance()
-	              ->get_path($product, q(fasta), $self->repository());
-      if ($ref_fasta) {
-        $init_hash{'reference_fasta'} = $ref_fasta;
-      }
+  }
+  if ($self->qc_to_run() =~ $TARGET_FILE_CHECK_RE) {
+    # Do not run on tag zero files, unmerged or merged.
+    # Do not run on lane-level data if the lane is a pool.
+    # Run on lane-level data for a single library.
+    # Run on merged plexes or lanes.
+    if (($is_plex && $product->is_tag_zero_product) || ($is_lane && $is_pool)) {
+      return 0;
     }
-
-    my $class = $self->_qc_module_name();
-    my $check_obj;
-    try {
-      $check_obj = $class->new(\%init_hash);
-    } catch {
-      delete $init_hash{'lims'};
-      $check_obj = $class->new(\%init_hash);
-    };
-
-    $can_run = $check_obj->can_run();
   }
 
-  return $can_run;
+  # The rest will abide by the return value of the can_run method of the
+  # autoqc check. We have to provide enough argument to the constructor for
+  # the object to be created and can_run to execute.
+  my %init_hash = ( rpt_list => $product->rpt_list, lims => $product->lims );
+  if ($self->has_repository && $self->_check_uses_refrepos()) {
+    $init_hash{'repository'} = $self->repository;
+  }
+  if ($self->qc_to_run() eq 'insert_size') {
+    $init_hash{'is_paired_read'} = $self->is_paired_read() ? 1 : 0;
+  } elsif ($self->qc_to_run() eq 'review') {
+    $init_hash{'product_conf_file_path'} = $self->product_conf_file_path;
+    $init_hash{'runfolder_path'} = $self->runfolder_path;
+  } elsif ($self->qc_to_run() eq 'genotype') {
+    my $ref_fasta = npg_pipeline::cache::reference->instance()
+                    ->get_path($product, q(fasta), $self->repository());
+    if ($ref_fasta) {
+      $init_hash{'reference_fasta'} = $ref_fasta;
+    }
+  }
+
+  my $class = $self->_qc_module_name();
+  my $check_obj;
+  try {
+    $check_obj = $class->new(\%init_hash);
+  } catch {
+    delete $init_hash{'lims'};
+    $check_obj = $class->new(\%init_hash); # Allow to fail at this stage.
+  };
+
+  return $check_obj->can_run();
 }
 
 __PACKAGE__->meta->make_immutable;
