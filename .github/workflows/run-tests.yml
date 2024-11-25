@@ -13,7 +13,8 @@ jobs:
     env:
       PERL_CACHE: $HOME/perl5 # Perlbrew and CPAN modules installed here, cached
       NPG_LIB: $HOME/perl5npg # NPG modules installed here, not cached
-      WSI_CONDA_CHANNEL: "https://dnap.cog.sanger.ac.uk/npg/conda/devel/generic"
+      WSI_CONDA_CHANNEL: https://dnap.cog.sanger.ac.uk/npg/conda/devel/generic
+      CONDA_HOME: $HOME/conda
       CONDA_TEST_ENV: test-environment
       WTSI_NPG_GITHUB_URL: https://github.com/wtsi-npg
       WTSI_NPG_BUILD_BRANCH: ${{ github.base_ref || github.ref }}
@@ -24,6 +25,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
 
       - name: "Install OS dependencies"
         run: |
