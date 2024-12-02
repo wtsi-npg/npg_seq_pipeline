@@ -1,10 +1,12 @@
 LIST OF CHANGES
 ---------------
 
+release 68.7.0 (2024-12-02)
  - npg_pipeline::function::autoqc
    - Simplified the flow of the code.
    - Made clearer logic for choosing QC checks to run, provided comments.
    - Allowed for running the review QC check on lanes.
+ - Move from Miniconda to Miniforge
 
 release 68.6.0 (2024-10-24)
  - The runfolder_path attribute is passed to the constructor of the review
