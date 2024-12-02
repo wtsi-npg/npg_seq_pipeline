@@ -11,9 +11,10 @@ jobs:
         shell: bash -l -e -o pipefail {0}
 
     env:
-      PERL_CACHE: ~/perl5 # Perlbrew and CPAN modules installed here, cached
-      NPG_LIB: ~/perl5npg # NPG modules installed here, not cached
-      WSI_CONDA_CHANNEL: "https://dnap.cog.sanger.ac.uk/npg/conda/devel/generic"
+      PERL_CACHE: $HOME/perl5 # Perlbrew and CPAN modules installed here, cached
+      NPG_LIB: $HOME/perl5npg # NPG modules installed here, not cached
+      WSI_CONDA_CHANNEL: https://dnap.cog.sanger.ac.uk/npg/conda/devel/generic
+      CONDA_HOME: $HOME/conda
       CONDA_TEST_ENV: test-environment
       WTSI_NPG_GITHUB_URL: https://github.com/wtsi-npg
       WTSI_NPG_BUILD_BRANCH: ${{ github.base_ref || github.ref }}
@@ -24,6 +25,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
 
       - name: "Install OS dependencies"
         run: |
@@ -32,22 +35,32 @@ jobs:
           sudo apt-get remove -y nginx libgd3
           sudo apt-get install -y libgd-dev uuid-dev libgd-text-perl
 
-      - name: "Initialize Miniconda"
+      - name: "Install Miniforge"
         run: |
-          echo 'source $CONDA/etc/profile.d/conda.sh' >> "$HOME/.bash_profile"
+          CONDA_HOME=${{ env.CONDA_HOME }} ./scripts/install_miniforge.sh
+          echo 'source "${{ env.CONDA_HOME }}/etc/profile.d/conda.sh"' >> "$HOME/.bash_profile"
+
+      - name: "Cache Conda"
+        id: miniforgeCache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.CONDA_HOME }}/pkgs
+            ${{ env.CONDA_HOME }}/envs
+          key: ${{ runner.os }}-build-miniforge
 
       - name: "Install Conda packages"
         run: |
-          conda config --prepend pkgs_dirs ~/conda/pkgs
-          conda config --prepend envs_dirs ~/conda/envs
+          conda config --prepend pkgs_dirs ${{ env.CONDA_HOME }}/pkgs
+          conda config --prepend envs_dirs ${{ env.CONDA_HOME }}/envs
 
           conda config --set auto_update_conda False
-          conda config --prepend channels "$WSI_CONDA_CHANNEL"
+          conda config --prepend channels "${{ env.WSI_CONDA_CHANNEL }}"
           conda info
 
-          conda create  -y -n "$CONDA_TEST_ENV"
-          conda install -y -n "$CONDA_TEST_ENV" baton
-          conda install -y -n "$CONDA_TEST_ENV" samtools
+          conda create  -y -n "${{ env.CONDA_TEST_ENV }}"
+          conda install -y -n "${{ env.CONDA_TEST_ENV }}" baton
+          conda install -y -n "${{ env.CONDA_TEST_ENV }}" samtools
 
       - name: "Cache Perl"
         id: cache-perl
@@ -77,14 +90,14 @@ jobs:
       - name: "Install Perl dependencies"
         run: |
           cpanm --local-lib=${{ env.PERL_CACHE }} local::lib
-          eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib="$NPG_LIB")
+          eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib="${{ env.NPG_LIB }}")
           eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib)
           
           cpanm --quiet --notest Module::Build
           cpanm --quiet --notest Net::SSLeay
           cpanm --quiet --notest https://github.com/chapmanb/vcftools-cpan/archive/v0.953.tar.gz
           
-          ./scripts/install_wsi_dependencies.sh "$NPG_LIB" \
+          ./scripts/install_wsi_dependencies.sh "${{ env.NPG_LIB }}" \
              perl-dnap-utilities \
              perl-irods-wrap \
              ml_warehouse \
@@ -98,23 +111,23 @@ jobs:
       - name: "Log install failure"
         if: ${{ failure() }}
         run: |
-          find ~/.cpanm/work -cmin -1 -name '*.log' -exec tail -n20  {} \;
+          find $HOME/.cpanm/work -cmin -1 -name '*.log' -exec tail -n20  {} \;
 
       - name: "Archive CPAN logs on failure"
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
           name: cpan_log
-          path: ~/.cpanm/work/*/build.log
+          path: $HOME/.cpanm/work/*/build.log
           retention-days: 5
 
       - name: "Run tests"
         run: |
-          conda activate "$CONDA_TEST_ENV"
+          conda activate "${{ env.CONDA_TEST_ENV }}"
           conda info --envs
           
           eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib)
-          eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib="$NPG_LIB")
+          eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib="${{ env.NPG_LIB }}")
           
           export TEST_AUTHOR=1
           perl Build.PL

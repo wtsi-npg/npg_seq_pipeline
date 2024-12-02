@@ -1042,6 +1042,7 @@ t/data/release/config/notify_off/product_release.yml
 t/data/release/config/notify_on/product_release.yml
 t/data/release/config/qc_review/product_release.yml
 t/data/release/config/qc_review_default/product_release.yml
+t/data/release/config/qc_review_default_with_lane/product_release.yml
 t/data/release/config/pp_archival/product_release.yml
 t/data/release/config/pp_archival/product_release_no_array.yml
 t/data/release/config/pp_archival/product_release_no_filters.yml
