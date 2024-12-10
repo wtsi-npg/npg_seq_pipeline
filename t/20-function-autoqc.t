@@ -8,9 +8,8 @@ use File::Slurp;
 use Log::Log4perl qw/:levels/;
 
 use t::util;
-
-use_ok('npg_pipeline::function::autoqc');
 use_ok('st::api::lims');
+use_ok('npg_pipeline::function::autoqc');
 use_ok('npg_tracking::glossary::composition');
 use_ok('npg_tracking::glossary::rpt');
 use_ok('npg_pipeline::product');
@@ -604,24 +603,16 @@ subtest 'review' => sub {
   );
 
   $da = $qc->create();
-  ok ($da && (@{$da} == 10), '10 definitions returned');
+  ok ($da && (@{$da} == 9), '9 definitions returned');
   my %definitions = map { $_->composition->freeze2rpt => $_ } @{$da};
   my @expected_rpt_lists = qw/ 8747:1:1  8747:1:2  8747:1:3
                                8747:2:4  8747:2:5  8747:2:6
-                               8747:3:7  8747:3:8  8747:3:9
-                               8747:7 /;
+                               8747:3:7  8747:3:8  8747:3:9 /;
   is_deeply ([sort keys %definitions], \@expected_rpt_lists,
     'definitions are for correct entities');
 
-  my $d = $definitions{'8747:7'};
-  my $expected_command = q{qc --check=review --rpt_list="8747:7" } .
-    qq{--filename_root=8747_7 --qc_out=$archive_dir/lane7/qc } .
-    qq{--qc_in=$archive_dir/lane7/qc --conf_path=t/data/release/config/qc_review } .
-    qq{--runfolder_path=$rf_path};
-  is ($d->command, $expected_command, 'correct command for lane-level job');
-
-  $d = $definitions{'8747:1:1'};
-  $expected_command = q{qc --check=review --rpt_list="8747:1:1" } .
+  my $d = $definitions{'8747:1:1'};
+  my $expected_command = q{qc --check=review --rpt_list="8747:1:1" } .
     qq{--filename_root=8747_1#1 --qc_out=$archive_dir/lane1/plex1/qc } .
     qq{--qc_in=$archive_dir/lane1/plex1/qc --conf_path=t/data/release/config/qc_review } .
     qq{--runfolder_path=$rf_path};
@@ -654,6 +645,13 @@ subtest 'review' => sub {
     resource          => $default
   );
 
+  # Lane 6 has samples from two studies - should not cause problems
+  # creating jobs.
+  my $with_control = 0;
+  is_deeply(
+    [st::api::lims->new(id_run => 8747, position => 6)->study_ids($with_control)],
+    [qw(2410 82)], 'lane 6 samples belong to two different studies'
+  );
   $da = $qc->create();
   ok ($da && (@{$da} == 14), '14 definitions returned');
   %definitions = map { $_->composition->freeze2rpt => $_ } @{$da};
