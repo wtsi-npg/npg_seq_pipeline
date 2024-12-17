@@ -33,7 +33,9 @@ jobs:
           sudo apt-get update
           # https://github.com/actions/runner-images/issues/2139
           sudo apt-get remove -y nginx libgd3
-          sudo apt-get install -y libgd-dev uuid-dev libgd-text-perl
+          # libdevel-patchperl-perl is needed for perlbrew
+          sudo apt-get install -y libgd-dev uuid-dev libgd-text-perl \
+            libdevel-patchperl-perl
 
       - name: "Install Miniforge"
         run: |

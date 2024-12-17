@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - Fix perlbrew installation by installing libdevel-patchperl-perl in runner
  - Changed/extended tests for npg_pipeline::function::autoqc to ensure that
    the tests work with changes in https://github.com/wtsi-npg/npg_qc/pull/895
    (study_specific assessment is disabled for lanes). Tested that a pools that
