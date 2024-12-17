@@ -1,6 +1,13 @@
 LIST OF CHANGES
 ---------------
 
+release 68.7.1 (2024-12-17)
+ - Fix perlbrew installation by installing libdevel-patchperl-perl in runner
+ - Changed/extended tests for npg_pipeline::function::autoqc to ensure that
+   the tests work with changes in https://github.com/wtsi-npg/npg_qc/pull/895
+   (study_specific assessment is disabled for lanes). Tested that a pools that
+   has samples from multiple studies does not cause problems.
+
 release 68.7.0 (2024-12-02)
  - npg_pipeline::function::autoqc
    - Simplified the flow of the code.
