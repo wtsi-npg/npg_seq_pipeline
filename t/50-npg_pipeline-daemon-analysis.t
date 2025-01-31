@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 12;
+use Test::More tests => 8;
 use Test::Exception;
 use Cwd qw{ getcwd abs_path };
 use File::Path qw{ make_path };
@@ -30,19 +30,38 @@ my $schema = t::dbic_util->new()->test_schema();
 my $test_run = $schema->resultset(q[Run])->find(1234);
 $test_run->update_run_status('analysis pending', 'pipeline',);
 
-my %h = map { $_ => 1 } (1234, 4330, 4999, 5222);
-my @statuses = ();
-for my $r ($schema->resultset(q[Run])->search({})->all()) {
-  my $id = $r->id_run;
-  if ($h{$id}) {
-    cmp_ok ($r->current_run_status_description, 'eq',
-      'analysis pending', "test run $id is analysis pending");
-  } else {
-    push @statuses, $r->current_run_status_description;
+subtest 'runs and statuses' => sub {
+  plan tests => 10;
+
+  my %h = map { $_ => 1 } (1234, 4330, 4999, 5222, 100000);
+  my @other_statuses = ();
+  for my $r ($schema->resultset(q[Run])->search({})->all()) {
+    my $id = $r->id_run;
+    if ($h{$id}) {
+      cmp_ok ($r->current_run_status_description, 'eq',
+        'analysis pending', "test run $id is analysis pending");
+      } else {
+        push @other_statuses, $r->current_run_status_description;
+    }
   }
-}
-is (scalar(grep { $_ eq 'analysis pending' } @statuses), 0,
-  'other test runs are not analysis pending');
+  is (scalar(grep { $_ eq 'analysis pending' } @other_statuses), 0,
+    'other test runs are not analysis pending');
+
+  my $runner = npg_pipeline::daemon::analysis->new(npg_tracking_schema => $schema);
+  is ($runner->manufacturer_name, 'Illumina', 'default manufacturer name');
+  my @run_ids = sort { $a <=> $b } map { $_->id_run }
+    $runner->runs_with_status('analysis pending');
+  is (join(q[,], @run_ids), '1234,4330,4999,5222', 'correct Illumina runs IDs');
+  
+  $runner = npg_pipeline::daemon::analysis->new(
+    manufacturer_name => 'Element Biosciences',
+    npg_tracking_schema => $schema
+  );
+  is ($runner->manufacturer_name, 'Element Biosciences',
+    'manufacturer name as set');
+  @run_ids = map { $_->id_run } $runner->runs_with_status('analysis pending');
+  ok ((@run_ids == 1) && ($run_ids[0] == 100000), 'One Element Biosciences run');
+};
 
 my $rf_path = '/some/path';
 

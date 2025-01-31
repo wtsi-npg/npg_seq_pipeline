@@ -113,3 +113,22 @@
   id_run_status_dict: 4
   id_user: 7
   iscurrent: 1
+- id_run_status: 45
+  id_run: 100000
+  date: 2024-11-23 02:14:17
+  id_run_status_dict: 2
+  id_user: 7
+  iscurrent: 0
+- id_run_status: 46
+  id_run: 100000
+  date: 2024-11-23 12:23:10
+  id_run_status_dict: 4
+  id_user: 7
+  iscurrent: 0
+- id_run_status: 47
+  id_run: 100000
+  date: 2024-11-23 12:44:40
+  id_run_status_dict: 6
+  id_user: 7
+  iscurrent: 1
+
