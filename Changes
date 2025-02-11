@@ -1,6 +1,13 @@
 LIST OF CHANGES
 ---------------
 
+ - Changed pipeline daemons so that they pick up runs performed on the
+   instruments by a manufacturer with a name given by a new attribute -
+   instrument_name. By default this name is set to 'Illumina' so that
+   the daemons continue picking up Illumina-only runs even if other
+   runs are present in the run tracking database. 
+ - Deleted redundant t::dbic_util::test_schema_wh method.
+
 release 68.7.1 (2024-12-17)
  - Fix perlbrew installation by installing libdevel-patchperl-perl in runner
  - Changed/extended tests for npg_pipeline::function::autoqc to ensure that

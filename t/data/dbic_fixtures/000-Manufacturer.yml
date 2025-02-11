@@ -1,0 +1,7 @@
+---
+- id_manufacturer: 20
+  name: Element Biosciences
+- id_manufacturer: 10
+  name: Illumina
+- id_manufacturer: 16
+  name: Roche/454

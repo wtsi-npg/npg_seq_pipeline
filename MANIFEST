@@ -139,6 +139,7 @@ t/data/cache/my_samplesheet_12376.csv
 t/data/dbic_fixtures/000-Designation.yml
 t/data/dbic_fixtures/000-EntityType.yml
 t/data/dbic_fixtures/000-InstrumentStatusDict.yml
+t/data/dbic_fixtures/000-Manufacturer.yml
 t/data/dbic_fixtures/000-RunLaneStatusDict.yml
 t/data/dbic_fixtures/000-RunStatusDict.yml
 t/data/dbic_fixtures/000-Tag.yml

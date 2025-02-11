@@ -106,4 +106,12 @@
   iscurrent: 1
   ipaddr: 
   instrument_comp: HS1
+- id_instrument: 70
+  name: AVITI2301
+  id_instrument_format: 12
+  external_name: ''
+  serial: ''
+  iscurrent: 1
+  ipaddr: ~ 
+  instrument_comp: ~
 

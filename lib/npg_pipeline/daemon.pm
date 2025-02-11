@@ -21,6 +21,7 @@ with qw{
 our $VERSION = '0';
 
 Readonly::Scalar my $SLEEPY_TIME => 900;
+Readonly::Scalar my $DEFAULT_INSTRUMENT_MANUFACTURER => 'Illumina';
 
 has 'pipeline_script_name' => (
   isa        => q{Str},
@@ -30,12 +31,21 @@ has 'pipeline_script_name' => (
   builder    => 'build_pipeline_script_name',
 );
 
+has 'manufacturer_name' => (
+  isa        => q{Str},
+  is         => q{ro},
+  default    => $DEFAULT_INSTRUMENT_MANUFACTURER,
+  documentation => 'Instrument manufacturer name, defaults to Illumina. ' .
+                   'Runs on instruments by this manufacturer only will be ' .
+                   'considered by this daemon.',
+);
+
 has 'dry_run' => (
   isa        => q{Bool},
   is         => q{ro},
   required   => 0,
   default    => 0,
-  documentation => 'dry run mode flag, false by default',
+  documentation => 'Dry run mode flag, false by default',
 );
 
 has 'seen' => (
@@ -58,6 +68,7 @@ sub _build_npg_tracking_schema {
 
 sub runs_with_status {
   my ($self, $status_name, $from_time) = @_;
+
   if (!$status_name) {
     $self->logcroak(q[Need status name]);
   }
@@ -73,7 +84,8 @@ sub runs_with_status {
   }
 
   return
-    map { $_->run() }
+    grep { $_->instrument_format->manufacturer->name eq $self->manufacturer_name }
+    map  { $_->run() }
     $self->npg_tracking_schema()->resultset(q[RunStatus])->search(
       $condition,
       {prefetch=>q[run_status_dict], order_by => q[me.date],}
@@ -194,8 +206,8 @@ case of error.
 =head2 runs_with_status
 
 With one argument, which should be a valid run status description,
-returns a list of DBIx::Class::Row objects from the Run result set,
-which correspond to runs with the current status descriptiongiven
+returns a list of C<DBIx::Class::Row> objects from the C<Run> result set,
+which correspond to runs with the current status description given
 by the argument.
   
   # find runs with current status 'archival pending'
@@ -214,6 +226,9 @@ should be after the time given by the second argument.
 
 In both cases a list of returned objects is sorted in the assending
 run status timestamp order.
+
+Only runs performed on the instruments by the manufacturer given by
+the C<manufacturer_name> attribute are chosen.
 
 If no run satisfies the conditions given by the argument(s), an
 empty list is returned.
