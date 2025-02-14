@@ -76,7 +76,9 @@ Readonly::Array my @SAVE2FILE_STATUS_FUNCTIONS =>
       run_analysis_complete
       run_secondary_analysis_in_progress
       run_qc_review_pending
+      lane_archival_in_progress
       run_archival_in_progress
+      lane_lane_released
       run_run_archived
       run_qc_complete
       lane_analysis_in_progress

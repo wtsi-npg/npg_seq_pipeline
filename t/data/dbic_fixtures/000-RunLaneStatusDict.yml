@@ -5,3 +5,7 @@
   id_run_lane_status_dict: 2
 - description: manual qc complete
   id_run_lane_status_dict: 3
+- description: archival in  progress
+  id_run_lane_status_dict: 4
+- description: lane released
+  id_run_lane_status_dict: 5
