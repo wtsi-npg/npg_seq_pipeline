@@ -25,13 +25,6 @@ sub test_schema_mlwh {
     );
 }
 
-sub test_schema_wh {
-    my ($self, $fixture_path) = @_;
-    return $self->create_test_db(
-        'npg_warehouse::Schema', $fixture_path
-    );
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable();
 1;

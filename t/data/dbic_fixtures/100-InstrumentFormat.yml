@@ -30,3 +30,11 @@
   default_columns: 4
   days_between_washes: 28
   runs_between_washes: 1
+- id_instrument_format: 12
+  id_manufacturer: 20
+  model: AVITI23
+  iscurrent: 1
+  default_tiles: 0
+  default_columns: 0
+  days_between_washes: 30
+  runs_between_washes: 1

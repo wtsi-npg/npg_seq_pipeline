@@ -379,4 +379,18 @@
   id_run_pair: ~
   is_paired: 0
   priority: 3
+  team: A
+- actual_cycle_count: 316
+  batch_id: ~
+  expected_cycle_count: 316
+  flowcell_id: ~
+  folder_name: 'elembio_run'
+  folder_path_glob: 't/data'
+  id_instrument: 70
+  id_instrument_format: 12
+  id_run: 100000
+  id_run_pair: ~
+  is_paired: 1
+  priority: 1
   team: A 
+ 
