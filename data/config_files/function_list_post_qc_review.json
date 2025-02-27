@@ -4,8 +4,13 @@
             {
                 "relation": "dependsOn",
                 "source": "pipeline_start",
-                "target": "run_archival_in_progress"
+                "target": "lane_archival_in_progress"
             },
+            {
+                "relation": "dependsOn",
+                "source": "lane_archival_in_progress",
+                "target": "run_archival_in_progress"
+            }, 
             {
                 "relation": "dependsOn",
                 "source": "run_archival_in_progress",
@@ -39,6 +44,11 @@
             {
                 "relation": "dependsOn",
                 "source": "archive_irods_locations_to_ml_warehouse",
+                "target": "lane_lane_released"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "lane_lane_released",
                 "target": "run_run_archived"
             },
             {
@@ -78,6 +88,32 @@
                 "label": "pipeline_start",
                 "metadata": {
                     "description": "A token job, which always succeeds; the start node of the both functions and jobs directed graphs.",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "lane_archival_in_progress",
+                "label": "lane_archival_in_progress",
+                "metadata": {
+                    "description": "Writes a serialized representation of the 'archival in progress' lane status to the file system",
+                    "resources": {
+                        "default": {
+                            "queue": "small",
+                            "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "lane_lane_released",
+                "label": "lane_lane_released",
+                "metadata": {
+                    "description": "Writes a serialized representation of the 'lane released' lane status to the file system",
                     "resources": {
                         "default": {
                             "queue": "small",
