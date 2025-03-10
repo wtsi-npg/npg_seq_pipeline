@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 68.9.0 (2025-03-10)
+ - Added new functions, lane_archival_in_progress and lane_lane_released,
+   to the run archival function graph.
+
 release 68.8.0 (2025-02-20)
  - Changed pipeline daemons so that they pick up runs performed on the
    instruments by a manufacturer with a name given by a new attribute -
