@@ -69,7 +69,10 @@ sub create {
                   $super_product->file_name_root(), $super_product->rpt_list()) && next;
 
     my $ref_path = $ref_cache_instance->get_path($super_product, q(fasta), $self->repository());
-    my $indel_model = ($super_product->lims->library_type && ($super_product->lims->library_type =~ /PCR[\s_\-]?free/ismx)) ? 'NONE' : 'CONSERVATIVE';
+    my $indel_model = ($super_product->lims->library_type
+                        && ($super_product->lims->library_type =~ /No[\s_\-]PCR/ismx
+                            xor $super_product->lims->library_type =~ /PCR[\s_\-]?free/ismx))
+                       ? 'NONE' : 'CONSERVATIVE';
 
     my $gatk_args = "--emit-ref-confidence GVCF -R $ref_path --pcr-indel-model $indel_model"; # --dbsnp $dbsnp
 
