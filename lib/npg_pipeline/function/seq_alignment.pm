@@ -887,11 +887,12 @@ sub _default_human_split_ref {
           roles => [qw/npg_tracking::data::reference::find/])
           ->new_object({
                          species => q{Homo_sapiens},
+                         strain => q{T2T-CHM13v2.0},
                          aligner => $aligner,
                         ($repos ? (q(repository)=>$repos) : ())
                        });
 
-  my $human_ref = (grep { /T2T-CHM13v2.0/ } @{$ruser->refs})[0];
+  my $human_ref = $ruser->refs->[0];
   unless($human_ref) { $self->logcroak(qq{Failed to find default human reference for non-consented human split (T2T-CHM13v2.0) in repository}) };
   if($aligner eq q{picard}) {
     $human_ref .= q{.dict};
