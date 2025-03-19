@@ -891,7 +891,7 @@ sub _default_human_split_ref {
                         ($repos ? (q(repository)=>$repos) : ())
                        });
 
-  my $human_ref = grep { m[references/Homo_sapiens/T2T-CHM13v2.0] } @{$ruser->refs};
+  my $human_ref = (grep { /T2T-CHM13v2.0/ } @{$ruser->refs})[0];
   unless($human_ref) { $self->logcroak(qq{Failed to find default human reference for non-consented human split (T2T-CHM13v2.0) in repository}) };
   if($aligner eq q{picard}) {
     $human_ref .= q{.dict};
