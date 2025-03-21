@@ -893,7 +893,7 @@ sub _default_human_split_ref {
                        });
 
   my $human_ref = $ruser->refs->[0];
-  if(not $human_ref) { $self->logcroak(qq{Failed to find default human reference for non-consented human split (T2T-CHM13v2.0) in repository}) };
+  if(not $human_ref) { $self->logcroak(q{Failed to find default human reference for non-consented human split (T2T-CHM13v2.0) in repository}) };
   if($aligner eq q{picard}) {
     $human_ref .= q{.dict};
   }
