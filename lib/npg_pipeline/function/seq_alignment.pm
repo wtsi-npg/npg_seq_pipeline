@@ -465,8 +465,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
 
   if($nchs) {
-    $p4_param_vals->{reference_dict_hs} = $self->_default_human_split_ref(q{picard}, $self->repository);   # always human default
-    $p4_param_vals->{hs_reference_genome_fasta} = $self->_default_human_split_ref(q{fasta}, $self->repository);   # always human default
+    $p4_param_vals->{reference_dict_hs} = $self->_default_human_split_ref(q{picard}, $self->repository);
+    $p4_param_vals->{hs_reference_genome_fasta} = $self->_default_human_split_ref(q{fasta}, $self->repository);
   }
 
   if(not $self->is_paired_read) {
@@ -592,9 +592,10 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   }
 
   if($nchs) {
-    $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bwa0_6}, $self->repository);
-    $p4_param_vals->{alignment_hs_method} = $hs_bwa;
-    $p4_param_vals->{hs_bwa_executable} = q{bwa0_6};
+    $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bowtie2}, $self->repository);
+    $p4_param_vals->{alignment_hs_method} = q{bowtie2};
+
+    push @{$p4_ops->{splice}}, q[aln_prealn_hs_bamadapterclip];
   }
 
   if($human_split) {
@@ -886,11 +887,13 @@ sub _default_human_split_ref {
           roles => [qw/npg_tracking::data::reference::find/])
           ->new_object({
                          species => q{Homo_sapiens},
+                         strain => q{T2T-CHM13v2.0},
                          aligner => $aligner,
                         ($repos ? (q(repository)=>$repos) : ())
                        });
 
   my $human_ref = $ruser->refs->[0];
+  if(not $human_ref) { $self->logcroak(q{Failed to find default human reference for non-consented human split (T2T-CHM13v2.0) in repository}) };
   if($aligner eq q{picard}) {
     $human_ref .= q{.dict};
   }

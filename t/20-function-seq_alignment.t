@@ -33,7 +33,7 @@ Log::Log4perl->easy_init({layout => '%d %-5p %c - %m%n',
 
 # Create test reference repository
 my %builds = ();
-$builds{'Homo_sapiens'} = ['1000Genomes_hs37d5','GRCh38_15','GRCh38_full_analysis_set_plus_decoy_hla','GRCh38X'];
+$builds{'Homo_sapiens'} = ['1000Genomes_hs37d5','GRCh38_15','GRCh38_full_analysis_set_plus_decoy_hla','GRCh38X', 'T2T-CHM13v2.0'];
 $builds{'Mus_musculus'} = ['GRCm38','NCBIm37'];
 $builds{'PhiX'} = ['Illumina'];
 $builds{'Strongyloides_ratti'} = ['20100601'];
@@ -132,6 +132,10 @@ sub symlink_default {
 `touch $ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/target/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.interval_list`;
 `touch $ref_dir/Homo_sapiens/GRCh38_full_analysis_set_plus_decoy_hla/all/target_autosome/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa.interval_list`;
 `touch $ref_dir/Homo_sapiens/GRCh38X/all/fasta/Homo_sapiens.GRCh38X.fa`;
+`touch $ref_dir/Homo_sapiens/T2T-CHM13v2.0/all/fasta/T2T-CHM13v2.0.fa`;
+`touch $ref_dir/Homo_sapiens/T2T-CHM13v2.0/all/picard/T2T-CHM13v2.0.fa`;
+`touch $ref_dir/Homo_sapiens/T2T-CHM13v2.0/all/bwa0_6/T2T-CHM13v2.0.fa`;
+`touch $ref_dir/Homo_sapiens/T2T-CHM13v2.0/all/bowtie2/T2T-CHM13v2.0.fa`;
 `touch $ref_dir/Strongyloides_ratti/20100601/all/fasta/rat.fa`;
 `touch $ref_dir/Strongyloides_ratti/20100601/all/picard/rat.fa`;
 `touch $ref_dir/Strongyloides_ratti/20100601/all/bwa0_6/rat.fa`;
