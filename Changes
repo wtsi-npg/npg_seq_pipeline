@@ -1,6 +1,12 @@
 LIST OF CHANGES
 ---------------
 
+release 68.10.0 (2025-03-28)
+ - changes to stage2 non-consented human split:
+   change hs alignment method to bowtie2
+   change human reference to T2T-CHM13v2.0
+   - remove adapter clip for human alignments in nchs
+
 release 68.9.0 (2025-03-10)
  - Added new functions, lane_archival_in_progress and lane_lane_released,
    to the run archival function graph.
