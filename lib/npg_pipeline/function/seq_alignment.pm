@@ -598,7 +598,6 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     push @{$p4_ops->{splice}}, q[aln_prealn_hs_bamcollate2_ranking];
     push @{$p4_ops->{splice}}, q[aln_prealn_hs_bamadapterclip];
     push @{$p4_ops->{splice}}, q[aln_postaln_hs_bam12split];
-    $p4_param_vals->{rankstrip_nchs_val} = 0;
   }
 
   if($human_split) {
