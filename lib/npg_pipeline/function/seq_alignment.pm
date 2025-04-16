@@ -595,7 +595,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bowtie2}, $self->repository);
     $p4_param_vals->{alignment_hs_method} = q{bowtie2};
 
+    push @{$p4_ops->{splice}}, q[aln_prealn_hs_bamcollate2_ranking];
     push @{$p4_ops->{splice}}, q[aln_prealn_hs_bamadapterclip];
+    push @{$p4_ops->{splice}}, q[aln_postaln_hs_bam12split];
   }
 
   if($human_split) {
