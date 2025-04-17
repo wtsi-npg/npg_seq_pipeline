@@ -1,6 +1,13 @@
 LIST OF CHANGES
 ---------------
 
+release 68.10.1 (2025-04-17)
+ - nchs human alignment: remove collate3 and bam12split nodes, set human
+   alignment bam12auxmerge ranksplit flag to 0 (no readname prefixing/removal
+   for bowtie2)
+ - leave bam112auxmerge rankstrip value to default [1] for nchs split with
+   bowtie2
+
 release 68.10.0 (2025-03-28)
  - changes to stage2 non-consented human split:
    change hs alignment method to bowtie2
