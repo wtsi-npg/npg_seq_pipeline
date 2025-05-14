@@ -86,6 +86,13 @@ sub create {
     }
   }
 
+  if($self->p4s1_i2b_first_tile) {
+    $command .= q{ --p4s1_i2b_first_tile=}    . $self->$self->p4s1_i2b_first_tile;
+  }
+  if($self->p4s1_i2b_tile_limit) {
+    $command .= q{ --p4s1_i2b_tile_limit=}    . $self->$self->p4s1_i2b_tile_limit;
+  }
+
   return [
       $self->create_definition({
         job_name => $job_name,
@@ -93,6 +100,18 @@ sub create {
       })
   ];
 }
+
+has 'p4s1_i2b_first_tile' => ( isa        => q{Maybe[Int]},
+                               is         => 'ro',
+                               required   => 0,
+                               lazy_build => 1,
+                       );
+
+has 'p4s1_i2b_tile_limit' => ( isa        => q{Maybe[Int]},
+                               is         => 'ro',
+                               required   => 0,
+                               lazy_build => 1,
+                       );
 
 =head2 run_cluster_count_check
 
@@ -104,7 +123,7 @@ sub run_cluster_count_check {
   my $self = shift;
 
   my $interop_data = npg_qc::illumina::interop::parser->new(
-                       runfolder_path => $self->runfolder_path)->parse();
+                       runfolder_path => $self->runfolder_path, $self->p4s1_i2b_first_tile, $self->p4s1_i2b_tile_limit)->parse();
   my @keys =  @{$self->lanes} ? @{$self->lanes} : keys %{$interop_data->{cluster_count_total}};
 
   my $max_cluster_count = sum map { $interop_data->{cluster_count_total}->{$_} } @keys;
