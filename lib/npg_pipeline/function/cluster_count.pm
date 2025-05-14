@@ -101,16 +101,6 @@ sub create {
   ];
 }
 
-has 'p4s1_i2b_first_tile' => ( isa        => q{Maybe[Int]},
-                               is         => 'ro',
-                               required   => 0,
-                       );
-
-has 'p4s1_i2b_tile_limit' => ( isa        => q{Maybe[Int]},
-                               is         => 'ro',
-                               required   => 0,
-                       );
-
 =head2 run_cluster_count_check
 
 Checks the cluster count, error if the count is inconsistent.
