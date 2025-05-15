@@ -429,7 +429,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       }
       else {
         push @{$p4_ops->{prune}}, 'aln_tee4_tee4:to_tgtaln-alignment_filter:target_bam_in';
-        push @{$p4_ops->{splice}}, 'aln_amp_bamadapterclip_pre_auxmerge:-aln_bam12auxmerge_nchs:no_aln_bam';
+        push @{$p4_ops->{splice}}, 'aln_amp_bamreset_pre_auxmerge:-aln_bam12auxmerge_nchs:no_aln_bam'; # Note: adapter clip always removed for nchs(bowtie2)+nta
       }
       push @{$p4_ops->{splice}}, 'alignment_filter:target_bam_out-foptgt_bmd_multiway:';
       $p4_param_vals->{scramble_reference_flag} = q[-x];
@@ -594,6 +594,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($nchs) {
     $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bowtie2}, $self->repository);
     $p4_param_vals->{alignment_hs_method} = q{bowtie2};
+    $p4_param_vals->{hs_reinsert_clips} = q{on};
 
     push @{$p4_ops->{splice}}, q[aln_prealn_hs_bamcollate2_ranking];
     push @{$p4_ops->{splice}}, q[aln_prealn_hs_bamadapterclip];
