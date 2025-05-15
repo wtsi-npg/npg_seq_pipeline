@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+release 68.11.0 (2025-05-15)
+ - add hs_reinsert_clips p4 parameter with value "on" for bowtie2 nchs
+
 release 68.10.1 (2025-04-17)
  - nchs human alignment: remove collate3 and bam12split nodes, set human
    alignment bam12auxmerge ranksplit flag to 0 (no readname prefixing/removal
