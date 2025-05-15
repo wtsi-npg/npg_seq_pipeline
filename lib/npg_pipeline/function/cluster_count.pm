@@ -87,10 +87,10 @@ sub create {
   }
 
   if($self->p4s1_i2b_first_tile) {
-    $command .= q{ --p4s1_i2b_first_tile=}    . $self->$self->p4s1_i2b_first_tile;
+    $command .= q{ --p4s1_i2b_first_tile=}    . $self->p4s1_i2b_first_tile;
   }
   if($self->p4s1_i2b_tile_limit) {
-    $command .= q{ --p4s1_i2b_tile_limit=}    . $self->$self->p4s1_i2b_tile_limit;
+    $command .= q{ --p4s1_i2b_tile_limit=}    . $self->p4s1_i2b_tile_limit;
   }
 
   return [
