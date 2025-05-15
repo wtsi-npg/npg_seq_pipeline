@@ -111,7 +111,7 @@ sub run_cluster_count_check {
   my $self = shift;
 
   my $interop_data = npg_qc::illumina::interop::parser->new(
-                       runfolder_path => $self->runfolder_path, $self->p4s1_i2b_first_tile, $self->p4s1_i2b_tile_limit)->parse();
+                       runfolder_path => $self->runfolder_path, p4s1_i2b_first_tile => $self->p4s1_i2b_first_tile, p4s1_i2b_tile_limit => $self->p4s1_i2b_tile_limit)->parse();
   my @keys =  @{$self->lanes} ? @{$self->lanes} : keys %{$interop_data->{cluster_count_total}};
 
   my $max_cluster_count = sum map { $interop_data->{cluster_count_total}->{$_} } @keys;
