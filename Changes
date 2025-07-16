@@ -1,6 +1,12 @@
 LIST OF CHANGES
 ---------------
 
+release 68.12.0 (2025-07-16)
+ - add flags to allow optional specification of first tile and tile limit for
+   stage1 i2b
+ - add optional tile limits to cluster count script invocation pass the
+   optional tile limit parameters to the Illumina interop file parser
+
 release 68.11.0 (2025-05-15)
  - add hs_reinsert_clips p4 parameter with value "on" for bowtie2 nchs
 
