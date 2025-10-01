@@ -170,13 +170,7 @@ has q{p4s1_phix_alignment_method} => (
 sub _build_p4s1_phix_alignment_method {
   my $self = shift;
 
-  my $alignment_method = $self->platform_NovaSeq? q[minimap2]: q[bwa_aln];
-
-  if($alignment_method eq q[bwa_aln] and not $self->is_paired_read) {
-      $alignment_method = q[bwa_aln_se];
-  }
-
-  return $alignment_method;
+  return q[minimap2];
 }
 
 =head2 p4s1_i2b_first_tile
