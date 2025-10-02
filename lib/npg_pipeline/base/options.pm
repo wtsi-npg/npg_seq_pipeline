@@ -164,14 +164,9 @@ set the PhiX alignment method for p4 stage1
 has q{p4s1_phix_alignment_method} => (
   isa           => q{Str},
   is            => q{ro},
-  lazy_build    => 1,
-  documentation => q{set the PhiX alignment method for p4 stage1},
+  default       => q[minimap2],
+  documentation => q{PhiX alignment method for p4 stage1},
 );
-sub _build_p4s1_phix_alignment_method {
-  my $self = shift;
-
-  return q[minimap2];
-}
 
 =head2 p4s1_i2b_first_tile
 
