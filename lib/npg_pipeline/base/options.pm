@@ -154,20 +154,6 @@ has 's1_s2_intfile_format' => (
                            default    => 'cram',
                          );
 
-
-=head2 p4s1_alignment_method
-
-set the PhiX alignment method for p4 stage1
-
-=cut
-
-has q{p4s1_phix_alignment_method} => (
-  isa           => q{Str},
-  is            => q{ro},
-  default       => q[minimap2],
-  documentation => q{PhiX alignment method for p4 stage1},
-);
-
 =head2 p4s1_i2b_first_tile
 
 Optional first tile for i2b in stage1
