@@ -1,5 +1,7 @@
 LIST OF CHANGES
 ---------------
+release 68.12.2 (2025-10-09)
+ - CI updates
 
 release 68.12.1 (2025-08-06)
  - add archive_irods_locations_to_ml_warehouse to analysis pipeline via
