@@ -38,7 +38,6 @@ Readonly::Scalar my $STAGING_TAG          => q[staging];
 Readonly::Scalar my $DO_NOT_DELETE_NAME   => q[npg_do_not_delete];
 
 Readonly::Array  my @NO_SCRIPT_ARG_ATTRS  => qw/
-                                                p4s1_phix_alignment_method
                                                 p4s2_aligner_intfile 
                                                 adapterfind
                                                 s1_s2_intfile_format

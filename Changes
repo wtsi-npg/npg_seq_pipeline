@@ -1,5 +1,8 @@
 LIST OF CHANGES
 ---------------
+
+ - minimap2 becomes default phix align method
+
 release 68.12.2 (2025-10-09)
  - CI updates
 
