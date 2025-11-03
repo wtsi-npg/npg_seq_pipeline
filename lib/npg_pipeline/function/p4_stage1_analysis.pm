@@ -73,6 +73,12 @@ sub generate {
   return \@definitions;
 }
 
+has q{p4s1_phix_alignment_method} => (
+  isa           => q{Str},
+  is            => q{ro},
+  default       => q[minimap2],
+);
+
 has 'p4_stage1_analysis_log_base' => (
                            isa        => 'Str',
                            is         => 'ro',
