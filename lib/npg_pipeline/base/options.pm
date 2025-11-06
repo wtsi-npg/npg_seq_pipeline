@@ -241,7 +241,7 @@ Optional LIMs identifier for flowcell.
 =cut
 
 has q{id_flowcell_lims} => (
-  isa      => q{Int},
+  isa      => q{Str},
   is       => q{ro},
   required => 0,
 );
