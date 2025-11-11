@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - Changed the type of id_flowcell_lims attribute from Int to Str so that
+   to be consistent both with the way this value is stored in both mlwh and
+   the tracking dtabase (see https://github.com/wtsi-npg/npg_tracking/pull/939). 
+
 release 68.13.0 (2025-11-03)
  - minimap2 becomes default phix align method
  - CI updates
