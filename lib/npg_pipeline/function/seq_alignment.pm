@@ -462,7 +462,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     }
   }
 
-  if(!($target_is_human and $do_target_alignment) and !$do_rna and !$spike_tag and !$is_chromium_lib) {
+  if(!($target_is_human && $do_target_alignment) && !$do_rna && !$spike_tag && !$is_chromium_lib) {
      push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
   }
 
