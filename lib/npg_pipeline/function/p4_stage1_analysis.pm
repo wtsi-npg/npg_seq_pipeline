@@ -73,6 +73,12 @@ sub generate {
   return \@definitions;
 }
 
+has q{p4s1_phix_alignment_method} => (
+  isa           => q{Str},
+  is            => q{ro},
+  default       => q[minimap2],
+);
+
 has 'p4_stage1_analysis_log_base' => (
                            isa        => 'Str',
                            is         => 'ro',
@@ -359,6 +365,13 @@ sub _generate_command_params {
     $p4_params{i2b_final_index_0} = join q{,}, @i2b_final_index_0;
     $p4_params{i2b_bc_seq_val}    = join q{,}, @i2b_bc_seq_val;
     $p4_params{i2b_bc_qual_val}   = join q{,}, @i2b_bc_qual_val;
+  }
+
+  if($self->p4s1_i2b_first_tile) {
+    $p4_params{i2b_first_tile} = $self->p4s1_i2b_first_tile;
+  }
+  if($self->p4s1_i2b_tile_limit) {
+    $p4_params{i2b_tile_limit} = $self->p4s1_i2b_tile_limit;
   }
 
   ###  TODO: remove this read length comparison if biobambam will handle this case. Check clip reinsertion.

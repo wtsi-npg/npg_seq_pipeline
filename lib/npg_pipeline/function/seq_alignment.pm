@@ -429,7 +429,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       }
       else {
         push @{$p4_ops->{prune}}, 'aln_tee4_tee4:to_tgtaln-alignment_filter:target_bam_in';
-        push @{$p4_ops->{splice}}, 'aln_amp_bamadapterclip_pre_auxmerge:-aln_bam12auxmerge_nchs:no_aln_bam';
+        push @{$p4_ops->{splice}}, 'aln_amp_bamreset_pre_auxmerge:-aln_bam12auxmerge_nchs:no_aln_bam'; # Note: adapter clip always removed for nchs(bowtie2)+nta
       }
       push @{$p4_ops->{splice}}, 'alignment_filter:target_bam_out-foptgt_bmd_multiway:';
       $p4_param_vals->{scramble_reference_flag} = q[-x];
@@ -594,6 +594,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   if($nchs) {
     $p4_param_vals->{hs_alignment_reference_genome} = $self->_default_human_split_ref(q{bowtie2}, $self->repository);
     $p4_param_vals->{alignment_hs_method} = q{bowtie2};
+    $p4_param_vals->{hs_reinsert_clips} = q{on};
 
     push @{$p4_ops->{splice}}, q[aln_prealn_hs_bamcollate2_ranking];
     push @{$p4_ops->{splice}}, q[aln_prealn_hs_bamadapterclip];
@@ -654,20 +655,21 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     q(bash -c '),
     q(mkdir -p), $working_dir, q{;},
     q(cd), $working_dir,
-    q{&&},
-
+    q{ && },
+    q{log_label=$}.q{(date +%Y%m%d%H%M%S)},
+    q{ && },
     q(vtfp.pl),
     q{-template_path $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib},
     q(-param_vals), $param_vals_fname,
-    q(-export_param_vals), qq(${name_root}_p4s2_pv_out_${id}.json),
+    q(-export_param_vals), qq(${name_root}).q(_p4s2_pv_out_).qq(${id}).q(_$).q({log_label}.json),
     q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
     qq(-keys aligner_numthreads -vals `$num_threads_expression`),
     qq(-keys br_numthreads_val -vals `$num_threads_expression --exclude 1 --divide 2`),
     qq(-keys b2c_mt_val -vals `$num_threads_expression --exclude 2 --divide 2`),
     q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/alignment_wtsi_stage2_}.$nchs_template_label.q{template.json},
-    qq(> run_$name_root.json),
+    qq(> run_${name_root}).q(_$).q({log_label}.json),
     q{&&},
-    qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json ),
+    qq(viv.pl -s -x -v 3 -o viv_${name_root}_).q($).q({log_label}.log run_).qq(${name_root}_).q($).q({log_label}.json ),
     q{&&},
     _qc_command('bam_flagstats', $dp_archive_path, $qc_out_path, undef,
                 $skip_target_markdup_metrics, $rpt_list, $name_root, [$cfs_input_file]),
