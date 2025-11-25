@@ -251,13 +251,14 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
   ################################################
   # check for illegal analysis option combinations
   ################################################
+  my $target_is_human = ($l->reference_genome and $l->reference_genome=~/Homo_sapiens/smx);
   if (1 < sum $l->contains_nonconsented_xahuman, $l->separate_y_chromosome_data, $l->contains_nonconsented_human) {
     $self->logcroak(qq{Only one of nonconsented X and autosome human split, separate Y chromosome data, and nonconsented human split may be specified ($name_root)});
   }
   if (($l->contains_nonconsented_xahuman or $l->separate_y_chromosome_data) and not $l->reference_genome=~/Homo_sapiens/smx ) {
     $self->logcroak(qq{Nonconsented X and autosome human split, and separate Y chromosome data, must have Homo sapiens reference ($name_root)});
   }
-  if ($l->contains_nonconsented_human and $l->reference_genome and $l->reference_genome=~/Homo_sapiens/smx ) {
+  if ($l->contains_nonconsented_human and $target_is_human) {
     $self->logcroak(qq{Nonconsented human split must not have Homo sapiens reference ($name_root)});
   }
 
@@ -460,8 +461,9 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
       }
     }
   }
-  elsif(!$do_rna && !$nchs && !$spike_tag && !$human_split && !$is_chromium_lib) {
-      push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
+
+  if(!($target_is_human && $do_target_alignment) && !$do_rna && !$spike_tag && !$is_chromium_lib) {
+     push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
   }
 
   if($nchs) {
