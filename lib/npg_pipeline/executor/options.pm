@@ -69,8 +69,9 @@ Do not use sf resource tokens; set if working outside the npg sequencing farm
 has q{no_sf_resource} => (
   isa           => q{Bool},
   is            => q{ro},
+  default       => 1,
   documentation =>
-  q{Do not use sf resource tokens},
+  q{Do not use sf resource tokens, defaults to true},
 );
 
 =head2 no_bsub
