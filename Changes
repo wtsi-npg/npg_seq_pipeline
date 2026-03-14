@@ -1,6 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+ - Changed the default value for the no_sf_resource pipeline option from
+   false to true. Our staging areas are currently on lustre, so we do not
+   have to limit the number of jobs simultaneously accessing the file system. 
+
 release 68.15.0 (2026-01-06)
  - remove production of BAM outputs for most stage2 processing
    except aligned human; RNA analysis; spike tag; and chromium libraries

@@ -285,7 +285,7 @@ subtest 'creating executor object' => sub {
 };
 
 subtest 'propagating options to the lsf executor' => sub {
-  plan tests => 14;
+  plan tests => 13;
 
   my @functions_in_order = qw(
     run_archival_in_progress
@@ -306,10 +306,12 @@ subtest 'propagating options to the lsf executor' => sub {
   my $p = npg_pipeline::pluggable->new($ref);
   my $e = $p->executor();
 
-  my @boolean_attrs = qw/interactive no_sf_resource no_bsub no_array_cpu_limit/;
+  my @boolean_attrs = qw/interactive no_bsub no_array_cpu_limit/;
   for my $attr (@boolean_attrs) {
     ok (!$e->$attr, "executor: $attr value is false");
   }
+
+  ok ($e->no_sf_resource, "executor: no_sf_resource value is true"); 
 
   for my $attr (qw/job_name_prefix job_priority array_cpu_limit/) {
     my $predicate = "has_$attr";
