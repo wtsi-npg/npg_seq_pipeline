@@ -167,6 +167,11 @@ t/data/dbic_fixtures/350-RunLane.yml
 t/data/dbic_fixtures/400-RunLaneStatus.yml
 t/data/dbic_fixtures/400-RunStatus.yml
 t/data/dbic_fixtures/400-TagRun.yml
+t/data/elembio/20250101_AV244103_NT1234567E/RunParameters.json
+t/data/elembio/20250127_AV244103_1234_NT1850075L/RunParameters.json
+t/data/elembio/20250127_AV244103_1234_NT1850075L/Data/README
+t/data/elembio/20250129_AV244103_B1234/RunParameters.json
+t/data/elembio/20250315_AV244103_SINGLE_END/RunParameters.json
 t/data/eight_reads.cram
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/no_cal/archive/lane1/8747_bfs_fofn.txt
 t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/no_cal/archive/lane1/8747_sf_fofn.txt

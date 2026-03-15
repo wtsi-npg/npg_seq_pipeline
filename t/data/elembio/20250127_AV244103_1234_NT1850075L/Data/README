@@ -1,0 +1,2 @@
+Placeholder file so this fixture also looks enough like a runfolder for
+lazy `runfolder_path` inference via `subpath` tests.

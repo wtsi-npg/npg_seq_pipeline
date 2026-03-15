@@ -19,7 +19,7 @@ use npg_pipeline::product;
 
 our $VERSION = '0';
 
-extends 'npg_tracking::illumina::runfolder';
+extends 'npg_tracking::runfolder';
 
 with qw{
         MooseX::Getopt
@@ -578,7 +578,7 @@ __END__
 
 =item WTSI::DNAP::Utilities::Loggable
 
-=item npg_tracking::illumina::runfolder
+=item npg_tracking::runfolder
 
 =item npg_tracking::util::pipeline_config
 
