@@ -91,6 +91,12 @@ Recommended approach:
 - Add an Elembio-specific central graph.
 - Keep the existing Illumina graph intact.
 
+Alternative approach (Alt Phase 1):
+
+- Add Elembio functions in parallel to the existing DAG.
+- Use `->can_run` functionality in existing functions to determine if they are Illumina or Elembio specific.
+- This integrates Elembio into the single graph, reducing duplication but requiring careful conditional logic.
+
 This reduces risk and avoids destabilising the current Illumina production
 path.
 
@@ -134,8 +140,7 @@ Primary changes:
   `RunStats.json` / `RunManifest.json`.
 - Make the analysis daemon choose the correct runfolder resolver by
   manufacturer.
-- Remove the hard dependency on samplesheet generation for Elembio, or fail
-  early with a clear policy when a batchless run is unsupported.
+- Implement samplesheet generation for Elembio by querying MLWH for LIMS data to create the NPG samplesheet cache.
 - Review stage 2 assumptions in `seq_alignment.pm`.
 
 Likely new Elembio-specific functions:
@@ -188,8 +193,9 @@ Good candidate for pipeline reuse:
 
 ### `src/npg_ml_warehouse`
 
-Likely smaller changes:
+Primary changes (critical):
 
+- Implement or confirm the ability to pull LIMS information from the MLWH database for Elembio runs to generate the NPG samplesheet.
 - Confirm the final Elembio analysis layout matches loader expectations.
 - Confirm tag-zero handling is acceptable.
 - Confirm product linking behaviour when batch id is missing.
@@ -276,17 +282,7 @@ These need to be agreed before implementation starts.
 
 ### 1. Batchless Elembio runs
 
-Question:
-
-- Are walk-up / batchless Elembio runs in scope for automatic analysis?
-
-If yes:
-
-- `npg_seq_pipeline` needs a non-samplesheet path for LIMS/product setup.
-
-If no:
-
-- fail early with a clear policy and error message.
+Assumption: Walk-up / batchless Elembio runs are in scope for automatic analysis, with LIMS information pulled from MLWH to generate the samplesheet.
 
 ### 2. Stage 1 granularity
 
@@ -337,33 +333,33 @@ Recommendation:
 
 ## Delivery Order
 
-### Phase 1: Tracking and launch
-
-- Define Elembio transition into `analysis pending`
-- Make daemon runfolder lookup manufacturer-aware
-- Decide policy for missing batch id
-
-### Phase 2: Elembio pipeline skeleton
+### Phase 1: Elembio pipeline skeleton
 
 - Add Elembio base / metadata wrapper
 - Add Elembio central graph
 - Add Elembio stage-1 function scaffolding
 
-### Phase 3: Elembio stage 1
+### Phase 2: Elembio stage 1
 
 - Implement `bases2fastq`
 - Implement `samtools import`
 - Write outputs into existing product scaffold
 
-### Phase 4: QC integration
+### Phase 3: QC integration
 
 - Generate Elembio tag metrics from run stats
 - Replace or suppress Illumina-only stage-1 checks
 
-### Phase 5: Shared downstream validation
+### Phase 4: Shared downstream validation
 
 - Run Elembio-imported products through `seq_alignment`
 - Patch remaining Illumina assumptions in shared stage 2
+
+### Phase 5: Tracking and launch
+
+- Define Elembio transition into `analysis pending`
+- Make daemon runfolder lookup manufacturer-aware
+- Implement samplesheet generation for Elembio via MLWH LIMS data pull
 
 ### Phase 6: Archival and ops
 
@@ -385,7 +381,7 @@ Recommendation:
 
 The smallest useful end-to-end slice is:
 
-1. Elembio run reaches `analysis pending`.
+1. Manually launch the Elembio central graph on a runfolder.
 2. Elembio central graph runs.
 3. `bases2fastq` plus `samtools import` produce product files.
 4. Elembio `tag_metrics` are generated from `RunStats.json`.
