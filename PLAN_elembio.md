@@ -136,11 +136,10 @@ Primary changes:
   `function_list_central_elembio.json`.
 - Add a new Elembio stage 1 function instead of reusing
   `p4_stage1_analysis.pm`.
-- Replace `qc_interop` for Elembio with a QC step driven by
-  `RunStats.json` / `RunManifest.json`.
+- Keep Elembio pipeline setup driven by instrument-runfolder metadata (`RunParameters.json`, and `RunManifest.json` where needed), then replace `qc_interop` with a post-`bases2fastq` QC step driven by `RunStats.json` / `RunManifest.json` from the deplex output folder.
 - Make the analysis daemon choose the correct runfolder resolver by
   manufacturer.
-- Implement samplesheet generation for Elembio by querying MLWH for LIMS data to create the NPG samplesheet cache.
+- Implement or reuse Elembio samplesheet generation for the NPG samplesheet cache from MLWH-backed LIMS data, keyed by `id_run` and optionally by `batch_id` / `id_flowcell_lims` where that is already available.
 - Review stage 2 assumptions in `seq_alignment.pm`.
 
 Likely new Elembio-specific functions:
@@ -195,7 +194,7 @@ Good candidate for pipeline reuse:
 
 Primary changes (critical):
 
-- Implement or confirm the ability to pull LIMS information from the MLWH database for Elembio runs to generate the NPG samplesheet.
+- Implement or confirm the ability to pull LIMS information from MLWH for Elembio runs to generate the NPG samplesheet, keyed by `id_run` and also by `batch_id` / `id_flowcell_lims` where present.
 - Confirm the final Elembio analysis layout matches loader expectations.
 - Confirm tag-zero handling is acceptable.
 - Confirm product linking behaviour when batch id is missing.
@@ -264,14 +263,19 @@ Preferred target outcome:
 
 - product-level imported CRAM/BAM files placed where the existing stage 2 can
   consume them
-- lane-level QC outputs generated from Elembio run stats
+- lane-level QC outputs generated after deplexing from `RunStats.json` in the `bases2fastq` output folder
 - short-file cache populated only if downstream checks still require FASTQ input
 
 ### QC strategy
 
 For Elembio:
 
-- use `RunStats.json` / `RunManifest.json` for tag metrics and lane stats
+- do not rely on `RunStats.json` for pipeline setup; it is only available after `bases2fastq` has run
+- use `RunStats.json` / `RunManifest.json` from the `bases2fastq` output folder for tag metrics and lane stats
+- treat LIMS / MLWH data, or the derived NPG samplesheet, as the source of
+  truth for barcode-to-sample/study linking, and treat the `bases2fastq`
+  output as the QC source that should reflect any such amendments or
+  corrections
 - skip `qc_interop`
 - probably skip `spatial_filter`
 - review whether a cluster-count consistency check still makes sense
@@ -338,16 +342,18 @@ Recommendation:
 - Add Elembio base / metadata wrapper
 - Add Elembio central graph
 - Add Elembio stage-1 function scaffolding
+- Integrate Elembio samplesheet / metadata-cache bootstrapping so the central
+  runner can start with MLWH-backed LIMS data
 
 ### Phase 2: Elembio stage 1
 
-- Implement `bases2fastq`
+- Implement `bases2fastq`, with the deplex output folder treated as the source for downstream Elembio QC
 - Implement `samtools import`
 - Write outputs into existing product scaffold
 
 ### Phase 3: QC integration
 
-- Generate Elembio tag metrics from run stats
+- Generate Elembio tag metrics from the `bases2fastq` `RunStats.json` output
 - Replace or suppress Illumina-only stage-1 checks
 
 ### Phase 4: Shared downstream validation
@@ -355,18 +361,19 @@ Recommendation:
 - Run Elembio-imported products through `seq_alignment`
 - Patch remaining Illumina assumptions in shared stage 2
 
-### Phase 5: Tracking and launch
-
-- Define Elembio transition into `analysis pending`
-- Make daemon runfolder lookup manufacturer-aware
-- Implement samplesheet generation for Elembio via MLWH LIMS data pull
-
-### Phase 6: Archival and ops
+### Phase 5: Archival and ops
 
 - Elembio run-data archiving
 - ML warehouse integration confirmation
 - iRODS path finalisation
-- `npg_esa` packaging and service rollout
+- `npg_esa` packaging and service rollout (sufficient for manual processing)
+
+### Phase 6: Tracking and launch
+
+- Define Elembio transition into `analysis pending`
+- Make daemon runfolder lookup manufacturer-aware
+- Wire automatic launch
+- `npg_esa` packaging and service rollout for this
 
 ## Main Risks
 
@@ -382,10 +389,11 @@ Recommendation:
 The smallest useful end-to-end slice is:
 
 1. Manually launch the Elembio central graph on a runfolder.
-2. Elembio central graph runs.
-3. `bases2fastq` plus `samtools import` produce product files.
-4. Elembio `tag_metrics` are generated from `RunStats.json`.
-5. A minimal subset of `seq_alignment` runs successfully on imported files.
+2. The run starts with Elembio samplesheet / metadata-cache setup plus metadata from the instrument runfolder (`RunParameters.json`, and `RunManifest.json` where needed), rather than depending on `RunStats.json`.
+3. `bases2fastq` runs and produces the deplex output folder.
+4. `samtools import` produces product files.
+5. Elembio `tag_metrics` are generated from `RunStats.json` in the `bases2fastq` output folder.
+6. A minimal subset of `seq_alignment` runs successfully on imported files.
 
 That slice will prove the overall architecture before archival and all
 downstream edge cases are tackled.
