@@ -139,7 +139,7 @@ Primary changes:
 - Keep Elembio pipeline setup driven by instrument-runfolder metadata (`RunParameters.json`, and `RunManifest.json` where needed), then replace `qc_interop` with a post-`bases2fastq` QC step driven by `RunStats.json` / `RunManifest.json` from the deplex output folder.
 - Make the analysis daemon choose the correct runfolder resolver by
   manufacturer.
-- Implement or reuse Elembio samplesheet generation for the NPG samplesheet cache from MLWH-backed LIMS data, keyed by `id_run` and optionally by `batch_id` / `id_flowcell_lims` where that is already available.
+- Implement or reuse Elembio samplesheet generation for the NPG samplesheet cache from MLWH-backed LIMS data, keyed primarily by `id_flowcell_lims` / batch id as the main link back to LIMS, with `id_run` used for sequencing-run context and as a secondary lookup path where needed.
 - Review stage 2 assumptions in `seq_alignment.pm`.
 
 Likely new Elembio-specific functions:
@@ -194,7 +194,7 @@ Good candidate for pipeline reuse:
 
 Primary changes (critical):
 
-- Implement or confirm the ability to pull LIMS information from MLWH for Elembio runs to generate the NPG samplesheet, keyed by `id_run` and also by `batch_id` / `id_flowcell_lims` where present.
+- Implement or confirm the ability to pull LIMS information from MLWH for Elembio runs to generate the NPG samplesheet, keyed primarily by `id_flowcell_lims` / batch id from the Elembio flowcell tables, with `id_run` used only for run-record context or secondary lookup where required.
 - Confirm the final Elembio analysis layout matches loader expectations.
 - Confirm tag-zero handling is acceptable.
 - Confirm product linking behaviour when batch id is missing.
@@ -257,6 +257,17 @@ Use Elembio-native metadata from `RunParameters.json`:
 
 Do not infer these through Illumina XML conventions.
 
+Key distinction:
+
+- `id_flowcell_lims` is the primary key back to LIMS-linked sample and study
+  information.
+- `id_run` is primarily a key for the sequencing run as recorded in tracking /
+  MLWH run-level tables, including instrument setup and later run outputs.
+- Analysis setup should be possible from the runfolder plus the relevant
+  `eseq_flowcell` / `iseq_flowcell`-style flowcell tables and their links to
+  samples and studies, without depending on run-level MLWH records being the
+  source of truth for LIMS linkage.
+
 ### Stage 1 outputs
 
 Preferred target outcome:
@@ -286,7 +297,7 @@ These need to be agreed before implementation starts.
 
 ### 1. Batchless Elembio runs
 
-Assumption: Walk-up / batchless Elembio runs are in scope for automatic analysis, with LIMS information pulled from MLWH to generate the samplesheet.
+Assumption: Walk-up / batchless Elembio runs are in scope for automatic analysis, but they should be treated as the exception path. The normal setup route should use `id_flowcell_lims` / batch id as the primary LIMS linkage, with `id_run` and runfolder metadata used for sequencing-run context.
 
 ### 2. Stage 1 granularity
 
@@ -343,7 +354,8 @@ Recommendation:
 - Add Elembio central graph
 - Add Elembio stage-1 function scaffolding
 - Integrate Elembio samplesheet / metadata-cache bootstrapping so the central
-  runner can start with MLWH-backed LIMS data
+  runner can start with MLWH-backed LIMS data, keyed primarily by
+  `id_flowcell_lims` / batch id
 
 ### Phase 2: Elembio stage 1
 
@@ -389,7 +401,7 @@ Recommendation:
 The smallest useful end-to-end slice is:
 
 1. Manually launch the Elembio central graph on a runfolder.
-2. The run starts with Elembio samplesheet / metadata-cache setup plus metadata from the instrument runfolder (`RunParameters.json`, and `RunManifest.json` where needed), rather than depending on `RunStats.json`.
+2. The analysis starts with creation of the analysis folder hierarchy, plus caching of LIMS information in an NPG samplesheet (`metadata_cache`) keyed primarily by `id_flowcell_lims` / batch id, together with metadata from the instrument runfolder (`RunParameters.json`, and `RunManifest.json` where needed), rather than depending on `RunStats.json`.
 3. `bases2fastq` runs and produces the deplex output folder.
 4. `samtools import` produces product files.
 5. Elembio `tag_metrics` are generated from `RunStats.json` in the `bases2fastq` output folder.
