@@ -590,11 +590,15 @@ sub _set_vars_from_samplesheet {
     #########
     # Find the samplesheet and set env vars
     #
-    my $cache = npg_pipeline::cache->new(
+    my %cache_init = (
       set_env_vars       => 1,
       id_run             => $self->id_run,
-      cache_location     => $self->analysis_path()
+      cache_location     => $self->analysis_path(),
     );
+    if ($self->has_mlwh_schema) {
+      $cache_init{'mlwh_schema'} = $self->mlwh_schema;
+    }
+    my $cache = npg_pipeline::cache->new(%cache_init);
     if ( none { $ENV{$_} } $cache->env_vars() ) {
       $cache->setup();
       for (@{$cache->messages}) { $self->info($_) };
