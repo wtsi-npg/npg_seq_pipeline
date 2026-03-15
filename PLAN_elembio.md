@@ -140,6 +140,9 @@ Primary changes:
 - Make the analysis daemon choose the correct runfolder resolver by
   manufacturer.
 - Implement or reuse Elembio samplesheet generation for the NPG samplesheet cache from MLWH-backed LIMS data, keyed primarily by `id_flowcell_lims` / batch id as the main link back to LIMS, with `id_run` used for sequencing-run context and as a secondary lookup path where needed.
+- Change the Elembio default for library merging so it is true only when the
+  product is to be aligned, while keeping the behaviour configurable on the
+  command line in the same way as Illumina today.
 - Review stage 2 assumptions in `seq_alignment.pm`.
 
 Likely new Elembio-specific functions:
@@ -371,6 +374,8 @@ Recommendation:
 ### Phase 4: Shared downstream validation
 
 - Run Elembio-imported products through `seq_alignment`
+- Make Elembio default library-merging conditional on alignment, with CLI
+  override support
 - Patch remaining Illumina assumptions in shared stage 2
 
 ### Phase 5: Archival and ops
