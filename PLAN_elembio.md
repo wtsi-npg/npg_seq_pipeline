@@ -8,7 +8,7 @@ existing Illumina path.
 The working assumption is:
 
 - Illumina keeps using the current `p4_stage1_analysis` and related flow.
-- Elembio stage 1 is based on `bases2fastq` plus `samtools import`.
+- Elembio stage 1 is based on per-lane `bases2fastq` plus `samtools import`.
 - Runfolder detection and run metadata for Elembio should come from the
   existing Elembio support in `npg_tracking`, not from
   `npg_tracking::illumina::runfolder`.
@@ -105,17 +105,41 @@ path.
 Recommended Elembio stage 1 flow:
 
 1. Lane-level `elembio_bases2fastq`, one invocation per lane, each writing
-   under `BAM_basecalls/fastq/lane{lane}` and generating a custom
-   `RunManifest` for `bases2fastq`
-2. Lane-and-tag-level `elembio_import` / `samtools import`
-3. Emit per-lane&tag CRAM/BAM into the existing directory scaffold, with
-   later merging used where required to create final products
+   under `BAM_basecalls/fastq/lane{lane}` and running `bases2fastq` in a
+   non-deplexing mode using:
+   - a lane-specific read selector such as `L1R` / `L2R`
+   - `--settings "I1Fastq,True"` and `--settings "I2Fastq,True"` where
+     index FASTQ output is required
+   - a minimal lane-level `[Samples]` CSV, for example `SampleName` /
+     `WholeLane`, rather than a fully deplexing samplesheet
+2. Extend `p4_stage1_analysis` options / templating so `samtools import`
+   can be driven with the appropriate mode for:
+   - single-read or paired-read input
+   - 0, 1, or 2 index reads
+   - single-read input via
+     `-0 <fastq_dir>/*/Samples/WholeLane_L<lane>_R1.fastq`
+   - paired-read input via
+     `-1 <fastq_dir>/*/Samples/WholeLane_L<lane>_R1.fastq` and
+     `-2 <fastq_dir>/*/Samples/WholeLane_L<lane>_R2.fastq`
+   - one index read via
+     `--i1 <fastq_dir>/*/Samples/WholeLane_L<lane>_I1.fastq`
+   - two index reads via the above plus
+     `--i2 <fastq_dir>/*/Samples/WholeLane_L<lane>_I2.fastq`
 
-This is preferable to trying to patch `p4_stage1_analysis` because the current
+This is preferable to forcing the whole Elembio path through the existing
+Illumina `p4_stage1_analysis` behaviour unchanged because the current
 Illumina stage 1 is lane-centric and already performs deplexing via the
-existing `bambi`-based flow, while the Elembio path should stay lane-centric
-for launch/layout purposes but use `bases2fastq` with a lane-specific
-`RunManifest`.
+existing `bambi`-based flow, while the preferred Elembio path should stay
+lane-centric for launch/layout purposes, use `bases2fastq` with a lane-specific
+selector plus a minimal `[Samples]` CSV, and reuse the existing
+`p4_stage1_analysis` machinery only where it is still a good fit for stage-1
+import semantics.
+
+Alternative Elembio stage 1 flow:
+
+1. Lane-level `elembio_bases2fastq` in deplexing mode
+2. Explicit per-lane&tag `elembio_import` / `samtools import`, producing the
+   lane-and-tag CRAM/BAM files used by stage 2
 
 ### 3. Reuse stage 2 only where it is genuinely platform-neutral
 
@@ -139,9 +163,18 @@ Primary changes:
 - Add Elembio-aware run metadata handling.
 - Add a new Elembio central graph, for example
   `function_list_central_elembio.json`.
-- Add a new Elembio stage 1 function instead of reusing
-  `p4_stage1_analysis.pm`.
-- Keep Elembio pipeline setup driven by instrument-runfolder metadata (`RunParameters.json`, and `RunManifest.json` where needed), then replace `qc_interop` with a post-`bases2fastq` QC step driven by `RunStats.json` / `RunManifest.json` from the deplex output folder.
+- Add a new Elembio `elembio_bases2fastq` stage-1 entry function, while
+  reusing / extending `p4_stage1_analysis.pm` where it remains a good fit for
+  import option handling.
+- Extend `p4_stage1_analysis` option generation so Elembio can select the
+  appropriate `samtools import` mode from read structure
+  (single/paired; 0/1/2 index reads), including the correct
+  `-0` vs `-1/-2` and optional `--i1/--i2` FASTQ inputs from the per-lane
+  `bases2fastq` output tree.
+- Keep Elembio pipeline setup driven by instrument-runfolder metadata
+  (`RunParameters.json`, and `RunManifest.json` where needed), then replace
+  `qc_interop` with a post-`bases2fastq` QC step driven by `RunStats.json` /
+  `RunManifest.json` from the `bases2fastq` output folder.
 - Make the analysis daemon choose the correct runfolder resolver by
   manufacturer.
 - Implement or reuse Elembio samplesheet generation for the NPG samplesheet cache from MLWH-backed LIMS data, keyed primarily by `id_flowcell_lims` / batch id as the main link back to LIMS, with `id_run` used for sequencing-run context and as a secondary lookup path where needed.
@@ -153,8 +186,11 @@ Primary changes:
 Likely new Elembio-specific functions:
 
 - `elembio_bases2fastq`
-- `elembio_import`
 - `elembio_qc_runstats`
+
+Alternative / fallback Elembio-specific functions:
+
+- `elembio_import`
 
 Areas that probably need platform branching:
 
@@ -283,7 +319,8 @@ Preferred target outcome:
 - lane-and-tag imported CRAM/BAM files placed where the existing stage 2 can
   consume them, with later merging used only where needed to create final
   products
-- lane-level QC outputs generated after deplexing from `RunStats.json` in the `bases2fastq` output folder
+- lane-level QC outputs generated from `RunStats.json` in the `bases2fastq`
+  output folder
 - short-file cache populated only if downstream checks still require FASTQ input
 
 ### QC strategy
@@ -312,13 +349,17 @@ Assumption: Walk-up / batchless Elembio runs are in scope for automatic analysis
 
 Question:
 
-- Do we want Elembio stage 1 to emit lane-level intermediates before import,
-  or go straight from per-lane `bases2fastq` to per-lane&tag imports?
+- Should the main Elembio path use per-lane non-deplexing `bases2fastq`
+  followed by `p4_stage1_analysis` / `samtools import` modes selected from
+  read structure, or should it use a fully deplexing `bases2fastq` step plus
+  explicit per-lane&tag import as a separate stage?
 
 Recommendation:
 
-- go directly from per-lane `bases2fastq` output to per-lane&tag imports
-  unless a downstream requirement forces extra lane-level stage-1 files.
+- make the non-deplexing per-lane `bases2fastq` plus
+  `p4_stage1_analysis`-driven import path the main implementation, and keep
+  the fully deplexing plus explicit-import path as an alternative if the main
+  route proves too awkward.
 
 ### 3. Tag-zero semantics
 
@@ -362,9 +403,11 @@ Recommendation:
 - Add Elembio base / metadata wrapper
 - Add Elembio central graph
 - Add Elembio lane-level `elembio_bases2fastq` scaffolding, including
-  generation of per-lane custom `RunManifest` input files under
-  `BAM_basecalls/fastq/lane{lane}`
-- Add per-lane&tag `elembio_import` scaffolding to model `samtools import`
+  generation of per-lane selector / minimal `[Samples]` CSV inputs under
+  `BAM_basecalls/fastq/lane{lane}` in non-deplexing mode
+- Add Elembio-aware `p4_stage1_analysis` option scaffolding for
+  `samtools import` mode selection across single/paired and 0/1/2-index cases,
+  including the expected `WholeLane_L<lane>_{R1,R2,I1,I2}.fastq` inputs
 - Integrate Elembio samplesheet / metadata-cache bootstrapping so the central
   runner can start with MLWH-backed LIMS data, keyed primarily by
   `id_flowcell_lims` / batch id
@@ -372,10 +415,14 @@ Recommendation:
 ### Phase 2: Elembio stage 1
 
 - Implement per-lane `elembio_bases2fastq`, with output rooted in
-  `BAM_basecalls/fastq/lane{lane}` and the deplex output treated as the source
-  for downstream Elembio QC
-- Implement per-lane&tag `elembio_import` / `samtools import`
-- Write lane-and-tag outputs into the existing analysis directory scaffold
+  `BAM_basecalls/fastq/lane{lane}` in non-deplexing mode, using lane-specific
+  selectors plus minimal `[Samples]` CSV inputs
+- Implement Elembio `p4_stage1_analysis` option sets for `samtools import`
+  across single-read / paired-read and 0 / 1 / 2 index-read cases, using
+  `-0` for single-read data, `-1/-2` for paired data, and optional
+  `--i1/--i2` FASTQ inputs from `*/Samples/WholeLane_L<lane>_*.fastq`
+- Keep the deplexing `elembio_import` route as a documented fallback /
+  alternative implementation
 
 ### Phase 3: QC integration
 
@@ -406,8 +453,8 @@ Recommendation:
 ## Main Risks
 
 - Architectural mismatch between the current Illumina lane-centric stage 1 and
-  a different Elembio lane-centric stage 1 built around `bases2fastq` and
-  lane-specific manifests.
+  a different Elembio lane-centric stage 1 built around `bases2fastq`,
+  lane-specific manifests, and Elembio-specific `samtools import` modes.
 - Current dependence on batch id / samplesheet-backed LIMS cache.
 - Missing automatic transition to `analysis pending`.
 - Hidden Illumina assumptions in shared downstream logic.
@@ -419,9 +466,14 @@ The smallest useful end-to-end slice is:
 
 1. Manually launch the Elembio central graph on a runfolder.
 2. The analysis starts with creation of the analysis folder hierarchy, plus caching of LIMS information in an NPG samplesheet (`metadata_cache`) keyed primarily by `id_flowcell_lims` / batch id, together with metadata from the instrument runfolder (`RunParameters.json`, and `RunManifest.json` where needed), rather than depending on `RunStats.json`.
-3. `elembio_bases2fastq` runs once per lane, creating a custom lane-specific
-   `RunManifest` and producing output under `BAM_basecalls/fastq/lane{lane}`.
-4. `elembio_import` runs once per lane&tag and produces lane-and-tag files.
+3. `elembio_bases2fastq` runs once per lane, using a lane-specific selector
+   and a minimal lane-level `[Samples]` CSV, running in non-deplexing mode,
+   and producing output under `BAM_basecalls/fastq/lane{lane}`.
+4. `p4_stage1_analysis` selects the appropriate `samtools import` mode from
+   the run structure and produces lane-and-tag files:
+   - `-0 <fastq_dir>/*/Samples/WholeLane_L<lane>_R1.fastq` for single-read
+   - `-1/-2` with `R1` and `R2` FASTQs for paired-read
+   - optional `--i1` / `--i2` with `I1` / `I2` FASTQs for indexed runs
 5. Elembio `tag_metrics` are generated from `RunStats.json` in the `bases2fastq` output folder.
 6. A minimal subset of `seq_alignment` runs successfully on imported files.
 
