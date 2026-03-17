@@ -104,13 +104,18 @@ path.
 
 Recommended Elembio stage 1 flow:
 
-1. Run-level `bases2fastq`
-2. Product-level `samtools import`
-3. Emit per-product CRAM/BAM into the existing product directory scaffold
+1. Lane-level `elembio_bases2fastq`, one invocation per lane, each writing
+   under `BAM_basecalls/fastq/lane{lane}` and generating a custom
+   `RunManifest` for `bases2fastq`
+2. Lane-and-tag-level `elembio_import` / `samtools import`
+3. Emit per-lane&tag CRAM/BAM into the existing directory scaffold, with
+   later merging used where required to create final products
 
 This is preferable to trying to patch `p4_stage1_analysis` because the current
-Illumina stage 1 is lane-centric and undecoded, while Elembio deplexing is
-naturally run-centric and already deplexed.
+Illumina stage 1 is lane-centric and already performs deplexing via the
+existing `bambi`-based flow, while the Elembio path should stay lane-centric
+for launch/layout purposes but use `bases2fastq` with a lane-specific
+`RunManifest`.
 
 ### 3. Reuse stage 2 only where it is genuinely platform-neutral
 
@@ -147,9 +152,9 @@ Primary changes:
 
 Likely new Elembio-specific functions:
 
-- `elembio_stage1_analysis`
+- `elembio_bases2fastq`
+- `elembio_import`
 - `elembio_qc_runstats`
-- optionally separate `elembio_bases2fastq` and `elembio_import`
 
 Areas that probably need platform branching:
 
@@ -275,8 +280,9 @@ Key distinction:
 
 Preferred target outcome:
 
-- product-level imported CRAM/BAM files placed where the existing stage 2 can
-  consume them
+- lane-and-tag imported CRAM/BAM files placed where the existing stage 2 can
+  consume them, with later merging used only where needed to create final
+  products
 - lane-level QC outputs generated after deplexing from `RunStats.json` in the `bases2fastq` output folder
 - short-file cache populated only if downstream checks still require FASTQ input
 
@@ -306,13 +312,13 @@ Assumption: Walk-up / batchless Elembio runs are in scope for automatic analysis
 
 Question:
 
-- Do we want Elembio stage 1 to emit lane-level intermediates, or go directly
-  to product-level imports?
+- Do we want Elembio stage 1 to emit lane-level intermediates before import,
+  or go straight from per-lane `bases2fastq` to per-lane&tag imports?
 
 Recommendation:
 
-- go directly to product-level imports unless a downstream requirement forces
-  lane-level stage-1 files.
+- go directly from per-lane `bases2fastq` output to per-lane&tag imports
+  unless a downstream requirement forces extra lane-level stage-1 files.
 
 ### 3. Tag-zero semantics
 
@@ -355,16 +361,21 @@ Recommendation:
 
 - Add Elembio base / metadata wrapper
 - Add Elembio central graph
-- Add Elembio stage-1 function scaffolding
+- Add Elembio lane-level `elembio_bases2fastq` scaffolding, including
+  generation of per-lane custom `RunManifest` input files under
+  `BAM_basecalls/fastq/lane{lane}`
+- Add per-lane&tag `elembio_import` scaffolding to model `samtools import`
 - Integrate Elembio samplesheet / metadata-cache bootstrapping so the central
   runner can start with MLWH-backed LIMS data, keyed primarily by
   `id_flowcell_lims` / batch id
 
 ### Phase 2: Elembio stage 1
 
-- Implement `bases2fastq`, with the deplex output folder treated as the source for downstream Elembio QC
-- Implement `samtools import`
-- Write outputs into existing product scaffold
+- Implement per-lane `elembio_bases2fastq`, with output rooted in
+  `BAM_basecalls/fastq/lane{lane}` and the deplex output treated as the source
+  for downstream Elembio QC
+- Implement per-lane&tag `elembio_import` / `samtools import`
+- Write lane-and-tag outputs into the existing analysis directory scaffold
 
 ### Phase 3: QC integration
 
@@ -394,8 +405,9 @@ Recommendation:
 
 ## Main Risks
 
-- Architectural mismatch between Illumina lane-centric stage 1 and Elembio
-  run-centric deplexing.
+- Architectural mismatch between the current Illumina lane-centric stage 1 and
+  a different Elembio lane-centric stage 1 built around `bases2fastq` and
+  lane-specific manifests.
 - Current dependence on batch id / samplesheet-backed LIMS cache.
 - Missing automatic transition to `analysis pending`.
 - Hidden Illumina assumptions in shared downstream logic.
@@ -407,8 +419,9 @@ The smallest useful end-to-end slice is:
 
 1. Manually launch the Elembio central graph on a runfolder.
 2. The analysis starts with creation of the analysis folder hierarchy, plus caching of LIMS information in an NPG samplesheet (`metadata_cache`) keyed primarily by `id_flowcell_lims` / batch id, together with metadata from the instrument runfolder (`RunParameters.json`, and `RunManifest.json` where needed), rather than depending on `RunStats.json`.
-3. `bases2fastq` runs and produces the deplex output folder.
-4. `samtools import` produces product files.
+3. `elembio_bases2fastq` runs once per lane, creating a custom lane-specific
+   `RunManifest` and producing output under `BAM_basecalls/fastq/lane{lane}`.
+4. `elembio_import` runs once per lane&tag and produces lane-and-tag files.
 5. Elembio `tag_metrics` are generated from `RunStats.json` in the `bases2fastq` output folder.
 6. A minimal subset of `seq_alignment` runs successfully on imported files.
 
