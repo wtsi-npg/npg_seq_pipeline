@@ -117,14 +117,14 @@ Recommended Elembio stage 1 flow:
    - single-read or paired-read input
    - 0, 1, or 2 index reads
    - single-read input via
-     `-0 <fastq_dir>/*/Samples/WholeLane_L<lane>_R1.fastq`
+     `-0 <fastq_dir>/Samples/WholeLane_L<lane>_R1.fastq`
    - paired-read input via
-     `-1 <fastq_dir>/*/Samples/WholeLane_L<lane>_R1.fastq` and
-     `-2 <fastq_dir>/*/Samples/WholeLane_L<lane>_R2.fastq`
+     `-1 <fastq_dir>/Samples/WholeLane_L<lane>_R1.fastq` and
+     `-2 <fastq_dir>/Samples/WholeLane_L<lane>_R2.fastq`
    - one index read via
-     `--i1 <fastq_dir>/*/Samples/WholeLane_L<lane>_I1.fastq`
+     `--i1 <fastq_dir>/Samples/WholeLane_L<lane>_I1.fastq`
    - two index reads via the above plus
-     `--i2 <fastq_dir>/*/Samples/WholeLane_L<lane>_I2.fastq`
+     `--i2 <fastq_dir>/Samples/WholeLane_L<lane>_I2.fastq`
 
 This is preferable to forcing the whole Elembio path through the existing
 Illumina `p4_stage1_analysis` behaviour unchanged because the current
@@ -407,7 +407,7 @@ Recommendation:
   `BAM_basecalls/fastq/lane{lane}` in non-deplexing mode
 - Add Elembio-aware `p4_stage1_analysis` option scaffolding for
   `samtools import` mode selection across single/paired and 0/1/2-index cases,
-  including the expected `WholeLane_L<lane>_{R1,R2,I1,I2}.fastq` inputs
+  including the expected `Samples/WholeLane_L<lane>_{R1,R2,I1,I2}.fastq` inputs
 - Integrate Elembio samplesheet / metadata-cache bootstrapping so the central
   runner can start with MLWH-backed LIMS data, keyed primarily by
   `id_flowcell_lims` / batch id
@@ -420,7 +420,7 @@ Recommendation:
 - Implement Elembio `p4_stage1_analysis` option sets for `samtools import`
   across single-read / paired-read and 0 / 1 / 2 index-read cases, using
   `-0` for single-read data, `-1/-2` for paired data, and optional
-  `--i1/--i2` FASTQ inputs from `*/Samples/WholeLane_L<lane>_*.fastq`
+  `--i1/--i2` FASTQ inputs from `Samples/WholeLane_L<lane>_*.fastq`
 - Keep the deplexing `elembio_import` route as a documented fallback /
   alternative implementation
 
@@ -471,7 +471,7 @@ The smallest useful end-to-end slice is:
    and producing output under `BAM_basecalls/fastq/lane{lane}`.
 4. `p4_stage1_analysis` selects the appropriate `samtools import` mode from
    the run structure and produces lane-and-tag files:
-   - `-0 <fastq_dir>/*/Samples/WholeLane_L<lane>_R1.fastq` for single-read
+   - `-0 <fastq_dir>/Samples/WholeLane_L<lane>_R1.fastq` for single-read
    - `-1/-2` with `R1` and `R2` FASTQs for paired-read
    - optional `--i1` / `--i2` with `I1` / `I2` FASTQs for indexed runs
 5. Elembio `tag_metrics` are generated from `RunStats.json` in the `bases2fastq` output folder.

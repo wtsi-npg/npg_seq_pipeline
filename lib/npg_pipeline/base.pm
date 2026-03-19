@@ -32,17 +32,9 @@ with qw{
 
 Readonly::Array my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                subpath
-                                               tilelayout_rows
-                                               tile_count
-                                               lane_tilecount
-                                               tilelayout_columns
                                                npg_tracking_schema
                                                tracking_run
-                                               experiment_name
                                                logger
-                                               lane_count
-                                               expected_cycle_count
-                                               run_flowcell
                                                qc_path
                                               /;
 

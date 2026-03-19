@@ -1,9 +1,13 @@
 use strict;
 use warnings;
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Exception;
 use File::Copy qw(cp);
 use File::Copy::Recursive qw(dircopy);
+use File::Slurp qw(write_file);
+use File::Spec::Functions qw(catdir catfile);
+use Cwd qw(abs_path);
+use FindBin qw($Bin);
 use Perl6::Slurp;
 use JSON;
 use File::Temp qw(tempdir);
@@ -12,6 +16,11 @@ use t::util;
 
 my $util = t::util->new(clean_temp_directory => 1);
 my $dir = $util->temp_directory();
+my $workspace_root = abs_path(catdir($Bin, q[..], q[..], q[..]));
+my $my_stack_bin = catdir($workspace_root, q{my_stack}, q{bin});
+my $p4_template_path = catdir($workspace_root, q{src}, q{p4}, q{data}, q{vtlib});
+my $perlane_template =
+  catfile($p4_template_path, q{perlane_phix_deplex_wtsi_stage1_template.json});
 
 use_ok('npg_pipeline::function::p4_stage1_analysis');
 
@@ -57,6 +66,39 @@ sub _create_runfolder {
     or die 'Failed to copy the InterOp file';
   mkdir join(q[/], $bam_basecall_path , "metadata_cache_${id_run}")
     or die 'Failed to create directory';
+
+  return $rf_info;
+}
+
+sub _write_elembio_samplesheet {
+  my ($path) = @_;
+
+  my @lines = (
+    q{[Data],,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,},
+    q{Lane,Sample_ID,Sample_Name,GenomeFolder,Index,bait_name,default_library_type,default_tag_sequence,default_tagtwo_sequence,email_addresses,email_addresses_of_followers,email_addresses_of_managers,email_addresses_of_owners,gbs_plex_name,is_control,is_pool,lane_id,lane_priority,library_name,organism,organism_taxon_id,project_cost_code,project_id,project_name,purpose,qc_state,request_id,required_insert_size_range,sample_accession_number,sample_cohort,sample_common_name,sample_consent_withdrawn,sample_description,sample_donor_id,sample_id,sample_name,sample_public_name,sample_reference_genome,sample_supplier_name,spiked_phix_tag_index,study_accession_number,study_alignments_in_bam,study_contains_nonconsented_human,study_contains_nonconsented_xahuman,study_description,study_id,study_name,study_reference_genome,study_separate_y_chromosome_data,study_title,tag_index,},
+    q{1,6088421,EGAN00001085691,,ATCACGTT,,Agilent Pulldown,ATCACGTT,,cdt@sanger.ac.uk,las@sanger.ac.uk,cdt@sanger.ac.uk,sm2@sanger.ac.uk,,0,0,,,PD8949a2_pd2 6088421,Human,9606,S0768,730,Wellcome Trust Senior Clinical Fellowship Grant,standard,,,from:100 to:400,EGAN00001085691,,Homo sapiens,,,,1503596,PD8949a2_pd2,PD8949a2,,,168,EGAS00001000027,1,0,0,Study,1713,TMD_AMLK Exome Study,Homo_sapiens (CGP_GRCh37.NCBI.allchr_MT),,TMD_AMLK Exome Study,1,},
+    q{1,6088422,EGAN00001085692,,CGATGTTT,,Agilent Pulldown,CGATGTTT,,cdt@sanger.ac.uk,las@sanger.ac.uk,cdt@sanger.ac.uk,sm2@sanger.ac.uk,,0,0,,,PD8950a_pd2 6088422,Human,9606,S0768,730,Wellcome Trust Senior Clinical Fellowship Grant,standard,,,from:100 to:400,EGAN00001085692,,Homo sapiens,,,,1503597,PD8950a_pd2,PD8950a,,,168,EGAS00001000027,1,0,0,Study,1713,TMD_AMLK Exome Study,Homo_sapiens (CGP_GRCh37.NCBI.allchr_MT),,TMD_AMLK Exome Study,2,},
+    q{2,6088425,EGAN00001085694,,TGACCACT,,Agilent Pulldown,TGACCACT,,cdt@sanger.ac.uk,las@sanger.ac.uk,cdt@sanger.ac.uk,sm2@sanger.ac.uk,,0,0,,,PD8953a2_pd2 6088425,Human,9606,S0768,730,Wellcome Trust Senior Clinical Fellowship Grant,standard,,,from:100 to:400,EGAN00001085694,,Homo sapiens,,,,1503599,PD8953a2_pd2,PD8953a2,,,168,EGAS00001000027,1,0,0,Study,1713,TMD_AMLK Exome Study,Homo_sapiens (CGP_GRCh37.NCBI.allchr_MT),,TMD_AMLK Exome Study,4,},
+  );
+
+  write_file($path, map { $_ . qq[\n] } @lines);
+  return;
+}
+
+sub _create_elembio_runfolder {
+  my ($rf_name) = @_;
+
+  my $tdir = tempdir(CLEANUP => 1);
+  my $rf_info = $util->create_runfolder(
+    $tdir, {'runfolder_name' => $rf_name, analysis_path => 'BAM_basecalls'}
+  );
+  my $runfolder = $rf_info->{'runfolder_path'};
+  my $bam_basecall_path = $rf_info->{'analysis_path'};
+
+  cp("t/data/elembio/${rf_name}/RunParameters.json", "$runfolder/RunParameters.json")
+    or die 'Failed to copy Elembio run params';
+  mkdir join(q[/], $bam_basecall_path, q{metadata_cache_51922})
+    or die 'Failed to create Elembio metadata cache directory';
 
   return $rf_info;
 }
@@ -547,5 +589,111 @@ subtest 'check_duplex-seq' => sub {
   is_deeply($h, $expected, 'correct json file content (for p4 stage1 params file)');
 };
 
-1;
+subtest 'check Elembio import mode selection' => sub {
+  plan tests => 24;
 
+  my $samplesheet_path = tempdir(CLEANUP => 1) . q{/samplesheet_51922.csv};
+  _write_elembio_samplesheet($samplesheet_path);
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = $samplesheet_path;
+
+  my $paired_info = _create_elembio_runfolder(q{20250127_AV244103_1234_NT1850075L});
+  my $paired = npg_pipeline::function::p4_stage1_analysis->new(
+    runfolder_path    => $paired_info->{'runfolder_path'},
+    bam_basecall_path => $paired_info->{'analysis_path'},
+    id_run            => 51922,
+    repository        => $repos_root,
+    resource          => $default,
+    timestamp         => q{20260317-120000},
+  );
+  is($paired->manufacturer, q{Element Biosciences}, 'paired fixture manufacturer');
+  is(
+    join(q{ }, $paired->_elembio_import_args(1)),
+    q{-R 51922_1 -1 } . $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R1.fastq } .
+    q{-2 } . $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R2.fastq } .
+    q{--i1 } . $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_I1.fastq -u -O bam},
+    'paired single-index import args'
+  );
+
+  my $dual_info = _create_elembio_runfolder(q{20250101_AV244103_NT1234567E});
+  my $dual = npg_pipeline::function::p4_stage1_analysis->new(
+    runfolder_path    => $dual_info->{'runfolder_path'},
+    bam_basecall_path => $dual_info->{'analysis_path'},
+    id_run            => 51922,
+    repository        => $repos_root,
+    resource          => $default,
+  );
+  is(
+    join(q{ }, $dual->_elembio_import_args(2)),
+    q{-R 51922_2 -1 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_R1.fastq } .
+    q{-2 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_R2.fastq } .
+    q{--i1 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_I1.fastq } .
+    q{--i2 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_I2.fastq -u -O bam},
+    'paired dual-index import args'
+  );
+
+  my $single_info = _create_elembio_runfolder(q{20250315_AV244103_SINGLE_END});
+  my $single = npg_pipeline::function::p4_stage1_analysis->new(
+    runfolder_path    => $single_info->{'runfolder_path'},
+    bam_basecall_path => $single_info->{'analysis_path'},
+    id_run            => 51922,
+    repository        => $repos_root,
+    resource          => $default,
+  );
+  is(
+    join(q{ }, $single->_elembio_import_args(1)),
+    q{-R 51922_1 -0 } . $single_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R1.fastq -u -O bam},
+    'single-end import args'
+  );
+
+  my $definitions;
+  lives_ok { $definitions = $paired->generate() } 'Elembio p4 stage1 generation succeeds';
+  is(scalar @{$definitions}, 2, 'two Elembio lane definitions returned');
+  isa_ok($definitions->[0], q{npg_pipeline::function::definition});
+  like($definitions->[0]->command, qr/\Abash -c ' cd .*\/lane1\/log && vtfp\.pl /,
+    'lane1 command uses the shared p4 wrapper');
+  like($definitions->[1]->command,
+    qr/perlane_phix_deplex_wtsi_stage1_template\.json && viv\.pl -s -x -v 3 -o viv_51922_2\.log run_51922_2\.json '\z/,
+    'lane2 command runs the shared stage1 template');
+
+  my $param_path = $paired_info->{'analysis_path'} .
+    q{/p4_stage1_analysis/lane1/param_files/51922_1_p4s1_pv_in.json};
+  ok(-f $param_path, 'lane1 param file created');
+  my $params = from_json(slurp($param_path));
+  is($params->{'assign'}->[0]->{'s1_se_pe'}, q{pe}, 'paired mode in params');
+  is($params->{'assign'}->[0]->{'samtools_executable'}, q{samtools}, 'samtools executable in params');
+  is($params->{'assign'}->[0]->{'stage1_input_type'}, q{fastq_import},
+    'fastq import mode recorded in params');
+  is($params->{'assign'}->[0]->{'fastq_dir'},
+    $paired_info->{'analysis_path'} . q{/fastq/lane1},
+    'fastq dir saved in params');
+  is($params->{'assign'}->[0]->{'fastq_samples_dir'},
+    $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples},
+    'fastq samples dir saved in params');
+  is($params->{'assign'}->[0]->{'fastq_import_r1'},
+    $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R1.fastq},
+    'R1 path saved in params');
+  is($params->{'assign'}->[0]->{'fastq_import_i1'},
+    $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_I1.fastq},
+    'I1 path saved in params');
+  ok(exists $params->{'assign'}->[0]->{'barcode_file'}, 'barcode file saved in params');
+  like($params->{'assign'}->[0]->{'fastq_import_arg_string'},
+    qr/\A-R 51922_1 -1 .*WholeLane_L1_R1\.fastq -2 .*WholeLane_L1_R2\.fastq --i1 .*WholeLane_L1_I1\.fastq -u -O bam\z/,
+    'import arg string saved in params');
+  like($params->{'assign'}->[0]->{'fastq_import_cmd'},
+    qr/\Asamtools import -R 51922_1 -1 .*WholeLane_L1_R1\.fastq -2 .*WholeLane_L1_R2\.fastq --i1 .*WholeLane_L1_I1\.fastq -u -O bam\z/,
+    'full import command saved in params');
+
+  my $graph = from_json(slurp qq{vtfp.pl -verbosity_level 0 -no-absolute_program_paths -template_path $p4_template_path -param_vals $param_path -keys cfgdatadir,aligner_numthreads,s2b_mt_val,bamsormadup_numthreads,br_numthreads_val -vals ${p4_template_path}/,2,2,2,2 $perlane_template |});
+  ok($graph->{'nodes'} && ref $graph->{'nodes'} eq q{ARRAY}, 'vtfp graph nodes returned');
+  my ($import_node) = grep { $_->{'id'} && $_->{'id'} eq q{illumina2bam} } @{$graph->{'nodes'}};
+  ok($import_node, 'front-end node present in expanded graph');
+  ok($import_node->{'cmd'}, 'front-end node has command');
+  my $expanded_command = ref $import_node->{'cmd'} eq q{ARRAY}
+    ? join(q{ }, @{$import_node->{'cmd'}})
+    : $import_node->{'cmd'};
+  like($expanded_command,
+    qr/\Asamtools import -R 51922_1 -1 .*WholeLane_L1_R1\.fastq -2 .*WholeLane_L1_R2\.fastq --i1 .*WholeLane_L1_I1\.fastq -u -O bam\z/,
+    'expanded graph uses whole-lane fastq import command');
+};
+
+1;

@@ -58,7 +58,6 @@ Readonly::Array  my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                 id_flowcell_lims
                                                 conf_path
                                                 logger
-                                                workflow_type
                                                /;
 
 =head1 NAME

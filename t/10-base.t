@@ -61,6 +61,8 @@ sub _assert_elembio_read_structure {
     "$label combined indexing cycle range");
   is($base->expected_cycle_count, $expected->{expected_cycle_count},
     "$label expected cycle count");
+  is($base->lane_count, $expected->{lane_count},
+    "$label lane count");
 }
 
 subtest 'local flag' => sub {
@@ -120,7 +122,7 @@ subtest 'label' => sub {
 };
 
 subtest 'Elembio read structure from RunParameters.json' => sub {
-  plan tests => 47;
+  plan tests => 51;
 
   _assert_elembio_read_structure(
     _elembio_base(q[t/data/elembio/20250127_AV244103_1234_NT1850075L]),
@@ -137,6 +139,7 @@ subtest 'Elembio read structure from RunParameters.json' => sub {
       index_read2_cycle_range => [],
       indexing_cycle_range    => [1, 8],
       expected_cycle_count    => 310,
+      lane_count              => 2,
     }
   );
 
@@ -155,6 +158,7 @@ subtest 'Elembio read structure from RunParameters.json' => sub {
       index_read2_cycle_range => [9, 16],
       indexing_cycle_range    => [1, 16],
       expected_cycle_count    => 318,
+      lane_count              => 2,
     }
   );
 
@@ -173,6 +177,7 @@ subtest 'Elembio read structure from RunParameters.json' => sub {
       index_read2_cycle_range => [],
       indexing_cycle_range    => [],
       expected_cycle_count    => 302,
+      lane_count              => 2,
     }
   );
 
@@ -191,6 +196,7 @@ subtest 'Elembio read structure from RunParameters.json' => sub {
       index_read2_cycle_range => [],
       indexing_cycle_range    => [],
       expected_cycle_count    => 151,
+      lane_count              => 2,
     }
   );
 

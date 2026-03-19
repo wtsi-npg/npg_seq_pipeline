@@ -13,6 +13,7 @@ bin/npg_run_is_deletable
 Build.PL
 Changes
 data/config_files/function_list_central.json
+data/config_files/function_list_central_elembio.json
 data/config_files/function_list_central.json.png
 data/config_files/function_list_post_qc_review.json
 data/config_files/function_list_post_qc_review.json.png
@@ -45,6 +46,7 @@ lib/npg_pipeline/function/bqsr_calc.pm
 lib/npg_pipeline/function/cluster_count.pm
 lib/npg_pipeline/function/current_analysis_link.pm
 lib/npg_pipeline/function/definition.pm
+lib/npg_pipeline/function/elembio_bases2fastq.pm
 lib/npg_pipeline/function/haplotype_caller.pm
 lib/npg_pipeline/function/irods_locations_warehouse_archiver.pm
 lib/npg_pipeline/function/log_files_archiver.pm
@@ -112,6 +114,7 @@ t/20-function-bqsr_calc.t
 t/20-function-cluster_count.t
 t/20-function-current_analysis_link.t
 t/20-function-definition.t
+t/20-function-elembio_bases2fastq.t
 t/20-function-haplotype_caller.t
 t/20-function-irods_locations_warehouse_archiver.t
 t/20-function-log_files_archiver.t
