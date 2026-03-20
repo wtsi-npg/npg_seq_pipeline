@@ -227,7 +227,7 @@ sub _elembio_fastq_file_path {
     q{fastq},
     q{lane} . $position,
     q{Samples},
-    q{WholeLane_L} . $position . q{_} . $read_name . q{.fastq}
+    q{WholeLane_L} . $position . q{_} . $read_name . q{.fastq.gz}
   );
 }
 

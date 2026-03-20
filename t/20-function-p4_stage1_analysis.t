@@ -608,9 +608,9 @@ subtest 'check Elembio import mode selection' => sub {
   is($paired->manufacturer, q{Element Biosciences}, 'paired fixture manufacturer');
   is(
     join(q{ }, $paired->_elembio_import_args(1)),
-    q{-R 51922_1 -1 } . $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R1.fastq } .
-    q{-2 } . $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R2.fastq } .
-    q{--i1 } . $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_I1.fastq -u -O bam},
+    q{-R 51922_1 -1 } . $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R1.fastq.gz } .
+    q{-2 } . $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R2.fastq.gz } .
+    q{--i1 } . $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_I1.fastq.gz -u -O bam},
     'paired single-index import args'
   );
 
@@ -624,10 +624,10 @@ subtest 'check Elembio import mode selection' => sub {
   );
   is(
     join(q{ }, $dual->_elembio_import_args(2)),
-    q{-R 51922_2 -1 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_R1.fastq } .
-    q{-2 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_R2.fastq } .
-    q{--i1 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_I1.fastq } .
-    q{--i2 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_I2.fastq -u -O bam},
+    q{-R 51922_2 -1 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_R1.fastq.gz } .
+    q{-2 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_R2.fastq.gz } .
+    q{--i1 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_I1.fastq.gz } .
+    q{--i2 } . $dual_info->{'analysis_path'} . q{/fastq/lane2/Samples/WholeLane_L2_I2.fastq.gz -u -O bam},
     'paired dual-index import args'
   );
 
@@ -641,7 +641,7 @@ subtest 'check Elembio import mode selection' => sub {
   );
   is(
     join(q{ }, $single->_elembio_import_args(1)),
-    q{-R 51922_1 -0 } . $single_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R1.fastq -u -O bam},
+    q{-R 51922_1 -0 } . $single_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R1.fastq.gz -u -O bam},
     'single-end import args'
   );
 
@@ -670,17 +670,17 @@ subtest 'check Elembio import mode selection' => sub {
     $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples},
     'fastq samples dir saved in params');
   is($params->{'assign'}->[0]->{'fastq_import_r1'},
-    $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R1.fastq},
+    $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_R1.fastq.gz},
     'R1 path saved in params');
   is($params->{'assign'}->[0]->{'fastq_import_i1'},
-    $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_I1.fastq},
+    $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_I1.fastq.gz},
     'I1 path saved in params');
   ok(exists $params->{'assign'}->[0]->{'barcode_file'}, 'barcode file saved in params');
   like($params->{'assign'}->[0]->{'fastq_import_arg_string'},
-    qr/\A-R 51922_1 -1 .*WholeLane_L1_R1\.fastq -2 .*WholeLane_L1_R2\.fastq --i1 .*WholeLane_L1_I1\.fastq -u -O bam\z/,
+    qr/\A-R 51922_1 -1 .*WholeLane_L1_R1\.fastq\.gz -2 .*WholeLane_L1_R2\.fastq\.gz --i1 .*WholeLane_L1_I1\.fastq\.gz -u -O bam\z/,
     'import arg string saved in params');
   like($params->{'assign'}->[0]->{'fastq_import_cmd'},
-    qr/\Asamtools import -R 51922_1 -1 .*WholeLane_L1_R1\.fastq -2 .*WholeLane_L1_R2\.fastq --i1 .*WholeLane_L1_I1\.fastq -u -O bam\z/,
+    qr/\Asamtools import -R 51922_1 -1 .*WholeLane_L1_R1\.fastq\.gz -2 .*WholeLane_L1_R2\.fastq\.gz --i1 .*WholeLane_L1_I1\.fastq\.gz -u -O bam\z/,
     'full import command saved in params');
 
   my $graph = from_json(slurp qq{vtfp.pl -verbosity_level 0 -no-absolute_program_paths -template_path $p4_template_path -param_vals $param_path -keys cfgdatadir,aligner_numthreads,s2b_mt_val,bamsormadup_numthreads,br_numthreads_val -vals ${p4_template_path}/,2,2,2,2 $perlane_template |});
@@ -692,7 +692,7 @@ subtest 'check Elembio import mode selection' => sub {
     ? join(q{ }, @{$import_node->{'cmd'}})
     : $import_node->{'cmd'};
   like($expanded_command,
-    qr/\Asamtools import -R 51922_1 -1 .*WholeLane_L1_R1\.fastq -2 .*WholeLane_L1_R2\.fastq --i1 .*WholeLane_L1_I1\.fastq -u -O bam\z/,
+    qr/\Asamtools import -R 51922_1 -1 .*WholeLane_L1_R1\.fastq\.gz -2 .*WholeLane_L1_R2\.fastq\.gz --i1 .*WholeLane_L1_I1\.fastq\.gz -u -O bam\z/,
     'expanded graph uses whole-lane fastq import command');
 };
 

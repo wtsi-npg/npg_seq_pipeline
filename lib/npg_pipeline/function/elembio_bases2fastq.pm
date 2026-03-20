@@ -92,7 +92,7 @@ sub generate {
     my $samples_path = $self->_write_lane_samples_file($lane);
     push @definitions, $self->create_definition({
       job_name    => join(q{_}, q{elembio_bases2fastq}, $self->id_run,
-                          q{lane} . $lane, $self->timestamp),
+                          $self->timestamp),
       command     => $self->_command($lane, $samples_path),
       composition => npg_pipeline::product->new(
         rpt_list => join q{:}, $self->id_run, $lane

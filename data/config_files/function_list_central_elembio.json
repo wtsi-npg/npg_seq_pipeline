@@ -127,6 +127,14 @@
                     }
                 }
             }
-        ]
+        ],
+        "metadata": {
+            "description": "A generic directed graph of functions (job types) for WSI pipeline for the analysis of raw Elembio sequencing data",
+            "default_resources": {
+                "minimum_cpu": 1,
+                "memory": 2,
+                "array_cpu_limit": 64
+            }
+        }
     }
 }

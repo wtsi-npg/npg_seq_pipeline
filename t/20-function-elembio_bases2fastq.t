@@ -72,10 +72,10 @@ subtest 'generate lane-level Elembio bases2fastq definitions' => sub {
   my $d2 = $definitions->[1];
   isa_ok($d1, q{npg_pipeline::function::definition});
   isa_ok($d2, q{npg_pipeline::function::definition});
-  is($d1->job_name, q{elembio_bases2fastq_51922_lane1_20260316-101010},
-    'lane1 job name');
-  is($d2->job_name, q{elembio_bases2fastq_51922_lane2_20260316-101010},
-    'lane2 job name');
+  is($d1->job_name, q{elembio_bases2fastq_51922_20260316-101010},
+    'shared array job name for lane1');
+  is($d2->job_name, q{elembio_bases2fastq_51922_20260316-101010},
+    'shared array job name for lane2');
   is($d1->queue, q{p4stage1}, 'lane1 queue');
   is($d2->queue, q{p4stage1}, 'lane2 queue');
   ok(!$d1->has_command_preexec, 'lane1 has no preexec command');
