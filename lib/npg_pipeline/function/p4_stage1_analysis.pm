@@ -26,6 +26,7 @@ our $VERSION  = '0';
 
 Readonly::Scalar my $DEFAULT_I2B_THREAD_COUNT     => 3; # value passed to bambi i2b --threads flag
 Readonly::Scalar my $DEFAULT_SPLIT_THREADS_COUNT  => 0; # value passed to samtools split --threads flag
+Readonly::Scalar my $DEFAULT_SEED_READ_COUNT      => 10_000.0;
 
 Readonly::Scalar my $DUPLEXSEQ_TAG_LENGTH         => 3; # length of Duplex-Seq tag at start of read
 Readonly::Scalar my $DUPLEXSEQ_SKIP_LENGTH        => 4; # Number of bases to skip after the Duplex-Seq tag
@@ -327,7 +328,7 @@ sub _generate_elembio_command_params {
     split_threads_val            =>
       $self->general_values_conf()->{'p4_stage1_split_threads_count'} ||
       $DEFAULT_SPLIT_THREADS_COUNT,
-    seed_frac                    => sprintf(q[%.8f], (10_000.0 / $self->cluster_counts->{$position}) + $id_run),
+    seed_frac                    => sprintf(q[%.8f], ($DEFAULT_SEED_READ_COUNT / $self->cluster_counts->{$position}) + $id_run),
   );
 
   if ($st_names->{library}) {
@@ -573,8 +574,7 @@ sub _generate_command_params {
   # cluster count (used to calculate FRAC for bam subsampling)
   my $cluster_count = $self->cluster_counts->{$position};
   $p4_params{cluster_count} = $cluster_count;
-  ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
-  $p4_params{seed_frac} = sprintf q[%.8f], (10_000.0 / $cluster_count) + $id_run;
+  $p4_params{seed_frac} = sprintf q[%.8f], ($DEFAULT_SEED_READ_COUNT / $cluster_count) + $id_run;
 
   $p4_params{split_threads_val} = $self->general_values_conf()->{'p4_stage1_split_threads_count'} || $DEFAULT_SPLIT_THREADS_COUNT;
 
