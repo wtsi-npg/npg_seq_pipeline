@@ -97,7 +97,6 @@ subtest 'generate lane-level Elembio bases2fastq definitions' => sub {
       q{--skip-multi-qc},
       q{--settings}, q{"SpikeInAsUnassigned,False"},
       q{-r}, $lane1_samples_path,
-      q{--settings}, q{"ReadType,Paired"},
     ),
     'lane1 command is correct',
   );
@@ -118,7 +117,6 @@ subtest 'generate lane-level Elembio bases2fastq definitions' => sub {
       q{--skip-multi-qc},
       q{--settings}, q{"SpikeInAsUnassigned,False"},
       q{-r}, $lane2_samples_path,
-      q{--settings}, q{"ReadType,Paired"},
     ),
     'lane2 command is correct',
   );

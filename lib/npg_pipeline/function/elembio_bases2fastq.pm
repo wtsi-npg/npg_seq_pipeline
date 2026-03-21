@@ -173,10 +173,6 @@ sub _command {
     q{--settings},           q{"SpikeInAsUnassigned,False"},
     q{-r},                   $samples_path;
 
-  if ($self->is_paired_read) {
-    push @parts, q{--settings}, q{"ReadType,Paired"};
-  }
-
   return join q{ }, @parts;
 }
 
