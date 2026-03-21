@@ -1,8 +1,10 @@
 package npg_pipeline::function::cluster_count;
 
 use Moose;
+use JSON qw(decode_json);
 use namespace::autoclean;
 use File::Slurp;
+use File::Spec::Functions qw(catfile);
 use List::Util qw{sum};
 use Readonly;
 
@@ -107,17 +109,39 @@ Checks the cluster count, error if the count is inconsistent.
 
 =cut
 
-sub run_cluster_count_check {
+sub _expected_cluster_counts {
   my $self = shift;
+
+  if ($self->manufacturer eq q{Element Biosciences}) {
+    my $path = catfile($self->runfolder_path, q{AvitiRunStats.json});
+    if (!-f $path) {
+      $self->logcroak(qq{Elembio run stats file $path does not exist});
+    }
+    my $stats = decode_json(read_file($path));
+    my $lane_stats = $stats->{LaneStats};
+    if (ref $lane_stats ne q{ARRAY}) {
+      $self->logcroak(qq{LaneStats are absent from $path});
+    }
+    my %pf = map { $_->{Lane} => $_->{PFCount} } @{$lane_stats};
+    my %raw = map { $_->{Lane} => $_->{PolonyCount} } @{$lane_stats};
+    my @keys = @{$self->lanes} ? @{$self->lanes} : sort keys %pf;
+    return (sum(map { $raw{$_} } @keys), sum(map { $pf{$_} } @keys));
+  }
 
   my $interop_data = npg_qc::illumina::interop::parser->new(
                        runfolder_path => $self->runfolder_path, p4s1_i2b_first_tile => $self->p4s1_i2b_first_tile, p4s1_i2b_tile_limit => $self->p4s1_i2b_tile_limit)->parse();
   my @keys =  @{$self->lanes} ? @{$self->lanes} : keys %{$interop_data->{cluster_count_total}};
 
-  my $max_cluster_count = sum map { $interop_data->{cluster_count_total}->{$_} } @keys;
+  return (sum(map { $interop_data->{cluster_count_total}->{$_} } @keys),
+          sum(map { $interop_data->{cluster_count_pf_total}->{$_} } @keys));
+}
+
+sub run_cluster_count_check {
+  my $self = shift;
+
+  my ($max_cluster_count, $pass_cluster_count) = $self->_expected_cluster_counts();
   $self->info(qq{Raw cluster count: $max_cluster_count});
 
-  my $pass_cluster_count = sum map { $interop_data->{cluster_count_pf_total}->{$_} } @keys;
   $self->info(qq{PF cluster count: $pass_cluster_count});
 
   my $spatial_filter_processed = $self->_spatial_filter_processed_count();

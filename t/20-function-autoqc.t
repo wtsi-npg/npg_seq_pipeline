@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 15;
+use Test::More tests => 16;
 use Test::Exception;
 use File::Path qw/make_path/;
 use File::Copy::Recursive qw/fcopy dircopy/;
@@ -687,6 +687,38 @@ subtest 'interop' => sub {
       " --qc_in=${rf_path}/InterOp" .
       join( q[], map { " --qc_out=${adir}/lane". $_ . '/qc'  } (1 .. 8) ),
     'command');
+};
+
+subtest q{interop excluded for non-Illumina runs} => sub {
+  plan tests => 5;
+
+  my $rf_name = q{20250127_AV244103_1234_NT1850075L};
+  my $rf_info = $util->create_runfolder(
+    $tmp, {runfolder_name => $rf_name, analysis_path => q{BAM_basecalls_elembio}}
+  );
+  fcopy(qq{t/data/elembio/$rf_name/RunParameters.json},
+        qq{$rf_info->{runfolder_path}/RunParameters.json})
+    or die q{Fail to copy Elembio RunParameters.json};
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q{t/data/samplesheet_8747.csv};
+  my $qc = npg_pipeline::function::autoqc->new(
+    qc_to_run      => q{interop},
+    is_indexed     => 1,
+    id_run         => 51922,
+    label          => q{elembio},
+    runfolder_path => $rf_info->{runfolder_path},
+    timestamp      => q{today},
+    conf_path      => q{t/data/release/config/archive_on},
+    resource       => $default
+  );
+
+  my $da = $qc->create();
+  ok($da && (@{$da} == 1), q{one interop definition returned});
+  my $d = $da->[0];
+  ok($d->excluded, q{interop is excluded});
+  ok(!$d->has_command, q{excluded interop has no command});
+  ok(!$d->has_job_name, q{excluded interop has no job name});
+  ok(!$d->has_composition, q{excluded interop has no composition});
 };
 
 1;

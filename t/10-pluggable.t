@@ -97,11 +97,11 @@ subtest 'graph creation from jgf files' => sub {
   $obj = npg_pipeline::pluggable->new(
     id_run              => 1234,
     runfolder_path      => $test_dir,
-    function_list       => "$config_dir/function_list_central_elembio.json",
+    function_list       => "$config_dir/function_list_central.json",
     npg_tracking_schema => undef
   );
   lives_ok { $obj->function_graph() }
-    'no error creating a graph for Elembio analysis';
+    'no error creating a graph for Elembio-capable analysis via the shared central graph';
 };
 
 subtest 'graph creation from explicitly given function list' => sub {

@@ -97,6 +97,19 @@ sub _create_elembio_runfolder {
 
   cp("t/data/elembio/${rf_name}/RunParameters.json", "$runfolder/RunParameters.json")
     or die 'Failed to copy Elembio run params';
+  write_file(
+    "$runfolder/AvitiRunStats.json",
+    encode_json({
+      RunStats => {
+        PFCount => 1096468501,
+        PolonyCount => 1777689932,
+      },
+      LaneStats => [
+        {Lane => 1, PFCount => 547302158, PolonyCount => 887283420},
+        {Lane => 2, PFCount => 549166343, PolonyCount => 890406512},
+      ],
+    })
+  );
   mkdir join(q[/], $bam_basecall_path, q{metadata_cache_51922})
     or die 'Failed to create Elembio metadata cache directory';
 
@@ -590,7 +603,7 @@ subtest 'check_duplex-seq' => sub {
 };
 
 subtest 'check Elembio import mode selection' => sub {
-  plan tests => 24;
+  plan tests => 26;
 
   my $samplesheet_path = tempdir(CLEANUP => 1) . q{/samplesheet_51922.csv};
   _write_elembio_samplesheet($samplesheet_path);
@@ -675,6 +688,10 @@ subtest 'check Elembio import mode selection' => sub {
   is($params->{'assign'}->[0]->{'fastq_import_i1'},
     $paired_info->{'analysis_path'} . q{/fastq/lane1/Samples/WholeLane_L1_I1.fastq.gz},
     'I1 path saved in params');
+  is($params->{'assign'}->[0]->{'cluster_count'}, 547302158,
+    'Elembio lane PFCount saved in params');
+  is($params->{'assign'}->[0]->{'seed_frac'}, sprintf(q[%.8f], (10_000.0 / 547302158) + 51922),
+    'seed frac derived from Elembio lane PFCount');
   ok(exists $params->{'assign'}->[0]->{'barcode_file'}, 'barcode file saved in params');
   like($params->{'assign'}->[0]->{'fastq_import_arg_string'},
     qr/\A-R 51922_1 -1 .*WholeLane_L1_R1\.fastq\.gz -2 .*WholeLane_L1_R2\.fastq\.gz --i1 .*WholeLane_L1_I1\.fastq\.gz -u -O bam\z/,

@@ -129,8 +129,8 @@ subtest 'generate lane-level Elembio bases2fastq definitions' => sub {
     'lane2 samples csv content');
 };
 
-subtest 'reject non-Elembio runfolders' => sub {
-  plan tests => 1;
+subtest 'skip non-Elembio runfolders via excluded definition' => sub {
+  plan tests => 5;
 
   my $tmp_dir = tempdir(CLEANUP => 1);
   my $rf_info = $util->create_runfolder(
@@ -149,9 +149,12 @@ subtest 'reject non-Elembio runfolders' => sub {
     resource          => $default,
   );
 
-  throws_ok { $f->generate() }
-    qr/Element Biosciences runfolders/,
-    'error for non-Elembio runfolder';
+  my $definitions;
+  lives_ok { $definitions = $f->generate() } 'non-Elembio generation succeeds';
+  is(scalar @{$definitions}, 1, 'one excluded definition returned');
+  isa_ok($definitions->[0], q{npg_pipeline::function::definition});
+  ok($definitions->[0]->excluded, 'definition is excluded');
+  ok(!$definitions->[0]->has_command, 'excluded definition has no command');
 };
 
 1;

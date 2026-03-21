@@ -137,9 +137,27 @@ has 'cluster_counts'   => (
 
 sub _build_cluster_counts {
   my $self = shift;
+  if ($self->manufacturer eq q{Element Biosciences}) {
+    return $self->_elembio_cluster_counts();
+  }
   return npg_qc::illumina::interop::parser->new(
            runfolder_path => $self->runfolder_path
          )->parse()->{cluster_count_pf_total};
+}
+
+sub _elembio_cluster_counts {
+  my $self = shift;
+  my $path = catfile($self->runfolder_path, q{AvitiRunStats.json});
+  if (!-f $path) {
+    $self->logcroak(qq{Elembio run stats file $path does not exist});
+  }
+  my $stats = decode_json(read_file($path));
+  my $lane_stats = $stats->{LaneStats};
+  if (ref $lane_stats ne q{ARRAY}) {
+    $self->logcroak(qq{LaneStats are absent from $path});
+  }
+  my %counts = map { $_->{Lane} => $_->{PFCount} } @{$lane_stats};
+  return \%counts;
 }
 
 # phix_aligner is used to determine the reference genome. Be aware that
@@ -305,10 +323,11 @@ sub _generate_elembio_command_params {
     unfiltered_cram_file         => $no_cal_path . q[/] . $name_root . q{.unfiltered.cram},
     md5filename                  => $no_cal_path . q[/] . $name_root . q{.bam.md5},
     split_prefix                 => $no_cal_path,
+    cluster_count                => $self->cluster_counts->{$position},
     split_threads_val            =>
       $self->general_values_conf()->{'p4_stage1_split_threads_count'} ||
       $DEFAULT_SPLIT_THREADS_COUNT,
-    seed_frac                    => $id_run . q{.00002000},
+    seed_frac                    => sprintf(q[%.8f], (10_000.0 / $self->cluster_counts->{$position}) + $id_run),
   );
 
   if ($st_names->{library}) {

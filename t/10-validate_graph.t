@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 7;
+use Test::More tests => 5;
 use FindBin '$Bin';
 
 use Perl6::Slurp;
@@ -15,7 +15,6 @@ ok($validator, 'Instantiated validator with JGF schema');
 
 my @pipeline_graphs = (
   $Bin.'/../data/config_files/function_list_central.json',
-  $Bin.'/../data/config_files/function_list_central_elembio.json',
   $Bin.'/../data/config_files/function_list_post_qc_review.json'
 );
 

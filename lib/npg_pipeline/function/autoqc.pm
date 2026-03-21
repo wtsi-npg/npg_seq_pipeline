@@ -142,7 +142,7 @@ sub _job_name {
 sub _create_definition4interop {
   my $self = shift;
 
-  # To level InterOp files directory should be given as qc_in.
+  # Top level InterOp files directory should be given as qc_in.
   # The check is run once, produces per-lane result object, which are
   # saved in lane-level qc directories.
 
@@ -150,6 +150,12 @@ sub _create_definition4interop {
                         @{$self->products->{lanes}};
   my $run_composition =
     npg_tracking::glossary::composition->new(components => \@lane_components);
+
+  if ($self->manufacturer ne q{Illumina}) {
+    $self->info(sprintf q{Skipping autoqc check %s for run %i because manufacturer %s is not Illumina},
+      $self->qc_to_run(), $self->id_run(), $self->manufacturer);
+    return $self->create_excluded_definition();
+  }
 
   my $ref = {};
   $ref->{'job_name'} = $self->_job_name();

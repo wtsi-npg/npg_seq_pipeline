@@ -24,6 +24,11 @@
             {
                 "relation": "dependsOn",
                 "source": "run_analysis_in_progress",
+                "target": "elembio_bases2fastq"
+            },
+            {
+                "relation": "dependsOn",
+                "source": "elembio_bases2fastq",
                 "target": "p4_stage1_analysis"
             },
             {
@@ -325,6 +330,21 @@
                         "default": {
                             "queue": "small",
                             "minimum_cpu": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": "elembio_bases2fastq",
+                "label": "elembio_bases2fastq",
+                "metadata": {
+                    "description": "Elembio lane-level `bases2fastq` placeholder using per-lane selectors and minimal `[Samples]` CSV input. Non-Elembio runs are skipped via an excluded definition.",
+                    "resources": {
+                        "default": {
+                            "minimum_cpu": 16,
+                            "memory": 20,
+                            "fs_slots_num": 4,
+                            "queue": "p4stage1"
                         }
                     }
                 }

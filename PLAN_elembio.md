@@ -117,14 +117,14 @@ Recommended Elembio stage 1 flow:
    - single-read or paired-read input
    - 0, 1, or 2 index reads
    - single-read input via
-     `-0 <fastq_dir>/Samples/WholeLane_L<lane>_R1.fastq`
+     `-0 <fastq_dir>/Samples/WholeLane_L<lane>_R1.fastq.gz`
    - paired-read input via
-     `-1 <fastq_dir>/Samples/WholeLane_L<lane>_R1.fastq` and
-     `-2 <fastq_dir>/Samples/WholeLane_L<lane>_R2.fastq`
+     `-1 <fastq_dir>/Samples/WholeLane_L<lane>_R1.fastq.gz` and
+     `-2 <fastq_dir>/Samples/WholeLane_L<lane>_R2.fastq.gz`
    - one index read via
-     `--i1 <fastq_dir>/Samples/WholeLane_L<lane>_I1.fastq`
+     `--i1 <fastq_dir>/Samples/WholeLane_L<lane>_I1.fastq.gz`
    - two index reads via the above plus
-     `--i2 <fastq_dir>/Samples/WholeLane_L<lane>_I2.fastq`
+     `--i2 <fastq_dir>/Samples/WholeLane_L<lane>_I2.fastq.gz`
 
 This is preferable to forcing the whole Elembio path through the existing
 Illumina `p4_stage1_analysis` behaviour unchanged because the current
@@ -161,8 +161,7 @@ Examples:
 Primary changes:
 
 - Add Elembio-aware run metadata handling.
-- Add a new Elembio central graph, for example
-  `function_list_central_elembio.json`.
+- Prepend `elembio_bases2fastq` to the standard central graph, with non-Elembio runs skipping it via an excluded definition.
 - Add a new Elembio `elembio_bases2fastq` stage-1 entry function, while
   reusing / extending `p4_stage1_analysis.pm` where it remains a good fit for
   import option handling.
@@ -386,8 +385,7 @@ Recommendation:
 
 Question:
 
-- Use the current `npg_pipeline_central` with manufacturer branching, or add a
-  parallel Elembio central runner?
+- Use the current `npg_pipeline_central` with manufacturer-aware function behaviour and graph edges?
 
 Recommendation:
 
@@ -401,7 +399,7 @@ Recommendation:
 ### Phase 1: Elembio pipeline skeleton
 
 - Add Elembio base / metadata wrapper
-- Add Elembio central graph
+- Prepend `elembio_bases2fastq` to the standard central graph
 - Add Elembio lane-level `elembio_bases2fastq` scaffolding, including
   generation of per-lane selector / minimal `[Samples]` CSV inputs under
   `BAM_basecalls/fastq/lane{lane}` in non-deplexing mode
@@ -464,14 +462,14 @@ Recommendation:
 
 The smallest useful end-to-end slice is:
 
-1. Manually launch the Elembio central graph on a runfolder.
+1. Manually launch the standard central graph on an Elembio runfolder.
 2. The analysis starts with creation of the analysis folder hierarchy, plus caching of LIMS information in an NPG samplesheet (`metadata_cache`) keyed primarily by `id_flowcell_lims` / batch id, together with metadata from the instrument runfolder (`RunParameters.json`, and `RunManifest.json` where needed), rather than depending on `RunStats.json`.
 3. `elembio_bases2fastq` runs once per lane, using a lane-specific selector
    and a minimal lane-level `[Samples]` CSV, running in non-deplexing mode,
    and producing output under `BAM_basecalls/fastq/lane{lane}`.
 4. `p4_stage1_analysis` selects the appropriate `samtools import` mode from
    the run structure and produces lane-and-tag files:
-   - `-0 <fastq_dir>/Samples/WholeLane_L<lane>_R1.fastq` for single-read
+   - `-0 <fastq_dir>/Samples/WholeLane_L<lane>_R1.fastq.gz` for single-read
    - `-1/-2` with `R1` and `R2` FASTQs for paired-read
    - optional `--i1` / `--i2` with `I1` / `I2` FASTQs for indexed runs
 5. Elembio `tag_metrics` are generated from `RunStats.json` in the `bases2fastq` output folder.

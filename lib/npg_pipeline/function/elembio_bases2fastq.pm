@@ -76,9 +76,10 @@ sub generate {
   my $self = shift;
 
   if ($self->manufacturer ne q{Element Biosciences}) {
-    $self->logcroak(
-      q[Elembio stage 1 is only supported for Element Biosciences runfolders]
+    $self->info(
+      q[Non-Elembio run detected, skipping elembio_bases2fastq via excluded definition]
     );
+    return [$self->create_excluded_definition()];
   }
 
   my @definitions;
