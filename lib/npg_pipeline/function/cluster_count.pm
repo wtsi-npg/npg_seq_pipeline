@@ -144,27 +144,6 @@ sub run_cluster_count_check {
 
   $self->info(qq{PF cluster count: $pass_cluster_count});
 
-  my $spatial_filter_processed = $self->_spatial_filter_processed_count();
-  my $spatial_filter_failed    = $self->_spatial_filter_failed_count();
-  if (defined $spatial_filter_processed) {
-    if($self->is_paired_read()){
-      $spatial_filter_processed /= 2;
-      $spatial_filter_failed /= 2;
-    }
-    $self->info(qq{Spatial filter applied to $spatial_filter_processed clusters failing $spatial_filter_failed});
-    if ($pass_cluster_count != $spatial_filter_processed and
-        $max_cluster_count != $spatial_filter_processed) {
-      my $msg = qq{Spatial filter processed count ($spatial_filter_processed) matches neither raw ($max_cluster_count) or PF ($pass_cluster_count) clusters};
-      $self->logcroak($msg);
-    }
-    $max_cluster_count = $spatial_filter_processed; # reset to max processed at spatial filter
-    $pass_cluster_count -= $spatial_filter_failed;
-    if($spatial_filter_failed){
-      $self->warn(qq{Passed cluster count drops to $pass_cluster_count});
-    }
-  } else {
-    $self->info(q{Spatial filter not applied (well, not recorded anyway)});
-  }
 
   my $total_bam_cluster_count = $self->_bam_cluster_count_total();
 
