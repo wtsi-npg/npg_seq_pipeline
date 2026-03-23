@@ -124,8 +124,9 @@ subtest 'label' => sub {
 subtest 'Elembio read structure from RunParameters.json' => sub {
   plan tests => 51;
 
+  my $single_index = _elembio_base(q[t/data/elembio/20250127_AV244103_1234_NT1850075L]);
   _assert_elembio_read_structure(
-    _elembio_base(q[t/data/elembio/20250127_AV244103_1234_NT1850075L]),
+    $single_index,
     q[single-index paired run],
     {
       is_paired_read         => 1,
@@ -143,8 +144,9 @@ subtest 'Elembio read structure from RunParameters.json' => sub {
     }
   );
 
+  my $dual_index = _elembio_base(q[t/data/elembio/20250101_AV244103_NT1234567E]);
   _assert_elembio_read_structure(
-    _elembio_base(q[t/data/elembio/20250101_AV244103_NT1234567E]),
+    $dual_index,
     q[dual-index paired run],
     {
       is_paired_read          => 1,
@@ -162,8 +164,9 @@ subtest 'Elembio read structure from RunParameters.json' => sub {
     }
   );
 
+  my $unindexed = _elembio_base(q[t/data/elembio/20250129_AV244103_B1234]);
   _assert_elembio_read_structure(
-    _elembio_base(q[t/data/elembio/20250129_AV244103_B1234]),
+    $unindexed,
     q[unindexed paired run],
     {
       is_paired_read          => 1,
@@ -181,8 +184,9 @@ subtest 'Elembio read structure from RunParameters.json' => sub {
     }
   );
 
+  my $single_end = _elembio_base(q[t/data/elembio/20250315_AV244103_SINGLE_END]);
   _assert_elembio_read_structure(
-    _elembio_base(q[t/data/elembio/20250315_AV244103_SINGLE_END]),
+    $single_end,
     q[single-end run],
     {
       is_paired_read          => 0,

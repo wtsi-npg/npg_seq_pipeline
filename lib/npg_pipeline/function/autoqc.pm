@@ -255,7 +255,7 @@ sub _should_run {
 
   if ($self->qc_to_run() eq 'spatial_filter') {
     # Run on individual lanes only.
-    return $is_lane && !($self->platform_NovaSeq || $self->platform_NovaSeqX) ? 1 : 0;
+    return $self->spatial_filter && $is_lane ? 1 : 0;
   }
   if ($self->qc_to_run() eq 'tag_metrics') {
     # For indexed runs, run on individual lanes if they are pools of samples.
