@@ -1,6 +1,18 @@
 LIST OF CHANGES
 ---------------
 
+ - Changed the default value for the no_sf_resource pipeline option from
+   false to true. Our staging areas are currently on lustre, so we do not
+   have to limit the number of jobs simultaneously accessing the file system. 
+
+release 68.15.0 (2026-01-06)
+ - remove production of BAM outputs for most stage2 processing
+   except aligned human; RNA analysis; spike tag; and chromium libraries
+ - update tests for seq_alignment
+   make Boolean operators consistent (remove mix of high- and low-precedence
+   operators)
+ - CI updates
+
 release 68.14.0 (2025-11-18)
  - Changed the type of id_flowcell_lims attribute from Int to Str so that
    to be consistent both with the way this value is stored in both mlwh and

@@ -1744,6 +1744,7 @@ subtest 'BWA MEM 2 tests' => sub {
         'prune' => [
           'fop.*_bmd_multiway:calibration_pu-',
           'fop.*samtools_stats_F0.*_target.*-',
+          'fop.*_bmd_multiway:bam-',
           'fop.*samtools_stats_F0.*00_bait.*-'
         ]
       },
@@ -1855,6 +1856,7 @@ subtest 'HiC_flags' => sub {
       'prune' => [
         'fop.*_bmd_multiway:calibration_pu-',
         'fop.*samtools_stats_F0.*_target.*-',
+          'fop.*_bmd_multiway:bam-',
         'fop.*samtools_stats_F0.*00_bait.*-'
       ],
       'splice' => []
