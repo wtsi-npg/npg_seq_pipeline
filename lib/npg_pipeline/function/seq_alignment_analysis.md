@@ -162,7 +162,19 @@ quant_method = salmon
 Outputs: BAM + RNA-SeQC + alignment metrics + salmon quantification
 ```
 
-**3. X/Autosome Split (Human Reference)**:
+**3. GbS / GBS Plex Analysis**:
+```
+Input: library_type="GbS standard" (or "GnT MDA"), gbs_plex_name="Hs_MajorQC"
+↓
+do_gbs_plex = true
+alignment_method = bwa_aln / bwa_aln_se using the gbs_plex reference (bwa0_6)
+markdup_method = none
+primer_clip_method = no_clip
+QC: runs GbS-specific `genotype_call`
+Outputs: BAM + genotype VCF + `genotype_call` QC
+```
+
+**4. X/Autosome Split (Human Reference)**:
 ```
 Input: contains_nonconsented_xahuman=1, reference="Homo_sapiens (GRCh38)"
 ↓
@@ -172,7 +184,7 @@ Splits: X + autosomes (chr 1-22) → _xahuman file, Y → main file
 Outputs: CRAM_xahuman (X+autosomes) + CRAM (Y) + flagstats for each
 ```
 
-**4. Human Contamination Removal (Non-Human Target)**:
+**5. Human Contamination Removal (Non-Human Target)**:
 ```
 Input: contains_nonconsented_human=1, reference="Plasmodium_falciparum (...)"
        (or any non-human reference)
@@ -183,7 +195,7 @@ Splits: human reads vs target reads
 Outputs: CRAM_human (T2T aligned) + CRAM (target aligned/unaligned)
 ```
 
-**5. 10X Chromium (No Target Alignment)**:
+**6. 10X Chromium (No Target Alignment)**:
 ```
 Input: library_type="Chromium single cell 3'v3", reference=*
 ↓
@@ -194,7 +206,7 @@ Outputs: Unaligned CRAM + PhiX subset CRAM (if applicable)
          + bam_flagstats + alignment_filter_metrics
 ```
 
-**6. Human Chromosome Split Without Target Alignment (Edge Case)**:
+**7. Human Chromosome Split Without Target Alignment (Edge Case)**:
 ```
 Input: separate_y_chromosome_data=1 (or contains_nonconsented_xahuman=1),
        reference="Homo_sapiens (GRCh38)",
@@ -340,7 +352,7 @@ bash -c '
 
   # Additional QC based on analysis type:
   # RNA-seq: && qc --check rna_seqc ...
-  # GBS: && qc --check genotype_call ...
+  # GBS only: && qc --check genotype_call ...
   # Aligned: && qc --check substitution_metrics ...
   # Human split: && qc --check bam_flagstats ... --subset xahuman ...
 '
@@ -422,7 +434,7 @@ Where:
 | Alignment filter metrics | `{rpt}_bam_alignment_filter_metrics.json` | If not spike tag |
 | Substitution metrics | `{rpt}.substitution_metrics.json` | If aligned + not tag#0 |
 | RNA-SeQC | `{rpt}.rna_seqc.json` | If RNA-seq + not tag#0 |
-| Genotype call | `{rpt}.genotype_call.json` | If GBS plex |
+| Genotype call | `{rpt}.genotype_call.json` | If GbS / `gbs_plex` only |
 
 ---
 
@@ -558,6 +570,10 @@ Where:
 - QC checks called as separate commands after pipeline execution
 - Each check reads CRAM/BAM and writes JSON to qc/
 - Conditional based on analysis type and split mode (main flagstats always; alignment_filter_metrics for non-spike products; RNA-SeQC for RNA only)
+- `genotype_call` here is the GbS-specific calling check, not the generic `autoqc` `genotype` / `bcfstats` checks
+- More generic genotype/sample-identity checks run separately via `autoqc`:
+  - `genotype`: compares sequence-derived genotypes against Sequenom/Fluidigm-style QC data when that external genotype data is available
+  - `bcfstats`: compares called genotypes against a generic genotype reference set and explicitly skips GbS libraries
 
 ---
 
@@ -595,7 +611,7 @@ Where:
 | **Y chromosome split** | `separate_y_chromosome_data=1`, `ref=Homo_sapiens` | Align, Y→_yhuman, X+autosomes→main | `*_yhuman.cram` (Y) + `*.cram` (X+1-22) |
 | **Human contamination removal** | `contains_nonconsented_human=1`, `ref` NOT human | Align to target + T2T to remove human | `*_human.cram` (T2T) + `*.cram` |
 | **PhiX spike** | `is_phix_spike=1` | Align to PhiX ref, markdup, no human split | `*.cram` (PhiX aligned) |
-| **GBS** | `library_type=GbS`, `gbs_plex_name=*` | BWA aln (old), no markdup, genotype call | BAM + genotype VCF |
+| **GBS** | `library_type=GbS`, `gbs_plex_name=*` | BWA aln (old), no markdup, GbS-specific `genotype_call` QC | BAM + genotype VCF + `genotype_call` QC |
 | **Haplotagging** | `library_type=Haplotagging*` | BWA, haplotag barcode processing | BAM with haplotag RG |
 | **Hi-C** | `library_type=Hi-C*` | BWA mem with -5 -S -P flags, high mismatch penalty | BAM for Hi-C analysis |
 | **Duplex-Seq** | `library_type=Duplex-Seq` | BWA, duplex-seq aware duplicate marking | CRAM with duplex tags |
