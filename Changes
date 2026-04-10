@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - Extended is_chromium_lib RE to include 10X and ignore case
  - Changed the default value for the no_sf_resource pipeline option from
    false to true. Our staging areas are currently on lustre, so we do not
    have to limit the number of jobs simultaneously accessing the file system. 
