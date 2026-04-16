@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 68.16.0 (2026-04-16)
  - Extended is_chromium_lib RE to include 10X and ignore case
  - Changed the default value for the no_sf_resource pipeline option from
    false to true. Our staging areas are currently on lustre, so we do not
