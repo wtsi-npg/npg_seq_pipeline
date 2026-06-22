@@ -24,7 +24,7 @@ jobs:
         perl: ["5.34.1", "5.38.2"]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: '0'
 
