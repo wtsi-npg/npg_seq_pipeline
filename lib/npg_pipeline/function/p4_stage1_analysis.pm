@@ -29,6 +29,10 @@ Readonly::Scalar my $DEFAULT_SPLIT_THREADS_COUNT  => 0; # value passed to samtoo
 Readonly::Scalar my $DUPLEXSEQ_TAG_LENGTH         => 3; # length of Duplex-Seq tag at start of read
 Readonly::Scalar my $DUPLEXSEQ_SKIP_LENGTH        => 4; # Number of bases to skip after the Duplex-Seq tag
 
+# UD (Universal Duplex) Seq, like Duplex-Seq but use a different tag and skip length
+Readonly::Scalar my $UDSEQ_TAG_LENGTH         => 8; # length of UD-seq tag at start of read
+Readonly::Scalar my $UDSEQ_SKIP_LENGTH        => 0; # Number of bases to skip after the UD-seq tag
+
 sub generate {
   my $self = shift;
 
@@ -299,7 +303,7 @@ sub _generate_command_params {
     $p4_params{i2b_bc_qual_val} = q[tq];
   }
 
-  if($self->_is_duplexseq($lane_lims)) {
+  if($self->_is_duplexseq($lane_lims) || $self->_is_udseq($lane_lims)) {
     $self->info(q{P4 stage1 analysis of a Duplex-Seq lane});
 
     if (!$self->is_paired_read) {
@@ -309,6 +313,14 @@ sub _generate_command_params {
     # The first $DUPLEXSEQ_TAG_LENGTH bases(quality values) and the next $DUPLEXSEQ_SKIP_LENGTH bases(quality values) are removed and
     # placed in tags rb(qr) and br(bq). This is done on both the forward and reverse reads with the tags created on the corresponding
     # read. The rb(qr) tags on each read are duplicated on the paired read but the tags are re-named mb(mq).
+
+    my $duplex_tag_length = $DUPLEXSEQ_TAG_LENGTH;
+    my $duplex_skip_length = $DUPLEXSEQ_SKIP_LENGTH;
+    # The two new (Universal Duplex) library_types use a different tag and skip length
+    if ($self->_is_udseq($lane_lims)) {
+       $duplex_tag_length = $UDSEQ_TAG_LENGTH;
+       $duplex_skip_length = $UDSEQ_SKIP_LENGTH;
+    }
 
     my @i2b_bc_read = ();
     my @i2b_first_0 = ();
@@ -321,11 +333,11 @@ sub _generate_command_params {
     # read 1
     my($first, $final) = $self->read1_cycle_range();
     push @i2b_bc_read, q{1},q{2},q{1};
-    push @i2b_first_index_0, qq{$first},qq{$first},$first+$DUPLEXSEQ_TAG_LENGTH;
-    push @i2b_final_index_0, $first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH-1;
+    push @i2b_first_index_0, qq{$first},qq{$first},$first+$duplex_tag_length;
+    push @i2b_final_index_0, $first+$duplex_tag_length-1,$first+$duplex_tag_length-1,$first+$duplex_tag_length+$duplex_skip_length-1;
     push @i2b_bc_seq_val, q{rb},q{mb},q{br};
     push @i2b_bc_qual_val, q{rq},q{mq},q{bq};
-    push @i2b_first_0, $first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH;
+    push @i2b_first_0, $first+$duplex_tag_length+$duplex_skip_length;
     push @i2b_final_0, qq{$final};
 
     # index read(s)
@@ -351,11 +363,11 @@ sub _generate_command_params {
     # read 2
     ($first, $final) = $self->read2_cycle_range();
     push @i2b_bc_read, q{2},q{1},q{2};
-    push @i2b_first_index_0, qq{$first},qq{$first},$first+$DUPLEXSEQ_TAG_LENGTH;
-    push @i2b_final_index_0, $first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH-1,$first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH-1;
+    push @i2b_first_index_0, qq{$first},qq{$first},$first+$duplex_tag_length;
+    push @i2b_final_index_0, $first+$duplex_tag_length-1,$first+$duplex_tag_length-1,$first+$duplex_tag_length+$duplex_skip_length-1;
     push @i2b_bc_seq_val, q{rb},q{mb},q{br};
     push @i2b_bc_qual_val, q{rq},q{mq},q{bq};
-    push @i2b_first_0, $first+$DUPLEXSEQ_TAG_LENGTH+$DUPLEXSEQ_SKIP_LENGTH;
+    push @i2b_first_0, $first+$duplex_tag_length+$duplex_skip_length;
     push @i2b_final_0, qq{$final};
 
     $p4_params{i2b_bc_read}       = join q{,}, @i2b_bc_read;
@@ -537,6 +549,16 @@ sub _is_duplexseq {
                   $lane_lims->descendants();
 
   return $is_duplexseq;
+}
+
+sub _is_udseq{
+  my ( $self, $lane_lims ) = @_;
+
+  # The two new (Universal Duplex) library_types UD-seq and UD-seq Twist Pulldown use a different tag and skip length
+  my $is_udseq = any {$_->library_type && $_->library_type =~/^UD-seq/smx}
+                  $lane_lims->descendants();
+
+  return $is_udseq;
 }
 
 __PACKAGE__->meta->make_immutable;

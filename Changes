@@ -1,6 +1,9 @@
 LIST OF CHANGES
 ---------------
 
+ - I've added two new Duplex library_types UD-seq and UD-seq Twist Pulldown
+   which use a different tag and skip length
+
 release 68.16.0 (2026-04-16)
  - Extended is_chromium_lib RE to include 10X and ignore case
  - Changed the default value for the no_sf_resource pipeline option from
