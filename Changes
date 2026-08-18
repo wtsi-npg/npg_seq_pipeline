@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - Forse alignments off for Parse libraries as for existing Chromium libraries.
+  
 release 68.16.1 (2026-07-22)
  - CI updates
 
