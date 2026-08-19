@@ -52,8 +52,10 @@ around 'markdup_method' => sub {
     # I've restricted this to library_types which exactly match Duplex-Seq to exclude the old library_type Bidirectional Duplex-seq
     # the Duplex-Seq library prep has been replaced by the NanoSeq library prep, the analysis is the same and the Duplex-Seq library_type is still in use
     # I've added two new library_types Targeted NanoSeq Pulldown Twist and Targeted NanoSeq Pulldown Agilent
+    # I've added two new library_types UD-seq and UD-seq Twist Pulldown
+
     my $mdm;
-    if($lt eq q[Duplex-Seq] || $lt =~ /^Targeted\sNanoSeq\sPulldown/smx) {
+    if($lt eq q[Duplex-Seq] || $lt =~ /^Targeted\sNanoSeq\sPulldown|^UD-seq/smx) {
       $mdm = q(duplexseq);
     }
     elsif($self->platform_NovaSeqX) {
