@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+ - Force alignments off for Parse libraries as for existing Chromium libraries.
  - I've added two new Duplex library_types UD-seq and UD-seq Twist Pulldown
    which use a different tag and skip length
 
