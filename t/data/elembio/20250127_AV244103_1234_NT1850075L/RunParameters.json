@@ -1,0 +1,22 @@
+{
+  "RunName": "1234_NT1850075L",
+  "RunType": "Sequencing",
+  "Side": "SideA",
+  "FlowcellID": "2427452508",
+  "Date": "2025-01-27T15:41:06.714507363Z",
+  "InstrumentName": "AV244103",
+  "RunFolderName": "20250127_AV244103_1234_NT1850075L",
+  "Cycles": {
+    "R1": 151,
+    "R2": 151,
+    "I1": 8,
+    "I2": 0
+  },
+  "ReadOrder": "I1,R1,R2",
+  "AnalysisLanes": "1+2",
+  "Consumables": {
+    "Flowcell": {
+      "SerialNumber": "2427452508"
+    }
+  }
+}

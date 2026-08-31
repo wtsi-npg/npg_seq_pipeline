@@ -1,8 +1,9 @@
 use strict;
 use warnings;
-use Test::More tests => 26;
+use Test::More tests => 35;
 use Test::Exception;
 use File::Temp qw/tempdir/;
+use File::Slurp qw/read_file/;
 use t::dbic_util;
 
 use st::api::lims::ml_warehouse;
@@ -15,6 +16,9 @@ is(join(q[ ], npg_pipeline::cache->env_vars()),
   'names of env. variables that can be set by the module');
 
 my $wh_schema = t::dbic_util->new()->test_schema_mlwh('t/data/fixtures/mlwh');
+my $wh_schema_cross_platform = t::dbic_util->new()->test_schema_mlwh(
+  '../npg_tracking/t/data/fixtures_lims_wh_samplesheet'
+);
 
 my @lchildren = st::api::lims->new(
                      id_run           => 12376,
@@ -33,7 +37,7 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
                                        id_flowcell_lims => 'XXXXXXXX',
                                        cache_location   => $tempdir);
   throws_ok { $cache->lims }
-    qr/No record retrieved for st::api::lims::ml_warehouse id_flowcell_lims XXXXXXXX/,
+    qr/Unable to determine MLWH LIMS driver for id_flowcell_lims XXXXXXXX/,
     'cannot retrieve lims objects';
 
   $cache = npg_pipeline::cache->new(id_run           => 12376,
@@ -51,7 +55,36 @@ local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = '';
   lives_ok { $clims = $cache->lims() } 'can retrieve lims objects';
   ok( $clims, 'lims objects returned');
   is( scalar @{$clims}, 1, 'one lims object returned');
-  is( $clims->[0]->driver_type, 'ml_warehouse', 'correct driver type');
+  is( $clims->[0]->driver_type, 'ml_warehouse_flowcell', 'correct driver type');
+}
+
+{
+  my $tempdir = tempdir( CLEANUP => 1);
+
+  my $cache = npg_pipeline::cache->new(
+    id_run           => 51922,
+    mlwh_schema      => $wh_schema_cross_platform,
+    id_flowcell_lims => 107441,
+    cache_location   => $tempdir
+  );
+  is($cache->driver_type, 'ml_warehouse_flowcell',
+    'cross-platform flowcell driver detected from id_flowcell_lims');
+
+  my $clims;
+  lives_ok { $clims = $cache->lims() } 'can retrieve Elembio lims objects';
+  ok($clims, 'Elembio lims objects returned');
+  is(scalar @{$clims}, 2, 'two Elembio lane lims objects returned');
+  is($clims->[0]->driver_type, 'ml_warehouse_flowcell',
+    'correct flowcell driver type');
+
+  my $cache_dir = join q[/], $tempdir, 'metadata_cache_51922';
+  mkdir $cache_dir;
+  lives_ok { $cache->setup() } 'Elembio cache setup succeeds';
+  my $ss_path = join q[/], $cache_dir, 'samplesheet_51922.csv';
+  ok(-e $ss_path, 'Elembio samplesheet is present');
+  my $ss = read_file($ss_path);
+  like($ss, qr/6133STDY8786700/smx, 'Elembio samplesheet contains expected sample');
+  like($ss, qr/MPN[ ]Whole[ ]Genomes/smx, 'Elembio samplesheet contains expected study');
 }
 
 {

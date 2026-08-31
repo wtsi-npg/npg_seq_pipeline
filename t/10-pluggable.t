@@ -74,7 +74,7 @@ subtest 'object with no function order set - simple methods' => sub {
 };
 
 subtest 'graph creation from jgf files' => sub {
-  plan tests => 2;
+  plan tests => 3;
 
   my $obj = npg_pipeline::pluggable->new(
     id_run              => 1234,
@@ -93,6 +93,15 @@ subtest 'graph creation from jgf files' => sub {
   );
   lives_ok {  $obj->function_graph() }
     'no error creating a graph for default archival';
+
+  $obj = npg_pipeline::pluggable->new(
+    id_run              => 1234,
+    runfolder_path      => $test_dir,
+    function_list       => "$config_dir/function_list_central.json",
+    npg_tracking_schema => undef
+  );
+  lives_ok { $obj->function_graph() }
+    'no error creating a graph for Elembio-capable analysis via the shared central graph';
 };
 
 subtest 'graph creation from explicitly given function list' => sub {

@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 10;
+use Test::More tests => 11;
 use Test::Exception;
 use File::Temp qw(tempdir tempfile);
 use Cwd qw(getcwd abs_path);
@@ -29,6 +29,40 @@ use_ok(q{npg_pipeline::base});
 sub _generate_rpt {
   my ($id_run, $lanes, $tag_index) = @_;
   return join q[;], map { join q[:], $id_run, $_, $tag_index  } @{$lanes};
+}
+
+sub _elembio_base {
+  my ($path) = @_;
+  return npg_pipeline::base->new(runfolder_path => $path);
+}
+
+sub _assert_elembio_read_structure {
+  my ($base, $label, $expected) = @_;
+
+  is($base->is_paired_read, $expected->{is_paired_read},
+    "$label paired-read flag");
+  is($base->is_indexed, $expected->{is_indexed},
+    "$label indexed flag");
+  is($base->is_dual_index, $expected->{is_dual_index},
+    "$label dual-index flag");
+  is_deeply([$base->read_cycle_counts], $expected->{read_cycle_counts},
+    "$label read cycle counts");
+  is_deeply([$base->reads_indexed], $expected->{reads_indexed},
+    "$label indexed reads");
+  is_deeply([$base->read1_cycle_range], $expected->{read1_cycle_range},
+    "$label read1 cycle range");
+  is_deeply([$base->read2_cycle_range], $expected->{read2_cycle_range},
+    "$label read2 cycle range");
+  is_deeply([$base->index_read1_cycle_range], $expected->{index_read1_cycle_range},
+    "$label index read1 cycle range");
+  is_deeply([$base->index_read2_cycle_range], $expected->{index_read2_cycle_range},
+    "$label index read2 cycle range");
+  is_deeply([$base->indexing_cycle_range], $expected->{indexing_cycle_range},
+    "$label combined indexing cycle range");
+  is($base->expected_cycle_count, $expected->{expected_cycle_count},
+    "$label expected cycle count");
+  is($base->lane_count, $expected->{lane_count},
+    "$label lane count");
 }
 
 subtest 'local flag' => sub {
@@ -85,6 +119,101 @@ subtest 'label' => sub {
     'error if label is not preset';
   $base = npg_pipeline::base->new(product_rpt_list => '22:1:33', label => '33');
   is ($base->label, '33', 'label as set');
+};
+
+subtest 'Elembio read structure from RunParameters.json' => sub {
+  plan tests => 51;
+
+  my $single_index = _elembio_base(q[t/data/elembio/20250127_AV244103_1234_NT1850075L]);
+  _assert_elembio_read_structure(
+    $single_index,
+    q[single-index paired run],
+    {
+      is_paired_read         => 1,
+      is_indexed             => 1,
+      is_dual_index          => 0,
+      read_cycle_counts      => [8, 151, 151],
+      reads_indexed          => [1, 0, 0],
+      read1_cycle_range      => [9, 159],
+      read2_cycle_range      => [160, 310],
+      index_read1_cycle_range => [1, 8],
+      index_read2_cycle_range => [],
+      indexing_cycle_range    => [1, 8],
+      expected_cycle_count    => 310,
+      lane_count              => 2,
+    }
+  );
+
+  my $dual_index = _elembio_base(q[t/data/elembio/20250101_AV244103_NT1234567E]);
+  _assert_elembio_read_structure(
+    $dual_index,
+    q[dual-index paired run],
+    {
+      is_paired_read          => 1,
+      is_indexed              => 1,
+      is_dual_index           => 1,
+      read_cycle_counts       => [8, 8, 151, 151],
+      reads_indexed           => [1, 1, 0, 0],
+      read1_cycle_range       => [17, 167],
+      read2_cycle_range       => [168, 318],
+      index_read1_cycle_range => [1, 8],
+      index_read2_cycle_range => [9, 16],
+      indexing_cycle_range    => [1, 16],
+      expected_cycle_count    => 318,
+      lane_count              => 2,
+    }
+  );
+
+  my $unindexed = _elembio_base(q[t/data/elembio/20250129_AV244103_B1234]);
+  _assert_elembio_read_structure(
+    $unindexed,
+    q[unindexed paired run],
+    {
+      is_paired_read          => 1,
+      is_indexed              => 0,
+      is_dual_index           => 0,
+      read_cycle_counts       => [151, 151],
+      reads_indexed           => [0, 0],
+      read1_cycle_range       => [1, 151],
+      read2_cycle_range       => [152, 302],
+      index_read1_cycle_range => [],
+      index_read2_cycle_range => [],
+      indexing_cycle_range    => [],
+      expected_cycle_count    => 302,
+      lane_count              => 2,
+    }
+  );
+
+  my $single_end = _elembio_base(q[t/data/elembio/20250315_AV244103_SINGLE_END]);
+  _assert_elembio_read_structure(
+    $single_end,
+    q[single-end run],
+    {
+      is_paired_read          => 0,
+      is_indexed              => 0,
+      is_dual_index           => 0,
+      read_cycle_counts       => [151],
+      reads_indexed           => [0],
+      read1_cycle_range       => [1, 151],
+      read2_cycle_range       => [],
+      index_read1_cycle_range => [],
+      index_read2_cycle_range => [],
+      indexing_cycle_range    => [],
+      expected_cycle_count    => 151,
+      lane_count              => 2,
+    }
+  );
+
+  my $lazy_base = npg_pipeline::base->new(
+    subpath => q[t/data/elembio/20250127_AV244103_1234_NT1850075L/Data]
+  );
+  is($lazy_base->runfolder_path,
+    q[t/data/elembio/20250127_AV244103_1234_NT1850075L],
+    q[lazy-built runfolder_path resolves to Elembio fixture root]);
+  is_deeply([$lazy_base->read_cycle_counts], [8, 151, 151],
+    q[lazy-built runfolder_path drives Elembio read cycle parsing]);
+  is($lazy_base->is_paired_read, 1,
+    q[lazy-built runfolder_path also supports inherited paired-read flag]);
 };
 
 subtest 'error on incompatible merge attributes' => sub {

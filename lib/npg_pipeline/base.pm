@@ -11,6 +11,7 @@ use JSON;
 use Perl6::Slurp;
 use Readonly;
 use Try::Tiny;
+use WTSI::DNAP::Warehouse::Schema;
 
 use npg_tracking::glossary::rpt;
 use npg_tracking::glossary::composition::factory::rpt_list;
@@ -19,7 +20,7 @@ use npg_pipeline::product;
 
 our $VERSION = '0';
 
-extends 'npg_tracking::illumina::runfolder';
+extends 'npg_tracking::runfolder';
 
 with qw{
         MooseX::Getopt
@@ -31,17 +32,9 @@ with qw{
 
 Readonly::Array my @NO_SCRIPT_ARG_ATTRS  => qw/
                                                subpath
-                                               tilelayout_rows
-                                               tile_count
-                                               lane_tilecount
-                                               tilelayout_columns
                                                npg_tracking_schema
                                                tracking_run
-                                               experiment_name
                                                logger
-                                               lane_count
-                                               expected_cycle_count
-                                               run_flowcell
                                                qc_path
                                               /;
 
@@ -82,6 +75,22 @@ Run id, an optional attribute.
 =cut
 
 has q{+id_run} => (required => 0,);
+
+=head2 mlwh_schema
+
+Optional ML Warehouse schema handle. Primarily useful for tests and for
+pipeline bootstrap paths that need to generate cached LIMS metadata without
+connecting to the default warehouse instance.
+
+=cut
+
+has q{mlwh_schema} => (
+  isa        => q{WTSI::DNAP::Warehouse::Schema},
+  is         => q{ro},
+  required   => 0,
+  predicate  => q{has_mlwh_schema},
+  metaclass  => q{NoGetopt},
+);
 
 =head2 product_rpt_list
 
@@ -194,7 +203,8 @@ Tells p4 stage2 (seq_alignment) to merge all lanes (at their plex level
 if plexed, except spiked PhiX and tag_zero).
 
 If not set, this attribute is build lazily. It is set to true for NovaSeq runs,
-which use a Standard flowcell.
+which use a Standard flowcell. For non-Illumina instruments, it defaults to
+false.
 
 =cut
 
@@ -210,6 +220,9 @@ has q{merge_lanes} => (
 );
 sub _build_merge_lanes {
   my $self = shift;
+  if ($self->manufacturer ne q{Illumina}) {
+    return 0;
+  }
   return $self->all_lanes_mergeable;
 }
 
@@ -219,7 +232,7 @@ Tells p4 stage2 (seq_alignment) to merge all plexes that belong to the same
 library, except spiked PhiX and tag_zero.
 
 If not set, this attribute is build lazily. It is set to true for indexed
-NovaSeqX runs.
+NovaSeqX runs. For non-Illumina instruments, it defaults to false.
 
 =cut
 
@@ -233,6 +246,9 @@ has q{merge_by_library} => (
 );
 sub _build_merge_by_library {
   my $self = shift;
+  if ($self->manufacturer ne q{Illumina}) {
+    return 0;
+  }
   return $self->is_indexed && $self->platform_NovaSeqX();
 }
 
@@ -578,7 +594,7 @@ __END__
 
 =item WTSI::DNAP::Utilities::Loggable
 
-=item npg_tracking::illumina::runfolder
+=item npg_tracking::runfolder
 
 =item npg_tracking::util::pipeline_config
 
