@@ -1,6 +1,7 @@
 LIST OF CHANGES
 ---------------
 
+release 68.17.0 (2026-09-02)
  - Force alignments off for Parse libraries as for existing Chromium libraries.
  - I've added two new Duplex library_types UD-seq and UD-seq Twist Pulldown
    which use a different tag and skip length
