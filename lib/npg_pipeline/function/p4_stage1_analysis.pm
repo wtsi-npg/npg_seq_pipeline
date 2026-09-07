@@ -6,6 +6,7 @@ use namespace::autoclean;
 use Try::Tiny;
 use Readonly;
 use File::Slurp;
+use File::Spec::Functions qw/catdir catfile/;
 use List::Util qw{sum};
 use List::MoreUtils qw{any};
 use JSON;
@@ -25,6 +26,7 @@ our $VERSION  = '0';
 
 Readonly::Scalar my $DEFAULT_I2B_THREAD_COUNT     => 3; # value passed to bambi i2b --threads flag
 Readonly::Scalar my $DEFAULT_SPLIT_THREADS_COUNT  => 0; # value passed to samtools split --threads flag
+Readonly::Scalar my $DEFAULT_SEED_READ_COUNT      => 10_000.0;
 
 Readonly::Scalar my $DUPLEXSEQ_TAG_LENGTH         => 3; # length of Duplex-Seq tag at start of read
 Readonly::Scalar my $DUPLEXSEQ_SKIP_LENGTH        => 4; # Number of bases to skip after the Duplex-Seq tag
@@ -36,24 +38,28 @@ Readonly::Scalar my $UDSEQ_SKIP_LENGTH        => 0; # Number of bases to skip af
 sub generate {
   my $self = shift;
 
-  $self->info(q{Creating definitions to run P4 stage1 analysis for run },
-              $self->id_run);
+  my $generator_method = q{_generate_command_params};
+  my $message = q{Creating definitions to run P4 stage1 analysis for run };
+  if ($self->manufacturer eq q{Element Biosciences}) {
+    $generator_method = q{_generate_elembio_command_params};
+    $message = q{Creating Elembio p4 stage1 analysis scaffolding for run };
+  }
+
+  $self->info($message, $self->id_run);
 
   $self->info(q{Creating P4 stage1 analysis directories for run },
               $self->id_run );
   $self->_create_p4_stage1_dirs();
 
-  my $alims = $self->lims->children_ia;
   my @definitions = ();
 
   for my $lane_product (@{$self->products->{lanes}}) {
 
     my $p = $lane_product->composition->{components}->[0]->{position}; # there should be only one element in components
-
     my $l = $lane_product->lims;
     my $tag_list_file = q{};
 
-    if($l->is_pool) {
+    if ($l->is_pool) {
       $self->info(qq{Lane $p is indexed, generating tag list});
 
       $tag_list_file = npg_pipeline::cache::barcodes->new(
@@ -65,7 +71,7 @@ sub generate {
       )->generate();
     }
 
-    my @generated = $self->_generate_command_params($l, $tag_list_file, $lane_product);
+    my @generated = $self->$generator_method($l, $tag_list_file, $lane_product);
     my ($command, $p4_params, $p4_ops) = @generated;
     push @definitions, $self->_create_definition($lane_product->composition, $command);
 
@@ -136,9 +142,27 @@ has 'cluster_counts'   => (
 
 sub _build_cluster_counts {
   my $self = shift;
+  if ($self->manufacturer eq q{Element Biosciences}) {
+    return $self->_elembio_cluster_counts();
+  }
   return npg_qc::illumina::interop::parser->new(
            runfolder_path => $self->runfolder_path
          )->parse()->{cluster_count_pf_total};
+}
+
+sub _elembio_cluster_counts {
+  my $self = shift;
+  my $path = catfile($self->runfolder_path, q{AvitiRunStats.json});
+  if (!-f $path) {
+    $self->logcroak(qq{Elembio run stats file $path does not exist});
+  }
+  my $stats = decode_json(read_file($path));
+  my $lane_stats = $stats->{LaneStats};
+  if (ref $lane_stats ne q{ARRAY}) {
+    $self->logcroak(qq{LaneStats are absent from $path});
+  }
+  my %counts = map { $_->{Lane} => $_->{PFCount} } @{$lane_stats};
+  return \%counts;
 }
 
 # phix_aligner is used to determine the reference genome. Be aware that
@@ -217,6 +241,145 @@ sub _get_index_lengths {
   return \@index_length_array;
 }
 
+sub _elembio_fastq_file_path {
+  my ($self, $position, $read_name) = @_;
+  # "WholeLane" comes from the minimal [Samples] CSV written by
+  # elembio_bases2fastq for the non-deplexing lane-level bases2fastq run.
+  return catfile(
+    $self->bam_basecall_path,
+    q{fastq},
+    q{lane} . $position,
+    q{Samples},
+    q{WholeLane_L} . $position . q{_} . $read_name . q{.fastq.gz}
+  );
+}
+
+sub _elembio_import_args {
+  my ($self, $position) = @_;
+
+  my @args = (q{-R}, join q{_}, $self->id_run, $position);
+  if ($self->is_paired_read) {
+    push @args,
+      q{-1}, $self->_elembio_fastq_file_path($position, q{R1}),
+      q{-2}, $self->_elembio_fastq_file_path($position, q{R2});
+  } else {
+    push @args,
+      q{-0}, $self->_elembio_fastq_file_path($position, q{R1});
+  }
+
+  if ($self->is_indexed) {
+    push @args, q{--i1}, $self->_elembio_fastq_file_path($position, q{I1});
+  }
+  if ($self->is_dual_index) {
+    push @args, q{--i2}, $self->_elembio_fastq_file_path($position, q{I2});
+  }
+
+  push @args, q{-u}, q{-O}, q{bam};
+  return @args;
+}
+
+sub _generate_elembio_command_params {
+  my ($self, $lane_lims, $tag_list_file, $lane_product) = @_;
+
+  my $id_run = $self->id_run();
+  my $position = $lane_lims->position;
+  my $name_root = $id_run . q{_} . $position;
+  my $no_cal_path = $self->recalibrated_path;
+  my $bam_basecall_path = $self->bam_basecall_path;
+  my @import_args = $self->_elembio_import_args($position);
+  my $import_command = join q{ }, q{samtools}, q{import}, @import_args;
+  my $fastq_dir = catdir($self->bam_basecall_path, q{fastq}, q{lane} . $position);
+  my $st_names = $self->_get_library_sample_study_names($lane_lims);
+  my %p4_params = (
+    samtools_executable          => q{samtools},
+    bwa_executable               => q{bwa0_6},
+    teepot_tempdir               => q{.},
+    teepot_wval                  => q{500},
+    teepot_mval                  => q{2G},
+    phix_alignment_method        => $self->p4s1_phix_alignment_method,
+    reference_phix               => $self->phix_alignment_reference,
+    scramble_reference_fasta     => $self->_default_phix_ref(q{fasta}, $self->repository),
+    s1_se_pe                     => $self->is_paired_read ? q{pe} : q{se},
+    s1_output_format             => $self->s1_s2_intfile_format,
+    stage1_input_type            => q{fastq_import},
+    rpt                          => $lane_product->rpt_list,
+    rpt_list                     => $lane_product->rpt_list,
+    outdatadir                   => $no_cal_path,
+    lane_archive_path            => $lane_product->path($self->archive_path),
+    subsetsubpath                => $lane_product->short_files_cache_path($self->archive_path),
+    qc_check_id_run              => $id_run,
+    qc_check_position            => $position,
+    qc_check_qc_in_dir           => $bam_basecall_path,
+    qc_check_qc_out_dir          => $lane_product->qc_out_path($self->archive_path),
+    i2b_run_path                 => $self->runfolder_path,
+    i2b_runfolder                => $self->run_folder,
+    i2b_intensity_dir            => $self->intensity_path,
+    i2b_lane                     => $position,
+    i2b_basecalls_dir            => $self->basecall_path,
+    i2b_rg                       => $name_root,
+    i2b_pu                       => join(q{_}, $self->run_folder, $position),
+    fastq_dir                    => $fastq_dir,
+    fastq_samples_dir            => catdir($fastq_dir, q{Samples}),
+    fastq_import_arg_string      => join(q{ }, @import_args),
+    fastq_import_cmd             => $import_command,
+    fastq_import_r1              => $self->_elembio_fastq_file_path($position, q{R1}),
+    seqchksum_file               => $bam_basecall_path . q[/] . $name_root . q{.post_i2b.seqchksum},
+    filtered_bam                 => $no_cal_path . q[/] . $name_root . q{.bam},
+    unfiltered_cram_file         => $no_cal_path . q[/] . $name_root . q{.unfiltered.cram},
+    md5filename                  => $no_cal_path . q[/] . $name_root . q{.bam.md5},
+    split_prefix                 => $no_cal_path,
+    cluster_count                => $self->cluster_counts->{$position},
+    split_threads_val            =>
+      $self->general_values_conf()->{'p4_stage1_split_threads_count'} ||
+      $DEFAULT_SPLIT_THREADS_COUNT,
+    seed_frac                    => sprintf(q[%.8f], ($DEFAULT_SEED_READ_COUNT / $self->cluster_counts->{$position}) + $id_run),
+  );
+
+  if ($st_names->{library}) {
+    $p4_params{i2b_library_name} = $st_names->{library};
+  }
+  if ($st_names->{sample}) {
+    $p4_params{i2b_sample_aliases} = $st_names->{sample};
+  }
+  if ($st_names->{study}) {
+    my $study = $st_names->{study};
+    $study =~ s/"/\\"/gmxs;
+    $p4_params{i2b_study_name} = q{"} . $study . q{"};
+  }
+
+  if ($self->is_paired_read) {
+    $p4_params{fastq_import_r2} =
+      $self->_elembio_fastq_file_path($position, q{R2});
+  }
+  if ($self->is_indexed) {
+    $p4_params{fastq_import_i1} =
+      $self->_elembio_fastq_file_path($position, q{I1});
+  }
+  if ($self->is_dual_index) {
+    $p4_params{fastq_import_i2} =
+      $self->_elembio_fastq_file_path($position, q{I2});
+  }
+  if ($tag_list_file) {
+    $p4_params{barcode_file} = $tag_list_file;
+    $p4_params{decoder_metrics} =
+      $bam_basecall_path . q{/} . $name_root . q{.bam.tag_decode.metrics};
+  }
+
+  my %p4_ops = (splice => [], prune => [],);
+  if ($self->is_multiplexed_lane($position)) {
+    push @{$p4_ops{prune}}, q[tee_split:unsplit_bam-];
+  } else {
+    push @{$p4_ops{splice}}, q[tee_i2b:baf-bamcollate:];
+    push @{$p4_ops{prune}}, q[tee_split:split_bam-];
+  }
+  if (not $self->adapterfind) {
+    push @{$p4_ops{splice}}, q[bamadapterfind];
+  }
+  my $command = $self->_generate_p4_stage1_command($name_root);
+
+  return ($command, \%p4_params, \%p4_ops);
+}
+
 #########################################################################################################
 # _generate_command_params:
 # Determine parameters for the lane from LIMS information and create the hash from which the p4 stage1
@@ -266,9 +429,6 @@ sub _generate_command_params {
   $p4_params{unfiltered_cram_file} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.unfiltered.cram}; # full name for spatially unfiltered lane-level cram file
   $p4_params{md5filename} = $no_cal_path . q[/] . $id_run . q[_] . $position . q{.bam.md5}; # full name for the md5 for the spatially filtered lane-level file
   $p4_params{split_prefix} = $no_cal_path; # location for split bam files
-
-  my $job_name = join q/_/, (q{p4_stage1}, $id_run, $position, $self->timestamp());
-  $job_name = q{'} . $job_name . q{'};
 
   $p4_params{i2b_run_path} = $runfolder_path;
   $p4_params{i2b_thread_count} = $self->general_values_conf()->{'p4_stage1_i2b_thread_count'} || $DEFAULT_I2B_THREAD_COUNT;
@@ -426,39 +586,59 @@ sub _generate_command_params {
   # cluster count (used to calculate FRAC for bam subsampling)
   my $cluster_count = $self->cluster_counts->{$position};
   $p4_params{cluster_count} = $cluster_count;
-  ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
-  $p4_params{seed_frac} = sprintf q[%.8f], (10_000.0 / $cluster_count) + $id_run;
+  $p4_params{seed_frac} = sprintf q[%.8f], ($DEFAULT_SEED_READ_COUNT / $cluster_count) + $id_run;
 
   $p4_params{split_threads_val} = $self->general_values_conf()->{'p4_stage1_split_threads_count'} || $DEFAULT_SPLIT_THREADS_COUNT;
 
   my $num_threads_expression = q[npg_pipeline_job_env_to_threads --num_threads ] . $self->get_resources->{minimum_cpu};
   my $name_root = $id_run . q{_} . $position;
-  # allow specification of thread number for some processes in config file. Note: these threads are being drawn from the same pool. Unless
-  #  they appear in the config file, their values will be derived from what LSF assigns the job based on the -n value supplied to the bsub
-  #  command.
-  my $aligner_slots = $self->general_values_conf()->{'p4_stage1_aligner_slots'} || qq[`$num_threads_expression --exclude -2 --divide 3`];
-  my $samtobam_slots = $self->general_values_conf()->{'p4_stage1_samtobam_slots'} || qq[`$num_threads_expression --exclude -1 --divide 3`];
-  my $bamsormadup_slots = $self->general_values_conf()->{'p4_stage1_bamsort_slots'} || qq[`$num_threads_expression --divide 3`];
-  my $bamrecompress_slots = $self->general_values_conf()->{'p4_stage1_bamrecompress_slots'} || qq[`$num_threads_expression`];
-
-  my $command = join q( ), q(bash -c '),
-                           q(cd), $self->p4_stage1_errlog_paths->{$position}, q{&&},
-                           q(vtfp.pl),
-                           q{-template_path $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib},
-                           qq(-o run_$name_root.json),
-                           q(-param_vals), (join q{/}, $self->p4_stage1_params_paths->{$position}, $name_root.q{_p4s1_pv_in.json}),
-                           q(-export_param_vals), $name_root.q{_p4s1_pv_out_}.$self->_job_id().q/.json/,
-                           q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
-                           qq(-keys aligner_numthreads -vals $aligner_slots),
-                           qq(-keys s2b_mt_val -vals $samtobam_slots),
-                           qq(-keys bamsormadup_numthreads -vals $bamsormadup_slots),
-                           qq(-keys br_numthreads_val -vals $bamrecompress_slots),
-                           q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/bcl2bam_phix_deplex_wtsi_stage1_template.json},
-                           q{&&},
-                           qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json),
-                           q(');
+  my $command = $self->_generate_p4_stage1_command($name_root);
 
   return ($command, \%p4_params, \%p4_ops);
+}
+
+sub _generate_p4_stage1_command {
+  my ($self, $name_root) = @_;
+
+  my ($position) = $name_root =~ /_(\d+)\z/xms;
+  my $num_threads_expression =
+    q[npg_pipeline_job_env_to_threads --num_threads ] .
+    $self->get_resources->{minimum_cpu};
+
+  # allow specification of thread number for some processes in config file.
+  # These threads are drawn from the same pool unless overridden in config.
+  my $aligner_slots =
+    $self->general_values_conf()->{'p4_stage1_aligner_slots'} ||
+    qq[`$num_threads_expression --exclude -2 --divide 3`];
+  my $samtobam_slots =
+    $self->general_values_conf()->{'p4_stage1_samtobam_slots'} ||
+    qq[`$num_threads_expression --exclude -1 --divide 3`];
+  my $bamsormadup_slots =
+    $self->general_values_conf()->{'p4_stage1_bamsort_slots'} ||
+    qq[`$num_threads_expression --divide 3`];
+  my $bamrecompress_slots =
+    $self->general_values_conf()->{'p4_stage1_bamrecompress_slots'} ||
+    qq[`$num_threads_expression`];
+  my $template_name = $self->manufacturer eq q{Element Biosciences}
+    ? q{perlane_phix_deplex_wtsi_stage1_template.json}
+    : q{bcl2bam_phix_deplex_wtsi_stage1_template.json};
+
+  return join q( ), q(bash -c '),
+                    q(cd), $self->p4_stage1_errlog_paths->{$position}, q{&&},
+                    q(vtfp.pl),
+                    q{-template_path $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib},
+                    qq(-o run_$name_root.json),
+                    q(-param_vals), (join q{/}, $self->p4_stage1_params_paths->{$position}, $name_root.q{_p4s1_pv_in.json}),
+                    q(-export_param_vals), $name_root.q{_p4s1_pv_out_}.$self->_job_id().q/.json/,
+                    q{-keys cfgdatadir -vals $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl)))/../data/vtlib/},
+                    qq(-keys aligner_numthreads -vals $aligner_slots),
+                    qq(-keys s2b_mt_val -vals $samtobam_slots),
+                    qq(-keys bamsormadup_numthreads -vals $bamsormadup_slots),
+                    qq(-keys br_numthreads_val -vals $bamrecompress_slots),
+                    q{$}.q{(dirname $}.q{(dirname $}.q{(readlink -f $}.q{(which vtfp.pl))))/data/vtlib/} . $template_name,
+                    q{&&},
+                    qq(viv.pl -s -x -v 3 -o viv_$name_root.log run_$name_root.json),
+                    q(');
 }
 
 sub _get_library_sample_study_names {

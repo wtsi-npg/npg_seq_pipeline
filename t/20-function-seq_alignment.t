@@ -214,6 +214,7 @@ subtest 'basic functionality' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -291,6 +292,7 @@ subtest 'basic functionality' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object (forcing on phix split)';
@@ -367,6 +369,7 @@ subtest 'RNASeq analysis' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -433,6 +436,7 @@ subtest 'RNASeq analysis' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -518,6 +522,7 @@ subtest 'RNASeq analysis' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -557,6 +562,7 @@ subtest 'test 3' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -618,6 +624,7 @@ subtest 'test 4' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -728,6 +735,7 @@ subtest 'Newer flowcell' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -816,6 +824,7 @@ subtest 'MiSeq WES baits' => sub {
       verbose           => 1,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -949,6 +958,7 @@ subtest 'cycle count over threshold' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -1030,6 +1040,7 @@ subtest 'nonconsented human split, no target alignment' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -1112,6 +1123,7 @@ subtest 'nonconsented human split, target alignment' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -1196,6 +1208,7 @@ subtest 'no target alignment, no human split' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -1277,6 +1290,7 @@ subtest 'chromium' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -1356,6 +1370,7 @@ subtest 'miseq' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -1484,6 +1499,7 @@ subtest 'miseq_primer_panel_only' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -1552,6 +1568,7 @@ subtest 'product_release_tests and mark duplicate method' => sub {
         repository        => $dir,
         conf_path         => 't/data/release/config/seq_alignment',
         resource          => $default,
+        spatial_filter    => 1,
         npg_tracking_schema => undef
       )
     } 'no error creating an object';
@@ -1601,6 +1618,7 @@ subtest 'mark duplicate method for a product with multiple studies' => sub {
     runfolder_path    => $runfolder_path,
     conf_path         => 't/data/release/config/seq_alignment',
     resource          => $default,
+    spatial_filter    => 1,
     npg_tracking_schema => undef
   );
   my $product;
@@ -1674,6 +1692,7 @@ subtest 'BWA MEM 2 tests' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     );
     apply_all_roles($ms_gen, 'npg_pipeline::runfolder_scaffold');
@@ -1779,6 +1798,7 @@ subtest 'HiC_flags' => sub {
       verbose           => 1,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating an object';
@@ -1849,14 +1869,13 @@ subtest 'HiC_flags' => sub {
         'bwa_mem_S_flag' => 'on',
         'bwa_mem_P_flag' => 'on',
         'bwa_mem_B_value' => '5',
-        'spatial_filter_switch' => 'off',
       },
     ],
     'ops' => {
       'prune' => [
         'fop.*_bmd_multiway:calibration_pu-',
         'fop.*samtools_stats_F0.*_target.*-',
-          'fop.*_bmd_multiway:bam-',
+        'fop.*_bmd_multiway:bam-',
         'fop.*samtools_stats_F0.*00_bait.*-'
       ],
       'splice' => []
@@ -1900,6 +1919,7 @@ subtest 'Haplotagging test' => sub {
       repository        => $dir,
       conf_path         => 't/data/release/config/seq_alignment',
       resource          => $default,
+      spatial_filter    => 1,
       npg_tracking_schema => undef
     )
   } 'no error creating seq_alignment object';
@@ -2021,6 +2041,7 @@ subtest 'single-end markdup_method test' => sub {
         repository        => $dir,
         conf_path         => 't/data/release/config/seq_alignment',
         resource          => $default,
+        spatial_filter    => 1,
         npg_tracking_schema => undef
       )
     } 'no error creating seq_alignment object';
@@ -2135,6 +2156,7 @@ subtest 'test reference caching' => sub {
     archive_path   => $archive_dir,
     repository     => $dir,
     resource       => $default,
+    spatial_filter => 1,
     conf_path      => 't/data/release/config/seq_alignment',
     lanes          => [1, 4],
     npg_tracking_schema => undef

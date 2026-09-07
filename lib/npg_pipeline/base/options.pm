@@ -142,6 +142,27 @@ sub _build_adapterfind {
   return $self->platform_NovaSeq? 0: 1;
 }
 
+=head2 spatial_filter
+
+Toggles spatial filtering in stage2 analysis and spatial_filter QC generation.
+
+=cut
+
+has q{spatial_filter} => (
+  isa           => q{Bool},
+  is            => q{ro},
+  lazy_build    => 1,
+  documentation => q{Toggles spatial filtering in stage2 analysis and spatial_filter QC generation.},
+);
+sub _build_spatial_filter {
+  my $self = shift;
+
+  return 0 if $self->manufacturer eq q{Element Biosciences};
+  return 0 if $self->platform_NovaSeq || $self->platform_NovaSeqX;
+
+  return 1;
+}
+
 =head2 s1_s2_intfile_format
 
 format (bam/cram) for stage1_output/stage2_input files
