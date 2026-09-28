@@ -52,8 +52,10 @@ around 'markdup_method' => sub {
     # I've restricted this to library_types which exactly match Duplex-Seq to exclude the old library_type Bidirectional Duplex-seq
     # the Duplex-Seq library prep has been replaced by the NanoSeq library prep, the analysis is the same and the Duplex-Seq library_type is still in use
     # I've added two new library_types Targeted NanoSeq Pulldown Twist and Targeted NanoSeq Pulldown Agilent
+    # I've added two new library_types UD-seq and UD-seq Twist Pulldown
+
     my $mdm;
-    if($lt eq q[Duplex-Seq] || $lt =~ /^Targeted\sNanoSeq\sPulldown/smx) {
+    if($lt eq q[Duplex-Seq] || $lt =~ /^Targeted\sNanoSeq\sPulldown|^UD-seq/smx) {
       $mdm = q(duplexseq);
     }
     elsif($self->platform_NovaSeqX) {
@@ -336,8 +338,8 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     }
   }
 
-  my $is_chromium_lib = $l->library_type && ($l->library_type =~ /Chromium|10X/ismx);
-  my $do_target_alignment = ($is_chromium_lib or $is_haplotag_lib) ? 0
+  my $is_chromium_or_parse_lib = $l->library_type && ($l->library_type =~ /Chromium|10X|Parse\s+Evercode/ismx);
+  my $do_target_alignment = ($is_chromium_or_parse_lib or $is_haplotag_lib) ? 0
                              : ((not $is_tag_zero_product or $self->align_tag0)
                                && $self->_ref($dp, q[fasta])
                                && ($l->alignments_in_bam || $do_gbs_plex));
@@ -462,7 +464,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
     }
   }
 
-  if(!($target_is_human && $do_target_alignment) && !$do_rna && !$spike_tag && !$is_chromium_lib) {
+  if(!($target_is_human && $do_target_alignment) && !$do_rna && !$spike_tag && !$is_chromium_or_parse_lib) {
      push @{$p4_ops->{prune}}, 'fop.*_bmd_multiway:bam-';
   }
 
@@ -634,7 +636,7 @@ sub _alignment_command { ## no critic (Subroutines::ProhibitExcessComplexity)
 
   my %info = (
                do_target_alignment         => $do_target_alignment,
-               is_chromium_lib             => $is_chromium_lib,
+               is_chromium_or_parse_lib    => $is_chromium_or_parse_lib,
                skip_target_markdup_metrics => $skip_target_markdup_metrics,
                spike_tag                   => $spike_tag,
                nonconsented_humansplit     => $nchs,

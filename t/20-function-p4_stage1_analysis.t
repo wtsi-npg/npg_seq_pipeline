@@ -290,7 +290,7 @@ subtest 'check_save_arguments_minimap2' => sub {
 };
 
 subtest 'check_duplex-seq' => sub {
-  plan tests => 29;
+  plan tests => 31;
 
   my $id_run  = 36062;
   my $rf_name = '210111_A00513_0447_AHJ55JDSXY';
@@ -475,6 +475,73 @@ subtest 'check_duplex-seq' => sub {
          'i2b_first_0' => '8,175',
          'i2b_first_index_0' => '1,1,4,152,160,168,168,171',
          'unfiltered_cram_file' => $no_cal_path . '/36062_2.unfiltered.cram',
+         'teepot_mval' => '2G'
+       }
+     ],
+     "ops" => {
+       "splice" => ["bamadapterfind"],
+       "prune" => ["tee_split:unsplit_bam-"]
+      }
+    };
+
+  is_deeply($h, $expected, 'correct json file content (for p4 stage1 params file)');
+  
+  # and a UD-seq Twist lane
+
+  $pfname = $bbp . q[/p4_stage1_analysis/lane4/param_files/36062_4_p4s1_pv_in.json];
+  ok (-e $pfname, 'params file exists');
+  $h = from_json(slurp($pfname));
+
+  $no_cal_path = $intensities_dir . '/BAM_basecalls_20210113-092146/no_cal';
+
+  $expected = {
+    'assign' => [
+       {
+         'i2b_intensity_dir' =>  $intensities_dir,
+         'qc_check_qc_out_dir' =>  $no_cal_path . '/archive/lane4/qc',
+         'bwa_executable' => 'bwa0_6',
+         'cluster_count' => '3017356478',
+         'split_prefix' => $no_cal_path,
+         'barcode_file' => $intensities_dir . '/BAM_basecalls_20210113-092146/metadata_cache_36062/lane_4.taglist',
+         'split_threads_val' => '4',
+         'i2b_lane' => '4',
+         'seed_frac' => '36062.00000331',
+         'reference_phix' => $dir . '/srpipe_references/references/PhiX/default/all/minimap2/phix_unsnipped_short_no_N.fa.mmi',
+         'i2b_bc_qual_val' => 'rq,mq,bq,QT,QT,rq,mq,bq',
+         'lane_archive_path' => $no_cal_path . '/archive/lane4',
+         'samtools_executable' => 'samtools',
+         'qc_check_id_run' => '36062',
+         'i2b_final_0' => '151,318',
+         'i2b_sample_aliases' => 'EGAN00002827435,EGAN00002827458,EGAN00002827408,EGAN00002827411,EGAN00002827414,EGAN00002827416,EGAN00002827418,EGAN00002827421,EGAN00002827424,EGAN00002827426,EGAN00002827427,EGAN00002827430,EGAN00002827443,EGAN00002827447,EGAN00002827452,EGAN00002827463,EGAN00002827467,EGAN00002827472,EGAN00002827475,EGAN00002827478,EGAN00002827481,EGAN00002827485,EGAN00002827488,EGAN00002827514,EGAN00002827518,EGAN00002827521,EGAN00002827524,EGAN00002827527',
+         'tileviz_dir' => $no_cal_path . '/archive/lane4/tileviz',
+         's1_se_pe' => 'pe',
+         'aln_filter_value' => '0x900',
+         'i2b_runfolder' => $rf_name,
+         'subsetsubpath' => $no_cal_path . '/archive/lane4/.npg_cache_10000',
+         'outdatadir' => $no_cal_path,
+         'i2b_study_name' => '"EGAS00001004066: Bottleneck sequencing of human tissue including neurons, cord blood, sperm This data is part of a pre-publication release. For information on the proper use of pre-publication data shared by the Wellcome Trust Sanger Institute (including details of any publication moratoria), please see http://www.sanger.ac.uk/datasharing/,EGAS00001004604: This study is investigating the effects of chemotherapy drugs used in cancer treatment on the somatic mutational landscape in normal human tissues. The samples used in this study have been taken from rapid autopsies of patients who have undergone chemotherapy using drugs thought to cause mutations in the DNA. Structures from a variety of tissues will be dissected using LCM and whole genome sequences will be produced in order to assess mutational burdens and signatures. "',
+         'scramble_reference_fasta' => $dir . '/srpipe_references/references/PhiX/default/all/fasta/phix_unsnipped_short_no_N.fa',
+         'i2b_thread_count' => '8',
+         'teepot_tempdir' => '.',
+         'filtered_bam' => $no_cal_path . '/36062_4.bam',
+         'md5filename' => $no_cal_path . '/36062_4.bam.md5',
+         'i2b_basecalls_dir' => $intensities_dir . '/BaseCalls',
+         'i2b_run_path' => $rfpath,
+         'i2b_rg' => '36062_4',
+         'rpt_list' => '36062:4',
+         'teepot_wval' => '500',
+         'i2b_pu' => $rf_name . '_4',
+         'i2b_final_index_0' => '8,8,8,159,167,175,175,175',
+         'seqchksum_file' => $intensities_dir . '/BAM_basecalls_20210113-092146/36062_4.post_i2b.seqchksum',
+         'decoder_metrics' => $intensities_dir . '/BAM_basecalls_20210113-092146/36062_4.bam.tag_decode.metrics',
+         'i2b_bc_read' => '1,2,1,1,1,2,1,2',
+         'qc_check_qc_in_dir' => $intensities_dir. '/BAM_basecalls_20210113-092146',
+         'i2b_bc_seq_val' => 'rb,mb,br,BC,BC,rb,mb,br',
+         's1_output_format' => 'cram',
+         'phix_alignment_method' => 'minimap2',
+         'i2b_first_0' => '9,176',
+         'i2b_first_index_0' => '1,1,9,152,160,168,168,176',
+         'unfiltered_cram_file' => $no_cal_path . '/36062_4.unfiltered.cram',
          'teepot_mval' => '2G'
        }
      ],
