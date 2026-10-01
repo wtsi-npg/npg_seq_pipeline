@@ -1,8 +1,9 @@
 LIST OF CHANGES
 ---------------
 
- -Added an emergency fix to exclude iRODS uploads from the analysis pipeline.
-  This change will have to be reverted once it's safe to resume iRODS uploads.
+release 68.17.1 (2026-10-01)
+ - Added an emergency fix to exclude iRODS uploads from the analysis pipeline.
+   This change will have to be reverted once it's safe to resume iRODS uploads.
 
 release 68.17.0 (2026-09-02)
  - Force alignments off for Parse libraries as for existing Chromium libraries.
