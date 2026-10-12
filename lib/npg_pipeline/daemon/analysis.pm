@@ -80,7 +80,7 @@ sub _generate_command {
   my ($self, $arg_refs) = @_;
 
   my $cmd = sprintf
-    '%s --verbose --job_priority %i --runfolder_path %s --id_flowcell_lims %s --no_irods_archival',
+    '%s --verbose --job_priority %i --runfolder_path %s --id_flowcell_lims %s',
              $self->pipeline_script_name,
              $arg_refs->{'job_priority'},
              $arg_refs->{'rf_path'},
