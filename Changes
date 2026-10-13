@@ -2,6 +2,7 @@ LIST OF CHANGES
 ---------------
 
  - made the is_duplexseq() and is_udseq() regex case insensitive
+ - revert exclusion of iRODS jobs
 
 release 68.17.1 (2026-10-01)
  - Added an emergency fix to exclude iRODS uploads from the analysis pipeline.
