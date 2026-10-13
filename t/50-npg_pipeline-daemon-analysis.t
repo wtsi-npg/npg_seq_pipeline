@@ -130,8 +130,7 @@ subtest 'generate command' => sub {
   my $path = join q[:], join(q[/], abs_path(getcwd()), q[t]),
                         $perl_bin, $original_path;
   my $command =
-    q[/bin/true --verbose --job_priority 4 --runfolder_path t --id_flowcell_lims 55] .
-    q[ --no_irods_archival];
+    q[/bin/true --verbose --job_priority 4 --runfolder_path t --id_flowcell_lims 55];
   is($runner->_generate_command($data),
     qq[export PATH=${path}; $command], 'command');
 };
