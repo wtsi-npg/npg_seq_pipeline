@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 34;
+use Test::More tests => 37;
 use Test::Exception;
 
 use_ok('npg_pipeline::pluggable::registry');
@@ -66,5 +66,10 @@ $i = $r->get_function_implementor('stage2App');
 is ($i->{'module'}, 'stage2pp', 'module name');
 is ($i->{'method'}, 'create', 'method name');
 is_deeply ($i->{'params'}, {'pipeline_type' => 'stage2App'}, 'params');
+
+$i = $r->get_function_implementor('elembio_bases2fastq');
+is ($i->{'module'}, 'elembio_bases2fastq', 'module name');
+is ($i->{'method'}, 'generate', 'method name');
+ok (!exists $i->{'params'}, 'params not defined');
 
 1;

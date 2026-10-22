@@ -750,12 +750,16 @@ sub _run_spider {
   # We have a standard samplesheet loation for a run.
   #
   try {
-    my $cache = npg_pipeline::cache->new(
+    my %cache_init = (
       'id_run'           => $self->id_run,
       'set_env_vars'     => 1,
       'cache_dir_path'   => $self->metadata_cache_dir_path(),
       'id_flowcell_lims' => $self->id_flowcell_lims,
     );
+    if ($self->has_mlwh_schema) {
+      $cache_init{'mlwh_schema'} = $self->mlwh_schema;
+    }
+    my $cache = npg_pipeline::cache->new(%cache_init);
     $cache->setup();
     $self->info(join qq[\n], @{$cache->messages});
   } catch {

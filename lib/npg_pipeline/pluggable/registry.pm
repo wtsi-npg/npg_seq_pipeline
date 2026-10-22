@@ -38,7 +38,8 @@ Readonly::Hash my %REGISTRY => (
 
   'create_summary_link_analysis' => {'current_analysis_link' => 'create'},
 
-  'p4_stage1_analysis'      => {'p4_stage1_analysis' => 'generate'},
+  'p4_stage1_analysis'  => {'p4_stage1_analysis' => 'generate'},
+  'elembio_bases2fastq' => {'elembio_bases2fastq' => 'generate'},
   'stage2pp'                => {'stage2pp' =>
     {method => 'create', pipeline_type => 'stage2pp'}},
   'stage2App'                => {'stage2pp' =>

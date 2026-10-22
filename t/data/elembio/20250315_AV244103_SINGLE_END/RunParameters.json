@@ -1,0 +1,21 @@
+{
+  "RunName": "SINGLE_END",
+  "RunType": "Sequencing",
+  "Side": "SideA",
+  "Date": "2025-03-15T12:00:00Z",
+  "InstrumentName": "AV244103",
+  "RunFolderName": "20250315_AV244103_SINGLE_END",
+  "Cycles": {
+    "R1": 151,
+    "R2": 0,
+    "I1": 0,
+    "I2": 0
+  },
+  "ReadOrder": "R1",
+  "AnalysisLanes": "1+2",
+  "Consumables": {
+    "Flowcell": {
+      "SerialNumber": "2422551730"
+    }
+  }
+}
