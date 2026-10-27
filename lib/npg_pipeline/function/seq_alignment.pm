@@ -55,7 +55,7 @@ around 'markdup_method' => sub {
     # I've added two new library_types UD-seq and UD-seq Twist Pulldown
 
     my $mdm;
-    if($lt eq q[Duplex-Seq] || $lt =~ /^Targeted\sNanoSeq\sPulldown|^UD-seq/smx) {
+    if($lt eq q[Duplex-Seq] || $lt =~ /^Targeted\sNanoSeq\sPulldown|^UD-seq/ismx) {
       $mdm = q(duplexseq);
     }
     elsif($self->platform_NovaSeqX) {
