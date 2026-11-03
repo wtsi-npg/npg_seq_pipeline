@@ -1,6 +1,8 @@
 LIST OF CHANGES
 ---------------
 
+ - make NanoSeq_markdup_case_insensitive
+
 release 68.17.2 (2026-10-13)
  - made the is_duplexseq() and is_udseq() regex case insensitive
  - revert exclusion of iRODS jobs
