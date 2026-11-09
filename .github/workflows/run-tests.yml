@@ -81,9 +81,23 @@ jobs:
           
           source ${{ env.PERL_CACHE }}/etc/bashrc
           perlbrew available
-          perlbrew install --notest perl-${{ matrix.perl }}
+          if [[ "${{ matrix.perl }}" == "5.34.1" ]]; then # default gcc for 26.04 too strict for 5.34.1
+            perlbrew install --notest \
+              -Dnoextensions=SDBM_File \
+              perl-${{ matrix.perl }}
+          else
+            perlbrew install --notest perl-${{ matrix.perl }}
+          fi
           perlbrew use perl-${{ matrix.perl }}
           perlbrew install-cpanm
+
+      - name: "Archive Perlbrew logs on install failure"
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: perlbrew_log
+          path: ~/perl5/build.perl-*.log
+          retention-days: 5
 
       - name: "Initialize Perlbrew"
         run: |
