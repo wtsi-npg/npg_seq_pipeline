@@ -4,7 +4,15 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: "ubuntu-latest"
+            perl: "5.34.1" # whilst we're stuck on 22.04 (unavailable in GHA) where this is the Perl
+          - os: "ubuntu-26.04"
+            perl: "osnative" # anticipated (2026-11) next move
+
+    runs-on: ${{ matrix.os }}
 
     defaults:
       run:
@@ -18,10 +26,6 @@ jobs:
       CONDA_TEST_ENV: test-environment
       WTSI_NPG_GITHUB_URL: https://github.com/wtsi-npg
       WTSI_NPG_BUILD_BRANCH: ${{ github.base_ref || github.ref }}
-
-    strategy:
-      matrix:
-        perl: ["5.34.1", "5.38.2"]
 
     steps:
       - uses: actions/checkout@v7
@@ -69,10 +73,10 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ${{ env.PERL_CACHE }}
-          key: ${{ runner.os }}-${{ matrix.perl }}-perl
+          key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.perl }}-perl
 
       - name: "Install Perlbrew"
-        if: steps.cache-perl.outputs.cache-hit != 'true'
+        if: matrix.perl != 'osnative' && steps.cache-perl.outputs.cache-hit != 'true'
         run: |
           curl -sSL https://install.perlbrew.pl -o perlbrew.sh
           sha256sum -c .github/workflows/perlbrew.sha256
@@ -100,8 +104,14 @@ jobs:
           retention-days: 5
 
       - name: "Initialize Perlbrew"
+        if: matrix.perl != 'osnative'
         run: |
           echo "source ${{ env.PERL_CACHE }}/etc/bashrc" >> "$HOME/.bash_profile"
+
+      - name: "OS native Perl cpanminus"
+        if: matrix.perl == 'osnative'
+        run: |
+          sudo apt-get install -y cpanminus
 
       - name: "Install Perl dependencies"
         run: |
