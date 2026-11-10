@@ -11,6 +11,7 @@ jobs:
             perl: "5.34.1" # whilst we're stuck on 22.04 (unavailable in GHA) where this is the Perl
           - os: "ubuntu-26.04"
             perl: "osnative" # anticipated (2026-11) next move
+            # use experimental: true to allow for a failing NPG test or build
 
     runs-on: ${{ matrix.os }}
 
@@ -148,6 +149,8 @@ jobs:
           retention-days: 5
 
       - name: "Run tests"
+        id: run-tests
+        continue-on-error: ${{ matrix.experimental == true }}
         run: |
           conda activate "${{ env.CONDA_TEST_ENV }}"
           conda info --envs
@@ -159,3 +162,32 @@ jobs:
           perl Build.PL
           ./Build test --verbose
           ./Build install
+
+      - name: "Report experimental tests failure"
+        if: steps.run-tests.outcome == 'failure' && matrix.experimental == true
+        run: |
+          echo "### ⚠️ Experimental Job Failed" >> $GITHUB_STEP_SUMMARY
+          echo "An experimental test suite failed, but should not block this PR." >> $GITHUB_STEP_SUMMARY
+          echo "::warning title=Experimental Element Matrix Failure::An experimental test suite failed but should not block this merge."
+
+      - name: "Build distribution"
+        id: build-distribution
+        continue-on-error: ${{ matrix.experimental == true }}
+        run: |
+          eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib)
+          eval $(perl -I ${{ env.PERL_CACHE }}/lib/perl5/ -Mlocal::lib="$NPG_LIB")
+          export TEST_AUTHOR=1
+          
+          ./Build dist
+          export DIST_FILE=$(ls npg*.tar.gz)
+          export MD5_FILE=$DIST_FILE.md5
+          md5sum $DIST_FILE > $MD5_FILE
+          export SHA256_FILE=$DIST_FILE.sha256
+          shasum -a 256 $DIST_FILE > $SHA256_FILE
+
+      - name: "Report experimental build distribution failure"
+        if: steps.build-distribution.outcome  == 'failure' && matrix.experimental == true
+        run: |
+          echo "### ⚠️ Experimental Job Failed" >> $GITHUB_STEP_SUMMARY
+          echo "An experimental build distribution failed, but should not block this PR." >> $GITHUB_STEP_SUMMARY
+          echo "::warning title=Experimental Element Matrix Failure::An experimental build distribution failed but should not block this merge."
