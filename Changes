@@ -1,7 +1,10 @@
 LIST OF CHANGES
 ---------------
 
+release 68.17.3 (2026-11-19)
  - make NanoSeq_markdup_case_insensitive
+ - GHA: refinement, matrix change and cope with Ubuntu 26.04 Perl 5.34.1
+     combination
 
 release 68.17.2 (2026-10-13)
  - made the is_duplexseq() and is_udseq() regex case insensitive
