@@ -9,6 +9,7 @@ use POSIX qw(strftime);
 use Cwd qw/cwd/;
 use File::Copy;
 use File::Spec;
+use List::Util qw(first);
 
 use npg_tracking::util::abs_path qw/abs_path/;
 use npg_tracking::util::types;
@@ -77,17 +78,46 @@ has 'lims'       => (isa        => 'ArrayRef[st::api::lims]',
 sub _build_lims {
   my $self = shift;
 
+  my $ref = $self->_lims_driver_init;
+
+  return [st::api::lims->new($ref)->children];
+}
+
+=head2 driver_type
+
+MLWH-backed LIMS driver type used for building the cached samplesheet.
+
+=cut
+
+has 'driver_type' => (
+  isa        => 'Str',
+  is         => 'ro',
+  required   => 0,
+  lazy_build => 1,
+);
+sub _build_driver_type {
+  my $self = shift;
+
   $self->id_flowcell_lims or
     croak 'id_flowcell_lims (batch id) is required';
 
-  my $ref = {
-    driver_type      => 'ml_warehouse',
-    id_run           => $self->id_run,
-    mlwh_schema      => $self->mlwh_schema,
-    id_flowcell_lims => $self->id_flowcell_lims
-  };
+  my @checks = (
+    [q{ml_warehouse_flowcell}, q{EseqFlowcell}, {id_flowcell_lims    => $self->id_flowcell_lims}],
+    [q{ml_warehouse_flowcell}, q{IseqFlowcell}, {id_flowcell_lims    => $self->id_flowcell_lims}],
+    [q{ml_warehouse_flowcell}, q{UseqWafer},    {batch_for_opentrons => $self->id_flowcell_lims}],
+  );
 
-  return [st::api::lims->new($ref)->children];
+  my $driver_type = first {
+    my ($type, $resultset, $search) = @{$_};
+    $self->mlwh_schema->resultset($resultset)->search($search)->count;
+  } @checks;
+
+  if ($driver_type) {
+    return $driver_type->[0];
+  }
+
+  croak sprintf 'Unable to determine MLWH LIMS driver for id_flowcell_lims %s',
+    $self->id_flowcell_lims;
 }
 
 =head2 set_env_vars
@@ -234,6 +264,27 @@ A list of env. variables names that can be set by this module in global scope.
 =cut
 sub env_vars {
   return (st::api::lims->cached_samplesheet_var_name());
+}
+
+sub _lims_driver_init {
+  my $self = shift;
+
+  my $ref = {
+    driver_type => $self->driver_type,
+    id_run      => $self->id_run,
+    mlwh_schema => $self->mlwh_schema,
+  };
+
+  if ($self->driver_type eq q{ml_warehouse_flowcell} &&
+      !$self->id_flowcell_lims) {
+    croak 'id_flowcell_lims (batch id) is required';
+  }
+
+  if ($self->id_flowcell_lims) {
+    $ref->{id_flowcell_lims} = $self->id_flowcell_lims;
+  }
+
+  return $ref;
 }
 
 sub _samplesheet {

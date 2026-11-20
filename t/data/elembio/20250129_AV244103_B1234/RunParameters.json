@@ -1,0 +1,21 @@
+{
+  "RunName": "B1234",
+  "RunType": "Sequencing",
+  "Side": "SideA",
+  "Date": "2025-01-29T14:33:13.409033205Z",
+  "InstrumentName": "AV244103",
+  "RunFolderName": "20250129_AV244103_B1234",
+  "Cycles": {
+    "R1": 151,
+    "R2": 151,
+    "I1": 0,
+    "I2": 0
+  },
+  "ReadOrder": "R1,R2",
+  "AnalysisLanes": "1+2",
+  "Consumables": {
+    "Flowcell": {
+      "SerialNumber": "2422551729"
+    }
+  }
+}

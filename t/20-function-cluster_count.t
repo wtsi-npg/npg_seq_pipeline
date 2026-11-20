@@ -1,12 +1,14 @@
 use strict;
 use warnings;
 use English qw(-no_match_vars);
-use Test::More tests => 23;
+use Test::More tests => 25;
 use Test::Exception;
 use Log::Log4perl qw(:levels);
 use File::Copy qw(cp);
+use File::Slurp qw(write_file);
 use File::Temp qw(tempdir);
 use File::Path qw(make_path);
+use JSON qw(encode_json);
 
 use t::util;
 
@@ -218,6 +220,49 @@ my $default = {
     note `$c 2>&1`;
     ok( ! $CHILD_ERROR, $ms{$p} );
   }
+}
+
+
+{
+  my $tmp_dir = tempdir(CLEANUP => 1);
+  my $rf_name = q{20250127_AV244103_1234_NT1850075L};
+  my $rf_info = $util->create_runfolder($tmp_dir,
+    {'runfolder_name' => $rf_name, 'analysis_path' => 'BAM_basecalls'});
+  my $runfolder_path = $rf_info->{'runfolder_path'};
+  my $bam_basecall_path = $rf_info->{'analysis_path'};
+  cp("t/data/elembio/${rf_name}/RunParameters.json", "$runfolder_path/RunParameters.json")
+    or die 'Failed to copy Elembio run params';
+  write_file(
+    "$runfolder_path/AvitiRunStats.json",
+    encode_json({
+      RunStats => {
+        PFCount => 150694669,
+        PolonyCount => 150694669,
+      },
+      LaneStats => [
+        {Lane => 1, PFCount => 150694669, PolonyCount => 150694669},
+      ],
+    })
+  );
+
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[t/data/samplesheet_8747.csv];
+  my $archive_path = q{t/data/example_runfolder/121103_HS29_08747_B_C1BV5ACXX/Data/Intensities/BAM_basecalls_20130122-085552/no_cal/archive};
+  my $object = npg_pipeline::function::cluster_count->new(
+    id_run => 8747,
+    lanes => [1],
+    runfolder_path => $runfolder_path,
+    bam_basecall_path => $bam_basecall_path,
+    archive_path => $archive_path,
+    bfs_paths    => [ qq{$archive_path/lane1/qc} ],
+    sf_paths     => [],
+    bfs_fofp_name => q{},
+    sf_fofp_name => q{},
+    resource => $default
+  );
+
+  is_deeply([$object->_expected_cluster_counts()], [150694669, 150694669],
+    'Elembio expected cluster counts read from AvitiRunStats');
+  ok($object->run_cluster_count_check(), 'Elembio cluster count check runs ok');
 }
 
 1;

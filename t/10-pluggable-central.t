@@ -1,7 +1,8 @@
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
+use Cwd qw(abs_path);
 use Log::Log4perl qw(:levels);
 use File::Copy qw(cp);
 use File::Path qw(make_path);
@@ -10,6 +11,7 @@ use File::Slurp qw(read_file write_file);
 use JSON;
 
 use t::util;
+use t::dbic_util;
 
 my $util = t::util->new();
 my $tdir = $util->temp_directory();
@@ -43,6 +45,19 @@ sub _setup_runfolder_47995 {
     }
   }
   return $rf_info;
+}
+
+sub _setup_runfolder_51922 {
+  my $tmp_dir = tempdir(CLEANUP => 1);
+  my $rf_name = q[20250127_AV244103_1234_NT1850075L];
+  my $rf = join q[/], $tmp_dir, $rf_name;
+  make_path("$rf/Data/Intensities/BaseCalls");
+  cp("t/data/elembio/$rf_name/RunParameters.json", "$rf/RunParameters.json")
+    or die 'Failed to copy Elembio RunParameters.json';
+  return {
+    runfolder_name => $rf_name,
+    runfolder_path => $rf,
+  };
 }
 
 my $central = q{npg_pipeline::pluggable::central};
@@ -240,6 +255,49 @@ subtest 'execute prepare()' => sub {
   $pb = $central->new($init);
   $pb->prepare();
   is ($pb->bam_basecall_path, $expected_pb_cal, 'bam basecall path is set');
+};
+
+subtest 'execute prepare() with generated Elembio metadata cache' => sub {
+  plan tests => 9;
+
+  my $wh_schema = t::dbic_util->new()->test_schema_mlwh(
+    '../npg_tracking/t/data/fixtures_lims_wh_samplesheet'
+  );
+  local $ENV{NPG_CACHED_SAMPLESHEET_FILE} = q[];
+  my $rf_info = _setup_runfolder_51922();
+  my $rf = $rf_info->{'runfolder_path'};
+  my $timestamp = '20260315-setup';
+  my $pb = $central->new(
+    id_run                => 51922,
+    id_flowcell_lims      => 107441,
+    mlwh_schema           => $wh_schema,
+    run_folder            => $rf_info->{'runfolder_name'},
+    runfolder_path        => $rf,
+    timestamp             => $timestamp,
+    spider                => 1,
+    product_conf_file_path => $product_config,
+  );
+
+  is($pb->manufacturer, 'Element Biosciences',
+    'Elembio runfolder is detected');
+  lives_ok { $pb->prepare() } 'prepare runs fine with generated cache';
+
+  my $bam_basecall_path = join q[/], $rf, "Data/Intensities/BAM_basecalls_$timestamp";
+  my $cache_dir = join q[/], $bam_basecall_path, q[metadata_cache_51922];
+  my $samplesheet = join q[/], $cache_dir, q[samplesheet_51922.csv];
+
+  is($pb->bam_basecall_path, $bam_basecall_path, 'bam basecall path is set');
+  ok(-d $bam_basecall_path, 'analysis directory exists');
+  ok(-d $cache_dir, 'metadata cache directory exists');
+  ok(-f $samplesheet, 'samplesheet is generated in metadata cache');
+  is($ENV{NPG_CACHED_SAMPLESHEET_FILE}, abs_path($samplesheet),
+    'cached samplesheet environment variable is set');
+
+  my $content = read_file($samplesheet);
+  like($content, qr/6133STDY8786700/smx,
+    'generated samplesheet contains expected sample');
+  like($content, qr/MPN[ ]Whole[ ]Genomes/smx,
+    'generated samplesheet contains expected study');
 };
 
 1;
